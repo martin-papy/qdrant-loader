@@ -13,27 +13,31 @@ A tool for collecting and vectorizing technical content from multiple sources an
 ## Setup
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd qdrant-loader
-```
+
+    ```bash
+    git clone <repository-url>
+    cd qdrant-loader
+    ```
 
 2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On macOS/Linux
-```
+
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On macOS/Linux
+    ```
 
 3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 4. Configure environment variables:
-```bash
-cp .env.template .env
-# Edit .env with your configuration
-```
+
+    ```bash
+    cp .env.template .env
+    # Edit .env with your configuration
+    ```
 
 ## Usage
 
@@ -49,4 +53,6 @@ cp .env.template .env
 
 ## License
 
-[License information will be added] 
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+The GNU GPLv3 is a copyleft license that requires anyone who distributes your code or a derivative work to make the source available under the same terms. This license also provides patent protection and protection against tivoization.
