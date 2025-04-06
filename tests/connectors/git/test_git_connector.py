@@ -206,3 +206,17 @@ def test_cleanup(mock_config, mock_git_ops):
         assert os.path.exists(temp_dir)
     assert not os.path.exists(temp_dir)
     assert connector.temp_dir is None
+
+def test_cleanup_on_exception(mock_config, mock_git_ops):
+    """Test cleanup functionality when an exception occurs."""
+    connector = GitConnector(mock_config, mock_git_ops)
+    temp_dir = None
+    try:
+        with connector:
+            temp_dir = connector.temp_dir
+            assert os.path.exists(temp_dir)
+            raise ValueError("Test exception")
+    except ValueError:
+        pass
+    assert not os.path.exists(temp_dir)
+    assert connector.temp_dir is None
