@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# You must always read in details all the following documents at the beginning of any new conversation.
+
+- [PRD.md](mdc:docs/PRD.md)](mdc:docs/PRD.md) will help you understant the goal of the application
+- [Plan.md](mdc:docs/Plan.md) will help you understand the progress we made in our project
+- [CodingStandards.md](mdc:docs/CodingStandards.md) are all the tules you need to stricly follow

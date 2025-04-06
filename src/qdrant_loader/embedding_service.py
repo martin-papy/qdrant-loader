@@ -2,32 +2,23 @@ from openai import OpenAI
 import tiktoken
 import structlog
 from typing import List, Optional
-from .config import Settings, get_settings
+from qdrant_loader.config import Settings, get_global_config
 
 logger = structlog.get_logger()
 
 class EmbeddingService:
-    def __init__(self, settings: Optional[Settings] = None):
-        self.settings = settings or get_settings()
-        if not self.settings:
-            raise ValueError("Settings must be provided either through environment or constructor")
+    """Service for generating embeddings using OpenAI's API."""
+    
+    def __init__(self, settings: Settings):
+        """Initialize the embedding service.
         
-        # Set model first
-        self.model = self.settings.OPENAI_MODEL
-        
-        # Initialize OpenAI client
-        try:
-            self.client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
-        except Exception as e:
-            logger.error("Failed to initialize OpenAI client", error=str(e))
-            raise
-        
-        # Initialize tokenizer after OpenAI client
-        try:
-            self.encoding = tiktoken.encoding_for_model(self.model)
-        except Exception as e:
-            logger.error("Failed to initialize tokenizer", error=str(e))
-            raise
+        Args:
+            settings: The application settings containing OpenAI API key.
+        """
+        self.settings = settings
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.model = get_global_config().embedding.model
+        self.encoding = tiktoken.encoding_for_model(self.model)
 
     def get_embedding(self, text: str) -> List[float]:
         """Get embedding for a single text string."""

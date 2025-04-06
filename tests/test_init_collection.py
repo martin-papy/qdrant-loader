@@ -11,10 +11,7 @@ def mock_settings():
         QDRANT_API_KEY="test-key",
         QDRANT_COLLECTION_NAME="test-collection",
         OPENAI_API_KEY="test-openai-key",
-        OPENAI_MODEL="text-embedding-3-small",
-        LOG_LEVEL="INFO",
-        CHUNK_SIZE=500,
-        CHUNK_OVERLAP=50
+        LOG_LEVEL="INFO"
     )
 
 @pytest.fixture
