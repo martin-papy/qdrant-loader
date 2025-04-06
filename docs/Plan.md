@@ -95,12 +95,14 @@
 
 ## Phase 5: Git Integration (Future)
 
-- [ ] Implement Git connector
-  - [ ] Add Git connector tests
-- [ ] Add repository scanning
-  - [ ] Add scanning tests
-- [ ] Handle different file types
-  - [ ] Add file type handling tests
+- [x] Implement Git connector
+  - [x] Add Git connector tests
+  - [x] Implement repository cloning and cleanup
+  - [x] Add file filtering and processing
+  - [x] Handle different file types
+  - [x] Add file type handling tests
+  - [x] Implement proper cleanup of temporary repositories
+  - [x] Add comprehensive test coverage
 
 ## Phase 6: Confluence Integration (Future)
 
