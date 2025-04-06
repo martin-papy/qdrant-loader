@@ -312,6 +312,11 @@ class Settings(BaseSettings):
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
     
+    # Git Authentication Configuration
+    GITHUB_TOKEN: Optional[str] = Field(None, description="GitHub Personal Access Token")
+    GITLAB_TOKEN: Optional[str] = Field(None, description="GitLab Personal Access Token")
+    BITBUCKET_TOKEN: Optional[str] = Field(None, description="Bitbucket Personal Access Token")
+    
     # Logging Configuration
     LOG_LEVEL: str = Field(default="INFO", description="Logging level")
     
@@ -332,8 +337,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True,
-        env_prefix=""
+        env_file_encoding="utf-8",
+        extra="allow"  # Allow extra fields in environment variables
     )
 
 _settings_instance = None

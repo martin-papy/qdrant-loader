@@ -60,12 +60,26 @@ class GitPythonAdapter(GitOperations):
         return files
 
 class GitConnector:
-    """Connector for Git repositories"""
-    def __init__(self, config: GitRepoConfig, git_ops: Optional[GitOperations] = None):
+    """Connector for Git repositories."""
+    
+    def __init__(self, config: GitRepoConfig, auth_config: Optional[GitAuthConfig] = None):
         self.config = config
+        self.auth_config = auth_config
         self.temp_dir = None
-        self.repo = None
-        self.git_ops = git_ops or GitPythonAdapter()
+        self.git_ops = None
+
+    def __enter__(self):
+        """Context manager entry."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.git_ops = GitPythonAdapter()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            import shutil
+            shutil.rmtree(self.temp_dir)
+            logger.debug(f"Cleaned up temporary directory: {self.temp_dir}")
 
     def _clone_repository(self) -> None:
         """Clone the repository to a temporary directory"""
@@ -134,25 +148,27 @@ class GitConnector:
             raise
 
     def get_documents(self) -> List[Document]:
-        """Get all documents from the repository"""
-        self._clone_repository()
-        
-        documents = []
-        for file_path in self.git_ops.list_files(self.temp_dir):
-            if self._should_process_file(file_path):
-                try:
-                    doc = self._process_file(file_path)
-                    documents.append(doc)
-                except Exception as e:
-                    logger.error(f"Failed to process file {file_path}: {e}")
-                    continue
-        
-        return documents
+        """Get documents from the Git repository."""
+        if not self.temp_dir or not self.git_ops:
+            raise RuntimeError("GitConnector must be used as a context manager")
 
-    def cleanup(self) -> None:
-        """Clean up temporary files"""
-        if self.temp_dir and os.path.exists(self.temp_dir):
-            import shutil
-            shutil.rmtree(self.temp_dir)
-        self.temp_dir = None
-        self.repo = None 
+        try:
+            # Clone repository
+            self._clone_repository()
+            
+            # Get all files matching the configuration
+            files = self.git_ops.list_files(self.temp_dir)
+            
+            # Process files into documents
+            documents = []
+            for file_path in files:
+                if self._should_process_file(file_path):
+                    doc = self._process_file(file_path)
+                    if doc:
+                        documents.append(doc)
+            
+            return documents
+            
+        except Exception as e:
+            logger.error(f"Error processing Git repository: {e}")
+            raise 
