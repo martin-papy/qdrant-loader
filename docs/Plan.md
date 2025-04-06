@@ -66,7 +66,7 @@
   - [x] Handle different documentation formats
   - [x] Add connector tests
 - [x] Enhance source configuration
-  - [x] Implement configuration validation for public_sources.yaml
+  - [x] Implement configuration validation for config.yaml
   - [x] Add support for dynamic version detection
   - [x] Add configuration tests
 - [x] Build generic ingestion pipeline
@@ -76,7 +76,7 @@
   - [ ] Create CLI interface
   - [x] Add pipeline integration tests
 - [ ] Add documentation
-  - [ ] Document public_sources.yaml configuration options
+  - [ ] Document config.yaml configuration options
   - [ ] Create source implementation guide
   - [ ] Add troubleshooting guide
 

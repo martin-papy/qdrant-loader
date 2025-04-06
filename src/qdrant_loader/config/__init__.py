@@ -287,16 +287,16 @@ class Settings(BaseSettings):
 _settings_instance = None
 
 def get_settings() -> Optional[Settings]:
-    """Get the settings instance, creating it if necessary and if not in test environment."""
+    """Get the settings instance, creating it if necessary."""
     global _settings_instance
-    if _settings_instance is None and "PYTEST_CURRENT_TEST" not in os.environ:
+    if _settings_instance is None:
         try:
             _settings_instance = Settings()
         except ValidationError as e:
             raise ValueError(f"Invalid configuration: {str(e)}")
         except Exception as e:
             raise ValueError(f"Failed to load settings: {str(e)}")
-    return _settings_instance 
+    return _settings_instance
 
 _global_config_instance = None
 
