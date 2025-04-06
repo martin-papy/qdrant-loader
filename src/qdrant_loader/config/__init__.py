@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from pydantic import Field, field_validator, ConfigDict, ValidationError, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
@@ -156,22 +156,74 @@ class PublicDocsConfig(BaseModel):
         except Exception as e:
             raise ValueError(f"Failed to load public docs configuration: {str(e)}")
 
+class GitAuthConfig(BaseModel):
+    """Configuration for Git repository authentication using Personal Access Tokens."""
+    type: str = Field(
+        default="none",
+        description="Authentication type: 'none', 'github', 'gitlab', or 'bitbucket'"
+    )
+    token_env: Optional[str] = Field(
+        default=None,
+        description="Name of environment variable containing the authentication token"
+    )
+
+    @field_validator("type")
+    @classmethod
+    def validate_auth_type(cls, v):
+        valid_types = ["none", "github", "gitlab", "bitbucket"]
+        if v.lower() not in valid_types:
+            raise ValueError(f"auth.type must be one of {valid_types}")
+        return v.lower()
+
+    def get_token(self) -> Optional[str]:
+        """Get the authentication token from environment variable."""
+        if self.token_env:
+            return os.getenv(self.token_env)
+        return None
+
 class GitRepoConfig(BaseModel):
     """Configuration for a Git repository source."""
-    url: str = Field(..., description="Repository URL")
-    branch: str = Field(default="main", description="Branch to process")
+    url: str = Field(..., description="URL of the Git repository")
+    branch: str = Field(default="main", description="Branch to scan")
     include_paths: List[str] = Field(
-        default=["**"],
-        description="Paths to include in processing"
+        default=["**/*"],
+        description="List of glob patterns for files to include"
     )
     exclude_paths: List[str] = Field(
         default=[],
-        description="Paths to exclude from processing"
+        description="List of glob patterns for files to exclude"
     )
     file_types: List[str] = Field(
-        default=["md", "rst", "txt"],
-        description="File types to process"
+        default=["*.md", "*.rst", "*.txt", "*.py", "*.js", "*.ts", "*.java", "*.go", "*.rb"],
+        description="List of file extensions to process"
     )
+    max_file_size: int = Field(
+        default=1024 * 1024,  # 1MB
+        description="Maximum file size to process in bytes"
+    )
+    depth: int = Field(
+        default=1,
+        description="Number of commits to scan back in history"
+    )
+    auth: GitAuthConfig = Field(
+        default_factory=GitAuthConfig,
+        description="Authentication configuration"
+    )
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v):
+        if not v.startswith(("http://", "https://", "git@")):
+            raise ValueError("url must be a valid Git repository URL")
+        return v
+
+    @field_validator("file_types")
+    @classmethod
+    def validate_file_types(cls, v):
+        for file_type in v:
+            if not file_type.startswith("*."):
+                raise ValueError("file_types must be a list of glob patterns starting with '*.'")
+        return v
 
 class ConfluenceConfig(BaseModel):
     """Configuration for a Confluence space source."""

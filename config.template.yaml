@@ -62,28 +62,70 @@ public_docs:
       # Code blocks to preserve
       code_blocks: "pre code"
 
-# Git repository sources (future)
+# Git repository sources
 git_repos:
-  # Example configuration for a Git repository
-  my_repo:
-    # Repository URL
+  # Example configuration for a public repository
+  public_repo:
     url: "https://github.com/example/repo.git"
-    
-    # Branch to process
     branch: "main"
-    
-    # Paths to include/exclude
     include_paths:
       - "docs/**"
+      - "src/**"
       - "README.md"
     exclude_paths:
       - "docs/archive/**"
-    
-    # File types to process
+      - "node_modules/**"
+      - "venv/**"
     file_types:
-      - "md"
-      - "rst"
-      - "txt"
+      - "*.md"
+      - "*.rst"
+      - "*.txt"
+      - "*.py"
+      - "*.js"
+      - "*.ts"
+      - "*.java"
+      - "*.go"
+      - "*.rb"
+    max_file_size: 1048576
+    depth: 1
+    auth:
+      type: "none"  # No authentication needed for public repos
+
+  # Example configuration for a private GitHub repository
+  private_github_repo:
+    url: "https://github.com/example/private-repo.git"
+    branch: "main"
+    include_paths:
+      - "docs/**"
+    file_types:
+      - "*.md"
+    auth:
+      type: "github"
+      token_env: "GITHUB_TOKEN"  # Environment variable containing the GitHub token
+
+  # Example configuration for a private GitLab repository
+  private_gitlab_repo:
+    url: "https://gitlab.com/example/private-repo.git"
+    branch: "main"
+    include_paths:
+      - "docs/**"
+    file_types:
+      - "*.md"
+    auth:
+      type: "gitlab"
+      token_env: "GITLAB_TOKEN"  # Environment variable containing the GitLab token
+
+  # Example configuration for a private Bitbucket repository
+  private_bitbucket_repo:
+    url: "https://bitbucket.org/example/private-repo.git"
+    branch: "main"
+    include_paths:
+      - "docs/**"
+    file_types:
+      - "*.md"
+    auth:
+      type: "bitbucket"
+      token_env: "BITBUCKET_TOKEN"  # Environment variable containing the Bitbucket token
 
 # Confluence spaces (future)
 confluence:
