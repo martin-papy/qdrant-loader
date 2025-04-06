@@ -39,17 +39,44 @@ A tool for collecting and vectorizing technical content from multiple sources an
     # Edit .env with your configuration
     ```
 
-## Usage
+5. Initialize the QDrant collection:
 
-[Usage instructions will be added as the project develops]
+    ```bash
+    python -m src.init_collection
+    ```
+
+    This will create a collection with:
+    - 1536 dimensions (matching OpenAI's text-embedding-3-small model)
+    - Cosine similarity distance metric
+    - Collection name as specified in your .env file
 
 ## Development
 
-- Run tests: `pytest`
-- Format code: `black .`
-- Sort imports: `isort .`
-- Type checking: `mypy .`
-- Lint: `flake8`
+### Running Tests
+
+Run the full test suite:
+
+```bash
+pytest tests/
+```
+
+Run tests with coverage report:
+
+```bash
+pytest --cov=src tests/
+```
+
+Run specific test files:
+
+```bash
+pytest tests/test_config.py
+pytest tests/test_qdrant_manager.py
+pytest tests/test_embedding_service.py
+```
+
+## Usage
+
+[Usage instructions will be added as the project develops]
 
 ## License
 
