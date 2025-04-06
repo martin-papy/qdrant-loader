@@ -11,9 +11,23 @@ class EmbeddingService:
         self.settings = settings or get_settings()
         if not self.settings:
             raise ValueError("Settings must be provided either through environment or constructor")
-        self.client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
+        
+        # Set model first
         self.model = self.settings.OPENAI_MODEL
-        self.encoding = tiktoken.encoding_for_model(self.model)
+        
+        # Initialize OpenAI client
+        try:
+            self.client = OpenAI(api_key=self.settings.OPENAI_API_KEY)
+        except Exception as e:
+            logger.error("Failed to initialize OpenAI client", error=str(e))
+            raise
+        
+        # Initialize tokenizer after OpenAI client
+        try:
+            self.encoding = tiktoken.encoding_for_model(self.model)
+        except Exception as e:
+            logger.error("Failed to initialize tokenizer", error=str(e))
+            raise
 
     def get_embedding(self, text: str) -> List[float]:
         """Get embedding for a single text string."""
