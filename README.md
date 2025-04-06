@@ -15,7 +15,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 1. Clone the repository:
 
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/kheldar666/qdrant-loader.git
     cd qdrant-loader
     ```
 
@@ -49,6 +49,39 @@ A tool for collecting and vectorizing technical content from multiple sources an
     - 1536 dimensions (matching OpenAI's text-embedding-3-small model)
     - Cosine similarity distance metric
     - Collection name as specified in your .env file
+
+## Technical Requirements
+
+- Python 3.8 or higher
+- QDrant server (local or cloud instance)
+- OpenAI API key
+- Sufficient disk space for the vector database
+- Internet connection for API access
+
+## Contributing and Support
+
+We welcome contributions and feedback! Here's how you can get involved:
+
+### Reporting Issues
+
+If you encounter any bugs or have feature requests, please:
+
+1. Check the [existing issues](https://github.com/kheldar666/qdrant-loader/issues) to avoid duplicates
+2. Create a new issue with:
+   - A clear, descriptive title
+   - Steps to reproduce the problem
+   - Expected vs actual behavior
+   - Environment details (Python version, OS, etc.)
+   - Relevant error messages or logs
+
+### Providing Feedback
+
+- For general feedback or suggestions, create a [Discussion](https://github.com/kheldar666/qdrant-loader/discussions)
+- For code contributions, please:
+  1. Fork the repository
+  2. Create a feature branch
+  3. Submit a pull request with a clear description of changes
+  4. Ensure all tests pass and new code is covered by tests
 
 ## Development
 
