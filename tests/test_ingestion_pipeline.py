@@ -97,7 +97,9 @@ def test_process_public_docs(
 @patch("qdrant_loader.ingestion_pipeline.get_settings")
 @patch("qdrant_loader.ingestion_pipeline.EmbeddingService")
 @patch("qdrant_loader.ingestion_pipeline.QdrantManager")
+@patch("qdrant_loader.ingestion_pipeline.ChunkingStrategy")
 def test_process_documents(
+    mock_chunking_strategy,
     mock_qdrant_manager,
     mock_embedding_service,
     mock_get_settings,
@@ -106,10 +108,13 @@ def test_process_documents(
     mock_documents
 ):
     mock_get_settings.return_value = mock_settings
-    mock_embedding_service.return_value.generate_embeddings.return_value = [
+    mock_embedding_service.return_value.get_embeddings.return_value = [
         [0.1, 0.2, 0.3],
         [0.4, 0.5, 0.6]
     ]
+    
+    # Mock chunking strategy to return the same documents
+    mock_chunking_strategy.return_value.chunk_document.side_effect = lambda doc: [doc]
     
     pipeline = IngestionPipeline()
     pipeline._process_public_docs = Mock(return_value=mock_documents)
@@ -117,13 +122,13 @@ def test_process_documents(
     pipeline.process_documents(mock_sources_config)
     
     # Verify embeddings were generated
-    mock_embedding_service.return_value.generate_embeddings.assert_called_once_with(
+    mock_embedding_service.return_value.get_embeddings.assert_called_once_with(
         ["Test content 1", "Test content 2"]
     )
     
     # Verify points were uploaded to qDrant
-    mock_qdrant_manager.return_value.upload_points.assert_called_once()
-    points = mock_qdrant_manager.return_value.upload_points.call_args[0][0]
+    mock_qdrant_manager.return_value.upsert_points.assert_called_once()
+    points = mock_qdrant_manager.return_value.upsert_points.call_args[0][0]
     assert len(points) == 2
     assert all("vector" in point for point in points)
     assert all("payload" in point for point in points) 
