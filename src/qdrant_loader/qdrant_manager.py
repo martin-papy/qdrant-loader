@@ -3,7 +3,7 @@ from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 import structlog
 from typing import Optional, List
-from .config import Settings, get_settings
+from .config import Settings, get_settings, get_global_config
 
 logger = structlog.get_logger()
 
@@ -14,6 +14,7 @@ class QdrantManager:
         if not self.settings:
             raise ValueError("Settings must be provided either through environment or constructor")
         self.collection_name = self.settings.QDRANT_COLLECTION_NAME
+        self.batch_size = get_global_config().embedding.batch_size
         self.connect()
 
     def connect(self) -> None:
@@ -22,6 +23,7 @@ class QdrantManager:
             self.client = QdrantClient(
                 url=self.settings.QDRANT_URL,
                 api_key=self.settings.QDRANT_API_KEY,
+                timeout=60  # 60 seconds timeout
             )
             logger.info("Successfully connected to qDrant")
         except Exception as e:
@@ -50,14 +52,20 @@ class QdrantManager:
             raise
 
     def upsert_points(self, points: List[models.PointStruct]) -> None:
-        """Upsert points to the collection."""
+        """Upsert points to the collection in batches."""
         try:
-            self.client.upsert(
-                collection_name=self.collection_name,
-                points=points,
-                wait=True
-            )
-            logger.info("Successfully upserted points", count=len(points))
+            total_points = len(points)
+            for i in range(0, total_points, self.batch_size):
+                batch = points[i:i + self.batch_size]
+                self.client.upsert(
+                    collection_name=self.collection_name,
+                    points=batch,
+                    wait=True
+                )
+                logger.info("Upserted batch of points", 
+                           batch_size=len(batch),
+                           progress=f"{i + len(batch)}/{total_points}")
+            logger.info("Successfully upserted all points", count=total_points)
         except Exception as e:
             logger.error("Failed to upsert points", error=str(e))
             raise

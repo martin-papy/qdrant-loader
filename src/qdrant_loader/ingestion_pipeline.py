@@ -1,11 +1,13 @@
 from typing import List, Optional
 import structlog
-from .config import SourcesConfig, get_settings
+from .config import SourcesConfig, get_settings, get_global_config
 from .connectors.public_docs import PublicDocsConnector
 from .core.document import Document
+from .core.chunking import ChunkingStrategy
 from .embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
 from datetime import datetime
+import uuid
 
 logger = structlog.get_logger()
 
@@ -20,6 +22,14 @@ class IngestionPipeline:
             
         self.embedding_service = EmbeddingService(self.settings)
         self.qdrant_manager = QdrantManager(self.settings)
+        
+        # Initialize chunking strategy with global config
+        global_config = get_global_config()
+        self.chunking_strategy = ChunkingStrategy(
+            chunk_size=global_config.chunking["size"],
+            chunk_overlap=global_config.chunking["overlap"],
+            model_name=global_config.embedding.model
+        )
         
     def _process_public_docs(self, sources: dict) -> List[Document]:
         """Process documents from public documentation sources."""
@@ -67,24 +77,38 @@ class IngestionPipeline:
                 logger.warning("No documents were processed")
                 return
                 
-            # Generate embeddings for all documents
-            logger.info("Generating embeddings", document_count=len(documents))
-            embeddings = self.embedding_service.generate_embeddings(
-                [doc.content for doc in documents]
+            # Chunk documents
+            chunked_documents = []
+            for doc in documents:
+                chunks = self.chunking_strategy.chunk_document(doc)
+                chunked_documents.extend(chunks)
+                
+            logger.info("Chunked documents", 
+                       original_count=len(documents),
+                       chunk_count=len(chunked_documents))
+                
+            # Generate embeddings for all chunks
+            logger.info("Generating embeddings", document_count=len(chunked_documents))
+            embeddings = self.embedding_service.get_embeddings(
+                [doc.content for doc in chunked_documents]
             )
             
             # Prepare points for qDrant
             points = []
-            for doc, embedding in zip(documents, embeddings):
+            for doc, embedding in zip(chunked_documents, embeddings):
+                # Create a unique ID by combining source and chunk index
+                point_id = str(uuid.uuid4())
+                doc.metadata['original_url'] = doc.metadata.get('url', doc.source)
+                
                 points.append({
-                    "id": doc.metadata.get("url", doc.source),
+                    "id": point_id,
                     "vector": embedding,
                     "payload": doc.metadata
                 })
                 
             # Upload to qDrant
             logger.info("Uploading documents to qDrant", point_count=len(points))
-            self.qdrant_manager.upload_points(points)
+            self.qdrant_manager.upsert_points(points)
             
         except Exception as e:
             logger.error("Failed to process documents", error=str(e))
