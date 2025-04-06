@@ -39,26 +39,51 @@ class QdrantManager:
             logger.error("Failed to connect to qDrant", error=str(e))
             raise
 
-    def create_collection(self, vector_size: int = 1536) -> None:
-        """Create a new collection if it doesn't exist."""
-        try:
-            collections = self.client.get_collections().collections
-            collection_names = [collection.name for collection in collections]
-            
-            if self.collection_name not in collection_names:
-                self.client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=models.VectorParams(
-                        size=vector_size,
-                        distance=models.Distance.COSINE
-                    )
-                )
-                logger.info("Created new collection", collection=self.collection_name)
-            else:
-                logger.info("Collection already exists", collection=self.collection_name)
-        except UnexpectedResponse as e:
-            logger.error("Failed to create collection", error=str(e))
-            raise
+    def create_collection(self) -> None:
+        """Create collection with enhanced metadata fields."""
+        self.client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=models.VectorParams(
+                size=1536,  # OpenAI embedding size
+                distance=models.Distance.COSINE
+            ),
+            metadata_schema={
+                # File Information
+                'file_type': 'keyword',
+                'file_name': 'keyword',
+                'file_directory': 'keyword',
+                'file_encoding': 'keyword',
+                'line_count': 'integer',
+                'word_count': 'integer',
+                'has_code_blocks': 'boolean',
+                'has_images': 'boolean',
+                'has_links': 'boolean',
+                
+                # Repository Information
+                'repository_name': 'keyword',
+                'repository_owner': 'keyword',
+                'repository_description': 'text',
+                'repository_language': 'keyword',
+                
+                # Git History
+                'last_modified_by': 'keyword',
+                'commit_message': 'text',
+                'commit_hash': 'keyword',
+                'creation_date': 'datetime',
+                'number_of_commits': 'integer',
+                
+                # Document Structure
+                'has_toc': 'boolean',
+                'heading_levels': 'integer[]',
+                'sections_count': 'integer',
+                
+                # Source Information
+                'source': 'keyword',
+                'source_type': 'keyword',
+                'created_at': 'datetime'
+            }
+        )
+        logger.info("Created new collection", collection=self.collection_name)
 
     def upsert_points(self, points: List[models.PointStruct]) -> None:
         """Upsert points to the collection in batches."""
