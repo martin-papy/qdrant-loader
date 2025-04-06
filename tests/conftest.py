@@ -15,8 +15,5 @@ def test_settings():
         QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
         QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
         OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        OPENAI_MODEL=os.getenv("OPENAI_MODEL"),
-        LOG_LEVEL=os.getenv("LOG_LEVEL"),
-        CHUNK_SIZE=int(os.getenv("CHUNK_SIZE")),
-        CHUNK_OVERLAP=int(os.getenv("CHUNK_OVERLAP"))
+        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
     ) 

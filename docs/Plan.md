@@ -58,23 +58,27 @@
   - [x] Add content cleaning
   - [x] Add document processor tests
 
-## Phase 3: Public Documentation Integration
+## Phase 3: Source Integration Framework
 
-- [ ] Create public docs connector
-  - [ ] Implement URL-based content fetching
-  - [ ] Add HTML/Markdown parsing
-  - [ ] Handle different documentation formats
-  - [ ] Add connector tests
-- [ ] Implement Thymeleaf documentation specific handler
-  - [ ] Add version detection
-  - [ ] Implement specific parsing rules
-  - [ ] Test with Thymeleaf docs
-  - [ ] Add handler-specific tests
-- [ ] Create ingestion pipeline
-  - [ ] Implement document processing flow
-  - [ ] Add error handling
+- [x] Create public docs connector
+  - [x] Implement URL-based content fetching
+  - [x] Add HTML/Markdown parsing
+  - [x] Handle different documentation formats
+  - [x] Add connector tests
+- [x] Enhance source configuration
+  - [x] Implement configuration validation for public_sources.yaml
+  - [x] Add support for dynamic version detection
+  - [x] Add configuration tests
+- [x] Build generic ingestion pipeline
+  - [x] Create source-agnostic processing flow
+  - [x] Implement retry mechanisms for failed requests
+  - [x] Add error handling and logging
   - [ ] Create CLI interface
-  - [ ] Add pipeline integration tests
+  - [x] Add pipeline integration tests
+- [ ] Add documentation
+  - [ ] Document public_sources.yaml configuration options
+  - [ ] Create source implementation guide
+  - [ ] Add troubleshooting guide
 
 ## Phase 4: Testing and Documentation
 

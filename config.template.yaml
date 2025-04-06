@@ -1,0 +1,121 @@
+# Template for sources configuration
+# Copy this file to sources.yaml and customize it for your needs
+
+# Global configuration for all sources
+global:
+  # Default chunking configuration
+  chunking:
+    size: 500
+    overlap: 50
+  
+  # Default embedding configuration
+  embedding:
+    model: "text-embedding-3-small"
+    batch_size: 100
+
+  # Logging configuration
+  logging:
+    level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format: "json"  # Options: json, plain
+    file: "qdrant-loader.log"  # Optional: Path to log file
+
+# Public documentation sources
+public_docs:
+  # Example configuration for a documentation source
+  my_docs:
+    # Base URL of the documentation website
+    base_url: "https://docs.example.com"
+    
+    # Specific version of the documentation to fetch
+    version: "1.0"
+    
+    # Enable automatic version detection
+    auto_detect_version: false
+    
+    # Optional: Regex pattern to extract version from URLs or content
+    # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
+    version_pattern: null
+    
+    # Content type of the documentation (html, markdown, etc.)
+    content_type: "html"
+    
+    # Optional: Specific path pattern to match documentation pages
+    # If not specified, will try to find all documentation pages
+    path_pattern: "/docs/{version}/**"
+    
+    # Optional: List of paths to exclude from processing
+    exclude_paths:
+      - "/docs/{version}/api-reference"
+      - "/docs/{version}/changelog"
+    
+    # Optional: CSS selectors for content extraction
+    # If not specified, will use default selectors
+    selectors:
+      # Main content container
+      content: "article.main-content"
+      # Elements to remove (navigation, headers, footers)
+      remove: 
+        - "nav"
+        - "header"
+        - "footer"
+        - ".sidebar"
+      # Code blocks to preserve
+      code_blocks: "pre code"
+
+# Git repository sources (future)
+git_repos:
+  # Example configuration for a Git repository
+  my_repo:
+    # Repository URL
+    url: "https://github.com/example/repo.git"
+    
+    # Branch to process
+    branch: "main"
+    
+    # Paths to include/exclude
+    include_paths:
+      - "docs/**"
+      - "README.md"
+    exclude_paths:
+      - "docs/archive/**"
+    
+    # File types to process
+    file_types:
+      - "md"
+      - "rst"
+      - "txt"
+
+# Confluence spaces (future)
+confluence:
+  # Example configuration for a Confluence space
+  my_space:
+    # Space key
+    space_key: "SPACE"
+    
+    # Content types to process
+    content_types:
+      - "page"
+      - "blogpost"
+    
+    # Labels to include/exclude
+    include_labels:
+      - "documentation"
+    exclude_labels:
+      - "draft"
+
+# Jira projects (future)
+jira:
+  # Example configuration for a Jira project
+  my_project:
+    # Project key
+    project_key: "PROJ"
+    
+    # Issue types to process
+    issue_types:
+      - "Documentation"
+      - "Technical Spec"
+    
+    # Statuses to include
+    include_statuses:
+      - "Done"
+      - "Approved" 

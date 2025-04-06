@@ -1,6 +1,15 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from qdrant_loader.embedding_service import EmbeddingService
+from qdrant_loader.config import GlobalConfig
+
+@pytest.fixture
+def mock_global_config():
+    return GlobalConfig(
+        chunking={"size": 500, "overlap": 50},
+        embedding={"model": "text-embedding-3-small", "batch_size": 100},
+        logging={"level": "INFO", "format": "json", "file": "qdrant-loader.log"}
+    )
 
 @pytest.fixture
 def mock_openai_client():
@@ -9,9 +18,10 @@ def mock_openai_client():
     return mock_client
 
 @pytest.fixture
-def embedding_service(test_settings):
+def embedding_service(test_settings, mock_global_config):
     with patch('openai.OpenAI') as mock_openai_class, \
-         patch('tiktoken.encoding_for_model') as mock_tiktoken:
+         patch('tiktoken.encoding_for_model') as mock_tiktoken, \
+         patch('qdrant_loader.embedding_service.get_global_config', return_value=mock_global_config):
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
         mock_tiktoken.return_value = MagicMock()
@@ -21,16 +31,16 @@ def embedding_service(test_settings):
 
 def test_init_no_settings():
     """Test initialization with no settings provided."""
-    with patch('qdrant_loader.embedding_service.get_settings', return_value=None):
-        with pytest.raises(ValueError, match="Settings must be provided either through environment or constructor"):
-            EmbeddingService()
+    with pytest.raises(TypeError, match="missing 1 required positional argument: 'settings'"):
+        EmbeddingService()
 
 def test_init_openai_error():
     """Test initialization with OpenAI client error."""
     with patch('qdrant_loader.embedding_service.OpenAI', side_effect=Exception("API Error")), \
          patch('tiktoken.encoding_for_model', return_value=MagicMock()), \
-         pytest.raises(Exception, match="API Error"):
-        EmbeddingService(settings=Mock(OPENAI_API_KEY="test", OPENAI_MODEL="test"))
+         patch('qdrant_loader.embedding_service.get_global_config', return_value=MagicMock()):
+        with pytest.raises(Exception, match="API Error"):
+            EmbeddingService(settings=Mock(OPENAI_API_KEY="test"))
 
 def test_get_embedding_error(embedding_service):
     """Test error handling in get_embedding."""
