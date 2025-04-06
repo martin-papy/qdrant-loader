@@ -1,6 +1,7 @@
 # Implementation Plan
 
 ## Phase 0: Project Setup
+
 - [x] Create project structure
   - [x] Initialize git repository
   - [x] Create basic directory structure
@@ -20,6 +21,7 @@
   - [x] Add test requirements
 
 ## Phase 1: Core Infrastructure
+
 - [ ] Implement configuration management
   - [ ] Create config.py
   - [ ] Implement .env file handling
@@ -37,6 +39,7 @@
   - [ ] Add embedding service tests
 
 ## Phase 2: Document Processing Pipeline
+
 - [ ] Implement chunking strategy
   - [ ] Create chunking utilities
   - [ ] Implement smart chunking for different content types
@@ -54,6 +57,7 @@
   - [ ] Add document processor tests
 
 ## Phase 3: Public Documentation Integration
+
 - [ ] Create public docs connector
   - [ ] Implement URL-based content fetching
   - [ ] Add HTML/Markdown parsing
@@ -71,6 +75,7 @@
   - [ ] Add pipeline integration tests
 
 ## Phase 4: Testing and Documentation
+
 - [ ] Implement comprehensive testing
   - [ ] Add end-to-end tests
   - [ ] Add performance tests
@@ -83,6 +88,7 @@
   - [ ] Add API documentation
 
 ## Phase 5: Git Integration (Future)
+
 - [ ] Implement Git connector
   - [ ] Add Git connector tests
 - [ ] Add repository scanning
@@ -91,6 +97,7 @@
   - [ ] Add file type handling tests
 
 ## Phase 6: Confluence Integration (Future)
+
 - [ ] Implement Confluence connector
   - [ ] Add Confluence connector tests
 - [ ] Add space/content filtering
@@ -99,9 +106,11 @@
   - [ ] Add attachment handling tests
 
 ## Phase 7: Jira Integration (Future)
+
 - [ ] Implement Jira connector
   - [ ] Add Jira connector tests
 - [ ] Add project filtering
   - [ ] Add filtering tests
 - [ ] Handle ticket relationships
-  - [ ] Add relationship handling tests 
+  - [ ] Add relationship handling tests
+  
