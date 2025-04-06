@@ -6,42 +6,83 @@ from qdrant_loader.embedding_service import EmbeddingService
 def mock_openai_client():
     mock_client = MagicMock()
     mock_client.embeddings.create = MagicMock()
-    with patch('openai.OpenAI', return_value=mock_client) as mock:
-        yield mock_client
+    return mock_client
 
 @pytest.fixture
-def embedding_service(mock_openai_client, test_settings):
-    service = EmbeddingService(settings=test_settings)
-    service.client = mock_openai_client
-    return service
+def embedding_service(test_settings):
+    with patch('openai.OpenAI') as mock_openai_class, \
+         patch('tiktoken.encoding_for_model') as mock_tiktoken:
+        mock_client = MagicMock()
+        mock_openai_class.return_value = mock_client
+        mock_tiktoken.return_value = MagicMock()
+        service = EmbeddingService(settings=test_settings)
+        service.client = mock_client
+        return service
 
-def test_get_embedding(embedding_service, mock_openai_client):
-    # Mock the OpenAI response
-    mock_embedding = [0.1, 0.2, 0.3]
-    mock_response = MagicMock()
-    mock_response.data = [MagicMock(embedding=mock_embedding)]
-    mock_openai_client.embeddings.create.return_value = mock_response
+def test_init_no_settings():
+    """Test initialization with no settings provided."""
+    with patch('qdrant_loader.embedding_service.get_settings', return_value=None):
+        with pytest.raises(ValueError, match="Settings must be provided either through environment or constructor"):
+            EmbeddingService()
+
+def test_init_openai_error():
+    """Test initialization with OpenAI client error."""
+    with patch('qdrant_loader.embedding_service.OpenAI', side_effect=Exception("API Error")), \
+         patch('tiktoken.encoding_for_model', return_value=MagicMock()), \
+         pytest.raises(Exception, match="API Error"):
+        EmbeddingService(settings=Mock(OPENAI_API_KEY="test", OPENAI_MODEL="test"))
+
+def test_get_embedding_error(embedding_service):
+    """Test error handling in get_embedding."""
+    embedding_service.client.embeddings.create.side_effect = Exception("API Error")
     
-    result = embedding_service.get_embedding("test text")
+    with pytest.raises(Exception, match="API Error"):
+        embedding_service.get_embedding("test text")
     
-    assert result == mock_embedding
-    mock_openai_client.embeddings.create.assert_called_once_with(
+    embedding_service.client.embeddings.create.assert_called_once_with(
         model=embedding_service.model,
         input="test text"
     )
 
-def test_get_embeddings(embedding_service, mock_openai_client):
+def test_get_embeddings_error(embedding_service):
+    """Test error handling in get_embeddings."""
+    embedding_service.client.embeddings.create.side_effect = Exception("API Error")
+    
+    with pytest.raises(Exception, match="API Error"):
+        embedding_service.get_embeddings(["text1", "text2"])
+    
+    embedding_service.client.embeddings.create.assert_called_once_with(
+        model=embedding_service.model,
+        input=["text1", "text2"]
+    )
+
+def test_get_embedding(embedding_service):
+    # Mock the OpenAI response
+    mock_embedding = [0.1, 0.2, 0.3]
+    mock_response = MagicMock()
+    mock_response.data = [MagicMock(embedding=mock_embedding)]
+    embedding_service.client.embeddings.create.return_value = mock_response
+    
+    result = embedding_service.get_embedding("test text")
+    
+    assert result == mock_embedding
+    embedding_service.client.embeddings.create.assert_called_once_with(
+        model=embedding_service.model,
+        input="test text"
+    )
+
+def test_get_embeddings(embedding_service):
     # Mock the OpenAI response
     mock_embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
     mock_response = MagicMock()
     mock_response.data = [MagicMock(embedding=emb) for emb in mock_embeddings]
-    mock_openai_client.embeddings.create.return_value = mock_response
+    embedding_service.client.embeddings.create.return_value = mock_response
     
     texts = ["text1", "text2"]
     result = embedding_service.get_embeddings(texts)
     
     assert result == mock_embeddings
-    mock_openai_client.embeddings.create.assert_called_once_with(
+    embedding_service.client.embeddings.create.assert_called_once_with(
         model=embedding_service.model,
         input=texts
     )

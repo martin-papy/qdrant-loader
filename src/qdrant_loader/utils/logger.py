@@ -1,5 +1,6 @@
 import os
 import structlog
+import logging
 from typing import Optional
 
 def setup_logging(log_level: Optional[str] = None, log_format: Optional[str] = None) -> None:
@@ -14,8 +15,18 @@ def setup_logging(log_level: Optional[str] = None, log_format: Optional[str] = N
     log_level = log_level or os.getenv("LOG_LEVEL", "INFO")
     log_format = log_format or os.getenv("LOG_FORMAT", "json")
 
+    # Convert string level to logging level
+    try:
+        level = getattr(logging, log_level.upper())
+    except AttributeError:
+        raise ValueError(f"Invalid log level: {log_level}")
+
+    # Configure standard logging
+    logging.basicConfig(level=level)
+
     # Configure structlog
     processors = [
+        structlog.stdlib.filter_by_level,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
@@ -28,16 +39,13 @@ def setup_logging(log_level: Optional[str] = None, log_format: Optional[str] = N
 
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.BoundLogger,
+        wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
-    # Set the log level
-    structlog.get_logger().setLevel(log_level)
-
-def get_logger(name: str) -> structlog.BoundLogger:
+def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """
     Get a logger instance with the given name.
     
