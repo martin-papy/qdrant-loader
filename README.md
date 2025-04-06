@@ -1,6 +1,6 @@
 # QDrant Loader
 
-A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database.
+A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. The ultime goal is to use the qdrant database for coding more effectively using AI Tooling like : Cursor, Windsufr ( using mcp-qdrant-server ) or GitHub Copilot.
 
 ## Features
 
