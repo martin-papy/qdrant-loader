@@ -22,21 +22,21 @@
 
 ## Phase 1: Core Infrastructure
 
-- [ ] Implement configuration management
-  - [ ] Create config.py
-  - [ ] Implement .env file handling
-  - [ ] Add configuration validation
-  - [ ] Add configuration tests
-- [ ] Set up qDrant connection
-  - [ ] Implement connection manager
-  - [ ] Add basic error handling
-  - [ ] Test connection
-  - [ ] Add connection tests
-- [ ] Create embedding service
-  - [ ] Implement OpenAI embedding client
-  - [ ] Add token counting
-  - [ ] Test embedding generation
-  - [ ] Add embedding service tests
+- [x] Implement configuration management
+  - [x] Create config.py with Settings class
+  - [x] Implement .env file handling with python-dotenv
+  - [x] Add configuration validation using pydantic
+  - [x] Add configuration tests
+- [x] Set up qDrant connection
+  - [x] Implement QdrantManager class
+  - [x] Add basic error handling and logging
+  - [x] Test connection
+  - [x] Add connection tests
+- [x] Create embedding service
+  - [x] Implement OpenAI embedding client
+  - [x] Add token counting with tiktoken
+  - [x] Test embedding generation
+  - [x] Add embedding service tests
 
 ## Phase 2: Document Processing Pipeline
 
