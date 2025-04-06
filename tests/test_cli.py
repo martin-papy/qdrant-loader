@@ -4,7 +4,8 @@ Tests for the CLI module.
 import pytest
 from click.testing import CliRunner
 from qdrant_loader.cli import cli
-from qdrant_loader.config import get_settings, Settings, _settings_instance
+from qdrant_loader.config import get_settings, Settings, _settings_instance, SourcesConfig
+from unittest.mock import patch, MagicMock
 
 @pytest.fixture
 def runner():
@@ -63,4 +64,55 @@ def test_cli_ingest(runner):
     result = runner.invoke(cli, ['ingest'])
     # Note: This will fail in a real environment without proper configuration
     # We should mock the ingestion pipeline in a real test environment
-    assert result.exit_code != 0  # Expected to fail without proper configuration 
+    assert result.exit_code != 0  # Expected to fail without proper configuration
+
+def test_cli_ingest_with_config(runner, tmp_path):
+    """Test that the ingest command works with a valid configuration file."""
+    # Create a temporary config file
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("""
+global:
+  chunking:
+    size: 500
+    overlap: 50
+  embedding:
+    model: text-embedding-3-small
+    batch_size: 100
+  logging:
+    level: INFO
+    format: json
+    file: qdrant-loader.log
+
+public_docs:
+  thymeleaf:
+    base_url: https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html
+    version: "3.1"
+    content_type: html
+    exclude_paths:
+      - /downloads
+    selectors:
+      content: article, main, .content
+      remove:
+        - nav
+        - header
+        - footer
+        - .sidebar
+      code_blocks: pre code
+""")
+
+    # Mock the ingestion pipeline
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        
+        # Run the command
+        result = runner.invoke(cli, ['ingest', '--config', str(config_path)])
+        
+        # Check that the command succeeded
+        assert result.exit_code == 0
+        
+        # Verify that the pipeline was called with the correct configuration
+        mock_pipeline.return_value.process_documents.assert_called_once()
+        config_arg = mock_pipeline.return_value.process_documents.call_args[0][0]
+        assert isinstance(config_arg, SourcesConfig)
+        assert config_arg.public_docs["thymeleaf"].base_url == "https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html" 

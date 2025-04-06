@@ -6,7 +6,7 @@ import structlog
 from pathlib import Path
 from typing import Optional
 
-from .config import get_settings, get_global_config, Settings
+from .config import get_settings, get_global_config, Settings, SourcesConfig
 from .ingestion_pipeline import IngestionPipeline
 from .init_collection import init_collection
 from .utils.logger import setup_logging
@@ -58,11 +58,17 @@ def ingest(config: Optional[str], source: Optional[str]):
         if not Path(config_path).exists():
             raise click.ClickException(f"Configuration file not found: {config_path}")
         
+        # Load and parse the configuration file
+        try:
+            sources_config = SourcesConfig.from_yaml(config_path)
+        except Exception as e:
+            raise click.ClickException(f"Failed to load configuration: {str(e)}")
+        
         pipeline = IngestionPipeline()
         logger.info("Starting ingestion pipeline", config_path=config_path, source=source)
         
-        # TODO: Implement source-specific ingestion
-        pipeline.process_documents(config_path)
+        # Process documents with the parsed configuration
+        pipeline.process_documents(sources_config)
         
         logger.info("Ingestion completed successfully")
     except Exception as e:
