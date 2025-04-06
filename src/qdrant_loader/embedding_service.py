@@ -21,11 +21,11 @@ class EmbeddingService:
         self.encoding = tiktoken.encoding_for_model(self.model)
 
     def get_embedding(self, text: str) -> List[float]:
-        """Get embedding for a single text string."""
+        """Get embedding for a single text."""
         try:
             response = self.client.embeddings.create(
                 model=self.model,
-                input=[text]  # Wrap single text in a list
+                input=[text]  # OpenAI API expects a list
             )
             return response.data[0].embedding
         except Exception as e:
@@ -33,34 +33,13 @@ class EmbeddingService:
             raise
 
     def get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Get embeddings for a list of text strings."""
+        """Get embeddings for multiple texts."""
         try:
-            # Clean and format the input texts
-            formatted_texts = []
-            for text in texts:
-                # Convert to string and clean
-                cleaned_text = str(text).strip()
-                # Skip empty strings
-                if cleaned_text:
-                    formatted_texts.append(cleaned_text)
-                
-            if not formatted_texts:
-                logger.warning("No valid texts to embed after cleaning")
-                return []
-            
-            # Split into batches to avoid token limits
-            batch_size = get_global_config().embedding.batch_size
-            batches = [formatted_texts[i:i + batch_size] for i in range(0, len(formatted_texts), batch_size)]
-            
-            all_embeddings = []
-            for batch in batches:
-                response = self.client.embeddings.create(
-                    model=self.model,
-                    input=batch  # Pass the batch directly as a list
-                )
-                all_embeddings.extend([item.embedding for item in response.data])
-            
-            return all_embeddings
+            response = self.client.embeddings.create(
+                model=self.model,
+                input=texts
+            )
+            return [data.embedding for data in response.data]
         except Exception as e:
             logger.error("Failed to get embeddings", error=str(e))
             raise

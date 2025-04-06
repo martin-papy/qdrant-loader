@@ -5,262 +5,242 @@ from typing import Dict, Any, List
 from git import Repo
 import structlog
 from qdrant_loader.utils.logger import get_logger
+import os
+import git
+import logging
 
 logger = get_logger(__name__)
 
 class GitMetadataExtractor:
-    """Extracts metadata from Git repository files."""
-    
-    def __init__(self, repo: Repo, file_path: str):
-        self.repo = repo
-        self.file_path = file_path
-        self.relative_path = Path(file_path).relative_to(repo.working_dir)
-        self.content = None
+    """Extract metadata from Git repository files."""
 
-    def extract_all_metadata(self) -> Dict[str, Any]:
-        """Extract all available metadata for the file."""
-        try:
-            # Load file content once
-            self.content = Path(self.file_path).read_text(encoding='utf-8', errors='ignore')
-            
-            return {
-                **self.extract_file_metadata(),
-                **self.extract_repo_metadata(),
-                **self.extract_git_history(),
-                **self.extract_structure_metadata()
-            }
-        except Exception as e:
-            logger.error(f"Failed to extract metadata for {self.file_path}: {e}")
-            return {}
+    def __init__(self):
+        """Initialize the Git metadata extractor."""
+        self.logger = logging.getLogger(__name__)
 
-    def extract_file_metadata(self) -> Dict[str, Any]:
+    def extract_all_metadata(self, file_path: str, content: str) -> Dict[str, Any]:
+        """Extract all metadata for a file.
+
+        Args:
+            file_path: Path to the file.
+            content: Content of the file.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing all metadata.
+        """
+        file_metadata = self._extract_file_metadata(file_path, content)
+        repo_metadata = self._extract_repo_metadata(file_path)
+        git_metadata = self._extract_git_metadata(file_path)
+        structure_metadata = self._extract_structure_metadata(content)
+
+        return {
+            **file_metadata,
+            **repo_metadata,
+            **git_metadata,
+            **structure_metadata
+        }
+
+    def _extract_file_metadata(self, file_path: str, content: str) -> Dict[str, Any]:
         """Extract metadata about the file itself."""
+        file_type = os.path.splitext(file_path)[1]
+        file_name = os.path.basename(file_path)
+        file_directory = os.path.dirname(file_path)
+        file_encoding = self._detect_encoding(content)
+        line_count = len(content.splitlines())
+        word_count = len(content.split())
+
         return {
-            'file_type': self.relative_path.suffix,
-            'file_name': self.relative_path.name,
-            'file_directory': str(self.relative_path.parent),
-            'file_encoding': self._detect_encoding(),
-            'line_count': self._count_lines(),
-            'word_count': self._count_words(),
-            'has_code_blocks': self._has_code_blocks(),
-            'has_images': self._has_images(),
-            'has_links': self._has_links()
+            "file_type": file_type,
+            "file_name": file_name,
+            "file_directory": file_directory,
+            "file_encoding": file_encoding,
+            "line_count": line_count,
+            "word_count": word_count,
+            "has_code_blocks": self._has_code_blocks(content),
+            "has_images": self._has_images(content),
+            "has_links": self._has_links(content)
         }
 
-    def extract_repo_metadata(self) -> Dict[str, Any]:
+    def _extract_repo_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract metadata about the repository."""
-        try:
-            url = self.repo.remotes.origin.url
-            # Extract repo name from URL, removing .git suffix if present
-            repo_name = url.split('/')[-1].replace('.git', '')
-            
-            return {
-                'repository_name': repo_name,
-                'repository_owner': self._get_repo_owner(),
-                'repository_description': self._get_repo_description(),
-                'repository_language': self._detect_repo_language()
-            }
-        except Exception as e:
-            logger.error(f"Failed to extract repository metadata: {e}")
-            return {
-                'repository_name': 'unknown',
-                'repository_owner': 'unknown',
-                'repository_description': '',
-                'repository_language': 'unknown'
-            }
+        repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
+        repo_url = repo.remotes.origin.url
+        repo_name = os.path.splitext(os.path.basename(repo_url))[0]
+        repo_owner = os.path.basename(os.path.dirname(repo_url))
+        repo_description = self._get_repo_description(repo, file_path)
+        repo_language = self._detect_language(file_path)
 
-    def extract_git_history(self) -> Dict[str, Any]:
-        """Extract Git history metadata."""
-        try:
-            commits = list(self.repo.iter_commits(paths=str(self.relative_path)))
-            if not commits:
-                return {}
-                
-            return {
-                'last_modified_by': commits[0].author.name,
-                'commit_message': commits[0].message.strip(),
-                'commit_hash': commits[0].hexsha,
-                'creation_date': commits[-1].committed_datetime.isoformat(),
-                'number_of_commits': len(commits)
-            }
-        except Exception as e:
-            logger.error(f"Failed to extract git history for {self.file_path}: {e}")
-            return {}
-
-    def extract_structure_metadata(self) -> Dict[str, Any]:
-        """Extract document structure metadata."""
         return {
-            'has_toc': self._has_table_of_contents(),
-            'heading_levels': self._get_heading_levels(),
-            'sections_count': self._count_sections()
+            "repository_url": repo_url,
+            "repository_name": repo_name,
+            "repository_owner": repo_owner,
+            "repository_description": repo_description,
+            "repository_language": repo_language
         }
 
-    def _detect_encoding(self) -> str:
-        """Detect file encoding, defaulting to UTF-8."""
-        try:
-            with open(self.file_path, 'rb') as f:
-                raw = f.read()
-                if not raw:
-                    return 'utf-8'
-                result = chardet.detect(raw)
-                # If confidence is high enough and not ASCII, use detected encoding
-                if result and result['confidence'] > 0.9 and result['encoding'] != 'ascii':
-                    return result['encoding'].lower()
-            return 'utf-8'  # Default to UTF-8
-        except Exception:
-            return 'utf-8'
+    def _extract_git_metadata(self, file_path: str) -> Dict[str, Any]:
+        """Extract Git-specific metadata."""
+        repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
+        commits = list(repo.iter_commits(paths=file_path, max_count=1))
+        if commits:
+            last_commit = commits[0]
+            last_commit_date = last_commit.committed_datetime.isoformat()
+            last_commit_author = last_commit.author.name
+            last_commit_message = last_commit.message.strip()
+        else:
+            last_commit_date = None
+            last_commit_author = None
+            last_commit_message = None
 
-    def _count_lines(self) -> int:
-        """Count lines in file."""
-        return len(self.content.splitlines())
+        return {
+            "last_commit_date": last_commit_date,
+            "last_commit_author": last_commit_author,
+            "last_commit_message": last_commit_message
+        }
 
-    def _count_words(self) -> int:
-        """Count words in file."""
-        return len(self.content.split())
+    def _extract_structure_metadata(self, content: str) -> Dict[str, Any]:
+        """Extract metadata about the document structure."""
+        has_toc = "## Table of Contents" in content or "## Contents" in content
+        heading_levels = self._get_heading_levels(content)
+        sections_count = len(heading_levels)
 
-    def _has_code_blocks(self) -> bool:
-        """Check if file contains code blocks."""
-        return bool(re.search(r'```[\s\S]*?```', self.content))
+        return {
+            "has_toc": has_toc,
+            "heading_levels": heading_levels,
+            "sections_count": sections_count
+        }
 
-    def _has_images(self) -> bool:
-        """Check if file contains image references."""
-        return bool(re.search(r'!\[.*?\]\(.*?\)', self.content))
+    def _get_repo_description(self, repo: git.Repo, file_path: str) -> str:
+        """Get repository description from Git config or README."""
+        # Try to get description from Git config
+        description = repo.description
+        if description and description.strip() and "Unnamed repository;" not in description:
+            return description.strip()
 
-    def _has_links(self) -> bool:
-        """Check if file contains hyperlinks."""
-        return bool(re.search(r'\[.*?\]\(.*?\)', self.content))
-
-    def _get_repo_owner(self) -> str:
-        """Extract repository owner from URL."""
-        try:
-            url = self.repo.remotes.origin.url
-            if 'github.com' in url:
-                return url.split('/')[-2]
-            elif 'gitlab.com' in url:
-                return url.split('/')[-2]
-            elif 'bitbucket.org' in url:
-                return url.split('/')[-2]
-        except Exception:
-            pass
-        return 'unknown'
-
-    def _get_repo_description(self) -> str:
-        """Get repository description from config or README."""
-        try:
-            # First try to get from repo description, but skip if it's the default message
-            if (self.repo.description and 
-                self.repo.description.strip() and 
-                "Unnamed repository;" not in self.repo.description):
-                return self.repo.description.strip()
-            
-            # If not available, try to extract from README
-            readme_paths = ['README.md', 'README.txt', 'README', 'README.rst']
-            for readme in readme_paths:
-                readme_path = Path(self.repo.working_dir) / readme
-                if readme_path.exists():
-                    content = readme_path.read_text(encoding='utf-8', errors='ignore')
-                    lines = content.split('\n')
-                    
-                    # Process the content to find a good description
-                    description = ''
-                    current_paragraph = []
-                    found_title = False
-                    
-                    for line in lines:
-                        line = line.strip()
-                        
-                        # Skip badges and links at the start
-                        if not found_title and (
-                            line.startswith('[![') or 
-                            line.startswith('![') or
-                            line.startswith('[!')
-                        ):
-                            continue
-                            
-                        # Identify the title
-                        if not found_title:
-                            if line and (line.startswith('#') or '===' in line):
-                                found_title = True
-                            continue
-                            
-                        # Skip common sections we don't want in the description
-                        if line.lower().startswith(('#', '##')) and any(
-                            section in line.lower() for section in 
-                            ['install', 'usage', 'contributing', 'license', 'test', 'build', 'deploy']
-                        ):
-                            break
-                            
-                        # Build paragraphs
-                        if line:
-                            # Skip lines that are likely not part of the description
-                            if not (line.startswith('```') or line.startswith('---') or line.startswith('>')):
-                                current_paragraph.append(line)
-                        elif current_paragraph:
-                            # We found a complete paragraph
-                            paragraph = ' '.join(current_paragraph)
-                            # Skip short or non-descriptive paragraphs
-                            if (len(paragraph) > 50 and 
-                                not paragraph.startswith('[![') and
-                                not all(char in '[]()!#' for char in paragraph)):
-                                description = paragraph
+        # Try to find description in README files
+        readme_files = ["README.md", "README.txt", "README", "README.rst"]
+        repo_root = repo.working_dir
+        for readme_file in readme_files:
+            readme_path = os.path.join(repo_root, readme_file)
+            if os.path.exists(readme_path):
+                try:
+                    with open(readme_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        paragraphs = []
+                        current_paragraph = []
+                        in_title = True
+                        for line in content.splitlines():
+                            line = line.strip()
+                            # Skip badges and links at the start
+                            if in_title and (line.startswith("[![") or line.startswith("[")):
+                                continue
+                            # Skip empty lines
+                            if not line:
+                                if current_paragraph:
+                                    paragraphs.append(" ".join(current_paragraph))
+                                    current_paragraph = []
+                                continue
+                            # Skip titles
+                            if line.startswith("#") or line.startswith("==="):
+                                in_title = True
+                                continue
+                            # Skip common sections
+                            if line.lower() in ["## installation", "## usage", "## contributing", "## license"]:
                                 break
-                            current_paragraph = []
-                    
-                    # Handle case where description is in the last paragraph
-                    if not description and current_paragraph:
-                        description = ' '.join(current_paragraph)
-                    
-                    if description:
-                        # Clean up the description
-                        description = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', description)  # Convert markdown links to text
-                        description = re.sub(r'<[^>]+>', '', description)  # Remove HTML tags
-                        description = description.replace('\n', ' ').strip()
-                        # Limit length while trying to break at a sentence boundary
-                        if len(description) > 200:
-                            sentences = re.split(r'(?<=[.!?])\s+', description[:250])
-                            description = ' '.join(sentences[:-1]) + '...'
-                        return description
-            
-            return 'No description available'
-        except Exception as e:
-            logger.error(f"Failed to get repository description: {e}")
-            return 'No description available'
+                            in_title = False
+                            current_paragraph.append(line)
 
-    def _detect_repo_language(self) -> str:
-        """Detect primary language of repository."""
-        # This is a simple implementation. Could be enhanced with more sophisticated detection
+                        if current_paragraph:
+                            paragraphs.append(" ".join(current_paragraph))
+
+                        # Find first meaningful paragraph
+                        for paragraph in paragraphs:
+                            if len(paragraph) >= 50:  # Minimum length for a meaningful description
+                                # Clean up markdown links
+                                paragraph = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", paragraph)
+                                # Clean up HTML tags
+                                paragraph = re.sub(r"<[^>]+>", "", paragraph)
+                                # Limit length and break at sentence boundary
+                                if len(paragraph) > 200:
+                                    sentences = re.split(r"(?<=[.!?])\s+", paragraph)
+                                    description = ""
+                                    for sentence in sentences:
+                                        if len(description + sentence) > 200:
+                                            break
+                                        description += sentence + " "
+                                    description = description.strip() + "..."
+                                else:
+                                    description = paragraph
+                                return description
+                except Exception as e:
+                    self.logger.error({"event": "Failed to read README", "error": str(e)})
+
+        return "No description available"
+
+    def _detect_encoding(self, content: str) -> str:
+        """Detect file encoding."""
+        if not content:
+            return "utf-8"
+
         try:
-            # Check file extension for common programming languages
-            ext = self.relative_path.suffix.lower()
-            lang_map = {
-                '.py': 'Python',
-                '.js': 'JavaScript',
-                '.java': 'Java',
-                '.md': 'Markdown',
-                '.txt': 'Text',
-                '.adoc': 'AsciiDoc'
-            }
-            return lang_map.get(ext, 'Unknown')
-        except Exception:
-            return 'Unknown'
+            result = chardet.detect(content.encode())
+            if result["encoding"] and result["encoding"].lower() != "ascii" and result["confidence"] > 0.8:
+                return result["encoding"].lower()
+        except Exception as e:
+            self.logger.error({"event": "Failed to detect encoding", "error": str(e)})
 
-    def _has_table_of_contents(self) -> bool:
-        """Check if file has a table of contents."""
-        toc_patterns = [
-            r'^#+\s*Table of Contents',
-            r'^#+\s*Contents',
-            r'^#+\s*TOC',
-            r'\[TOC\]'
-        ]
-        return any(re.search(pattern, self.content, re.MULTILINE) for pattern in toc_patterns)
+        return "utf-8"
 
-    def _get_heading_levels(self) -> List[int]:
-        """Get list of heading levels used in the document."""
-        heading_levels = set()
-        for match in re.finditer(r'^(#+)\s', self.content, re.MULTILINE):
-            heading_levels.add(len(match.group(1)))
-        return sorted(heading_levels)
+    def _detect_language(self, file_path: str) -> str:
+        """Detect programming language based on file extension."""
+        ext = os.path.splitext(file_path)[1].lower()
+        language_map = {
+            ".py": "Python",
+            ".js": "JavaScript",
+            ".ts": "TypeScript",
+            ".java": "Java",
+            ".cpp": "C++",
+            ".c": "C",
+            ".go": "Go",
+            ".rs": "Rust",
+            ".rb": "Ruby",
+            ".php": "PHP",
+            ".cs": "C#",
+            ".scala": "Scala",
+            ".kt": "Kotlin",
+            ".swift": "Swift",
+            ".m": "Objective-C",
+            ".h": "C/C++ Header",
+            ".sh": "Shell",
+            ".bat": "Batch",
+            ".ps1": "PowerShell",
+            ".md": "Markdown",
+            ".rst": "reStructuredText",
+            ".txt": "Text",
+            ".json": "JSON",
+            ".xml": "XML",
+            ".yaml": "YAML",
+            ".yml": "YAML",
+            ".toml": "TOML",
+            ".ini": "INI",
+            ".cfg": "Configuration",
+            ".conf": "Configuration"
+        }
+        return language_map.get(ext, "Unknown")
 
-    def _count_sections(self) -> int:
-        """Count number of main sections in the document."""
-        return len(re.findall(r'^#\s', self.content, re.MULTILINE)) 
+    def _has_code_blocks(self, content: str) -> bool:
+        """Check if content contains code blocks."""
+        return bool(re.search(r"```[a-zA-Z]*\n[\s\S]*?\n```", content))
+
+    def _has_images(self, content: str) -> bool:
+        """Check if content contains image references."""
+        return bool(re.search(r"!\[.*?\]\(.*?\)", content))
+
+    def _has_links(self, content: str) -> bool:
+        """Check if content contains links."""
+        return bool(re.search(r"\[.*?\]\(.*?\)", content))
+
+    def _get_heading_levels(self, content: str) -> List[int]:
+        """Get list of heading levels in the content."""
+        headings = re.findall(r"^(#+)\s", content, re.MULTILINE)
+        return [len(h) for h in headings] 

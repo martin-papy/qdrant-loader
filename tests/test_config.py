@@ -10,7 +10,8 @@ from qdrant_loader.config import (
     SelectorsConfig,
     GitRepoConfig,
     ConfluenceConfig,
-    JiraConfig
+    JiraConfig,
+    ChunkingConfig
 )
 from pydantic import ValidationError
 
@@ -111,25 +112,16 @@ def test_invalid_log_format():
 
 def test_invalid_chunk_size():
     """Test that invalid chunk size raises ValueError."""
-    with pytest.raises(ValueError):
-        Settings(
-            QDRANT_URL=os.getenv("QDRANT_URL"),
-            QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-            QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
-            OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-            CHUNK_SIZE=-1
-        )
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        ChunkingConfig(chunk_size=0)
 
 def test_invalid_chunk_overlap():
     """Test that invalid chunk overlap raises ValueError."""
-    with pytest.raises(ValueError):
-        Settings(
-            QDRANT_URL=os.getenv("QDRANT_URL"),
-            QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-            QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
-            OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-            CHUNK_OVERLAP=-1
-        )
+    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+        ChunkingConfig(chunk_overlap=-1)
+
+    with pytest.raises(ValueError, match="Chunk overlap must be less than chunk size"):
+        ChunkingConfig(chunk_size=100, chunk_overlap=100)
 
 def test_missing_required_fields():
     """Test that missing required fields raises ValidationError."""

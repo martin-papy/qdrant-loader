@@ -31,6 +31,8 @@ qdrant-loader = "qdrant_loader.cli:cli"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "--cov=src --cov-report=term-missing"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 source = ["src"]
