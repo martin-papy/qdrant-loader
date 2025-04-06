@@ -3,6 +3,7 @@ from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 import structlog
 from typing import Optional, List
+from urllib.parse import urlparse
 from .config import Settings, get_settings, get_global_config
 
 logger = structlog.get_logger()
@@ -20,8 +21,16 @@ class QdrantManager:
     def connect(self) -> None:
         """Establish connection to qDrant server."""
         try:
+            # Ensure HTTPS is used when API key is present
+            url = self.settings.QDRANT_URL
+            if self.settings.QDRANT_API_KEY:
+                parsed_url = urlparse(url)
+                if parsed_url.scheme != 'https':
+                    url = url.replace('http://', 'https://', 1)
+                    logger.warning("Forcing HTTPS connection due to API key usage")
+
             self.client = QdrantClient(
-                url=self.settings.QDRANT_URL,
+                url=url,
                 api_key=self.settings.QDRANT_API_KEY,
                 timeout=60  # 60 seconds timeout
             )

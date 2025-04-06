@@ -2,6 +2,7 @@ from typing import List, Optional
 import structlog
 from .config import SourcesConfig, get_settings, get_global_config
 from .connectors.public_docs import PublicDocsConnector
+from .connectors.git import GitConnector
 from .core.document import Document
 from .core.chunking import ChunkingStrategy
 from .embedding_service import EmbeddingService
@@ -63,6 +64,25 @@ class IngestionPipeline:
                 
         return documents
         
+    def _process_git_repos(self, sources: dict) -> List[Document]:
+        """Process documents from Git repository sources."""
+        documents = []
+        
+        for source_name, source_config in sources.items():
+            try:
+                logger.info("Processing Git repository", source=source_name)
+                with GitConnector(source_config) as connector:
+                    docs = connector.get_documents()
+                    documents.extend(docs)
+                    
+            except Exception as e:
+                logger.error("Failed to process Git repository", 
+                           source=source_name, 
+                           error=str(e))
+                continue
+                
+        return documents
+        
     def process_documents(self, config: SourcesConfig) -> None:
         """Process and ingest documents from all configured sources."""
         try:
@@ -72,6 +92,11 @@ class IngestionPipeline:
             if config.public_docs:
                 public_docs = self._process_public_docs(config.public_docs)
                 documents.extend(public_docs)
+                
+            # Process Git repository sources
+            if config.git_repos:
+                git_docs = self._process_git_repos(config.git_repos)
+                documents.extend(git_docs)
                 
             if not documents:
                 logger.warning("No documents were processed")
