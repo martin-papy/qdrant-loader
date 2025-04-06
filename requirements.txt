@@ -5,10 +5,12 @@ qdrant-client>=1.7.0
 openai>=1.12.0
 tiktoken>=0.5.2
 pydantic-settings>=2.0.0
+typing-extensions>=4.5.0
 
 # Development dependencies
 pytest>=7.4.0
 pytest-cov>=4.1.0
+pytest-mock>=3.12.0
 black>=23.11.0
 isort>=5.12.0
 flake8>=6.1.0
