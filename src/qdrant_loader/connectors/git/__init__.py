@@ -6,6 +6,7 @@ from git import Repo, GitCommandError
 from qdrant_loader.config import GitRepoConfig, GitAuthConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
+from .metadata_extractor import GitMetadataExtractor
 
 logger = get_logger(__name__)
 
@@ -48,16 +49,15 @@ class GitPythonAdapter(GitOperations):
     def get_last_commit_date(self) -> str:
         if not self.repo:
             raise RuntimeError("Repository not initialized")
-        return self.repo.git.log("-1", "--format=%cd", "--date=iso")
+        return self.repo.head.commit.committed_datetime.isoformat()
 
     def list_files(self, path: str) -> List[str]:
         if not self.repo:
             raise RuntimeError("Repository not initialized")
-        files = []
-        for root, _, filenames in os.walk(path):
-            for filename in filenames:
-                files.append(os.path.join(root, filename))
-        return files
+        # Use git ls-tree to get all tracked files
+        files = self.repo.git.ls_tree('-r', '--name-only', 'HEAD').split('\n')
+        # Convert to absolute paths
+        return [str(Path(self.repo.working_dir) / f) for f in files if f]
 
 class GitConnector:
     """Connector for Git repositories."""
@@ -82,70 +82,98 @@ class GitConnector:
             logger.debug(f"Cleaned up temporary directory: {self.temp_dir}")
 
     def _clone_repository(self) -> None:
-        """Clone the repository to a temporary directory"""
-        if self.temp_dir is None:
-            self.temp_dir = tempfile.mkdtemp()
-        
+        """Clone the repository to a temporary directory."""
+        if not self.temp_dir or not self.git_ops:
+            raise RuntimeError("GitConnector must be used as a context manager")
+
         try:
+            # Set up authentication if provided
+            if self.auth_config and self.auth_config.token_env:
+                os.environ["GIT_ASKPASS"] = "echo"
+                os.environ["GIT_USERNAME"] = "token"
+                os.environ["GIT_PASSWORD"] = os.getenv(self.auth_config.token_env, "")
+
             self.git_ops.clone(
-                self.config.url,
-                self.temp_dir,
-                self.config.branch,
-                self.config.depth
+                url=self.config.url,
+                to_path=self.temp_dir,
+                branch=self.config.branch,
+                depth=self.config.depth
             )
+            logger.info(f"Successfully cloned repository: {self.config.url}")
         except Exception as e:
-            logger.error(f"Failed to process Git repository: {e}")
+            logger.error(f"Failed to clone repository: {e}")
             raise
 
     def _should_process_file(self, file_path: str) -> bool:
-        """Check if a file should be processed based on configuration"""
+        """Check if a file should be processed based on configuration."""
+        rel_path = str(Path(file_path).relative_to(self.temp_dir))
+        
         # Check file size
-        file_size = os.path.getsize(file_path)
-        if file_size > self.config.max_file_size:
-            logger.debug(f"File {file_path} exceeds max size: {file_size} > {self.config.max_file_size}")
-            return False
-
-        # Check file type
-        file_ext = os.path.splitext(file_path)[1]
-        if not any(ft.replace("*", "") == file_ext for ft in self.config.file_types):
-            logger.debug(f"File {file_path} with extension {file_ext} does not match any of {self.config.file_types}")
-            return False
-
-        # Check include/exclude paths
-        rel_path = os.path.relpath(file_path, self.temp_dir)
-        if self.config.include_paths:
-            # Special case for **/* pattern
-            if not any(p == "**/*" or Path(rel_path).match(p) for p in self.config.include_paths):
-                logger.debug(f"File {file_path} does not match any include paths: {self.config.include_paths}")
+        if self.config.max_file_size:
+            file_size = os.path.getsize(file_path)
+            if file_size > self.config.max_file_size:
+                logger.debug(f"Skipping large file: {rel_path} ({file_size} bytes)")
                 return False
-        if self.config.exclude_paths and any(Path(rel_path).match(p) for p in self.config.exclude_paths):
-            logger.debug(f"File {file_path} matches exclude paths: {self.config.exclude_paths}")
-            return False
-
-        logger.debug(f"File {file_path} passed all checks")
+        
+        # Check file type
+        if self.config.file_types:
+            file_ext = os.path.splitext(rel_path)[1]
+            logger.debug(f"Checking file type for {rel_path} (ext: {file_ext})")
+            for ft in self.config.file_types:
+                logger.debug(f"  Comparing with {ft} -> {ft.replace('*', '')}")
+            if not any(ft.replace('*', '') == file_ext for ft in self.config.file_types):
+                logger.debug(f"Skipping file type: {rel_path} (ext: {file_ext})")
+                return False
+        
+        # Check include paths
+        if self.config.include_paths:
+            logger.debug(f"Checking include paths for {rel_path}")
+            from fnmatch import fnmatch
+            matches = False
+            for p in self.config.include_paths:
+                logger.debug(f"  Checking against pattern {p} -> {fnmatch(rel_path, p)}")
+                if fnmatch(rel_path, p):
+                    matches = True
+                    break
+            if not matches:
+                logger.debug(f"File not in include paths: {rel_path}")
+                return False
+        
+        # Check exclude paths
+        if self.config.exclude_paths:
+            logger.debug(f"Checking exclude paths for {rel_path}")
+            from fnmatch import fnmatch
+            for p in self.config.exclude_paths:
+                logger.debug(f"  Checking against pattern {p} -> {fnmatch(rel_path, p)}")
+                if fnmatch(rel_path, p):
+                    logger.debug(f"File in exclude paths: {rel_path}")
+                    return False
+        
+        logger.debug(f"File passed all filters: {rel_path}")
         return True
 
-    def _process_file(self, file_path: str) -> Document:
-        """Process a single file and return a Document"""
+    def _process_file(self, file_path: str) -> Optional[Document]:
+        """Process a single file into a document with enhanced metadata."""
         try:
-            content = self.git_ops.get_file_content(file_path)
-            last_commit_date = self.git_ops.get_last_commit_date()
+            # Initialize metadata extractor
+            extractor = GitMetadataExtractor(self.git_ops.repo, file_path)
             
+            # Extract all metadata
+            metadata = extractor.extract_all_metadata()
+            
+            # Get file content
+            content = self.git_ops.get_file_content(file_path)
+            
+            # Create document with enhanced metadata
             return Document(
                 content=content,
+                metadata=metadata,
                 source=self.config.url,
-                source_type="git",
-                project=self.config.url.split("/")[-1].replace(".git", ""),
-                metadata={
-                    "file_path": file_path,
-                    "branch": self.config.branch,
-                    "file_size": os.path.getsize(file_path),
-                    "last_commit_date": last_commit_date
-                }
+                source_type="git"
             )
         except Exception as e:
             logger.error(f"Failed to process file {file_path}: {e}")
-            raise
+            return None
 
     def get_documents(self) -> List[Document]:
         """Get documents from the Git repository."""
@@ -158,15 +186,24 @@ class GitConnector:
             
             # Get all files matching the configuration
             files = self.git_ops.list_files(self.temp_dir)
+            logger.debug(f"Found {len(files)} files in repository")
+            for file in files:
+                logger.debug(f"Found file: {file}")
             
             # Process files into documents
             documents = []
             for file_path in files:
+                rel_path = str(Path(file_path).relative_to(self.temp_dir))
+                logger.debug(f"Processing file: {rel_path}")
                 if self._should_process_file(file_path):
+                    logger.debug(f"File passed filters: {rel_path}")
                     doc = self._process_file(file_path)
                     if doc:
                         documents.append(doc)
+                else:
+                    logger.debug(f"File filtered out: {rel_path}")
             
+            logger.info(f"Processed {len(documents)} documents from repository")
             return documents
             
         except Exception as e:

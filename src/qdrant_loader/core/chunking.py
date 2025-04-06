@@ -105,20 +105,18 @@ class ChunkingStrategy:
         
         for i, chunk in enumerate(chunks):
             # Create a new document for each chunk
+            metadata = document.metadata.copy()
+            metadata.update({
+                'chunk_index': i,
+                'total_chunks': len(chunks)
+            })
+            
             chunk_doc = Document(
                 content=chunk,
                 source=document.source,
                 source_type=document.source_type,
-                url=document.url,
-                last_updated=document.last_updated,
-                project=document.project,
-                author=document.author,
-                metadata=document.metadata.copy() if document.metadata else {}
+                metadata=metadata
             )
-            
-            # Add chunk-specific metadata
-            chunk_doc.metadata['chunk_index'] = i
-            chunk_doc.metadata['total_chunks'] = len(chunks)
             
             chunked_documents.append(chunk_doc)
         
