@@ -48,3 +48,4 @@ htmlcov/
 # Distribution
 dist/
 build/ 
+config.yaml

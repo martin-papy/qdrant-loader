@@ -1,6 +1,6 @@
 # QDrant Loader
 
-A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. The ultime goal is to use the qdrant database for coding more effectively using AI Tooling like : Cursor, Windsufr ( using mcp-qdrant-server ) or GitHub Copilot.
+A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. The ultimate goal is to use the qdrant database for coding more effectively using AI Tooling like: Cursor, Windsurf (using mcp-qdrant-server) or GitHub Copilot.
 
 ## Features
 
@@ -9,6 +9,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 - Vectorization using OpenAI embeddings
 - Storage in QDrant vector database
 - Configurable through environment variables
+- Command-line interface for easy operation
 
 ## Setup
 
@@ -39,16 +40,92 @@ A tool for collecting and vectorizing technical content from multiple sources an
     # Edit .env with your configuration
     ```
 
-5. Initialize the QDrant collection:
+## Configuration
 
-    ```bash
-    python -m src.init_collection
-    ```
+### Environment Variables
 
-    This will create a collection with:
-    - 1536 dimensions (matching OpenAI's text-embedding-3-small model)
-    - Cosine similarity distance metric
-    - Collection name as specified in your .env file
+Create a `.env` file in your project root with the following variables:
+
+```bash
+# QDrant Configuration
+QDRANT_URL=https://your-qdrant-instance:6333
+QDRANT_API_KEY=your-api-key
+QDRANT_COLLECTION_NAME=your-collection-name
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key
+
+```
+
+### Configuration File
+
+Create a `config.yaml` file in your project root for source-specific settings:
+
+```yaml
+global:
+  chunking:
+    size: 500
+    overlap: 50
+  embedding:
+    model: text-embedding-3-small
+    batch_size: 100
+  logging:
+    level: INFO
+    format: json
+    file: qdrant-loader.log
+```
+
+## Usage
+
+### Command Line Interface
+
+The QDrant Loader provides a command-line interface for all operations. After installation, you can use the `qdrant-loader` command:
+
+```bash
+# Show help and available commands
+qdrant-loader --help
+
+# Initialize the QDrant collection
+qdrant-loader init
+
+# Force reinitialize the collection
+qdrant-loader init --force
+
+# Run the ingestion pipeline
+qdrant-loader ingest
+
+# Run ingestion with specific configuration
+qdrant-loader ingest --config custom-config.yaml
+
+# Run ingestion for a specific source
+qdrant-loader ingest --source public-docs
+
+# Show current configuration
+qdrant-loader config
+
+# Show version information
+qdrant-loader version
+```
+
+### Common Options
+
+All commands support the following options:
+
+```bash
+# Enable verbose output
+qdrant-loader [command] --verbose
+
+# Set logging level
+qdrant-loader [command] --log-level DEBUG
+```
+
+### Python Module Usage
+
+You can also use the CLI directly through Python:
+
+```bash
+python -m qdrant_loader.cli [command] [options]
+```
 
 ## Technical Requirements
 
@@ -105,11 +182,8 @@ Run specific test files:
 pytest tests/test_config.py
 pytest tests/test_qdrant_manager.py
 pytest tests/test_embedding_service.py
+pytest tests/test_cli.py
 ```
-
-## Usage
-
-[Usage instructions will be added as the project develops]
 
 ## License
 
