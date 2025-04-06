@@ -1,5 +1,5 @@
-from typing import Optional, List, Dict, Any, Tuple
-from pydantic import Field, field_validator, ConfigDict, ValidationError, BaseModel
+from typing import Optional, List, Dict, Any, Tuple, Union
+from pydantic import Field, field_validator, ConfigDict, ValidationError, BaseModel, model_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import os
@@ -20,6 +20,30 @@ class EmbeddingConfig(BaseModel):
         default=100,
         description="Number of texts to embed in a single batch"
     )
+
+class ChunkingConfig(BaseModel):
+    """Configuration for text chunking."""
+
+    chunk_size: int = Field(
+        default=1000,
+        description="Size of text chunks in characters",
+        gt=0,
+        title="Chunk Size"
+    )
+    chunk_overlap: int = Field(
+        default=200,
+        description="Overlap between chunks in characters",
+        ge=0,
+        title="Chunk Overlap"
+    )
+
+    @field_validator('chunk_overlap')
+    def validate_chunk_overlap(cls, v: int, info: ValidationInfo) -> int:
+        """Validate that chunk overlap is less than chunk size."""
+        chunk_size = info.data.get('chunk_size', 1000)
+        if v >= chunk_size:
+            raise ValueError("Chunk overlap must be less than chunk size")
+        return v
 
 class GlobalConfig(BaseModel):
     """Global configuration for all sources."""
@@ -300,6 +324,37 @@ class SourcesConfig(BaseModel):
             return cls(**config_data)
         except Exception as e:
             raise ValueError(f"Failed to load sources configuration: {str(e)}")
+
+class Config(BaseModel):
+    """Configuration for the Qdrant loader."""
+
+    # Qdrant settings
+    qdrant_url: str
+    qdrant_api_key: str
+    collection_name: str
+
+    # Chunking settings
+    chunk_size: int = Field(default=1000, gt=0)
+    chunk_overlap: int = Field(default=100, ge=0)
+
+    # OpenAI settings
+    openai_api_key: str
+    openai_model: str = "text-embedding-3-small"
+
+    # Sources
+    sources: List[Union[GitRepoConfig, PublicDocsConfig]]
+
+    # Logging settings
+    log_level: str = "INFO"
+    log_format: str = "json"
+
+    @field_validator("chunk_overlap")
+    def validate_chunk_overlap(cls, v: int, info: ValidationInfo) -> int:
+        """Validate chunk overlap is less than chunk size."""
+        chunk_size = info.data.get("chunk_size", 1000)
+        if v >= chunk_size:
+            raise ValueError("Chunk overlap must be less than chunk size")
+        return v
 
 class Settings(BaseSettings):
     """Configuration settings for the QDrant Loader."""

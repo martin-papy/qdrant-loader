@@ -45,13 +45,13 @@ def test_init_openai_error():
 def test_get_embedding_error(embedding_service):
     """Test error handling in get_embedding."""
     embedding_service.client.embeddings.create.side_effect = Exception("API Error")
-    
+
     with pytest.raises(Exception, match="API Error"):
         embedding_service.get_embedding("test text")
-    
+
     embedding_service.client.embeddings.create.assert_called_once_with(
         model=embedding_service.model,
-        input="test text"
+        input=["test text"]  # OpenAI API expects a list
     )
 
 def test_get_embeddings_error(embedding_service):
@@ -72,13 +72,13 @@ def test_get_embedding(embedding_service):
     mock_response = MagicMock()
     mock_response.data = [MagicMock(embedding=mock_embedding)]
     embedding_service.client.embeddings.create.return_value = mock_response
-    
+
     result = embedding_service.get_embedding("test text")
-    
+
     assert result == mock_embedding
     embedding_service.client.embeddings.create.assert_called_once_with(
         model=embedding_service.model,
-        input="test text"
+        input=["test text"]  # OpenAI API expects a list
     )
 
 def test_get_embeddings(embedding_service):

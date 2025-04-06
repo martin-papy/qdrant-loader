@@ -115,7 +115,11 @@ class ChunkingStrategy:
                 content=chunk,
                 source=document.source,
                 source_type=document.source_type,
-                metadata=metadata
+                metadata=metadata,
+                url=document.url,
+                project=document.project,
+                author=document.author,
+                last_updated=document.last_updated
             )
             
             chunked_documents.append(chunk_doc)

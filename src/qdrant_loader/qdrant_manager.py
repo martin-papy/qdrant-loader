@@ -40,50 +40,61 @@ class QdrantManager:
             raise
 
     def create_collection(self) -> None:
-        """Create collection with enhanced metadata fields."""
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            vectors_config=models.VectorParams(
-                size=1536,  # OpenAI embedding size
-                distance=models.Distance.COSINE
-            ),
-            metadata_schema={
-                # File Information
-                'file_type': 'keyword',
-                'file_name': 'keyword',
-                'file_directory': 'keyword',
-                'file_encoding': 'keyword',
-                'line_count': 'integer',
-                'word_count': 'integer',
-                'has_code_blocks': 'boolean',
-                'has_images': 'boolean',
-                'has_links': 'boolean',
-                
-                # Repository Information
-                'repository_name': 'keyword',
-                'repository_owner': 'keyword',
-                'repository_description': 'text',
-                'repository_language': 'keyword',
-                
-                # Git History
-                'last_modified_by': 'keyword',
-                'commit_message': 'text',
-                'commit_hash': 'keyword',
-                'creation_date': 'datetime',
-                'number_of_commits': 'integer',
-                
-                # Document Structure
-                'has_toc': 'boolean',
-                'heading_levels': 'integer[]',
-                'sections_count': 'integer',
-                
-                # Source Information
-                'source': 'keyword',
-                'source_type': 'keyword',
-                'created_at': 'datetime'
-            }
-        )
-        logger.info("Created new collection", collection=self.collection_name)
+        """Create a new collection if it doesn't exist."""
+        try:
+            # Check if collection already exists
+            collections = self.client.get_collections()
+            if any(c.name == self.collection_name for c in collections.collections):
+                logger.info(f"Collection {self.collection_name} already exists")
+                return
+
+            # Create collection with metadata schema
+            self.client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=models.VectorParams(
+                    size=1536,  # OpenAI embedding size
+                    distance=models.Distance.COSINE
+                ),
+                metadata_schema={
+                    # File Information
+                    'file_type': 'keyword',
+                    'file_name': 'keyword',
+                    'file_directory': 'keyword',
+                    'file_encoding': 'keyword',
+                    'line_count': 'integer',
+                    'word_count': 'integer',
+                    'has_code_blocks': 'boolean',
+                    'has_images': 'boolean',
+                    'has_links': 'boolean',
+                    
+                    # Repository Information
+                    'repository_name': 'keyword',
+                    'repository_owner': 'keyword',
+                    'repository_description': 'text',
+                    'repository_language': 'keyword',
+                    
+                    # Git History
+                    'last_modified_by': 'keyword',
+                    'commit_message': 'text',
+                    'commit_hash': 'keyword',
+                    'creation_date': 'datetime',
+                    'number_of_commits': 'integer',
+                    
+                    # Document Structure
+                    'has_toc': 'boolean',
+                    'heading_levels': 'integer[]',
+                    'sections_count': 'integer',
+                    
+                    # Source Information
+                    'source': 'keyword',
+                    'source_type': 'keyword',
+                    'created_at': 'datetime'
+                }
+            )
+            logger.info(f"Created collection {self.collection_name}")
+        except Exception as e:
+            logger.error(f"Failed to create collection: {e}")
+            raise
 
     def upsert_points(self, points: List[models.PointStruct]) -> None:
         """Upsert points to the collection in batches."""
