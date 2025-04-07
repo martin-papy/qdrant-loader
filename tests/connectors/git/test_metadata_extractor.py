@@ -19,7 +19,12 @@ def mock_repo():
     repo.remotes = MagicMock()
     repo.remotes.origin = MagicMock()
     repo.remotes.origin.url = "https://github.com/test/repo.git"
-    repo.description = "Test repository"
+    
+    # Set up config reader to return repository description
+    config_reader = MagicMock()
+    config_reader.get_value = MagicMock(return_value="Test repository")
+    repo.config_reader = MagicMock(return_value=config_reader)
+    
     return repo
 
 def test_extract_file_metadata(metadata_extractor):

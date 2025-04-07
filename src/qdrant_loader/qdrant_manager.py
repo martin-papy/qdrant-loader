@@ -34,6 +34,9 @@ class QdrantManager:
                 api_key=self.settings.QDRANT_API_KEY,
                 timeout=60  # 60 seconds timeout
             )
+            # Note: The version check warning is expected when connecting to Qdrant Cloud instances.
+            # This occurs because the version check endpoint might not be accessible due to security restrictions.
+            # The warning can be safely ignored as it doesn't affect functionality.
             logger.info("Successfully connected to qDrant")
         except Exception as e:
             logger.error("Failed to connect to qDrant", error=str(e))

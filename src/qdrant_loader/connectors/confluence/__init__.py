@@ -6,6 +6,7 @@ from qdrant_loader.config import ConfluenceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
 from datetime import datetime
+import re
 
 logger = get_logger(__name__)
 
@@ -21,14 +22,17 @@ class ConfluenceConnector:
         self.config = config
         self.base_url = config.url.rstrip("/")
         
-        # Get authentication token
+        # Get authentication token and email
         self.token = os.getenv("CONFLUENCE_TOKEN")
+        self.email = os.getenv("CONFLUENCE_EMAIL")
         if not self.token:
             raise ValueError("CONFLUENCE_TOKEN environment variable is not set")
+        if not self.email:
+            raise ValueError("CONFLUENCE_EMAIL environment variable is not set")
             
         # Initialize session with authentication
         self.session = requests.Session()
-        self.session.auth = HTTPBasicAuth("", self.token)
+        self.session.auth = HTTPBasicAuth(self.email, self.token)
         
     def _get_api_url(self, endpoint: str) -> str:
         """Construct the full API URL for an endpoint.
@@ -76,13 +80,19 @@ class ConfluenceConnector:
             Dict[str, Any]: Response containing space content
         """
         params = {
-            "spaceKey": self.config.space_key,
+            "cql": f"space = {self.config.space_key} and type in (page, blogpost)",
             "expand": "body.storage,version,metadata.labels,history,space,extensions.position",
             "start": start,
-            "limit": limit,
-            "type": ",".join(self.config.content_types)
+            "limit": limit
         }
-        return self._make_request("GET", "content", params=params)
+        logger.debug("Making Confluence API request", url=f"{self.base_url}/rest/api/content/search", params=params)
+        response = self._make_request("GET", "content/search", params=params)
+        if response and "results" in response:
+            logger.info(f"Found {len(response['results'])} documents in Confluence space", 
+                       count=len(response["results"]), 
+                       total_size=response.get("size", 0))
+        logger.debug("Confluence API response", response=response)
+        return response
 
     def _should_process_content(self, content: Dict[str, Any]) -> bool:
         """Check if content should be processed based on labels.
@@ -109,71 +119,106 @@ class ConfluenceConnector:
             
         return True
 
-    def _process_content(self, content: Dict[str, Any]) -> Document:
-        """Process a single piece of Confluence content into a Document.
+    def _process_content(self, content: Dict[str, Any], clean_html: bool = True) -> Optional[Document]:
+        """Process a single content item from Confluence.
         
         Args:
-            content: Content data from Confluence API
+            content: Content item from Confluence API
+            clean_html: Whether to clean HTML tags from content. Defaults to True.
             
         Returns:
-            Document: Processed document
+            Document if processing successful
             
         Raises:
-            ValueError: If the content is malformed or missing required fields
+            ValueError: If required fields are missing or malformed
         """
         try:
-            # Extract basic metadata
-            metadata = {
-                "id": content["id"],
-                "type": content["type"],
-                "title": content["title"],
-                "space_key": self.config.space_key,
-                "version": content["version"]["number"],
-                "last_modified": content["version"]["when"],
-                "url": f"{self.base_url}/spaces/{self.config.space_key}/pages/{content['id']}",
-                "labels": [
-                    label["name"]
-                    for label in content.get("metadata", {}).get("labels", {}).get("results", [])
-                ]
-            }
+            # Extract required fields
+            content_id = content.get('id')
+            title = content.get('title')
+            body = content.get('body', {}).get('storage', {}).get('value')
+            space = content.get('space', {}).get('key')
             
-            # Extract author information if available
-            if "history" in content:
-                metadata["author"] = content["history"].get("createdBy", {}).get("displayName", "Unknown")
-                metadata["created_date"] = content["history"].get("createdDate", "")
-            
-            # Extract space information
-            if "space" in content:
-                metadata["space_name"] = content["space"].get("name", "")
-                metadata["space_type"] = content["space"].get("type", "")
-            
-            # Extract content
-            if "body" not in content or "storage" not in content["body"]:
+            # Check for missing or malformed body
+            if not body:
                 raise ValueError("Content body is missing or malformed")
-                
-            body = content["body"]["storage"]["value"]
             
-            # Extract page relationships
-            if "extensions" in content and "position" in content["extensions"]:
-                metadata["parent_id"] = content["extensions"]["position"].get("parentId")
-                metadata["position"] = content["extensions"]["position"].get("position")
+            # Check for other missing required fields
+            missing_fields = []
+            if not content_id:
+                missing_fields.append('id')
+            if not title:
+                missing_fields.append('title')
+            if not space:
+                missing_fields.append('space')
             
+            if missing_fields:
+                raise ValueError(f"Content is missing required fields: {', '.join(missing_fields)}")
+
+            # Get version information
+            version = content.get('version', {})
+            version_number = version.get('number', 1) if isinstance(version, dict) else 1
+
+            # Get URL and author information
+            url = content.get('_links', {}).get('webui', '')
+            author = content.get('history', {}).get('createdBy', {}).get('displayName')
+            last_updated = None
+            if 'version' in content and 'when' in content['version']:
+                try:
+                    last_updated = content['version']['when']
+                except (ValueError, TypeError):
+                    pass
+
+            # Create metadata
+            metadata = {
+                'id': content_id,
+                'title': title,
+                'space': space,
+                'version': version_number,
+                'type': content.get('type', 'unknown'),
+                'labels': [
+                    label['name']
+                    for label in content.get('metadata', {}).get('labels', {}).get('results', [])
+                ],
+                'last_modified': last_updated
+            }
+
+            # Clean content if requested
+            content_text = self._clean_html(body) if clean_html else body
+
+            # Create document with all fields
             return Document(
-                content=body,
-                metadata=metadata,
-                source=f"confluence/{self.config.space_key}",
+                id=content_id,
+                content=content_text,
+                source=f"{self.base_url}/spaces/{space}/pages/{content_id}",
                 source_type="confluence",
-                url=metadata["url"],
-                last_updated=datetime.fromisoformat(metadata["last_modified"])
+                metadata=metadata,
+                url=url,
+                author=author,
+                last_updated=last_updated,
+                project=space
             )
-            
-        except KeyError as e:
-            logger.error(f"Missing required field in content: {str(e)}")
-            raise ValueError(f"Content is missing required field: {str(e)}")
         except Exception as e:
             logger.error(f"Failed to process content: {str(e)}")
             raise
+
+    def _clean_html(self, html: str) -> str:
+        """Clean HTML content by removing tags and special characters.
+        
+        Args:
+            html: HTML content to clean
             
+        Returns:
+            Cleaned text
+        """
+        # Remove HTML tags
+        text = re.sub(r'<[^>]+>', ' ', html)
+        # Replace special characters
+        text = re.sub(r'&[^;]+;', ' ', text)
+        # Replace multiple spaces with single space
+        text = re.sub(r'\s+', ' ', text)
+        return text.strip()
+
     def get_documents(self) -> List[Document]:
         """Fetch and process documents from Confluence.
         
@@ -196,12 +241,13 @@ class ConfluenceConnector:
                 for content in results:
                     if self._should_process_content(content):
                         try:
-                            document = self._process_content(content)
-                            documents.append(document)
-                            logger.info(
-                                f"Processed {content['type']} '{content['title']}' "
-                                f"(ID: {content['id']}) from space {self.config.space_key}"
-                            )
+                            document = self._process_content(content, clean_html=False)
+                            if document:
+                                documents.append(document)
+                                logger.info(
+                                    f"Processed {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}) from space {self.config.space_key}"
+                                )
                         except Exception as e:
                             logger.error(
                                 f"Failed to process {content['type']} '{content['title']}' "
