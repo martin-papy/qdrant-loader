@@ -215,32 +215,38 @@ class GitConnector:
     def _should_process_file(self, file_path: str) -> bool:
         """Check if a file should be processed."""
         try:
-            # Check if file is a markdown file
-            if not file_path.lower().endswith('.md'):
-                self.logger.debug(f"File type not matched: {file_path}")
-                return False
-
             # Get relative path from repo root
             rel_path = os.path.relpath(file_path, self.temp_dir)
             self.logger.debug(f"Checking file: {rel_path}")
 
+            # Check file type using basename
+            file_name = os.path.basename(rel_path)
+            file_type_matched = any(fnmatch.fnmatch(file_name, pattern) for pattern in self.config.file_types)
+            self.logger.debug(f"File type check for {rel_path}: {file_type_matched} (patterns: {self.config.file_types})")
+            if not file_type_matched:
+                return False
+
             # Check file size
-            if os.path.getsize(file_path) > self.config.max_file_size:
-                self.logger.debug(f"File too large: {rel_path}")
+            file_size = os.path.getsize(file_path)
+            self.logger.debug(f"File size for {rel_path}: {file_size} (max: {self.config.max_file_size})")
+            if file_size > self.config.max_file_size:
                 return False
 
             # Check include paths
             if self.config.include_paths:
-                if not any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.config.include_paths):
-                    self.logger.debug(f"File not in include paths: {rel_path}")
+                include_matched = any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.config.include_paths)
+                self.logger.debug(f"Include paths check for {rel_path}: {include_matched} (patterns: {self.config.include_paths})")
+                if not include_matched:
                     return False
 
             # Check exclude paths
             if self.config.exclude_paths:
-                if any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.config.exclude_paths):
-                    self.logger.debug(f"File in exclude paths: {rel_path}")
+                exclude_matched = any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.config.exclude_paths)
+                self.logger.debug(f"Exclude paths check for {rel_path}: {exclude_matched} (patterns: {self.config.exclude_paths})")
+                if exclude_matched:
                     return False
 
+            self.logger.debug(f"File {rel_path} passed all checks")
             return True
         except Exception as e:
             self.logger.error(f"Error checking file {file_path}: {e}")

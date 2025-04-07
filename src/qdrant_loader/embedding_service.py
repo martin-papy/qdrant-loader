@@ -1,3 +1,4 @@
+import time
 from openai import OpenAI
 import tiktoken
 import structlog
@@ -19,10 +20,21 @@ class EmbeddingService:
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = get_global_config().embedding.model
         self.encoding = tiktoken.encoding_for_model(self.model)
+        self.last_request_time = 0
+        self.min_request_interval = 0.1  # 100ms between requests
+
+    def _apply_rate_limit(self):
+        """Apply rate limiting between API requests."""
+        current_time = time.time()
+        time_since_last_request = current_time - self.last_request_time
+        if time_since_last_request < self.min_request_interval:
+            time.sleep(self.min_request_interval - time_since_last_request)
+        self.last_request_time = time.time()
 
     def get_embedding(self, text: str) -> List[float]:
         """Get embedding for a single text."""
         try:
+            self._apply_rate_limit()
             response = self.client.embeddings.create(
                 model=self.model,
                 input=[text]  # OpenAI API expects a list
@@ -35,6 +47,7 @@ class EmbeddingService:
     def get_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Get embeddings for multiple texts."""
         try:
+            self._apply_rate_limit()
             response = self.client.embeddings.create(
                 model=self.model,
                 input=texts

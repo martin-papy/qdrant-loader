@@ -27,28 +27,25 @@ public_docs:
 
 git_repos:
   test-repo:
-    url: https://github.com/python/cpython.git
+    url: https://github.com/github/github-mcp-server.git
     branch: main
     include_paths:
-      - "Doc/**"
+      - "README.rst"
       - "README.md"
     exclude_paths:
       - "**/test/**"
     file_types:
-      - "*.md"
       - "*.rst"
+      - "*.md"
     max_file_size: 1048576
     depth: 1
-    auth:
-      type: "github"
-      token_env: "GITHUB_TOKEN"
 
 confluence:
   test-space:
-    url: "https://test.atlassian.net/wiki"
-    space_key: "TEST"
+    url: "CONFLUENCE_URL_PLACEHOLDER"
+    space_key: "CONFLUENCE_SPACE_KEY_PLACEHOLDER"
     content_types:
       - "page"
       - "blogpost"
     include_labels: []
-    exclude_labels: [] 
+    exclude_labels: []
