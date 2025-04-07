@@ -16,4 +16,11 @@ def test_settings():
         QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
         OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
         LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
+    )
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line(
+        "markers",
+        "integration: mark test as an integration test"
     ) 

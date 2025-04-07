@@ -43,6 +43,22 @@ def mock_content():
                     {"name": "test"}
                 ]
             }
+        },
+        "history": {
+            "createdBy": {
+                "displayName": "Test User"
+            },
+            "createdDate": "2024-03-06T12:00:00Z"
+        },
+        "space": {
+            "name": "Test Space",
+            "type": "global"
+        },
+        "extensions": {
+            "position": {
+                "parentId": "123455",
+                "position": 1
+            }
         }
     }
 
@@ -118,7 +134,7 @@ def test_get_space_content(mock_session, mock_config, mock_env_vars, mock_conten
         "https://example.atlassian.net/wiki/rest/api/content",
         params={
             "spaceKey": "TEST",
-            "expand": "body.storage,version,metadata.labels",
+            "expand": "body.storage,version,metadata.labels,history,space,extensions.position",
             "start": 0,
             "limit": 25,
             "type": "page,blogpost"
@@ -195,4 +211,97 @@ def test_get_documents(mock_session, mock_config, mock_env_vars, mock_content):
     assert document.metadata["space_key"] == "TEST"
     assert document.metadata["version"] == 1
     assert document.metadata["last_modified"] == "2024-03-07T12:00:00Z"
-    assert document.metadata["labels"] == ["documentation", "test"] 
+    assert document.metadata["labels"] == ["documentation", "test"]
+
+def test_process_content_with_full_metadata(mock_config, mock_env_vars, mock_content):
+    """Test processing content with all available metadata."""
+    connector = ConfluenceConnector(mock_config)
+    document = connector._process_content(mock_content)
+    
+    assert document.content == "<p>Test content</p>"
+    assert document.metadata["id"] == "123456"
+    assert document.metadata["title"] == "Test Page"
+    assert document.metadata["space_key"] == "TEST"
+    assert document.metadata["version"] == 1
+    assert document.metadata["last_modified"] == "2024-03-07T12:00:00Z"
+    assert document.metadata["labels"] == ["documentation", "test"]
+    assert document.metadata["author"] == "Test User"
+    assert document.metadata["created_date"] == "2024-03-06T12:00:00Z"
+    assert document.metadata["space_name"] == "Test Space"
+    assert document.metadata["space_type"] == "global"
+    assert document.metadata["parent_id"] == "123455"
+    assert document.metadata["position"] == 1
+
+def test_process_content_with_missing_optional_fields(mock_config, mock_env_vars):
+    """Test processing content with missing optional fields."""
+    minimal_content = {
+        "id": "123456",
+        "type": "page",
+        "title": "Test Page",
+        "body": {
+            "storage": {
+                "value": "<p>Test content</p>"
+            }
+        },
+        "version": {
+            "number": 1,
+            "when": "2024-03-07T12:00:00Z"
+        },
+        "metadata": {
+            "labels": {
+                "results": []
+            }
+        }
+    }
+    
+    connector = ConfluenceConnector(mock_config)
+    document = connector._process_content(minimal_content)
+    
+    assert document.content == "<p>Test content</p>"
+    assert document.metadata["id"] == "123456"
+    assert document.metadata["title"] == "Test Page"
+    assert document.metadata["space_key"] == "TEST"
+    assert document.metadata["version"] == 1
+    assert document.metadata["last_modified"] == "2024-03-07T12:00:00Z"
+    assert document.metadata["labels"] == []
+    assert "author" not in document.metadata
+    assert "created_date" not in document.metadata
+    assert "space_name" not in document.metadata
+    assert "space_type" not in document.metadata
+    assert "parent_id" not in document.metadata
+    assert "position" not in document.metadata
+
+def test_process_content_with_missing_required_fields(mock_config, mock_env_vars):
+    """Test processing content with missing required fields."""
+    invalid_content = {
+        "id": "123456",
+        "type": "page",
+        "title": "Test Page"
+        # Missing body and version fields
+    }
+    
+    connector = ConfluenceConnector(mock_config)
+    with pytest.raises(ValueError, match="Content is missing required field"):
+        connector._process_content(invalid_content)
+
+def test_process_content_with_malformed_body(mock_config, mock_env_vars):
+    """Test processing content with malformed body structure."""
+    malformed_content = {
+        "id": "123456",
+        "type": "page",
+        "title": "Test Page",
+        "body": {},  # Missing storage field
+        "version": {
+            "number": 1,
+            "when": "2024-03-07T12:00:00Z"
+        },
+        "metadata": {
+            "labels": {
+                "results": []
+            }
+        }
+    }
+    
+    connector = ConfluenceConnector(mock_config)
+    with pytest.raises(ValueError, match="Content body is missing or malformed"):
+        connector._process_content(malformed_content) 
