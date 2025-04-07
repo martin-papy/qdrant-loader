@@ -127,10 +127,14 @@ git_repos:
       type: "bitbucket"
       token_env: "BITBUCKET_TOKEN"  # Environment variable containing the Bitbucket token
 
-# Confluence spaces (future)
+# Confluence spaces
 confluence:
   # Example configuration for a Confluence space
   my_space:
+  
+    # Replace with your actual Confluence URL
+    url: "https://your-domain.atlassian.net/wiki"  
+
     # Space key
     space_key: "SPACE"
     

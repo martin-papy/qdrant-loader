@@ -35,9 +35,11 @@ def init(force: bool):
         
         if force:
             logger.info("Force reinitialization requested")
+            click.echo("Force reinitialization requested")
         
         init_collection()
         logger.info("Collection initialization completed successfully")
+        click.echo("Collection initialization completed successfully")
     except Exception as e:
         logger.error("Failed to initialize collection", error=str(e))
         raise click.ClickException(f"Failed to initialize collection: {str(e)}")
@@ -45,9 +47,29 @@ def init(force: bool):
 @cli.command()
 @click.option('--config', '-c', type=click.Path(exists=True), 
               help='Path to configuration file')
-@click.option('--source', '-s', help='Specific source to ingest')
-def ingest(config: Optional[str], source: Optional[str]):
-    """Run the ingestion pipeline."""
+@click.option('--source-type', type=click.Choice(['confluence', 'git', 'public-docs']),
+              help='Type of source to ingest (confluence, git, or public-docs)')
+@click.option('--source', '-s', help='Specific source name to ingest')
+def ingest(config: Optional[str], source_type: Optional[str], source: Optional[str]):
+    """Run the ingestion pipeline.
+    
+    Examples:
+        \b
+        # Ingest all sources
+        qdrant-loader ingest
+        
+        # Ingest only Confluence sources
+        qdrant-loader ingest --source-type confluence
+        
+        # Ingest a specific Confluence space
+        qdrant-loader ingest --source-type confluence --source my-space
+        
+        # Ingest only Git repositories
+        qdrant-loader ingest --source-type git
+        
+        # Ingest a specific Git repository
+        qdrant-loader ingest --source-type git --source my-repo
+    """
     try:
         settings = get_settings()
         if not settings:
@@ -64,11 +86,18 @@ def ingest(config: Optional[str], source: Optional[str]):
         except Exception as e:
             raise click.ClickException(f"Failed to load configuration: {str(e)}")
         
+        # Validate source type and name if provided
+        if source and not source_type:
+            raise click.ClickException("--source-type must be specified when using --source")
+        
         pipeline = IngestionPipeline()
-        logger.info("Starting ingestion pipeline", config_path=config_path, source=source)
+        logger.info("Starting ingestion pipeline", 
+                   config_path=config_path, 
+                   source_type=source_type,
+                   source=source)
         
         # Process documents with the parsed configuration
-        pipeline.process_documents(sources_config)
+        pipeline.process_documents(sources_config, source_type=source_type, source_name=source)
         
         logger.info("Ingestion completed successfully")
     except Exception as e:

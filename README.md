@@ -77,6 +77,33 @@ global:
 
 ## Usage
 
+### Installation
+
+You can use QDrant Loader in two ways:
+
+1. **Install from PyPI (Recommended for end users)**:
+
+   ```bash
+   pip install qdrant-loader
+   ```
+
+2. **Install from source (Recommended for development)**:
+
+   ```bash
+   # Clone the repository
+   git clone https://github.com/kheldar666/qdrant-loader.git
+   cd qdrant-loader
+
+   # Create and activate virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On macOS/Linux
+   # or
+   .\venv\Scripts\activate  # On Windows
+
+   # Install in development mode
+   pip install -e .
+   ```
+
 ### Command Line Interface
 
 The QDrant Loader provides a command-line interface for all operations. After installation, you can use the `qdrant-loader` command:
@@ -97,8 +124,15 @@ qdrant-loader ingest
 # Run ingestion with specific configuration
 qdrant-loader ingest --config custom-config.yaml
 
+# Run ingestion for specific source types
+qdrant-loader ingest --source-type confluence  # Ingest only Confluence sources
+qdrant-loader ingest --source-type git        # Ingest only Git repositories
+qdrant-loader ingest --source-type public-docs # Ingest only public documentation
+
 # Run ingestion for a specific source
-qdrant-loader ingest --source public-docs
+qdrant-loader ingest --source-type confluence --source my-space  # Specific Confluence space
+qdrant-loader ingest --source-type git --source my-repo         # Specific Git repository
+qdrant-loader ingest --source-type public-docs --source my-docs # Specific public docs
 
 # Show current configuration
 qdrant-loader config
@@ -124,8 +158,52 @@ qdrant-loader [command] --log-level DEBUG
 You can also use the CLI directly through Python:
 
 ```bash
+# When installed from PyPI
 python -m qdrant_loader.cli [command] [options]
+
+# When running from source
+python -m src.qdrant_loader.cli [command] [options]
 ```
+
+### Development Usage
+
+When working with the source code:
+
+1. **Running Tests**:
+
+   ```bash
+   # Run all tests
+   pytest tests/
+
+   # Run tests with coverage
+   pytest --cov=src tests/
+
+   # Run specific test files
+   pytest tests/test_config.py
+   pytest tests/test_qdrant_manager.py
+   pytest tests/test_embedding_service.py
+   pytest tests/test_cli.py
+   ```
+
+2. **Building the Package**:
+
+   ```bash
+   # Build the package
+   python -m build
+
+   # Install the built package
+   pip install dist/qdrant_loader-*.whl
+   ```
+
+3. **Running from Source**:
+
+   ```bash
+   # Run the CLI directly from source
+   python -m src.qdrant_loader.cli [command] [options]
+
+   # Run with development logging
+   LOG_LEVEL=DEBUG python -m src.qdrant_loader.cli [command] [options]
+   ```
 
 ## Technical Requirements
 

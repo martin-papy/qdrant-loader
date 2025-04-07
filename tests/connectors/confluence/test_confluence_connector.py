@@ -73,8 +73,9 @@ def test_connector_initialization(mock_config, mock_env_vars):
 
 def test_missing_token_environment_variable(mock_config):
     """Test that the connector raises an error when CONFLUENCE_TOKEN is missing."""
-    with pytest.raises(ValueError, match="CONFLUENCE_TOKEN environment variable is not set"):
-        ConfluenceConnector(mock_config)
+    with patch.dict('os.environ', {}, clear=True):
+        with pytest.raises(ValueError, match="CONFLUENCE_TOKEN environment variable is not set"):
+            ConfluenceConnector(mock_config)
 
 @patch("requests.Session")
 def test_make_request(mock_session, mock_config, mock_env_vars):
