@@ -104,10 +104,17 @@ class GitOperations:
             self.logger.error(f"Failed to list files: {e}")
             raise
 
-class GitPythonAdapter(GitOperations):
-    """Adapter for GitPython library"""
-    def __init__(self, repo: Optional[Repo] = None):
+class GitPythonAdapter:
+    """Adapter for GitPython operations."""
+
+    def __init__(self, repo: Optional[git.Repo] = None) -> None:
+        """Initialize the adapter.
+
+        Args:
+            repo (Optional[git.Repo]): Git repository instance
+        """
         self.repo = repo
+        self.logger = get_logger(__name__)
 
     def clone(self, url: str, to_path: str, branch: str, depth: int) -> None:
         """Clone a Git repository.
@@ -122,30 +129,64 @@ class GitPythonAdapter(GitOperations):
             clone_args = ['--branch', branch]
             if depth > 0:
                 clone_args.extend(['--depth', str(depth)])
-            
+
             self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
             self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
-        except git.exc.GitCommandError as e:
-            self.logger.error(f"Failed to clone repository: {e}")
+        except Exception as e:
+            self.logger.error(f"Failed to clone repository: {str(e)}")
             raise
 
     def get_file_content(self, file_path: str) -> str:
-        if not self.repo:
-            raise RuntimeError("Repository not initialized")
-        return Path(file_path).read_text()
+        """Get the content of a file in the repository.
 
-    def get_last_commit_date(self) -> str:
-        if not self.repo:
-            raise RuntimeError("Repository not initialized")
-        return self.repo.head.commit.committed_datetime.isoformat()
+        Args:
+            file_path (str): Path to the file
 
-    def list_files(self, path: str) -> List[str]:
-        if not self.repo:
-            raise RuntimeError("Repository not initialized")
-        # Use git ls-tree to get all tracked files
-        files = self.repo.git.ls_tree('-r', '--name-only', 'HEAD').split('\n')
-        # Convert to absolute paths
-        return [str(Path(self.repo.working_dir) / f) for f in files if f]
+        Returns:
+            str: File content
+        """
+        try:
+            if self.repo is None:
+                raise ValueError("Repository not initialized")
+            return self.repo.git.show(f"HEAD:{file_path}")
+        except Exception as e:
+            self.logger.error(f"Failed to get file content: {str(e)}")
+            raise
+
+    def get_last_commit_date(self, file_path: str) -> datetime:
+        """Get the last commit date for a file.
+
+        Args:
+            file_path (str): Path to the file
+
+        Returns:
+            datetime: Last commit date
+        """
+        try:
+            if self.repo is None:
+                raise ValueError("Repository not initialized")
+            log = self.repo.git.log("-1", "--format=%ai", file_path)
+            return datetime.fromisoformat(log.strip())
+        except Exception as e:
+            self.logger.error(f"Failed to get last commit date: {str(e)}")
+            raise
+
+    def list_files(self, path: str = ".") -> List[str]:
+        """List files in the repository.
+
+        Args:
+            path (str): Path to list files from
+
+        Returns:
+            List[str]: List of file paths
+        """
+        try:
+            if self.repo is None:
+                raise ValueError("Repository not initialized")
+            return [line.split()[-1] for line in self.repo.git.ls_tree("-r", "--name-only", "HEAD", path).splitlines()]
+        except Exception as e:
+            self.logger.error(f"Failed to list files: {str(e)}")
+            raise
 
 class GitConnector:
     """Connector for Git repositories."""

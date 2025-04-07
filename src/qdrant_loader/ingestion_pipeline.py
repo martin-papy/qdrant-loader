@@ -3,6 +3,7 @@ import structlog
 from .config import SourcesConfig, get_settings, get_global_config
 from .connectors.public_docs import PublicDocsConnector
 from .connectors.git import GitConnector
+from .connectors.confluence import ConfluenceConnector
 from .core.document import Document
 from .core.chunking import ChunkingStrategy
 from .embedding_service import EmbeddingService
@@ -64,39 +65,107 @@ class IngestionPipeline:
                 
         return documents
         
-    def _process_git_repos(self, sources: dict) -> List[Document]:
+    def _process_git_repos(self, git_repos: dict) -> List[Document]:
         """Process documents from Git repository sources."""
         documents = []
-        
-        for source_name, source_config in sources.items():
+        for repo_name, repo_config in git_repos.items():
             try:
-                logger.info("Processing Git repository", source=source_name)
-                with GitConnector(source_config) as connector:
-                    docs = connector.get_documents()
-                    documents.extend(docs)
-                    
+                connector = GitConnector(repo_config)
+                repo_docs = connector.fetch_documents()
+                documents.extend(repo_docs)
+                logger.info(f"Processed Git repository: {repo_name}", 
+                          document_count=len(repo_docs))
             except Exception as e:
-                logger.error("Failed to process Git repository", 
-                           source=source_name, 
+                logger.error(f"Failed to process Git repository {repo_name}", 
                            error=str(e))
-                continue
-                
         return documents
+
+    def _process_confluence(self, confluence_spaces: dict) -> List[Document]:
+        """Process documents from Confluence sources.
         
-    def process_documents(self, config: SourcesConfig) -> None:
-        """Process and ingest documents from all configured sources."""
+        Args:
+            confluence_spaces: Dictionary of Confluence space configurations
+            
+        Returns:
+            List[Document]: List of processed documents
+        """
+        documents = []
+        for space_name, space_config in confluence_spaces.items():
+            try:
+                connector = ConfluenceConnector(space_config)
+                space_docs = connector.fetch_documents()
+                documents.extend(space_docs)
+                logger.info(f"Processed Confluence space: {space_name}", 
+                          document_count=len(space_docs))
+            except Exception as e:
+                logger.error(f"Failed to process Confluence space {space_name}", 
+                           error=str(e))
+        return documents
+
+    def _filter_sources(self, config: SourcesConfig, source_type: Optional[str], source_name: Optional[str]) -> SourcesConfig:
+        """Filter sources based on type and name."""
+        if not source_type and not source_name:
+            return config
+
+        filtered_config = SourcesConfig()
+        
+        if source_type == "confluence":
+            if source_name:
+                if source_name in config.confluence:
+                    filtered_config.confluence[source_name] = config.confluence[source_name]
+            else:
+                filtered_config.confluence = config.confluence
+                
+        elif source_type == "git":
+            if source_name:
+                if source_name in config.git_repos:
+                    filtered_config.git_repos[source_name] = config.git_repos[source_name]
+            else:
+                filtered_config.git_repos = config.git_repos
+                
+        elif source_type == "public-docs":
+            if source_name:
+                if source_name in config.public_docs:
+                    filtered_config.public_docs[source_name] = config.public_docs[source_name]
+            else:
+                filtered_config.public_docs = config.public_docs
+                
+        return filtered_config
+
+    def process_documents(self, config: SourcesConfig, source_type: Optional[str] = None, source_name: Optional[str] = None) -> None:
+        """Process and ingest documents from the specified sources.
+        
+        Args:
+            config: Configuration containing source definitions
+            source_type: Optional type of source to process (confluence, git, public-docs)
+            source_name: Optional specific source name to process
+        """
         try:
+            # Filter sources based on type and name
+            filtered_config = self._filter_sources(config, source_type, source_name)
+            
+            if not any([filtered_config.confluence, filtered_config.git_repos, filtered_config.public_docs]):
+                logger.warning("No sources to process after filtering", 
+                             source_type=source_type,
+                             source_name=source_name)
+                return
+                
             documents = []
             
             # Process public documentation sources
-            if config.public_docs:
-                public_docs = self._process_public_docs(config.public_docs)
+            if filtered_config.public_docs:
+                public_docs = self._process_public_docs(filtered_config.public_docs)
                 documents.extend(public_docs)
                 
             # Process Git repository sources
-            if config.git_repos:
-                git_docs = self._process_git_repos(config.git_repos)
+            if filtered_config.git_repos:
+                git_docs = self._process_git_repos(filtered_config.git_repos)
                 documents.extend(git_docs)
+                
+            # Process Confluence sources
+            if filtered_config.confluence:
+                confluence_docs = self._process_confluence(filtered_config.confluence)
+                documents.extend(confluence_docs)
                 
             if not documents:
                 logger.warning("No documents were processed")
@@ -137,4 +206,4 @@ class IngestionPipeline:
             
         except Exception as e:
             logger.error("Failed to process documents", error=str(e))
-            raise 
+            raise Exception("Failed to process documents") from e 

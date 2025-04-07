@@ -46,7 +46,7 @@ class ChunkingService:
         Returns:
             List[Document]: List of chunked documents.
         """
-        chunks = self.chunking_strategy.chunk_text(document.content)
+        chunks = self.chunking_strategy._split_text(document.content)
         chunked_docs = []
         
         for i, chunk in enumerate(chunks):

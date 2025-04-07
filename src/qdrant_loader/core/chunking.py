@@ -40,6 +40,11 @@ class ChunkingStrategy:
             return [""]
             
         tokens = self.encoding.encode(text)
+        
+        # If text is smaller than chunk size, return it as a single chunk
+        if len(tokens) <= self.chunk_size:
+            return [text]
+            
         chunks = []
         start_idx = 0
         
