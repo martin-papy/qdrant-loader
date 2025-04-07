@@ -77,7 +77,7 @@ class ConfluenceConnector:
         """
         params = {
             "spaceKey": self.config.space_key,
-            "expand": "body.storage,version,metadata.labels",
+            "expand": "body.storage,version,metadata.labels,history,space,extensions.position",
             "start": start,
             "limit": limit,
             "type": ",".join(self.config.content_types)
@@ -117,33 +117,62 @@ class ConfluenceConnector:
             
         Returns:
             Document: Processed document
+            
+        Raises:
+            ValueError: If the content is malformed or missing required fields
         """
-        # Extract metadata
-        metadata = {
-            "id": content["id"],
-            "type": content["type"],
-            "title": content["title"],
-            "space_key": self.config.space_key,
-            "version": content["version"]["number"],
-            "last_modified": content["version"]["when"],
-            "url": f"{self.base_url}/spaces/{self.config.space_key}/pages/{content['id']}",
-            "labels": [
-                label["name"]
-                for label in content.get("metadata", {}).get("labels", {}).get("results", [])
-            ]
-        }
-        
-        # Extract content
-        body = content["body"]["storage"]["value"]
-        
-        return Document(
-            content=body,
-            metadata=metadata,
-            source=f"confluence/{self.config.space_key}",
-            source_type="confluence",
-            url=metadata["url"],
-            last_updated=datetime.fromisoformat(metadata["last_modified"])
-        )
+        try:
+            # Extract basic metadata
+            metadata = {
+                "id": content["id"],
+                "type": content["type"],
+                "title": content["title"],
+                "space_key": self.config.space_key,
+                "version": content["version"]["number"],
+                "last_modified": content["version"]["when"],
+                "url": f"{self.base_url}/spaces/{self.config.space_key}/pages/{content['id']}",
+                "labels": [
+                    label["name"]
+                    for label in content.get("metadata", {}).get("labels", {}).get("results", [])
+                ]
+            }
+            
+            # Extract author information if available
+            if "history" in content:
+                metadata["author"] = content["history"].get("createdBy", {}).get("displayName", "Unknown")
+                metadata["created_date"] = content["history"].get("createdDate", "")
+            
+            # Extract space information
+            if "space" in content:
+                metadata["space_name"] = content["space"].get("name", "")
+                metadata["space_type"] = content["space"].get("type", "")
+            
+            # Extract content
+            if "body" not in content or "storage" not in content["body"]:
+                raise ValueError("Content body is missing or malformed")
+                
+            body = content["body"]["storage"]["value"]
+            
+            # Extract page relationships
+            if "extensions" in content and "position" in content["extensions"]:
+                metadata["parent_id"] = content["extensions"]["position"].get("parentId")
+                metadata["position"] = content["extensions"]["position"].get("position")
+            
+            return Document(
+                content=body,
+                metadata=metadata,
+                source=f"confluence/{self.config.space_key}",
+                source_type="confluence",
+                url=metadata["url"],
+                last_updated=datetime.fromisoformat(metadata["last_modified"])
+            )
+            
+        except KeyError as e:
+            logger.error(f"Missing required field in content: {str(e)}")
+            raise ValueError(f"Content is missing required field: {str(e)}")
+        except Exception as e:
+            logger.error(f"Failed to process content: {str(e)}")
+            raise
             
     def get_documents(self) -> List[Document]:
         """Fetch and process documents from Confluence.
@@ -180,10 +209,10 @@ class ConfluenceConnector:
                             )
                 
                 # Check if there are more results
-                if len(results) < limit:
+                if "_links" in response and "next" in response["_links"]:
+                    start += limit
+                else:
                     break
-                    
-                start += limit
                 
             except Exception as e:
                 logger.error(f"Failed to fetch content from space {self.config.space_key}: {str(e)}")
