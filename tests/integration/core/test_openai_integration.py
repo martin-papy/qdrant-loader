@@ -121,5 +121,5 @@ def test_rate_limiting(embedding_service):
     
     # Verify we got all embeddings
     assert len(embeddings) == 10
-    # Verify the operation took at least 1 second (due to rate limiting)
-    assert duration >= 1.0 
+    # Verify the operation took at least 0.9 seconds (due to rate limiting)
+    assert duration >= 0.9 

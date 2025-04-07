@@ -10,6 +10,7 @@ from .metadata_extractor import GitMetadataExtractor
 import fnmatch
 import git
 from datetime import datetime
+import time
 
 logger = get_logger(__name__)
 
@@ -30,16 +31,25 @@ class GitOperations:
             branch (str): Branch to clone
             depth (int): Clone depth (use 0 for full history)
         """
-        try:
-            clone_args = ['--branch', branch]
-            if depth > 0:
-                clone_args.extend(['--depth', str(depth)])
-            
-            self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
-            self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
-        except git.exc.GitCommandError as e:
-            self.logger.error(f"Failed to clone repository: {e}")
-            raise
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                clone_args = ['--branch', branch]
+                if depth > 0:
+                    clone_args.extend(['--depth', str(depth)])
+                
+                self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
+                self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
+                return
+            except git.exc.GitCommandError as e:
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    self.logger.error(f"Failed to clone repository after {max_retries} attempts: {e}")
+                    raise
 
     def get_file_content(self, file_path: str) -> str:
         """Get file content.
@@ -125,16 +135,25 @@ class GitPythonAdapter:
             branch (str): Branch to clone
             depth (int): Clone depth (use 0 for full history)
         """
-        try:
-            clone_args = ['--branch', branch]
-            if depth > 0:
-                clone_args.extend(['--depth', str(depth)])
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                clone_args = ['--branch', branch]
+                if depth > 0:
+                    clone_args.extend(['--depth', str(depth)])
 
-            self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
-            self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
-        except Exception as e:
-            self.logger.error(f"Failed to clone repository: {str(e)}")
-            raise
+                self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
+                self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
+                return
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    self.logger.warning(f"Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    self.logger.error(f"Failed to clone repository after {max_retries} attempts: {e}")
+                    raise
 
     def get_file_content(self, file_path: str) -> str:
         """Get the content of a file in the repository.
@@ -200,10 +219,24 @@ class GitConnector:
         self.metadata_extractor = GitMetadataExtractor()
 
     def __enter__(self):
-        """Set up the Git repository."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.git_ops.clone(self.config.url, self.temp_dir, self.config.branch, self.config.depth)
-        return self
+        """Enter the context manager."""
+        try:
+            self.temp_dir = tempfile.mkdtemp()
+            self.logger.info(f"Created temporary directory: {self.temp_dir}")
+            
+            self.git_ops.clone(
+                url=self.config.url,
+                to_path=self.temp_dir,
+                branch=self.config.branch,
+                depth=self.config.depth
+            )
+            return self
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Git connector: {str(e)}")
+            if self.temp_dir and os.path.exists(self.temp_dir):
+                import shutil
+                shutil.rmtree(self.temp_dir)
+            raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context manager."""
