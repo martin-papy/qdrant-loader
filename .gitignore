@@ -49,3 +49,4 @@ htmlcov/
 dist/
 build/ 
 config.yaml
+tests/config.test.yaml

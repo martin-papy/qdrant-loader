@@ -93,7 +93,7 @@ class IngestionPipeline:
         for space_name, space_config in confluence_spaces.items():
             try:
                 connector = ConfluenceConnector(space_config)
-                space_docs = connector.fetch_documents()
+                space_docs = connector.get_documents()
                 documents.extend(space_docs)
                 logger.info(f"Processed Confluence space: {space_name}", 
                           document_count=len(space_docs))

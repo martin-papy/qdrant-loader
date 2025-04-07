@@ -1,0 +1,54 @@
+global:
+  chunking:
+    size: 500
+    overlap: 50
+  embedding:
+    model: text-embedding-3-small
+    batch_size: 10  # Smaller batch size for tests
+  logging:
+    level: INFO
+    format: json
+    file: qdrant-loader-test.log
+
+public_docs:
+  test-docs:
+    base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
+    version: "3.12"
+    content_type: html
+    exclude_paths:
+      - /downloads
+    selectors:
+      content: .body
+      remove:
+        - nav
+        - header
+        - footer
+      code_blocks: pre code
+
+git_repos:
+  test-repo:
+    url: https://github.com/python/cpython.git
+    branch: main
+    include_paths:
+      - "Doc/**"
+      - "README.md"
+    exclude_paths:
+      - "**/test/**"
+    file_types:
+      - "*.md"
+      - "*.rst"
+    max_file_size: 1048576
+    depth: 1
+    auth:
+      type: "github"
+      token_env: "GITHUB_TOKEN"
+
+confluence:
+  test-space:
+    url: "https://test.atlassian.net/wiki"
+    space_key: "TEST"
+    content_types:
+      - "page"
+      - "blogpost"
+    include_labels: []
+    exclude_labels: [] 

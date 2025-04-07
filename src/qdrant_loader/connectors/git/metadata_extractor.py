@@ -28,17 +28,27 @@ class GitMetadataExtractor:
         Returns:
             Dict[str, Any]: Dictionary containing all metadata.
         """
+        self.logger.info(f"Starting metadata extraction for file: {file_path}")
+        
         file_metadata = self._extract_file_metadata(file_path, content)
         repo_metadata = self._extract_repo_metadata(file_path)
         git_metadata = self._extract_git_metadata(file_path)
-        structure_metadata = self._extract_structure_metadata(content)
+        
+        # Only extract structure metadata for markdown files
+        structure_metadata = {}
+        if file_path.lower().endswith('.md'):
+            self.logger.info(f"Processing markdown file: {file_path}")
+            structure_metadata = self._extract_structure_metadata(content)
 
-        return {
+        metadata = {
             **file_metadata,
             **repo_metadata,
             **git_metadata,
             **structure_metadata
         }
+        
+        self.logger.info(f"Completed metadata extraction for {file_path}. Results: {metadata}")
+        return metadata
 
     def _extract_file_metadata(self, file_path: str, content: str) -> Dict[str, Any]:
         """Extract metadata about the file itself."""
@@ -100,80 +110,125 @@ class GitMetadataExtractor:
 
     def _extract_structure_metadata(self, content: str) -> Dict[str, Any]:
         """Extract metadata about the document structure."""
-        has_toc = "## Table of Contents" in content or "## Contents" in content
-        heading_levels = self._get_heading_levels(content)
-        sections_count = len(heading_levels)
+        self.logger.info("Starting structure metadata extraction")
+        self.logger.debug(f"Content to process:\n{content}")
+        
+        has_toc = False
+        heading_levels = []
+        sections_count = 0
 
-        return {
+        # Check if content is markdown by looking for markdown headers
+        # Look for markdown headers that:
+        # 1. Start with 1-6 # characters at the start of a line or after a newline
+        # 2. Are followed by whitespace and text
+        # 3. Continue until the next newline or end of content
+        headings = re.findall(r"(?:^|\n)\s*(#{1,6})\s+(.+?)(?:\n|$)", content, re.MULTILINE)
+        self.logger.info(f"Found {len(headings)} headers in content")
+        
+        if headings:
+            self.logger.debug(f"Headers found: {headings}")
+            has_toc = "## Table of Contents" in content or "## Contents" in content
+            heading_levels = [len(h[0]) for h in headings]
+            sections_count = len(heading_levels)
+            self.logger.info(f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}")
+        else:
+            self.logger.warning("No headers found in content")
+            # Log the first few lines of content for debugging
+            first_lines = "\n".join(content.splitlines()[:5])
+            self.logger.debug(f"First few lines of content:\n{first_lines}")
+            # Try alternative header detection
+            alt_headings = re.findall(r"^#{1,6}\s+.+$", content, re.MULTILINE)
+            if alt_headings:
+                self.logger.info(f"Found {len(alt_headings)} headers using alternative pattern")
+                self.logger.debug(f"Alternative headers found: {alt_headings}")
+                has_toc = "## Table of Contents" in content or "## Contents" in content
+                heading_levels = [len(re.match(r"^(#{1,6})", h).group(1)) for h in alt_headings]
+                sections_count = len(heading_levels)
+                self.logger.info(f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}")
+
+        metadata = {
             "has_toc": has_toc,
             "heading_levels": heading_levels,
             "sections_count": sections_count
         }
+        
+        self.logger.info(f"Structure metadata extraction completed: {metadata}")
+        return metadata
 
     def _get_repo_description(self, repo: git.Repo, file_path: str) -> str:
         """Get repository description from Git config or README."""
-        # Try to get description from Git config
-        description = repo.description
-        if description and description.strip() and "Unnamed repository;" not in description:
-            return description.strip()
+        try:
+            # Try to get description from Git config
+            config = repo.config_reader()
+            try:
+                if config.has_section('remote "origin"'):
+                    description = config.get_value('remote "origin"', "description", default="")
+                    if description and description.strip() and "Unnamed repository;" not in description:
+                        return description.strip()
+            except Exception as e:
+                self.logger.debug(f"Failed to read Git config: {e}")
 
-        # Try to find description in README files
-        readme_files = ["README.md", "README.txt", "README", "README.rst"]
-        repo_root = repo.working_dir
-        for readme_file in readme_files:
-            readme_path = os.path.join(repo_root, readme_file)
-            if os.path.exists(readme_path):
-                try:
-                    with open(readme_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        paragraphs = []
-                        current_paragraph = []
-                        in_title = True
-                        for line in content.splitlines():
-                            line = line.strip()
-                            # Skip badges and links at the start
-                            if in_title and (line.startswith("[![") or line.startswith("[")):
-                                continue
-                            # Skip empty lines
-                            if not line:
-                                if current_paragraph:
-                                    paragraphs.append(" ".join(current_paragraph))
-                                    current_paragraph = []
-                                continue
-                            # Skip titles
-                            if line.startswith("#") or line.startswith("==="):
-                                in_title = True
-                                continue
-                            # Skip common sections
-                            if line.lower() in ["## installation", "## usage", "## contributing", "## license"]:
-                                break
-                            in_title = False
-                            current_paragraph.append(line)
+            # Try to find description in README files
+            readme_files = ["README.md", "README.txt", "README", "README.rst"]
+            repo_root = repo.working_dir
+            for readme_file in readme_files:
+                readme_path = os.path.join(repo_root, readme_file)
+                if os.path.exists(readme_path) and os.path.isfile(readme_path):
+                    try:
+                        with open(readme_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            paragraphs = []
+                            current_paragraph = []
+                            in_title = True
+                            for line in content.splitlines():
+                                line = line.strip()
+                                # Skip badges and links at the start
+                                if in_title and (line.startswith("[![") or line.startswith("[")):
+                                    continue
+                                # Skip empty lines
+                                if not line:
+                                    if current_paragraph:
+                                        paragraphs.append(" ".join(current_paragraph))
+                                        current_paragraph = []
+                                    continue
+                                # Skip titles
+                                if line.startswith("#") or line.startswith("==="):
+                                    in_title = True
+                                    continue
+                                # Skip common sections
+                                if line.lower() in ["## installation", "## usage", "## contributing", "## license"]:
+                                    break
+                                in_title = False
+                                current_paragraph.append(line)
 
-                        if current_paragraph:
-                            paragraphs.append(" ".join(current_paragraph))
+                            if current_paragraph:
+                                paragraphs.append(" ".join(current_paragraph))
 
-                        # Find first meaningful paragraph
-                        for paragraph in paragraphs:
-                            if len(paragraph) >= 50:  # Minimum length for a meaningful description
-                                # Clean up markdown links
-                                paragraph = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", paragraph)
-                                # Clean up HTML tags
-                                paragraph = re.sub(r"<[^>]+>", "", paragraph)
-                                # Limit length and break at sentence boundary
-                                if len(paragraph) > 200:
-                                    sentences = re.split(r"(?<=[.!?])\s+", paragraph)
-                                    description = ""
-                                    for sentence in sentences:
-                                        if len(description + sentence) > 200:
-                                            break
-                                        description += sentence + " "
-                                    description = description.strip() + "..."
-                                else:
-                                    description = paragraph
-                                return description
-                except Exception as e:
-                    self.logger.error({"event": "Failed to read README", "error": str(e)})
+                            # Find first meaningful paragraph
+                            for paragraph in paragraphs:
+                                if len(paragraph) >= 50:  # Minimum length for a meaningful description
+                                    # Clean up markdown links
+                                    paragraph = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", paragraph)
+                                    # Clean up HTML tags
+                                    paragraph = re.sub(r"<[^>]+>", "", paragraph)
+                                    # Limit length and break at sentence boundary
+                                    if len(paragraph) > 200:
+                                        sentences = re.split(r"(?<=[.!?])\s+", paragraph)
+                                        description = ""
+                                        for sentence in sentences:
+                                            if len(description + sentence) > 200:
+                                                break
+                                            description += sentence + " "
+                                        description = description.strip() + "..."
+                                    else:
+                                        description = paragraph
+                                    return description
+                    except Exception as e:
+                        self.logger.debug(f"Failed to read README {readme_file}: {e}")
+                        continue
+
+        except Exception as e:
+            self.logger.debug(f"Failed to get repository description: {e}")
 
         return "No description available"
 
