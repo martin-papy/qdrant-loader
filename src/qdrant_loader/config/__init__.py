@@ -251,6 +251,7 @@ class GitRepoConfig(BaseModel):
 
 class ConfluenceConfig(BaseModel):
     """Configuration for a Confluence space source."""
+    url: str = Field(..., description="Confluence Cloud URL (e.g., https://your-domain.atlassian.net/wiki)")
     space_key: str = Field(..., description="Space key")
     content_types: List[str] = Field(
         default=["page", "blogpost"],
