@@ -64,6 +64,7 @@ def test_sources_config_validation():
         },
         confluence={
             "test_space": ConfluenceConfig(
+                url="https://example.atlassian.net/wiki",
                 space_key="SPACE",
                 content_types=["page"]
             )
