@@ -9,3 +9,4 @@ alwaysApply: true
 - [PRD.md](mdc:docs/PRD.md) will help you understant the goal of the application
 - [Plan.md](mdc:docs/Plan.md) will help you understand the progress we made in our project
 - [CodingStandards.md](mdc:docs/CodingStandards.md) are all the tules you need to stricly follow
+- [README.md](mdc:README.md) for the general documentation of the project
