@@ -40,16 +40,8 @@ git_repos:
   # Remote repository for authentication testing
   auth-test-repo:
     url: AUTH_TEST_REPO_URL  # Replace with actual test repository
-    branch: main
-    include_paths:
-      - "src"
-    exclude_paths:
-      - "tests"
-    file_types:
-      - "*.md"
-    auth:
-      type: github
-      token_env: AUTH_TEST_REPO_TOKEN
+    branch: "main"
+    token: "${GITHUB_TOKEN}"
 
 confluence:
   test-space:
@@ -60,3 +52,16 @@ confluence:
       - "blogpost"
     include_labels: []
     exclude_labels: []
+    token: "${CONFLUENCE_TOKEN}"
+    email: "${CONFLUENCE_EMAIL}"
+
+jira:
+  test-project:
+    base_url: "JIRA_URL_PLACEHOLDER"
+    project_key: "JIRA_PROJECT_KEY_PLACEHOLDER"
+    requests_per_minute: 60
+    page_size: 50
+    process_attachments: true
+    track_last_sync: true
+    token: "${JIRA_TOKEN}"
+    email: "${JIRA_EMAIL}"
