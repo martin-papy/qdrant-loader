@@ -19,7 +19,7 @@ TEST_REPO_PATH = Path(__file__).parent.parent.parent.parent / "fixtures" / "test
 def git_config():
     """Create a GitRepoConfig instance for testing."""
     return GitRepoConfig(
-        url=str(TEST_REPO_PATH),
+        url=str(TEST_REPO_PATH.absolute()),
         branch="main",
         depth=1,
         file_types=["*.md"],

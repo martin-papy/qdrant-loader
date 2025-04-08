@@ -45,9 +45,16 @@ class GitOperations:
             max_retries (int, optional): Maximum number of retry attempts. Defaults to 3.
             retry_delay (int, optional): Delay between retries in seconds. Defaults to 2.
         """
-        # If url is a local path, copy the repository instead of cloning
+        # Resolve the URL to an absolute path if it's a local path
         if os.path.exists(url):
+            url = os.path.abspath(url)
             self.logger.info(f"Using local repository at {url}")
+            
+            # Ensure the source is a valid Git repository
+            if not os.path.exists(os.path.join(url, '.git')):
+                raise ValueError(f"Path {url} is not a valid Git repository")
+            
+            # Copy the repository
             shutil.copytree(url, to_path, dirs_exist_ok=True)
             self.repo = git.Repo(to_path)
             return
