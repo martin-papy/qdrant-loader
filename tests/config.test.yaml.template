@@ -26,19 +26,29 @@ public_docs:
       code_blocks: pre code
 
 git_repos:
+  # Local test repository for general testing
   test-repo:
-    url: https://github.com/github/github-mcp-server.git
+    url: ./tests/fixtures/test-repo  # Use local test repository
     branch: main
     include_paths:
-      - "README.rst"
       - "README.md"
-    exclude_paths:
-      - "**/test/**"
+    exclude_paths: []
     file_types:
-      - "*.rst"
       - "*.md"
-    max_file_size: 1048576
-    depth: 1
+  
+  # Remote repository for authentication testing
+  auth-test-repo:
+    url: https://github.com/test/authentication-test-repo.git  # Replace with actual test repository
+    branch: main
+    include_paths:
+      - "src"
+    exclude_paths:
+      - "tests"
+    file_types:
+      - "*.md"
+    auth:
+      type: github
+      token_env: GITHUB_TOKEN
 
 confluence:
   test-space:

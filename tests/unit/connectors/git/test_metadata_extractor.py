@@ -2,11 +2,21 @@ import pytest
 from unittest.mock import patch, MagicMock
 import git
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
+from qdrant_loader.config import GitRepoConfig
 
 @pytest.fixture
-def metadata_extractor():
+def git_config():
+    """Create a GitRepoConfig instance for testing."""
+    return GitRepoConfig(
+        url="https://github.com/test/repo.git",
+        repository_description="Test repository",
+        repository_language="Python"
+    )
+
+@pytest.fixture
+def metadata_extractor(git_config):
     """Create a GitMetadataExtractor instance."""
-    return GitMetadataExtractor()
+    return GitMetadataExtractor(git_config)
 
 @pytest.fixture
 def mock_repo():
@@ -54,6 +64,7 @@ def test_extract_repo_metadata(metadata_extractor, mock_repo):
         assert metadata["repository_description"] == "Test repository"
         assert metadata["repository_owner"] == "test"
         assert metadata["repository_url"] == "https://github.com/test/repo.git"
+        assert metadata["repository_language"] == "Python"
 
 def test_extract_git_metadata(metadata_extractor, mock_repo):
     """Test Git metadata extraction."""

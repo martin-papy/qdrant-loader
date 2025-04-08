@@ -10,6 +10,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
 concurrency:
   group: "test-and-coverage"
@@ -25,6 +26,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Create test repository
+        run: |
+          mkdir -p tests/fixtures/test-repo
+          cd tests/fixtures/test-repo
+          git init
+          echo "# Test Repository" > README.md
+          echo "Test content" > src/test.md
+          git add .
+          git config --global user.email "test@example.com"
+          git config --global user.name "Test User"
+          git commit -m "Initial commit"
 
       - name: Install dependencies
         run: |
@@ -42,12 +55,14 @@ jobs:
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_API_TOKEN=.*|CONFLUENCE_API_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
+          sed -i "s|GITHUB_TOKEN=.*|GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}|g" tests/.env.test
 
       - name: Create config.test.yaml file
         run: |
           cp tests/config.test.yaml.template tests/config.test.yaml
           sed -i "s|url: .*|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
           sed -i "s|space_key: .*|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
+          sed -i "s|url: https://github.com/test/authentication-test-repo.git|url: \"${{ secrets.AUTH_TEST_REPO_URL }}\"|g" tests/config.test.yaml
 
       - name: Run tests and generate coverage reports
         run: |

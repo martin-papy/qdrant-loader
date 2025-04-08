@@ -34,7 +34,8 @@ addopts = "--cov=src --cov-report=term-missing"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
-    "ignore::UserWarning:qdrant_loader.qdrant_manager"
+    "ignore::UserWarning:qdrant_loader.qdrant_manager",
+    "ignore:.*type_params.*:DeprecationWarning:pydantic.v1.typing"
 ]
 
 [tool.coverage.run]

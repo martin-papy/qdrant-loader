@@ -21,7 +21,7 @@ def test_settings():
 @pytest.fixture(scope="session")
 def test_config():
     """Load test configuration from config.test.yaml."""
-    config_path = Path(__file__).parent.parent / "config.test.yaml"
+    config_path = Path(__file__).parent / "config.test.yaml"
     with open(config_path) as f:
         return yaml.safe_load(f)
 
