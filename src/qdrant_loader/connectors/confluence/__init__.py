@@ -254,11 +254,11 @@ class ConfluenceConnector:
                                 f"(ID: {content['id']}): {str(e)}"
                             )
                 
-                # Check if there are more results
-                if "_links" in response and "next" in response["_links"]:
-                    start += limit
-                else:
+                # Check if there are more results using the size and start parameters
+                total_size = response.get("size", 0)
+                if start + limit >= total_size:
                     break
+                start += limit
                 
             except Exception as e:
                 logger.error(f"Failed to fetch content from space {self.config.space_key}: {str(e)}")
