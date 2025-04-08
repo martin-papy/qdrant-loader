@@ -54,6 +54,10 @@ class GitRepoConfig(BaseModel):
         None,
         description="Authentication configuration"
     )
+    temp_dir: Optional[str] = Field(
+        None,
+        description="Temporary directory where the repository is cloned"
+    )
 
     @field_validator('url')
     def validate_url(cls, v: str) -> str:
