@@ -116,6 +116,11 @@ def test_process_file(git_connector):
         with open(file_path, 'w') as f:
             f.write(content)
         
+        # Initialize git repo and commit the file
+        repo = Repo(git_connector.temp_dir)
+        repo.index.add([os.path.relpath(file_path, git_connector.temp_dir)])
+        repo.index.commit("Add test file")
+        
         # Process the file
         doc = git_connector._process_file(file_path)
         assert isinstance(doc, Document)

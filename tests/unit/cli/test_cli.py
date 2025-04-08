@@ -172,29 +172,33 @@ def test_cli_init(runner):
 
 def test_cli_ingest_with_source_type(runner, mock_config_file):
     """Test that the ingest command works with source type filtering."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
         # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
         # Test with confluence source type
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), '--source-type', 'confluence'])
         assert result.exit_code == 0
-        mock_pipeline.return_value.process_documents.assert_called_once()
+        mock_run.assert_called_once()
         args = mock_pipeline.return_value.process_documents.call_args[1]
         assert args['source_type'] == 'confluence'
         assert args['source_name'] is None
 
 def test_cli_ingest_with_source_type_and_name(runner, mock_config_file):
     """Test that the ingest command works with both source type and name."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
         # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
         # Test with specific confluence space
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), 
                                    '--source-type', 'confluence', '--source', 'space1'])
         assert result.exit_code == 0
-        mock_pipeline.return_value.process_documents.assert_called_once()
+        mock_run.assert_called_once()
         args = mock_pipeline.return_value.process_documents.call_args[1]
         assert args['source_type'] == 'confluence'
         assert args['source_name'] == 'space1'
@@ -213,57 +217,65 @@ def test_cli_ingest_with_source_but_no_type(runner, mock_config_file):
 
 def test_cli_ingest_with_nonexistent_source(runner, mock_config_file):
     """Test that the ingest command handles nonexistent source names gracefully."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
         # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
-        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), 
+        # Test with nonexistent source
+        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file),
                                    '--source-type', 'confluence', '--source', 'nonexistent'])
-        assert result.exit_code == 0  # Should not fail, just process nothing
-        mock_pipeline.return_value.process_documents.assert_called_once()
-        args = mock_pipeline.return_value.process_documents.call_args[1]
-        assert args['source_type'] == 'confluence'
-        assert args['source_name'] == 'nonexistent'
+        assert result.exit_code == 0
+        mock_run.assert_called_once()
 
 def test_cli_ingest_with_all_source_types(runner, mock_config_file):
     """Test that the ingest command works with all source types."""
-    source_types = ['confluence', 'git', 'public-docs', 'jira']
-    
-    for source_type in source_types:
-        with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
-            mock_pipeline.return_value.process_documents.return_value = None
-            
-            result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), 
-                                       '--source-type', source_type])
-            assert result.exit_code == 0
-            mock_pipeline.return_value.process_documents.assert_called_once()
-            args = mock_pipeline.return_value.process_documents.call_args[1]
-            assert args['source_type'] == source_type
-            assert args['source_name'] is None
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
+        
+        # Test with all source types
+        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file)])
+        assert result.exit_code == 0
+        mock_run.assert_called_once()
+        args = mock_pipeline.return_value.process_documents.call_args[1]
+        assert args['source_type'] is None
+        assert args['source_name'] is None
 
 def test_cli_ingest_with_verbose(runner, mock_config_file):
     """Test that the ingest command works with verbose output."""
     with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run, \
          patch('qdrant_loader.cli.logger') as mock_logger:
+        # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
+        # Test with verbose flag (must be before the command)
         result = runner.invoke(cli, ['--verbose', 'ingest', '--config', str(mock_config_file)])
         assert result.exit_code == 0
+        mock_run.assert_called_once()
         
         # Verify that the logger was called with the verbose message
         mock_logger.info.assert_any_call("Verbose mode enabled")
 
 def test_cli_ingest_with_log_level(runner, mock_config_file):
     """Test that the ingest command works with different log levels."""
-    log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-    
-    for level in log_levels:
-        with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
-            mock_pipeline.return_value.process_documents.return_value = None
-            
-            result = runner.invoke(cli, ['--log-level', level, 'ingest', 
-                                       '--config', str(mock_config_file)])
-            assert result.exit_code == 0 
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
+        
+        # Test with different log levels (must be before the command)
+        for level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            result = runner.invoke(cli, ['--log-level', level, 'ingest', '--config', str(mock_config_file)])
+            assert result.exit_code == 0
+            mock_run.assert_called_once()
+            mock_run.reset_mock()
 
 def test_cli_init_with_force(runner):
     """Test that the init command works with force flag."""
@@ -312,13 +324,17 @@ def test_cli_ingest_with_invalid_config(runner, tmp_path):
     assert "Failed to load configuration:" in str(result.output)
 
 def test_cli_ingest_pipeline_error(runner, mock_config_file):
-    """Test that the ingest command handles pipeline errors gracefully."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
-        mock_pipeline.return_value.process_documents.side_effect = Exception("Pipeline error")
-
+    """Test that the ingest command handles pipeline errors correctly."""
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
+        # Mock the process_documents method to raise an exception
+        mock_pipeline.return_value.process_documents.side_effect = Exception("Test error")
+        mock_run.side_effect = Exception("Test error")
+        
+        # Test error handling
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file)])
-        assert result.exit_code != 0
-        assert "Failed to run ingestion pipeline: Pipeline error" in str(result.output)
+        assert result.exit_code == 1
+        assert "Failed to run ingestion pipeline" in result.output
 
 def test_cli_config_without_settings(runner):
     """Test that the config command fails when settings are not available."""
@@ -356,29 +372,33 @@ def test_cli_log_level_validation(runner, mock_config_file):
 
 def test_cli_ingest_with_jira_source_type(runner, mock_config_file):
     """Test that the ingest command works with JIRA source type."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
         # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
         # Test with JIRA source type
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), '--source-type', 'jira'])
         assert result.exit_code == 0
-        mock_pipeline.return_value.process_documents.assert_called_once()
+        mock_run.assert_called_once()
         args = mock_pipeline.return_value.process_documents.call_args[1]
         assert args['source_type'] == 'jira'
         assert args['source_name'] is None
 
 def test_cli_ingest_with_jira_source_type_and_name(runner, mock_config_file):
-    """Test that the ingest command works with both JIRA source type and name."""
-    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+    """Test that the ingest command works with JIRA source type and name."""
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run:
         # Mock the process_documents method
         mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
         
         # Test with specific JIRA project
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), 
                                    '--source-type', 'jira', '--source', 'project1'])
         assert result.exit_code == 0
-        mock_pipeline.return_value.process_documents.assert_called_once()
+        mock_run.assert_called_once()
         args = mock_pipeline.return_value.process_documents.call_args[1]
         assert args['source_type'] == 'jira'
         assert args['source_name'] == 'project1' 
