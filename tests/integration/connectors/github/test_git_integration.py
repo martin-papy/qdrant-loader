@@ -11,6 +11,7 @@ from git import Repo
 from git.exc import GitCommandError
 from dotenv import load_dotenv
 import yaml
+from tests.utils import is_github_actions
 
 from qdrant_loader.config import GitRepoConfig, Settings, GitAuthConfig, SourcesConfig
 from qdrant_loader.connectors.git import GitConnector, GitOperations, GitPythonAdapter
@@ -18,6 +19,12 @@ from qdrant_loader.core.document import Document
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+
+# Skip all tests in this file if running in GitHub Actions
+pytestmark = pytest.mark.skipif(
+    is_github_actions(),
+    reason="Git repository tests are skipped in GitHub Actions"
+)
 
 @pytest.fixture(scope="session")
 def test_settings():

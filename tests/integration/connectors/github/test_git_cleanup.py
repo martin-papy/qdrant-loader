@@ -8,12 +8,19 @@ import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
 import time
+from tests.utils import is_github_actions
 
 from qdrant_loader.config import GitRepoConfig, GitAuthConfig
 from qdrant_loader.connectors.git import GitConnector
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+
+# Skip all tests in this file if running in GitHub Actions
+pytestmark = pytest.mark.skipif(
+    is_github_actions(),
+    reason="Git repository tests are skipped in GitHub Actions"
+)
 
 @pytest.fixture
 def test_repo_url():
@@ -115,4 +122,18 @@ def test_multiple_connector_cleanup(test_repo_config):
             
     # All directories should be cleaned up
     for temp_dir in temp_dirs:
-        assert not os.path.exists(temp_dir), f"Temporary directory {temp_dir} should be cleaned up" 
+        assert not os.path.exists(temp_dir), f"Temporary directory {temp_dir} should be cleaned up"
+
+@pytest.fixture(scope="function")
+def test_repo_config():
+    """Create a GitRepoConfig instance for testing."""
+    return GitRepoConfig(
+        url=str(Path("./tests/fixtures/test-repo").absolute()),
+        branch="main",
+        include_paths=["src"],
+        exclude_paths=["tests"],
+        file_types=["*.md"],
+        max_file_size=1048576,  # 1MB
+        depth=1,
+        auth=GitAuthConfig(type="none", token_env=None)
+    ) 
