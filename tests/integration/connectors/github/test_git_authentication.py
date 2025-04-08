@@ -22,6 +22,9 @@ def test_repo_url():
         config = yaml.safe_load(f)
     
     # Get the auth-test-repo URL
+    if "sources" in config:
+        config = config["sources"]
+    
     auth_test_repo_url = config['git_repos']['auth-test-repo']['url']
     
     # Verify the URL is valid
