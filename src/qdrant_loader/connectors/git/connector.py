@@ -94,10 +94,34 @@ class GitOperations:
 
         Returns:
             str: File content
+
+        Raises:
+            ValueError: If repository is not initialized
+            FileNotFoundError: If file does not exist in the repository
+            Exception: For other errors
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+            if not self.repo:
+                raise ValueError("Repository not initialized")
+            
+            # Get the relative path from the repository root
+            rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            
+            # Check if file exists in the repository
+            try:
+                # First try to get the file content using git show
+                content = self.repo.git.show(f"HEAD:{rel_path}")
+                return content
+            except git.exc.GitCommandError as e:
+                if "exists on disk, but not in" in str(e):
+                    # File exists on disk but not in the repository
+                    raise FileNotFoundError(f"File {rel_path} exists on disk but not in the repository")
+                elif "does not exist" in str(e):
+                    # File does not exist in the repository
+                    raise FileNotFoundError(f"File {rel_path} does not exist in the repository")
+                else:
+                    # Other git command errors
+                    raise
         except Exception as e:
             self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
@@ -112,8 +136,14 @@ class GitOperations:
             Optional[datetime]: Last commit date or None if not found
         """
         try:
-            repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
-            commits = list(repo.iter_commits(paths=file_path, max_count=1))
+            if not self.repo:
+                raise ValueError("Repository not initialized")
+            
+            # Get the relative path from the repository root
+            rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            
+            # Get the last commit for the file
+            commits = list(self.repo.iter_commits(paths=rel_path, max_count=1))
             if commits:
                 last_commit = commits[0]
                 return last_commit.committed_datetime
@@ -130,15 +160,14 @@ class GitOperations:
         """
         try:
             if not self.repo:
-                raise RuntimeError("Repository not initialized")
+                raise ValueError("Repository not initialized")
             
-            files = []
-            for root, _, filenames in os.walk(self.repo.working_dir):
-                for filename in filenames:
-                    file_path = os.path.join(root, filename)
-                    files.append(file_path)
+            # Use git ls-tree to list all files
+            output = self.repo.git.ls_tree("-r", "--name-only", "HEAD")
+            files = output.splitlines() if output else []
             
-            return files
+            # Convert relative paths to absolute paths
+            return [os.path.join(self.repo.working_dir, f) for f in files]
         except Exception as e:
             self.logger.error(f"Failed to list files: {e}")
             raise
@@ -254,18 +283,17 @@ class GitPythonAdapter:
 class GitConnector:
     """Git repository connector."""
 
-    def __init__(self, config: GitRepoConfig, git_ops: Optional[GitOperations] = None):
-        """Initialize the connector.
-
+    def __init__(self, config: GitRepoConfig):
+        """Initialize the Git connector.
+        
         Args:
-            config (GitRepoConfig): Git repository configuration
-            git_ops (Optional[GitOperations], optional): Git operations instance. Defaults to None.
+            config: Configuration for the Git repository
         """
         self.config = config
-        self.git_ops = git_ops or GitOperations()
-        self.temp_dir = None
-        self.logger = get_logger(__name__)
+        self.temp_dir = None  # Will be set in __enter__
         self.metadata_extractor = GitMetadataExtractor(config=self.config)
+        self.git_ops = GitOperations()
+        self.logger = get_logger(__name__)
 
     def __enter__(self):
         """Set up the Git repository.
@@ -276,6 +304,7 @@ class GitConnector:
         try:
             # Create temporary directory
             self.temp_dir = tempfile.mkdtemp()
+            self.config.temp_dir = self.temp_dir  # Update config with the actual temp dir
             self.logger.info(f"Created temporary directory: {self.temp_dir}")
 
             # Clone repository

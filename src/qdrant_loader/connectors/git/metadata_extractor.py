@@ -103,21 +103,28 @@ class GitMetadataExtractor:
                 repo_owner = ''
                 repo_name = normalized_url
 
-            # Get repository description and language from Git config if available
+            # Initialize default values
             repo_description = ''
             repo_language = ''
-            try:
-                repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
-                config = repo.config_reader()
-                # Try to get description from github section first, then fall back to core
-                if config.has_section('github'):
-                    repo_description = config.get_value('github', "description", default="")
-                    repo_language = config.get_value('github', "language", default="")
-                elif config.has_section('core'):
-                    repo_description = config.get_value('core', "description", default="")
-                    repo_language = config.get_value('core', "language", default="")
-            except Exception as e:
-                self.logger.debug(f"Failed to read Git config: {e}")
+
+            # Only try to read Git config if we have a valid temp directory
+            if self.config.temp_dir and os.path.exists(self.config.temp_dir):
+                try:
+                    repo = git.Repo(self.config.temp_dir)
+                    if repo and not repo.bare:
+                        try:
+                            config = repo.config_reader()
+                            # Try to get description from github section first, then fall back to core
+                            if config.has_section('github'):
+                                repo_description = config.get_value('github', "description", default="")
+                                repo_language = config.get_value('github', "language", default="")
+                            elif config.has_section('core'):
+                                repo_description = config.get_value('core', "description", default="")
+                                repo_language = config.get_value('core', "language", default="")
+                        except Exception as e:
+                            self.logger.debug(f"Failed to read Git config: {e}")
+                except Exception as e:
+                    self.logger.debug(f"Failed to initialize Git repository: {e}")
 
             return {
                 'repository_name': repo_name,
@@ -132,23 +139,31 @@ class GitMetadataExtractor:
 
     def _extract_git_metadata(self, file_path: str) -> Dict[str, Any]:
         """Extract Git-specific metadata."""
-        repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
-        commits = list(repo.iter_commits(paths=file_path, max_count=1))
-        if commits:
-            last_commit = commits[0]
-            last_commit_date = last_commit.committed_datetime.isoformat()
-            last_commit_author = last_commit.author.name
-            last_commit_message = last_commit.message.strip()
-        else:
-            last_commit_date = None
-            last_commit_author = None
-            last_commit_message = None
+        try:
+            if not self.config.temp_dir or not os.path.exists(self.config.temp_dir):
+                return {}
 
-        return {
-            "last_commit_date": last_commit_date,
-            "last_commit_author": last_commit_author,
-            "last_commit_message": last_commit_message
-        }
+            repo = git.Repo(self.config.temp_dir)
+            rel_path = os.path.relpath(file_path, self.config.temp_dir)
+            commits = list(repo.iter_commits(paths=rel_path, max_count=1))
+            if commits:
+                last_commit = commits[0]
+                last_commit_date = last_commit.committed_datetime.isoformat()
+                last_commit_author = last_commit.author.name
+                last_commit_message = last_commit.message.strip()
+            else:
+                last_commit_date = None
+                last_commit_author = None
+                last_commit_message = None
+
+            return {
+                "last_commit_date": last_commit_date,
+                "last_commit_author": last_commit_author,
+                "last_commit_message": last_commit_message
+            }
+        except Exception as e:
+            self.logger.warning(f"Failed to extract Git metadata: {str(e)}")
+            return {}
 
     def _extract_structure_metadata(self, content: str) -> Dict[str, Any]:
         """Extract metadata about the document structure."""
