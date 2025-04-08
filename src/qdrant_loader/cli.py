@@ -5,6 +5,7 @@ import click
 import structlog
 from pathlib import Path
 from typing import Optional
+import asyncio
 
 from .config import get_settings, get_global_config, Settings, SourcesConfig
 from .ingestion_pipeline import IngestionPipeline
@@ -105,7 +106,7 @@ def ingest(config: Optional[str], source_type: Optional[str], source: Optional[s
                    source=source)
         
         # Process documents with the initialized configuration
-        pipeline.process_documents(settings.sources_config, source_type=source_type, source_name=source)
+        asyncio.run(pipeline.process_documents(settings.sources_config, source_type=source_type, source_name=source))
         
         logger.info("Ingestion completed successfully")
     except Exception as e:
