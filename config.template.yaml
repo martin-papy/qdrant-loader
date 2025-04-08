@@ -19,149 +19,149 @@ global:
     format: "json"  # Options: json, plain
     file: "qdrant-loader.log"  # Optional: Path to log file
 
-# Public documentation sources
-public_docs:
-  # Example configuration for a documentation source
-  my_docs:
-    # Base URL of the documentation website
-    base_url: "https://docs.example.com"
-    
-    # Specific version of the documentation to fetch
-    version: "1.0"
-    
-    # Enable automatic version detection
-    auto_detect_version: false
-    
-    # Optional: Regex pattern to extract version from URLs or content
-    # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
-    version_pattern: null
-    
-    # Content type of the documentation (html, markdown, etc.)
-    content_type: "html"
-    
-    # Optional: Specific path pattern to match documentation pages
-    # If not specified, will try to find all documentation pages
-    path_pattern: "/docs/{version}/**"
-    
-    # Optional: List of paths to exclude from processing
-    exclude_paths:
-      - "/docs/{version}/api-reference"
-      - "/docs/{version}/changelog"
-    
-    # Optional: CSS selectors for content extraction
-    # If not specified, will use default selectors
-    selectors:
-      # Main content container
-      content: "article.main-content"
-      # Elements to remove (navigation, headers, footers)
-      remove: 
-        - "nav"
-        - "header"
-        - "footer"
-        - ".sidebar"
-      # Code blocks to preserve
-      code_blocks: "pre code"
+sources:
+  public_docs:
+    # Example configuration for a documentation source
+    my_docs:
+      # Base URL of the documentation website
+      base_url: "https://docs.example.com"
+      
+      # Specific version of the documentation to fetch
+      version: "1.0"
+      
+      # Enable automatic version detection
+      auto_detect_version: false
+      
+      # Optional: Regex pattern to extract version from URLs or content
+      # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
+      version_pattern: null
+      
+      # Content type of the documentation (html, markdown, etc.)
+      content_type: "html"
+      
+      # Optional: Specific path pattern to match documentation pages
+      # If not specified, will try to find all documentation pages
+      path_pattern: "/docs/{version}/**"
+      
+      # Optional: List of paths to exclude from processing
+      exclude_paths:
+        - "/docs/{version}/api-reference"
+        - "/docs/{version}/changelog"
+      
+      # Optional: CSS selectors for content extraction
+      # If not specified, will use default selectors
+      selectors:
+        # Main content container
+        content: "article.main-content"
+        # Elements to remove (navigation, headers, footers)
+        remove: 
+          - "nav"
+          - "header"
+          - "footer"
+          - ".sidebar"
+        # Code blocks to preserve
+        code_blocks: "pre code"
 
-# Git repository sources
-git_repos:
-  # Example configuration for a public repository
-  public_repo:
-    url: "https://github.com/example/repo.git"
-    branch: "main"
-    include_paths:
-      - "docs/**"
-      - "src/**"
-      - "README.md"
-    exclude_paths:
-      - "docs/archive/**"
-      - "node_modules/**"
-      - "venv/**"
-    file_types:
-      - "*.md"
-      - "*.rst"
-      - "*.txt"
-      - "*.py"
-      - "*.js"
-      - "*.ts"
-      - "*.java"
-      - "*.go"
-      - "*.rb"
-    max_file_size: 1048576
-    depth: 1
-    auth:
-      type: "none"  # No authentication needed for public repos
+  # Git repository sources
+  git_repos:
+    # Example configuration for a public repository
+    public_repo:
+      url: "https://github.com/example/repo.git"
+      branch: "main"
+      include_paths:
+        - "docs/**"
+        - "src/**"
+        - "README.md"
+      exclude_paths:
+        - "docs/archive/**"
+        - "node_modules/**"
+        - "venv/**"
+      file_types:
+        - "*.md"
+        - "*.rst"
+        - "*.txt"
+        - "*.py"
+        - "*.js"
+        - "*.ts"
+        - "*.java"
+        - "*.go"
+        - "*.rb"
+      max_file_size: 1048576
+      depth: 1
+      auth:
+        type: "none"  # No authentication needed for public repos
 
-  # Example configuration for a private GitHub repository
-  private_github_repo:
-    url: "https://github.com/example/private-repo.git"
-    branch: "main"
-    include_paths:
-      - "docs/**"
-    file_types:
-      - "*.md"
-    auth:
-      type: "github"
-      token_env: "GITHUB_TOKEN"  # Environment variable containing the GitHub token
+    # Example configuration for a private GitHub repository
+    private_github_repo:
+      url: "https://github.com/example/private-repo.git"
+      branch: "main"
+      include_paths:
+        - "docs/**"
+      file_types:
+        - "*.md"
+      auth:
+        type: "github"
+        token_env: "GITHUB_TOKEN"  # Environment variable containing the GitHub token
 
-  # Example configuration for a private GitLab repository
-  private_gitlab_repo:
-    url: "https://gitlab.com/example/private-repo.git"
-    branch: "main"
-    include_paths:
-      - "docs/**"
-    file_types:
-      - "*.md"
-    auth:
-      type: "gitlab"
-      token_env: "GITLAB_TOKEN"  # Environment variable containing the GitLab token
+    # Example configuration for a private GitLab repository
+    private_gitlab_repo:
+      url: "https://gitlab.com/example/private-repo.git"
+      branch: "main"
+      include_paths:
+        - "docs/**"
+      file_types:
+        - "*.md"
+      auth:
+        type: "gitlab"
+        token_env: "GITLAB_TOKEN"  # Environment variable containing the GitLab token
 
-  # Example configuration for a private Bitbucket repository
-  private_bitbucket_repo:
-    url: "https://bitbucket.org/example/private-repo.git"
-    branch: "main"
-    include_paths:
-      - "docs/**"
-    file_types:
-      - "*.md"
-    auth:
-      type: "bitbucket"
-      token_env: "BITBUCKET_TOKEN"  # Environment variable containing the Bitbucket token
+    # Example configuration for a private Bitbucket repository
+    private_bitbucket_repo:
+      url: "https://bitbucket.org/example/private-repo.git"
+      branch: "main"
+      include_paths:
+        - "docs/**"
+      file_types:
+        - "*.md"
+      auth:
+        type: "bitbucket"
+        token_env: "BITBUCKET_TOKEN"  # Environment variable containing the Bitbucket token
 
-# Confluence spaces
-confluence:
-  # Example configuration for a Confluence space
-  my_space:
-  
-    # Replace with your actual Confluence URL
-    url: "https://your-domain.atlassian.net/wiki"  
-
-    # Space key
-    space_key: "SPACE"
+  # Confluence spaces
+  confluence:
+    # Example configuration for a Confluence space
+    my_space:
     
-    # Content types to process
-    content_types:
-      - "page"
-      - "blogpost"
-    
-    # Labels to include/exclude
-    include_labels:
-      - "documentation"
-    exclude_labels:
-      - "draft"
+      # Replace with your actual Confluence URL
+      url: "https://your-domain.atlassian.net/wiki"  
 
-# Jira projects (future)
-jira:
-  # Example configuration for a Jira project
-  my_project:
-    # Project key
-    project_key: "PROJ"
-    
-    # Issue types to process
-    issue_types:
-      - "Documentation"
-      - "Technical Spec"
-    
-    # Statuses to include
-    include_statuses:
-      - "Done"
-      - "Approved" 
+      # Space key
+      space_key: "SPACE"
+      
+      # Content types to process
+      content_types:
+        - "page"
+        - "blogpost"
+      
+      # Labels to include/exclude
+      include_labels:
+        - "documentation"
+      exclude_labels:
+        - "draft"
+
+  # Jira projects (future)
+  jira:
+    # Example configuration for a Jira project
+    my_project:
+      # Project key
+      project_key: "PROJ"
+      
+      # Issue types to process
+      issue_types:
+        - "Documentation"
+        - "Technical Spec"
+      
+      # Statuses to include
+      include_statuses:
+        - "Done"
+        - "Approved" 
