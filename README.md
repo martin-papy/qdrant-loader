@@ -55,6 +55,10 @@ QDRANT_COLLECTION_NAME=your-collection-name
 # OpenAI Configuration
 OPENAI_API_KEY=your-openai-api-key
 
+# JIRA Configuration
+JIRA_TOKEN=your-jira-api-token
+JIRA_EMAIL=your-jira-email
+
 ```
 
 ### Configuration File
@@ -73,6 +77,18 @@ global:
     level: INFO
     format: json
     file: qdrant-loader.log
+
+sources:
+  jira:
+    my_project:
+      base_url: "https://your-domain.atlassian.net"
+      project_key: "PROJ"
+      issue_types:
+        - "Documentation"
+        - "Technical Spec"
+      include_statuses:
+        - "Done"
+        - "Approved"
 ```
 
 ## Usage
@@ -128,11 +144,13 @@ qdrant-loader ingest --config custom-config.yaml
 qdrant-loader ingest --source-type confluence  # Ingest only Confluence sources
 qdrant-loader ingest --source-type git        # Ingest only Git repositories
 qdrant-loader ingest --source-type public-docs # Ingest only public documentation
+qdrant-loader ingest --source-type jira       # Ingest only JIRA sources
 
 # Run ingestion for a specific source
 qdrant-loader ingest --source-type confluence --source my-space  # Specific Confluence space
 qdrant-loader ingest --source-type git --source my-repo         # Specific Git repository
 qdrant-loader ingest --source-type public-docs --source my-docs # Specific public docs
+qdrant-loader ingest --source-type jira --source my-project     # Specific JIRA project
 
 # Show current configuration
 qdrant-loader config

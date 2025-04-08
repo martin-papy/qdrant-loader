@@ -47,8 +47,8 @@ def init(force: bool):
 @cli.command()
 @click.option('--config', '-c', type=click.Path(exists=True), 
               help='Path to configuration file')
-@click.option('--source-type', type=click.Choice(['confluence', 'git', 'public-docs']),
-              help='Type of source to ingest (confluence, git, or public-docs)')
+@click.option('--source-type', type=click.Choice(['confluence', 'git', 'public-docs', 'jira']),
+              help='Type of source to ingest (confluence, git, public-docs, or jira)')
 @click.option('--source', '-s', help='Specific source name to ingest')
 def ingest(config: Optional[str], source_type: Optional[str], source: Optional[str]):
     """Run the ingestion pipeline.
@@ -69,6 +69,12 @@ def ingest(config: Optional[str], source_type: Optional[str], source: Optional[s
         
         # Ingest a specific Git repository
         qdrant-loader ingest --source-type git --source my-repo
+        
+        # Ingest only JIRA sources
+        qdrant-loader ingest --source-type jira
+        
+        # Ingest a specific JIRA project
+        qdrant-loader ingest --source-type jira --source my-project
     """
     try:
         # Load configuration
