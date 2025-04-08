@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 from qdrant_loader.connectors.confluence import ConfluenceConnector
-from qdrant_loader.config import ConfluenceConfig, Settings, SourcesConfig
+from qdrant_loader.config import ConfluenceConfig, Settings, initialize_config
 from qdrant_loader.core.document import Document
 from dotenv import load_dotenv
 import yaml
@@ -17,25 +17,17 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
 @pytest.fixture(scope="session")
 def test_settings():
     """Load test settings from environment variables and config file."""
-    # Create settings from environment variables
-    settings = Settings()
-    
-    # Load sources config from YAML
+    # Load settings from YAML
     config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    sources_config = SourcesConfig.from_yaml(str(config_path))
-    
-    # Add confluence configurations to settings
-    if sources_config.confluence:
-        settings.confluence = sources_config.confluence
-    
-    return settings
+    initialize_config(config_path)
+    return Settings.from_yaml(config_path)
 
 @pytest.fixture(scope="function")
 def confluence_config(test_settings):
     """Create a ConfluenceConfig instance with test settings."""
     # Get the first Confluence space config from the test settings
-    space_key = next(iter(test_settings.confluence.keys()))
-    return test_settings.confluence[space_key]
+    space_key = next(iter(test_settings.sources_config.confluence.keys()))
+    return test_settings.sources_config.confluence[space_key]
 
 @pytest.fixture(scope="function")
 def confluence_connector(confluence_config):
