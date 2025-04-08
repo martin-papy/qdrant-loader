@@ -8,9 +8,16 @@ import time
 from pathlib import Path
 import pytest
 from git import Repo, GitCommandError
+from tests.utils import is_github_actions
 
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
+
+# Skip all tests in this file if running in GitHub Actions
+pytestmark = pytest.mark.skipif(
+    is_github_actions(),
+    reason="Git repository tests are skipped in GitHub Actions"
+)
 
 # Path to the test repository
 TEST_REPO_PATH = Path(__file__).parent.parent.parent.parent / "fixtures" / "test-repo"

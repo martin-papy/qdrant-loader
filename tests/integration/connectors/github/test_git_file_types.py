@@ -4,8 +4,15 @@ Tests for Git connector file type filtering.
 import os
 import pytest
 from pathlib import Path
+from tests.utils import is_github_actions
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
+
+# Skip all tests in this file if running in GitHub Actions
+pytestmark = pytest.mark.skipif(
+    is_github_actions(),
+    reason="Git repository tests are skipped in GitHub Actions"
+)
 
 @pytest.fixture(scope="function")
 def git_config_with_file_types():

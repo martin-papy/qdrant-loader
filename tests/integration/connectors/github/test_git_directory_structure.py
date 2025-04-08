@@ -6,6 +6,13 @@ import pytest
 from pathlib import Path
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
+from tests.utils import is_github_actions
+
+# Skip all tests in this file if running in GitHub Actions
+pytestmark = pytest.mark.skipif(
+    is_github_actions(),
+    reason="Git repository tests are skipped in GitHub Actions"
+)
 
 @pytest.fixture(scope="function")
 def git_config_with_directories():
