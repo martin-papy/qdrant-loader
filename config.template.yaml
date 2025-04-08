@@ -103,30 +103,6 @@ sources:
         type: "github"
         token_env: "GITHUB_TOKEN"  # Environment variable containing the GitHub token
 
-    # Example configuration for a private GitLab repository
-    private_gitlab_repo:
-      url: "https://gitlab.com/example/private-repo.git"
-      branch: "main"
-      include_paths:
-        - "docs/**"
-      file_types:
-        - "*.md"
-      auth:
-        type: "gitlab"
-        token_env: "GITLAB_TOKEN"  # Environment variable containing the GitLab token
-
-    # Example configuration for a private Bitbucket repository
-    private_bitbucket_repo:
-      url: "https://bitbucket.org/example/private-repo.git"
-      branch: "main"
-      include_paths:
-        - "docs/**"
-      file_types:
-        - "*.md"
-      auth:
-        type: "bitbucket"
-        token_env: "BITBUCKET_TOKEN"  # Environment variable containing the Bitbucket token
-
   # Confluence spaces
   confluence:
     # Example configuration for a Confluence space
