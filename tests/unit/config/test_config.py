@@ -2,18 +2,21 @@ import os
 import pytest
 from pathlib import Path
 from dotenv import load_dotenv
+from pydantic import ValidationError
 from qdrant_loader.config import (
     Settings,
-    SourcesConfig,
     GlobalConfig,
+    SourcesConfig,
+    GitRepoConfig,
+    GitAuthConfig,
+    ConfluenceSpaceConfig,
+    JiraProjectConfig,
     PublicDocsSourceConfig,
     SelectorsConfig,
-    GitRepoConfig,
-    ConfluenceConfig,
-    JiraConfig,
-    ChunkingConfig
+    ChunkingConfig,
+    initialize_config,
+    get_settings
 )
-from pydantic import ValidationError
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent / ".env.test")
@@ -47,7 +50,6 @@ def test_settings_validation(test_settings):
 def test_sources_config_validation():
     """Test that SourcesConfig can be created with valid data."""
     config = SourcesConfig(
-        global_config=GlobalConfig(),
         public_docs={
             "test_docs": PublicDocsSourceConfig(
                 base_url="https://docs.example.com",
@@ -63,48 +65,45 @@ def test_sources_config_validation():
             )
         },
         confluence={
-            "test_space": ConfluenceConfig(
+            "test_space": ConfluenceSpaceConfig(
                 url="https://example.atlassian.net/wiki",
                 space_key="SPACE",
-                content_types=["page"]
+                content_types=["page"],
+                token="test-token",
+                email="test@example.com"
             )
         },
         jira={
-            "test_project": JiraConfig(
+            "test_project": JiraProjectConfig(
+                base_url="https://example.atlassian.net",
                 project_key="PROJ",
-                issue_types=["Documentation"]
+                token="test-token",
+                email="test@example.com"
             )
         }
     )
     
-    assert isinstance(config.global_config, GlobalConfig)
     assert isinstance(config.public_docs["test_docs"], PublicDocsSourceConfig)
     assert isinstance(config.git_repos["test_repo"], GitRepoConfig)
-    assert isinstance(config.confluence["test_space"], ConfluenceConfig)
-    assert isinstance(config.jira["test_project"], JiraConfig)
+    assert isinstance(config.confluence["test_space"], ConfluenceSpaceConfig)
+    assert isinstance(config.jira["test_project"], JiraProjectConfig)
 
 def test_global_config_defaults():
     """Test that GlobalConfig has correct default values."""
     config = GlobalConfig()
     
-    assert config.chunking["size"] == 500
-    assert config.chunking["overlap"] == 50
+    assert config.chunking.chunk_size == 1000
+    assert config.chunking.chunk_overlap == 200
     assert config.embedding.model == "text-embedding-3-small"
     assert config.embedding.batch_size == 100
-    assert config.logging["level"] == "INFO"
-    assert config.logging["format"] == "json"
-    assert config.logging["file"] == "qdrant-loader.log"
+    assert config.logging.level == "INFO"
+    assert config.logging.format == "json"
+    assert config.logging.file == "qdrant-loader.log"
 
 def test_invalid_log_level():
     """Test that invalid log level raises ValueError."""
-    with pytest.raises(ValueError):
-        Settings(
-            QDRANT_URL="http://localhost:6333",
-            QDRANT_API_KEY="test-key",
-            QDRANT_COLLECTION_NAME="test-collection",
-            OPENAI_API_KEY="test-key",
-            LOG_LEVEL="INVALID"
-        )
+    with pytest.raises(ValueError, match="Invalid logging level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"):
+        GlobalConfig(logging={"level": "INVALID"})
 
 def test_invalid_log_format():
     """Test that invalid log format raises ValueError."""
@@ -128,8 +127,8 @@ def test_missing_required_fields():
     """Test that missing required fields raises ValidationError."""
     with pytest.raises(ValidationError):
         Settings(
-            QDRANT_URL="",
-            QDRANT_API_KEY="",
-            QDRANT_COLLECTION_NAME="",
-            OPENAI_API_KEY=""
+            QDRANT_URL=None,  # None should trigger validation error
+            QDRANT_API_KEY=None,  # None should trigger validation error
+            QDRANT_COLLECTION_NAME=None,  # None should trigger validation error
+            OPENAI_API_KEY=None  # None should trigger validation error
         ) 

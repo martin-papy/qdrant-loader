@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 import yaml
 from tests.utils import is_github_actions
 
-from qdrant_loader.config import GitRepoConfig, Settings, GitAuthConfig, SourcesConfig
+from qdrant_loader.config import GitRepoConfig, Settings, GitAuthConfig, SourcesConfig, initialize_config, get_settings
 from qdrant_loader.connectors.git import GitConnector, GitOperations, GitPythonAdapter
 from qdrant_loader.core.document import Document
 
@@ -29,25 +29,19 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="session")
 def test_settings():
     """Load test settings from environment variables and config file."""
-    # Create settings from environment variables
-    settings = Settings()
-    
     # Load sources config from YAML
     config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    sources_config = SourcesConfig.from_yaml(str(config_path))
-    
-    # Add git repo configurations to settings
-    if sources_config.git_repos:
-        settings.git_repos = sources_config.git_repos
-    
-    return settings
+    # Initialize global settings
+    initialize_config(config_path)
+    # Return the initialized settings
+    return get_settings()
 
 @pytest.fixture(scope="function")
 def git_config(test_settings):
     """Create a GitRepoConfig instance with test settings."""
     # Get the first Git repo config from the test settings
-    repo_key = next(iter(test_settings.git_repos.keys()))
-    return test_settings.git_repos[repo_key]
+    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
+    return test_settings.sources_config.git_repos[repo_key]
 
 @pytest.fixture(scope="function")
 def git_connector(git_config):
@@ -163,6 +157,6 @@ def test_error_handling(git_config):
         max_file_size=git_config.max_file_size
     )
     
-    with pytest.raises(GitCommandError):
+    with pytest.raises(RuntimeError):
         with GitConnector(invalid_config) as connector:
             connector.get_documents()

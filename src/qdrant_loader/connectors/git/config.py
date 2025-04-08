@@ -1,66 +1,57 @@
 """Configuration for Git connector."""
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 import os
 
 
 class GitAuthConfig(BaseModel):
     """Configuration for Git authentication."""
-    token: Optional[str] = Field(
-        default=None,
-        description="Git access token (loaded from GITHUB_TOKEN env var)"
+    
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid"
     )
-    username: Optional[str] = Field(
-        default=None,
-        description="Git username (loaded from GITHUB_USERNAME env var)"
-    )
-
-    @field_validator('token', mode='after')
-    def load_token_from_env(cls, v: Optional[str]) -> Optional[str]:
-        """Load token from environment variable if not provided."""
-        return v or os.getenv('GITHUB_TOKEN')
-
-    @field_validator('username', mode='after')
-    def load_username_from_env(cls, v: Optional[str]) -> Optional[str]:
-        """Load username from environment variable if not provided."""
-        return v or os.getenv('GITHUB_USERNAME')
+    
+    token: str = Field(..., description="Authentication token")
 
 
 class GitRepoConfig(BaseModel):
-    """Configuration for a Git repository source."""
-    url: str = Field(
-        ...,
-        description="URL of the Git repository"
+    """Configuration for a Git repository."""
+    
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid"
     )
-    branch: str = Field(
-        default="main",
-        description="Branch to clone"
-    )
+    
+    url: str = Field(..., description="URL of the Git repository")
+    branch: str = Field(default="main", description="Branch to clone")
     include_paths: List[str] = Field(
-        default=["/"],
-        description="Paths to include in processing"
+        default_factory=list,
+        description="Paths to include in the repository"
     )
     exclude_paths: List[str] = Field(
-        default=[],
-        description="Paths to exclude from processing"
+        default_factory=list,
+        description="Paths to exclude from the repository"
     )
     file_types: List[str] = Field(
-        default=["*.md", "*.rst", "*.txt"],
+        default_factory=list,
         description="File types to process"
     )
     max_file_size: int = Field(
         default=1048576,  # 1MB
-        description="Maximum file size to process in bytes",
-        ge=0
+        description="Maximum file size in bytes"
     )
     depth: int = Field(
         default=1,
-        description="Clone depth (0 for full clone)",
-        ge=0
+        description="Depth of the repository to clone"
+    )
+    token: Optional[str] = Field(
+        None,
+        description="Authentication token for the repository"
     )
     auth: Optional[GitAuthConfig] = Field(
-        default=None,
+        None,
         description="Authentication configuration"
     )
 

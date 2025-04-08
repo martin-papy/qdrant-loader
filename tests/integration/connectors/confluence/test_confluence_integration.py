@@ -6,10 +6,13 @@ from datetime import datetime
 from pathlib import Path
 import pytest
 from qdrant_loader.connectors.confluence import ConfluenceConnector
-from qdrant_loader.config import ConfluenceConfig, Settings, initialize_config
+from qdrant_loader.config import ConfluenceSpaceConfig, Settings, initialize_config
 from qdrant_loader.core.document import Document
 from dotenv import load_dotenv
 import yaml
+from unittest.mock import patch, MagicMock
+import requests
+from requests.auth import HTTPBasicAuth
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
@@ -133,12 +136,14 @@ def test_get_documents(confluence_connector):
 @pytest.mark.integration
 def test_error_handling(confluence_config):
     """Test error handling with invalid Confluence configuration."""
-    invalid_config = ConfluenceConfig(
+    invalid_config = ConfluenceSpaceConfig(
         url="https://invalid.atlassian.net/wiki",
         space_key="INVALID",
         content_types=confluence_config.content_types,
         include_labels=confluence_config.include_labels,
-        exclude_labels=confluence_config.exclude_labels
+        exclude_labels=confluence_config.exclude_labels,
+        token=confluence_config.token,
+        email=confluence_config.email
     )
     
     with pytest.raises(Exception):

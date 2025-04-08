@@ -1,6 +1,6 @@
 from typing import List, Optional
 import structlog
-from .config import SourcesConfig, get_settings, get_global_config
+from .config import SourcesConfig, get_settings
 from .connectors.public_docs import PublicDocsConnector
 from .connectors.git import GitConnector
 from .connectors.confluence import ConfluenceConnector
@@ -26,10 +26,10 @@ class IngestionPipeline:
         self.qdrant_manager = QdrantManager(self.settings)
         
         # Initialize chunking strategy with global config
-        global_config = get_global_config()
+        global_config = self.settings.global_config
         self.chunking_strategy = ChunkingStrategy(
-            chunk_size=global_config.chunking["size"],
-            chunk_overlap=global_config.chunking["overlap"],
+            chunk_size=global_config.chunking.chunk_size,
+            chunk_overlap=global_config.chunking.chunk_overlap,
             model_name=global_config.embedding.model
         )
         
@@ -48,7 +48,7 @@ class IngestionPipeline:
                         content=content,
                         source=source_name,
                         source_type="public_docs",
-                        url=source_config.base_url,
+                        url=str(source_config.base_url),  # Convert HttpUrl to string
                         last_updated=datetime.now(),
                         metadata={
                             "version": source_config.version,
@@ -61,7 +61,7 @@ class IngestionPipeline:
                 logger.error("Failed to process public docs source", 
                            source=source_name, 
                            error=str(e))
-                continue
+                raise  # Re-raise the exception to trigger error handling
                 
         return documents
         

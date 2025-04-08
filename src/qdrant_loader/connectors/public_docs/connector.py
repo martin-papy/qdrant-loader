@@ -14,11 +14,12 @@ logger = logging.getLogger(__name__)
 class PublicDocsConnector:
     """Generic connector for public documentation websites."""
     
-    def __init__(self, config: PublicDocsSourceConfig):
-        """Initialize the connector with configuration."""
-        self.config = config
-        self.base_url = config.base_url.rstrip("/")
-        self.version = config.version
+    def __init__(self, source_config: PublicDocsSourceConfig):
+        """Initialize the connector with source configuration."""
+        self.source_config = source_config
+        # Convert HttpUrl to string before applying string operations
+        self.base_url = str(source_config.base_url).rstrip("/")
+        self.version = source_config.version
         self.session = requests.Session()
         self.visited_urls: Set[str] = set()
         self.url_queue: deque = deque()
@@ -37,13 +38,13 @@ class PublicDocsConnector:
         path = urlparse(url).path
         
         # Check if URL is in exclude paths
-        for exclude_path in self.config.exclude_paths:
+        for exclude_path in self.source_config.exclude_paths:
             if exclude_path.format(version=self.version) in path:
                 return False
                 
         # Check if URL matches the path pattern if specified
-        if self.config.path_pattern:
-            pattern = self.config.path_pattern.format(version=self.version)
+        if self.source_config.path_pattern:
+            pattern = self.source_config.path_pattern.format(version=self.version)
             if not re.match(pattern, path):
                 return False
                 
@@ -72,19 +73,19 @@ class PublicDocsConnector:
         soup = BeautifulSoup(html, "html.parser")
         
         # Remove unwanted elements
-        for selector in self.config.selectors.remove:
+        for selector in self.source_config.selectors.remove:
             for element in soup.select(selector):
                 element.decompose()
         
         # Find main content
-        content = soup.select_one(self.config.selectors.content)
+        content = soup.select_one(self.source_config.selectors.content)
         if not content:
             logger.warning("Could not find main content using selector: %s", 
-                         self.config.selectors.content)
+                         self.source_config.selectors.content)
             return ""
             
         # Preserve code blocks
-        for code_block in content.select(self.config.selectors.code_blocks):
+        for code_block in content.select(self.source_config.selectors.code_blocks):
             code_block.replace_with(f"\n```\n{code_block.text}\n```\n")
             
         return content.get_text(separator="\n", strip=True)
@@ -101,7 +102,7 @@ class PublicDocsConnector:
                 if link not in self.visited_urls:
                     self.url_queue.append(link)
             
-            if self.config.content_type == "html":
+            if self.source_config.content_type == "html":
                 return self._extract_content(response.text)
             else:
                 return response.text

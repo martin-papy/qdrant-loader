@@ -102,31 +102,25 @@ class GitOperations:
             self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
 
-    def get_last_commit_date(self, file_path: str) -> datetime:
-        """Get last commit date for a file.
+    def get_last_commit_date(self, file_path: str) -> Optional[datetime]:
+        """Get the last commit date for a file.
 
         Args:
             file_path (str): Path to the file
 
         Returns:
-            datetime: Last commit date
+            Optional[datetime]: Last commit date or None if not found
         """
         try:
-            if not self.repo:
-                raise RuntimeError("Repository not initialized")
-            
-            # Get the relative path from the repo root
-            rel_path = os.path.relpath(file_path, self.repo.working_dir)
-            
-            # Get the last commit for the file
-            commits = list(self.repo.iter_commits(paths=rel_path, max_count=1))
-            if not commits:
-                return datetime.now()
-            
-            return datetime.fromtimestamp(commits[0].committed_date)
+            repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
+            commits = list(repo.iter_commits(paths=file_path, max_count=1))
+            if commits:
+                last_commit = commits[0]
+                return last_commit.committed_datetime
+            return None
         except Exception as e:
             self.logger.error(f"Failed to get last commit date for {file_path}: {e}")
-            raise
+            return None
 
     def list_files(self) -> List[str]:
         """List all files in the repository.
@@ -210,37 +204,32 @@ class GitPythonAdapter:
             str: File content
         """
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+            if not self.repo:
+                raise ValueError("Repository not initialized")
+            return self.repo.git.show(f"HEAD:{file_path}")
         except Exception as e:
             self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
 
-    def get_last_commit_date(self, file_path: str) -> datetime:
-        """Get last commit date for a file.
+    def get_last_commit_date(self, file_path: str) -> Optional[datetime]:
+        """Get the last commit date for a file.
 
         Args:
             file_path (str): Path to the file
 
         Returns:
-            datetime: Last commit date
+            Optional[datetime]: Last commit date or None if not found
         """
         try:
-            if not self.repo:
-                raise RuntimeError("Repository not initialized")
-            
-            # Get the relative path from the repo root
-            rel_path = os.path.relpath(file_path, self.repo.working_dir)
-            
-            # Get the last commit for the file
-            commits = list(self.repo.iter_commits(paths=rel_path, max_count=1))
-            if not commits:
-                return datetime.now()
-            
-            return datetime.fromtimestamp(commits[0].committed_date)
+            repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
+            commits = list(repo.iter_commits(paths=file_path, max_count=1))
+            if commits:
+                last_commit = commits[0]
+                return last_commit.committed_datetime
+            return None
         except Exception as e:
             self.logger.error(f"Failed to get last commit date for {file_path}: {e}")
-            raise
+            return None
 
     def list_files(self, path: str = ".") -> List[str]:
         """List all files in the repository.
@@ -253,15 +242,11 @@ class GitPythonAdapter:
         """
         try:
             if not self.repo:
-                raise RuntimeError("Repository not initialized")
+                raise ValueError("Repository not initialized")
             
-            files = []
-            for root, _, filenames in os.walk(os.path.join(self.repo.working_dir, path)):
-                for filename in filenames:
-                    file_path = os.path.join(root, filename)
-                    files.append(file_path)
-            
-            return files
+            # Use git ls-tree to list all files
+            output = self.repo.git.ls_tree("-r", "--name-only", "HEAD", path)
+            return output.splitlines() if output else []
         except Exception as e:
             self.logger.error(f"Failed to list files: {e}")
             raise
@@ -280,7 +265,7 @@ class GitConnector:
         self.git_ops = git_ops or GitOperations()
         self.temp_dir = None
         self.logger = get_logger(__name__)
-        self.metadata_extractor = GitMetadataExtractor()
+        self.metadata_extractor = GitMetadataExtractor(config=self.config)
 
     def __enter__(self):
         """Set up the Git repository.
@@ -331,8 +316,47 @@ class GitConnector:
             bool: True if the file should be processed, False otherwise
         """
         try:
+            # Check if file exists and is readable
+            if not os.path.isfile(file_path) or not os.access(file_path, os.R_OK):
+                self.logger.debug(f"Skipping {file_path}: file does not exist or is not readable")
+                return False
+
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
+
+            # Skip files that are just extensions without names (e.g. ".md")
+            file_basename = os.path.basename(rel_path)
+            if file_basename.startswith("."):
+                self.logger.debug(f"Skipping {rel_path}: invalid filename (starts with dot)")
+                return False
+
+            # Check if file matches any exclude patterns first
+            for pattern in self.config.exclude_paths:
+                pattern = pattern.lstrip("/")
+                if pattern.endswith("/**"):
+                    dir_pattern = pattern[:-3]  # Remove /** suffix
+                    if dir_pattern == os.path.dirname(rel_path) or os.path.dirname(rel_path).startswith(dir_pattern + "/"):
+                        self.logger.debug(f"Skipping {rel_path}: matches exclude directory pattern {pattern}")
+                        return False
+                elif pattern.endswith("/"):
+                    dir_pattern = pattern[:-1]  # Remove trailing slash
+                    if os.path.dirname(rel_path) == dir_pattern or os.path.dirname(rel_path).startswith(dir_pattern + "/"):
+                        self.logger.debug(f"Skipping {rel_path}: matches exclude directory pattern {pattern}")
+                        return False
+                elif fnmatch.fnmatch(rel_path, pattern):
+                    self.logger.debug(f"Skipping {rel_path}: matches exclude pattern {pattern}")
+                    return False
+
+            # Check if file matches any file type patterns (case-insensitive)
+            file_type_match = False
+            for pattern in self.config.file_types:
+                if fnmatch.fnmatch(file_basename.lower(), pattern.lower()):
+                    file_type_match = True
+                    break
+
+            if not file_type_match:
+                self.logger.debug(f"Skipping {rel_path}: does not match any file type patterns")
+                return False
 
             # Check file size
             if os.path.getsize(file_path) > self.config.max_file_size:
@@ -340,31 +364,40 @@ class GitConnector:
                 return False
 
             # Check if file matches any include patterns
-            included = False
+            if not self.config.include_paths:
+                # If no include paths specified, include everything
+                return True
+
+            # Get the file's directory relative to repo root
+            rel_dir = os.path.dirname(rel_path)
+
             for pattern in self.config.include_paths:
-                if pattern == "/":
-                    included = True
-                    break
-                if fnmatch.fnmatch(rel_path, pattern.lstrip("/")):
-                    included = True
-                    break
-
-            if not included:
-                self.logger.debug(f"Skipping {rel_path}: not in include paths")
-                return False
-
-            # Check if file matches any exclude patterns
-            for pattern in self.config.exclude_paths:
-                if fnmatch.fnmatch(rel_path, pattern.lstrip("/")):
-                    self.logger.debug(f"Skipping {rel_path}: matches exclude pattern {pattern}")
-                    return False
-
-            # Check if file matches any file type patterns
-            for pattern in self.config.file_types:
-                if fnmatch.fnmatch(rel_path, pattern):
+                pattern = pattern.lstrip("/")
+                if pattern == "" or pattern == "/":
+                    # Root pattern means include only files in root directory
+                    if rel_dir == "":
+                        return True
+                    continue
+                if pattern.endswith("/**"):
+                    dir_pattern = pattern[:-3]  # Remove /** suffix
+                    if dir_pattern == "" or dir_pattern == "/":
+                        return True  # Root pattern with /** means include everything
+                    if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
+                        return True
+                elif pattern.endswith("/"):
+                    dir_pattern = pattern[:-1]  # Remove trailing slash
+                    if dir_pattern == "" or dir_pattern == "/":
+                        # Root pattern with / means include only files in root directory
+                        if rel_dir == "":
+                            return True
+                        continue
+                    if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
+                        return True
+                elif fnmatch.fnmatch(rel_path, pattern):
                     return True
 
-            self.logger.debug(f"Skipping {rel_path}: does not match any file type patterns")
+            # If we have include patterns but none matched, exclude the file
+            self.logger.debug(f"Skipping {rel_path}: not in include paths")
             return False
 
         except Exception as e:
@@ -391,18 +424,26 @@ class GitConnector:
             last_commit_date = self.git_ops.get_last_commit_date(file_path)
 
             # Extract metadata
-            metadata = self.metadata_extractor.extract_metadata(
+            metadata = self.metadata_extractor.extract_all_metadata(
                 file_path=rel_path,
-                content=content,
-                last_commit_date=last_commit_date,
-                repo_url=self.config.url,
-                branch=self.config.branch
+                content=content
             )
+
+            # Add Git-specific metadata
+            metadata.update({
+                'repository_url': self.config.url,
+                'branch': self.config.branch,
+                'last_commit_date': last_commit_date.isoformat() if last_commit_date else None
+            })
 
             # Create document
             return Document(
-                page_content=content,
-                metadata=metadata
+                content=content,
+                metadata=metadata,
+                source=self.config.url,
+                source_type="git",
+                url=f"{self.config.url}/blob/{self.config.branch}/{rel_path}",
+                last_updated=last_commit_date
             )
 
         except Exception as e:

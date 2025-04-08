@@ -71,20 +71,22 @@ def ingest(config: Optional[str], source_type: Optional[str], source: Optional[s
         qdrant-loader ingest --source-type git --source my-repo
     """
     try:
-        settings = get_settings()
-        if not settings:
-            raise click.ClickException("Settings not available. Please check your environment variables.")
-        
         # Load configuration
         config_path = config or "config.yaml"
         if not Path(config_path).exists():
             raise click.ClickException(f"Configuration file not found: {config_path}")
         
-        # Load and parse the configuration file
+        # Initialize configuration from the YAML file
         try:
-            sources_config = SourcesConfig.from_yaml(config_path)
+            from .config import initialize_config
+            initialize_config(Path(config_path))
         except Exception as e:
             raise click.ClickException(f"Failed to load configuration: {str(e)}")
+        
+        # Get settings after initialization
+        settings = get_settings()
+        if not settings:
+            raise click.ClickException("Settings not available. Please check your environment variables.")
         
         # Validate source type and name if provided
         if source and not source_type:
@@ -96,8 +98,8 @@ def ingest(config: Optional[str], source_type: Optional[str], source: Optional[s
                    source_type=source_type,
                    source=source)
         
-        # Process documents with the parsed configuration
-        pipeline.process_documents(sources_config, source_type=source_type, source_name=source)
+        # Process documents with the initialized configuration
+        pipeline.process_documents(settings.sources_config, source_type=source_type, source_name=source)
         
         logger.info("Ingestion completed successfully")
     except Exception as e:
