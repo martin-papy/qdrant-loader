@@ -27,18 +27,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Create test repository
-        run: |
-          mkdir -p tests/fixtures/test-repo
-          cd tests/fixtures/test-repo
-          git init
-          echo "# Test Repository" > README.md
-          echo "Test content" > src/test.md
-          git add .
-          git config --global user.email "test@example.com"
-          git config --global user.name "Test User"
-          git commit -m "Initial commit"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
