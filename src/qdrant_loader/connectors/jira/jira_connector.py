@@ -12,6 +12,7 @@ from atlassian import Jira
 
 from .config import JiraConfig
 from .models import JiraIssue, JiraUser, JiraAttachment
+from ...core.document import Document
 
 logger = structlog.get_logger(__name__)
 
@@ -200,4 +201,59 @@ class JiraConnector:
                 raw_attachment["created"].replace("Z", "+00:00")
             ),
             author=self._parse_user(raw_attachment["author"]),
-        ) 
+        )
+
+    async def get_documents(self) -> List[Document]:
+        """Fetch and process documents from Jira.
+        
+        Returns:
+            List[Document]: List of processed documents
+        """
+        documents = []
+        
+        # Collect all issues
+        issues = []
+        async for issue in self.get_issues():
+            issues.append(issue)
+        
+        # Convert issues to documents
+        for issue in issues:
+            content = f"{issue.summary}\n\n{issue.description or ''}"
+            base_url = str(self.config.base_url).rstrip('/')
+            document = Document(
+                id=issue.id,
+                content=content,
+                source=self.config.project_key,
+                source_type="jira",
+                url=f"{base_url}/browse/{issue.key}",
+                last_updated=issue.updated,
+                metadata={
+                    "project": self.config.project_key,
+                    "issue_type": issue.issue_type,
+                    "status": issue.status,
+                    "key": issue.key,
+                    "priority": issue.priority,
+                    "labels": issue.labels,
+                    "reporter": issue.reporter.display_name if issue.reporter else None,
+                    "assignee": issue.assignee.display_name if issue.assignee else None,
+                    "created": issue.created.isoformat(),
+                    "updated": issue.updated.isoformat(),
+                    "parent_key": issue.parent_key,
+                    "subtasks": issue.subtasks,
+                    "linked_issues": issue.linked_issues,
+                    "attachments": [
+                        {
+                            "id": att.id,
+                            "filename": att.filename,
+                            "size": att.size,
+                            "mime_type": att.mime_type,
+                            "created": att.created.isoformat(),
+                            "author": att.author.display_name if att.author else None,
+                        }
+                        for att in issue.attachments
+                    ] if issue.attachments else [],
+                },
+            )
+            documents.append(document)
+        
+        return documents 

@@ -125,6 +125,16 @@ def mock_config_file(tmp_path):
                         "remove": ["nav", "header", "footer"]
                     }
                 }
+            },
+            "jira": {
+                "project1": {
+                    "base_url": "https://test.atlassian.net/jira",
+                    "project_key": "PROJ1",
+                    "issue_types": ["Documentation", "Technical Spec"],
+                    "include_statuses": ["Done", "Approved"],
+                    "token": "test-token",
+                    "email": "test@example.com"
+                }
             }
         }
     }
@@ -217,7 +227,7 @@ def test_cli_ingest_with_nonexistent_source(runner, mock_config_file):
 
 def test_cli_ingest_with_all_source_types(runner, mock_config_file):
     """Test that the ingest command works with all source types."""
-    source_types = ['confluence', 'git', 'public-docs']
+    source_types = ['confluence', 'git', 'public-docs', 'jira']
     
     for source_type in source_types:
         with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
@@ -342,4 +352,33 @@ def test_cli_log_level_validation(runner, mock_config_file):
     """Test that invalid log levels are rejected."""
     result = runner.invoke(cli, ['--log-level', 'INVALID', 'ingest', '--config', str(mock_config_file)])
     assert result.exit_code != 0
-    assert "Invalid value for '--log-level'" in result.output 
+    assert "Invalid value for '--log-level'" in result.output
+
+def test_cli_ingest_with_jira_source_type(runner, mock_config_file):
+    """Test that the ingest command works with JIRA source type."""
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        
+        # Test with JIRA source type
+        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), '--source-type', 'jira'])
+        assert result.exit_code == 0
+        mock_pipeline.return_value.process_documents.assert_called_once()
+        args = mock_pipeline.return_value.process_documents.call_args[1]
+        assert args['source_type'] == 'jira'
+        assert args['source_name'] is None
+
+def test_cli_ingest_with_jira_source_type_and_name(runner, mock_config_file):
+    """Test that the ingest command works with both JIRA source type and name."""
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline:
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        
+        # Test with specific JIRA project
+        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file), 
+                                   '--source-type', 'jira', '--source', 'project1'])
+        assert result.exit_code == 0
+        mock_pipeline.return_value.process_documents.assert_called_once()
+        args = mock_pipeline.return_value.process_documents.call_args[1]
+        assert args['source_type'] == 'jira'
+        assert args['source_name'] == 'project1' 
