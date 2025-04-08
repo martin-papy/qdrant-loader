@@ -49,11 +49,28 @@ jobs:
       - name: Create config.test.yaml file
         run: |
           cp tests/config.test.template.yaml tests/config.test.yaml
-          sed -i "s|url: .*|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
-          sed -i "s|space_key: .*|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
-          sed -i "s|base_url: .*|base_url: \"${{ secrets.JIRA_URL }}\"|g" tests/config.test.yaml
-          sed -i "s|project_key: .*|project_key: \"${{ secrets.JIRA_PROJECT_KEY }}\"|g" tests/config.test.yaml
+          # More specific sed commands for Confluence
+          sed -i "s|url: \"CONFLUENCE_URL_PLACEHOLDER\"|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
+          sed -i "s|space_key: \"CONFLUENCE_SPACE_KEY_PLACEHOLDER\"|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
+          
+          # More specific sed commands for Jira
+          sed -i "s|base_url: \"JIRA_URL_PLACEHOLDER\"|base_url: \"${{ secrets.JIRA_URL }}\"|g" tests/config.test.yaml
+          sed -i "s|project_key: \"JIRA_PROJECT_KEY_PLACEHOLDER\"|project_key: \"${{ secrets.JIRA_PROJECT_KEY }}\"|g" tests/config.test.yaml
+          
+          # Git repo URL
           sed -i "s|url: AUTH_TEST_REPO_URL|url: \"${{ secrets.AUTH_TEST_REPO_URL }}\"|g" tests/config.test.yaml
+          
+          # Environment variables
+          sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/config.test.yaml
+          sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config.test.yaml
+          sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config.test.yaml
+          sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config.test.yaml
+          sed -i "s|\${GITHUB_TOKEN}|${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/config.test.yaml
+
+      - name: Verify config file (sanitized)
+        run: |
+          echo "Verifying config.test.yaml (with sensitive data masked)..."
+          sed 's/\(token: \)"[^"]*"/\1"***"/g; s/\(email: \)"[^"]*"/\1"***"/g' tests/config.test.yaml
 
       - name: Run tests and generate coverage reports
         run: |
