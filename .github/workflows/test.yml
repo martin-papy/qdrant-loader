@@ -48,7 +48,7 @@ jobs:
 
       - name: Create config.test.yaml file
         run: |
-          cp tests/config.test.yaml.template tests/config.test.yaml
+          cp tests/config.test.template.yaml tests/config.test.yaml
           sed -i "s|url: .*|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
           sed -i "s|space_key: .*|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
           sed -i "s|base_url: .*|base_url: \"${{ secrets.JIRA_URL }}\"|g" tests/config.test.yaml
