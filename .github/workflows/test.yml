@@ -43,14 +43,14 @@ jobs:
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_API_TOKEN=.*|CONFLUENCE_API_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
-          sed -i "s|GITHUB_TOKEN=.*|GITHUB_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
+          sed -i "s|AUTH_TEST_REPO_TOKEN=.*|AUTH_TEST_REPO_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
 
       - name: Create config.test.yaml file
         run: |
           cp tests/config.test.yaml.template tests/config.test.yaml
           sed -i "s|url: .*|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
           sed -i "s|space_key: .*|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
-          sed -i "s|url: https://github.com/test/authentication-test-repo.git|url: \"${{ secrets.AUTH_TEST_REPO_URL }}\"|g" tests/config.test.yaml
+          sed -i "s|url: AUTH_TEST_REPO_URL|url: \"${{ secrets.AUTH_TEST_REPO_URL }}\"|g" tests/config.test.yaml
 
       - name: Run tests and generate coverage reports
         run: |

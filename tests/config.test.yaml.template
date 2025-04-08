@@ -38,7 +38,7 @@ git_repos:
   
   # Remote repository for authentication testing
   auth-test-repo:
-    url: https://github.com/test/authentication-test-repo.git  # Replace with actual test repository
+    url: AUTH_TEST_REPO_URL  # Replace with actual test repository
     branch: main
     include_paths:
       - "src"
@@ -48,7 +48,7 @@ git_repos:
       - "*.md"
     auth:
       type: github
-      token_env: GITHUB_TOKEN
+      token_env: AUTH_TEST_REPO_TOKEN
 
 confluence:
   test-space:

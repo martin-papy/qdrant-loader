@@ -33,7 +33,7 @@ def test_repo_url():
 @pytest.fixture
 def valid_github_token():
     """Return a valid GitHub token from environment."""
-    return os.getenv("GITHUB_TOKEN")
+    return os.getenv("AUTH_TEST_REPO_TOKEN")
 
 @pytest.fixture
 def git_config_with_auth(test_repo_url, valid_github_token):
@@ -48,7 +48,7 @@ def git_config_with_auth(test_repo_url, valid_github_token):
         max_file_size=1024 * 1024,  # 1MB
         auth=GitAuthConfig(
             type="github",
-            token_env="GITHUB_TOKEN"
+            token_env="AUTH_TEST_REPO_TOKEN"
         )
     )
 
@@ -56,7 +56,7 @@ def git_config_with_auth(test_repo_url, valid_github_token):
 def test_github_pat_authentication_success(git_config_with_auth, valid_github_token):
     """Test successful GitHub PAT authentication."""
     if not valid_github_token:
-        pytest.skip("GITHUB_TOKEN environment variable not set")
+        pytest.skip("AUTH_TEST_REPO_TOKEN environment variable not set")
     
     with GitConnector(git_config_with_auth) as connector:
         # If we can get documents, authentication was successful
