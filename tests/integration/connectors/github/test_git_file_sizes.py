@@ -11,7 +11,7 @@ from qdrant_loader.connectors.git import GitConnector
 def git_config_with_size_limit():
     """Create a GitRepoConfig instance with specific size limits."""
     return GitRepoConfig(
-        url="./tests/fixtures/test-repo",
+        url=str(Path("./tests/fixtures/test-repo").absolute()),
         branch="main",
         file_types=["*.md"],
         include_paths=[],
