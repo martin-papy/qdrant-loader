@@ -21,7 +21,7 @@ def test_settings():
     settings = Settings()
     
     # Load sources config from YAML
-    config_path = Path(__file__).parent.parent.parent / "config.test.yaml"
+    config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
     sources_config = SourcesConfig.from_yaml(str(config_path))
     
     # Add confluence configurations to settings

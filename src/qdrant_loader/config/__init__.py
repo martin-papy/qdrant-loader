@@ -207,23 +207,26 @@ class GitAuthConfig(BaseModel):
 
 class GitRepoConfig(BaseModel):
     """Configuration for a Git repository source."""
-    url: str = Field(..., description="URL of the Git repository")
-    branch: str = Field(default="main", description="Branch to scan")
+    url: str = Field(..., description="Git repository URL or local path")
+    branch: str = Field(
+        default="main",
+        description="Branch to clone"
+    )
     include_paths: List[str] = Field(
-        default=["**/*"],
-        description="List of glob patterns for files to include"
+        default=[],
+        description="List of paths to include"
     )
     exclude_paths: List[str] = Field(
         default=[],
-        description="List of glob patterns for files to exclude"
+        description="List of paths to exclude"
     )
     file_types: List[str] = Field(
-        default=["*.md", "*.rst", "*.txt", "*.py", "*.js", "*.ts", "*.java", "*.go", "*.rb"],
-        description="List of file extensions to process"
+        default=["*.md", "*.rst", "*.txt"],
+        description="List of file types to process"
     )
     max_file_size: int = Field(
         default=1024 * 1024,  # 1MB
-        description="Maximum file size to process in bytes"
+        description="Maximum file size in bytes"
     )
     depth: int = Field(
         default=1,
@@ -237,8 +240,10 @@ class GitRepoConfig(BaseModel):
     @field_validator("url")
     @classmethod
     def validate_url(cls, v):
-        if not v.startswith(("http://", "https://", "git@")):
-            raise ValueError("url must be a valid Git repository URL")
+        if (not v.startswith(("http://", "https://", "git@")) and
+            not v.startswith(("./", "../", "/")) and
+            not os.path.isdir(v)):
+            raise ValueError("url must be a valid Git repository URL or local path")
         return v
 
     @field_validator("file_types")
