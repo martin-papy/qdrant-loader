@@ -9,8 +9,7 @@ class ConfluenceSpaceConfig(BaseModel):
     """Configuration for a Confluence space."""
     
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        extra="forbid"
+        arbitrary_types_allowed=True
     )
     
     url: str = Field(..., description="Base URL of the Confluence instance")

@@ -100,8 +100,7 @@ class JiraProjectConfig(BaseModel):
     """Configuration for a Jira project."""
     
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        extra="forbid"
+        arbitrary_types_allowed=True
     )
     
     base_url: str = Field(..., description="Base URL of the Jira instance")

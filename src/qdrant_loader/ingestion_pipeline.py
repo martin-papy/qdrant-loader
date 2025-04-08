@@ -70,11 +70,11 @@ class IngestionPipeline:
         documents = []
         for repo_name, repo_config in git_repos.items():
             try:
-                connector = GitConnector(repo_config)
-                repo_docs = connector.fetch_documents()
-                documents.extend(repo_docs)
-                logger.info(f"Processed Git repository: {repo_name}", 
-                          document_count=len(repo_docs))
+                with GitConnector(repo_config) as connector:
+                    repo_docs = connector.get_documents()
+                    documents.extend(repo_docs)
+                    logger.info(f"Processed Git repository: {repo_name}", 
+                              document_count=len(repo_docs))
             except Exception as e:
                 logger.error(f"Failed to process Git repository {repo_name}", 
                            error=str(e))
@@ -181,25 +181,30 @@ class IngestionPipeline:
                        original_count=len(documents),
                        chunk_count=len(chunked_documents))
                 
-            # Generate embeddings for all chunks
-            logger.info("Generating embeddings", document_count=len(chunked_documents))
-            embeddings = self.embedding_service.get_embeddings(
-                [doc.content for doc in chunked_documents]
-            )
-            
-            # Prepare points for qDrant
+            # Process documents in batches
+            batch_size = self.settings.global_config.embedding.batch_size
             points = []
-            for doc, embedding in zip(chunked_documents, embeddings):
-                # Create a unique ID by combining source and chunk index
-                point_id = str(uuid.uuid4())
-                doc.metadata['original_url'] = doc.metadata.get('url', doc.source)
+            
+            for i in range(0, len(chunked_documents), batch_size):
+                batch = chunked_documents[i:i + batch_size]
+                logger.info(f"Processing batch {i//batch_size + 1}/{(len(chunked_documents) + batch_size - 1)//batch_size}")
                 
-                points.append({
-                    "id": point_id,
-                    "vector": embedding,
-                    "payload": doc.metadata
-                })
+                # Generate embeddings for the batch
+                embeddings = self.embedding_service.get_embeddings(
+                    [doc.content for doc in batch]
+                )
                 
+                # Create points for the batch
+                for doc, embedding in zip(batch, embeddings):
+                    point_id = str(uuid.uuid4())
+                    doc.metadata['original_url'] = doc.metadata.get('url', doc.source)
+                    
+                    points.append({
+                        "id": point_id,
+                        "vector": embedding,
+                        "payload": doc.metadata
+                    })
+            
             # Upload to qDrant
             logger.info("Uploading documents to qDrant", point_count=len(points))
             self.qdrant_manager.upsert_points(points)
