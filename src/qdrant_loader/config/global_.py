@@ -5,29 +5,12 @@ including chunking, embedding, and logging configurations.
 """
 
 from typing import Dict, Any, List
-from pydantic import Field, validator
+from pydantic import Field, field_validator, ValidationInfo
 
 from .base import BaseConfig
 from .types import GlobalConfigDict
-
-
-class ChunkingConfig(BaseConfig):
-    """Configuration for text chunking."""
-    size: int = Field(default=500, description="Size of each chunk in characters")
-    overlap: int = Field(default=50, description="Overlap between chunks in characters")
-
-    @validator('overlap')
-    def validate_overlap(cls, v: int, values: Dict[str, Any]) -> int:
-        """Validate that overlap is less than chunk size."""
-        if 'size' in values and v >= values['size']:
-            raise ValueError("Chunk overlap must be less than chunk size")
-        return v
-
-
-class EmbeddingConfig(BaseConfig):
-    """Configuration for text embedding."""
-    model: str = Field(default="text-embedding-3-small", description="Name of the embedding model to use")
-    batch_size: int = Field(default=100, description="Number of texts to process in each batch")
+from .chunking import ChunkingConfig
+from .embedding import EmbeddingConfig
 
 
 class LoggingConfig(BaseConfig):
@@ -36,16 +19,16 @@ class LoggingConfig(BaseConfig):
     format: str = Field(default="json", description="Log format (json or text)")
     file: str = Field(default="qdrant-loader.log", description="Path to log file")
 
-    @validator('level')
-    def validate_level(cls, v: str) -> str:
+    @field_validator('level')
+    def validate_level(cls, v: str, info: ValidationInfo) -> str:
         """Validate logging level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
             raise ValueError(f"Invalid logging level. Must be one of: {', '.join(valid_levels)}")
         return v.upper()
 
-    @validator('format')
-    def validate_format(cls, v: str) -> str:
+    @field_validator('format')
+    def validate_format(cls, v: str, info: ValidationInfo) -> str:
         """Validate log format."""
         valid_formats = ["json", "text"]
         if v.lower() not in valid_formats:
@@ -62,7 +45,10 @@ class GlobalConfig(BaseConfig):
     def to_dict(self) -> GlobalConfigDict:
         """Convert the configuration to a dictionary."""
         return {
-            "chunking": self.chunking.dict(),
-            "embedding": self.embedding.dict(),
-            "logging": self.logging.dict()
+            "chunking": {
+                "size": self.chunking.chunk_size,
+                "overlap": self.chunking.chunk_overlap
+            },
+            "embedding": self.embedding.model_dump(),
+            "logging": self.logging.model_dump()
         } 

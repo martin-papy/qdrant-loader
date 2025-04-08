@@ -3,7 +3,7 @@ from openai import OpenAI
 import tiktoken
 import structlog
 from typing import List, Optional
-from qdrant_loader.config import Settings, get_global_config
+from qdrant_loader.config import Settings
 
 logger = structlog.get_logger()
 
@@ -18,7 +18,7 @@ class EmbeddingService:
         """
         self.settings = settings
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = get_global_config().embedding.model
+        self.model = settings.global_config.embedding.model
         self.encoding = tiktoken.encoding_for_model(self.model)
         self.last_request_time = 0
         self.min_request_interval = 0.1  # 100ms between requests

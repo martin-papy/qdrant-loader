@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 import os
 import requests
 from requests.auth import HTTPBasicAuth
-from qdrant_loader.config import ConfluenceConfig
+from .config import ConfluenceSpaceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
 from datetime import datetime
@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class ConfluenceConnector:
     """Connector for Atlassian Confluence."""
     
-    def __init__(self, config: ConfluenceConfig):
+    def __init__(self, config: ConfluenceSpaceConfig):
         """Initialize the connector with configuration.
         
         Args:

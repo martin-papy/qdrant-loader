@@ -9,8 +9,8 @@ def git_config():
     """Create a GitRepoConfig instance for testing."""
     return GitRepoConfig(
         url="https://github.com/test/repo.git",
-        repository_description="Test repository",
-        repository_language="Python"
+        branch="main",
+        file_types=[".md", ".py"]  # Add some file types to pass validation
     )
 
 @pytest.fixture
@@ -32,7 +32,11 @@ def mock_repo():
     
     # Set up config reader to return repository description
     config_reader = MagicMock()
-    config_reader.get_value = MagicMock(return_value="Test repository")
+    config_reader.has_section = MagicMock(return_value=True)  # Always return True for has_section
+    config_reader.get_value = MagicMock(side_effect=lambda section, key, default=None: {
+        ('github', 'description'): 'Test repository',
+        ('github', 'language'): 'Python'
+    }.get((section, key), default))
     repo.config_reader = MagicMock(return_value=config_reader)
     
     return repo

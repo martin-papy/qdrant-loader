@@ -29,8 +29,8 @@ def test_repo_url():
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Get the auth-test-repo URL
-    auth_test_repo_url = config['git_repos']['auth-test-repo']['url']
+    # Get the auth-test-repo URL from the correct path in config
+    auth_test_repo_url = config['sources']['git_repos']['auth-test-repo']['url']
     
     # Verify the URL is valid
     if not auth_test_repo_url.startswith(("http://", "https://")):
@@ -42,16 +42,14 @@ def test_repo_url():
 def test_repo_config(test_repo_url):
     """Create a test GitRepoConfig."""
     return GitRepoConfig(
-        url=test_repo_url,
+        url=str(Path("./tests/fixtures/test-repo").absolute()),  # Use local test repo
         branch="main",
         depth=1,
         file_types=["*.md"],
         include_paths=["src"],
         exclude_paths=["tests"],
         max_file_size=1024 * 1024,  # 1MB
-        auth=GitAuthConfig(
-            type="none"
-        )
+        auth=None  # No authentication needed for local repo
     )
 
 def test_cleanup_on_success(test_repo_config):
@@ -90,7 +88,7 @@ def test_cleanup_on_init_failure(test_repo_config):
         exclude_paths=["tests"],
         max_file_size=1024 * 1024,
         auth=GitAuthConfig(
-            type="none"
+            token="invalid_token"  # Invalid token to ensure authentication fails
         )
     )
     
@@ -122,18 +120,4 @@ def test_multiple_connector_cleanup(test_repo_config):
             
     # All directories should be cleaned up
     for temp_dir in temp_dirs:
-        assert not os.path.exists(temp_dir), f"Temporary directory {temp_dir} should be cleaned up"
-
-@pytest.fixture(scope="function")
-def test_repo_config():
-    """Create a GitRepoConfig instance for testing."""
-    return GitRepoConfig(
-        url=str(Path("./tests/fixtures/test-repo").absolute()),
-        branch="main",
-        include_paths=["src"],
-        exclude_paths=["tests"],
-        file_types=["*.md"],
-        max_file_size=1048576,  # 1MB
-        depth=1,
-        auth=GitAuthConfig(type="none", token_env=None)
-    ) 
+        assert not os.path.exists(temp_dir), f"Temporary directory {temp_dir} should be cleaned up" 

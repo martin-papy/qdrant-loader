@@ -1,39 +1,33 @@
 """Configuration for Confluence connector."""
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 import os
 
 
-class ConfluenceConfig(BaseModel):
-    """Configuration for a Confluence space source."""
-    url: HttpUrl = Field(
-        ...,
-        description="Base URL of the Confluence instance"
+class ConfluenceSpaceConfig(BaseModel):
+    """Configuration for a Confluence space."""
+    
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid"
     )
-    space_key: str = Field(
-        ...,
-        description="Space key to process"
-    )
+    
+    url: str = Field(..., description="Base URL of the Confluence instance")
+    space_key: str = Field(..., description="Key of the Confluence space")
     content_types: List[str] = Field(
         default=["page", "blogpost"],
-        description="Content types to process"
+        description="Types of content to process"
     )
-    token: Optional[str] = Field(
-        default=None,
-        description="Confluence API token (loaded from CONFLUENCE_TOKEN env var)"
+    token: str = Field(..., description="Confluence API token")
+    email: str = Field(..., description="Email associated with the Confluence account")
+    include_labels: List[str] = Field(
+        default=[],
+        description="List of labels to include (empty list means include all)"
     )
-    email: Optional[str] = Field(
-        default=None,
-        description="Confluence user email (loaded from CONFLUENCE_EMAIL env var)"
-    )
-    max_results: Optional[int] = Field(
-        default=None,
-        description="Maximum number of results to fetch"
-    )
-    updated_since: Optional[str] = Field(
-        default=None,
-        description="Only fetch content updated since this date (ISO format)"
+    exclude_labels: List[str] = Field(
+        default=[],
+        description="List of labels to exclude"
     )
 
     @field_validator('content_types')

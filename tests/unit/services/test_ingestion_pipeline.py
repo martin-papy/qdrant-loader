@@ -4,12 +4,15 @@ Tests for the ingestion pipeline.
 import pytest
 from unittest.mock import patch, MagicMock, call
 from qdrant_loader.ingestion_pipeline import IngestionPipeline
-from qdrant_loader.config import SourcesConfig, GlobalConfig, EmbeddingConfig
+from qdrant_loader.config import SourcesConfig, GlobalConfig, EmbeddingConfig, initialize_config
 from qdrant_loader.core.document import Document
 import uuid
 from datetime import datetime
+import tempfile
+import yaml
+from pathlib import Path
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_settings():
     """Create mock settings."""
     settings = MagicMock()
@@ -17,16 +20,47 @@ def mock_settings():
     settings.QDRANT_URL = "http://test-url"
     settings.QDRANT_API_KEY = "test-key"
     settings.QDRANT_COLLECTION_NAME = "test-collection"
-    return settings
+    settings.global_config = GlobalConfig(
+        chunking={"size": 500, "overlap": 50},
+        embedding=EmbeddingConfig(model="text-embedding-3-small", batch_size=100),
+        logging={"level": "INFO", "format": "json", "file": "qdrant-loader.log"}
+    )
+    settings.sources_config = SourcesConfig(
+        public_docs={},
+        confluence={},
+        git_repos={}
+    )
+    
+    # Create a temporary YAML config file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
+        config = {
+            'global': {
+                'chunking': {'size': 500, 'overlap': 50},
+                'embedding': {'model': 'text-embedding-3-small', 'batch_size': 100},
+                'logging': {'level': 'INFO', 'format': 'json', 'file': 'qdrant-loader.log'}
+            },
+            'sources': {
+                'confluence': {},
+                'git_repos': {},
+                'public_docs': {}
+            }
+        }
+        yaml.dump(config, temp_file)
+        temp_path = Path(temp_file.name)
+    
+    try:
+        # Initialize the config with our mock settings
+        with patch('qdrant_loader.config.get_settings', return_value=settings):
+            initialize_config(temp_path)
+            yield settings
+    finally:
+        # Clean up the temporary file
+        temp_path.unlink()
 
 @pytest.fixture
 def mock_config():
     """Create mock configuration."""
     return SourcesConfig(
-        global_config=GlobalConfig(
-            chunking={"size": 500, "overlap": 50},
-            embedding=EmbeddingConfig(model="text-embedding-3-small")
-        ),
         public_docs={
             "test-docs": {
                 "base_url": "https://test.com",
@@ -48,23 +82,20 @@ def mock_documents():
                 "space": "SPACE1",
                 "content_type": "page"
             },
-            created_at=datetime.now()
+            created_at=datetime.now(),
+            url="https://test.com/doc1"  # Add a valid URL string
         )
     ]
 
 def test_ingestion_pipeline_init(mock_settings):
     """Test pipeline initialization."""
-    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.ingestion_pipeline.get_global_config') as mock_global_config:
-        
-        mock_global_config.return_value.chunking = {"size": 500, "overlap": 50}
-        mock_global_config.return_value.embedding.model = "text-embedding-3-small"
-        
+    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings) as mock_get_settings:
         pipeline = IngestionPipeline()
         assert pipeline.settings == mock_settings
         assert pipeline.embedding_service is not None
         assert pipeline.qdrant_manager is not None
         assert pipeline.chunking_strategy is not None
+        mock_get_settings.assert_called_once()
 
 def test_ingestion_pipeline_init_no_settings():
     """Test pipeline initialization with no settings."""
@@ -74,12 +105,7 @@ def test_ingestion_pipeline_init_no_settings():
 
 def test_process_documents_no_sources(mock_settings, mock_config):
     """Test processing with no sources."""
-    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.ingestion_pipeline.get_global_config') as mock_global_config:
-        
-        mock_global_config.return_value.chunking = {"size": 500, "overlap": 50}
-        mock_global_config.return_value.embedding.model = "text-embedding-3-small"
-        
+    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings):
         pipeline = IngestionPipeline()
         empty_config = SourcesConfig()
         pipeline.process_documents(empty_config)
@@ -87,11 +113,7 @@ def test_process_documents_no_sources(mock_settings, mock_config):
 def test_process_documents_public_docs(mock_settings, mock_config, mock_documents):
     """Test processing public docs."""
     with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.ingestion_pipeline.get_global_config') as mock_global_config, \
          patch('qdrant_loader.ingestion_pipeline.PublicDocsConnector') as mock_connector:
-
-        mock_global_config.return_value.chunking = {"size": 500, "overlap": 50}
-        mock_global_config.return_value.embedding.model = "text-embedding-3-small"
 
         # Setup mock connector
         mock_connector.return_value.get_documentation.return_value = ["Test content 1"]
@@ -113,18 +135,12 @@ def test_process_documents_public_docs(mock_settings, mock_config, mock_document
 def test_process_documents_error(mock_settings, mock_config):
     """Test error handling in document processing."""
     with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.ingestion_pipeline.get_global_config') as mock_global_config, \
          patch('qdrant_loader.ingestion_pipeline.PublicDocsConnector') as mock_connector:
 
-        mock_global_config.return_value.chunking = {"size": 500, "overlap": 50}
-        mock_global_config.return_value.embedding.model = "text-embedding-3-small"
-
-        # Setup mock connector to return some content
-        mock_connector.return_value.get_documentation.return_value = ["Test content"]
+        # Setup mock connector to raise an error
+        mock_connector.return_value.get_documentation.side_effect = Exception("Test error")
 
         pipeline = IngestionPipeline()
-        # Mock chunking strategy to raise an error
-        pipeline.chunking_strategy.chunk_document = MagicMock(side_effect=Exception("Chunking error"))
 
         # Process the documents
         with pytest.raises(Exception, match="Failed to process documents"):
@@ -132,12 +148,7 @@ def test_process_documents_error(mock_settings, mock_config):
 
 def test_filter_sources(mock_settings, mock_config):
     """Test source filtering."""
-    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.ingestion_pipeline.get_global_config') as mock_global_config:
-        
-        mock_global_config.return_value.chunking = {"size": 500, "overlap": 50}
-        mock_global_config.return_value.embedding.model = "text-embedding-3-small"
-        
+    with patch('qdrant_loader.ingestion_pipeline.get_settings', return_value=mock_settings):
         pipeline = IngestionPipeline()
         
         # Test filtering by type

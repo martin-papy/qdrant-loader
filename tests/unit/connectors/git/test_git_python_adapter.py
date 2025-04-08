@@ -101,27 +101,30 @@ def test_git_python_adapter_get_last_commit_date(mock_repo):
     adapter = GitPythonAdapter(mock_repo)
     file_path = "test.md"
     
-    date = adapter.get_last_commit_date(file_path)
-    assert isinstance(date, datetime)
-    assert date.isoformat() == "2024-03-20T12:00:00+00:00"
-    mock_repo.git.log.assert_called_once_with("-1", "--format=%ai", file_path)
+    # Mock the Repo class and iter_commits
+    with patch('git.Repo') as mock_git_repo:
+        mock_commit = MagicMock()
+        mock_commit.committed_datetime = datetime(2024, 3, 20, 12, 0, 0)
+        mock_git_repo.return_value.iter_commits.return_value = [mock_commit]
+        
+        date = adapter.get_last_commit_date(file_path)
+        assert isinstance(date, datetime)
+        assert date.isoformat() == "2024-03-20T12:00:00"
 
 def test_git_python_adapter_get_last_commit_date_no_repo():
     """Test GitPythonAdapter get_last_commit_date method without repo."""
     adapter = GitPythonAdapter()
-    with pytest.raises(ValueError) as exc_info:
-        adapter.get_last_commit_date("test.md")
-    assert "Repository not initialized" in str(exc_info.value)
+    result = adapter.get_last_commit_date("test.md")
+    assert result is None
 
 def test_git_python_adapter_get_last_commit_date_error(mock_repo):
     """Test GitPythonAdapter get_last_commit_date method with error."""
     adapter = GitPythonAdapter(mock_repo)
-    error = GitCommandError("log", "error")
-    mock_repo.git.log.side_effect = error
     
-    with pytest.raises(GitCommandError) as exc_info:
-        adapter.get_last_commit_date("test.md")
-    assert str(exc_info.value) == str(error)
+    # Mock the Repo class to raise an exception
+    with patch('git.Repo', side_effect=Exception("Test error")):
+        result = adapter.get_last_commit_date("test.md")
+        assert result is None
 
 def test_git_python_adapter_list_files(mock_repo):
     """Test GitPythonAdapter list_files method."""

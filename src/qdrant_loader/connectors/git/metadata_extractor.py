@@ -9,7 +9,7 @@ import os
 import git
 import logging
 from datetime import datetime
-from qdrant_loader.config import GitRepoConfig
+from .config import GitRepoConfig
 
 logger = get_logger(__name__)
 
@@ -109,15 +109,15 @@ class GitMetadataExtractor:
             try:
                 repo = git.Repo(os.path.dirname(file_path), search_parent_directories=True)
                 config = repo.config_reader()
-                if config.has_section('core'):
+                # Try to get description from github section first, then fall back to core
+                if config.has_section('github'):
+                    repo_description = config.get_value('github', "description", default="")
+                    repo_language = config.get_value('github', "language", default="")
+                elif config.has_section('core'):
                     repo_description = config.get_value('core', "description", default="")
                     repo_language = config.get_value('core', "language", default="")
             except Exception as e:
                 self.logger.debug(f"Failed to read Git config: {e}")
-
-            # Use values from mock repo for testing
-            if repo_description == "Test repository":
-                repo_language = "Python"
 
             return {
                 'repository_name': repo_name,

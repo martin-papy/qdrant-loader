@@ -1,9 +1,10 @@
 """Configuration for embedding generation."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from .base import BaseConfig
 
 
-class EmbeddingConfig(BaseModel):
+class EmbeddingConfig(BaseConfig):
     """Configuration for embedding generation."""
     model: str = Field(
         default="text-embedding-3-small",

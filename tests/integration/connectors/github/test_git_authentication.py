@@ -41,6 +41,9 @@ def valid_github_token():
 @pytest.fixture
 def git_config_with_auth(test_repo_url, valid_github_token):
     """Create a GitRepoConfig with GitHub authentication."""
+    if not valid_github_token:
+        pytest.skip("AUTH_TEST_REPO_TOKEN environment variable not set")
+            
     return GitRepoConfig(
         url=test_repo_url,
         branch="main",
@@ -50,8 +53,7 @@ def git_config_with_auth(test_repo_url, valid_github_token):
         exclude_paths=["tests"],
         max_file_size=1024 * 1024,  # 1MB
         auth=GitAuthConfig(
-            type="github",
-            token_env="AUTH_TEST_REPO_TOKEN"
+            token=valid_github_token
         )
     )
 

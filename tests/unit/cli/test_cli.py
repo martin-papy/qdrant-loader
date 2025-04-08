@@ -4,7 +4,7 @@ Tests for the CLI module.
 import pytest
 from click.testing import CliRunner
 from qdrant_loader.cli import cli
-from qdrant_loader.config import get_settings, Settings, _settings_instance, SourcesConfig
+from qdrant_loader.config import get_settings, Settings, _global_settings, SourcesConfig, initialize_config
 from unittest.mock import patch, MagicMock
 import yaml
 from pathlib import Path
@@ -14,7 +14,7 @@ def runner():
     return CliRunner()
 
 @pytest.fixture(autouse=True)
-def setup_env(monkeypatch):
+def setup_env(monkeypatch, tmp_path):
     """Setup environment variables for all tests."""
     # Mock environment variables
     monkeypatch.setenv('QDRANT_URL', 'http://test-url')
@@ -22,15 +22,69 @@ def setup_env(monkeypatch):
     monkeypatch.setenv('QDRANT_COLLECTION_NAME', 'test-collection')
     monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
     monkeypatch.setenv('LOG_LEVEL', 'INFO')
+    monkeypatch.setenv('CONFLUENCE_TOKEN', 'test-token')
+    monkeypatch.setenv('CONFLUENCE_EMAIL', 'test@example.com')
+    monkeypatch.setenv('JIRA_TOKEN', 'test-token')
+    monkeypatch.setenv('JIRA_EMAIL', 'test@example.com')
+    monkeypatch.setenv('GITHUB_TOKEN', 'test-token')
+    monkeypatch.setenv('GITLAB_TOKEN', 'test-token')
+    monkeypatch.setenv('BITBUCKET_TOKEN', 'test-token')
+    monkeypatch.setenv('AUTH_TEST_REPO_TOKEN', 'test-token')
+    monkeypatch.setenv('OPENAI_ORGANIZATION', 'test-org')
     
     # Clear any cached settings
-    global _settings_instance
-    _settings_instance = None
+    global _global_settings
+    _global_settings = None
+    
+    # Create a mock config file
+    config_path = tmp_path / "test_config.yaml"
+    config_data = {
+        "global": {
+            "chunking": {"size": 500, "overlap": 50},
+            "embedding": {"model": "text-embedding-3-small", "batch_size": 100},
+            "logging": {"level": "INFO", "format": "json", "file": "qdrant-loader.log"}
+        },
+        "sources": {
+            "confluence": {
+                "space1": {
+                    "url": "https://test.atlassian.net/wiki",
+                    "space_key": "SPACE1",
+                    "content_types": ["page", "blogpost"],
+                    "token": "test-token",
+                    "email": "test@example.com"
+                }
+            },
+            "git_repos": {
+                "repo1": {
+                    "url": "https://github.com/test/repo1",
+                    "branch": "main",
+                    "include_paths": ["docs/**/*"],
+                    "exclude_paths": ["docs/drafts/**/*"]
+                }
+            },
+            "public_docs": {
+                "docs1": {
+                    "base_url": "https://docs.example.com",
+                    "version": "1.0",
+                    "content_type": "html",
+                    "exclude_paths": ["/downloads"],
+                    "selectors": {
+                        "content": "article",
+                        "remove": ["nav", "header", "footer"]
+                    }
+                }
+            }
+        }
+    }
+    config_path.write_text(yaml.dump(config_data))
+    
+    # Initialize settings with the mock config
+    initialize_config(config_path)
     
     yield
     
     # Clean up after test
-    _settings_instance = None
+    _global_settings = None
 
 @pytest.fixture
 def mock_config_file(tmp_path):
@@ -42,32 +96,34 @@ def mock_config_file(tmp_path):
             "embedding": {"model": "text-embedding-3-small", "batch_size": 100},
             "logging": {"level": "INFO", "format": "json", "file": "qdrant-loader.log"}
         },
-        "confluence": {
-            "space1": {
-                "url": "https://test.atlassian.net/wiki",
-                "space_key": "SPACE1",
-                "content_types": ["page", "blogpost"],
-                "include_labels": ["documentation"],
-                "exclude_labels": ["draft"]
-            }
-        },
-        "git_repos": {
-            "repo1": {
-                "url": "https://github.com/test/repo1",
-                "branch": "main",
-                "include_paths": ["docs/**/*"],
-                "exclude_paths": ["docs/drafts/**/*"]
-            }
-        },
-        "public_docs": {
-            "docs1": {
-                "base_url": "https://docs.example.com",
-                "version": "1.0",
-                "content_type": "html",
-                "exclude_paths": ["/downloads"],
-                "selectors": {
-                    "content": "article",
-                    "remove": ["nav", "header", "footer"]
+        "sources": {
+            "confluence": {
+                "space1": {
+                    "url": "https://test.atlassian.net/wiki",
+                    "space_key": "SPACE1",
+                    "content_types": ["page", "blogpost"],
+                    "token": "test-token",
+                    "email": "test@example.com"
+                }
+            },
+            "git_repos": {
+                "repo1": {
+                    "url": "https://github.com/test/repo1",
+                    "branch": "main",
+                    "include_paths": ["docs/**/*"],
+                    "exclude_paths": ["docs/drafts/**/*"]
+                }
+            },
+            "public_docs": {
+                "docs1": {
+                    "base_url": "https://docs.example.com",
+                    "version": "1.0",
+                    "content_type": "html",
+                    "exclude_paths": ["/downloads"],
+                    "selectors": {
+                        "content": "article",
+                        "remove": ["nav", "header", "footer"]
+                    }
                 }
             }
         }

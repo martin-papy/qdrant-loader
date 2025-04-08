@@ -17,13 +17,11 @@ import structlog
 from .chunking import ChunkingConfig
 from .embedding import EmbeddingConfig
 from .global_ import GlobalConfig
-from .sources import (
-    SourcesConfig,
-    GitRepoConfig,
-    ConfluenceSpaceConfig as ConfluenceConfig,
-    JiraProjectConfig as JiraConfig,
-    PublicDocsConfig
-)
+from .sources import SourcesConfig
+from ..connectors.git.config import GitRepoConfig, GitAuthConfig
+from ..connectors.confluence.config import ConfluenceSpaceConfig
+from ..connectors.jira.config import JiraProjectConfig
+from ..connectors.public_docs.config import PublicDocsSourceConfig, SelectorsConfig
 
 # Load environment variables from .env file
 load_dotenv()
@@ -33,9 +31,11 @@ __all__ = [
     'GlobalConfig',
     'SourcesConfig',
     'GitRepoConfig',
-    'ConfluenceConfig',
-    'JiraConfig',
-    'PublicDocsConfig',
+    'GitAuthConfig',
+    'ConfluenceSpaceConfig',
+    'JiraProjectConfig',
+    'PublicDocsSourceConfig',
+    'SelectorsConfig',
     'get_settings',
     'get_global_config',
     'initialize_config',
@@ -48,28 +48,20 @@ _global_settings: Optional['Settings'] = None
 def get_settings() -> 'Settings':
     """Get the global settings instance.
     
-    This is an alias for get_global_config() for backward compatibility.
-    
     Returns:
         Settings: The global settings instance.
-        
-    Raises:
-        RuntimeError: If the global configuration has not been initialized.
     """
-    return get_global_config()
+    if _global_settings is None:
+        raise RuntimeError("Settings not initialized. Call initialize_config() first.")
+    return _global_settings
 
-def get_global_config() -> 'Settings':
+def get_global_config() -> GlobalConfig:
     """Get the global configuration instance.
     
     Returns:
-        Settings: The global configuration instance.
-        
-    Raises:
-        RuntimeError: If the global configuration has not been initialized.
+        GlobalConfig: The global configuration instance.
     """
-    if _global_settings is None:
-        raise RuntimeError("Global configuration has not been initialized")
-    return _global_settings
+    return get_settings().global_config
 
 def initialize_config(yaml_path: Path) -> None:
     """Initialize the global configuration.
@@ -80,45 +72,69 @@ def initialize_config(yaml_path: Path) -> None:
     global _global_settings
     _global_settings = Settings.from_yaml(yaml_path)
 
-class Settings(BaseConfig):
+class Settings(BaseSettings):
     """Main configuration class combining global and source-specific settings."""
     
-    QDRANT_URL: str
-    QDRANT_API_KEY: Optional[str] = None
-    QDRANT_COLLECTION: str
-    OPENAI_API_KEY: str
-    OPENAI_ORGANIZATION: Optional[str] = None
+    # qDrant Configuration
+    QDRANT_URL: str = Field(..., description="qDrant server URL")
+    QDRANT_API_KEY: Optional[str] = Field(None, description="qDrant API key")
+    QDRANT_COLLECTION_NAME: str = Field(..., description="qDrant collection name")
     
-    global_config: GlobalConfig
-    sources_config: SourcesConfig
+    # OpenAI Configuration
+    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    OPENAI_ORGANIZATION: Optional[str] = Field(None, description="OpenAI organization ID")
     
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    # Source-specific environment variables
+    AUTH_TEST_REPO_TOKEN: Optional[str] = Field(None, description="Test repository token")
+    CONFLUENCE_TOKEN: Optional[str] = Field(None, description="Confluence API token")
+    CONFLUENCE_EMAIL: Optional[str] = Field(None, description="Confluence user email")
+    JIRA_TOKEN: Optional[str] = Field(None, description="Jira API token")
+    JIRA_EMAIL: Optional[str] = Field(None, description="Jira user email")
     
+    # Configuration objects
+    global_config: GlobalConfig = Field(default_factory=GlobalConfig, description="Global configuration settings")
+    sources_config: SourcesConfig = Field(default_factory=SourcesConfig, description="Source-specific configurations")
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="allow"
+    )
+
     @classmethod
-    def from_yaml(cls, yaml_path: Path) -> 'Settings':
+    def from_yaml(cls, config_path: Path) -> 'Settings':
         """Load configuration from a YAML file.
         
         Args:
-            yaml_path: Path to the YAML configuration file.
+            config_path: Path to the YAML configuration file.
             
         Returns:
             Settings: Loaded configuration.
         """
-        with open(yaml_path, 'r') as f:
+        with open(config_path, 'r') as f:
             config_data = yaml.safe_load(f)
-        
+            
         # Create configuration instances
         global_config = GlobalConfig(**config_data.get('global', {}))
         sources_config = SourcesConfig(**config_data.get('sources', {}))
         
-        # Create settings instance
-        return cls(
-            global_config=global_config,
-            sources_config=sources_config
-        )
+        # Create settings instance with environment variables and config objects
+        settings_data = {
+            'global_config': global_config,
+            'sources_config': sources_config,
+            'QDRANT_URL': os.getenv('QDRANT_URL'),
+            'QDRANT_API_KEY': os.getenv('QDRANT_API_KEY'),
+            'QDRANT_COLLECTION_NAME': os.getenv('QDRANT_COLLECTION_NAME'),
+            'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
+            'OPENAI_ORGANIZATION': os.getenv('OPENAI_ORGANIZATION'),
+            'AUTH_TEST_REPO_TOKEN': os.getenv('AUTH_TEST_REPO_TOKEN'),
+            'CONFLUENCE_TOKEN': os.getenv('CONFLUENCE_TOKEN'),
+            'CONFLUENCE_EMAIL': os.getenv('CONFLUENCE_EMAIL'),
+            'JIRA_TOKEN': os.getenv('JIRA_TOKEN'),
+            'JIRA_EMAIL': os.getenv('JIRA_EMAIL')
+        }
+        
+        return cls(**settings_data)
     
     def to_dict(self) -> dict:
         """Convert the configuration to a dictionary.

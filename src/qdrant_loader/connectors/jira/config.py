@@ -93,4 +93,34 @@ class JiraConfig(BaseModel):
         """Validate that list items are not empty strings."""
         if any(not item.strip() for item in v):
             raise ValueError("List items cannot be empty strings")
-        return [item.strip() for item in v] 
+        return [item.strip() for item in v]
+
+
+class JiraProjectConfig(BaseModel):
+    """Configuration for a Jira project."""
+    
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid"
+    )
+    
+    base_url: str = Field(..., description="Base URL of the Jira instance")
+    project_key: str = Field(..., description="Key of the Jira project")
+    requests_per_minute: int = Field(
+        default=60,
+        description="Maximum number of requests per minute"
+    )
+    page_size: int = Field(
+        default=50,
+        description="Number of issues to fetch per page"
+    )
+    process_attachments: bool = Field(
+        default=True,
+        description="Whether to process issue attachments"
+    )
+    track_last_sync: bool = Field(
+        default=True,
+        description="Whether to track the last sync time"
+    )
+    token: str = Field(..., description="Jira API token")
+    email: str = Field(..., description="Email associated with the Jira account") 
