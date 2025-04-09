@@ -398,9 +398,12 @@ class GitConnector:
 
             # Check if file matches any file type patterns (case-insensitive)
             file_type_match = False
+            file_ext = os.path.splitext(file_basename)[1].lower()  # Get extension with dot
             for pattern in self.config.file_types:
                 self.logger.debug(f"Checking file type pattern: {pattern}")
-                if fnmatch.fnmatch(file_basename.lower(), pattern.lower()):
+                # Extract extension from pattern (e.g., "*.md" -> ".md")
+                pattern_ext = os.path.splitext(pattern)[1].lower()
+                if pattern_ext and file_ext == pattern_ext:
                     file_type_match = True
                     self.logger.debug(f"File {rel_path} matches file type pattern {pattern}")
                     break
@@ -435,11 +438,11 @@ class GitConnector:
                         self.logger.debug(f"Including {rel_path}: matches root pattern")
                         return True
                     continue
-                if pattern.endswith("/**"):
-                    dir_pattern = pattern[:-3]  # Remove /** suffix
+                if pattern.endswith("/**/*"):
+                    dir_pattern = pattern[:-5]  # Remove /**/* suffix
                     if dir_pattern == "" or dir_pattern == "/":
-                        self.logger.debug(f"Including {rel_path}: matches root /** pattern")
-                        return True  # Root pattern with /** means include everything
+                        self.logger.debug(f"Including {rel_path}: matches root /**/* pattern")
+                        return True  # Root pattern with /**/* means include everything
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
                         self.logger.debug(f"Including {rel_path}: matches directory pattern {pattern}")
                         return True
