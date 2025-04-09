@@ -5,23 +5,22 @@ import pytest
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import asyncio
+from dotenv import load_dotenv
 from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.jira.config import JiraConfig
 from qdrant_loader.config import Settings, SourcesConfig
 
+@pytest.fixture(scope="session", autouse=True)
+def load_env():
+    """Load test environment variables before any tests run."""
+    env_path = Path(__file__).parent.parent.parent.parent / ".env.test"
+    if not env_path.exists():
+        pytest.fail(".env.test file not found")
+    load_dotenv(env_path, override=True)
+
 @pytest.fixture
 def test_settings():
-    """Load test settings from environment and config file."""
-    # Load environment variables
-    env_path = Path(__file__).parent.parent.parent.parent / ".env.test"
-    if env_path.exists():
-        with open(env_path) as f:
-            for line in f:
-                if line.strip() and not line.startswith("#"):
-                    key, value = line.strip().split("=", 1)
-                    os.environ[key] = value
-
-    # Load configuration
+    """Load test settings from config file."""
     config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
     if not config_path.exists():
         pytest.fail("Test configuration file not found")
@@ -99,4 +98,14 @@ async def test_get_issues_error_handling(connector):
 
     with pytest.raises(Exception):
         async for _ in invalid_connector.get_issues():
-            pass  # We expect an error before getting any issues 
+            pass  # We expect an error before getting any issues
+
+def test_environment_variable_substitution(test_settings):
+    """Test that environment variables are properly substituted in the configuration."""
+    jira_settings = test_settings.sources_config.jira["test-project"]
+    
+    # Check that environment variables were substituted
+    assert jira_settings.base_url == os.getenv("JIRA_URL"), "JIRA_URL not properly substituted"
+    assert jira_settings.project_key == os.getenv("JIRA_PROJECT_KEY"), "JIRA_PROJECT_KEY not properly substituted"
+    assert jira_settings.token == os.getenv("JIRA_TOKEN"), "JIRA_TOKEN not properly substituted"
+    assert jira_settings.email == os.getenv("JIRA_EMAIL"), "JIRA_EMAIL not properly substituted" 

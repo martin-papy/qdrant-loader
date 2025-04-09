@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import time
 from tests.utils import is_github_actions
 
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig
+from qdrant_loader.config import GitRepoConfig, GitAuthConfig, Settings
 from qdrant_loader.connectors.git import GitConnector
 
 # Load test environment variables
@@ -26,11 +26,10 @@ pytestmark = pytest.mark.skipif(
 def test_repo_url():
     """Return a test repository URL from config.test.yaml."""
     config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+    settings = Settings.from_yaml(config_path)
     
     # Get the auth-test-repo URL from the correct path in config
-    auth_test_repo_url = config['sources']['git_repos']['auth-test-repo']['url']
+    auth_test_repo_url = settings.sources_config.git_repos['auth-test-repo'].url
     
     # Verify the URL is valid
     if not auth_test_repo_url.startswith(("http://", "https://")):

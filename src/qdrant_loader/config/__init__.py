@@ -12,6 +12,7 @@ import os
 import yaml
 from dotenv import load_dotenv
 import structlog
+import re
 
 # Import consolidated configs
 from .chunking import ChunkingConfig
@@ -82,12 +83,18 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-    OPENAI_ORGANIZATION: Optional[str] = Field(None, description="OpenAI organization ID")
     
     # Source-specific environment variables
-    AUTH_TEST_REPO_TOKEN: Optional[str] = Field(None, description="Test repository token")
+    REPO_TOKEN: Optional[str] = Field(None, description="Repository token")
+    REPO_URL: Optional[str] = Field(None, description="Repository URL")
+    
+    CONFLUENCE_URL: Optional[str] = Field(None, description="Confluence URL")
+    CONFLUENCE_SPACE_KEY: Optional[str] = Field(None, description="Confluence space key")
     CONFLUENCE_TOKEN: Optional[str] = Field(None, description="Confluence API token")
     CONFLUENCE_EMAIL: Optional[str] = Field(None, description="Confluence user email")
+
+    JIRA_URL: Optional[str] = Field(None, description="Jira URL")
+    JIRA_PROJECT_KEY: Optional[str] = Field(None, description="Jira project key")
     JIRA_TOKEN: Optional[str] = Field(None, description="Jira API token")
     JIRA_EMAIL: Optional[str] = Field(None, description="Jira user email")
     
@@ -100,6 +107,25 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow"
     )
+
+    @staticmethod
+    def _substitute_env_vars(data: Any) -> Any:
+        """Recursively substitute environment variables in configuration data.
+        
+        Args:
+            data: Configuration data to process
+            
+        Returns:
+            Processed data with environment variables substituted
+        """
+        if isinstance(data, str):
+            # Handle ${VAR_NAME} pattern
+            return os.path.expandvars(data)
+        elif isinstance(data, dict):
+            return {k: Settings._substitute_env_vars(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [Settings._substitute_env_vars(item) for item in data]
+        return data
 
     @classmethod
     def from_yaml(cls, config_path: Path) -> 'Settings':
@@ -114,6 +140,9 @@ class Settings(BaseSettings):
         with open(config_path, 'r') as f:
             config_data = yaml.safe_load(f)
             
+        # Substitute environment variables in the config data
+        config_data = cls._substitute_env_vars(config_data)
+            
         # Create configuration instances
         global_config = GlobalConfig(**config_data.get('global', {}))
         sources_config = SourcesConfig(**config_data.get('sources', {}))
@@ -126,10 +155,14 @@ class Settings(BaseSettings):
             'QDRANT_API_KEY': os.getenv('QDRANT_API_KEY'),
             'QDRANT_COLLECTION_NAME': os.getenv('QDRANT_COLLECTION_NAME'),
             'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
-            'OPENAI_ORGANIZATION': os.getenv('OPENAI_ORGANIZATION'),
-            'AUTH_TEST_REPO_TOKEN': os.getenv('AUTH_TEST_REPO_TOKEN'),
+            'REPO_TOKEN': os.getenv('REPO_TOKEN'),
+            'REPO_URL': os.getenv('REPO_URL'),
+            'CONFLUENCE_URL': os.getenv('CONFLUENCE_URL'),
+            'CONFLUENCE_SPACE_KEY': os.getenv('CONFLUENCE_SPACE_KEY'),
             'CONFLUENCE_TOKEN': os.getenv('CONFLUENCE_TOKEN'),
             'CONFLUENCE_EMAIL': os.getenv('CONFLUENCE_EMAIL'),
+            'JIRA_URL': os.getenv('JIRA_URL'),
+            'JIRA_PROJECT_KEY': os.getenv('JIRA_PROJECT_KEY'),
             'JIRA_TOKEN': os.getenv('JIRA_TOKEN'),
             'JIRA_EMAIL': os.getenv('JIRA_EMAIL')
         }
