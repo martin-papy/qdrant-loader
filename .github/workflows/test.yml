@@ -45,6 +45,10 @@ jobs:
           sed -i "s|AUTH_TEST_REPO_TOKEN=.*|AUTH_TEST_REPO_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
           sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
           sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
+          sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
+          sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
+          sed -i "s|GITHUB_TOKEN=.*|GITHUB_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
+
 
       - name: Create config.test.yaml file
         run: |
@@ -61,10 +65,10 @@ jobs:
           sed -i "s|url: AUTH_TEST_REPO_URL|url: \"${{ secrets.AUTH_TEST_REPO_URL }}\"|g" tests/config.test.yaml
           
           # Environment variables
-          sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/config.test.yaml
-          sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config.test.yaml
-          sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config.test.yaml
-          sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config.test.yaml
+          # sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/config.test.yaml
+          # sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config.test.yaml
+          # sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config.test.yaml
+          # sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config.test.yaml
           sed -i "s|\${GITHUB_TOKEN}|${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/config.test.yaml
 
       - name: Verify config file (sanitized)
