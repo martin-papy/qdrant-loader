@@ -361,6 +361,8 @@ class GitConnector:
             bool: True if the file should be processed, False otherwise
         """
         try:
+            self.logger.debug(f"Checking if file should be processed: {file_path}")
+            
             # Check if file exists and is readable
             if not os.path.isfile(file_path) or not os.access(file_path, os.R_OK):
                 self.logger.debug(f"Skipping {file_path}: file does not exist or is not readable")
@@ -368,6 +370,7 @@ class GitConnector:
 
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
+            self.logger.debug(f"Relative path: {rel_path}")
 
             # Skip files that are just extensions without names (e.g. ".md")
             file_basename = os.path.basename(rel_path)
@@ -378,6 +381,7 @@ class GitConnector:
             # Check if file matches any exclude patterns first
             for pattern in self.config.exclude_paths:
                 pattern = pattern.lstrip("/")
+                self.logger.debug(f"Checking exclude pattern: {pattern}")
                 if pattern.endswith("/**"):
                     dir_pattern = pattern[:-3]  # Remove /** suffix
                     if dir_pattern == os.path.dirname(rel_path) or os.path.dirname(rel_path).startswith(dir_pattern + "/"):
@@ -395,8 +399,10 @@ class GitConnector:
             # Check if file matches any file type patterns (case-insensitive)
             file_type_match = False
             for pattern in self.config.file_types:
+                self.logger.debug(f"Checking file type pattern: {pattern}")
                 if fnmatch.fnmatch(file_basename.lower(), pattern.lower()):
                     file_type_match = True
+                    self.logger.debug(f"File {rel_path} matches file type pattern {pattern}")
                     break
 
             if not file_type_match:
@@ -404,41 +410,52 @@ class GitConnector:
                 return False
 
             # Check file size
-            if os.path.getsize(file_path) > self.config.max_file_size:
+            file_size = os.path.getsize(file_path)
+            self.logger.debug(f"File size: {file_size} bytes (max: {self.config.max_file_size})")
+            if file_size > self.config.max_file_size:
                 self.logger.debug(f"Skipping {rel_path}: exceeds max file size")
                 return False
 
             # Check if file matches any include patterns
             if not self.config.include_paths:
                 # If no include paths specified, include everything
+                self.logger.debug("No include paths specified, including all files")
                 return True
 
             # Get the file's directory relative to repo root
             rel_dir = os.path.dirname(rel_path)
+            self.logger.debug(f"Checking include patterns for directory: {rel_dir}")
 
             for pattern in self.config.include_paths:
                 pattern = pattern.lstrip("/")
+                self.logger.debug(f"Checking include pattern: {pattern}")
                 if pattern == "" or pattern == "/":
                     # Root pattern means include only files in root directory
                     if rel_dir == "":
+                        self.logger.debug(f"Including {rel_path}: matches root pattern")
                         return True
                     continue
                 if pattern.endswith("/**"):
                     dir_pattern = pattern[:-3]  # Remove /** suffix
                     if dir_pattern == "" or dir_pattern == "/":
+                        self.logger.debug(f"Including {rel_path}: matches root /** pattern")
                         return True  # Root pattern with /** means include everything
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
+                        self.logger.debug(f"Including {rel_path}: matches directory pattern {pattern}")
                         return True
                 elif pattern.endswith("/"):
                     dir_pattern = pattern[:-1]  # Remove trailing slash
                     if dir_pattern == "" or dir_pattern == "/":
                         # Root pattern with / means include only files in root directory
                         if rel_dir == "":
+                            self.logger.debug(f"Including {rel_path}: matches root pattern")
                             return True
                         continue
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
+                        self.logger.debug(f"Including {rel_path}: matches directory pattern {pattern}")
                         return True
                 elif fnmatch.fnmatch(rel_path, pattern):
+                    self.logger.debug(f"Including {rel_path}: matches exact pattern {pattern}")
                     return True
 
             # If we have include patterns but none matched, exclude the file
