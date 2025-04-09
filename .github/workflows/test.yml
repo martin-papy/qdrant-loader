@@ -43,23 +43,22 @@ jobs:
           sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_API_TOKEN=.*|CONFLUENCE_API_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
           sed -i "s|AUTH_TEST_REPO_TOKEN=.*|AUTH_TEST_REPO_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
-          sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
-          sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
+          sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
+          sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
-          sed -i "s|GITHUB_TOKEN=.*|GITHUB_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
+          sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/.env.test
+          sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/.env.test
+          sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
+          sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
+          sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/.env.test
+          sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
+
 
 
       - name: Create config.test.yaml file
         run: |
           cp tests/config.test.template.yaml tests/config.test.yaml
-          # More specific sed commands for Confluence
-          sed -i "s|url: \"CONFLUENCE_URL_PLACEHOLDER\"|url: \"${{ secrets.CONFLUENCE_URL }}\"|g" tests/config.test.yaml
-          sed -i "s|space_key: \"CONFLUENCE_SPACE_KEY_PLACEHOLDER\"|space_key: \"${{ secrets.CONFLUENCE_SPACE_KEY }}\"|g" tests/config.test.yaml
-          
-          # More specific sed commands for Jira
-          sed -i "s|base_url: \"JIRA_URL_PLACEHOLDER\"|base_url: \"${{ secrets.JIRA_URL }}\"|g" tests/config.test.yaml
-          sed -i "s|project_key: \"JIRA_PROJECT_KEY_PLACEHOLDER\"|project_key: \"${{ secrets.JIRA_PROJECT_KEY }}\"|g" tests/config.test.yaml
           
       - name: Verify config file
         run: |

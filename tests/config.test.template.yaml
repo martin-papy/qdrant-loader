@@ -39,14 +39,14 @@ sources:
     
     # Remote repository for authentication testing
     auth-test-repo:
-      url: AUTH_TEST_REPO_URL  # Replace with actual test repository
+      url: "${REPO_URL}"
       branch: "main"
-      token: "${GITHUB_TOKEN}"
+      token: "${REPO_TOKEN}"
 
   confluence:
     test-space:
-      url: "CONFLUENCE_URL_PLACEHOLDER"
-      space_key: "CONFLUENCE_SPACE_KEY_PLACEHOLDER"
+      url: "${CONFLUENCE_URL}"
+      space_key: "${CONFLUENCE_SPACE_KEY}"
       content_types:
         - "page"
         - "blogpost"
@@ -57,8 +57,8 @@ sources:
 
   jira:
     test-project:
-      base_url: "JIRA_URL_PLACEHOLDER"
-      project_key: "JIRA_PROJECT_KEY_PLACEHOLDER"
+      base_url: "${JIRA_URL}"
+      project_key: "${JIRA_PROJECT_KEY}"
       requests_per_minute: 60
       page_size: 50
       process_attachments: true

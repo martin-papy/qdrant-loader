@@ -8,7 +8,7 @@ from git.exc import GitCommandError
 from dotenv import load_dotenv
 from pathlib import Path
 
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig
+from qdrant_loader.config import GitRepoConfig, GitAuthConfig, Settings
 from qdrant_loader.connectors.git import GitConnector
 
 # Load test environment variables
@@ -18,14 +18,10 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
 def test_repo_url():
     """Return a test repository URL from config.test.yaml."""
     config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+    settings = Settings.from_yaml(config_path)
     
     # Get the auth-test-repo URL
-    if "sources" in config:
-        config = config["sources"]
-    
-    auth_test_repo_url = config['git_repos']['auth-test-repo']['url']
+    auth_test_repo_url = settings.sources_config.git_repos['auth-test-repo'].url
     
     # Verify the URL is valid
     if not auth_test_repo_url.startswith(("http://", "https://")):
@@ -36,13 +32,13 @@ def test_repo_url():
 @pytest.fixture
 def valid_github_token():
     """Return a valid GitHub token from environment."""
-    return os.getenv("AUTH_TEST_REPO_TOKEN")
+    return os.getenv("REPO_TOKEN")
 
 @pytest.fixture
 def git_config_with_auth(test_repo_url, valid_github_token):
     """Create a GitRepoConfig with GitHub authentication."""
     if not valid_github_token:
-        pytest.skip("AUTH_TEST_REPO_TOKEN environment variable not set")
+        pytest.skip("REPO_TOKEN environment variable not set")
             
     return GitRepoConfig(
         url=test_repo_url,
@@ -61,7 +57,7 @@ def git_config_with_auth(test_repo_url, valid_github_token):
 def test_github_pat_authentication_success(git_config_with_auth, valid_github_token):
     """Test successful GitHub PAT authentication."""
     if not valid_github_token:
-        pytest.skip("AUTH_TEST_REPO_TOKEN environment variable not set")
+        pytest.skip("REPO_TOKEN environment variable not set")
     
     with GitConnector(git_config_with_auth) as connector:
         # If we can get documents, authentication was successful
