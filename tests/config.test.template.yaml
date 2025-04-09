@@ -28,14 +28,13 @@ sources:
   git_repos:
     # Local test repository for general testing
     test-repo:
-      test-repo:
-        url: "./tests/fixtures/test-repo"
-        branch: "main"
-        include_paths: ["/", "docs/", "src/", "README.md"]
-        exclude_paths: ["tests/**"]
-        file_types: ["*.md"]
-        max_file_size: 1048576
-        depth: 1
+      url: "./tests/fixtures/test-repo"
+      branch: "main"
+      include_paths: ["/", "docs/", "src/", "README.md"]
+      exclude_paths: ["tests/**"]
+      file_types: ["*.md"]
+      max_file_size: 1048576
+      depth: 1
     
     # Remote repository for authentication testing
     auth-test-repo:
