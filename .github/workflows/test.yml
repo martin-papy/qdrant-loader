@@ -64,7 +64,7 @@ jobs:
 
       - name: Run tests and generate coverage reports
         run: |
-          python -m pytest tests/integration/connectors/confluence/test_confluence_integration.py --cov=qdrant_loader --cov-report=html -v --log-cli-level=DEBUG --capture=no --full-trace
+          python -m pytest tests/ --cov=qdrant_loader --cov-report=html -v
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
