@@ -34,7 +34,7 @@ class GitOperations:
         self.repo = None
         self.logger = logger or logging.getLogger(__name__)
 
-    def clone(self, url: str, to_path: str, branch: str, depth: int, max_retries: int = 3, retry_delay: int = 2) -> None:
+    def clone(self, url: str, to_path: str, branch: str, depth: int, max_retries: int = 3, retry_delay: int = 2, auth_token: Optional[str] = None) -> None:
         """Clone a Git repository.
 
         Args:
@@ -44,6 +44,7 @@ class GitOperations:
             depth (int): Clone depth (use 0 for full history)
             max_retries (int, optional): Maximum number of retry attempts. Defaults to 3.
             retry_delay (int, optional): Delay between retries in seconds. Defaults to 2.
+            auth_token (Optional[str], optional): Authentication token. Defaults to None.
         """
         # Resolve the URL to an absolute path if it's a local path
         if os.path.exists(url):
@@ -68,8 +69,15 @@ class GitOperations:
                 # Store original value and disable credential prompts
                 original_prompt = os.environ.get('GIT_TERMINAL_PROMPT')
                 os.environ['GIT_TERMINAL_PROMPT'] = '0'
+
                 try:
-                    self.repo = git.Repo.clone_from(url, to_path, multi_options=clone_args)
+                    # If auth token is provided, modify the URL to include it
+                    clone_url = url
+                    if auth_token and url.startswith('https://'):
+                        # Insert token into URL: https://token@github.com/...
+                        clone_url = url.replace('https://', f'https://{auth_token}@')
+
+                    self.repo = git.Repo.clone_from(clone_url, to_path, multi_options=clone_args)
                     self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
                 finally:
                     # Restore original value
@@ -307,12 +315,20 @@ class GitConnector:
             self.config.temp_dir = self.temp_dir  # Update config with the actual temp dir
             self.logger.info(f"Created temporary directory: {self.temp_dir}")
 
+            # Get auth token from config
+            auth_token = None
+            if self.config.auth and self.config.auth.token:
+                auth_token = self.config.auth.token
+            elif self.config.token:
+                auth_token = self.config.token
+
             # Clone repository
             self.git_ops.clone(
                 url=self.config.url,
                 to_path=self.temp_dir,
                 branch=self.config.branch,
-                depth=self.config.depth
+                depth=self.config.depth,
+                auth_token=auth_token
             )
 
             return self
