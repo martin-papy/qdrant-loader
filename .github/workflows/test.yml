@@ -40,12 +40,9 @@ jobs:
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_API_TOKEN=.*|CONFLUENCE_API_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
-          sed -i "s|AUTH_TEST_REPO_TOKEN=.*|AUTH_TEST_REPO_TOKEN=${{ secrets.AUTH_TEST_REPO_TOKEN }}|g" tests/.env.test
           sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
           sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_API_TOKEN }}|g" tests/.env.test
+          sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_TOKEN }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/.env.test
           sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/.env.test
@@ -62,6 +59,8 @@ jobs:
         run: |
           echo "Content of config.test.yaml:"
           cat tests/config.test.yaml
+          echo "Content of .env.test (with secrets redacted):"
+          sed 's/\(.*=\).*/\1***/' tests/.env.test
 
       - name: Run tests and generate coverage reports
         run: |
