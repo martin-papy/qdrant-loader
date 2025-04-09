@@ -54,13 +54,6 @@ jobs:
       - name: Create config.test.yaml file
         run: |
           cp tests/config.test.template.yaml tests/config.test.yaml
-          
-      - name: Verify config file
-        run: |
-          echo "Content of config.test.yaml:"
-          cat tests/config.test.yaml
-          echo "Content of .env.test (with secrets redacted):"
-          sed 's/\(.*=\).*/\1***/' tests/.env.test
 
       - name: Run tests and generate coverage reports
         run: |
