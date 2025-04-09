@@ -30,8 +30,8 @@ sources:
       url: "${REPO_URL}"
       branch: "main"
       token: "${REPO_TOKEN}"
-      include_paths: ["/", "docs/**/*", "src/**/*", "README.md"]
-      exclude_paths: ["tests/**"]
+      include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
+      exclude_paths: ["src/test/**/*"]
       file_types: ["*.md","*.java"]
       max_file_size: 1048576
       depth: 1
