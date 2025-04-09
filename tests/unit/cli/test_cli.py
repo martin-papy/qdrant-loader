@@ -362,7 +362,7 @@ def test_cli_ingest_with_missing_config_file(runner):
     with patch('pathlib.Path.exists', return_value=False):
         result = runner.invoke(cli, ['ingest'])
         assert result.exit_code != 0
-        assert "Configuration file not found: config.yaml" in str(result.output)
+        assert "No config file specified and no config.yaml found in current directory" in str(result.output)
 
 def test_cli_log_level_validation(runner, mock_config_file):
     """Test that invalid log levels are rejected."""
@@ -401,4 +401,42 @@ def test_cli_ingest_with_jira_source_type_and_name(runner, mock_config_file):
         mock_run.assert_called_once()
         args = mock_pipeline.return_value.process_documents.call_args[1]
         assert args['source_type'] == 'jira'
-        assert args['source_name'] == 'project1' 
+        assert args['source_name'] == 'project1'
+
+def test_cli_ingest_with_default_config(runner):
+    """Test that the ingest command uses config.yaml from current directory when no config is specified."""
+    with patch('pathlib.Path.exists', return_value=True), \
+         patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run, \
+         patch('qdrant_loader.config.initialize_config') as mock_init_config, \
+         patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
+        
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
+        
+        result = runner.invoke(cli, ['ingest'])
+        assert result.exit_code == 0
+        mock_init_config.assert_called_once_with(Path('config.yaml'))
+
+def test_cli_ingest_without_config_and_no_default(runner):
+    """Test that the ingest command fails when no config is specified and no config.yaml exists."""
+    with patch('pathlib.Path.exists', return_value=False):
+        result = runner.invoke(cli, ['ingest'])
+        assert result.exit_code != 0
+        assert "No config file specified and no config.yaml found in current directory" in str(result.output)
+
+def test_cli_ingest_with_explicit_config(runner, mock_config_file):
+    """Test that the ingest command uses the explicitly specified config file."""
+    with patch('qdrant_loader.cli.IngestionPipeline') as mock_pipeline, \
+         patch('qdrant_loader.cli.asyncio.run') as mock_run, \
+         patch('qdrant_loader.config.initialize_config') as mock_init_config, \
+         patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
+        
+        # Mock the process_documents method
+        mock_pipeline.return_value.process_documents.return_value = None
+        mock_run.return_value = None
+        
+        result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file)])
+        assert result.exit_code == 0
+        mock_init_config.assert_called_once_with(Path(str(mock_config_file))) 

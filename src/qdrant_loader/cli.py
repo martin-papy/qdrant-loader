@@ -46,18 +46,23 @@ def init(force: bool):
         raise click.ClickException(f"Failed to initialize collection: {str(e)}")
 
 @cli.command()
-@click.option('--config', '-c', type=click.Path(exists=True), 
-              help='Path to configuration file')
+@click.option('--config', '-c', type=click.Path(exists=True),
+              help='Path to configuration file (defaults to config.yaml in current directory)')
 @click.option('--source-type', type=click.Choice(['confluence', 'git', 'public-docs', 'jira']),
               help='Type of source to ingest (confluence, git, public-docs, or jira)')
 @click.option('--source', '-s', help='Specific source name to ingest')
 def ingest(config: Optional[str], source_type: Optional[str], source: Optional[str]):
     """Run the ingestion pipeline.
     
+    If no config file is specified, will look for config.yaml in the current directory.
+    
     Examples:
         \b
-        # Ingest all sources
+        # Ingest all sources (using config.yaml from current directory)
         qdrant-loader ingest
+        
+        # Ingest using specific config file
+        qdrant-loader ingest --config custom-config.yaml
         
         # Ingest only Confluence sources
         qdrant-loader ingest --source-type confluence
@@ -78,10 +83,18 @@ def ingest(config: Optional[str], source_type: Optional[str], source: Optional[s
         qdrant-loader ingest --source-type jira --source my-project
     """
     try:
-        # Load configuration
-        config_path = config or "config.yaml"
-        if not Path(config_path).exists():
-            raise click.ClickException(f"Configuration file not found: {config_path}")
+        # Try to find config file
+        config_path = config
+        if config_path is None:
+            default_config = Path('config.yaml')
+            if default_config.exists():
+                config_path = str(default_config)
+                logger.info("Using default config.yaml from current directory")
+            else:
+                raise click.ClickException(
+                    "No config file specified and no config.yaml found in current directory. "
+                    "Please provide a config file with --config or create config.yaml in the current directory."
+                )
         
         # Initialize configuration from the YAML file
         try:
