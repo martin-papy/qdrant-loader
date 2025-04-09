@@ -1,25 +1,32 @@
 # Template for sources configuration
-# Copy this file to sources.yaml and customize it for your needs
+# Copy this file to config.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
 
 # Global configuration for all sources
 global:
   # Default chunking configuration
+  # Controls how documents are split into chunks for processing
   chunking:
-    size: 500
-    overlap: 50
+    size: 500        # Maximum number of characters per chunk
+    overlap: 50      # Number of characters to overlap between chunks
   
   # Default embedding configuration
+  # Controls how text is converted to vectors
   embedding:
-    model: "text-embedding-3-small"
-    batch_size: 100
+    model: "text-embedding-3-small"  # OpenAI embedding model to use
+    batch_size: 100                  # Number of chunks to process in one batch
 
   # Logging configuration
+  # Controls how logs are generated and stored
   logging:
-    level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    format: "json"  # Options: json, plain
-    file: "qdrant-loader.log"  # Optional: Path to log file
+    level: "INFO"    # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format: "json"   # Log format: json (structured) or plain (human-readable)
+    file: "qdrant-loader.log"  # Path to log file (relative to current directory)
 
+# Source-specific configurations
+# Each source type has its own configuration section
 sources:
+  # Public documentation sources (websites, documentation)
   public_docs:
     # Example configuration for a documentation source
     my_docs:
@@ -29,18 +36,18 @@ sources:
       # Specific version of the documentation to fetch
       version: "1.0"
       
-      # Enable automatic version detection
+      # Enable automatic version detection from URLs or content
       auto_detect_version: false
       
       # Optional: Regex pattern to extract version from URLs or content
       # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
       version_pattern: null
       
-      # Content type of the documentation (html, markdown, etc.)
-      content_type: "html"
+      # Content type of the documentation
+      content_type: "html"  # Options: html, markdown, etc.
       
       # Optional: Specific path pattern to match documentation pages
-      # If not specified, will try to find all documentation pages
+      # Uses glob syntax: ** matches any directory, * matches any file
       path_pattern: "/docs/{version}/**"
       
       # Optional: List of paths to exclude from processing
@@ -49,9 +56,9 @@ sources:
         - "/docs/{version}/changelog"
       
       # Optional: CSS selectors for content extraction
-      # If not specified, will use default selectors
+      # Helps identify and extract relevant content from HTML
       selectors:
-        # Main content container
+        # Main content container selector
         content: "article.main-content"
         # Elements to remove (navigation, headers, footers)
         remove: 
@@ -59,24 +66,24 @@ sources:
           - "header"
           - "footer"
           - ".sidebar"
-        # Code blocks to preserve
+        # Code blocks to preserve (will be kept in the content)
         code_blocks: "pre code"
 
   # Git repository sources
   git_repos:
     # Example configuration for a public repository
     public_repo:
-      url: "https://github.com/example/repo.git"
-      branch: "main"
-      include_paths:
+      url: "https://github.com/example/repo.git"  # Repository URL
+      branch: "main"                             # Branch to process
+      include_paths:                             # Paths to include (glob patterns)
         - "docs/**"
         - "src/**"
         - "README.md"
-      exclude_paths:
+      exclude_paths:                             # Paths to exclude (glob patterns)
         - "docs/archive/**"
         - "node_modules/**"
         - "venv/**"
-      file_types:
+      file_types:                                # File extensions to process
         - "*.md"
         - "*.rst"
         - "*.txt"
@@ -86,58 +93,42 @@ sources:
         - "*.java"
         - "*.go"
         - "*.rb"
-      max_file_size: 1048576
-      depth: 1
+      max_file_size: 1048576                    # Maximum file size in bytes (1MB)
+      depth: 1                                  # Maximum directory depth to process
       auth:
-        type: "none"  # No authentication needed for public repos
+        type: "none"                            # Authentication type: none, token, ssh
 
     # Example configuration for a private GitHub repository
     private_github_repo:
-      url: "https://github.com/example/private-repo.git"
+      url: "${REPO_URL}"                        # Use environment variable
       branch: "main"
+      token: "${REPO_TOKEN}"                    # GitHub Personal Access Token
       include_paths:
         - "docs/**"
       file_types:
         - "*.md"
-      auth:
-        type: "github"
-        token_env: "GITHUB_TOKEN"  # Environment variable containing the GitHub token
 
-  # Confluence spaces
+  # Confluence documentation sources
   confluence:
-    # Example configuration for a Confluence space
-    my_space:
-    
-      # Replace with your actual Confluence URL
-      url: "https://your-domain.atlassian.net/wiki"  
-
-      # Space key
-      space_key: "SPACE"
-      
-      # Content types to process
-      content_types:
+    my-space:
+      url: "${CONFLUENCE_URL}"                  # Confluence instance URL
+      space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
+      content_types:                            # Types of content to process
         - "page"
         - "blogpost"
-      
-      # Labels to include/exclude
-      include_labels:
-        - "documentation"
-      exclude_labels:
-        - "draft"
+      include_labels: []                        # Only process content with these labels
+      exclude_labels: []                        # Skip content with these labels
+      token: "${CONFLUENCE_TOKEN}"              # Confluence API token
+      email: "${CONFLUENCE_EMAIL}"              # Confluence user email
 
-  # Jira projects (future)
+  # JIRA issue tracking sources
   jira:
-    # Example configuration for a Jira project
-    my_project:
-      # Project key
-      project_key: "PROJ"
-      
-      # Issue types to process
-      issue_types:
-        - "Documentation"
-        - "Technical Spec"
-      
-      # Statuses to include
-      include_statuses:
-        - "Done"
-        - "Approved" 
+    my-project:
+      base_url: "${JIRA_URL}"                   # JIRA instance URL
+      project_key: "${JIRA_PROJECT_KEY}"        # Project to process
+      requests_per_minute: 60                   # Rate limit for API calls
+      page_size: 50                            # Number of issues per API request
+      process_attachments: true                 # Whether to process issue attachments
+      track_last_sync: true                    # Track last sync time for incremental updates
+      token: "${JIRA_TOKEN}"                    # JIRA API token
+      email: "${JIRA_EMAIL}"                    # JIRA user email

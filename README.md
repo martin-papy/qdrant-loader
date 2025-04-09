@@ -8,8 +8,9 @@ A tool for collecting and vectorizing technical content from multiple sources an
 - Smart chunking and preprocessing of documents
 - Vectorization using OpenAI embeddings
 - Storage in QDrant vector database
-- Configurable through environment variables
+- Configurable through environment variables and YAML configuration
 - Command-line interface for easy operation
+- Comprehensive logging and debugging capabilities
 
 ## Setup
 
@@ -40,11 +41,22 @@ A tool for collecting and vectorizing technical content from multiple sources an
     # Edit .env with your configuration
     ```
 
+    See [.env.template](.env.template) for all available environment variables and their descriptions.
+
+5. Create your configuration file:
+
+    ```bash
+    cp config.template.yaml config.yaml
+    # Edit config.yaml with your source configurations
+    ```
+
+    See [config.template.yaml](config.template.yaml) for detailed configuration options and examples.
+
 ## Configuration
 
 ### Environment Variables
 
-Create a `.env` file in your project root with the following variables:
+Create a `.env` file in your project root with the following variables (not all are mandatory):
 
 ```bash
 # QDrant Configuration
@@ -55,15 +67,48 @@ QDRANT_COLLECTION_NAME=your-collection-name
 # OpenAI Configuration
 OPENAI_API_KEY=your-openai-api-key
 
+# Git Configuration
+REPO_TOKEN=your-repo-token               # Github PAT
+REPO_URL=your-repo-url
+
+# Confluence Configuration
+CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
+CONFLUENCE_SPACE_KEY=your-space-key
+CONFLUENCE_TOKEN=your-confluence-token
+CONFLUENCE_EMAIL=your-confluence-email
+
 # JIRA Configuration
-JIRA_TOKEN=your-jira-api-token
+JIRA_URL=https://your-domain.atlassian.net
+JIRA_PROJECT_KEY=your-project-key
+JIRA_TOKEN=your-jira-token
 JIRA_EMAIL=your-jira-email
 
+# Logging Configuration (Optional)
+LOG_LEVEL=INFO                           # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FORMAT=json                          # Options: json, plain
 ```
+
+Environment variables can be set in three ways:
+
+1. In the `.env` file (recommended for development)
+2. As system environment variables
+3. Through the shell before running commands
+
+Required variables:
+
+- `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION_NAME`
+- `OPENAI_API_KEY`
+
+Optional variables:
+
+- Source-specific variables are only required if you're using that source
+- Logging variables have sensible defaults
+
+Note: API keys and tokens are automatically masked in logs and output.
 
 ### Configuration File
 
-Create a `config.yaml` file in your project root for source-specific settings:
+The configuration file (`config.yaml`) is required for running the ingestion pipeline. It contains source-specific settings and global configurations. See [config.template.yaml](config.template.yaml) for a complete template with detailed comments:
 
 ```yaml
 global:
@@ -135,9 +180,9 @@ qdrant-loader init
 qdrant-loader init --force
 
 # Run the ingestion pipeline
+# Will use config.yaml in current directory if --config is not specified
 qdrant-loader ingest
-
-# Run ingestion with specific configuration
+# Or specify a custom config file
 qdrant-loader ingest --config custom-config.yaml
 
 # Run ingestion for specific source types
@@ -159,6 +204,39 @@ qdrant-loader config
 qdrant-loader version
 ```
 
+### Logging and Debugging
+
+The CLI provides comprehensive logging capabilities:
+
+```bash
+# Enable verbose output
+qdrant-loader [command] --verbose
+
+# Set logging level
+qdrant-loader [command] --log-level DEBUG
+
+# View logs in real-time
+tail -f qdrant-loader.log
+```
+
+Logs are written to both:
+
+1. Console (stdout)
+2. Log file (default: `qdrant-loader.log`)
+
+Log levels available:
+
+- `DEBUG`: Detailed information for debugging
+- `INFO`: General operational information
+- `WARNING`: Warning messages for potential issues
+- `ERROR`: Error messages for failed operations
+- `CRITICAL`: Critical errors that prevent operation
+
+Log formats:
+
+- `json`: Structured JSON format (default)
+- `plain`: Human-readable text format
+
 ### Common Options
 
 All commands support the following options:
@@ -169,6 +247,9 @@ qdrant-loader [command] --verbose
 
 # Set logging level
 qdrant-loader [command] --log-level DEBUG
+
+# Specify config file (optional, defaults to config.yaml)
+qdrant-loader [command] --config custom-config.yaml
 ```
 
 ### Python Module Usage
@@ -225,7 +306,7 @@ When working with the source code:
 
 ## Technical Requirements
 
-- Python 3.8 or higher
+- Python 3.12 or higher
 - QDrant server (local or cloud instance)
 - OpenAI API key
 - Sufficient disk space for the vector database
