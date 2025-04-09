@@ -78,8 +78,8 @@ def test_should_process_file(git_connector):
         # Create test files in the temporary directory
         test_files = [
             (".git/config", False),  # Should be excluded
-            ("src/test.md", True),  # Should be included
-            ("tests/test.md", False),  # Should be excluded
+            ("src/main/test.md", True),  # Should be included
+            ("src/test/test.md", False),  # Should be excluded
             ("docs/README.md", True),  # Should be included
             ("large_file.md", False)  # Should be excluded if too large
         ]
@@ -102,7 +102,7 @@ def test_process_file(git_connector):
     """Test GitConnector _process_file method with real files."""
     with git_connector:
         # Create a test file
-        file_path = os.path.join(git_connector.temp_dir, "src", "test.md")
+        file_path = os.path.join(git_connector.temp_dir, "src", "main", "test.md")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         content = "# Test Document\n\n## Section 1\nTest content\n\n## Section 2\nMore test content"
         with open(file_path, 'w') as f:

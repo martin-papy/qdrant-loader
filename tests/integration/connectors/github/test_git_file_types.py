@@ -41,9 +41,9 @@ def test_md_file_handling(git_connector_with_file_types):
         # Test various MD files
         test_files = [
             "README.md",
-            "src/test.md",
+            "src/main/test.md",
             "docs/README.md",
-            "src/nested/deep/path/test.md"
+            "src/main/nested/deep/path/test.md"
         ]
         
         for file_path in test_files:
@@ -62,9 +62,9 @@ def test_txt_file_handling(git_connector_with_file_types):
     with git_connector_with_file_types:
         # Create and test TXT files
         test_files = [
-            "src/test.txt",
+            "src/main/test.txt",
             "docs/notes.txt",
-            "src/nested/deep/path/readme.txt"
+            "src/main/nested/deep/path/readme.txt"
         ]
         
         for file_path in test_files:
