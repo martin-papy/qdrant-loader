@@ -6,30 +6,15 @@ import pytest
 import yaml
 import tempfile
 from pathlib import Path
-from dotenv import load_dotenv
 import time
-from tests.utils import is_github_actions
-
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig, Settings
+from qdrant_loader.config import GitRepoConfig, GitAuthConfig
 from qdrant_loader.connectors.git import GitConnector
 
-# Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
-
-# Skip all tests in this file if running in GitHub Actions
-pytestmark = pytest.mark.skipif(
-    is_github_actions(),
-    reason="Git repository tests are skipped in GitHub Actions"
-)
-
 @pytest.fixture
-def test_repo_url():
+def test_repo_url(test_settings):
     """Return a test repository URL from config.test.yaml."""
-    config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    settings = Settings.from_yaml(config_path)
-    
     # Get the auth-test-repo URL from the correct path in config
-    auth_test_repo_url = settings.sources_config.git_repos['auth-test-repo'].url
+    auth_test_repo_url = test_settings.sources_config.git_repos['auth-test-repo'].url
     
     # Verify the URL is valid
     if not auth_test_repo_url.startswith(("http://", "https://")):
