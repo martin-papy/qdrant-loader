@@ -26,7 +26,7 @@ def test_repo_url(test_settings):
 def test_repo_config(test_repo_url):
     """Create a test GitRepoConfig."""
     return GitRepoConfig(
-        url=str(Path("./tests/fixtures/test-repo").absolute()),  # Use local test repo
+        url=test_repo_url,
         branch="main",
         depth=1,
         file_types=["*.md"],
