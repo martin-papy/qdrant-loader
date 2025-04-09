@@ -11,6 +11,11 @@ from qdrant_loader.config import Settings, initialize_config, get_settings
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
 
 @pytest.fixture(scope="session")
+def is_github_actions():
+    """Check if running in GitHub Actions environment."""
+    return os.getenv('GITHUB_ACTIONS') == 'true'
+
+@pytest.fixture(scope="session")
 def test_settings():
     """Load test settings from environment variables and config file."""
     # Load settings from YAML
