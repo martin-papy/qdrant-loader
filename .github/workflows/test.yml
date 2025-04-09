@@ -57,7 +57,7 @@ jobs:
 
       - name: Run tests and generate coverage reports
         run: |
-          python -m pytest tests/integration/connectors/github/ --cov=qdrant_loader --cov-report=html -v
+          python -m pytest tests/ --cov=qdrant_loader --cov-report=html -v
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
