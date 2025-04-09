@@ -9,59 +9,59 @@ global:
     level: INFO
     format: json
     file: qdrant-loader-test.log
+sources:
+  public_docs:
+    test-docs:
+      base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
+      version: "3.12"
+      content_type: html
+      exclude_paths:
+        - /downloads
+      selectors:
+        content: .body
+        remove:
+          - nav
+          - header
+          - footer
+        code_blocks: pre code
 
-public_docs:
-  test-docs:
-    base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
-    version: "3.12"
-    content_type: html
-    exclude_paths:
-      - /downloads
-    selectors:
-      content: .body
-      remove:
-        - nav
-        - header
-        - footer
-      code_blocks: pre code
-
-git_repos:
-  # Local test repository for general testing
-  test-repo:
+  git_repos:
+    # Local test repository for general testing
     test-repo:
-      url: "./tests/fixtures/test-repo"
+      test-repo:
+        url: "./tests/fixtures/test-repo"
+        branch: "main"
+        include_paths: ["/", "docs/", "src/", "README.md"]
+        exclude_paths: ["tests/**"]
+        file_types: ["*.md"]
+        max_file_size: 1048576
+        depth: 1
+    
+    # Remote repository for authentication testing
+    auth-test-repo:
+      url: AUTH_TEST_REPO_URL  # Replace with actual test repository
       branch: "main"
-      include_paths: ["/", "docs/", "src/", "README.md"]
-      exclude_paths: ["tests/**"]
-      file_types: ["*.md"]
-      max_file_size: 1048576
-      depth: 1
-  
-  # Remote repository for authentication testing
-  auth-test-repo:
-    url: AUTH_TEST_REPO_URL  # Replace with actual test repository
-    branch: "main"
-    token: "${GITHUB_TOKEN}"
+      token: "${GITHUB_TOKEN}"
 
-confluence:
-  test-space:
-    url: "CONFLUENCE_URL_PLACEHOLDER"
-    space_key: "CONFLUENCE_SPACE_KEY_PLACEHOLDER"
-    content_types:
-      - "page"
-      - "blogpost"
-    include_labels: []
-    exclude_labels: []
-    token: "${CONFLUENCE_TOKEN}"
-    email: "${CONFLUENCE_EMAIL}"
+  confluence:
+    test-space:
+      url: "CONFLUENCE_URL_PLACEHOLDER"
+      space_key: "CONFLUENCE_SPACE_KEY_PLACEHOLDER"
+      content_types:
+        - "page"
+        - "blogpost"
+      include_labels: []
+      exclude_labels: []
+      token: "${CONFLUENCE_TOKEN}"
+      email: "${CONFLUENCE_EMAIL}"
 
-jira:
-  test-project:
-    base_url: "JIRA_URL_PLACEHOLDER"
-    project_key: "JIRA_PROJECT_KEY_PLACEHOLDER"
-    requests_per_minute: 60
-    page_size: 50
-    process_attachments: true
-    track_last_sync: true
-    token: "${JIRA_TOKEN}"
-    email: "${JIRA_EMAIL}"
+  jira:
+    test-project:
+      base_url: "JIRA_URL_PLACEHOLDER"
+      project_key: "JIRA_PROJECT_KEY_PLACEHOLDER"
+      requests_per_minute: 60
+      page_size: 50
+      process_attachments: true
+      track_last_sync: true
+      token: "${JIRA_TOKEN}"
+      email: "${JIRA_EMAIL}"
