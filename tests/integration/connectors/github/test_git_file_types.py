@@ -4,26 +4,24 @@ Tests for Git connector file type filtering.
 import os
 import pytest
 from pathlib import Path
-from tests.utils import is_github_actions
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
-# Skip all tests in this file if running in GitHub Actions
-pytestmark = pytest.mark.skipif(
-    is_github_actions(),
-    reason="Git repository tests are skipped in GitHub Actions"
-)
-
 @pytest.fixture(scope="function")
-def git_config_with_file_types():
+def git_config_with_file_types(test_settings):
     """Create a GitRepoConfig instance with specific file type settings."""
+    # Get the first Git repo config from the test settings
+    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
+    base_config = test_settings.sources_config.git_repos[repo_key]
+    
     return GitRepoConfig(
-        url="./tests/fixtures/test-repo",
-        branch="main",
+        url=base_config.url,
+        branch=base_config.branch,
         file_types=["*.md", "*.txt"],
-        include_paths=[],
-        exclude_paths=[],
-        max_file_size=1024 * 1024  # 1MB
+        include_paths=base_config.include_paths,
+        exclude_paths=base_config.exclude_paths,
+        max_file_size=base_config.max_file_size,
+        auth=base_config.auth
     )
 
 @pytest.fixture(scope="function")

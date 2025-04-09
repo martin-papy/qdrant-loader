@@ -6,24 +6,22 @@ import pytest
 from pathlib import Path
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
-from tests.utils import is_github_actions
-
-# Skip all tests in this file if running in GitHub Actions
-pytestmark = pytest.mark.skipif(
-    is_github_actions(),
-    reason="Git repository tests are skipped in GitHub Actions"
-)
 
 @pytest.fixture(scope="function")
-def git_config_with_directories():
+def git_config_with_directories(test_settings):
     """Create a GitRepoConfig instance with specific directory settings."""
+    # Get the first Git repo config from the test settings
+    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
+    base_config = test_settings.sources_config.git_repos[repo_key]
+    
     return GitRepoConfig(
-        url="./tests/fixtures/test-repo",
-        branch="main",
-        file_types=["*.md"],
+        url=base_config.url,
+        branch=base_config.branch,
+        file_types=base_config.file_types,
         include_paths=["/","src/", "docs/"],
         exclude_paths=["tests/"],
-        max_file_size=1024 * 1024  # 1MB
+        max_file_size=base_config.max_file_size,
+        auth=base_config.auth
     )
 
 @pytest.fixture(scope="function")

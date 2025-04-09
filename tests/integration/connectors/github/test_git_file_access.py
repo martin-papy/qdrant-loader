@@ -8,31 +8,25 @@ import time
 from pathlib import Path
 import pytest
 from git import Repo, GitCommandError
-from tests.utils import is_github_actions
-
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
-# Skip all tests in this file if running in GitHub Actions
-pytestmark = pytest.mark.skipif(
-    is_github_actions(),
-    reason="Git repository tests are skipped in GitHub Actions"
-)
-
-# Path to the test repository
-TEST_REPO_PATH = Path(__file__).parent.parent.parent.parent / "fixtures" / "test-repo"
-
 @pytest.fixture(scope="function")
-def git_config():
+def git_config(test_settings):
     """Create a GitRepoConfig instance for testing."""
+    # Get the first Git repo config from the test settings
+    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
+    base_config = test_settings.sources_config.git_repos[repo_key]
+    
     return GitRepoConfig(
-        url=str(TEST_REPO_PATH.absolute()),
-        branch="main",
-        depth=1,
-        file_types=["*.md"],
+        url=base_config.url,
+        branch=base_config.branch,
+        depth=base_config.depth,
+        file_types=base_config.file_types,
         include_paths=["docs/", "src/"],
         exclude_paths=[".git/"],
-        max_file_size=1024 * 1024  # 1MB
+        max_file_size=base_config.max_file_size,
+        auth=base_config.auth
     )
 
 @pytest.fixture(scope="function")
