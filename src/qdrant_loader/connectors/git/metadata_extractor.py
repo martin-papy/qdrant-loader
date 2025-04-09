@@ -65,6 +65,7 @@ class GitMetadataExtractor:
         file_encoding = self._detect_encoding(content)
         line_count = len(content.splitlines())
         word_count = len(content.split())
+        file_size = len(content.encode(file_encoding))
 
         return {
             "file_type": file_type,
@@ -73,6 +74,7 @@ class GitMetadataExtractor:
             "file_encoding": file_encoding,
             "line_count": line_count,
             "word_count": word_count,
+            "file_size": file_size,
             "has_code_blocks": self._has_code_blocks(content),
             "has_images": self._has_images(content),
             "has_links": self._has_links(content)

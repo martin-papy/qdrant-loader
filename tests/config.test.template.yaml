@@ -26,21 +26,15 @@ sources:
         code_blocks: pre code
 
   git_repos:
-    # Local test repository for general testing
-    test-repo:
-      url: "./tests/fixtures/test-repo"
+    auth-test-repo:
+      url: "${REPO_URL}"
       branch: "main"
+      token: "${REPO_TOKEN}"
       include_paths: ["/", "docs/", "src/", "README.md"]
       exclude_paths: ["tests/**"]
       file_types: ["*.md"]
       max_file_size: 1048576
       depth: 1
-    
-    # Remote repository for authentication testing
-    auth-test-repo:
-      url: "${REPO_URL}"
-      branch: "main"
-      token: "${REPO_TOKEN}"
 
   confluence:
     test-space:
