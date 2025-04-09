@@ -13,6 +13,11 @@ import yaml
 from unittest.mock import patch, MagicMock
 import requests
 from requests.auth import HTTPBasicAuth
+import logging
+
+# Configure logging for tests
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
@@ -20,10 +25,43 @@ load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
 @pytest.fixture(scope="session")
 def test_settings():
     """Load test settings from environment variables and config file."""
-    # Load settings from YAML
-    config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    initialize_config(config_path)
-    return Settings.from_yaml(config_path)
+    try:
+        # Log environment variables (excluding sensitive data)
+        env_vars = {
+            'CONFLUENCE_URL': os.getenv('CONFLUENCE_URL'),
+            'CONFLUENCE_SPACE_KEY': os.getenv('CONFLUENCE_SPACE_KEY'),
+            'CONFLUENCE_EMAIL': os.getenv('CONFLUENCE_EMAIL'),
+            'CONFLUENCE_TOKEN': 'REDACTED' if os.getenv('CONFLUENCE_TOKEN') else None
+        }
+        logger.debug("Environment variables: %s", env_vars)
+
+        # Load settings from YAML
+        config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
+        logger.debug("Loading config from: %s", config_path)
+        
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config file not found at {config_path}")
+            
+        try:
+            with open(config_path) as f:
+                config_data = yaml.safe_load(f)
+                logger.debug("Loaded YAML data: %s", {k: '...' for k in config_data.keys()})
+        except yaml.YAMLError as e:
+            logger.error("Failed to parse YAML file: %s", e)
+            raise
+            
+        try:
+            initialize_config(config_path)
+            settings = Settings.from_yaml(config_path)
+            logger.debug("Successfully initialized settings")
+            return settings
+        except Exception as e:
+            logger.error("Failed to initialize settings: %s", e)
+            raise
+            
+    except Exception as e:
+        logger.error("Failed to load test settings: %s", e)
+        raise
 
 @pytest.fixture(scope="function")
 def confluence_config(test_settings):
