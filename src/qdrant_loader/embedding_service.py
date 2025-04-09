@@ -21,7 +21,7 @@ class EmbeddingService:
         self.model = settings.global_config.embedding.model
         self.encoding = tiktoken.encoding_for_model(self.model)
         self.last_request_time = 0
-        self.min_request_interval = 0.1  # 100ms between requests
+        self.min_request_interval = 0.5  # 500ms between requests
 
     def _apply_rate_limit(self):
         """Apply rate limiting between API requests."""
@@ -47,12 +47,20 @@ class EmbeddingService:
     def get_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Get embeddings for multiple texts."""
         try:
-            self._apply_rate_limit()
-            response = self.client.embeddings.create(
-                model=self.model,
-                input=texts
-            )
-            return [data.embedding for data in response.data]
+            # Process texts in smaller batches to respect rate limits
+            batch_size = 5  # Process 5 texts at a time
+            all_embeddings = []
+            
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                self._apply_rate_limit()
+                response = self.client.embeddings.create(
+                    model=self.model,
+                    input=batch
+                )
+                all_embeddings.extend([data.embedding for data in response.data])
+            
+            return all_embeddings
         except Exception as e:
             logger.error("Failed to get embeddings", error=str(e))
             raise
