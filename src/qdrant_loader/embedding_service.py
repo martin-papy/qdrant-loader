@@ -21,7 +21,7 @@ class EmbeddingService:
         self.model = settings.global_config.embedding.model
         self.encoding = tiktoken.encoding_for_model(self.model)
         self.last_request_time = 0
-        self.min_request_interval = 0.1  # 100ms between requests
+        self.min_request_interval = 0.5  # 500ms between requests
 
     def _apply_rate_limit(self):
         """Apply rate limiting between API requests."""
