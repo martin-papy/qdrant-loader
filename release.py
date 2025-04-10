@@ -360,11 +360,19 @@ def release(dry_run: bool, verbose: bool):
     logger.info(f"Selected new version: {new_version}")
     
     if dry_run:
+        logger.info(f"[DRY RUN] Would create and push tag v{current_version}")
+        logger.info(f"[DRY RUN] Would create release for version {current_version}")
         logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
         logger.info(f"[DRY RUN] Would create commit: chore(release): bump version to v{new_version}")
-        logger.info(f"[DRY RUN] Would create and push tag v{new_version}")
-        logger.info(f"[DRY RUN] Would create GitHub release for version {new_version}")
         return
+    
+    # Create and push tag with current version
+    run_command(f'git tag -a v{current_version} -m "Release v{current_version}"', dry_run)
+    run_command("git push origin main --tags", dry_run)
+    
+    # Create GitHub release with current version
+    token = get_github_token(dry_run)
+    create_github_release(current_version, token, dry_run)
     
     # Update version
     update_version(new_version, dry_run)
@@ -372,15 +380,7 @@ def release(dry_run: bool, verbose: bool):
     # Create commit
     run_command(f'git commit -am "chore(release): bump version to v{new_version}"', dry_run)
     
-    # Create and push tag
-    run_command(f'git tag -a v{new_version} -m "Release v{new_version}"', dry_run)
-    run_command("git push origin main --tags", dry_run)
-    
-    # Create GitHub release
-    token = get_github_token(dry_run)
-    create_github_release(new_version, token, dry_run)
-    
-    logger.info(f"\nSuccessfully created release v{new_version}!")
+    logger.info(f"\nSuccessfully created release v{current_version} and bumped version to v{new_version}!")
 
 if __name__ == "__main__":
     release() 
