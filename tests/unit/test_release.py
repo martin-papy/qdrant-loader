@@ -344,7 +344,10 @@ def test_check_github_workflows_success():
             mock_logger.return_value = mock_log
             
             # Setup mocks
-            mock_run.return_value = (remote_url, "")
+            mock_run.side_effect = [
+                (remote_url, ""),  # For git remote
+                ("abc123", "")     # For git rev-parse HEAD
+            ]
             mock_token.return_value = "test-token"
             
             # Mock successful API responses
@@ -358,8 +361,8 @@ def test_check_github_workflows_success():
             mock_response_completed.status_code = 200
             mock_response_completed.json.return_value = {
                 "workflow_runs": [
-                    {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com"},
-                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+                    {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com", "head_sha": "abc123"},
+                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com", "head_sha": "abc123"}
                 ]
             }
             
@@ -367,7 +370,7 @@ def test_check_github_workflows_success():
             mock_get.side_effect = [mock_response_running, mock_response_completed]
             
             check_github_workflows()
-            mock_log.info.assert_called_with("All workflows are passing")
+            mock_log.info.assert_any_call("GitHub workflows check completed successfully")
             
             # Verify the correct repository URL was used in both API calls
             assert mock_get.call_count == 2
@@ -376,6 +379,51 @@ def test_check_github_workflows_success():
             
             # Reset mocks for next iteration
             mock_get.reset_mock()
+
+def test_check_github_workflows_commit_mismatch():
+    """Test GitHub workflows check when workflow runs are on different commits."""
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
+        # Setup mocks
+        mock_run.side_effect = [
+            ("git@github.com:owner/repo.git", ""),  # For git remote
+            ("abc123", "")                          # For git rev-parse HEAD
+        ]
+        mock_token.return_value = "test-token"
+        
+        # Mock successful API responses
+        # First call: check running workflows
+        mock_response_running = MagicMock()
+        mock_response_running.status_code = 200
+        mock_response_running.json.return_value = {"workflow_runs": []}
+        
+        # Second call: check completed workflows
+        mock_response_completed = MagicMock()
+        mock_response_completed.status_code = 200
+        mock_response_completed.json.return_value = {
+            "workflow_runs": [
+                {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com", "head_sha": "def456"},
+                {"name": "Lint", "conclusion": "success", "html_url": "http://example.com", "head_sha": "def456"}
+            ]
+        }
+        
+        # Setup side effect to return different responses for different calls
+        mock_get.side_effect = [mock_response_running, mock_response_completed]
+        
+        with pytest.raises(SystemExit):
+            check_github_workflows()
+        
+        # Verify error messages
+        mock_log.error.assert_any_call("Workflow 'Test and Coverage' was run on a different commit. Please ensure all workflows are run on the current commit.")
+        mock_log.error.assert_any_call("Current commit: abc123")
+        mock_log.error.assert_any_call("Workflow commit: def456")
+        mock_log.error.assert_any_call("Workflow run: http://example.com")
 
 def test_check_github_workflows_failure():
     """Test GitHub workflows check when a workflow is failing."""
@@ -395,7 +443,10 @@ def test_check_github_workflows_failure():
             mock_logger.return_value = mock_log
             
             # Setup mocks
-            mock_run.return_value = (remote_url, "")
+            mock_run.side_effect = [
+                (remote_url, ""),  # For git remote
+                ("abc123", "")     # For git rev-parse HEAD
+            ]
             mock_token.return_value = "test-token"
             
             # Mock successful API responses
@@ -409,8 +460,8 @@ def test_check_github_workflows_failure():
             mock_response_completed.status_code = 200
             mock_response_completed.json.return_value = {
                 "workflow_runs": [
-                    {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com"},
-                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+                    {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com", "head_sha": "abc123"},
+                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com", "head_sha": "abc123"}
                 ]
             }
             
@@ -441,7 +492,10 @@ def test_check_github_workflows_running():
         mock_logger.return_value = mock_log
         
         # Setup mocks
-        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_run.side_effect = [
+            ("git@github.com:owner/repo.git", ""),  # For git remote
+            ("abc123", "")                          # For git rev-parse HEAD
+        ]
         mock_token.return_value = "test-token"
         
         # Mock API response with running workflow
@@ -470,7 +524,10 @@ def test_check_github_workflows_api_error():
         mock_logger.return_value = mock_log
         
         # Setup mocks
-        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_run.side_effect = [
+            ("git@github.com:owner/repo.git", ""),  # For git remote
+            ("abc123", "")                          # For git rev-parse HEAD
+        ]
         mock_token.return_value = "test-token"
         
         # Mock API error
@@ -526,7 +583,10 @@ def test_dry_run_mode():
         with patch('release.run_command') as mock_run, \
              patch('release.get_github_token') as mock_token, \
              patch('requests.get') as mock_get:
-            mock_run.return_value = ("git@github.com:owner/repo.git", "")
+            mock_run.side_effect = [
+                ("git@github.com:owner/repo.git", ""),  # For git remote
+                ("abc123", "")                          # For git rev-parse HEAD
+            ]
             mock_token.return_value = "test-token"
             
             # Mock responses for both API calls
@@ -538,7 +598,7 @@ def test_dry_run_mode():
             mock_response_completed.status_code = 200
             mock_response_completed.json.return_value = {
                 "workflow_runs": [
-                    {"name": "Test", "conclusion": "success", "html_url": "http://example.com"}
+                    {"name": "Test", "conclusion": "success", "html_url": "http://example.com", "head_sha": "abc123"}
                 ]
             }
             
