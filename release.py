@@ -74,9 +74,10 @@ def check_unpushed_commits(dry_run: bool = False) -> None:
         return
     
     stdout, _ = run_command("git log origin/main..HEAD")
-    if not stdout:
-        click.echo("Error: No unpushed commits. Please push your changes first.")
+    if stdout:
+        click.echo("Error: There are unpushed commits. Please push all changes before creating a release.")
         sys.exit(1)
+    # If we get here, it means all commits are pushed, which is what we want for a release
 
 def get_github_token(dry_run: bool = False) -> str:
     """Get GitHub token from environment variable."""
