@@ -128,6 +128,65 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
         click.echo(f"Error creating GitHub release: {response.text}")
         sys.exit(1)
 
+def check_main_up_to_date(dry_run: bool = False) -> None:
+    """Check if local main branch is up to date with remote main."""
+    if dry_run:
+        click.echo("[DRY RUN] Would check if main is up to date with remote")
+        return
+    
+    stdout, _ = run_command("git fetch origin main")
+    stdout, _ = run_command("git rev-list HEAD...origin/main --count")
+    if stdout != "0":
+        click.echo("Error: Local main branch is not up to date with remote main. Please pull the latest changes first.")
+        sys.exit(1)
+
+def check_github_workflows(dry_run: bool = False) -> None:
+    """Check if all GitHub Actions workflows are passing."""
+    if dry_run:
+        click.echo("[DRY RUN] Would check GitHub Actions workflow status")
+        return
+    
+    # Get repository info
+    stdout, _ = run_command("git remote get-url origin")
+    repo_url = stdout.split(":")[1].replace(".git", "")
+    
+    # Get GitHub token
+    token = get_github_token(dry_run)
+    
+    # Get the latest workflow runs
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.get(
+        f"https://api.github.com/repos/{repo_url}/actions/runs",
+        headers=headers,
+        params={"branch": "main", "status": "completed", "per_page": 5}
+    )
+    
+    if response.status_code != 200:
+        click.echo(f"Error checking GitHub Actions status: {response.text}")
+        sys.exit(1)
+    
+    runs = response.json()["workflow_runs"]
+    if not runs:
+        click.echo("Error: No recent workflow runs found. Please ensure workflows are running.")
+        sys.exit(1)
+    
+    # Check the most recent run for each workflow
+    workflows = {}
+    for run in runs:
+        workflow_name = run["name"]
+        if workflow_name not in workflows:
+            workflows[workflow_name] = run
+    
+    for workflow_name, run in workflows.items():
+        if run["conclusion"] != "success":
+            click.echo(f"Error: Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}")
+            click.echo(f"Please check the workflow run at: {run['html_url']}")
+            sys.exit(1)
+
 @click.command()
 @click.option('--dry-run', is_flag=True, help='Simulate the release process without making any changes')
 def release(dry_run: bool):
@@ -139,6 +198,8 @@ def release(dry_run: bool):
     check_git_status(dry_run)
     check_current_branch(dry_run)
     check_unpushed_commits(dry_run)
+    check_main_up_to_date(dry_run)
+    check_github_workflows(dry_run)
     
     current_version = get_current_version()
     click.echo(f"Current version: {current_version}")
