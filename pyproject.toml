@@ -1,24 +1,31 @@
 [build-system]
-requires = ["hatchling"]
+requires = [
+    "hatchling",
+]
 build-backend = "hatchling.build"
 
 [project]
 name = "qdrant-loader"
-version = "0.1.3b1"
+version = "0.1.3b2"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "GPL-3.0"
-keywords = ["qdrant", "vector-database", "embeddings", "document-processing"]
+keywords = [
+    "qdrant",
+    "vector-database",
+    "embeddings",
+    "document-processing",
+]
 authors = [
-    { name = "Martin Papy", email = "martin.papy@gmail.com" }
+    { name = "Martin Papy", email = "martin.papy@gmail.com" },
 ]
 dependencies = [
     "click>=8.1.7",
     "requests>=2.31.0",
     "tomli>=2.0.1",
     "tomli-w>=1.0.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -32,20 +39,28 @@ classifiers = [
 qdrant-loader = "qdrant_loader.cli:cli"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+]
 addopts = "--cov=src --cov-report=term-missing"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "ignore::UserWarning:qdrant_loader.qdrant_manager",
     "ignore:.*type_params.*:DeprecationWarning:pydantic.v1.typing",
-    "ignore::pydantic.warnings.PydanticDeprecatedSince20"
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
 ]
 
 [tool.coverage.run]
-source = ["src"]
-omit = ["tests/*"]
+source = [
+    "src",
+]
+omit = [
+    "tests/*",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -55,13 +70,15 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "pass",
-    "raise ImportError"
+    "raise ImportError",
 ]
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
-include = '\.pyi?$'
+target-version = [
+    "py39",
+]
+include = "\\.pyi?$"
 
 [tool.isort]
 profile = "black"
@@ -83,4 +100,4 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
-warn_unreachable = true 
+warn_unreachable = true
