@@ -12,103 +12,68 @@ A tool for collecting and vectorizing technical content from multiple sources an
 - Command-line interface for easy operation
 - Comprehensive logging and debugging capabilities
 
-## Setup
+## Supported Connectors
 
-1. Clone the repository:
+- **Git**: Ingest code and documentation from Git repositories
+- **Confluence**: Extract technical documentation from Confluence spaces
+- **JIRA**: Collect technical specifications and documentation from JIRA issues
+- **Public Documentation**: Ingest public technical documentation from websites
+- **Custom Sources**: Extensible architecture for adding new data sources
 
-    ```bash
-    git clone https://github.com/kheldar666/qdrant-loader.git
-    cd qdrant-loader
-    ```
+## Quick Start
 
-2. Create and activate a virtual environment:
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On macOS/Linux
-    ```
-
-3. Install dependencies:
+1. Install the package:
 
     ```bash
-    pip install -r requirements.txt
+    pip install qdrant-loader
     ```
 
-4. Configure environment variables:
+2. Configure your environment:
 
     ```bash
     cp .env.template .env
     # Edit .env with your configuration
     ```
 
-    See [.env.template](.env.template) for all available environment variables and their descriptions.
-
-5. Create your configuration file:
+3. Create your configuration file:
 
     ```bash
     cp config.template.yaml config.yaml
     # Edit config.yaml with your source configurations
     ```
 
-    See [config.template.yaml](config.template.yaml) for detailed configuration options and examples.
+4. Initialize the QDrant collection:
+
+    ```bash
+    qdrant-loader init
+    ```
+
+5. Run the ingestion pipeline:
+
+    ```bash
+    qdrant-loader ingest
+    ```
 
 ## Configuration
 
 ### Environment Variables
-
-Create a `.env` file in your project root with the following variables (not all are mandatory):
-
-```bash
-# QDrant Configuration
-QDRANT_URL=https://your-qdrant-instance:6333
-QDRANT_API_KEY=your-api-key
-QDRANT_COLLECTION_NAME=your-collection-name
-
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key
-
-# Git Configuration
-REPO_TOKEN=your-repo-token               # Github PAT
-REPO_URL=your-repo-url
-
-# Confluence Configuration
-CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
-CONFLUENCE_SPACE_KEY=your-space-key
-CONFLUENCE_TOKEN=your-confluence-token
-CONFLUENCE_EMAIL=your-confluence-email
-
-# JIRA Configuration
-JIRA_URL=https://your-domain.atlassian.net
-JIRA_PROJECT_KEY=your-project-key
-JIRA_TOKEN=your-jira-token
-JIRA_EMAIL=your-jira-email
-
-# Logging Configuration (Optional)
-LOG_LEVEL=INFO                           # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FORMAT=json                          # Options: json, plain
-```
-
-Environment variables can be set in three ways:
-
-1. In the `.env` file (recommended for development)
-2. As system environment variables
-3. Through the shell before running commands
 
 Required variables:
 
 - `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION_NAME`
 - `OPENAI_API_KEY`
 
-Optional variables:
+Optional variables (required only for specific sources):
 
-- Source-specific variables are only required if you're using that source
-- Logging variables have sensible defaults
+- Git: `REPO_TOKEN`, `REPO_URL`
+- Confluence: `CONFLUENCE_URL`, `CONFLUENCE_SPACE_KEY`, `CONFLUENCE_TOKEN`, `CONFLUENCE_EMAIL`
+- JIRA: `JIRA_URL`, `JIRA_PROJECT_KEY`, `JIRA_TOKEN`, `JIRA_EMAIL`
 
-Note: API keys and tokens are automatically masked in logs and output.
+See [.env.template](.env.template) for all available environment variables and their descriptions.
 
 ### Configuration File
 
-The configuration file (`config.yaml`) is required for running the ingestion pipeline. It contains source-specific settings and global configurations. See [config.template.yaml](config.template.yaml) for a complete template with detailed comments:
+The `config.yaml` file controls the ingestion pipeline behavior. Key settings include:
 
 ```yaml
 global:
@@ -136,38 +101,11 @@ sources:
         - "Approved"
 ```
 
+See [config.template.yaml](config.template.yaml) for complete configuration options.
+
 ## Usage
 
-### Installation
-
-You can use QDrant Loader in two ways:
-
-1. **Install from PyPI (Recommended for end users)**:
-
-   ```bash
-   pip install qdrant-loader
-   ```
-
-2. **Install from source (Recommended for development)**:
-
-   ```bash
-   # Clone the repository
-   git clone https://github.com/kheldar666/qdrant-loader.git
-   cd qdrant-loader
-
-   # Create and activate virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On macOS/Linux
-   # or
-   .\venv\Scripts\activate  # On Windows
-
-   # Install in development mode
-   pip install -e .
-   ```
-
 ### Command Line Interface
-
-The QDrant Loader provides a command-line interface for all operations. After installation, you can use the `qdrant-loader` command:
 
 ```bash
 # Show help and available commands
@@ -176,26 +114,19 @@ qdrant-loader --help
 # Initialize the QDrant collection
 qdrant-loader init
 
-# Force reinitialize the collection
-qdrant-loader init --force
-
-# Run the ingestion pipeline
-# Will use config.yaml in current directory if --config is not specified
+# Run ingestion for all sources
 qdrant-loader ingest
-# Or specify a custom config file
-qdrant-loader ingest --config custom-config.yaml
 
 # Run ingestion for specific source types
-qdrant-loader ingest --source-type confluence  # Ingest only Confluence sources
-qdrant-loader ingest --source-type git        # Ingest only Git repositories
-qdrant-loader ingest --source-type public-docs # Ingest only public documentation
-qdrant-loader ingest --source-type jira       # Ingest only JIRA sources
+qdrant-loader ingest --source-type confluence  # Ingest only Confluence
+qdrant-loader ingest --source-type git        # Ingest only Git
+qdrant-loader ingest --source-type public-docs # Ingest only public docs
+qdrant-loader ingest --source-type jira       # Ingest only JIRA
 
-# Run ingestion for a specific source
-qdrant-loader ingest --source-type confluence --source my-space  # Specific Confluence space
-qdrant-loader ingest --source-type git --source my-repo         # Specific Git repository
-qdrant-loader ingest --source-type public-docs --source my-docs # Specific public docs
-qdrant-loader ingest --source-type jira --source my-project     # Specific JIRA project
+# Run ingestion for specific sources
+qdrant-loader ingest --source-type confluence --source my-space
+qdrant-loader ingest --source-type git --source my-repo
+qdrant-loader ingest --source-type jira --source my-project
 
 # Show current configuration
 qdrant-loader config
@@ -204,105 +135,63 @@ qdrant-loader config
 qdrant-loader version
 ```
 
-### Logging and Debugging
-
-The CLI provides comprehensive logging capabilities:
-
-```bash
-# Enable verbose output
-qdrant-loader [command] --verbose
-
-# Set logging level
-qdrant-loader [command] --log-level DEBUG
-
-# View logs in real-time
-tail -f qdrant-loader.log
-```
-
-Logs are written to both:
-
-1. Console (stdout)
-2. Log file (default: `qdrant-loader.log`)
-
-Log levels available:
-
-- `DEBUG`: Detailed information for debugging
-- `INFO`: General operational information
-- `WARNING`: Warning messages for potential issues
-- `ERROR`: Error messages for failed operations
-- `CRITICAL`: Critical errors that prevent operation
-
-Log formats:
-
-- `json`: Structured JSON format (default)
-- `plain`: Human-readable text format
-
 ### Common Options
 
-All commands support the following options:
+All commands support:
+
+- `--verbose`: Enable verbose output
+- `--log-level LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `--config FILE`: Specify custom config file (defaults to config.yaml)
+
+## Development
+
+### Setup Development Environment
 
 ```bash
-# Enable verbose output
-qdrant-loader [command] --verbose
+# Clone the repository
+git clone https://github.com/kheldar666/qdrant-loader.git
+cd qdrant-loader
 
-# Set logging level
-qdrant-loader [command] --log-level DEBUG
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On macOS/Linux
+# or
+.\venv\Scripts\activate  # On Windows
 
-# Specify config file (optional, defaults to config.yaml)
-qdrant-loader [command] --config custom-config.yaml
+# Install dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Install in development mode with additional dev dependencies
+pip install -e ".[dev]"
 ```
 
-### Python Module Usage
-
-You can also use the CLI directly through Python:
+### Running Tests
 
 ```bash
-# When installed from PyPI
-python -m qdrant_loader.cli [command] [options]
+# Run all tests
+pytest tests/
 
-# When running from source
-python -m src.qdrant_loader.cli [command] [options]
+# Run tests with coverage
+pytest --cov=src tests/
+
+# Run specific test files
+pytest tests/test_config.py
+pytest tests/test_qdrant_manager.py
+pytest tests/test_embedding_service.py
+pytest tests/test_cli.py
 ```
 
-### Development Usage
+### Release Management
 
-When working with the source code:
+The project includes a release management script (`release.py`) to automate version bumping and GitHub releases.
 
-1. **Running Tests**:
+```bash
+# Run release script
+python release.py
 
-   ```bash
-   # Run all tests
-   pytest tests/
-
-   # Run tests with coverage
-   pytest --cov=src tests/
-
-   # Run specific test files
-   pytest tests/test_config.py
-   pytest tests/test_qdrant_manager.py
-   pytest tests/test_embedding_service.py
-   pytest tests/test_cli.py
-   ```
-
-2. **Building the Package**:
-
-   ```bash
-   # Build the package
-   python -m build
-
-   # Install the built package
-   pip install dist/qdrant_loader-*.whl
-   ```
-
-3. **Running from Source**:
-
-   ```bash
-   # Run the CLI directly from source
-   python -m src.qdrant_loader.cli [command] [options]
-
-   # Run with development logging
-   LOG_LEVEL=DEBUG python -m src.qdrant_loader.cli [command] [options]
-   ```
+# Test release process (dry run)
+python release.py --dry-run
+```
 
 ## Technical Requirements
 
@@ -312,116 +201,25 @@ When working with the source code:
 - Sufficient disk space for the vector database
 - Internet connection for API access
 
-## Contributing and Support
+## Contributing
 
-We welcome contributions and feedback! Here's how you can get involved:
+We welcome contributions! Please:
 
-### Reporting Issues
-
-If you encounter any bugs or have feature requests, please:
-
-1. Check the [existing issues](https://github.com/kheldar666/qdrant-loader/issues) to avoid duplicates
+1. Check existing issues to avoid duplicates
 2. Create a new issue with:
-   - A clear, descriptive title
-   - Steps to reproduce the problem
+   - Clear, descriptive title
+   - Steps to reproduce
    - Expected vs actual behavior
-   - Environment details (Python version, OS, etc.)
-   - Relevant error messages or logs
+   - Environment details
+   - Relevant error messages
 
-### Providing Feedback
+For code contributions:
 
-- For general feedback or suggestions, create a [Discussion](https://github.com/kheldar666/qdrant-loader/discussions)
-- For code contributions, please:
-  1. Fork the repository
-  2. Create a feature branch
-  3. Submit a pull request with a clear description of changes
-  4. Ensure all tests pass and new code is covered by tests
-
-## Development
-
-### Running Tests
-
-Run the full test suite:
-
-```bash
-pytest tests/
-```
-
-Run tests with coverage report:
-
-```bash
-pytest --cov=src tests/
-```
-
-Run specific test files:
-
-```bash
-pytest tests/test_config.py
-pytest tests/test_qdrant_manager.py
-pytest tests/test_embedding_service.py
-pytest tests/test_cli.py
-```
-
-### Release Management
-
-The project includes a release management script (`release.py`) to help automate version bumping and GitHub releases. The script provides an interactive interface for managing releases and includes safety checks to prevent common mistakes.
-
-#### Prerequisites
-
-1. Install development dependencies:
-   ```bash
-   pip install -r requirements-test.txt
-   ```
-
-2. Ensure your GitHub token is set in the `.env` file:
-   ```bash
-   GITHUB_TOKEN=your_github_token
-   ```
-
-#### Usage
-
-Run the release script:
-```bash
-python release.py
-```
-
-The script will:
-1. Check for uncommitted changes
-2. Verify you're on the main branch
-3. Show the current version
-4. Present version bump options:
-   - Major (e.g., 1.0.0)
-   - Minor (e.g., 0.2.0)
-   - Patch (e.g., 0.1.4)
-   - Beta (e.g., 0.1.3b2)
-   - Custom version input
-
-After selecting the version bump type, the script will:
-1. Update the version in `pyproject.toml`
-2. Create a commit with the version bump
-3. Create and push a git tag
-4. Create a GitHub release with the latest commits as release notes
-
-#### Dry Run Mode
-
-You can test the release process without making any changes using the dry run mode:
-```bash
-python release.py --dry-run
-```
-
-This will show all the actions that would be taken without actually executing them.
-
-#### Safety Checks
-
-The script includes several safety checks:
-- Verifies working directory is clean
-- Ensures you're on the main branch
-- Checks for unpushed commits
-- Validates GitHub token availability
-- Prevents duplicate version tags
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request with clear description
+4. Ensure all tests pass
 
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-The GNU GPLv3 is a copyleft license that requires anyone who distributes your code or a derivative work to make the source available under the same terms. This license also provides patent protection and protection against tivoization.
