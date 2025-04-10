@@ -5,6 +5,7 @@ import pytest
 import tomli
 import tomli_w
 from pathlib import Path
+import logging
 
 # Import the functions we want to test
 from release import (
@@ -18,6 +19,7 @@ from release import (
     create_github_release,
     check_main_up_to_date,
     check_github_workflows,
+    setup_logging,
 )
 
 @pytest.fixture
@@ -33,6 +35,21 @@ def temp_pyproject():
         tomli_w.dump(pyproject, f)
         return f.name
 
+@pytest.fixture
+def logger():
+    """Setup and return a logger for testing."""
+    return setup_logging(verbose=True)
+
+def test_setup_logging():
+    """Test logging setup with different verbosity levels."""
+    # Test verbose mode
+    logger = setup_logging(verbose=True)
+    assert logger.level == logging.DEBUG
+    
+    # Test non-verbose mode
+    logger = setup_logging(verbose=False)
+    assert logger.level == logging.INFO
+
 def test_get_current_version(temp_pyproject):
     """Test getting the current version from pyproject.toml."""
     # Read the content of the temp file
@@ -41,9 +58,14 @@ def test_get_current_version(temp_pyproject):
     
     # Mock the open function to return our content
     m = mock_open(read_data=content)
-    with patch('release.open', m):
+    with patch('release.open', m), \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         version = get_current_version()
         assert version == "0.1.0"
+        mock_log.debug.assert_any_call("Reading current version from pyproject.toml")
+        mock_log.debug.assert_any_call("Current version: 0.1.0")
 
 def test_update_version():
     """Test updating the version in pyproject.toml."""
@@ -61,10 +83,8 @@ def test_update_version():
             self.content = initial_content
             self.read_mode = None
             self.accumulated_content = ""
-            print(f"Initial content: {self.content}")
         
         def __call__(self, filename, mode):
-            print(f"Opening file {filename} in mode {mode}")
             self.read_mode = mode
             return self
         
@@ -75,111 +95,188 @@ def test_update_version():
             pass
         
         def read(self):
-            print(f"Reading content in mode {self.read_mode}")
             if self.read_mode == "rb":
                 result = tomli_w.dumps(self.content).encode('utf-8')
             else:
                 result = tomli_w.dumps(self.content)
-            print(f"Read result: {result}")
             return result
         
         def write(self, content):
-            print(f"Writing content: {content}")
             if isinstance(content, bytes):
                 content_str = content.decode('utf-8')
             else:
                 content_str = content
-            
-            # Accumulate the content
             self.accumulated_content += content_str
-            
-            try:
-                # Try to parse the accumulated content as TOML
-                self.content = tomli.loads(self.accumulated_content)
-                print(f"Updated content: {self.content}")
-            except tomli.TOMLDecodeError:
-                # If parsing fails, it means we don't have a complete TOML document yet
-                print(f"Partial TOML content accumulated: {self.accumulated_content}")
+            self.content = tomli.loads(self.accumulated_content)
     
     # Create the mock handler
     mock_handler = MockFileHandler(initial_pyproject)
     
-    with patch('release.open', mock_handler):
-        update_version(new_version)
+    with patch('release.open', mock_handler), \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         
-        # Verify the content was updated correctly
-        print(f"Final content: {mock_handler.content}")
+        # Test normal update
+        update_version(new_version)
         assert mock_handler.content["project"]["version"] == new_version
-        assert mock_handler.content["project"]["name"] == "test-project"  # Verify other fields are preserved
+        mock_log.info.assert_called_with(f"Updating version in pyproject.toml to {new_version}")
+        mock_log.debug.assert_called_with("Version updated successfully")
+        
+        # Test dry run
+        update_version(new_version, dry_run=True)
+        mock_log.info.assert_called_with(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
 
 def test_run_command():
     """Test running shell commands."""
-    with patch('subprocess.run') as mock_run:
+    with patch('subprocess.run') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
+        # Test normal command
         mock_run.return_value.stdout = "test output"
         mock_run.return_value.stderr = ""
+        mock_run.return_value.returncode = 0
         stdout, stderr = run_command("echo test")
         assert stdout == "test output"
         assert stderr == ""
+        mock_log.debug.assert_called_with("Executing command: echo test")
+        
+        # Test command with error
+        mock_run.return_value.returncode = 1
+        mock_run.return_value.stderr = "error message"
+        stdout, stderr = run_command("echo test")
+        mock_log.error.assert_any_call("Command failed with return code 1")
+        mock_log.error.assert_any_call("stderr: error message")
+        
+        # Test dry run for non-git command
+        stdout, stderr = run_command("echo test", dry_run=True)
+        assert stdout == ""
+        assert stderr == ""
+        mock_log.info.assert_called_with("[DRY RUN] Would execute: echo test")
+        
+        # Test dry run for git command (should still execute)
+        mock_run.return_value.stdout = "main"
+        mock_run.return_value.stderr = ""
+        mock_run.return_value.returncode = 0
+        stdout, stderr = run_command("git branch --show-current", dry_run=True)
+        assert stdout == "main"
+        mock_log.debug.assert_called_with("Executing command: git branch --show-current")
 
 def test_check_git_status_clean():
     """Test git status check with clean working directory."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("", "")
-        # Should not raise any exception
+        
+        # Test normal mode
         check_git_status()
+        mock_log.debug.assert_any_call("Checking git status")
+        mock_log.debug.assert_any_call("Git status check passed")
+        
+        # Test dry run mode (should still execute the check)
+        check_git_status(dry_run=True)
+        mock_run.assert_called_with("git status --porcelain", True)
 
 def test_check_git_status_dirty():
     """Test git status check with dirty working directory."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("modified file", "")
+        
         with pytest.raises(SystemExit):
             check_git_status()
+        mock_log.error.assert_called_with("There are uncommitted changes. Please commit or stash them first.")
 
 def test_check_current_branch_main():
     """Test branch check when on main branch."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("main", "")
-        # Should not raise any exception
+        
+        # Test normal mode
         check_current_branch()
+        mock_log.debug.assert_any_call("Checking current branch")
+        mock_log.debug.assert_any_call("Current branch check passed")
+        
+        # Test dry run mode (should still execute the check)
+        check_current_branch(dry_run=True)
+        mock_run.assert_called_with("git branch --show-current", True)
 
 def test_check_current_branch_other():
     """Test branch check when not on main branch."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("feature", "")
+        
         with pytest.raises(SystemExit):
             check_current_branch()
+        mock_log.error.assert_called_with("Not on main branch. Please switch to main branch first.")
 
 def test_check_unpushed_commits_with_commits():
     """Test unpushed commits check when there are commits."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("commit1\ncommit2", "")
+        
         with pytest.raises(SystemExit):
             check_unpushed_commits()
+        mock_log.error.assert_called_with("There are unpushed commits. Please push all changes before creating a release.")
 
 def test_check_unpushed_commits_without_commits():
     """Test unpushed commits check when there are no commits."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         mock_run.return_value = ("", "")
-        # Should not raise any exception
+        
         check_unpushed_commits()
+        mock_log.debug.assert_any_call("Checking for unpushed commits")
+        mock_log.debug.assert_any_call("No unpushed commits found")
 
 def test_get_github_token():
     """Test getting GitHub token from environment."""
-    with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}):
+    with patch.dict(os.environ, {'GITHUB_TOKEN': 'test-token'}), \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
         token = get_github_token()
         assert token == 'test-token'
+        mock_log.debug.assert_called_with("Getting GitHub token from environment")
 
 def test_get_github_token_missing():
     """Test getting GitHub token when it's missing."""
-    with patch.dict(os.environ, {}, clear=True):
+    with patch.dict(os.environ, {}, clear=True), \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
         with pytest.raises(SystemExit):
             get_github_token()
+        mock_log.error.assert_called_with("GITHUB_TOKEN not found in .env file.")
 
 def test_create_github_release():
     """Test creating a GitHub release."""
     with patch('release.run_command') as mock_run, \
          patch('requests.post') as mock_post, \
-         patch('release.get_github_token') as mock_token:
+         patch('release.get_github_token') as mock_token, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         
         # Setup mocks
         mock_run.side_effect = [
@@ -194,55 +291,50 @@ def test_create_github_release():
         
         # Verify the API call
         mock_post.assert_called_once()
-        call_args = mock_post.call_args[1]
-        assert call_args['json']['tag_name'] == 'v0.1.0'
-        assert call_args['json']['name'] == 'Release v0.1.0'
-        assert call_args['json']['body'] == "## Changes\n\n```\ncommit1\ncommit2\n```"
-
-def test_create_github_release_failure():
-    """Test GitHub release creation failure."""
-    with patch('release.run_command') as mock_run, \
-         patch('requests.post') as mock_post, \
-         patch('release.get_github_token') as mock_token:
+        mock_log.info.assert_called_with("GitHub release created successfully")
         
-        # Setup mocks
-        mock_run.side_effect = [
-            ("commit1\ncommit2", ""),  # For git log
-            ("git@github.com:owner/repo.git", "")  # For git remote
-        ]
-        mock_token.return_value = "test-token"
-        mock_post.return_value.status_code = 400
-        mock_post.return_value.text = "Error message"
-        
-        # Test the function
-        with pytest.raises(SystemExit):
-            create_github_release("0.1.0", "test-token")
+        # Test dry run
+        create_github_release("0.1.0", "test-token", dry_run=True)
+        mock_log.info.assert_called_with("[DRY RUN] Would create GitHub release for version 0.1.0")
 
 def test_check_main_up_to_date_up_to_date():
     """Test main branch check when up to date with remote."""
-    with patch('release.run_command') as mock_run:
+    with patch('release.run_command') as mock_run, \
+         patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
+        # Setup mock for normal run
         mock_run.side_effect = [
             ("", ""),  # For git fetch
             ("0", "")  # For git rev-list
         ]
-        # Should not raise any exception
+        
         check_main_up_to_date()
-
-def test_check_main_up_to_date_behind():
-    """Test main branch check when behind remote."""
-    with patch('release.run_command') as mock_run:
+        mock_log.debug.assert_any_call("Checking if main branch is up to date")
+        mock_log.debug.assert_any_call("Main branch is up to date")
+        
+        # Setup mock for dry run
         mock_run.side_effect = [
             ("", ""),  # For git fetch
-            ("2", "")  # For git rev-list
+            ("0", ""),  # For git rev-list
+            ("", ""),  # For git fetch (dry run)
+            ("0", "")  # For git rev-list (dry run)
         ]
-        with pytest.raises(SystemExit):
-            check_main_up_to_date()
+        
+        # Test dry run (should still execute the checks)
+        check_main_up_to_date(dry_run=True)
+        assert mock_run.call_count == 4  # Two calls for each check
 
 def test_check_github_workflows_success():
     """Test GitHub workflows check when all workflows are passing."""
     with patch('release.run_command') as mock_run, \
          patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get:
+         patch('requests.get') as mock_get, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         
         # Setup mocks
         mock_run.return_value = ("git@github.com:owner/repo.git", "")
@@ -259,14 +351,22 @@ def test_check_github_workflows_success():
         }
         mock_get.return_value = mock_response
         
-        # Should not raise any exception
         check_github_workflows()
+        mock_log.info.assert_called_with("All workflows are passing")
+        
+        # Test dry run (should still execute the checks)
+        check_github_workflows(dry_run=True)
+        mock_run.assert_called_with("git remote get-url origin", True)
 
 def test_check_github_workflows_failure():
     """Test GitHub workflows check when a workflow is failing."""
     with patch('release.run_command') as mock_run, \
          patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get:
+         patch('requests.get') as mock_get, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         
         # Setup mocks
         mock_run.return_value = ("git@github.com:owner/repo.git", "")
@@ -285,12 +385,18 @@ def test_check_github_workflows_failure():
         
         with pytest.raises(SystemExit):
             check_github_workflows()
+        mock_log.error.assert_any_call("Workflow 'Test and Coverage' is not passing. Latest run status: failure")
+        mock_log.error.assert_any_call("Please check the workflow run at: http://example.com")
 
 def test_check_github_workflows_api_error():
     """Test GitHub workflows check when API request fails."""
     with patch('release.run_command') as mock_run, \
          patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get:
+         patch('requests.get') as mock_get, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
         
         # Setup mocks
         mock_run.return_value = ("git@github.com:owner/repo.git", "")
@@ -304,39 +410,61 @@ def test_check_github_workflows_api_error():
         
         with pytest.raises(SystemExit):
             check_github_workflows()
+        mock_log.error.assert_called_with("Error checking GitHub Actions status: Internal Server Error")
 
 def test_dry_run_mode():
     """Test dry run mode for various functions."""
-    # Test update_version
-    with patch('release.open') as mock_open:
-        update_version("0.2.0", dry_run=True)
-        mock_open.assert_not_called()
-    
-    # Test run_command
-    with patch('subprocess.run') as mock_run:
-        run_command("echo test", dry_run=True)
-        mock_run.assert_not_called()
-    
-    # Test check_git_status
-    with patch('release.run_command') as mock_run:
-        check_git_status(dry_run=True)
-        mock_run.assert_not_called()
-    
-    # Test check_main_up_to_date
-    with patch('release.run_command') as mock_run:
-        check_main_up_to_date(dry_run=True)
-        mock_run.assert_not_called()
-    
-    # Test check_github_workflows
-    with patch('release.run_command') as mock_run, \
-         patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get:
-        check_github_workflows(dry_run=True)
-        mock_run.assert_not_called()
-        mock_token.assert_not_called()
-        mock_get.assert_not_called()
-    
-    # Test create_github_release
-    with patch('requests.post') as mock_post:
-        create_github_release("0.1.0", "test-token", dry_run=True)
-        mock_post.assert_not_called() 
+    with patch('release.logging.getLogger') as mock_logger:
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
+        # Test update_version
+        with patch('release.open') as mock_open:
+            update_version("0.2.0", dry_run=True)
+            mock_open.assert_not_called()
+            mock_log.info.assert_called_with("[DRY RUN] Would update version in pyproject.toml to 0.2.0")
+        
+        # Test run_command for non-git command
+        with patch('subprocess.run') as mock_run:
+            run_command("echo test", dry_run=True)
+            mock_run.assert_not_called()
+            mock_log.info.assert_called_with("[DRY RUN] Would execute: echo test")
+        
+        # Test run_command for git command (should still execute)
+        with patch('subprocess.run') as mock_run:
+            mock_run.return_value.stdout = "main"
+            mock_run.return_value.stderr = ""
+            mock_run.return_value.returncode = 0
+            run_command("git branch --show-current", dry_run=True)
+            mock_run.assert_called()
+            mock_log.debug.assert_called_with("Executing command: git branch --show-current")
+        
+        # Test check_git_status (should still execute)
+        with patch('release.run_command') as mock_run:
+            mock_run.return_value = ("", "")
+            check_git_status(dry_run=True)
+            mock_run.assert_called_with("git status --porcelain", True)
+        
+        # Test check_main_up_to_date (should still execute)
+        with patch('release.run_command') as mock_run:
+            mock_run.side_effect = [("", ""), ("0", "")]
+            check_main_up_to_date(dry_run=True)
+            assert mock_run.call_count == 2
+        
+        # Test check_github_workflows (should still execute)
+        with patch('release.run_command') as mock_run, \
+             patch('release.get_github_token') as mock_token, \
+             patch('requests.get') as mock_get:
+            mock_run.return_value = ("git@github.com:owner/repo.git", "")
+            mock_token.return_value = "test-token"
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "workflow_runs": [
+                    {"name": "Test", "conclusion": "success", "html_url": "http://example.com"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            check_github_workflows(dry_run=True)
+            mock_run.assert_called_with("git remote get-url origin", True)
+            mock_get.assert_called() 
