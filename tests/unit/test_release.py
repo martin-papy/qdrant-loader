@@ -16,6 +16,8 @@ from release import (
     check_unpushed_commits,
     get_github_token,
     create_github_release,
+    check_main_up_to_date,
+    check_github_workflows,
 )
 
 @pytest.fixture
@@ -216,6 +218,93 @@ def test_create_github_release_failure():
         with pytest.raises(SystemExit):
             create_github_release("0.1.0", "test-token")
 
+def test_check_main_up_to_date_up_to_date():
+    """Test main branch check when up to date with remote."""
+    with patch('release.run_command') as mock_run:
+        mock_run.side_effect = [
+            ("", ""),  # For git fetch
+            ("0", "")  # For git rev-list
+        ]
+        # Should not raise any exception
+        check_main_up_to_date()
+
+def test_check_main_up_to_date_behind():
+    """Test main branch check when behind remote."""
+    with patch('release.run_command') as mock_run:
+        mock_run.side_effect = [
+            ("", ""),  # For git fetch
+            ("2", "")  # For git rev-list
+        ]
+        with pytest.raises(SystemExit):
+            check_main_up_to_date()
+
+def test_check_github_workflows_success():
+    """Test GitHub workflows check when all workflows are passing."""
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get:
+        
+        # Setup mocks
+        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_token.return_value = "test-token"
+        
+        # Mock successful API response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "workflow_runs": [
+                {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com"},
+                {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+            ]
+        }
+        mock_get.return_value = mock_response
+        
+        # Should not raise any exception
+        check_github_workflows()
+
+def test_check_github_workflows_failure():
+    """Test GitHub workflows check when a workflow is failing."""
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get:
+        
+        # Setup mocks
+        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_token.return_value = "test-token"
+        
+        # Mock API response with failing workflow
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "workflow_runs": [
+                {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com"},
+                {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+            ]
+        }
+        mock_get.return_value = mock_response
+        
+        with pytest.raises(SystemExit):
+            check_github_workflows()
+
+def test_check_github_workflows_api_error():
+    """Test GitHub workflows check when API request fails."""
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get:
+        
+        # Setup mocks
+        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_token.return_value = "test-token"
+        
+        # Mock API error
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_get.return_value = mock_response
+        
+        with pytest.raises(SystemExit):
+            check_github_workflows()
+
 def test_dry_run_mode():
     """Test dry run mode for various functions."""
     # Test update_version
@@ -232,6 +321,20 @@ def test_dry_run_mode():
     with patch('release.run_command') as mock_run:
         check_git_status(dry_run=True)
         mock_run.assert_not_called()
+    
+    # Test check_main_up_to_date
+    with patch('release.run_command') as mock_run:
+        check_main_up_to_date(dry_run=True)
+        mock_run.assert_not_called()
+    
+    # Test check_github_workflows
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get:
+        check_github_workflows(dry_run=True)
+        mock_run.assert_not_called()
+        mock_token.assert_not_called()
+        mock_get.assert_not_called()
     
     # Test create_github_release
     with patch('requests.post') as mock_post:
