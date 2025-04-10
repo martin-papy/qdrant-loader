@@ -13,6 +13,13 @@ keywords = ["qdrant", "vector-database", "embeddings", "document-processing"]
 authors = [
     { name = "Martin Papy", email = "martin.papy@gmail.com" }
 ]
+dependencies = [
+    "click>=8.1.7",
+    "requests>=2.31.0",
+    "tomli>=2.0.1",
+    "tomli-w>=1.0.0",
+    "python-dotenv>=1.0.0"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

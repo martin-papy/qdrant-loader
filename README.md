@@ -362,6 +362,64 @@ pytest tests/test_embedding_service.py
 pytest tests/test_cli.py
 ```
 
+### Release Management
+
+The project includes a release management script (`release.py`) to help automate version bumping and GitHub releases. The script provides an interactive interface for managing releases and includes safety checks to prevent common mistakes.
+
+#### Prerequisites
+
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements-test.txt
+   ```
+
+2. Ensure your GitHub token is set in the `.env` file:
+   ```bash
+   GITHUB_TOKEN=your_github_token
+   ```
+
+#### Usage
+
+Run the release script:
+```bash
+python release.py
+```
+
+The script will:
+1. Check for uncommitted changes
+2. Verify you're on the main branch
+3. Show the current version
+4. Present version bump options:
+   - Major (e.g., 1.0.0)
+   - Minor (e.g., 0.2.0)
+   - Patch (e.g., 0.1.4)
+   - Beta (e.g., 0.1.3b2)
+   - Custom version input
+
+After selecting the version bump type, the script will:
+1. Update the version in `pyproject.toml`
+2. Create a commit with the version bump
+3. Create and push a git tag
+4. Create a GitHub release with the latest commits as release notes
+
+#### Dry Run Mode
+
+You can test the release process without making any changes using the dry run mode:
+```bash
+python release.py --dry-run
+```
+
+This will show all the actions that would be taken without actually executing them.
+
+#### Safety Checks
+
+The script includes several safety checks:
+- Verifies working directory is clean
+- Ensures you're on the main branch
+- Checks for unpushed commits
+- Validates GitHub token availability
+- Prevents duplicate version tags
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
