@@ -148,10 +148,11 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
         repo_url = stdout.replace("https://", "").replace(".git", "")
     elif stdout.startswith("ssh://"):
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        repo_url = stdout.replace("ssh://", "").replace("git@", "").replace(".git", "")
+        repo_url = stdout.replace("ssh://git@", "").replace(".git", "")
     else:
         # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
         repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
+    
     logger.debug(f"Repository URL: {repo_url}")
     
     response = requests.post(
@@ -188,7 +189,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
         repo_url = stdout.replace("https://", "").replace(".git", "")
     elif stdout.startswith("ssh://"):
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        repo_url = stdout.replace("ssh://", "").replace("git@", "").replace(".git", "")
+        repo_url = stdout.replace("ssh://git@", "").replace(".git", "")
     else:
         # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
         repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
