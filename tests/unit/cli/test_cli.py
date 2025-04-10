@@ -286,11 +286,23 @@ def test_cli_init_with_force(runner, mock_config_file):
         mock_init.assert_called_once()
         assert "Force reinitialization requested" in result.output
 
-def test_cli_init_without_settings(runner):
+def test_cli_init_without_settings(runner, tmp_path):
     """Test that the init command fails when settings are not available."""
+    # Create a temporary config file
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("""
+    global:
+        chunking:
+            size: 500
+            overlap: 50
+        embedding:
+            model: text-embedding-3-small
+            batch_size: 100
+    """)
+    
     with patch('qdrant_loader.cli.get_settings', return_value=None), \
          patch('qdrant_loader.config.initialize_config', return_value=None):
-        result = runner.invoke(cli, ['init'])
+        result = runner.invoke(cli, ['init', '--config', str(config_path)])
         assert result.exit_code != 0
         assert "Settings not available. Please check your environment variables." in str(result.output)
 
