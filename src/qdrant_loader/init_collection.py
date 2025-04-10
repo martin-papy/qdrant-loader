@@ -14,8 +14,8 @@ def init_collection():
         # Initialize the manager
         manager = QdrantManager(settings=settings)
         
-        # Create collection with 1536 dimensions (matching OpenAI's text-embedding-3-small)
-        manager.create_collection(vector_size=1536)
+        # Create collection (vector size is hardcoded to 1536 in QdrantManager)
+        manager.create_collection()
         
         logger.info("Successfully initialized qDrant collection")
     except Exception as e:

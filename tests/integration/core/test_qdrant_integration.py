@@ -2,23 +2,31 @@ import pytest
 from pathlib import Path
 from dotenv import load_dotenv
 from qdrant_loader.qdrant_manager import QdrantManager
-from qdrant_loader.config import Settings
+from qdrant_loader.config import Settings, initialize_config
 import os
 import uuid
+from urllib.parse import urlparse
 
 # Load test environment variables
-load_dotenv(Path(__file__).parent / ".env.test")
+load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+
+@pytest.fixture(scope="session", autouse=True)
+def initialize_test_config():
+    """Initialize the global config for all tests."""
+    yaml_path = Path(__file__).parent.parent.parent / "config.test.yaml"
+    initialize_config(yaml_path)
 
 @pytest.fixture
 def test_settings():
     """Fixture that provides test settings for all tests."""
-    return Settings(
+    settings = Settings(
         QDRANT_URL=os.getenv("QDRANT_URL"),
         QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
         QDRANT_COLLECTION_NAME=f"{os.getenv('QDRANT_COLLECTION_NAME')}-{uuid.uuid4().hex[:8]}",
         OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
         LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
     )
+    return settings
 
 @pytest.fixture
 def qdrant_manager(test_settings):
@@ -102,7 +110,12 @@ def test_error_handling(test_settings):
     """Test error handling with real Qdrant instance."""
     from qdrant_client.http.exceptions import UnexpectedResponse, ResponseHandlingException
     from requests.exceptions import ConnectionError
-    
+
+    # Skip test if using local instance (no authentication required)
+    parsed_url = urlparse(test_settings.QDRANT_URL)
+    if any(host in parsed_url.netloc for host in ['localhost', '127.0.0.1']):
+        pytest.skip("Skipping error handling test for local instance (no authentication required)")
+
     # Test invalid API key
     invalid_settings = Settings(
         QDRANT_URL=test_settings.QDRANT_URL,
@@ -115,11 +128,7 @@ def test_error_handling(test_settings):
     # Test that we can't perform operations with invalid credentials
     manager = QdrantManager(settings=invalid_settings)
     with pytest.raises(UnexpectedResponse):
-        # Try to create a collection which requires authentication
-        manager.client.create_collection(
-            collection_name="test-unauthorized",
-            vectors_config={"size": 3, "distance": "Cosine"}
-        )
+        manager.create_collection()
     
     # Test invalid URL
     invalid_settings = Settings(

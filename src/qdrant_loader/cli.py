@@ -27,9 +27,31 @@ def cli(verbose: bool, log_level: str):
 
 @cli.command()
 @click.option('--force', '-f', is_flag=True, help='Force reinitialization of collection')
-def init(force: bool):
+@click.option('--config', '-c', type=click.Path(exists=True),
+              help='Path to configuration file (defaults to config.yaml in current directory)')
+def init(force: bool, config: Optional[str]):
     """Initialize the qDrant collection."""
     try:
+        # Try to find config file
+        config_path = config
+        if config_path is None:
+            default_config = Path('config.yaml')
+            if default_config.exists():
+                config_path = str(default_config)
+                logger.info("Using default config.yaml from current directory")
+            else:
+                raise click.ClickException(
+                    "No config file specified and no config.yaml found in current directory. "
+                    "Please provide a config file with --config or create config.yaml in the current directory."
+                )
+        
+        # Initialize configuration from the YAML file
+        try:
+            from .config import initialize_config
+            initialize_config(Path(config_path))
+        except Exception as e:
+            raise click.ClickException(f"Failed to load configuration: {str(e)}")
+        
         settings = get_settings()
         if not settings:
             raise click.ClickException("Settings not available. Please check your environment variables.")

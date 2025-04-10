@@ -411,10 +411,6 @@ def test_cli_ingest_with_default_config(runner):
          patch('qdrant_loader.config.initialize_config') as mock_init_config, \
          patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
         
-        # Mock the process_documents method
-        mock_pipeline.return_value.process_documents.return_value = None
-        mock_run.return_value = None
-        
         result = runner.invoke(cli, ['ingest'])
         assert result.exit_code == 0
         mock_init_config.assert_called_once_with(Path('config.yaml'))
@@ -433,10 +429,57 @@ def test_cli_ingest_with_explicit_config(runner, mock_config_file):
          patch('qdrant_loader.config.initialize_config') as mock_init_config, \
          patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
         
-        # Mock the process_documents method
-        mock_pipeline.return_value.process_documents.return_value = None
-        mock_run.return_value = None
-        
         result = runner.invoke(cli, ['ingest', '--config', str(mock_config_file)])
         assert result.exit_code == 0
-        mock_init_config.assert_called_once_with(Path(str(mock_config_file))) 
+        mock_init_config.assert_called_once_with(Path(str(mock_config_file)))
+
+def test_cli_init_with_default_config(runner):
+    """Test that the init command uses config.yaml from current directory when no config is specified."""
+    with patch('pathlib.Path.exists', return_value=True), \
+         patch('qdrant_loader.cli.init_collection') as mock_init, \
+         patch('qdrant_loader.config.initialize_config') as mock_init_config, \
+         patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
+        
+        result = runner.invoke(cli, ['init'])
+        assert result.exit_code == 0
+        mock_init_config.assert_called_once_with(Path('config.yaml'))
+        mock_init.assert_called_once()
+
+def test_cli_init_with_explicit_config(runner, mock_config_file):
+    """Test that the init command uses the explicitly specified config file."""
+    with patch('qdrant_loader.cli.init_collection') as mock_init, \
+         patch('qdrant_loader.config.initialize_config') as mock_init_config, \
+         patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
+        
+        result = runner.invoke(cli, ['init', '--config', str(mock_config_file)])
+        assert result.exit_code == 0
+        mock_init_config.assert_called_once_with(Path(str(mock_config_file)))
+        mock_init.assert_called_once()
+
+def test_cli_init_without_config_and_no_default(runner):
+    """Test that the init command fails when no config is specified and no config.yaml exists."""
+    with patch('pathlib.Path.exists', return_value=False):
+        result = runner.invoke(cli, ['init'])
+        assert result.exit_code != 0
+        assert "No config file specified and no config.yaml found in current directory" in str(result.output)
+
+def test_cli_init_with_invalid_config(runner, tmp_path):
+    """Test that the init command fails with invalid config file."""
+    config_path = tmp_path / "invalid_config.yaml"
+    config_path.write_text("invalid: yaml: content")
+
+    result = runner.invoke(cli, ['init', '--config', str(config_path)])
+    assert result.exit_code != 0
+    assert "Failed to load configuration:" in str(result.output)
+
+def test_cli_init_with_force_and_config(runner, mock_config_file):
+    """Test that the init command works with both force flag and config file."""
+    with patch('qdrant_loader.cli.init_collection') as mock_init, \
+         patch('qdrant_loader.config.initialize_config') as mock_init_config, \
+         patch('qdrant_loader.cli.get_settings', return_value=MagicMock()):
+        
+        result = runner.invoke(cli, ['init', '--force', '--config', str(mock_config_file)])
+        assert result.exit_code == 0
+        mock_init_config.assert_called_once_with(Path(str(mock_config_file)))
+        mock_init.assert_called_once()
+        assert "Force reinitialization requested" in result.output 
