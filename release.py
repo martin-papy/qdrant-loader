@@ -257,6 +257,10 @@ def check_github_workflows(dry_run: bool = False) -> None:
             logger.error(f"- {run['name']} is running: {run['html_url']}")
         sys.exit(1)
     
+    # Get current commit hash
+    current_commit, _ = run_command("git rev-parse HEAD", dry_run)
+    logger.debug(f"Current commit hash: {current_commit}")
+    
     # Then check completed workflows
     logger.debug("Checking completed workflows")
     response = requests.get(
@@ -286,8 +290,16 @@ def check_github_workflows(dry_run: bool = False) -> None:
             logger.error(f"Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}")
             logger.error(f"Please check the workflow run at: {run['html_url']}")
             sys.exit(1)
+        
+        # Check if the workflow run matches our current commit
+        if run["head_sha"] != current_commit:
+            logger.error(f"Workflow '{workflow_name}' was run on a different commit. Please ensure all workflows are run on the current commit.")
+            logger.error(f"Current commit: {current_commit}")
+            logger.error(f"Workflow commit: {run['head_sha']}")
+            logger.error(f"Workflow run: {run['html_url']}")
+            sys.exit(1)
     
-    logger.info("All workflows are passing")
+    logger.info("All workflows are passing and match the current commit")
     logger.info("GitHub workflows check completed successfully")
 
 @click.command()
