@@ -150,10 +150,18 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
         # Remove ssh://git@ and .git, then split by / and take the last two parts
         parts = stdout.replace("ssh://git@", "").replace(".git", "").split("/")
-        repo_url = "/".join(parts[-2:])
+        if len(parts) >= 3:
+            repo_url = "/".join(parts[-2:])
+        else:
+            logger.error(f"Invalid repository URL format: {stdout}")
+            sys.exit(1)
     else:
         # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
         repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
+    
+    if not repo_url:
+        logger.error("Could not determine repository path from Git remote URL")
+        sys.exit(1)
     
     logger.debug(f"Repository URL: {repo_url}")
     
