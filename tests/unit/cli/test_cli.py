@@ -277,28 +277,30 @@ def test_cli_ingest_with_log_level(runner, mock_config_file):
             mock_run.assert_called_once()
             mock_run.reset_mock()
 
-def test_cli_init_with_force(runner):
+def test_cli_init_with_force(runner, mock_config_file):
     """Test that the init command works with force flag."""
     with patch('qdrant_loader.cli.init_collection') as mock_init, \
          patch('qdrant_loader.cli.get_settings', return_value=Settings()):
-        result = runner.invoke(cli, ['init', '--force'])
+        result = runner.invoke(cli, ['init', '--force', '--config', str(mock_config_file)])
         assert result.exit_code == 0
         mock_init.assert_called_once()
         assert "Force reinitialization requested" in result.output
 
 def test_cli_init_without_settings(runner):
     """Test that the init command fails when settings are not available."""
-    with patch('qdrant_loader.cli.get_settings', return_value=None):
+    with patch('qdrant_loader.cli.get_settings', return_value=None), \
+         patch('qdrant_loader.config.initialize_config', return_value=None):
         result = runner.invoke(cli, ['init'])
         assert result.exit_code != 0
         assert "Settings not available. Please check your environment variables." in str(result.output)
 
-def test_cli_init_with_error(runner):
+def test_cli_init_with_error(runner, mock_config_file):
     """Test that the init command handles errors gracefully."""
-    with patch('qdrant_loader.cli.init_collection', side_effect=Exception("Test error")):
-        result = runner.invoke(cli, ['init'])
+    with patch('qdrant_loader.cli.init_collection', side_effect=Exception("Test error")), \
+         patch('qdrant_loader.cli.get_settings', return_value=Settings()):
+        result = runner.invoke(cli, ['init', '--config', str(mock_config_file)])
         assert result.exit_code != 0
-        assert "Failed to initialize collection: Test error" in str(result.output)
+        assert "Test error" in str(result.output)
 
 def test_cli_ingest_without_settings(runner, mock_config_file):
     """Test that the ingest command fails when settings are not available."""

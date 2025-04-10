@@ -51,7 +51,3 @@ dist/
 build/ 
 config.yaml
 tests/config.test.yaml
-
-# Cursor
-.cursor/
-.cursorrules
