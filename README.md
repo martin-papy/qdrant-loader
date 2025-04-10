@@ -31,24 +31,22 @@ A tool for collecting and vectorizing technical content from multiple sources an
 2. Configure your environment:
 
     ```bash
-    cp .env.template .env
+    # Download and configure environment variables
+    curl -o .env https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/.env.template
     # Edit .env with your configuration
-    ```
 
-3. Create your configuration file:
-
-    ```bash
-    cp config.template.yaml config.yaml
+    # Download and configure the main configuration file
+    curl -o config.yaml https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/config.template.yaml
     # Edit config.yaml with your source configurations
     ```
 
-4. Initialize the QDrant collection:
+3. Initialize the QDrant collection:
 
     ```bash
     qdrant-loader init
     ```
 
-5. Run the ingestion pipeline:
+4. Run the ingestion pipeline:
 
     ```bash
     qdrant-loader ingest
@@ -161,8 +159,12 @@ source venv/bin/activate  # On macOS/Linux
 # Install dependencies
 pip install -r requirements.txt -r requirements-dev.txt
 
-# Install in development mode with additional dev dependencies
-pip install -e
+# Install in development mode
+pip install -e .
+
+# Finally, copy and update your configuration files   
+cp .env.template .env
+cp config.template.yaml config.yaml
 ```
 
 ### Running Tests
