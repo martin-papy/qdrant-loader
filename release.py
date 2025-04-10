@@ -60,7 +60,7 @@ def update_version(new_version: str, dry_run: bool = False) -> None:
 def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
     """Run a shell command and return stdout and stderr."""
     logger = logging.getLogger(__name__)
-    if dry_run and not cmd.startswith(("git status", "git branch", "git log", "git fetch", "git rev-list")):
+    if dry_run and not cmd.startswith(("git status", "git branch", "git log", "git fetch", "git rev-list", "git remote")):
         logger.info(f"[DRY RUN] Would execute: {cmd}")
         return "", ""
     
