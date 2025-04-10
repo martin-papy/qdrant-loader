@@ -109,7 +109,6 @@ def get_github_token(dry_run: bool = False) -> str:
     if not token:
         logger.error("GITHUB_TOKEN not found in .env file.")
         sys.exit(1)
-    logger.debug("GitHub token found in environment")
     return token
 
 def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
@@ -230,7 +229,27 @@ def check_github_workflows(dry_run: bool = False) -> None:
         "Accept": "application/vnd.github.v3+json"
     }
     
-    logger.debug("Fetching workflow runs from GitHub API")
+    # First check for running workflows
+    logger.debug("Checking for running workflows")
+    response = requests.get(
+        f"https://api.github.com/repos/{repo_url}/actions/runs",
+        headers=headers,
+        params={"branch": "main", "status": "in_progress", "per_page": 5}
+    )
+    
+    if response.status_code != 200:
+        logger.error(f"Error checking GitHub Actions status: {response.text}")
+        sys.exit(1)
+    
+    runs = response.json()["workflow_runs"]
+    if runs:
+        logger.error("There are workflows still running. Please wait for them to complete.")
+        for run in runs:
+            logger.error(f"- {run['name']} is running: {run['html_url']}")
+        sys.exit(1)
+    
+    # Then check completed workflows
+    logger.debug("Checking completed workflows")
     response = requests.get(
         f"https://api.github.com/repos/{repo_url}/actions/runs",
         headers=headers,
@@ -258,6 +277,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
             logger.error(f"Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}")
             logger.error(f"Please check the workflow run at: {run['html_url']}")
             sys.exit(1)
+    
     logger.info("All workflows are passing")
 
 @click.command()
