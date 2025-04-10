@@ -148,7 +148,9 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
         repo_url = stdout.replace("https://", "").replace(".git", "")
     elif stdout.startswith("ssh://"):
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        repo_url = stdout.replace("ssh://git@", "").replace(".git", "")
+        # Remove ssh://git@ and .git, then split by / and take the last two parts
+        parts = stdout.replace("ssh://git@", "").replace(".git", "").split("/")
+        repo_url = "/".join(parts[-2:])
     else:
         # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
         repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
