@@ -141,8 +141,17 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     }
     
     # Get repository info
-    stdout, _ = run_command("git remote get-url origin")
-    repo_url = stdout.split(":")[1].replace(".git", "")
+    stdout, _ = run_command("git remote get-url origin", dry_run)
+    # Handle both SSH and HTTPS URLs
+    if stdout.startswith("https://"):
+        # Handle HTTPS URLs (https://github.com/username/repo.git)
+        repo_url = stdout.replace("https://", "").replace(".git", "")
+    elif stdout.startswith("ssh://"):
+        # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
+        repo_url = stdout.replace("ssh://", "").replace("git@", "").replace(".git", "")
+    else:
+        # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
+        repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
     logger.debug(f"Repository URL: {repo_url}")
     
     response = requests.post(
