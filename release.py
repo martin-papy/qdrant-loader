@@ -192,10 +192,6 @@ def check_github_workflows(dry_run: bool = False) -> None:
     logger = logging.getLogger(__name__)
     logger.info("Checking GitHub Actions workflow status")
     
-    if dry_run:
-        logger.info("[DRY RUN] Would check GitHub Actions workflow status")
-        return
-    
     # Get repository info
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
