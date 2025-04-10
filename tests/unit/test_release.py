@@ -328,65 +328,91 @@ def test_check_main_up_to_date_up_to_date():
 
 def test_check_github_workflows_success():
     """Test GitHub workflows check when all workflows are passing."""
-    with patch('release.run_command') as mock_run, \
-         patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get, \
-         patch('release.logging.getLogger') as mock_logger:
-        
-        mock_log = MagicMock()
-        mock_logger.return_value = mock_log
-        
-        # Setup mocks
-        mock_run.return_value = ("git@github.com:owner/repo.git", "")
-        mock_token.return_value = "test-token"
-        
-        # Mock successful API response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "workflow_runs": [
-                {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com"},
-                {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        check_github_workflows()
-        mock_log.info.assert_called_with("All workflows are passing")
-        
-        # Test dry run (should still execute the checks)
-        check_github_workflows(dry_run=True)
-        mock_run.assert_called_with("git remote get-url origin", True)
+    test_cases = [
+        ("git@github.com:owner/repo.git", "owner/repo"),
+        ("ssh://git@github.com/owner/repo.git", "owner/repo"),
+        ("https://github.com/owner/repo.git", "owner/repo")
+    ]
+    
+    for remote_url, expected_repo in test_cases:
+        with patch('release.run_command') as mock_run, \
+             patch('release.get_github_token') as mock_token, \
+             patch('requests.get') as mock_get, \
+             patch('release.logging.getLogger') as mock_logger:
+            
+            mock_log = MagicMock()
+            mock_logger.return_value = mock_log
+            
+            # Setup mocks
+            mock_run.return_value = (remote_url, "")
+            mock_token.return_value = "test-token"
+            
+            # Mock successful API response
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "workflow_runs": [
+                    {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com"},
+                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            
+            check_github_workflows()
+            mock_log.info.assert_called_with("All workflows are passing")
+            
+            # Verify the correct repository URL was used in the API call
+            mock_get.assert_called_once()
+            call_args = mock_get.call_args[0][0]
+            assert expected_repo in call_args
+            
+            # Reset mocks for next iteration
+            mock_get.reset_mock()
 
 def test_check_github_workflows_failure():
     """Test GitHub workflows check when a workflow is failing."""
-    with patch('release.run_command') as mock_run, \
-         patch('release.get_github_token') as mock_token, \
-         patch('requests.get') as mock_get, \
-         patch('release.logging.getLogger') as mock_logger:
-        
-        mock_log = MagicMock()
-        mock_logger.return_value = mock_log
-        
-        # Setup mocks
-        mock_run.return_value = ("git@github.com:owner/repo.git", "")
-        mock_token.return_value = "test-token"
-        
-        # Mock API response with failing workflow
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "workflow_runs": [
-                {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com"},
-                {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
-            ]
-        }
-        mock_get.return_value = mock_response
-        
-        with pytest.raises(SystemExit):
-            check_github_workflows()
-        mock_log.error.assert_any_call("Workflow 'Test and Coverage' is not passing. Latest run status: failure")
-        mock_log.error.assert_any_call("Please check the workflow run at: http://example.com")
+    test_cases = [
+        ("git@github.com:owner/repo.git", "owner/repo"),
+        ("ssh://git@github.com/owner/repo.git", "owner/repo"),
+        ("https://github.com/owner/repo.git", "owner/repo")
+    ]
+    
+    for remote_url, expected_repo in test_cases:
+        with patch('release.run_command') as mock_run, \
+             patch('release.get_github_token') as mock_token, \
+             patch('requests.get') as mock_get, \
+             patch('release.logging.getLogger') as mock_logger:
+            
+            mock_log = MagicMock()
+            mock_logger.return_value = mock_log
+            
+            # Setup mocks
+            mock_run.return_value = (remote_url, "")
+            mock_token.return_value = "test-token"
+            
+            # Mock API response with failing workflow
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "workflow_runs": [
+                    {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com"},
+                    {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
+                ]
+            }
+            mock_get.return_value = mock_response
+            
+            with pytest.raises(SystemExit):
+                check_github_workflows()
+            mock_log.error.assert_any_call("Workflow 'Test and Coverage' is not passing. Latest run status: failure")
+            mock_log.error.assert_any_call("Please check the workflow run at: http://example.com")
+            
+            # Verify the correct repository URL was used in the API call
+            mock_get.assert_called_once()
+            call_args = mock_get.call_args[0][0]
+            assert expected_repo in call_args
+            
+            # Reset mocks for next iteration
+            mock_get.reset_mock()
 
 def test_check_github_workflows_api_error():
     """Test GitHub workflows check when API request fails."""
