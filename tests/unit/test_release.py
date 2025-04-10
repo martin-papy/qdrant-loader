@@ -347,24 +347,32 @@ def test_check_github_workflows_success():
             mock_run.return_value = (remote_url, "")
             mock_token.return_value = "test-token"
             
-            # Mock successful API response
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {
+            # Mock successful API responses
+            # First call: check running workflows
+            mock_response_running = MagicMock()
+            mock_response_running.status_code = 200
+            mock_response_running.json.return_value = {"workflow_runs": []}
+            
+            # Second call: check completed workflows
+            mock_response_completed = MagicMock()
+            mock_response_completed.status_code = 200
+            mock_response_completed.json.return_value = {
                 "workflow_runs": [
                     {"name": "Test and Coverage", "conclusion": "success", "html_url": "http://example.com"},
                     {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
                 ]
             }
-            mock_get.return_value = mock_response
+            
+            # Setup side effect to return different responses for different calls
+            mock_get.side_effect = [mock_response_running, mock_response_completed]
             
             check_github_workflows()
             mock_log.info.assert_called_with("All workflows are passing")
             
-            # Verify the correct repository URL was used in the API call
-            mock_get.assert_called_once()
-            call_args = mock_get.call_args[0][0]
-            assert expected_repo in call_args
+            # Verify the correct repository URL was used in both API calls
+            assert mock_get.call_count == 2
+            for call_args in mock_get.call_args_list:
+                assert expected_repo in call_args[0][0]
             
             # Reset mocks for next iteration
             mock_get.reset_mock()
@@ -390,29 +398,66 @@ def test_check_github_workflows_failure():
             mock_run.return_value = (remote_url, "")
             mock_token.return_value = "test-token"
             
-            # Mock API response with failing workflow
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {
+            # Mock successful API responses
+            # First call: check running workflows
+            mock_response_running = MagicMock()
+            mock_response_running.status_code = 200
+            mock_response_running.json.return_value = {"workflow_runs": []}
+            
+            # Second call: check completed workflows
+            mock_response_completed = MagicMock()
+            mock_response_completed.status_code = 200
+            mock_response_completed.json.return_value = {
                 "workflow_runs": [
                     {"name": "Test and Coverage", "conclusion": "failure", "html_url": "http://example.com"},
                     {"name": "Lint", "conclusion": "success", "html_url": "http://example.com"}
                 ]
             }
-            mock_get.return_value = mock_response
+            
+            # Setup side effect to return different responses for different calls
+            mock_get.side_effect = [mock_response_running, mock_response_completed]
             
             with pytest.raises(SystemExit):
                 check_github_workflows()
             mock_log.error.assert_any_call("Workflow 'Test and Coverage' is not passing. Latest run status: failure")
             mock_log.error.assert_any_call("Please check the workflow run at: http://example.com")
             
-            # Verify the correct repository URL was used in the API call
-            mock_get.assert_called_once()
-            call_args = mock_get.call_args[0][0]
-            assert expected_repo in call_args
+            # Verify the correct repository URL was used in both API calls
+            assert mock_get.call_count == 2
+            for call_args in mock_get.call_args_list:
+                assert expected_repo in call_args[0][0]
             
             # Reset mocks for next iteration
             mock_get.reset_mock()
+
+def test_check_github_workflows_running():
+    """Test GitHub workflows check when workflows are still running."""
+    with patch('release.run_command') as mock_run, \
+         patch('release.get_github_token') as mock_token, \
+         patch('requests.get') as mock_get, \
+         patch('release.logging.getLogger') as mock_logger:
+        
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+        
+        # Setup mocks
+        mock_run.return_value = ("git@github.com:owner/repo.git", "")
+        mock_token.return_value = "test-token"
+        
+        # Mock API response with running workflow
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "workflow_runs": [
+                {"name": "Test and Coverage", "status": "in_progress", "html_url": "http://example.com"}
+            ]
+        }
+        mock_get.return_value = mock_response
+        
+        with pytest.raises(SystemExit):
+            check_github_workflows()
+        mock_log.error.assert_any_call("There are workflows still running. Please wait for them to complete.")
+        mock_log.error.assert_any_call("- Test and Coverage is running: http://example.com")
 
 def test_check_github_workflows_api_error():
     """Test GitHub workflows check when API request fails."""
@@ -483,14 +528,21 @@ def test_dry_run_mode():
              patch('requests.get') as mock_get:
             mock_run.return_value = ("git@github.com:owner/repo.git", "")
             mock_token.return_value = "test-token"
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {
+            
+            # Mock responses for both API calls
+            mock_response_running = MagicMock()
+            mock_response_running.status_code = 200
+            mock_response_running.json.return_value = {"workflow_runs": []}
+            
+            mock_response_completed = MagicMock()
+            mock_response_completed.status_code = 200
+            mock_response_completed.json.return_value = {
                 "workflow_runs": [
                     {"name": "Test", "conclusion": "success", "html_url": "http://example.com"}
                 ]
             }
-            mock_get.return_value = mock_response
+            
+            mock_get.side_effect = [mock_response_running, mock_response_completed]
+            
             check_github_workflows(dry_run=True)
-            mock_run.assert_called_with("git remote get-url origin", True)
-            mock_get.assert_called() 
+            assert mock_get.call_count == 2 
