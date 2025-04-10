@@ -151,15 +151,15 @@ def test_check_unpushed_commits_with_commits():
     """Test unpushed commits check when there are commits."""
     with patch('release.run_command') as mock_run:
         mock_run.return_value = ("commit1\ncommit2", "")
-        # Should not raise any exception
-        check_unpushed_commits()
+        with pytest.raises(SystemExit):
+            check_unpushed_commits()
 
 def test_check_unpushed_commits_without_commits():
     """Test unpushed commits check when there are no commits."""
     with patch('release.run_command') as mock_run:
         mock_run.return_value = ("", "")
-        with pytest.raises(SystemExit):
-            check_unpushed_commits()
+        # Should not raise any exception
+        check_unpushed_commits()
 
 def test_get_github_token():
     """Test getting GitHub token from environment."""
