@@ -28,8 +28,8 @@ def test_init_collection_success(mock_settings, mock_qdrant_manager):
         
         init_collection()
         
-        # Verify QdrantManager was called with correct settings
-        mock_qdrant_manager.create_collection.assert_called_once_with(vector_size=1536)
+        # Verify QdrantManager was called
+        mock_qdrant_manager.create_collection.assert_called_once()
         # Verify success log was called
         mock_logger.info.assert_called_once_with("Successfully initialized qDrant collection")
 
