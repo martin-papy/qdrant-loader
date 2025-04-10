@@ -104,10 +104,6 @@ def check_unpushed_commits(dry_run: bool = False) -> None:
 def get_github_token(dry_run: bool = False) -> str:
     """Get GitHub token from environment variable."""
     logger = logging.getLogger(__name__)
-    if dry_run:
-        logger.info("[DRY RUN] Would check for GITHUB_TOKEN")
-        return "dry-run-token"
-    
     logger.debug("Getting GitHub token from environment")
     token = os.getenv("GITHUB_TOKEN")
     if not token:
@@ -195,6 +191,11 @@ def check_github_workflows(dry_run: bool = False) -> None:
     """Check if all GitHub Actions workflows are passing."""
     logger = logging.getLogger(__name__)
     logger.info("Checking GitHub Actions workflow status")
+    
+    if dry_run:
+        logger.info("[DRY RUN] Would check GitHub Actions workflow status")
+        return
+    
     # Get repository info
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
