@@ -10,24 +10,44 @@ from typing import Optional
 import click
 import requests
 import os
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Configure logging
+def setup_logging(verbose: bool = False):
+    """Configure logging based on verbosity level."""
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)  # Explicitly set the level on the logger
+    return logger
+
 def get_current_version() -> str:
     """Get the current version from pyproject.toml."""
+    logger = logging.getLogger(__name__)
+    logger.debug("Reading current version from pyproject.toml")
     with open("pyproject.toml", "rb") as f:
         pyproject = tomli.load(f)
-    return pyproject["project"]["version"]
+    version = pyproject["project"]["version"]
+    logger.debug(f"Current version: {version}")
+    return version
 
 def update_version(new_version: str, dry_run: bool = False) -> None:
     """Update the version in pyproject.toml."""
+    logger = logging.getLogger(__name__)
     if dry_run:
-        click.echo(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
+        logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
         return
     
+    logger.info(f"Updating version in pyproject.toml to {new_version}")
     with open("pyproject.toml", "rb") as f:
         pyproject = tomli.load(f)
     
@@ -35,68 +55,74 @@ def update_version(new_version: str, dry_run: bool = False) -> None:
     
     with open("pyproject.toml", "wb") as f:
         tomli_w.dump(pyproject, f)
+    logger.debug("Version updated successfully")
 
 def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
     """Run a shell command and return stdout and stderr."""
-    if dry_run:
-        click.echo(f"[DRY RUN] Would execute: {cmd}")
+    logger = logging.getLogger(__name__)
+    if dry_run and not cmd.startswith(("git status", "git branch", "git log", "git fetch", "git rev-list")):
+        logger.info(f"[DRY RUN] Would execute: {cmd}")
         return "", ""
     
+    logger.debug(f"Executing command: {cmd}")
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if result.returncode != 0:
+        logger.error(f"Command failed with return code {result.returncode}")
+        logger.error(f"stderr: {result.stderr}")
     return result.stdout.strip(), result.stderr.strip()
 
 def check_git_status(dry_run: bool = False) -> None:
     """Check if the working directory is clean."""
-    if dry_run:
-        click.echo("[DRY RUN] Would check git status")
-        return
-    
-    stdout, _ = run_command("git status --porcelain")
+    logger = logging.getLogger(__name__)
+    logger.debug("Checking git status")
+    stdout, _ = run_command("git status --porcelain", dry_run)
     if stdout:
-        click.echo("Error: There are uncommitted changes. Please commit or stash them first.")
+        logger.error("There are uncommitted changes. Please commit or stash them first.")
         sys.exit(1)
+    logger.debug("Git status check passed")
 
 def check_current_branch(dry_run: bool = False) -> None:
     """Check if we're on the main branch."""
-    if dry_run:
-        click.echo("[DRY RUN] Would check current branch")
-        return
-    
-    stdout, _ = run_command("git branch --show-current")
+    logger = logging.getLogger(__name__)
+    logger.debug("Checking current branch")
+    stdout, _ = run_command("git branch --show-current", dry_run)
     if stdout != "main":
-        click.echo("Error: Not on main branch. Please switch to main branch first.")
+        logger.error("Not on main branch. Please switch to main branch first.")
         sys.exit(1)
+    logger.debug("Current branch check passed")
 
 def check_unpushed_commits(dry_run: bool = False) -> None:
     """Check if there are any unpushed commits."""
-    if dry_run:
-        click.echo("[DRY RUN] Would check for unpushed commits")
-        return
-    
-    stdout, _ = run_command("git log origin/main..HEAD")
+    logger = logging.getLogger(__name__)
+    logger.debug("Checking for unpushed commits")
+    stdout, _ = run_command("git log origin/main..HEAD", dry_run)
     if stdout:
-        click.echo("Error: There are unpushed commits. Please push all changes before creating a release.")
+        logger.error("There are unpushed commits. Please push all changes before creating a release.")
         sys.exit(1)
-    # If we get here, it means all commits are pushed, which is what we want for a release
+    logger.debug("No unpushed commits found")
 
 def get_github_token(dry_run: bool = False) -> str:
     """Get GitHub token from environment variable."""
+    logger = logging.getLogger(__name__)
     if dry_run:
-        click.echo("[DRY RUN] Would check for GITHUB_TOKEN")
+        logger.info("[DRY RUN] Would check for GITHUB_TOKEN")
         return "dry-run-token"
     
+    logger.debug("Getting GitHub token from environment")
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        click.echo("Error: GITHUB_TOKEN not found in .env file.")
+        logger.error("GITHUB_TOKEN not found in .env file.")
         sys.exit(1)
     return token
 
 def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
     """Create a GitHub release."""
+    logger = logging.getLogger(__name__)
     if dry_run:
-        click.echo(f"[DRY RUN] Would create GitHub release for version {version}")
+        logger.info(f"[DRY RUN] Would create GitHub release for version {version}")
         return
     
+    logger.info(f"Creating GitHub release for version {version}")
     # Get the latest commits for release notes
     stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
     release_notes = f"## Changes\n\n```\n{stdout}\n```"
@@ -117,6 +143,7 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     # Get repository info
     stdout, _ = run_command("git remote get-url origin")
     repo_url = stdout.split(":")[1].replace(".git", "")
+    logger.debug(f"Repository URL: {repo_url}")
     
     response = requests.post(
         f"https://api.github.com/repos/{repo_url}/releases",
@@ -125,30 +152,29 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     )
     
     if response.status_code != 201:
-        click.echo(f"Error creating GitHub release: {response.text}")
+        logger.error(f"Error creating GitHub release: {response.text}")
         sys.exit(1)
+    logger.info("GitHub release created successfully")
 
 def check_main_up_to_date(dry_run: bool = False) -> None:
     """Check if local main branch is up to date with remote main."""
-    if dry_run:
-        click.echo("[DRY RUN] Would check if main is up to date with remote")
-        return
-    
-    stdout, _ = run_command("git fetch origin main")
-    stdout, _ = run_command("git rev-list HEAD...origin/main --count")
+    logger = logging.getLogger(__name__)
+    logger.debug("Checking if main branch is up to date")
+    stdout, _ = run_command("git fetch origin main", dry_run)
+    stdout, _ = run_command("git rev-list HEAD...origin/main --count", dry_run)
     if stdout != "0":
-        click.echo("Error: Local main branch is not up to date with remote main. Please pull the latest changes first.")
+        logger.error("Local main branch is not up to date with remote main. Please pull the latest changes first.")
         sys.exit(1)
+    logger.debug("Main branch is up to date")
 
 def check_github_workflows(dry_run: bool = False) -> None:
     """Check if all GitHub Actions workflows are passing."""
-    if dry_run:
-        click.echo("[DRY RUN] Would check GitHub Actions workflow status")
-        return
-    
+    logger = logging.getLogger(__name__)
+    logger.info("Checking GitHub Actions workflow status")
     # Get repository info
-    stdout, _ = run_command("git remote get-url origin")
+    stdout, _ = run_command("git remote get-url origin", dry_run)
     repo_url = stdout.split(":")[1].replace(".git", "")
+    logger.debug(f"Repository URL: {repo_url}")
     
     # Get GitHub token
     token = get_github_token(dry_run)
@@ -159,6 +185,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
         "Accept": "application/vnd.github.v3+json"
     }
     
+    logger.debug("Fetching workflow runs from GitHub API")
     response = requests.get(
         f"https://api.github.com/repos/{repo_url}/actions/runs",
         headers=headers,
@@ -166,12 +193,12 @@ def check_github_workflows(dry_run: bool = False) -> None:
     )
     
     if response.status_code != 200:
-        click.echo(f"Error checking GitHub Actions status: {response.text}")
+        logger.error(f"Error checking GitHub Actions status: {response.text}")
         sys.exit(1)
     
     runs = response.json()["workflow_runs"]
     if not runs:
-        click.echo("Error: No recent workflow runs found. Please ensure workflows are running.")
+        logger.error("No recent workflow runs found. Please ensure workflows are running.")
         sys.exit(1)
     
     # Check the most recent run for each workflow
@@ -183,16 +210,21 @@ def check_github_workflows(dry_run: bool = False) -> None:
     
     for workflow_name, run in workflows.items():
         if run["conclusion"] != "success":
-            click.echo(f"Error: Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}")
-            click.echo(f"Please check the workflow run at: {run['html_url']}")
+            logger.error(f"Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}")
+            logger.error(f"Please check the workflow run at: {run['html_url']}")
             sys.exit(1)
+    logger.info("All workflows are passing")
 
 @click.command()
 @click.option('--dry-run', is_flag=True, help='Simulate the release process without making any changes')
-def release(dry_run: bool):
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
+def release(dry_run: bool, verbose: bool):
     """Create a new release and bump version."""
+    # Setup logging
+    logger = setup_logging(verbose)
+    
     if dry_run:
-        click.echo("Running in dry-run mode. No changes will be made.")
+        logger.info("Running in dry-run mode. No changes will be made, but all safety checks will be performed.")
     
     # Run safety checks
     check_git_status(dry_run)
@@ -201,16 +233,19 @@ def release(dry_run: bool):
     check_main_up_to_date(dry_run)
     check_github_workflows(dry_run)
     
+    if dry_run:
+        logger.info("All safety checks passed. In a real run, the following changes would be made:")
+    
     current_version = get_current_version()
-    click.echo(f"Current version: {current_version}")
+    logger.info(f"Current version: {current_version}")
     
     # Get new version
-    click.echo("\nVersion bump options:")
-    click.echo("1. Major (e.g., 1.0.0)")
-    click.echo("2. Minor (e.g., 0.2.0)")
-    click.echo("3. Patch (e.g., 0.1.4)")
-    click.echo("4. Beta (e.g., 0.1.3b2)")
-    click.echo("5. Custom")
+    logger.info("\nVersion bump options:")
+    logger.info("1. Major (e.g., 1.0.0)")
+    logger.info("2. Minor (e.g., 0.2.0)")
+    logger.info("3. Patch (e.g., 0.1.4)")
+    logger.info("4. Beta (e.g., 0.1.3b2)")
+    logger.info("5. Custom")
     
     choice = click.prompt("Select version bump type", type=int)
     
@@ -232,8 +267,17 @@ def release(dry_run: bool):
     elif choice == 5:
         new_version = click.prompt("Enter new version")
     else:
-        click.echo("Invalid choice")
+        logger.error("Invalid choice")
         sys.exit(1)
+    
+    logger.info(f"Selected new version: {new_version}")
+    
+    if dry_run:
+        logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
+        logger.info(f"[DRY RUN] Would create commit: chore(release): bump version to v{new_version}")
+        logger.info(f"[DRY RUN] Would create and push tag v{new_version}")
+        logger.info(f"[DRY RUN] Would create GitHub release for version {new_version}")
+        return
     
     # Update version
     update_version(new_version, dry_run)
@@ -249,7 +293,7 @@ def release(dry_run: bool):
     token = get_github_token(dry_run)
     create_github_release(new_version, token, dry_run)
     
-    click.echo(f"\n{'[DRY RUN] Would ' if dry_run else ''}Successfully created release v{new_version}!")
+    logger.info(f"\nSuccessfully created release v{new_version}!")
 
 if __name__ == "__main__":
     release() 
