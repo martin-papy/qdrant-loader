@@ -113,6 +113,7 @@ def get_github_token(dry_run: bool = False) -> str:
     if not token:
         logger.error("GITHUB_TOKEN not found in .env file.")
         sys.exit(1)
+    logger.debug("GitHub token found in environment")
     return token
 
 def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
@@ -142,6 +143,8 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     
     # Get repository info
     stdout, _ = run_command("git remote get-url origin", dry_run)
+    logger.debug(f"Raw Git remote URL: {stdout}")
+    
     # Handle both SSH and HTTPS URLs
     if stdout.startswith("https://"):
         # Handle HTTPS URLs (https://github.com/username/repo.git)
@@ -149,7 +152,8 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     elif stdout.startswith("ssh://"):
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
         # Remove ssh://git@ and .git, then split by / and take the last two parts
-        parts = stdout.replace("ssh://git@", "").replace(".git", "").split("/")
+        clean_url = stdout.replace("ssh://git@", "").replace(".git", "")
+        parts = clean_url.split("/")
         if len(parts) >= 3:
             repo_url = "/".join(parts[-2:])
         else:
@@ -193,20 +197,35 @@ def check_github_workflows(dry_run: bool = False) -> None:
     logger.info("Checking GitHub Actions workflow status")
     # Get repository info
     stdout, _ = run_command("git remote get-url origin", dry_run)
+    logger.debug(f"Raw Git remote URL: {stdout}")
+    
     # Handle both SSH and HTTPS URLs
     if stdout.startswith("https://"):
         # Handle HTTPS URLs (https://github.com/username/repo.git)
         repo_url = stdout.replace("https://", "").replace(".git", "")
     elif stdout.startswith("ssh://"):
         # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        repo_url = stdout.replace("ssh://git@", "").replace(".git", "")
+        # Remove ssh://git@ and .git, then split by / and take the last two parts
+        clean_url = stdout.replace("ssh://git@", "").replace(".git", "")
+        parts = clean_url.split("/")
+        if len(parts) >= 3:
+            repo_url = "/".join(parts[-2:])
+        else:
+            logger.error(f"Invalid repository URL format: {stdout}")
+            sys.exit(1)
     else:
         # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
         repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
+    
+    if not repo_url:
+        logger.error("Could not determine repository path from Git remote URL")
+        sys.exit(1)
+    
     logger.debug(f"Repository URL: {repo_url}")
     
     # Get GitHub token
     token = get_github_token(dry_run)
+    logger.debug("GitHub token obtained")
     
     # Get the latest workflow runs
     headers = {
