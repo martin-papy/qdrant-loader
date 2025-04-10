@@ -74,32 +74,38 @@ def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
 def check_git_status(dry_run: bool = False) -> None:
     """Check if the working directory is clean."""
     logger = logging.getLogger(__name__)
+    logger.info("Starting git status check...")
     logger.debug("Checking git status")
     stdout, _ = run_command("git status --porcelain", dry_run)
     if stdout:
         logger.error("There are uncommitted changes. Please commit or stash them first.")
         sys.exit(1)
     logger.debug("Git status check passed")
+    logger.info("Git status check completed successfully")
 
 def check_current_branch(dry_run: bool = False) -> None:
     """Check if we're on the main branch."""
     logger = logging.getLogger(__name__)
+    logger.info("Starting current branch check...")
     logger.debug("Checking current branch")
     stdout, _ = run_command("git branch --show-current", dry_run)
     if stdout != "main":
         logger.error("Not on main branch. Please switch to main branch first.")
         sys.exit(1)
     logger.debug("Current branch check passed")
+    logger.info("Current branch check completed successfully")
 
 def check_unpushed_commits(dry_run: bool = False) -> None:
     """Check if there are any unpushed commits."""
     logger = logging.getLogger(__name__)
+    logger.info("Starting unpushed commits check...")
     logger.debug("Checking for unpushed commits")
     stdout, _ = run_command("git log origin/main..HEAD", dry_run)
     if stdout:
         logger.error("There are unpushed commits. Please push all changes before creating a release.")
         sys.exit(1)
     logger.debug("No unpushed commits found")
+    logger.info("Unpushed commits check completed successfully")
 
 def get_github_token(dry_run: bool = False) -> str:
     """Get GitHub token from environment variable."""
@@ -178,6 +184,7 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
 def check_main_up_to_date(dry_run: bool = False) -> None:
     """Check if local main branch is up to date with remote main."""
     logger = logging.getLogger(__name__)
+    logger.info("Starting main branch up-to-date check...")
     logger.debug("Checking if main branch is up to date")
     stdout, _ = run_command("git fetch origin main", dry_run)
     stdout, _ = run_command("git rev-list HEAD...origin/main --count", dry_run)
@@ -185,10 +192,12 @@ def check_main_up_to_date(dry_run: bool = False) -> None:
         logger.error("Local main branch is not up to date with remote main. Please pull the latest changes first.")
         sys.exit(1)
     logger.debug("Main branch is up to date")
+    logger.info("Main branch up-to-date check completed successfully")
 
 def check_github_workflows(dry_run: bool = False) -> None:
     """Check if all GitHub Actions workflows are passing."""
     logger = logging.getLogger(__name__)
+    logger.info("Starting GitHub workflows check...")
     logger.info("Checking GitHub Actions workflow status")
     
     # Get repository info
@@ -279,6 +288,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
             sys.exit(1)
     
     logger.info("All workflows are passing")
+    logger.info("GitHub workflows check completed successfully")
 
 @click.command()
 @click.option('--dry-run', is_flag=True, help='Simulate the release process without making any changes')
