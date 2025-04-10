@@ -162,7 +162,7 @@ source venv/bin/activate  # On macOS/Linux
 pip install -r requirements.txt -r requirements-dev.txt
 
 # Install in development mode with additional dev dependencies
-pip install -e ".[dev]"
+pip install -e
 ```
 
 ### Running Tests
