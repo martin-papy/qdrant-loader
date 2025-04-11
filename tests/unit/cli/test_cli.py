@@ -27,10 +27,6 @@ class AsyncCliRunner(CliRunner):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, sync_invoke)
 
-@pytest.fixture
-def runner():
-    return AsyncCliRunner()
-
 @pytest.fixture(autouse=True)
 def setup_env(monkeypatch, tmp_path):
     """Setup environment variables for all tests."""
@@ -54,10 +50,50 @@ def setup_env(monkeypatch, tmp_path):
     global _global_settings
     _global_settings = None
     
-    # Use the test config file from tests directory
-    config_path = Path("tests/config.test.yaml")
-    if not config_path.exists():
-        raise FileNotFoundError(f"Test config file not found at {config_path}")
+    # Create a test config file in the temporary directory
+    config_path = tmp_path / "config.test.yaml"
+    config_content = {
+        'global': {
+            'chunking': {
+                'size': 500,
+                'overlap': 50
+            },
+            'embedding': {
+                'model': 'text-embedding-3-small',
+                'batch_size': 10
+            },
+            'logging': {
+                'level': 'INFO',
+                'format': 'json',
+                'file': 'qdrant-loader-test.log'
+            }
+        },
+        'sources': {
+            'public_docs': {
+                'test-docs': {
+                    'base_url': 'https://docs.python.org/3/tutorial/',
+                    'version': '3.12',
+                    'content_type': 'html',
+                    'exclude_paths': ['/downloads'],
+                    'selectors': {
+                        'content': '.body',
+                        'remove': ['nav', 'header', 'footer'],
+                        'code_blocks': 'pre code'
+                    }
+                }
+            },
+            'git_repos': {
+                'auth-test-repo': {
+                    'url': 'https://github.com/test/repo',
+                    'branch': 'main',
+                    'token': 'test-token',
+                    'include_paths': ['/', 'docs/**/*', 'src/main/**/*', 'README.md'],
+                    'exclude_paths': ['src/test/**/*']
+                }
+            }
+        }
+    }
+    config_path.write_text(yaml.dump(config_content))
     
     # Initialize settings with the test config
     initialize_config(config_path)
@@ -67,6 +103,16 @@ def setup_env(monkeypatch, tmp_path):
     
     # Clean up after test
     _global_settings = None
+
+@pytest.fixture
+def runner(monkeypatch, setup_env):
+    """Create a CLI runner with the test environment."""
+    # Set the current working directory to the project root
+    monkeypatch.chdir(Path(__file__).parent.parent.parent.parent)
+    
+    # Create the runner
+    runner = AsyncCliRunner()
+    return runner
 
 @pytest.fixture
 def mock_pipeline(mocker):
@@ -109,14 +155,14 @@ async def test_cli_config(runner):
 @pytest.mark.asyncio
 async def test_cli_init(runner, mock_init_collection, setup_env):
     """Test the init command."""
-    result = await runner.async_invoke(cli, ["init"])
+    result = await runner.async_invoke(cli, ["init", "--config", str(setup_env)])
     assert result.exit_code == 0
     mock_init_collection.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_init_with_force(runner, mock_init_collection, setup_env):
     """Test the init command with force flag."""
-    result = await runner.async_invoke(cli, ["init", "--force"])
+    result = await runner.async_invoke(cli, ["init", "--force", "--config", str(setup_env)])
     assert result.exit_code == 0
     mock_init_collection.assert_called_once()
 
@@ -137,14 +183,14 @@ async def test_cli_init_with_invalid_config(runner):
 @pytest.mark.asyncio
 async def test_cli_ingest_with_source_type(runner, setup_env, mock_pipeline):
     """Test the ingest command with source type."""
-    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence'])
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_ingest_with_source_type_and_name(runner, setup_env, mock_pipeline):
     """Test the ingest command with source type and name."""
-    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'space1'])
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'space1', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_called_once()
 
@@ -166,7 +212,7 @@ async def test_cli_ingest_with_invalid_config(runner):
 @pytest.mark.asyncio
 async def test_cli_ingest_with_source_without_type(runner, setup_env):
     """Test the ingest command with source but no source type."""
-    result = await runner.async_invoke(cli, ['ingest', '--source', 'space1'])
+    result = await runner.async_invoke(cli, ['ingest', '--source', 'space1', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Source name provided without source type" in result.output
 
@@ -174,7 +220,7 @@ async def test_cli_ingest_with_source_without_type(runner, setup_env):
 async def test_cli_ingest_with_processing_error(runner, setup_env, mock_pipeline):
     """Test the ingest command with processing error."""
     mock_pipeline.process_documents.side_effect = Exception("Processing failed")
-    result = await runner.async_invoke(cli, ['ingest'])
+    result = await runner.async_invoke(cli, ['ingest', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Failed to process documents" in result.output
 
@@ -182,28 +228,28 @@ async def test_cli_ingest_with_processing_error(runner, setup_env, mock_pipeline
 async def test_cli_ingest_with_nonexistent_source(runner, setup_env, mock_pipeline):
     """Test the ingest command with nonexistent source."""
     mock_pipeline.process_documents.side_effect = ValueError("Source not found")
-    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'nonexistent'])
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'nonexistent', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Failed to process documents" in result.output
 
 @pytest.mark.asyncio
 async def test_cli_ingest_with_all_source_types(runner, setup_env, mock_pipeline):
     """Test the ingest command with all source types."""
-    result = await runner.async_invoke(cli, ['ingest'])
+    result = await runner.async_invoke(cli, ['ingest', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_ingest_with_verbose(runner, setup_env, mock_pipeline):
     """Test the ingest command with verbose flag."""
-    result = await runner.async_invoke(cli, ['ingest', '--verbose'])
+    result = await runner.async_invoke(cli, ['ingest', '--verbose', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_ingest_with_log_level(runner, setup_env, mock_pipeline):
     """Test that the ingest command works with different log levels."""
-    result = await runner.async_invoke(cli, ['ingest', '--log-level', 'DEBUG'])
+    result = await runner.async_invoke(cli, ['ingest', '--log-level', 'DEBUG', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_called_once()
 
@@ -219,7 +265,7 @@ async def test_cli_init_without_settings(runner):
 async def test_cli_init_with_error(runner, setup_env, mock_init_collection):
     """Test the init command with error."""
     mock_init_collection.side_effect = Exception("Failed to initialize")
-    result = await runner.async_invoke(cli, ['init'])
+    result = await runner.async_invoke(cli, ['init', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Failed to initialize collection" in result.output
 
@@ -227,7 +273,7 @@ async def test_cli_init_with_error(runner, setup_env, mock_init_collection):
 async def test_cli_ingest_pipeline_error(runner, setup_env, mock_pipeline):
     """Test that the ingest command handles pipeline errors."""
     mock_pipeline.process_documents.side_effect = Exception("Pipeline error")
-    result = await runner.async_invoke(cli, ['ingest'])
+    result = await runner.async_invoke(cli, ['ingest', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Failed to process documents" in result.output
 
@@ -255,13 +301,13 @@ def test_cli_log_level_validation(runner, setup_env, mock_pipeline):
 
 def test_cli_ingest_with_jira_source_type(runner, setup_env, mock_pipeline):
     """Test that the ingest command works with JIRA source type."""
-    result = runner.invoke(cli, ['ingest', '--source-type', 'jira'])
+    result = runner.invoke(cli, ['ingest', '--source-type', 'jira', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_awaited_once_with(config=ANY, source_type='jira', source_name=None)
 
 def test_cli_ingest_with_jira_source_type_and_name(runner, setup_env, mock_pipeline):
     """Test that the ingest command works with JIRA source type and name."""
-    result = runner.invoke(cli, ['ingest', '--source-type', 'jira', '--source', 'project1'])
+    result = runner.invoke(cli, ['ingest', '--source-type', 'jira', '--source', 'project1', '--config', str(setup_env)])
     assert result.exit_code == 0
     mock_pipeline.process_documents.assert_awaited_once_with(
         config=ANY, source_type='jira', source_name='project1'
@@ -288,6 +334,6 @@ def test_cli_init_with_force_and_config(runner, setup_env, mock_init_collection)
 def test_cli_init_with_connection_error(runner, setup_env, mock_init_collection):
     """Test the init command with connection error."""
     mock_init_collection.side_effect = ConnectionError("Failed to connect")
-    result = runner.invoke(cli, ['init'])
+    result = runner.invoke(cli, ['init', '--config', str(setup_env)])
     assert result.exit_code == 1
     assert "Failed to initialize collection" in result.output 
