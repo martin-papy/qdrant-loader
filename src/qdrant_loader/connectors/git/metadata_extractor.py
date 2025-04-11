@@ -1,15 +1,12 @@
 import chardet
 import re
-from pathlib import Path
 from typing import Dict, Any, List
-from git import Repo
-import structlog
 from qdrant_loader.utils.logger import get_logger
 import os
 import git
 import logging
 from datetime import datetime
-from .config import GitRepoConfig
+from qdrant_loader.connectors.git.config import GitRepoConfig
 
 logger = get_logger(__name__)
 

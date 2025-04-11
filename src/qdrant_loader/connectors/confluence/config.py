@@ -1,7 +1,7 @@
 """Configuration for Confluence connector."""
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 import os
 
 

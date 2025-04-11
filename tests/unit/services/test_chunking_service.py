@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from qdrant_loader.config import GlobalConfig, ChunkingConfig
-from qdrant_loader.chunking_service import ChunkingService
+from qdrant_loader.core.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from datetime import datetime
 
@@ -63,7 +63,7 @@ def test_chunk_document(config, test_document):
     mock_chunks[1].content = "chunk2"
     mock_strategy.chunk_document.return_value = mock_chunks
     
-    with patch('qdrant_loader.chunking_service.ChunkingStrategy', return_value=mock_strategy):
+    with patch('qdrant_loader.core.chunking_service.ChunkingStrategy', return_value=mock_strategy):
         service = ChunkingService(config)
         chunked_docs = service.chunk_document(test_document)
         
@@ -104,7 +104,7 @@ def test_chunk_document_error_handling(config, test_document):
     mock_strategy = MagicMock()
     mock_strategy.chunk_document.side_effect = Exception("Chunking error")
     
-    with patch('qdrant_loader.chunking_service.ChunkingStrategy', return_value=mock_strategy):
+    with patch('qdrant_loader.core.chunking_service.ChunkingStrategy', return_value=mock_strategy):
         service = ChunkingService(config)
         with pytest.raises(Exception, match="Chunking error"):
             service.chunk_document(test_document)

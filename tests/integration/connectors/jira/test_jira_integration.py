@@ -4,7 +4,6 @@ import os
 import pytest
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-import asyncio
 from dotenv import load_dotenv
 from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.jira.config import JiraConfig

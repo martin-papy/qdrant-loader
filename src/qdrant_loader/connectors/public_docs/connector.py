@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
 from collections import deque
-from .config import PublicDocsSourceConfig
+from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
 
 logger = logging.getLogger(__name__)
 

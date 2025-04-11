@@ -1,11 +1,11 @@
 """
-Tests for the OpenAI integration.
+Integration tests for OpenAI embedding service.
 """
 import pytest
 from pathlib import Path
 from dotenv import load_dotenv
 from qdrant_loader.config import Settings
-from qdrant_loader.embedding_service import EmbeddingService
+from qdrant_loader.core.embedding_service import EmbeddingService
 import os
 import time
 

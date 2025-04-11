@@ -1,8 +1,8 @@
 import logging
 from typing import List
-from .config import GlobalConfig
-from .core.document import Document
-from .core.chunking import ChunkingStrategy
+from qdrant_loader.config import GlobalConfig
+from qdrant_loader.core.document import Document
+from qdrant_loader.core.chunking_strategy import ChunkingStrategy
 
 class ChunkingService:
     """Service for chunking documents into smaller pieces."""

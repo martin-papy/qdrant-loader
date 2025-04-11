@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import pytest
 from dotenv import load_dotenv
-from qdrant_loader.config import Settings, initialize_config, get_settings
+from qdrant_loader.config import initialize_config, get_settings
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent.parent.parent / ".env.test")

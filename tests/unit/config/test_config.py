@@ -1,4 +1,3 @@
-import os
 import pytest
 from pathlib import Path
 from dotenv import load_dotenv
@@ -13,9 +12,7 @@ from qdrant_loader.config import (
     JiraProjectConfig,
     PublicDocsSourceConfig,
     SelectorsConfig,
-    ChunkingConfig,
-    initialize_config,
-    get_settings
+    ChunkingConfig
 )
 
 # Load test environment variables

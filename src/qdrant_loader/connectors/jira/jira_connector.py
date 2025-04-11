@@ -10,9 +10,9 @@ import time
 import structlog
 from atlassian import Jira
 
-from .config import JiraConfig
-from .models import JiraIssue, JiraUser, JiraAttachment
-from ...core.document import Document
+from qdrant_loader.connectors.jira.config import JiraConfig
+from qdrant_loader.connectors.jira.models import JiraIssue, JiraUser, JiraAttachment
+from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)
 

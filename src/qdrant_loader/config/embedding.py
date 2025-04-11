@@ -1,7 +1,7 @@
 """Configuration for embedding generation."""
 
 from pydantic import Field
-from .base import BaseConfig
+from qdrant_loader.config.base import BaseConfig
 
 
 class EmbeddingConfig(BaseConfig):
