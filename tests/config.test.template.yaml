@@ -1,7 +1,7 @@
 global:
   chunking:
-    size: 500
-    overlap: 50
+    chunk_size: 500
+    chunk_overlap: 50
   embedding:
     model: text-embedding-3-small
     batch_size: 10  # Smaller batch size for tests

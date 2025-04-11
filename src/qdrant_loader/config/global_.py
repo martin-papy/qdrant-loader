@@ -46,8 +46,8 @@ class GlobalConfig(BaseConfig):
         """Convert the configuration to a dictionary."""
         return {
             "chunking": {
-                "size": self.chunking.chunk_size,
-                "overlap": self.chunking.chunk_overlap
+                "chunk_size": self.chunking.chunk_size,
+                "chunk_overlap": self.chunking.chunk_overlap
             },
             "embedding": self.embedding.model_dump(),
             "logging": self.logging.model_dump()
