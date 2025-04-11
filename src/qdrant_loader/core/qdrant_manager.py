@@ -8,6 +8,14 @@ from qdrant_loader.config import Settings, get_settings, get_global_config
 
 logger = structlog.get_logger()
 
+class QdrantConnectionError(Exception):
+    """Custom exception for Qdrant connection errors."""
+    def __init__(self, message: str, original_error: Optional[str] = None, url: Optional[str] = None):
+        self.message = message
+        self.original_error = original_error
+        self.url = url
+        super().__init__(self.message)
+
 class QdrantManager:
     def __init__(self, settings: Optional[Settings] = None):
         self.client = None
@@ -45,18 +53,49 @@ class QdrantManager:
                     url = url.replace('http://', 'https://', 1)
                     logger.warning("Forcing HTTPS connection due to API key usage")
 
-            self.client = QdrantClient(
-                url=url,
-                api_key=api_key,
-                timeout=60  # 60 seconds timeout
-            )
-            # Note: The version check warning is expected when connecting to Qdrant Cloud instances.
-            # This occurs because the version check endpoint might not be accessible due to security restrictions.
-            # The warning can be safely ignored as it doesn't affect functionality.
-            logger.info("Successfully connected to qDrant")
-        except Exception as e:
-            logger.error("Failed to connect to qDrant", error=str(e))
+            try:
+                self.client = QdrantClient(
+                    url=url,
+                    api_key=api_key,
+                    timeout=60  # 60 seconds timeout
+                )
+                # Note: The version check warning is expected when connecting to Qdrant Cloud instances.
+                # This occurs because the version check endpoint might not be accessible due to security restrictions.
+                # The warning can be safely ignored as it doesn't affect functionality.
+                logger.info("Successfully connected to qDrant")
+            except Exception as e:
+                error_msg = str(e)
+                if "Connection refused" in error_msg:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
+                        original_error=error_msg,
+                        url=url
+                    )
+                elif "Invalid API key" in error_msg:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
+                        original_error=error_msg
+                    )
+                elif "timeout" in error_msg.lower():
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
+                        original_error=error_msg,
+                        url=url
+                    )
+                else:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
+                        original_error=error_msg,
+                        url=url
+                    )
+        except QdrantConnectionError:
             raise
+        except Exception as e:
+            raise QdrantConnectionError(
+                "Failed to connect to qDrant: Unexpected error",
+                original_error=str(e),
+                url=url
+            )
 
     def create_collection(self) -> None:
         """Create a new collection if it doesn't exist."""
@@ -86,15 +125,43 @@ class QdrantManager:
             total_points = len(points)
             for i in range(0, total_points, self.batch_size):
                 batch = points[i:i + self.batch_size]
-                self.client.upsert(
-                    collection_name=self.collection_name,
-                    points=batch,
-                    wait=True
-                )
-                logger.info("Upserted batch of points", 
-                           batch_size=len(batch),
-                           progress=f"{i + len(batch)}/{total_points}")
+                try:
+                    self.client.upsert(
+                        collection_name=self.collection_name,
+                        points=batch,
+                        wait=True
+                    )
+                    logger.info("Upserted batch of points", 
+                               batch_size=len(batch),
+                               progress=f"{i + len(batch)}/{total_points}")
+                except Exception as e:
+                    error_msg = str(e)
+                    if "Connection refused" in error_msg:
+                        raise QdrantConnectionError(
+                            "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
+                            original_error=error_msg,
+                            url=self.settings.QDRANT_URL
+                        )
+                    elif "Invalid API key" in error_msg:
+                        raise QdrantConnectionError(
+                            "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
+                            original_error=error_msg
+                        )
+                    elif "timeout" in error_msg.lower():
+                        raise QdrantConnectionError(
+                            "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
+                            original_error=error_msg,
+                            url=self.settings.QDRANT_URL
+                        )
+                    else:
+                        raise QdrantConnectionError(
+                            "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
+                            original_error=error_msg,
+                            url=self.settings.QDRANT_URL
+                        )
             logger.info("Successfully upserted all points", count=total_points)
+        except QdrantConnectionError:
+            raise
         except Exception as e:
             logger.error("Failed to upsert points", error=str(e))
             raise
