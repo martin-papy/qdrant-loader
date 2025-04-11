@@ -1,14 +1,15 @@
 from typing import List, Optional
 import structlog
-from .config import SourcesConfig, get_settings
-from .connectors.public_docs import PublicDocsConnector
-from .connectors.git import GitConnector
-from .connectors.confluence import ConfluenceConnector
-from .connectors.jira.jira_connector import JiraConnector
-from .core.document import Document
-from .core.chunking import ChunkingStrategy
-from .embedding_service import EmbeddingService
-from .qdrant_manager import QdrantManager
+from qdrant_loader.config import SourcesConfig, get_settings
+from qdrant_loader.connectors.public_docs import PublicDocsConnector
+from qdrant_loader.connectors.git import GitConnector
+from qdrant_loader.connectors.confluence import ConfluenceConnector
+from qdrant_loader.connectors.jira.jira_connector import JiraConnector
+from qdrant_loader.core.document import Document
+from qdrant_loader.core.chunking_strategy import ChunkingStrategy
+from qdrant_loader.core.embedding_service import EmbeddingService
+from qdrant_loader.core.qdrant_manager import QdrantManager
+
 from datetime import datetime
 import uuid
 import asyncio

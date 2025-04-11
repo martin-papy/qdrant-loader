@@ -1,14 +1,21 @@
 import pytest
 from pathlib import Path
 from dotenv import load_dotenv
-from qdrant_loader.qdrant_manager import QdrantManager
+from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.config import Settings, initialize_config
 import os
 import uuid
 from urllib.parse import urlparse
 
+def load_test_env():
+    """Load environment variables ensuring test settings take precedence."""
+    # First load any existing .env file
+    load_dotenv()
+    # Then load test environment to override any existing values
+    load_dotenv(Path(__file__).parent.parent.parent / ".env.test", override=True)
+
 # Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+load_test_env()
 
 @pytest.fixture(scope="session", autouse=True)
 def initialize_test_config():
@@ -110,6 +117,9 @@ def test_error_handling(test_settings):
     """Test error handling with real Qdrant instance."""
     from qdrant_client.http.exceptions import UnexpectedResponse, ResponseHandlingException
     from requests.exceptions import ConnectionError
+
+    # Debug output
+    print(f"\nQdrant URL being used: {test_settings.QDRANT_URL}")
 
     # Skip test if using local instance (no authentication required)
     parsed_url = urlparse(test_settings.QDRANT_URL)

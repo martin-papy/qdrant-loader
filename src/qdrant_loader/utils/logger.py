@@ -1,58 +1,78 @@
 import os
 import structlog
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 
-def setup_logging(log_level: Optional[str] = None, log_format: Optional[str] = None) -> None:
+class QdrantVersionFilter(logging.Filter):
+    """Filter to suppress Qdrant version check warnings."""
+    def filter(self, record):
+        return "Failed to obtain server version" not in str(record.msg)
+
+def _error_processor(logger: Any, method_name: str, event_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Configure the logging system.
+    Process the error field in log messages.
     
     Args:
-        log_level: The logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_format: The log format (json or console)
+        logger: The logger instance
+        method_name: The log method name
+        event_dict: The event dictionary containing log fields
+        
+    Returns:
+        The processed event dictionary
     """
-    # Default to environment variables if not provided
-    log_level = log_level or os.getenv("LOG_LEVEL", "INFO")
-    log_format = log_format or os.getenv("LOG_FORMAT", "json")
+    if "error" in event_dict:
+        error = event_dict.pop("error")
+        if isinstance(error, str):
+            event_dict["error"] = {"message": error}
+        elif isinstance(error, dict) and "message" not in error:
+            event_dict["error"] = {"message": str(error)}
+        
+        # Ensure error is included in the event message if no event is specified
+        if "event" not in event_dict:
+            event_dict["event"] = str(event_dict["error"]["message"])
+    
+    return event_dict
 
-    # Convert string level to logging level
+def setup_logging(level: str = "INFO") -> None:
+    """Configure the logging system."""
     try:
-        level = getattr(logging, log_level.upper())
+        # Convert string level to logging level
+        numeric_level = getattr(logging, level.upper())
     except AttributeError:
-        raise ValueError(f"Invalid log level: {log_level}")
+        raise ValueError(f"Invalid log level: {level}")
 
     # Configure standard logging
-    logging.basicConfig(level=level)
+    logging.basicConfig(
+        level=numeric_level,
+        format="%(message)s",
+    )
+
+    # Add filter to suppress Qdrant version check warnings
+    qdrant_logger = logging.getLogger("qdrant_client")
+    qdrant_logger.addFilter(QdrantVersionFilter())
 
     # Configure structlog
-    processors = [
-        structlog.stdlib.filter_by_level,
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-    ]
-
-    if log_format == "json":
-        processors.append(structlog.processors.JSONRenderer())
-    else:
-        processors.append(structlog.processors.KeyValueRenderer())
-
     structlog.configure(
-        processors=processors,
-        wrapper_class=structlog.stdlib.BoundLogger,
-        context_class=dict,
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso"),
+            _error_processor,
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
 
-def get_logger(name: str) -> structlog.stdlib.BoundLogger:
-    """
-    Get a logger instance with the given name.
-    
-    Args:
-        name: The name of the logger
-        
-    Returns:
-        A configured logger instance
-    """
+    # Configure the root logger's level
+    logging.getLogger().setLevel(numeric_level)
+
+def get_logger(name: Optional[str] = None) -> structlog.BoundLogger:
+    """Get a logger instance."""
     return structlog.get_logger(name) 

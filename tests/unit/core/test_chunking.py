@@ -3,8 +3,9 @@ Tests for the core chunking module.
 """
 import pytest
 import structlog
+from unittest.mock import patch, MagicMock
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.chunking import ChunkingStrategy
+from qdrant_loader.core.chunking_strategy import ChunkingStrategy
 from datetime import datetime
 
 # Configure logger for testing

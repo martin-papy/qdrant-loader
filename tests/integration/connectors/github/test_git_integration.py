@@ -2,15 +2,10 @@
 Tests for the Git integration.
 """
 import os
-import tempfile
-from datetime import datetime, UTC
 from pathlib import Path
-from typing import List
 import pytest
 from git import Repo
-from git.exc import GitCommandError
 from dotenv import load_dotenv
-import yaml
 from qdrant_loader.config import GitRepoConfig, Settings, GitAuthConfig, SourcesConfig, initialize_config, get_settings
 from qdrant_loader.connectors.git import GitConnector, GitOperations, GitPythonAdapter
 from qdrant_loader.core.document import Document
