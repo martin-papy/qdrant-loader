@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 import os
 import requests
 from requests.auth import HTTPBasicAuth
-from .config import ConfluenceSpaceConfig
+from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
 from datetime import datetime

@@ -1,4 +1,3 @@
-import pytest
 from datetime import datetime
 from qdrant_loader.core.document import Document
 

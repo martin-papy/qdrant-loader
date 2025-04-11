@@ -1,13 +1,13 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from qdrant_loader.init_collection import init_collection
+from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.config import Settings
-from qdrant_loader.qdrant_manager import QdrantManager
+from qdrant_loader.core.qdrant_manager import QdrantManager
 
 @pytest.fixture
 def mock_settings():
     return Settings(
-        QDRANT_URL="http://test-url",
+        QDRANT_URL="https://test-url",
         QDRANT_API_KEY="test-key",
         QDRANT_COLLECTION_NAME="test-collection",
         OPENAI_API_KEY="test-openai-key",
@@ -22,9 +22,9 @@ def mock_qdrant_manager():
 
 def test_init_collection_success(mock_settings, mock_qdrant_manager):
     """Test successful collection initialization."""
-    with patch('qdrant_loader.init_collection.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.init_collection.QdrantManager', return_value=mock_qdrant_manager), \
-         patch('qdrant_loader.init_collection.logger') as mock_logger:
+    with patch('qdrant_loader.core.init_collection.get_settings', return_value=mock_settings), \
+         patch('qdrant_loader.core.init_collection.QdrantManager', return_value=mock_qdrant_manager), \
+         patch('qdrant_loader.core.init_collection.logger') as mock_logger:
         
         init_collection()
         
@@ -35,8 +35,8 @@ def test_init_collection_success(mock_settings, mock_qdrant_manager):
 
 def test_init_collection_missing_settings():
     """Test initialization failure due to missing settings."""
-    with patch('qdrant_loader.init_collection.get_settings', return_value=None), \
-         patch('qdrant_loader.init_collection.logger') as mock_logger:
+    with patch('qdrant_loader.core.init_collection.get_settings', return_value=None), \
+         patch('qdrant_loader.core.init_collection.logger') as mock_logger:
         
         with pytest.raises(ValueError, match="Settings not available"):
             init_collection()
@@ -48,9 +48,9 @@ def test_init_collection_manager_error(mock_settings, mock_qdrant_manager):
     """Test initialization failure due to QdrantManager error."""
     mock_qdrant_manager.create_collection.side_effect = Exception("Test error")
     
-    with patch('qdrant_loader.init_collection.get_settings', return_value=mock_settings), \
-         patch('qdrant_loader.init_collection.QdrantManager', return_value=mock_qdrant_manager), \
-         patch('qdrant_loader.init_collection.logger') as mock_logger:
+    with patch('qdrant_loader.core.init_collection.get_settings', return_value=mock_settings), \
+         patch('qdrant_loader.core.init_collection.QdrantManager', return_value=mock_qdrant_manager), \
+         patch('qdrant_loader.core.init_collection.logger') as mock_logger:
         
         with pytest.raises(Exception, match="Test error"):
             init_collection()

@@ -9,14 +9,11 @@ from typing import List, Optional, Dict, Any
 import logging
 
 from langchain.schema import Document
-from pydantic.v1 import BaseModel  # Use v1 explicitly since langchain still uses it
 
-from pathlib import Path
-from git import Repo, GitCommandError
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
-from .metadata_extractor import GitMetadataExtractor
-from .config import GitRepoConfig
+from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
+from qdrant_loader.connectors.git.config import GitRepoConfig
 import git
 import time
 

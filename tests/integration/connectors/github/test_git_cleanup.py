@@ -7,7 +7,7 @@ import yaml
 import tempfile
 from pathlib import Path
 import time
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig
+from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
 @pytest.fixture

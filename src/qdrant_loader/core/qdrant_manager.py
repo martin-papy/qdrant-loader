@@ -4,7 +4,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 import structlog
 from typing import Optional, List
 from urllib.parse import urlparse
-from .config import Settings, get_settings, get_global_config
+from qdrant_loader.config import Settings, get_settings, get_global_config
 
 logger = structlog.get_logger()
 

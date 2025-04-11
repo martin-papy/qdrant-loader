@@ -52,58 +52,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
     qdrant-loader ingest
     ```
 
-## Configuration
-
-### Environment Variables
-
-Required variables:
-
-- `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION_NAME`
-- `OPENAI_API_KEY`
-
-Optional variables (required only for specific sources):
-
-- Git: `REPO_TOKEN`, `REPO_URL`
-- Confluence: `CONFLUENCE_URL`, `CONFLUENCE_SPACE_KEY`, `CONFLUENCE_TOKEN`, `CONFLUENCE_EMAIL`
-- JIRA: `JIRA_URL`, `JIRA_PROJECT_KEY`, `JIRA_TOKEN`, `JIRA_EMAIL`
-
-See [.env.template](.env.template) for all available environment variables and their descriptions.
-
-### Configuration File
-
-The `config.yaml` file controls the ingestion pipeline behavior. Key settings include:
-
-```yaml
-global:
-  chunking:
-    size: 500
-    overlap: 50
-  embedding:
-    model: text-embedding-3-small
-    batch_size: 100
-  logging:
-    level: INFO
-    format: json
-    file: qdrant-loader.log
-
-sources:
-  jira:
-    my_project:
-      base_url: "https://your-domain.atlassian.net"
-      project_key: "PROJ"
-      issue_types:
-        - "Documentation"
-        - "Technical Spec"
-      include_statuses:
-        - "Done"
-        - "Approved"
-```
-
-See [config.template.yaml](config.template.yaml) for complete configuration options.
-
-## Usage
-
-### Command Line Interface
+## Basic Commands
 
 ```bash
 # Show help and available commands
@@ -118,13 +67,7 @@ qdrant-loader ingest
 # Run ingestion for specific source types
 qdrant-loader ingest --source-type confluence  # Ingest only Confluence
 qdrant-loader ingest --source-type git        # Ingest only Git
-qdrant-loader ingest --source-type public-docs # Ingest only public docs
 qdrant-loader ingest --source-type jira       # Ingest only JIRA
-
-# Run ingestion for specific sources
-qdrant-loader ingest --source-type confluence --source my-space
-qdrant-loader ingest --source-type git --source my-repo
-qdrant-loader ingest --source-type jira --source my-project
 
 # Show current configuration
 qdrant-loader config
@@ -133,13 +76,9 @@ qdrant-loader config
 qdrant-loader version
 ```
 
-### Common Options
+## Documentation
 
-All commands support:
-
-- `--verbose`: Enable verbose output
-- `--log-level LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-- `--config FILE`: Specify custom config file (defaults to config.yaml)
+For detailed documentation about the client usage, configuration options, and advanced features, please refer to the [Client Usage Guide](docs/ClientUsage.md).
 
 ## Development
 
@@ -161,10 +100,6 @@ pip install -r requirements.txt -r requirements-dev.txt
 
 # Install in development mode
 pip install -e .
-
-# Finally, copy and update your configuration files   
-cp .env.template .env
-cp config.template.yaml config.yaml
 ```
 
 ### Running Tests
@@ -175,25 +110,9 @@ pytest tests/
 
 # Run tests with coverage
 pytest --cov=src tests/
-
-# Run specific test files
-pytest tests/test_config.py
-pytest tests/test_qdrant_manager.py
-pytest tests/test_embedding_service.py
-pytest tests/test_cli.py
 ```
 
-### Release Management
-
-The project includes a release management script (`release.py`) to automate version bumping and GitHub releases.
-
-```bash
-# Run release script
-python release.py
-
-# Test release process (dry run)
-python release.py --dry-run
-```
+> **Note on Environment Files**: During tests, both `.env` and `.env.test` files are loaded, with `.env.test` taking precedence and overriding any common variables. This allows tests to use specific test configurations while maintaining default values for non-test-specific settings.
 
 ## Technical Requirements
 

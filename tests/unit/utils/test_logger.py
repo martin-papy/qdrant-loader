@@ -21,7 +21,7 @@ def test_setup_logging_defaults(mock_env):
         setup_logging()
         
         # Verify logging was configured
-        mock_basic_config.assert_called_once_with(level=logging.INFO)
+        mock_basic_config.assert_called_once_with(level=logging.INFO, format="%(message)s")
         # Verify structlog was configured
         mock_configure.assert_called_once()
 
@@ -30,17 +30,17 @@ def test_setup_logging_custom_values():
     with patch('logging.basicConfig') as mock_basic_config, \
          patch('structlog.configure') as mock_configure:
         
-        setup_logging(log_level="DEBUG", log_format="console")
+        setup_logging(level="DEBUG")
         
         # Verify logging was configured
-        mock_basic_config.assert_called_once_with(level=logging.DEBUG)
+        mock_basic_config.assert_called_once_with(level=logging.DEBUG, format="%(message)s")
         # Verify structlog was configured
         mock_configure.assert_called_once()
 
 def test_setup_logging_invalid_level():
     """Test logging setup with invalid log level."""
     with pytest.raises(ValueError, match="Invalid log level: INVALID"):
-        setup_logging(log_level="INVALID")
+        setup_logging(level="INVALID")
 
 def test_get_logger():
     """Test getting a logger instance."""
@@ -55,14 +55,16 @@ def test_logger_integration():
     mock_logger = MagicMock(spec=structlog.stdlib.BoundLogger)
     
     with patch('structlog.stdlib.LoggerFactory') as mock_factory, \
-         patch('structlog.stdlib.BoundLogger') as mock_bound_logger:
+         patch('structlog.stdlib.BoundLogger') as mock_bound_logger, \
+         patch('structlog.get_logger') as mock_get_logger:
         
         # Configure the mock factory to return our mock logger
         mock_factory.return_value.return_value = mock_logger
         mock_bound_logger.return_value = mock_logger
+        mock_get_logger.return_value = mock_logger
         
         # Set up logging and get logger
-        setup_logging(log_level="DEBUG", log_format="json")
+        setup_logging(level="DEBUG")
         logger = get_logger("test")
         
         # Test logging at different levels

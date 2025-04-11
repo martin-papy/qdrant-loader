@@ -10,9 +10,6 @@ from qdrant_loader.config import ConfluenceSpaceConfig, Settings, initialize_con
 from qdrant_loader.core.document import Document
 from dotenv import load_dotenv
 import yaml
-from unittest.mock import patch, MagicMock
-import requests
-from requests.auth import HTTPBasicAuth
 import logging
 
 # Configure logging for tests

@@ -4,7 +4,6 @@ import os
 import pytest
 from pathlib import Path
 from dotenv import load_dotenv
-import yaml
 
 from qdrant_loader.config import (
     Settings,

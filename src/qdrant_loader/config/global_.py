@@ -7,10 +7,10 @@ including chunking, embedding, and logging configurations.
 from typing import Dict, Any, List
 from pydantic import Field, field_validator, ValidationInfo
 
-from .base import BaseConfig
-from .types import GlobalConfigDict
-from .chunking import ChunkingConfig
-from .embedding import EmbeddingConfig
+from qdrant_loader.config.base import BaseConfig
+from qdrant_loader.config.types import GlobalConfigDict
+from qdrant_loader.config.chunking import ChunkingConfig
+from qdrant_loader.config.embedding import EmbeddingConfig
 
 
 class LoggingConfig(BaseConfig):

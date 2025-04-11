@@ -2,8 +2,6 @@
 
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-import os
-
 
 class GitAuthConfig(BaseModel):
     """Configuration for Git authentication."""

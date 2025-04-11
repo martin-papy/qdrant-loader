@@ -1,5 +1,5 @@
 """Public documentation connector."""
 
-from .connector import PublicDocsConnector
+from qdrant_loader.connectors.public_docs.connector import PublicDocsConnector
 
 __all__ = ["PublicDocsConnector"] 

@@ -6,10 +6,10 @@ Confluence spaces, Jira projects, and public documentation.
 
 from typing import Dict, Optional
 from pydantic import BaseModel, ConfigDict, Field
-from ..connectors.git.config import GitRepoConfig
-from ..connectors.jira.config import JiraProjectConfig
-from ..connectors.confluence.config import ConfluenceSpaceConfig
-from ..connectors.public_docs.config import PublicDocsSourceConfig
+from qdrant_loader.connectors.git.config import GitRepoConfig
+from qdrant_loader.connectors.jira.config import JiraProjectConfig
+from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
+from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
 
 
 class SourcesConfig(BaseModel):

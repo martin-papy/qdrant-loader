@@ -1,7 +1,7 @@
 from typing import List, Optional
 import tiktoken
 import structlog
-from .document import Document
+from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger()
 

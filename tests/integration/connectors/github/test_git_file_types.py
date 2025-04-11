@@ -1,9 +1,7 @@
 """
 Tests for Git file type handling.
 """
-import os
 import pytest
-from pathlib import Path
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 

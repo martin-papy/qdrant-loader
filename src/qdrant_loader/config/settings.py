@@ -44,3 +44,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow"  # Allow extra fields in environment variables
     ) 
+
+def get_settings() -> Settings:
+    """Get the settings from environment variables."""
+    return Settings()
+
+__all__ = ['Settings', 'get_settings'] 
