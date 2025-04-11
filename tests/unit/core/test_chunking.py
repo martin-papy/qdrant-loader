@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.chunking_strategy import ChunkingStrategy
 from datetime import datetime
+from qdrant_loader.config import Settings, GlobalConfig, EmbeddingConfig
 
 # Configure logger for testing
 structlog.configure(
@@ -19,6 +20,18 @@ structlog.configure(
     logger_factory=structlog.PrintLoggerFactory(),
     cache_logger_on_first_use=False
 )
+
+@pytest.fixture
+def mock_settings():
+    """Create mock settings for testing."""
+    settings = MagicMock(spec=Settings)
+    settings.global_config = GlobalConfig(
+        embedding=EmbeddingConfig(
+            model="text-embedding-3-small",
+            tokenizer="cl100k_base"
+        )
+    )
+    return settings
 
 @pytest.fixture
 def test_document():
@@ -37,28 +50,28 @@ def test_document():
         last_updated=datetime.now()
     )
 
-def test_chunking_strategy_initialization():
+def test_chunking_strategy_initialization(mock_settings):
     """Test chunking strategy initialization."""
-    strategy = ChunkingStrategy(chunk_size=100, chunk_overlap=20)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=100, chunk_overlap=20)
     assert strategy.chunk_size == 100
     assert strategy.chunk_overlap == 20
     
     # Test invalid overlap
     with pytest.raises(ValueError):
-        ChunkingStrategy(chunk_size=100, chunk_overlap=100)
+        ChunkingStrategy(settings=mock_settings, chunk_size=100, chunk_overlap=100)
 
-def test_chunking_simple_text():
+def test_chunking_simple_text(mock_settings):
     """Test chunking with simple text."""
-    strategy = ChunkingStrategy(chunk_size=10, chunk_overlap=2)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=10, chunk_overlap=2)
     text = "This is a test sentence that will be chunked."
     chunks = strategy._split_text(text)
     
     assert len(chunks) > 1
     assert all(strategy._count_tokens(chunk) <= 10 for chunk in chunks)
 
-def test_chunking_document():
+def test_chunking_document(mock_settings):
     """Test chunking a document with metadata."""
-    strategy = ChunkingStrategy(chunk_size=10, chunk_overlap=2)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=10, chunk_overlap=2)
     doc = Document(
         content="This is a test sentence that will be chunked.",
         source="test_source",
@@ -79,9 +92,9 @@ def test_chunking_document():
         assert chunk_doc.metadata['total_chunks'] == len(chunked_docs)
         assert strategy._count_tokens(chunk_doc.content) <= 10
 
-def test_chunking_empty_document():
+def test_chunking_empty_document(mock_settings):
     """Test chunking an empty document."""
-    strategy = ChunkingStrategy()
+    strategy = ChunkingStrategy(settings=mock_settings)
     doc = Document(
         content="",
         source="test_source",
@@ -94,43 +107,43 @@ def test_chunking_empty_document():
     assert chunked_docs[0].metadata['chunk_index'] == 0
     assert chunked_docs[0].metadata['total_chunks'] == 1
 
-def test_chunking_strategy_init():
+def test_chunking_strategy_init(mock_settings):
     """Test initialization of chunking strategy."""
-    strategy = ChunkingStrategy(chunk_size=500, chunk_overlap=50)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=50)
     assert strategy.chunk_size == 500
     assert strategy.chunk_overlap == 50
     assert strategy.encoding is not None
 
-def test_chunking_strategy_init_invalid_overlap():
+def test_chunking_strategy_init_invalid_overlap(mock_settings):
     """Test initialization with invalid overlap."""
     with pytest.raises(ValueError, match="Chunk overlap must be less than chunk size"):
-        ChunkingStrategy(chunk_size=500, chunk_overlap=500)
+        ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=500)
 
-def test_count_tokens():
+def test_count_tokens(mock_settings):
     """Test token counting."""
-    strategy = ChunkingStrategy(chunk_size=500, chunk_overlap=50)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=50)
     text = "This is a test."
     token_count = strategy._count_tokens(text)
     assert token_count > 0
 
-def test_split_text_empty():
+def test_split_text_empty(mock_settings):
     """Test splitting empty text."""
-    strategy = ChunkingStrategy(chunk_size=500, chunk_overlap=50)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=50)
     chunks = strategy._split_text("")
     assert len(chunks) == 1
     assert chunks[0] == ""
 
-def test_split_text_small():
+def test_split_text_small(mock_settings):
     """Test splitting text smaller than chunk size."""
-    strategy = ChunkingStrategy(chunk_size=500, chunk_overlap=50)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=50)
     text = "This is a small text."
     chunks = strategy._split_text(text)
     assert len(chunks) == 1
     assert chunks[0] == text
 
-def test_split_text_large():
+def test_split_text_large(mock_settings):
     """Test splitting large text."""
-    strategy = ChunkingStrategy(chunk_size=10, chunk_overlap=2)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=10, chunk_overlap=2)
     text = "This is a longer text that should be split into multiple chunks."
     chunks = strategy._split_text(text)
     assert len(chunks) > 1
@@ -139,9 +152,9 @@ def test_split_text_large():
     # Verify that each chunk is not longer than the maximum size
     assert all(strategy._count_tokens(chunk) <= 10 for chunk in chunks)
 
-def test_split_text_with_overlap():
+def test_split_text_with_overlap(mock_settings):
     """Test text splitting with overlap."""
-    strategy = ChunkingStrategy(chunk_size=10, chunk_overlap=5)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=10, chunk_overlap=5)
     text = "This is a text that should have overlapping chunks."
     chunks = strategy._split_text(text)
     # Verify that chunks overlap
@@ -153,9 +166,9 @@ def test_split_text_with_overlap():
         overlap = len(set(current_tokens[-5:]).intersection(set(next_tokens[:5])))
         assert overlap > 0
 
-def test_chunk_document():
+def test_chunk_document(mock_settings):
     """Test document chunking."""
-    strategy = ChunkingStrategy(chunk_size=10, chunk_overlap=2)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=10, chunk_overlap=2)
     doc = Document(
         content="This is a test document that should be split into multiple chunks.",
         source="test",
@@ -172,9 +185,9 @@ def test_chunk_document():
         assert "chunk_index" in chunk_doc.metadata
         assert "total_chunks" in chunk_doc.metadata
 
-def test_chunk_document_empty():
+def test_chunk_document_empty(mock_settings):
     """Test chunking empty document."""
-    strategy = ChunkingStrategy(chunk_size=500, chunk_overlap=50)
+    strategy = ChunkingStrategy(settings=mock_settings, chunk_size=500, chunk_overlap=50)
     doc = Document(
         content="",
         source="test",
@@ -187,12 +200,12 @@ def test_chunk_document_empty():
     assert chunked_docs[0].metadata["chunk_index"] == 0
     assert chunked_docs[0].metadata["total_chunks"] == 1
 
-def test_chunk_document_with_model():
+def test_chunk_document_with_model(mock_settings):
     """Test chunking with different model."""
     strategy = ChunkingStrategy(
+        settings=mock_settings,
         chunk_size=500,
-        chunk_overlap=50,
-        model_name="text-embedding-3-small"
+        chunk_overlap=50
     )
     doc = Document(
         content="This is a test document.",
