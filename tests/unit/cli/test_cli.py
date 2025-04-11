@@ -28,7 +28,7 @@ class AsyncCliRunner(CliRunner):
         return await loop.run_in_executor(None, sync_invoke)
 
 @pytest.fixture(autouse=True)
-def setup_env(monkeypatch, tmp_path):
+def setup_env(monkeypatch):
     """Setup environment variables for all tests."""
     # Mock environment variables
     monkeypatch.setenv('QDRANT_URL', 'https://test-url')
@@ -43,66 +43,18 @@ def setup_env(monkeypatch, tmp_path):
     monkeypatch.setenv('GITHUB_TOKEN', 'test-token')
     monkeypatch.setenv('GITLAB_TOKEN', 'test-token')
     monkeypatch.setenv('BITBUCKET_TOKEN', 'test-token')
-    monkeypatch.setenv('AUTH_TEST_REPO_TOKEN', 'test-token')
-    monkeypatch.setenv('OPENAI_ORGANIZATION', 'test-org')
-    
+    monkeypatch.setenv('BITBUCKET_EMAIL', 'test@example.com')
+
     # Clear any cached settings
     global _global_settings
     _global_settings = None
     
-    # Create a test config file in the temporary directory
-    config_path = tmp_path / "config.test.yaml"
-    config_content = {
-        'global': {
-            'chunking': {
-                'size': 500,
-                'overlap': 50
-            },
-            'embedding': {
-                'model': 'text-embedding-3-small',
-                'batch_size': 10
-            },
-            'logging': {
-                'level': 'INFO',
-                'format': 'json',
-                'file': 'qdrant-loader-test.log'
-            }
-        },
-        'sources': {
-            'public_docs': {
-                'test-docs': {
-                    'base_url': 'https://docs.python.org/3/tutorial/',
-                    'version': '3.12',
-                    'content_type': 'html',
-                    'exclude_paths': ['/downloads'],
-                    'selectors': {
-                        'content': '.body',
-                        'remove': ['nav', 'header', 'footer'],
-                        'code_blocks': 'pre code'
-                    }
-                }
-            },
-            'git_repos': {
-                'auth-test-repo': {
-                    'url': 'https://github.com/test/repo',
-                    'branch': 'main',
-                    'token': 'test-token',
-                    'include_paths': ['/', 'docs/**/*', 'src/main/**/*', 'README.md'],
-                    'exclude_paths': ['src/test/**/*']
-                }
-            }
-        }
-    }
-    config_path.write_text(yaml.dump(config_content))
-    
-    # Initialize settings with the test config
+    # Initialize settings with the test config file
+    config_path = Path('tests/config.test.yaml')
     initialize_config(config_path)
     
-    # For tests that need to specify the config file, return the path
-    yield config_path
-    
-    # Clean up after test
-    _global_settings = None
+    # Return the config path for use in tests
+    return config_path
 
 @pytest.fixture
 def runner(monkeypatch, setup_env):
