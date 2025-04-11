@@ -9,6 +9,7 @@ from typing import Optional
 from qdrant_loader.config import initialize_config, get_settings
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
+from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionError
 
 logger = structlog.get_logger()
 
@@ -101,6 +102,46 @@ def ingest(config: Optional[Path], source_type: Optional[str], source: Optional[
         if source and not source_type:
             logger.error("source_name_without_type")
             raise click.ClickException("Source name provided without source type")
+        
+        # Check if collection exists
+        try:
+            qdrant_manager = QdrantManager(settings)
+            try:
+                collections = qdrant_manager.client.get_collections()
+                if not any(c.name == settings.QDRANT_COLLECTION_NAME for c in collections.collections):
+                    logger.error("collection_not_found", collection=settings.QDRANT_COLLECTION_NAME)
+                    raise click.ClickException(
+                        f"Collection '{settings.QDRANT_COLLECTION_NAME}' does not exist. "
+                        "Please run 'qdrant-loader init' first to create the collection."
+                    )
+            except Exception as e:
+                error_msg = str(e)
+                if "Connection refused" in error_msg:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
+                        original_error=error_msg,
+                        url=settings.QDRANT_URL
+                    )
+                elif "Invalid API key" in error_msg:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
+                        original_error=error_msg
+                    )
+                elif "timeout" in error_msg.lower():
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
+                        original_error=error_msg,
+                        url=settings.QDRANT_URL
+                    )
+                else:
+                    raise QdrantConnectionError(
+                        "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
+                        original_error=error_msg,
+                        url=settings.QDRANT_URL
+                    )
+        except QdrantConnectionError as e:
+            logger.error("connection_failed", error=str(e))
+            raise click.ClickException(str(e))
         
         pipeline = IngestionPipeline()
         asyncio.run(pipeline.process_documents(

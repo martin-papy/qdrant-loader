@@ -73,6 +73,7 @@ filterwarnings = [
     "ignore::UserWarning:qdrant_loader.qdrant_manager",
     "ignore:.*type_params.*:DeprecationWarning:pydantic.v1.typing",
     "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+    "ignore:coroutine 'AsyncMockMixin._execute_mock_call' was never awaited:RuntimeWarning:yaml.scanner",
 ]
 
 [tool.coverage.run]
