@@ -1,10 +1,11 @@
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.config import get_settings
 import structlog
+import asyncio
 
 logger = structlog.get_logger()
 
-def init_collection(settings=None, force=False):
+async def init_collection(settings=None, force=False):
     """Initialize the qDrant collection with proper configuration.
     
     Args:
@@ -32,9 +33,10 @@ def init_collection(settings=None, force=False):
         manager.create_collection()
         
         logger.info("Successfully initialized qDrant collection")
+        return True
     except Exception as e:
         logger.error("Failed to initialize collection", error=str(e))
         raise
 
 if __name__ == "__main__":
-    init_collection() 
+    asyncio.run(init_collection()) 

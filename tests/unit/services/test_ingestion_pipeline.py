@@ -116,7 +116,7 @@ def test_ingestion_pipeline_init(mock_settings):
 def test_ingestion_pipeline_init_no_settings():
     """Test pipeline initialization with no settings."""
     with patch('qdrant_loader.core.ingestion_pipeline.get_settings', return_value=None), \
-         pytest.raises(ValueError, match="Settings not available"):
+         pytest.raises(Exception, match="Failed to initialize pipeline: Settings not available. Please check your environment variables."):
         IngestionPipeline()
 
 @pytest.mark.asyncio
