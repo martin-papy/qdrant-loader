@@ -1,7 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 import tiktoken
 import structlog
 from qdrant_loader.core.document import Document
+
+if TYPE_CHECKING:
+    from qdrant_loader.config import Settings
 
 logger = structlog.get_logger()
 
@@ -10,27 +13,44 @@ class ChunkingStrategy:
     
     def __init__(
         self,
+        settings: "Settings",
         chunk_size: int = 500,
         chunk_overlap: int = 50,
-        model_name: str = "text-embedding-3-small"
     ):
         """
         Initialize the chunking strategy.
         
         Args:
+            settings: The application settings
             chunk_size: Maximum number of tokens per chunk
             chunk_overlap: Number of tokens to overlap between chunks
-            model_name: Name of the model to use for token counting
         """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.encoding = tiktoken.encoding_for_model(model_name)
+        self.tokenizer = settings.global_config.embedding.tokenizer
+        
+        # Initialize tokenizer based on configuration
+        if self.tokenizer == "none":
+            self.encoding = None
+        else:
+            try:
+                self.encoding = tiktoken.get_encoding(self.tokenizer)
+            except Exception as e:
+                logger.warning(
+                    "Failed to initialize tokenizer, falling back to simple character counting",
+                    error=str(e),
+                    tokenizer=self.tokenizer
+                )
+                self.encoding = None
         
         if chunk_overlap >= chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
     
     def _count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
+        if self.encoding is None:
+            # Fallback to character count if no tokenizer is available
+            return len(text)
         return len(self.encoding.encode(text))
     
     def _split_text(self, text: str) -> List[str]:
@@ -39,6 +59,31 @@ class ChunkingStrategy:
         if not text:
             return [""]
             
+        if self.encoding is None:
+            # If no tokenizer is available, split by characters
+            if len(text) <= self.chunk_size:
+                return [text]
+            
+            chunks = []
+            start_idx = 0
+            
+            while start_idx < len(text):
+                end_idx = min(start_idx + self.chunk_size, len(text))
+                chunk = text[start_idx:end_idx]
+                chunks.append(chunk)
+                
+                # Move start index forward, accounting for overlap
+                new_start_idx = end_idx - self.chunk_overlap
+                if new_start_idx <= start_idx:
+                    new_start_idx = start_idx + 1
+                start_idx = new_start_idx
+                
+                if start_idx >= len(text):
+                    break
+            
+            return chunks
+            
+        # Use tokenizer if available
         tokens = self.encoding.encode(text)
         
         # If text is smaller than chunk size, return it as a single chunk

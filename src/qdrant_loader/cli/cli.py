@@ -143,7 +143,7 @@ def ingest(config: Optional[Path], source_type: Optional[str], source: Optional[
             logger.error("connection_failed", error=str(e))
             raise click.ClickException(str(e))
         
-        pipeline = IngestionPipeline()
+        pipeline = IngestionPipeline(settings=settings)
         asyncio.run(pipeline.process_documents(
             config=settings.sources_config,
             source_type=source_type,

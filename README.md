@@ -6,7 +6,8 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
 - Ingestion of technical content from various sources
 - Smart chunking and preprocessing of documents
-- Vectorization using OpenAI embeddings
+- Vectorization using OpenAI embeddings or any OpenAI-compatible endpoint
+- Support for different embedding models (OpenAI, BAAI/bge-small-en-v1.5, etc.)
 - Storage in QDrant vector database
 - Configurable through environment variables and YAML configuration
 - Command-line interface for easy operation

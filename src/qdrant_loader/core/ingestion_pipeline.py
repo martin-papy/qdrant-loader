@@ -1,47 +1,46 @@
-from typing import List, Optional
+"""Pipeline for processing and ingesting documents from various sources."""
+
+import asyncio
+import uuid
+from datetime import datetime
+from typing import List, Optional, Dict, Any
 import structlog
-from qdrant_loader.config import SourcesConfig, get_settings
+from qdrant_loader.config import Settings, SourcesConfig
+from qdrant_loader.core.embedding_service import EmbeddingService
+from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.chunking_strategy import ChunkingStrategy
+from qdrant_loader.core.document import Document
 from qdrant_loader.connectors.public_docs import PublicDocsConnector
 from qdrant_loader.connectors.git import GitConnector
 from qdrant_loader.connectors.confluence import ConfluenceConnector
-from qdrant_loader.connectors.jira.jira_connector import JiraConnector
-from qdrant_loader.core.document import Document
-from qdrant_loader.core.chunking_strategy import ChunkingStrategy
-from qdrant_loader.core.embedding_service import EmbeddingService
-from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionError
-
-from datetime import datetime
-import uuid
-import asyncio
+from qdrant_loader.connectors.jira import JiraConnector
+from qdrant_loader.core.qdrant_manager import QdrantConnectionError
 
 logger = structlog.get_logger()
 
 class IngestionPipeline:
     """Pipeline for processing and ingesting documents from various sources."""
     
-    def __init__(self):
-        """Initialize the ingestion pipeline with required services."""
-        try:
-            self.settings = get_settings()
-            if not self.settings:
-                raise ValueError("Settings not available. Please check your environment variables.")
-                
-            self.embedding_service = EmbeddingService(self.settings)
-            self.qdrant_manager = QdrantManager(self.settings)
-            
-            # Initialize chunking strategy with global config
-            global_config = self.settings.global_config
-            self.chunking_strategy = ChunkingStrategy(
-                chunk_size=global_config.chunking.chunk_size,
-                chunk_overlap=global_config.chunking.chunk_overlap,
-                model_name=global_config.embedding.model
-            )
-        except QdrantConnectionError as e:
-            logger.error("connection_failed", error=str(e))
-            raise
-        except Exception as e:
-            logger.error("Failed to initialize pipeline", error=str(e))
-            raise Exception(f"Failed to initialize pipeline: {str(e)}") from e
+    def __init__(self, settings: Settings):
+        """Initialize the ingestion pipeline.
+        
+        Args:
+            settings: The application settings.
+        
+        Raises:
+            Exception: If settings are not available.
+        """
+        if not settings:
+            raise Exception("Failed to initialize pipeline: Settings not available. Please check your environment variables.")
+        
+        self.settings = settings
+        self.embedding_service = EmbeddingService(settings)
+        self.qdrant_manager = QdrantManager(settings)
+        self.chunking_strategy = ChunkingStrategy(
+            settings=settings,
+            chunk_size=settings.global_config.chunking.chunk_size,
+            chunk_overlap=settings.global_config.chunking.chunk_overlap
+        )
         
     def _process_public_docs(self, sources: dict) -> List[Document]:
         """Process documents from public documentation sources."""
@@ -166,95 +165,120 @@ class IngestionPipeline:
                            error=str(e))
         return documents
 
-    def _filter_sources(self, config: SourcesConfig, source_type: Optional[str], source_name: Optional[str]) -> SourcesConfig:
-        """Filter sources based on type and name."""
-        if not source_type and not source_name:
-            return config
-
+    def _filter_sources(self, config: SourcesConfig, source_type: Optional[str] = None, source_name: Optional[str] = None) -> SourcesConfig:
+        """Filter sources based on type and name.
+        
+        Args:
+            config: Configuration containing source definitions
+            source_type: Optional type of source to process (confluence, git, public-docs, jira)
+            source_name: Optional specific source name to process
+        
+        Returns:
+            SourcesConfig: Filtered configuration
+        """
         filtered_config = SourcesConfig()
         
-        if source_type == "confluence":
+        if not source_type:
+            return config
+        
+        if source_type == "public-docs":
             if source_name:
-                if source_name in config.confluence:
-                    filtered_config.confluence[source_name] = config.confluence[source_name]
-            else:
-                filtered_config.confluence = config.confluence
-                
-        elif source_type == "git":
-            if source_name:
-                if source_name in config.git_repos:
-                    filtered_config.git_repos[source_name] = config.git_repos[source_name]
-            else:
-                filtered_config.git_repos = config.git_repos
-                
-        elif source_type == "public-docs":
-            if source_name:
-                if source_name in config.public_docs:
-                    filtered_config.public_docs[source_name] = config.public_docs[source_name]
+                filtered_config.public_docs = {source_name: config.public_docs[source_name]} if source_name in config.public_docs else {}
             else:
                 filtered_config.public_docs = config.public_docs
-                
+        elif source_type == "git":
+            if source_name:
+                filtered_config.git_repos = {source_name: config.git_repos[source_name]} if source_name in config.git_repos else {}
+            else:
+                filtered_config.git_repos = config.git_repos
+        elif source_type == "confluence":
+            if source_name:
+                filtered_config.confluence = {source_name: config.confluence[source_name]} if source_name in config.confluence else {}
+            else:
+                filtered_config.confluence = config.confluence
         elif source_type == "jira":
             if source_name:
-                if source_name in config.jira:
-                    filtered_config.jira[source_name] = config.jira[source_name]
+                filtered_config.jira = {source_name: config.jira[source_name]} if source_name in config.jira else {}
             else:
                 filtered_config.jira = config.jira
-                
+        
         return filtered_config
 
-    async def process_documents(self, config: SourcesConfig, source_type: Optional[str] = None, source_name: Optional[str] = None) -> None:
+    async def process_documents(self, config: SourcesConfig, source_type: Optional[str] = None, source_name: Optional[str] = None) -> List[Document]:
         """Process and ingest documents from the specified sources.
         
         Args:
             config: Configuration containing source definitions
             source_type: Optional type of source to process (confluence, git, public-docs, jira)
             source_name: Optional specific source name to process
+        
+        Returns:
+            List[Document]: List of processed documents
+        
+        Raises:
+            QdrantConnectionError: If connection to Qdrant fails
+            Exception: If document processing fails
         """
         try:
             # Filter sources based on type and name
             filtered_config = self._filter_sources(config, source_type, source_name)
             
             if not any([filtered_config.confluence, filtered_config.git_repos, filtered_config.public_docs, filtered_config.jira]):
-                logger.warning("No sources to process after filtering", 
+                logger.warning("No sources to process after filtering",
                              source_type=source_type,
                              source_name=source_name)
-                return
-                
+                return []
+            
             documents = []
             
             # Process public documentation sources
             if filtered_config.public_docs:
-                public_docs = self._process_public_docs(filtered_config.public_docs)
-                documents.extend(public_docs)
-                
+                try:
+                    public_docs = self._process_public_docs(filtered_config.public_docs)
+                    documents.extend(public_docs)
+                except Exception as e:
+                    logger.error("Failed to process public docs source", source="public-docs", error=str(e))
+                    raise
+            
             # Process Git repository sources
             if filtered_config.git_repos:
-                git_docs = self._process_git_repos(filtered_config.git_repos)
-                documents.extend(git_docs)
-                
+                try:
+                    git_docs = self._process_git_repos(filtered_config.git_repos)
+                    documents.extend(git_docs)
+                except Exception as e:
+                    logger.error("Failed to process git repos source", source="git-repos", error=str(e))
+                    raise
+            
             # Process Confluence sources
             if filtered_config.confluence:
-                confluence_docs = self._process_confluence(filtered_config.confluence)
-                documents.extend(confluence_docs)
-                
+                try:
+                    confluence_docs = self._process_confluence(filtered_config.confluence)
+                    documents.extend(confluence_docs)
+                except Exception as e:
+                    logger.error("Failed to process confluence source", source="confluence", error=str(e))
+                    raise
+            
             # Process JIRA sources
             if filtered_config.jira:
-                # Since we're already in an async context, just await the coroutine
-                jira_docs = await self._process_jira(filtered_config.jira)
-                documents.extend(jira_docs)
+                try:
+                    # Since we're already in an async context, just await the coroutine
+                    jira_docs = await self._process_jira(filtered_config.jira)
+                    documents.extend(jira_docs)
+                except Exception as e:
+                    logger.error("Failed to process JIRA source", source="jira", error=str(e))
+                    raise
             
             if not documents:
                 logger.warning("No documents were processed")
-                return
-                
+                return []
+            
             # Chunk documents
             chunked_documents = []
             for doc in documents:
                 chunks = self.chunking_strategy.chunk_document(doc)
                 chunked_documents.extend(chunks)
             
-            logger.info("Chunked documents", 
+            logger.info("Chunked documents",
                        original_count=len(documents),
                        chunk_count=len(chunked_documents))
             
@@ -292,10 +316,11 @@ class IngestionPipeline:
             # Upload points to qDrant
             self.qdrant_manager.upsert_points(points)
             logger.info("Successfully processed and uploaded documents", document_count=len(documents))
+            return documents
             
         except QdrantConnectionError as e:
             logger.error("connection_failed", error=str(e))
             raise
         except Exception as e:
             logger.error("Failed to process documents", error=str(e))
-            raise Exception("Failed to process documents") from e 
+            raise 
