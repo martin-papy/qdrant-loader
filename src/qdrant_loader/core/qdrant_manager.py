@@ -106,15 +106,21 @@ class QdrantManager:
                 logger.info(f"Collection {self.collection_name} already exists")
                 return
 
+            # Get vector size from configuration
+            vector_size = self.settings.global_config.embedding.vector_size
+            if not vector_size:
+                logger.warning("No vector_size specified in config, defaulting to 1536")
+                vector_size = 1536
+
             # Create collection with basic configuration
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=models.VectorParams(
-                    size=1536,  # OpenAI embedding size
+                    size=vector_size,
                     distance=models.Distance.COSINE
                 )
             )
-            logger.info(f"Collection {self.collection_name} created successfully")
+            logger.info(f"Collection {self.collection_name} created successfully with vector size {vector_size}")
         except Exception as e:
             logger.error("Failed to create collection", error=str(e))
             raise

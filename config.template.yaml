@@ -7,14 +7,17 @@ global:
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
-    size: 500        # Maximum number of characters per chunk
-    overlap: 50      # Number of characters to overlap between chunks
+    chunk_size: 500        # Maximum number of characters per chunk
+    chunk_overlap: 50      # Number of characters to overlap between chunks
   
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:
-    model: "text-embedding-3-small"  # OpenAI embedding model to use
+    endpoint: "http://localhost:8080/v1" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
+    model: "text-embedding-3-small"  # Embedding model to use
     batch_size: 100                  # Number of chunks to process in one batch
+    vector_size: 1536                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+    tokenizer: "cl100k_base"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
 
   # Logging configuration
   # Controls how logs are generated and stored

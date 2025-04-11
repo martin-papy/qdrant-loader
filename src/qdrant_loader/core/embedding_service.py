@@ -14,12 +14,30 @@ class EmbeddingService:
         """Initialize the embedding service.
         
         Args:
-            settings: The application settings containing OpenAI API key.
+            settings: The application settings containing OpenAI API key and endpoint.
         """
         self.settings = settings
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = OpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.global_config.embedding.endpoint
+        )
         self.model = settings.global_config.embedding.model
-        self.encoding = tiktoken.encoding_for_model(self.model)
+        self.tokenizer = settings.global_config.embedding.tokenizer
+        
+        # Initialize tokenizer based on configuration
+        if self.tokenizer == "none":
+            self.encoding = None
+        else:
+            try:
+                self.encoding = tiktoken.get_encoding(self.tokenizer)
+            except Exception as e:
+                logger.warning(
+                    "Failed to initialize tokenizer, falling back to simple character counting",
+                    error=str(e),
+                    tokenizer=self.tokenizer
+                )
+                self.encoding = None
+        
         self.last_request_time = 0
         self.min_request_interval = 0.5  # 500ms between requests
 
@@ -67,6 +85,9 @@ class EmbeddingService:
 
     def count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
+        if self.encoding is None:
+            # Fallback to character count if no tokenizer is available
+            return len(text)
         return len(self.encoding.encode(text))
 
     def count_tokens_batch(self, texts: List[str]) -> List[int]:
