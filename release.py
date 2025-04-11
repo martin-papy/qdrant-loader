@@ -380,6 +380,10 @@ def release(dry_run: bool, verbose: bool):
     # Create commit
     run_command(f'git commit -am "chore(release): bump version to v{new_version}"', dry_run)
     
+    # Push commit
+    run_command("git push origin main", dry_run)
+
+    
     logger.info(f"\nSuccessfully created release v{current_version} and bumped version to v{new_version}!")
 
 if __name__ == "__main__":
