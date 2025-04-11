@@ -119,7 +119,7 @@ pytest --cov=src tests/
 
 - Python 3.12 or higher
 - QDrant server (local or cloud instance)
-- OpenAI API key
+- OpenAI API key (if using OpenAI, but you can use a local embedding if you like)
 - Sufficient disk space for the vector database
 - Internet connection for API access
 
