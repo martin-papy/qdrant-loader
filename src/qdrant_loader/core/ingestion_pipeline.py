@@ -8,7 +8,7 @@ from qdrant_loader.connectors.jira.jira_connector import JiraConnector
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.chunking_strategy import ChunkingStrategy
 from qdrant_loader.core.embedding_service import EmbeddingService
-from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionError
 
 from datetime import datetime
 import uuid
@@ -21,20 +21,27 @@ class IngestionPipeline:
     
     def __init__(self):
         """Initialize the ingestion pipeline with required services."""
-        self.settings = get_settings()
-        if not self.settings:
-            raise ValueError("Settings not available. Please check your environment variables.")
+        try:
+            self.settings = get_settings()
+            if not self.settings:
+                raise ValueError("Settings not available. Please check your environment variables.")
+                
+            self.embedding_service = EmbeddingService(self.settings)
+            self.qdrant_manager = QdrantManager(self.settings)
             
-        self.embedding_service = EmbeddingService(self.settings)
-        self.qdrant_manager = QdrantManager(self.settings)
-        
-        # Initialize chunking strategy with global config
-        global_config = self.settings.global_config
-        self.chunking_strategy = ChunkingStrategy(
-            chunk_size=global_config.chunking.chunk_size,
-            chunk_overlap=global_config.chunking.chunk_overlap,
-            model_name=global_config.embedding.model
-        )
+            # Initialize chunking strategy with global config
+            global_config = self.settings.global_config
+            self.chunking_strategy = ChunkingStrategy(
+                chunk_size=global_config.chunking.chunk_size,
+                chunk_overlap=global_config.chunking.chunk_overlap,
+                model_name=global_config.embedding.model
+            )
+        except QdrantConnectionError as e:
+            logger.error("connection_failed", error=str(e))
+            raise
+        except Exception as e:
+            logger.error("Failed to initialize pipeline", error=str(e))
+            raise Exception(f"Failed to initialize pipeline: {str(e)}") from e
         
     def _process_public_docs(self, sources: dict) -> List[Document]:
         """Process documents from public documentation sources."""
@@ -286,6 +293,9 @@ class IngestionPipeline:
             self.qdrant_manager.upsert_points(points)
             logger.info("Successfully processed and uploaded documents", document_count=len(documents))
             
+        except QdrantConnectionError as e:
+            logger.error("connection_failed", error=str(e))
+            raise
         except Exception as e:
             logger.error("Failed to process documents", error=str(e))
             raise Exception("Failed to process documents") from e 
