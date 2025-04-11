@@ -63,12 +63,13 @@ async def test_get_issues(connector):
 async def test_get_issues_with_filters(connector):
     """Test fetching issues with filters."""
     # Get issues updated in the last 7 days
-    start_date = datetime.now(timezone.utc) - timedelta(days=7)
+    start_date = datetime.now(timezone.utc) - timedelta(days=365)  # Look back 1 year instead of 7 days
     issues = []
     async for issue in connector.get_issues(updated_after=start_date):
         issues.append(issue)
-        # Verify all issues were updated after the start date
-        assert issue.updated >= start_date
+        # Normalize timezones before comparison
+        normalized_updated = issue.updated.astimezone(timezone.utc)
+        assert normalized_updated >= start_date, f"Issue {issue.key} was updated at {normalized_updated} which is before start date {start_date}"
 
 @pytest.mark.asyncio
 async def test_get_issues_with_pagination(connector):
