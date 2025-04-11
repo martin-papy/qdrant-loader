@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
+import logging
+import os
 import subprocess
 import sys
-import re
-import tomli
-import tomli_w
-from pathlib import Path
-from typing import Optional
+
+
 import click
 import requests
-import os
-import logging
-from datetime import datetime
+import tomli
+import tomli_w
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
