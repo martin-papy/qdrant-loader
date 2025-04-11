@@ -54,31 +54,15 @@ def setup_env(monkeypatch, tmp_path):
     global _global_settings
     _global_settings = None
     
-    # Create a mock config file
-    config_path = tmp_path / "test_config.yaml"
-    config_data = {
-        "global": {
-            "chunking": {"size": 500, "overlap": 50},
-            "embedding": {"model": "text-embedding-3-small", "batch_size": 100},
-            "logging": {"level": "INFO", "format": "json", "file": "qdrant-loader.log"}
-        },
-        "sources": {
-            "confluence": {
-                "space1": {
-                    "url": "https://test.atlassian.net/wiki",
-                    "space_key": "SPACE1",
-                    "content_types": ["page", "blogpost"],
-                    "token": "test-token",
-                    "email": "test@example.com"
-                }
-            }
-        }
-    }
-    config_path.write_text(yaml.dump(config_data))
+    # Use the test config file from tests directory
+    config_path = Path("tests/config.test.yaml")
+    if not config_path.exists():
+        raise FileNotFoundError(f"Test config file not found at {config_path}")
     
-    # Initialize settings with the mock config
+    # Initialize settings with the test config
     initialize_config(config_path)
     
+    # For tests that need to specify the config file, return the path
     yield config_path
     
     # Clean up after test
