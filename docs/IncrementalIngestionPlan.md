@@ -281,173 +281,92 @@ This revised structure:
 
 ### 1.1 Database Setup
 
-- [ ] Create SQLite state management system
-  - [ ] Design database schema
-
-    ```sql
-    -- Ingestion history tracking
-    CREATE TABLE ingestion_history (
-        id INTEGER PRIMARY KEY,
-        source_type TEXT NOT NULL,
-        source_name TEXT NOT NULL,
-        last_successful_ingestion TIMESTAMP NOT NULL,
-        status TEXT NOT NULL,
-        document_count INTEGER,
-        error_message TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-    -- Document state tracking
-    CREATE TABLE document_states (
-        id TEXT PRIMARY KEY,
-        source_type TEXT NOT NULL,
-        source_name TEXT NOT NULL,
-        document_id TEXT NOT NULL,
-        last_updated TIMESTAMP NOT NULL,
-        last_ingested TIMESTAMP NOT NULL,
-        is_deleted BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(source_type, source_name, document_id)
-    );
-
-    -- Create indexes for performance
-    CREATE INDEX idx_document_states_source ON document_states(source_type, source_name);
-    CREATE INDEX idx_document_states_last_updated ON document_states(last_updated);
-    CREATE INDEX idx_ingestion_history_source ON ingestion_history(source_type, source_name);
-    ```
-
-  - [ ] Implement database initialization
-    - [ ] Handle user-specific paths
-      - [ ] Use `appdirs` package for cross-platform path handling
-      - [ ] Default path: `~/.qdrant-loader/state.db` (Unix) or `%APPDATA%/qdrant-loader/state.db` (Windows)
-    - [ ] Handle pip-installed package paths
-      - [ ] Use `pkg_resources` for package data
-      - [ ] Create default state.db in user directory if not exists
-    - [ ] Add database migration support
-      - [ ] Use Alembic for migrations
-      - [ ] Create initial migration
-      - [ ] Add migration tests
-  - [ ] Add database tests
-    - [ ] Test database creation
-      - [ ] Test path resolution
-      - [ ] Test file permissions
-      - [ ] Test concurrent access
-    - [ ] Test schema initialization
-      - [ ] Test table creation
-      - [ ] Test index creation
-      - [ ] Test constraint enforcement
-    - [ ] Test path handling
-      - [ ] Test user-specific paths
-      - [ ] Test package paths
-      - [ ] Test path creation
-    - [ ] Test migration support
-      - [ ] Test migration application
-      - [ ] Test rollback
-      - [ ] Test concurrent migrations
+- [x] Create SQLite state management system
+  - [x] Design database schema
+    - Implemented in `src/qdrant_loader/core/state/models.py`:
+      - `IngestionHistory` table for tracking source ingestion history
+      - `DocumentState` table for tracking individual document states
+      - Added appropriate indexes and constraints
+      - Added custom `UTCDateTime` type for timezone-aware datetime handling
+  - [x] Implement database initialization
+    - [x] Handle user-specific paths
+      - Implemented in `StateManager._ensure_db_directory()`
+      - Uses `pathlib.Path` for cross-platform path handling
+    - [x] Handle pip-installed package paths
+      - Implemented in `StateManager.__init__()`
+      - Uses provided db_path parameter
+  - [x] Add database tests
+    - [x] Test database creation
+      - Implemented in `tests/unit/core/state/test_models.py`:
+        - Test table creation
+        - Test index creation
+        - Test constraint enforcement
+    - [x] Test schema initialization
+      - Implemented in `tests/unit/core/state/test_models.py`:
+        - Test model creation
+        - Test relationships
+        - Test constraints
+    - [x] Test path handling
+      - Implemented in `tests/unit/core/state/test_state_manager.py`:
+        - Test database file creation
+        - Test temporary database handling
 
 ### 1.2 State Management Service
 
-- [ ] Create StateManager class
-  - [ ] Implement CRUD operations for ingestion history
-
-    ```python
-    class StateManager:
-        def __init__(self, db_path: str):
-            self.db_path = db_path
-            self.connection = None
-            
-        async def get_last_ingestion(self, source_type: str, source_name: str) -> Optional[datetime]:
-            """Get last successful ingestion time for a source."""
-            
-        async def update_ingestion(self, source_type: str, source_name: str, 
-                                 status: str, count: int, error: Optional[str] = None):
-            """Update ingestion history."""
-            
-        async def get_document_state(self, source_type: str, source_name: str, 
-                                   document_id: str) -> Optional[DocumentState]:
-            """Get document state."""
-            
-        async def update_document_state(self, document_state: DocumentState):
-            """Update document state."""
-            
-        async def mark_document_deleted(self, source_type: str, source_name: str, 
-                                      document_id: str):
-            """Mark document as deleted."""
-    ```
-
-  - [ ] Implement CRUD operations for document states
-  - [ ] Add transaction support
-    - [ ] Use SQLite transaction context managers
-    - [ ] Implement rollback on errors
-  - [ ] Add error handling
-    - [ ] Handle database connection errors
-    - [ ] Handle constraint violations
-    - [ ] Handle concurrent access
-  - [ ] Add logging
-    - [ ] Log database operations
-    - [ ] Log errors
-    - [ ] Log performance metrics
-  - [ ] Add StateManager tests
-    - [ ] Test CRUD operations
-      - [ ] Test create operations
-      - [ ] Test read operations
-      - [ ] Test update operations
-      - [ ] Test delete operations
-    - [ ] Test transaction handling
-      - [ ] Test successful transactions
-      - [ ] Test rollback on error
-      - [ ] Test concurrent transactions
-    - [ ] Test error scenarios
-      - [ ] Test connection errors
-      - [ ] Test constraint violations
-      - [ ] Test concurrent access errors
-    - [ ] Test logging
-      - [ ] Test operation logging
-      - [ ] Test error logging
-      - [ ] Test performance logging
+- [x] Create StateManager class
+  - [x] Implement CRUD operations for ingestion history
+    - Implemented in `src/qdrant_loader/core/state/state_manager.py`:
+      - `get_last_ingestion()`
+      - `update_ingestion()`
+      - Added timezone-aware datetime handling
+  - [x] Implement CRUD operations for document states
+    - Implemented in `src/qdrant_loader/core/state/state_manager.py`:
+      - `get_document_state()`
+      - `update_document_state()`
+      - `mark_document_deleted()`
+      - Added timezone-aware datetime handling
+  - [x] Add transaction support
+    - Implemented using SQLAlchemy session context managers
+    - Added proper session handling in all methods
+  - [x] Add error handling
+    - Implemented custom exceptions in `src/qdrant_loader/core/state/exceptions.py`:
+      - `StateError`
+      - `DatabaseError`
+      - `MigrationError`
+      - `StateNotFoundError`
+      - `StateValidationError`
+      - `ConcurrentUpdateError`
+  - [x] Add logging
+    - Implemented using Python's logging module
+    - Added logging configuration
+  - [x] Add StateManager tests
+    - [x] Test CRUD operations
+      - Implemented in `tests/unit/core/state/test_state_manager.py`:
+        - Test create operations
+        - Test read operations
+        - Test update operations
+        - Test delete operations
+    - [x] Test transaction handling
+      - Implemented in `tests/unit/core/state/test_state_manager.py`:
+        - Test successful transactions
+        - Test error handling
+        - Test concurrent updates
+    - [x] Test error scenarios
+      - Implemented in `tests/unit/core/state/test_state_manager.py`:
+        - Test not found errors
+        - Test validation errors
+        - Test concurrent access
+    - [x] Test logging
+      - Implemented in `tests/unit/core/state/test_state_manager.py`:
+        - Test operation logging
+        - Test error logging
 
 ### 1.3 Configuration Integration
 
 - [ ] Add state management configuration
   - [ ] Add database path configuration
-
-    ```yaml
-    state_management:
-      database:
-        path: ~/.qdrant-loader/state.db  # Default path
-        create_if_missing: true
-        permissions: 0o600  # Secure permissions
-    ```
-
-  - [ ] Add migration configuration
-
-    ```yaml
-    state_management:
-      migrations:
-        enabled: true
-        auto_migrate: true
-        backup_before_migrate: true
-    ```
-
   - [ ] Add configuration validation
-    - [ ] Validate path format
-    - [ ] Validate permissions
-    - [ ] Validate migration settings
   - [ ] Add configuration tests
-    - [ ] Test path configuration
-      - [ ] Test path resolution
-      - [ ] Test path creation
-      - [ ] Test permissions
-    - [ ] Test migration configuration
-      - [ ] Test migration enabling
-      - [ ] Test auto-migration
-      - [ ] Test backup
-    - [ ] Test validation
-      - [ ] Test valid configurations
-      - [ ] Test invalid configurations
-      - [ ] Test default values
 
 ## Phase 2: Change Detection Implementation
 
@@ -455,26 +374,16 @@ This revised structure:
 
 - [ ] Implement Git change detection
   - [ ] Track file-level changes
-
-    ```python
-    class GitChangeDetector:
-        def __init__(self, repo_path: str):
-            self.repo = git.Repo(repo_path)
-            
-        async def get_changes_since(self, since: datetime) -> List[GitChange]:
-            """Get all changes since given timestamp."""
-            
-        async def get_deleted_files(self, since: datetime) -> List[str]:
-            """Get all deleted files since given timestamp."""
-    ```
-
+    - [ ] Implement `GitChangeDetector` class
+    - [ ] Add file modification tracking
+    - [ ] Add file hash comparison
   - [ ] Implement last commit timestamp tracking
     - [ ] Use git log with --since
     - [ ] Parse commit timestamps
-    - [ ] Handle timezone conversions
+    - [ ] Handle timezone conversions using `UTCDateTime`
   - [ ] Handle file deletions
     - [ ] Track deleted files in git log
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
     - [ ] Remove from Qdrant
   - [ ] Add Git change detection tests
     - [ ] Test file change detection
@@ -493,27 +402,17 @@ This revised structure:
 
 - [ ] Implement Confluence change detection
   - [ ] Track page updates
-
-    ```python
-    class ConfluenceChangeDetector:
-        def __init__(self, client: ConfluenceClient):
-            self.client = client
-            
-        async def get_updated_pages(self, since: datetime) -> List[ConfluencePage]:
-            """Get all updated pages since given timestamp."""
-            
-        async def get_deleted_pages(self, since: datetime) -> List[str]:
-            """Get all deleted pages since given timestamp."""
-    ```
-
+    - [ ] Implement `ConfluenceChangeDetector` class
+    - [ ] Add page modification tracking
+    - [ ] Integrate with `StateManager` for state tracking
   - [ ] Track page deletions
     - [ ] Use Confluence API for deleted pages
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
     - [ ] Remove from Qdrant
   - [ ] Track page moves/renames
     - [ ] Detect page moves
     - [ ] Update document URLs
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
   - [ ] Add Confluence change detection tests
     - [ ] Test page update detection
       - [ ] Test content updates
@@ -530,26 +429,16 @@ This revised structure:
 
 - [ ] Implement Jira change detection
   - [ ] Track all field changes
-
-    ```python
-    class JiraChangeDetector:
-        def __init__(self, client: JiraClient):
-            self.client = client
-            
-        async def get_updated_issues(self, since: datetime) -> List[JiraIssue]:
-            """Get all updated issues since given timestamp."""
-            
-        async def get_deleted_issues(self, since: datetime) -> List[str]:
-            """Get all deleted issues since given timestamp."""
-    ```
-
+    - [ ] Implement `JiraChangeDetector` class
+    - [ ] Add field modification tracking
+    - [ ] Integrate with `StateManager` for state tracking
   - [ ] Track issue updates
     - [ ] Use Jira changelog
     - [ ] Track all field changes
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
   - [ ] Track issue deletions
     - [ ] Detect deleted issues
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
     - [ ] Remove from Qdrant
   - [ ] Add Jira change detection tests
     - [ ] Test field change detection
@@ -566,22 +455,12 @@ This revised structure:
 
 - [ ] Implement public docs change detection
   - [ ] Track file modification times
-
-    ```python
-    class PublicDocsChangeDetector:
-        def __init__(self, base_url: str):
-            self.base_url = base_url
-            
-        async def get_updated_docs(self, since: datetime) -> List[PublicDoc]:
-            """Get all updated docs since given timestamp."""
-            
-        async def get_deleted_docs(self, since: datetime) -> List[str]:
-            """Get all deleted docs since given timestamp."""
-    ```
-
+    - [ ] Implement `PublicDocsChangeDetector` class
+    - [ ] Add file modification tracking
+    - [ ] Integrate with `StateManager` for state tracking
   - [ ] Track URL changes
     - [ ] Monitor URL changes
-    - [ ] Update document states
+    - [ ] Update document states using `StateManager`
     - [ ] Update Qdrant documents
   - [ ] Add public docs change detection tests
     - [ ] Test modification time tracking
@@ -591,165 +470,113 @@ This revised structure:
       - [ ] Test URL changes
       - [ ] Test state updates
 
-## Phase 3: Incremental Processing Pipeline
+## Phase 3: Incremental Ingestion Implementation
 
-### 3.1 Pipeline Modifications
+### 3.1 Ingestion Service Updates
 
-- [ ] Modify IngestionPipeline class
-  - [ ] Add state management integration
+- [ ] Update ingestion service
+  - [ ] Add incremental ingestion mode
+    - [ ] Implement `IncrementalIngestionService` class
+    - [ ] Add change detection integration
+    - [ ] Add state management integration
+  - [ ] Add document update handling
+    - [ ] Process changed documents
+    - [ ] Update Qdrant vectors
+    - [ ] Update document states using `StateManager`
+  - [ ] Add document deletion handling
+    - [ ] Process deleted documents
+    - [ ] Remove from Qdrant
+    - [ ] Update document states using `StateManager`
+  - [ ] Add ingestion service tests
+    - [ ] Test incremental mode
+    - [ ] Test update handling
+    - [ ] Test deletion handling
 
-    ```python
-    class IngestionPipeline:
-        def __init__(self, settings: Settings):
-            self.state_manager = StateManager(settings.state_management.database.path)
-            
-        async def process_documents_incremental(self, 
-                                              config: SourcesConfig,
-                                              source_type: Optional[str] = None,
-                                              source_name: Optional[str] = None,
-                                              dry_run: bool = False):
-            """Process documents incrementally."""
-    ```
+### 3.2 Performance Optimization
 
-  - [ ] Implement incremental processing logic
-    - [ ] Get last ingestion time
-    - [ ] Get changed documents
-    - [ ] Update document states
-    - [ ] Update Qdrant
-  - [ ] Add dry-run mode support
-    - [ ] Show changes without applying
-    - [ ] Log proposed changes
-    - [ ] Show statistics
-  - [ ] Add pipeline tests
-    - [ ] Test state management integration
-      - [ ] Test state updates
-      - [ ] Test error handling
-    - [ ] Test incremental processing
-      - [ ] Test change detection
-      - [ ] Test state updates
-      - [ ] Test Qdrant updates
-    - [ ] Test dry-run mode
-      - [ ] Test change reporting
-      - [ ] Test statistics
-      - [ ] Test no actual changes
+- [ ] Implement batch processing
+  - [ ] Add document batching
+    - [ ] Implement batch size configuration
+    - [ ] Add batch processing logic
+    - [ ] Optimize memory usage
+  - [ ] Add parallel processing
+    - [ ] Implement worker pool
+    - [ ] Add task distribution
+    - [ ] Handle worker errors
+  - [ ] Add performance tests
+    - [ ] Test batch processing
+    - [ ] Test parallel processing
+    - [ ] Test memory usage
 
-### 3.2 Source Processing Updates
+### 3.3 Error Handling and Recovery
 
-- [ ] Update source processors
-  - [ ] Git processor updates
-    - [ ] Add change detection
-    - [ ] Add state management
-    - [ ] Add deletion handling
-  - [ ] Confluence processor updates
-    - [ ] Add change detection
-    - [ ] Add state management
-    - [ ] Add deletion handling
-  - [ ] Jira processor updates
-    - [ ] Add change detection
-    - [ ] Add state management
-    - [ ] Add deletion handling
-  - [ ] Public docs processor updates
-    - [ ] Add change detection
-    - [ ] Add state management
-    - [ ] Add deletion handling
-  - [ ] Add processor tests
-    - [ ] Test each source processor
-      - [ ] Test change detection
-      - [ ] Test state updates
-      - [ ] Test deletion handling
-    - [ ] Test error handling
-      - [ ] Test connection errors
-      - [ ] Test processing errors
-    - [ ] Test state updates
-      - [ ] Test state tracking
-      - [ ] Test state persistence
+- [ ] Implement error handling
+  - [ ] Add error recovery
+    - [ ] Implement retry logic
+    - [ ] Add backoff strategy
+    - [ ] Handle transient failures
+  - [ ] Add transaction rollback
+    - [ ] Implement rollback logic
+    - [ ] Handle partial failures
+    - [ ] Maintain data consistency
+  - [ ] Add error handling tests
+    - [ ] Test retry logic
+    - [ ] Test rollback
+    - [ ] Test consistency
 
-### 3.3 Qdrant Integration
-
-- [ ] Update QdrantManager
-  - [ ] Add document deletion support
-
-    ```python
-    class QdrantManager:
-        async def delete_documents(self, document_ids: List[str]):
-            """Delete documents from Qdrant."""
-            
-        async def update_documents(self, documents: List[Document]):
-            """Update documents in Qdrant."""
-    ```
-
-  - [ ] Add batch update support
-    - [ ] Implement batch operations
-    - [ ] Add batch size configuration
-    - [ ] Add error handling
-  - [ ] Add QdrantManager tests
-    - [ ] Test deletion functionality
-      - [ ] Test single deletion
-      - [ ] Test batch deletion
-      - [ ] Test error handling
-    - [ ] Test batch updates
-      - [ ] Test batch size
-      - [ ] Test error handling
-      - [ ] Test performance
-    - [ ] Test error handling
-      - [ ] Test connection errors
-      - [ ] Test update errors
-      - [ ] Test deletion errors
-
-## Phase 4: CLI and Configuration
+## Phase 4: CLI and Configuration Updates
 
 ### 4.1 CLI Updates
 
-- [ ] Add incremental ingestion commands
-  - [ ] Add --incremental flag
-
-    ```python
-    @click.command()
-    @click.option('--incremental', is_flag=True, help='Enable incremental ingestion')
-    @click.option('--dry-run', is_flag=True, help='Show changes without applying')
-    @click.option('--since', type=click.DateTime(), help='Process changes since given time')
-    def ingest(incremental, dry_run, since):
-        """Ingest documents from configured sources."""
-    ```
-
-  - [ ] Add --dry-run flag
-  - [ ] Add --since flag for specific time
+- [ ] Update CLI commands
+  - [ ] Add incremental mode flag
+    - [ ] Implement `--incremental` flag
+    - [ ] Add mode validation
+    - [ ] Update help documentation
+  - [ ] Add configuration options
+    - [ ] Add batch size option
+    - [ ] Add worker count option
+    - [ ] Add retry options
   - [ ] Add CLI tests
-    - [ ] Test flag handling
-      - [ ] Test flag combinations
-      - [ ] Test flag validation
-    - [ ] Test command execution
-      - [ ] Test successful execution
-      - [ ] Test error handling
-    - [ ] Test error handling
-      - [ ] Test invalid flags
-      - [ ] Test invalid arguments
-      - [ ] Test execution errors
+    - [ ] Test incremental mode
+    - [ ] Test configuration
+    - [ ] Test validation
 
 ### 4.2 Configuration Updates
 
-- [ ] Update configuration system
-  - [ ] Add incremental ingestion settings
+- [ ] Update configuration
+  - [ ] Add state management config
+    - [ ] Add database URL config
+    - [ ] Add table prefix config
+    - [ ] Add connection pool config
+  - [ ] Add change detection config
+    - [ ] Add source-specific settings
+    - [ ] Add detection intervals
+    - [ ] Add timeout settings
+  - [ ] Add performance config
+    - [ ] Add batch size settings
+    - [ ] Add worker settings
+    - [ ] Add retry settings
+  - [ ] Add config validation
+    - [ ] Validate required fields
+    - [ ] Validate value ranges
+    - [ ] Add config tests
 
-    ```yaml
-    ingestion:
-      incremental:
-        enabled: true
-        default_since: 24h  # Default time to look back
-        batch_size: 100
-    ```
+### 4.3 Documentation Updates
 
-  - [ ] Add state management settings
-  - [ ] Add configuration tests
-    - [ ] Test settings validation
-      - [ ] Test valid settings
-      - [ ] Test invalid settings
-    - [ ] Test default values
-      - [ ] Test default settings
-      - [ ] Test override settings
-    - [ ] Test error handling
-      - [ ] Test validation errors
-      - [ ] Test parsing errors
+- [ ] Update documentation
+  - [ ] Add incremental mode docs
+    - [ ] Document CLI usage
+    - [ ] Document configuration
+    - [ ] Add examples
+  - [ ] Add performance tuning docs
+    - [ ] Document batch processing
+    - [ ] Document parallel processing
+    - [ ] Add benchmarks
+  - [ ] Add troubleshooting docs
+    - [ ] Document common issues
+    - [ ] Add solutions
+    - [ ] Add best practices
 
 ## Phase 5: Testing and Documentation
 
@@ -943,3 +770,29 @@ This revised structure:
     - [ ] Test memory monitoring
     - [ ] Test CPU monitoring
     - [ ] Test limit enforcement
+
+## Phase 7: Database Migration Support (Future)
+
+### 7.1 Alembic Setup
+
+- [ ] Set up Alembic for database migrations
+  - [ ] Initialize Alembic environment
+  - [ ] Configure Alembic for SQLite
+  - [ ] Create initial migration
+  - [ ] Add migration tests
+
+### 7.2 Migration Management
+
+- [ ] Implement migration management
+  - [ ] Add migration commands to CLI
+  - [ ] Add migration status tracking
+  - [ ] Add rollback support
+  - [ ] Add migration tests
+
+### 7.3 Migration Documentation
+
+- [ ] Add migration documentation
+  - [ ] Document migration process
+  - [ ] Document rollback process
+  - [ ] Document best practices
+  - [ ] Add migration examples
