@@ -272,6 +272,7 @@ docs/
    - Usage examples and configuration guides
 
 This revised structure:
+
 - Maintains our existing connector-based organization
 - Keeps change detection logic close to the connectors it works with
 - Follows our established patterns for code organization
@@ -364,9 +365,90 @@ This revised structure:
 ### 1.3 Configuration Integration
 
 - [ ] Add state management configuration
-  - [ ] Add database path configuration
-  - [ ] Add configuration validation
+  - [ ] Create StateManagementConfig class
+    - [ ] Implement in `src/qdrant_loader/config/state.py`:
+
+      ```python
+      class StateManagementConfig(BaseConfig):
+          """Configuration for state management."""
+          database_path: str = Field(..., description="Path to SQLite database file")
+          table_prefix: str = Field(default="qdrant_loader_", description="Prefix for database tables")
+          connection_pool: Dict[str, Any] = Field(
+              default_factory=lambda: {"size": 5, "timeout": "30s"},
+              description="Connection pool settings"
+          )
+      ```
+
+    - [ ] Add validation rules:
+      - Validate database path exists and is writable
+      - Validate table prefix format
+      - Validate connection pool settings
+  - [ ] Update GlobalConfig
+    - [ ] Add state_management field to `src/qdrant_loader/config/global_.py`:
+
+      ```python
+      class GlobalConfig(BaseConfig):
+          chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
+          embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+          logging: LoggingConfig = Field(default_factory=LoggingConfig)
+          state_management: StateManagementConfig = Field(default_factory=StateManagementConfig)
+      ```
+
+  - [ ] Update Settings class
+    - [ ] Add state management environment variables to `src/qdrant_loader/config/__init__.py`:
+
+      ```python
+      class Settings(BaseSettings):
+          # ... existing fields ...
+          STATE_DB_PATH: str = Field(..., description="Path to state management database")
+      ```
+
+    - [ ] Add validation for state management configuration
+      - Validate required environment variables
+      - Validate configuration consistency
+  - [ ] Update configuration loading
+    - [ ] The existing `from_yaml()` method in `Settings` class will handle the new configuration
+    - [ ] Add environment variable substitution for state management settings
   - [ ] Add configuration tests
+    - [ ] Test StateManagementConfig validation
+      - [ ] Test valid configurations
+      - [ ] Test invalid configurations
+      - [ ] Test default values
+    - [ ] Test environment variable handling
+      - [ ] Test variable substitution
+      - [ ] Test missing variables
+      - [ ] Test invalid values
+    - [ ] Test integration with existing config
+      - [ ] Test loading from YAML
+      - [ ] Test environment variable precedence
+      - [ ] Test validation in context of full config
+
+The configuration will be added to `config.yaml` under the global section:
+
+```yaml
+global:
+  # ... existing settings ...
+  state_management:
+    database_path: "${STATE_DB_PATH}"  # Will be replaced with value from .env
+    table_prefix: "qdrant_loader_"
+    connection_pool:
+      size: 5
+      timeout: 30s
+```
+
+And the corresponding environment variable in `.env`:
+
+```env
+STATE_DB_PATH=/path/to/state.db
+```
+
+This approach:
+
+1. Follows the existing configuration pattern
+2. Integrates with the current validation system
+3. Supports environment variable substitution
+4. Maintains separation of sensitive configuration
+5. Provides comprehensive test coverage
 
 ## Phase 2: Change Detection Implementation
 
