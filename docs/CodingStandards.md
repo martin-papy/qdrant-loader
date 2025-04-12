@@ -12,6 +12,8 @@ This document outlines the coding standards and best practices for the QDrant Lo
 6. [Logging](#logging)
 7. [Type Hints](#type-hints)
 8. [Dependencies](#dependencies)
+9. [Connector Development](#connector-development)
+10. [State Management](#state-management)
 
 ## 🎨 Code Style {#code-style}
 
@@ -45,15 +47,31 @@ This document outlines the coding standards and best practices for the QDrant Lo
 
 ```text
 qdrant-loader/
-├── src/                    # Source code
-│   ├── __init__.py
-│   ├── config.py          # Configuration management
-│   ├── embedding.py       # Embedding service
-│   ├── qdrant_manager.py  # QDrant database operations
-│   └── utils/             # Utility functions
-├── tests/                 # Test files
-├── docs/                  # Documentation
-└── scripts/              # Utility scripts
+├── src/
+│   ├── qdrant_loader/
+│   │   ├── core/                    # Core functionality
+│   │   │   ├── state/              # State management
+│   │   │   ├── performance/        # Performance optimization
+│   │   │   └── ingestion_pipeline.py
+│   │   │
+│   │   ├── connectors/             # Source connectors
+│   │   │   ├── git/               # Git connector
+│   │   │   ├── confluence/        # Confluence connector
+│   │   │   ├── jira/             # Jira connector
+│   │   │   ├── public_docs/      # Public docs connector
+│   │   │   └── base.py           # Base connector classes
+│   │   │
+│   │   ├── config/               # Configuration management
+│   │   ├── cli/                 # Command line interface
+│   │   └── utils/              # Utility functions
+│   │
+├── tests/                      # Test files
+│   ├── unit/                  # Unit tests
+│   ├── integration/          # Integration tests
+│   └── fixtures/            # Test fixtures
+│
+├── docs/                    # Documentation
+└── scripts/               # Utility scripts
 ```
 
 ## 📝 Documentation
@@ -99,12 +117,22 @@ def process_document(content: str, chunk_size: int = 500) -> List[str]:
 - Follow the same directory structure as src/
 - Test files should be named `test_*.py`
 - Test functions should be named `test_*`
+- Include tests for both connector and change detection functionality
+- Test state management operations
+- Test incremental ingestion scenarios
 
 ### Test Coverage
 
 - Maintain minimum 80% test coverage
 - Use pytest-cov for coverage reporting
 - Document test cases in docstrings
+- Include tests for:
+  - Connector functionality
+  - Change detection
+  - State management
+  - Incremental ingestion
+  - Error handling
+  - Performance optimization
 
 ### Testing Best Practices
 
@@ -112,6 +140,8 @@ def process_document(content: str, chunk_size: int = 500) -> List[str]:
 - Mock external dependencies
 - Test both success and failure cases
 - Include integration tests for critical paths
+- Test state persistence and recovery
+- Test concurrent operations
 
 ## ⚠️ Error Handling
 
@@ -121,18 +151,23 @@ def process_document(content: str, chunk_size: int = 500) -> List[str]:
 - Include meaningful error messages
 - Log exceptions with context
 - Use custom exceptions for domain-specific errors
+- Handle state management errors appropriately
+- Implement proper error recovery for incremental ingestion
 
 Example:
 
 ```python
-class DocumentProcessingError(Exception):
-    """Raised when document processing fails."""
+class StateManagementError(Exception):
+    """Raised when state management operations fail."""
     pass
 
-try:
-    process_document(content)
-except ValueError as e:
-    raise DocumentProcessingError(f"Invalid document format: {str(e)}")
+class ChangeDetectionError(Exception):
+    """Raised when change detection fails."""
+    pass
+
+class IncrementalIngestionError(Exception):
+    """Raised when incremental ingestion fails."""
+    pass
 ```
 
 ## 📊 Logging
@@ -141,12 +176,10 @@ except ValueError as e:
 
 - Use structlog for structured logging
 - Include context in log messages
-- Use appropriate log levels:
-  - DEBUG: Detailed information for debugging
-  - INFO: General operational information
-  - WARNING: Warning messages
-  - ERROR: Error conditions
-  - CRITICAL: Critical conditions
+- Use appropriate log levels
+- Log state management operations
+- Log change detection events
+- Log incremental ingestion progress
 
 Example:
 
@@ -155,13 +188,19 @@ import structlog
 
 logger = structlog.get_logger()
 
-def process_document(content: str):
-    logger.info("processing_document", content_length=len(content))
+def process_incremental_changes(source_type: str, source_name: str):
+    logger.info("processing_incremental_changes", 
+                source_type=source_type,
+                source_name=source_name)
     try:
         # Processing logic
-        logger.info("document_processed_successfully")
+        logger.info("changes_processed_successfully",
+                   change_count=len(changes))
     except Exception as e:
-        logger.error("document_processing_failed", error=str(e))
+        logger.error("change_processing_failed",
+                    error=str(e),
+                    source_type=source_type,
+                    source_name=source_name)
         raise
 ```
 
@@ -229,3 +268,69 @@ feature/add-document-processing
 bugfix/fix-chunking-logic
 docs/update-api-documentation
 ```
+
+## 🔌 Connector Development
+
+### Connector Structure
+
+- Each connector should be in its own directory
+- Include both connector and change detection logic
+- Follow the base connector interface
+- Implement proper error handling
+- Include comprehensive testing
+
+Example:
+
+```python
+from qdrant_loader.connectors.base import BaseConnector, BaseChangeDetector
+
+class GitConnector(BaseConnector):
+    """Git connector implementation."""
+    pass
+
+class GitChangeDetector(BaseChangeDetector):
+    """Git change detection implementation."""
+    pass
+```
+
+### Change Detection
+
+- Implement source-specific change detection
+- Track document modifications
+- Handle document deletions
+- Support incremental updates
+- Include proper error handling
+
+### Testing Connectors
+
+- Test connector functionality
+- Test change detection
+- Test error handling
+- Test state management integration
+- Test incremental ingestion
+
+## 💾 State Management
+
+### Database Operations
+
+- Use SQLAlchemy for database operations
+- Implement proper migrations
+- Handle concurrent access
+- Include error recovery
+- Support both user and package paths
+
+### State Tracking
+
+- Track document states
+- Track ingestion history
+- Handle state updates
+- Support state recovery
+- Implement proper cleanup
+
+### Testing State Management
+
+- Test database operations
+- Test state tracking
+- Test concurrent access
+- Test error recovery
+- Test state persistence
