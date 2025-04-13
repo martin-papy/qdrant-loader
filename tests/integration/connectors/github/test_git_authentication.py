@@ -1,110 +1,19 @@
 """
 Tests for Git authentication functionality.
 """
-import os
-import pytest
-import yaml
-from git.exc import GitCommandError
-from dotenv import load_dotenv
-from pathlib import Path
 import logging
+
+import pytest
+
+from git.exc import GitCommandError
 from pydantic import ValidationError
 
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig, Settings, SourcesConfig
+from qdrant_loader.config import GitAuthConfig, GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
 # Configure logging for tests
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-
-# Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
-
-@pytest.fixture(autouse=True)
-def disable_git_prompt():
-    """Disable Git credential prompts for all tests."""
-    original_prompt = os.environ.get('GIT_TERMINAL_PROMPT')
-    original_askpass = os.environ.get('GIT_ASKPASS')
-    
-    # Disable both credential prompts and credential helpers
-    os.environ['GIT_TERMINAL_PROMPT'] = '0'
-    os.environ['GIT_ASKPASS'] = 'echo'
-    
-    yield
-    
-    # Restore original values
-    if original_prompt is not None:
-        os.environ['GIT_TERMINAL_PROMPT'] = original_prompt
-    else:
-        del os.environ['GIT_TERMINAL_PROMPT']
-        
-    if original_askpass is not None:
-        os.environ['GIT_ASKPASS'] = original_askpass
-    else:
-        del os.environ['GIT_ASKPASS']
-
-@pytest.fixture(scope="session")
-def test_settings():
-    """Load test settings from environment variables and config file."""
-    try:
-        # Log environment variables (excluding sensitive data)
-        env_vars = {
-            'REPO_URL': os.getenv('REPO_URL'),
-            'REPO_TOKEN': 'REDACTED' if os.getenv('REPO_TOKEN') else None
-        }
-        logger.debug("Environment variables: %s", env_vars)
-
-        # Load settings from YAML
-        config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-        logger.debug("Loading config from: %s", config_path)
-        
-        if not config_path.exists():
-            raise FileNotFoundError(f"Config file not found at {config_path}")
-            
-        try:
-            with open(config_path) as f:
-                config_data = yaml.safe_load(f)
-                logger.debug("Loaded YAML data: %s", {k: '...' for k in config_data.keys()})
-        except yaml.YAMLError as e:
-            logger.error("Failed to parse YAML file: %s", e)
-            raise
-            
-        try:
-            settings = Settings.from_yaml(config_path)
-            logger.debug("Successfully initialized settings")
-            return settings
-        except Exception as e:
-            logger.error("Failed to initialize settings: %s", e)
-            raise
-            
-    except Exception as e:
-        logger.error("Failed to load test settings: %s", e)
-        raise
-
-@pytest.fixture
-def test_repo_url(test_settings):
-    """Return the test repository URL from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"].url
-
-@pytest.fixture
-def valid_github_token(test_settings):
-    """Return the valid GitHub token from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"].token
-
-@pytest.fixture
-def git_config_with_auth(test_settings):
-    """Return a GitRepoConfig with authentication from settings."""
-    repo_config = test_settings.sources_config.git_repos["auth-test-repo"]
-    return GitRepoConfig(
-        url=repo_config.url,
-        branch=repo_config.branch,
-        depth=repo_config.depth,
-        file_types=["*.md"],
-        include_paths=["docs/"],
-        exclude_paths=[],
-        max_file_size=1024 * 1024,
-        auth=GitAuthConfig(token=repo_config.token)
-    )
 
 @pytest.mark.integration
 def test_github_pat_authentication_success(git_config_with_auth):

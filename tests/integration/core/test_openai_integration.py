@@ -1,27 +1,13 @@
 """
 Integration tests for OpenAI embedding service.
 """
-import pytest
-from pathlib import Path
-from dotenv import load_dotenv
-from qdrant_loader.config import Settings
-from qdrant_loader.core.embedding_service import EmbeddingService
-import os
 import time
 
-# Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+import pytest
 
-@pytest.fixture(scope="session")
-def test_settings():
-    """Load test settings from environment variables."""
-    return Settings(
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        QDRANT_URL=os.getenv("QDRANT_URL"),
-        QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-        QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
-        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
-    )
+from qdrant_loader.config import Settings
+from qdrant_loader.core.embedding_service import EmbeddingService
+
 
 @pytest.fixture(scope="function")
 def embedding_service(test_settings):
@@ -100,7 +86,9 @@ def test_error_handling(test_settings):
         QDRANT_URL=test_settings.QDRANT_URL,
         QDRANT_API_KEY=test_settings.QDRANT_API_KEY,
         QDRANT_COLLECTION_NAME=test_settings.QDRANT_COLLECTION_NAME,
-        LOG_LEVEL=test_settings.LOG_LEVEL
+        STATE_DB_PATH=test_settings.STATE_DB_PATH,
+        global_config=test_settings.global_config,
+        sources_config=test_settings.sources_config
     )
     
     service = EmbeddingService(invalid_settings)

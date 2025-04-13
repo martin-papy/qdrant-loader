@@ -1,48 +1,12 @@
 """Integration tests for the Jira connector."""
 
 import os
-import pytest
-from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
+
+import pytest
+
 from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.jira.config import JiraConfig
-from qdrant_loader.config import Settings, SourcesConfig
-
-@pytest.fixture(scope="session", autouse=True)
-def load_env():
-    """Load test environment variables before any tests run."""
-    env_path = Path(__file__).parent.parent.parent.parent / ".env.test"
-    if not env_path.exists():
-        pytest.fail(".env.test file not found")
-    load_dotenv(env_path, override=True)
-
-@pytest.fixture
-def test_settings():
-    """Load test settings from config file."""
-    config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    if not config_path.exists():
-        pytest.fail("Test configuration file not found")
-    
-    return Settings.from_yaml(config_path)
-
-@pytest.fixture
-def jira_config(test_settings):
-    """Create a JiraConfig instance from test settings."""
-    jira_settings = test_settings.sources_config.jira["test-project"]
-    return JiraConfig(
-        base_url=jira_settings.base_url,
-        project_key=jira_settings.project_key,
-        requests_per_minute=jira_settings.requests_per_minute,
-        page_size=jira_settings.page_size,
-        process_attachments=True,
-        track_last_sync=True
-    )
-
-@pytest.fixture
-def connector(jira_config):
-    """Create a JiraConnector instance."""
-    return JiraConnector(jira_config)
 
 @pytest.mark.asyncio
 async def test_connector_initialization(connector):

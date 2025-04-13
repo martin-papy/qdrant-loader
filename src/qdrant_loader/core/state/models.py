@@ -35,15 +35,15 @@ class IngestionHistory(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     source_type = Column(String, nullable=False)
     source_name = Column(String, nullable=False)
-    last_successful_ingestion = Column(UTCDateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    last_successful_ingestion = Column(UTCDateTime(timezone=True), nullable=False)
     status = Column(String, nullable=False)
-    document_count = Column(Integer)
+    document_count = Column(Integer, default=0)
     error_message = Column(String)
-    created_at = Column(UTCDateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    updated_at = Column(UTCDateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    created_at = Column(UTCDateTime(timezone=True), nullable=False)
+    updated_at = Column(UTCDateTime(timezone=True), nullable=False)
     
     __table_args__ = (
-        Index("idx_ingestion_history_source", "source_type", "source_name"),
+        UniqueConstraint('source_type', 'source_name', name='uix_source'),
     )
 
 class DocumentState(Base):
@@ -58,11 +58,11 @@ class DocumentState(Base):
     last_updated = Column(UTCDateTime(timezone=True), nullable=False)
     last_ingested = Column(UTCDateTime(timezone=True), nullable=False)
     is_deleted = Column(Boolean, default=False)
-    created_at = Column(UTCDateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    updated_at = Column(UTCDateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    created_at = Column(UTCDateTime(timezone=True), nullable=False)
+    updated_at = Column(UTCDateTime(timezone=True), nullable=False)
     
     __table_args__ = (
-        UniqueConstraint("source_type", "source_name", "document_id", name="uq_document_state"),
+        UniqueConstraint('source_type', 'source_name', 'document_id', name='uix_document'),
         Index("idx_document_states_source", "source_type", "source_name"),
         Index("idx_document_states_last_updated", "last_updated"),
     ) 

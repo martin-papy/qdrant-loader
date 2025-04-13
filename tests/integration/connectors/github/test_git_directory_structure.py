@@ -5,43 +5,10 @@ import os
 import pytest
 import logging
 from pathlib import Path
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig
-from qdrant_loader.connectors.git import GitConnector
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-@pytest.fixture(scope="function")
-def git_config_with_directories(test_settings):
-    """Create a GitRepoConfig instance with directory settings."""
-    # Get the first Git repo config from the test settings
-    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
-    base_config = test_settings.sources_config.git_repos[repo_key]
-    
-    logger.debug(f"Creating GitRepoConfig with settings:")
-    logger.debug(f"  URL: {base_config.url}")
-    logger.debug(f"  Branch: {base_config.branch}")
-    logger.debug(f"  File types: {base_config.file_types}")
-    logger.debug(f"  Include paths: {base_config.include_paths}")
-    logger.debug(f"  Exclude paths: {base_config.exclude_paths}")
-    
-    return GitRepoConfig(
-        url=base_config.url,
-        branch=base_config.branch,
-        depth=base_config.depth,
-        file_types=base_config.file_types,
-        include_paths=base_config.include_paths,
-        exclude_paths=base_config.exclude_paths,
-        max_file_size=base_config.max_file_size,
-        auth=base_config.auth
-    )
-
-@pytest.fixture(scope="function")
-def git_connector(git_config_with_directories):
-    """Create a GitConnector instance."""
-    logger.debug("Creating GitConnector instance")
-    return GitConnector(git_config_with_directories)
 
 def normalize_path(path: str) -> str:
     """Normalize a path for consistent comparison."""
@@ -74,7 +41,7 @@ def test_nested_directory_handling(git_connector, is_github_actions):
         # Log specific directory checks
         docs_dirs = [dir for dir in directories if dir.startswith("docs")]
         src_dirs = [dir for dir in directories if dir.startswith("src")]
-        logger.debug(f"Docs directories found: {docs_dirs}")
+        logger.debug(f"Docs directories found: {docs_dirs}  ")
         logger.debug(f"Src directories found: {src_dirs}")
         
         # Verify we have documents from nested directories

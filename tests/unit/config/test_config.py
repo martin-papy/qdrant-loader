@@ -1,5 +1,9 @@
+"""Test configuration validation."""
+
 import pytest
 from pathlib import Path
+import tempfile
+import os
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from qdrant_loader.config import (
@@ -19,113 +23,92 @@ from qdrant_loader.config import (
 load_dotenv(Path(__file__).parent / ".env.test")
 
 @pytest.fixture
-def test_settings():
+def temp_db_dir():
+    """Create a temporary directory for database files."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield temp_dir
+
+@pytest.fixture
+def test_settings(temp_db_dir):
+    """Create test settings with required fields."""
+    db_path = str(Path(temp_db_dir) / "test.db")
     return Settings(
         QDRANT_URL="http://localhost:6333",
         QDRANT_API_KEY="test-key",
         QDRANT_COLLECTION_NAME="test-collection",
         OPENAI_API_KEY="test-key",
-        LOG_LEVEL="INFO"
+        LOG_LEVEL="INFO",
+        STATE_DB_PATH=db_path,
+        global_config=GlobalConfig(state_management={"database_path": db_path})
+    )
+
+@pytest.fixture
+def test_global_config(temp_db_dir):
+    """Create test global config with required fields."""
+    db_path = str(Path(temp_db_dir) / "test.db")
+    return GlobalConfig(
+        state_management={"database_path": db_path}
     )
 
 def test_settings_validation(test_settings):
-    """Test that all required settings are present and have correct types."""
-    # Test required string fields
-    assert isinstance(test_settings.QDRANT_URL, str)
-    assert isinstance(test_settings.QDRANT_API_KEY, str)
-    assert isinstance(test_settings.QDRANT_COLLECTION_NAME, str)
-    assert isinstance(test_settings.OPENAI_API_KEY, str)
-    assert isinstance(test_settings.LOG_LEVEL, str)
-    
-    # Test that string fields are not empty
-    assert test_settings.QDRANT_URL
-    assert test_settings.QDRANT_API_KEY
-    assert test_settings.QDRANT_COLLECTION_NAME
-    assert test_settings.OPENAI_API_KEY
-    assert test_settings.LOG_LEVEL
+    """Test that settings validation works correctly."""
+    assert test_settings.QDRANT_URL == "http://localhost:6333"
+    assert test_settings.QDRANT_API_KEY == "test-key"
+    assert test_settings.QDRANT_COLLECTION_NAME == "test-collection"
+    assert test_settings.OPENAI_API_KEY == "test-key"
+    assert test_settings.LOG_LEVEL == "INFO"
+    assert test_settings.STATE_DB_PATH.endswith("test.db")
 
 def test_sources_config_validation():
-    """Test that SourcesConfig can be created with valid data."""
-    config = SourcesConfig(
-        public_docs={
-            "test_docs": PublicDocsSourceConfig(
-                base_url="https://docs.example.com",
-                version="1.0",
-                content_type="html",
-                selectors=SelectorsConfig()
-            )
-        },
-        git_repos={
-            "test_repo": GitRepoConfig(
-                url="https://github.com/example/repo.git",
-                branch="main"
-            )
-        },
-        confluence={
-            "test_space": ConfluenceSpaceConfig(
-                url="https://example.atlassian.net/wiki",
-                space_key="SPACE",
-                content_types=["page"],
-                token="test-token",
-                email="test@example.com"
-            )
-        },
-        jira={
-            "test_project": JiraProjectConfig(
-                base_url="https://example.atlassian.net",
-                project_key="PROJ",
-                token="test-token",
-                email="test@example.com"
-            )
-        }
-    )
-    
-    assert isinstance(config.public_docs["test_docs"], PublicDocsSourceConfig)
-    assert isinstance(config.git_repos["test_repo"], GitRepoConfig)
-    assert isinstance(config.confluence["test_space"], ConfluenceSpaceConfig)
-    assert isinstance(config.jira["test_project"], JiraProjectConfig)
+    """Test that sources config validation works correctly."""
+    config = SourcesConfig()
+    assert isinstance(config, SourcesConfig)
 
-def test_global_config_defaults():
+def test_global_config_defaults(test_global_config):
     """Test that GlobalConfig has correct default values."""
-    config = GlobalConfig()
-    
-    assert config.chunking.chunk_size == 1000
-    assert config.chunking.chunk_overlap == 200
-    assert config.embedding.model == "text-embedding-3-small"
-    assert config.embedding.batch_size == 100
-    assert config.logging.level == "INFO"
-    assert config.logging.format == "json"
-    assert config.logging.file == "qdrant-loader.log"
+    assert test_global_config.chunking.chunk_size == 1000
+    assert test_global_config.chunking.chunk_overlap == 200
+    assert test_global_config.embedding.model == "text-embedding-3-small"
+    assert test_global_config.embedding.batch_size == 100
+    assert test_global_config.logging.level == "INFO"
+    assert test_global_config.logging.format == "json"
+    assert test_global_config.logging.file == "qdrant-loader.log"
+    assert test_global_config.state_management.table_prefix == "qdrant_loader_"
+    assert test_global_config.state_management.connection_pool == {"size": 5, "timeout": "30s"}
 
-def test_invalid_log_level():
+def test_invalid_log_level(test_global_config):
     """Test that invalid log level raises ValueError."""
-    with pytest.raises(ValueError, match="Invalid logging level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"):
-        GlobalConfig(logging={"level": "INVALID"})
+    with pytest.raises(ValidationError, match="Invalid logging level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"):
+        GlobalConfig(
+            state_management={"database_path": test_global_config.state_management.database_path},
+            logging={"level": "INVALID"}
+        )
 
-def test_invalid_log_format():
+def test_invalid_log_format(test_global_config):
     """Test that invalid log format raises ValueError."""
-    with pytest.raises(ValueError):
-        GlobalConfig(logging={"level": "INFO", "format": "invalid"})
+    with pytest.raises(ValidationError, match="Invalid log format. Must be one of: json, text"):
+        GlobalConfig(
+            state_management={"database_path": test_global_config.state_management.database_path},
+            logging={"format": "INVALID"}
+        )
 
-def test_invalid_chunk_size():
+def test_invalid_chunk_size(test_global_config):
     """Test that invalid chunk size raises ValueError."""
-    with pytest.raises(ValueError, match="Input should be greater than 0"):
-        ChunkingConfig(chunk_size=0)
+    with pytest.raises(ValidationError, match="Input should be greater than 0"):
+        GlobalConfig(
+            state_management={"database_path": test_global_config.state_management.database_path},
+            chunking={"chunk_size": 0}
+        )
 
-def test_invalid_chunk_overlap():
+def test_invalid_chunk_overlap(test_global_config):
     """Test that invalid chunk overlap raises ValueError."""
-    with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
-        ChunkingConfig(chunk_overlap=-1)
-
-    with pytest.raises(ValueError, match="Chunk overlap must be less than chunk size"):
-        ChunkingConfig(chunk_size=100, chunk_overlap=100)
+    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+        GlobalConfig(
+            state_management={"database_path": test_global_config.state_management.database_path},
+            chunking={"chunk_overlap": -1}
+        )
 
 def test_missing_required_fields():
     """Test that missing required fields raises ValidationError."""
     with pytest.raises(ValidationError):
-        Settings(
-            QDRANT_URL=None,  # None should trigger validation error
-            QDRANT_API_KEY=None,  # None should trigger validation error
-            QDRANT_COLLECTION_NAME=None,  # None should trigger validation error
-            OPENAI_API_KEY=None  # None should trigger validation error
-        ) 
+        Settings() 

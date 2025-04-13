@@ -1,27 +1,17 @@
-"""
-Shared fixtures for Git connector tests.
-"""
 import os
-from pathlib import Path
 import pytest
-from dotenv import load_dotenv
-from qdrant_loader.config import initialize_config, get_settings
+import logging
+from qdrant_loader.config import GitRepoConfig, GitAuthConfig
+from qdrant_loader.connectors.git import GitConnector
 
-# Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def is_github_actions():
     """Check if running in GitHub Actions environment."""
     return os.getenv('GITHUB_ACTIONS') == 'true'
-
-@pytest.fixture(scope="session")
-def test_settings():
-    """Load test settings from environment variables and config file."""
-    # Load settings from YAML
-    config_path = Path(__file__).parent.parent.parent.parent / "config.test.yaml"
-    initialize_config(config_path)
-    return get_settings()
 
 @pytest.fixture(autouse=True)
 def disable_git_prompt():
@@ -45,3 +35,24 @@ def disable_git_prompt():
         os.environ['GIT_ASKPASS'] = original_askpass
     else:
         del os.environ['GIT_ASKPASS'] 
+
+@pytest.fixture
+def test_repo_url(test_settings):
+    """Return the test repository URL from settings."""
+    return test_settings.sources_config.git_repos["auth-test-repo"].url
+
+@pytest.fixture
+def valid_github_token(test_settings):
+    """Return the valid GitHub token from settings."""
+    return test_settings.sources_config.git_repos["auth-test-repo"].token
+
+@pytest.fixture
+def git_config_with_auth(test_settings):
+    """Return a GitRepoConfig with authentication from settings."""
+    return test_settings.sources_config.git_repos["auth-test-repo"]
+
+@pytest.fixture(scope="function")
+def git_connector(git_config_with_auth):
+    """Create a GitConnector instance."""
+    logger.debug("Creating GitConnector instance")
+    return GitConnector(git_config_with_auth)
