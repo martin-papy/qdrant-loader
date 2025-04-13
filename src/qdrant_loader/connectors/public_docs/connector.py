@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlparse
 import re
 from collections import deque
 from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +91,10 @@ class PublicDocsConnector:
             
         return content.get_text(separator="\n", strip=True)
     
-    def _process_page(self, url: str) -> Optional[str]:
+    async def _process_page(self, url: str) -> Optional[str]:
         """Process a single documentation page."""
         try:
-            response = self.session.get(url)
+            response = await asyncio.to_thread(self.session.get, url)
             response.raise_for_status()
             
             # Extract links for crawling
@@ -111,7 +112,7 @@ class PublicDocsConnector:
             logger.error("Failed to process page %s: %s", url, str(e))
             return None
     
-    def get_documentation(self) -> List[str]:
+    async def get_documentation(self) -> List[str]:
         """Fetch and process all documentation pages using crawling."""
         logger.info("Starting documentation fetch from %s (version: %s)", 
                    self.base_url, self.version)
@@ -135,7 +136,7 @@ class PublicDocsConnector:
                 continue
                 
             logger.debug("Processing page: %s", current_url)
-            page_content = self._process_page(current_url)
+            page_content = await asyncio.to_thread(self._process_page, current_url)
             
             if page_content:
                 content.append(page_content)

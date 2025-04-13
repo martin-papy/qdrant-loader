@@ -74,7 +74,7 @@ def test_global_config_defaults(test_global_config):
     assert test_global_config.logging.format == "json"
     assert test_global_config.logging.file == "qdrant-loader.log"
     assert test_global_config.state_management.table_prefix == "qdrant_loader_"
-    assert test_global_config.state_management.connection_pool == {"size": 5, "timeout": "30s"}
+    assert test_global_config.state_management.connection_pool == {"size": 5, "timeout": 30}
 
 def test_invalid_log_level(test_global_config):
     """Test that invalid log level raises ValueError."""

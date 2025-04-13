@@ -7,6 +7,7 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logger import get_logger
 from datetime import datetime
 import re
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -45,7 +46,7 @@ class ConfluenceConnector:
         """
         return f"{self.base_url}/rest/api/{endpoint}"
         
-    def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make an authenticated request to the Confluence API.
         
         Args:
@@ -62,14 +63,14 @@ class ConfluenceConnector:
         url = self._get_api_url(endpoint)
         try:
             kwargs["auth"] = self.session.auth
-            response = self.session.request(method, url, **kwargs)
+            response = await asyncio.to_thread(self.session.request, method, url, **kwargs)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to make request to {url}: {str(e)}")
             raise
 
-    def _get_space_content(self, start: int = 0, limit: int = 25) -> Dict[str, Any]:
+    async def _get_space_content(self, start: int = 0, limit: int = 25) -> Dict[str, Any]:
         """Fetch content from a Confluence space.
         
         Args:
@@ -86,7 +87,7 @@ class ConfluenceConnector:
             "limit": limit
         }
         logger.debug("Making Confluence API request", url=f"{self.base_url}/rest/api/content/search", params=params)
-        response = self._make_request("GET", "content/search", params=params)
+        response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
             logger.info(f"Found {len(response['results'])} documents in Confluence space", 
                        count=len(response["results"]), 
@@ -219,7 +220,7 @@ class ConfluenceConnector:
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
 
-    def get_documents(self) -> List[Document]:
+    async def get_documents(self) -> List[Document]:
         """Fetch and process documents from Confluence.
         
         Returns:
@@ -231,7 +232,7 @@ class ConfluenceConnector:
         
         while True:
             try:
-                response = self._get_space_content(start, limit)
+                response = await self._get_space_content(start, limit)
                 results = response.get("results", [])
                 
                 if not results:

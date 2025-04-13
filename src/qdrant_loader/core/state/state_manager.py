@@ -2,23 +2,25 @@
 State management service for tracking document ingestion state.
 """
 
-import os
 import logging
-from datetime import datetime, UTC
-from typing import Optional, List
+import os
+from datetime import UTC, datetime
 from pathlib import Path
-from sqlalchemy import create_engine, select, update, and_, event
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Optional
 
-from .models import Base, IngestionHistory, DocumentState
+from sqlalchemy import and_, create_engine, event, select, update
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
 from .exceptions import (
+    ConcurrentUpdateError,
     DatabaseError,
     StateNotFoundError,
     StateValidationError,
-    ConcurrentUpdateError
 )
+from .models import Base, DocumentState, IngestionHistory
+from qdrant_loader.config.state import StateManagementConfig
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +33,29 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
 class StateManager:
     """Manages state for document ingestion."""
     
-    def __init__(self, db_url: str):
-        """Initialize the state manager with a database URL."""
+    def __init__(self, config: StateManagementConfig):
+        """Initialize the state manager with configuration."""
+        db_url = config.database_path
         if not db_url.startswith('sqlite:///'):
             db_url = f'sqlite:///{db_url}'
         
         # Create sync engine for migrations and sync operations
-        self.engine = create_engine(db_url)
+        engine_args = {}
+        if not db_url == 'sqlite:///:memory:':  # Don't use pool settings for in-memory SQLite
+            engine_args.update({
+                'pool_size': config.connection_pool['size'],
+                'pool_timeout': config.connection_pool['timeout']
+            })
+            
+        self.engine = create_engine(db_url, **engine_args)
         if 'sqlite' in db_url:
             event.listen(self.engine, 'connect', _set_sqlite_pragma)
         
         # Create async engine for async operations
-        self.async_engine = create_async_engine(f"sqlite+aiosqlite:///{db_url.replace('sqlite:///', '')}")
+        self.async_engine = create_async_engine(
+            f"sqlite+aiosqlite:///{db_url.replace('sqlite:///', '')}",
+            **engine_args
+        )
         
         # Create session factories
         self.Session = sessionmaker(bind=self.engine)

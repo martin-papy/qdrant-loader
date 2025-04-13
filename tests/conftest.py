@@ -33,13 +33,13 @@ def setup_test_environment():
     if data_dir.exists():
         shutil.rmtree(data_dir)
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_settings():
     """Get test settings."""
     settings = get_settings()
     return settings
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_global_config():
     """Get test configuration."""
     config = get_settings().global_config

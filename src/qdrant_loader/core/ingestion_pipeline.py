@@ -37,7 +37,7 @@ class IngestionPipeline:
         self.chunking_service = ChunkingService(config=self.config, settings=self.settings)
         self.embedding_service = EmbeddingService(settings)
         self.qdrant_manager = QdrantManager(settings)
-        self.state_manager = StateManager(settings.STATE_DB_PATH)
+        self.state_manager = StateManager(self.config.state_management)
 
     async def process_documents(
         self,
@@ -63,21 +63,21 @@ class IngestionPipeline:
             if filtered_config.git_repos:
                 for name, config in filtered_config.git_repos.items():
                     connector = GitConnector(config)
-                    git_docs = await connector.get_documentation()
+                    git_docs = await connector.get_documents()
                     documents.extend(git_docs)
 
             # Process Confluence spaces
             if filtered_config.confluence:
                 for name, config in filtered_config.confluence.items():
                     connector = ConfluenceConnector(config)
-                    confluence_docs = await connector.get_documentation()
+                    confluence_docs = await connector.get_documents()
                     documents.extend(confluence_docs)
 
             # Process Jira projects
             if filtered_config.jira:
                 for name, config in filtered_config.jira.items():
                     connector = JiraConnector(config)
-                    jira_docs = await connector.get_documentation()
+                    jira_docs = await connector.get_documents()
                     documents.extend(jira_docs)
 
             # Process public documentation
