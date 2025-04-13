@@ -3,6 +3,10 @@
 from typing import Optional
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+from .global_ import GlobalConfig
+from .sources import SourcesConfig
 
 
 class Settings(BaseSettings):
@@ -24,6 +28,13 @@ class Settings(BaseSettings):
     # Logging Configuration
     LOG_LEVEL: str = Field(default="INFO", description="Logging level")
     
+    # State Database Configuration
+    STATE_DB_PATH: str = Field(..., description="Path to state management database")
+    
+    # Optional configuration
+    global_config: Optional[GlobalConfig] = None
+    sources_config: Optional[SourcesConfig] = None
+    
     @field_validator("QDRANT_URL", "QDRANT_API_KEY", "QDRANT_COLLECTION_NAME", "OPENAI_API_KEY")
     @classmethod
     def validate_required_string(cls, v):
@@ -44,6 +55,23 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow"  # Allow extra fields in environment variables
     ) 
+
+    @classmethod
+    def from_yaml(cls, config_path: Path) -> "Settings":
+        """Create settings from a YAML file."""
+        from .base import load_yaml_config
+        config = load_yaml_config(config_path)
+        
+        # Extract global and sources config
+        global_config = GlobalConfig.model_validate(config.get("global", {}))
+        sources_config = SourcesConfig.model_validate(config.get("sources", {}))
+        
+        # Create settings with environment variables
+        settings = cls()
+        settings.global_config = global_config
+        settings.sources_config = sources_config
+        
+        return settings
 
 def get_settings() -> Settings:
     """Get the settings from environment variables."""

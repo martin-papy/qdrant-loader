@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import Mock, patch
-from bs4 import BeautifulSoup
-from qdrant_loader.connectors.public_docs import PublicDocsConnector
+
+import pytest
+
 from qdrant_loader.config import PublicDocsSourceConfig, SelectorsConfig
+from qdrant_loader.connectors.public_docs import PublicDocsConnector
+
 
 @pytest.fixture
 def mock_config():
@@ -10,7 +12,11 @@ def mock_config():
         base_url="https://docs.example.com",
         version="1.0",
         content_type="html",
-        selectors=SelectorsConfig()
+        selectors=SelectorsConfig(
+            content="article.main-content",
+            remove=["nav", "header", "footer", ".sidebar"],
+            code_blocks="pre code"
+        )
     )
 
 @pytest.fixture
@@ -71,13 +77,13 @@ def test_extract_content(mock_config, mock_html):
     assert "print(\"Hello World\")" in content
 
 @patch("requests.Session")
-def test_process_page(mock_session, mock_config, mock_html):
+def test_process_page(mock_requests_session, mock_config, mock_html):
     # Setup mock response
     mock_response = Mock()
     mock_response.text = mock_html
     mock_response.raise_for_status.return_value = None
-    mock_session.return_value.get.return_value = mock_response
     
+    mock_requests_session.return_value.get.return_value = mock_response
     connector = PublicDocsConnector(mock_config)
     content = connector._process_page("https://docs.example.com/page")
     

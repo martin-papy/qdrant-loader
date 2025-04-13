@@ -9,6 +9,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 - Vectorization using OpenAI embeddings or any OpenAI-compatible endpoint
 - Support for different embedding models (OpenAI, BAAI/bge-small-en-v1.5, etc.)
 - Storage in QDrant vector database
+- State management for incremental ingestion
 - Configurable through environment variables and YAML configuration
 - Command-line interface for easy operation
 - Comprehensive logging and debugging capabilities
@@ -35,10 +36,19 @@ A tool for collecting and vectorizing technical content from multiple sources an
     # Download and configure environment variables
     curl -o .env https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/.env.template
     # Edit .env with your configuration
+    # Add STATE_DB_PATH=/path/to/state.db for state management
 
     # Download and configure the main configuration file
     curl -o config.yaml https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/config.template.yaml
     # Edit config.yaml with your source configurations
+    # Add state management configuration under global section:
+    # global:
+    #   state_management:
+    #     database_path: "${STATE_DB_PATH}"
+    #     table_prefix: "qdrant_loader_"
+    #     connection_pool:
+    #       size: 5
+    #       timeout: 30s
     ```
 
 3. Initialize the QDrant collection:

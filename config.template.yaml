@@ -26,6 +26,15 @@ global:
     format: "json"   # Log format: json (structured) or plain (human-readable)
     file: "qdrant-loader.log"  # Path to log file (relative to current directory)
 
+  # State management configuration
+  # Controls how document ingestion state is tracked
+  state_management:
+    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file
+    table_prefix: "qdrant_loader_"     # Prefix for database tables
+    connection_pool:                   # Connection pool settings
+      size: 5                         # Maximum number of connections
+      timeout: 30                  # Connection timeout in seconds
+
 # Source-specific configurations
 # Each source type has its own configuration section
 sources:
