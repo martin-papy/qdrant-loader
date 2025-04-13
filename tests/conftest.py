@@ -1,68 +1,46 @@
-"""Test configuration and fixtures."""
+"""Shared test fixtures and configuration.
 
-import os
-import pytest
+This module contains pytest fixtures that are shared across all test modules.
+"""
+import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 
-from qdrant_loader.config import (
-    Settings,
-    SourcesConfig,
-    GlobalConfig,
-    ChunkingConfig,
-    EmbeddingConfig
-)
+import pytest
 
-# Load test environment variables
-load_dotenv(Path(__file__).parent / ".env.test")
+from qdrant_loader.config import initialize_config, get_settings
 
-@pytest.fixture
-def test_settings() -> Settings:
-    """Fixture that provides test settings for all tests."""
-    return Settings(
-        QDRANT_URL=os.getenv("QDRANT_URL"),
-        QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-        QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
-    )
-
-@pytest.fixture
-def test_global_config() -> GlobalConfig:
-    """Fixture that provides test global configuration."""
-    return GlobalConfig(
-        chunking={"size": 500, "overlap": 50},
-        embedding=EmbeddingConfig(
-            model="text-embedding-3-small",
-            batch_size=100
-        ),
-        logging={
-            "level": "INFO",
-            "format": "json",
-            "file": "qdrant-loader.log"
-        }
-    )
-
-@pytest.fixture
-def test_sources_config() -> SourcesConfig:
-    """Fixture that provides test sources configuration."""
-    config_path = Path(__file__).parent / "config.test.yaml"
-    if not config_path.exists():
-        pytest.fail("Test configuration file not found")
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Setup test environment before running tests."""
+    # Create necessary directories
+    data_dir = Path("./data")
+    data_dir.mkdir(parents=True, exist_ok=True)
     
-    return SourcesConfig.from_yaml(config_path)
+    # Load test configuration
+    config_path = Path("tests/config.test.yaml")
+    env_path = Path("tests/.env.test")
+    
+    # Load environment variables first
+    load_dotenv(env_path, override=True)
+    
+    # Initialize config using the same function as CLI
+    initialize_config(config_path)
+    
+    yield
+    
+    # Clean up after all tests
+    if data_dir.exists():
+        shutil.rmtree(data_dir)
 
 @pytest.fixture
-def test_chunking_config() -> ChunkingConfig:
-    """Fixture that provides test chunking configuration."""
-    return ChunkingConfig(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
+def test_settings():
+    """Get test settings."""
+    settings = get_settings()
+    return settings
 
-def pytest_configure(config):
-    """Register custom markers."""
-    config.addinivalue_line(
-        "markers",
-        "integration: mark test as an integration test"
-    ) 
+@pytest.fixture
+def test_global_config():
+    """Get test configuration."""
+    config = get_settings().global_config
+    return config

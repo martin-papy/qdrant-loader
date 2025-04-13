@@ -19,6 +19,7 @@ from .chunking import ChunkingConfig
 from .embedding import EmbeddingConfig
 from .global_ import GlobalConfig
 from .sources import SourcesConfig
+from .state import StateManagementConfig
 from ..connectors.git.config import GitRepoConfig, GitAuthConfig
 from ..connectors.confluence.config import ConfluenceSpaceConfig
 from ..connectors.jira.config import JiraProjectConfig
@@ -42,9 +43,8 @@ __all__ = [
     'get_settings',
     'get_global_config',
     'initialize_config',
+    'StateManagementConfig'
 ]
-
-from .base import BaseConfig, ConfigProtocol, SourceConfigProtocol, BaseSourceConfig
 
 _global_settings: Optional['Settings'] = None
 
@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    
+    # State Management Configuration
+    STATE_DB_PATH: str = Field(..., description="Path to state management database")
     
     # Source-specific environment variables
     REPO_TOKEN: Optional[str] = Field(None, description="Repository token")
@@ -210,6 +213,7 @@ class Settings(BaseSettings):
                 'QDRANT_API_KEY': os.getenv('QDRANT_API_KEY'),
                 'QDRANT_COLLECTION_NAME': os.getenv('QDRANT_COLLECTION_NAME'),
                 'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
+                'STATE_DB_PATH': os.getenv('STATE_DB_PATH'),
                 'REPO_TOKEN': os.getenv('REPO_TOKEN'),
                 'REPO_URL': os.getenv('REPO_URL'),
                 'CONFLUENCE_URL': os.getenv('CONFLUENCE_URL'),

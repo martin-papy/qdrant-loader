@@ -7,20 +7,16 @@ from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
 @pytest.fixture(scope="function")
-def git_config_with_size_limit(test_settings):
+def git_config_with_size_limit(git_config_with_auth):
     """Create a GitRepoConfig instance with specific size limits."""
-    # Get the first Git repo config from the test settings
-    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
-    base_config = test_settings.sources_config.git_repos[repo_key]
-    
     return GitRepoConfig(
-        url=base_config.url,
-        branch=base_config.branch,
-        file_types=base_config.file_types,
-        include_paths=base_config.include_paths,
-        exclude_paths=base_config.exclude_paths,
+        url=git_config_with_auth.url,
+        branch=git_config_with_auth.branch,
+        file_types=git_config_with_auth.file_types,
+        include_paths=git_config_with_auth.include_paths,
+        exclude_paths=git_config_with_auth.exclude_paths,
         max_file_size=1024,  # 1KB for testing
-        auth=base_config.auth
+        auth=git_config_with_auth.auth
     )
 
 @pytest.fixture(scope="function")

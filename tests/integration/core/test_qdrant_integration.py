@@ -1,39 +1,10 @@
-import pytest
-from pathlib import Path
-from dotenv import load_dotenv
-from qdrant_loader.core.qdrant_manager import QdrantManager
-from qdrant_loader.config import Settings, initialize_config
-import os
-import uuid
 from urllib.parse import urlparse
 
-def load_test_env():
-    """Load environment variables ensuring test settings take precedence."""
-    # First load any existing .env file
-    load_dotenv()
-    # Then load test environment to override any existing values
-    load_dotenv(Path(__file__).parent.parent.parent / ".env.test", override=True)
+import pytest
 
-# Load test environment variables
-load_test_env()
+from qdrant_loader.config import Settings
+from qdrant_loader.core.qdrant_manager import QdrantManager
 
-@pytest.fixture(scope="session", autouse=True)
-def initialize_test_config():
-    """Initialize the global config for all tests."""
-    yaml_path = Path(__file__).parent.parent.parent / "config.test.yaml"
-    initialize_config(yaml_path)
-
-@pytest.fixture
-def test_settings():
-    """Fixture that provides test settings for all tests."""
-    settings = Settings(
-        QDRANT_URL=os.getenv("QDRANT_URL"),
-        QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-        QDRANT_COLLECTION_NAME=f"{os.getenv('QDRANT_COLLECTION_NAME')}-{uuid.uuid4().hex[:8]}",
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
-    )
-    return settings
 
 @pytest.fixture
 def qdrant_manager(test_settings):
@@ -115,11 +86,10 @@ def test_collection_operations(qdrant_manager, test_settings):
 @pytest.mark.integration
 def test_error_handling(test_settings):
     """Test error handling with real Qdrant instance."""
-    from qdrant_client.http.exceptions import UnexpectedResponse, ResponseHandlingException
-    from requests.exceptions import ConnectionError
-
-    # Debug output
-    print(f"\nQdrant URL being used: {test_settings.QDRANT_URL}")
+    from qdrant_client.http.exceptions import (
+        ResponseHandlingException,
+        UnexpectedResponse,
+    )
 
     # Skip test if using local instance (no authentication required)
     parsed_url = urlparse(test_settings.QDRANT_URL)
@@ -132,7 +102,9 @@ def test_error_handling(test_settings):
         QDRANT_API_KEY="invalid-key",
         QDRANT_COLLECTION_NAME=test_settings.QDRANT_COLLECTION_NAME,
         OPENAI_API_KEY=test_settings.OPENAI_API_KEY,
-        LOG_LEVEL=test_settings.LOG_LEVEL
+        STATE_DB_PATH=test_settings.STATE_DB_PATH,
+        global_config=test_settings.global_config,
+        sources_config=test_settings.sources_config
     )
     
     # Test that we can't perform operations with invalid credentials
@@ -146,7 +118,9 @@ def test_error_handling(test_settings):
         QDRANT_API_KEY=test_settings.QDRANT_API_KEY,
         QDRANT_COLLECTION_NAME=test_settings.QDRANT_COLLECTION_NAME,
         OPENAI_API_KEY=test_settings.OPENAI_API_KEY,
-        LOG_LEVEL=test_settings.LOG_LEVEL
+        STATE_DB_PATH=test_settings.STATE_DB_PATH,
+        global_config=test_settings.global_config,
+        sources_config=test_settings.sources_config
     )
     
     with pytest.raises(ResponseHandlingException):
