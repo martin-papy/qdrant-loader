@@ -15,14 +15,14 @@ def normalize_path(path: str) -> str:
     return path.strip("/").replace("\\", "/")
 
 @pytest.mark.integration
-def test_nested_directory_handling(git_connector, is_github_actions):
+def test_nested_directory_handling(session_git_connector, is_github_actions):
     """Test handling of nested directories."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
-    with git_connector:
+    with session_git_connector:
         logger.debug("Starting test_nested_directory_handling")
         # Get all documents
-        docs = list(git_connector.get_documents())
+        docs = list(session_git_connector.get_documents())
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path
@@ -49,14 +49,14 @@ def test_nested_directory_handling(git_connector, is_github_actions):
         assert any(dir.startswith("src") for dir in directories), "No documents found in src directory"
 
 @pytest.mark.integration
-def test_root_directory_handling(git_connector, is_github_actions):
+def test_root_directory_handling(session_git_connector, is_github_actions):
     """Test handling of root directory files."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
-    with git_connector:
+    with session_git_connector:
         logger.debug("Starting test_root_directory_handling")
         # Get all documents
-        docs = list(git_connector.get_documents())
+        docs = list(session_git_connector.get_documents())
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path
@@ -80,14 +80,14 @@ def test_root_directory_handling(git_connector, is_github_actions):
         assert any(dir == "" for dir in directories), "No documents found in root directory"
 
 @pytest.mark.integration
-def test_directory_exclusion(git_connector, is_github_actions):
+def test_directory_exclusion(session_git_connector, is_github_actions):
     """Test directory exclusion functionality."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
-    with git_connector:
+    with session_git_connector:
         logger.debug("Starting test_directory_exclusion")
         # Get all documents
-        docs = list(git_connector.get_documents())
+        docs = list(session_git_connector.get_documents())
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path
@@ -111,14 +111,14 @@ def test_directory_exclusion(git_connector, is_github_actions):
         assert not any(dir.startswith("tests") for dir in directories), "Found documents in excluded tests directory"
 
 @pytest.mark.integration
-def test_directory_inclusion(git_connector, is_github_actions):
+def test_directory_inclusion(session_git_connector, is_github_actions):
     """Test directory inclusion functionality."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
-    with git_connector:
+    with session_git_connector:
         logger.debug("Starting test_directory_inclusion")
         # Get all documents
-        docs = list(git_connector.get_documents())
+        docs = list(session_git_connector.get_documents())
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path
@@ -147,14 +147,14 @@ def test_directory_inclusion(git_connector, is_github_actions):
         assert has_root or has_docs or has_src, "No documents found in any of the included directories"
 
 @pytest.mark.integration
-def test_directory_pattern_matching(git_connector, is_github_actions):
+def test_directory_pattern_matching(session_git_connector, is_github_actions):
     """Test directory pattern matching."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
-    with git_connector:
+    with session_git_connector:
         logger.debug("Starting test_directory_pattern_matching")
         # Get all documents
-        docs = list(git_connector.get_documents())
+        docs = list(session_git_connector.get_documents())
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path

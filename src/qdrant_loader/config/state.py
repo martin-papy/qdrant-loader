@@ -18,7 +18,7 @@ class StateManagementConfig(BaseConfig):
     database_path: str = Field(..., description="Path to SQLite database file")
     table_prefix: str = Field(default="qdrant_loader_", description="Prefix for database tables")
     connection_pool: Dict[str, Any] = Field(
-        default_factory=lambda: {"size": 5, "timeout": "30s"},
+        default_factory=lambda: {"size": 5, "timeout": 30},
         description="Connection pool settings"
     )
 
