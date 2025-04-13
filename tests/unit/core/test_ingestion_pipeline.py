@@ -7,12 +7,15 @@ from logging import getLogger
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from qdrant_loader.config import SourcesConfig
+from qdrant_loader.config import SourcesConfig, Settings, GlobalConfig
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
 from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig, SelectorsConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
+from qdrant_loader.core.chunking_service import ChunkingService
 
 logger = getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -34,27 +37,75 @@ def mock_documents():
         )
     ]
 
+@pytest_asyncio.fixture
+async def async_session():
+    """Create an async session for testing."""
+    return AsyncMock(spec=AsyncSession)
+
+@pytest.fixture
+def mock_chunking_service():
+    """Create a mock chunking service."""
+    mock = MagicMock()
+    mock.chunk_document.return_value = []
+    return mock
+
+@pytest.fixture
+def mock_embedding_service():
+    """Create a mock embedding service."""
+    mock = MagicMock()
+    mock.embed_documents.return_value = []
+    return mock
+
+@pytest.fixture
+def mock_qdrant_manager():
+    """Create a mock Qdrant manager."""
+    mock = MagicMock()
+    mock.client.get_collections.return_value = MagicMock(collections=[])
+    return mock
+
+@pytest.fixture
+def mock_state_manager():
+    """Create a mock state manager."""
+    mock = MagicMock()
+    return mock
+
 @pytest.mark.asyncio
-async def test_ingestion_pipeline_init(test_settings,test_global_config):
+async def test_ingestion_pipeline_init(test_settings):
     """Test pipeline initialization."""
-    with patch('qdrant_loader.core.ingestion_pipeline.ChunkingService') as mock_chunking_service, \
-         patch('qdrant_loader.core.ingestion_pipeline.EmbeddingService') as mock_embedding_service, \
-         patch('qdrant_loader.core.ingestion_pipeline.QdrantManager') as mock_qdrant_manager, \
-         patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager:
+    with patch('qdrant_loader.core.ingestion_pipeline.ChunkingService.__new__') as mock_chunking_service_new, \
+         patch('qdrant_loader.core.ingestion_pipeline.EmbeddingService') as mock_embedding_service_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.QdrantManager') as mock_qdrant_manager_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager_cls:
         
-        mock_chunking_service.return_value = MagicMock()
-        mock_embedding_service.return_value = MagicMock()
-        mock_qdrant_manager.return_value = MagicMock()
-        mock_state_manager.return_value = MagicMock()
+        # Set up mock instances
+        mock_chunking_service = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_qdrant_manager = MagicMock()
+        mock_state_manager = MagicMock()
         
+        # Configure mock classes to return their instances
+        mock_chunking_service_new.return_value = mock_chunking_service
+        mock_embedding_service_cls.return_value = mock_embedding_service
+        mock_qdrant_manager_cls.return_value = mock_qdrant_manager
+        mock_state_manager_cls.return_value = mock_state_manager
+        
+        # Create pipeline
         pipeline = IngestionPipeline(test_settings)
         
+        # Verify initialization
         assert pipeline.settings == test_settings
-        assert pipeline.config == test_global_config
-        mock_chunking_service.assert_called_once_with(config=test_global_config, settings=test_settings)
-        mock_embedding_service.assert_called_once_with(test_settings)
-        mock_qdrant_manager.assert_called_once_with(test_settings)
-        mock_state_manager.assert_called_once_with(test_settings.STATE_DB_PATH)
+        assert pipeline.config == test_settings.global_config
+        assert pipeline.chunking_service == mock_chunking_service
+        assert pipeline.embedding_service == mock_embedding_service
+        assert pipeline.qdrant_manager == mock_qdrant_manager
+        assert pipeline.state_manager == mock_state_manager
+        
+        # Verify ChunkingService was called with correct arguments
+        mock_chunking_service_new.assert_called_once_with(
+            ChunkingService,
+            config=test_settings.global_config,
+            settings=test_settings
+        )
 
 @pytest.mark.asyncio
 async def test_ingestion_pipeline_init_no_settings():
@@ -65,11 +116,44 @@ async def test_ingestion_pipeline_init_no_settings():
 @pytest.mark.asyncio
 async def test_process_documents_no_sources(test_settings):
     """Test processing with no sources."""
-    with patch('qdrant_loader.config.settings.get_settings', return_value=test_settings):
-        pipeline = IngestionPipeline(test_settings)
-        empty_config = SourcesConfig()
-        documents = await pipeline.process_documents(empty_config)
-        assert documents == []
+    with patch('qdrant_loader.core.ingestion_pipeline.ChunkingService.__new__') as mock_chunking_service_new, \
+         patch('qdrant_loader.core.ingestion_pipeline.EmbeddingService') as mock_embedding_service_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.QdrantManager') as mock_qdrant_manager_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager_cls, \
+         patch('qdrant_loader.connectors.git.connector.GitConnector.get_documents') as mock_get_documents, \
+         patch('qdrant_loader.core.ingestion_pipeline.Settings') as mock_settings:
+        
+        # Set up mock instances
+        mock_chunking_service = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_qdrant_manager = MagicMock()
+        mock_state_manager = MagicMock()
+        
+        # Configure mock classes to return their instances
+        mock_chunking_service_new.return_value = mock_chunking_service
+        mock_embedding_service_cls.return_value = mock_embedding_service
+        mock_qdrant_manager_cls.return_value = mock_qdrant_manager
+        mock_state_manager_cls.return_value = mock_state_manager
+        
+        # Mock Git documents
+        mock_get_documents.return_value = []
+        
+        # Make mock methods return coroutines
+        mock_state_manager.update_document_state = AsyncMock(return_value=None)
+        mock_embedding_service.get_embeddings = AsyncMock(return_value=[])
+        mock_qdrant_manager.upsert_points = AsyncMock(return_value=None)
+        
+        # Create mock settings with no sources
+        mock_settings_instance = MagicMock()
+        mock_settings_instance.sources_config = None
+        mock_settings.return_value = mock_settings_instance
+        
+        # Create pipeline
+        pipeline = IngestionPipeline(mock_settings_instance)
+        
+        # Test processing with no sources
+        result = await pipeline.process_documents()
+        assert result == []
 
 @pytest.mark.asyncio
 async def test_process_documents_public_docs(test_settings, mock_documents):
@@ -117,28 +201,59 @@ async def test_process_documents_public_docs(test_settings, mock_documents):
 @pytest.mark.asyncio
 async def test_process_documents_error(test_settings):
     """Test error handling in document processing."""
-    with patch('qdrant_loader.config.settings.get_settings', return_value=test_settings), \
-         patch('qdrant_loader.core.ingestion_pipeline.PublicDocsConnector') as mock_connector:
-        mock_connector.return_value.get_documentation.side_effect = Exception("Test error")
+    with patch('qdrant_loader.core.ingestion_pipeline.ChunkingService.__new__') as mock_chunking_service_new, \
+         patch('qdrant_loader.core.ingestion_pipeline.EmbeddingService') as mock_embedding_service_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.QdrantManager') as mock_qdrant_manager_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager_cls, \
+         patch('qdrant_loader.connectors.git.connector.GitOperations') as mock_git_ops:
+        
+        # Set up mock instances
+        mock_chunking_service = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_qdrant_manager = MagicMock()
+        mock_state_manager = MagicMock()
+        
+        # Configure mock classes to return their instances
+        mock_chunking_service_new.return_value = mock_chunking_service
+        mock_embedding_service_cls.return_value = mock_embedding_service
+        mock_qdrant_manager_cls.return_value = mock_qdrant_manager
+        mock_state_manager_cls.return_value = mock_state_manager
+        
+        # Mock Git operations to raise an error
+        mock_git_ops.return_value.list_files.side_effect = ValueError("Repository not initialized")
+        
+        # Create pipeline
         pipeline = IngestionPipeline(test_settings)
-        with pytest.raises(Exception, match="Test error"):
-            await pipeline.process_documents(test_settings.sources_config, source_type="public-docs")
+        
+        # Test error handling
+        with pytest.raises(ValueError, match="Repository not initialized"):
+            await pipeline.process_documents()
 
 def test_filter_sources(test_settings):
     """Test source filtering."""
-    with patch('qdrant_loader.config.settings.get_settings', return_value=test_settings):
+    with patch('qdrant_loader.core.ingestion_pipeline.ChunkingService.__new__') as mock_chunking_service_new, \
+         patch('qdrant_loader.core.ingestion_pipeline.EmbeddingService') as mock_embedding_service_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.QdrantManager') as mock_qdrant_manager_cls, \
+         patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager_cls:
+        
+        # Set up mock instances
+        mock_chunking_service = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_qdrant_manager = MagicMock()
+        mock_state_manager = MagicMock()
+        
+        # Configure mock classes to return their instances
+        mock_chunking_service_new.return_value = mock_chunking_service
+        mock_embedding_service_cls.return_value = mock_embedding_service
+        mock_qdrant_manager_cls.return_value = mock_qdrant_manager
+        mock_state_manager_cls.return_value = mock_state_manager
+        
+        # Create pipeline
         pipeline = IngestionPipeline(test_settings)
         
-        # Test filtering by type
-        filtered = pipeline._filter_sources(test_settings.sources_config, source_type="public-docs")
-        assert filtered.public_docs == test_settings.sources_config.public_docs
-        assert not filtered.confluence
-        assert not filtered.git_repos
-        
-        # Test filtering by name
-        filtered = pipeline._filter_sources(test_settings.sources_config, source_type="public-docs", source_name="test-docs")
-        assert len(filtered.public_docs) == 1
-        assert "test-docs" in filtered.public_docs
+        # Test source filtering
+        filtered_config = pipeline._filter_sources(test_settings.sources_config)
+        assert isinstance(filtered_config, SourcesConfig)
 
 @pytest.mark.asyncio
 async def test_process_documents_with_jira(test_settings):

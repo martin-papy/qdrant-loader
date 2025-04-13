@@ -1,3 +1,5 @@
+"""Test configuration for Jira integration tests."""
+
 import pytest
 from qdrant_loader.connectors.jira.config import JiraConfig
 from qdrant_loader.connectors.jira import JiraConnector
@@ -16,6 +18,6 @@ def jira_config(test_settings):
     )
 
 @pytest.fixture
-def connector(jira_config):
+def jira_connector(jira_config):
     """Create a JiraConnector instance."""
     return JiraConnector(jira_config)

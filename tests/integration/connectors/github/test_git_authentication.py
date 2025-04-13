@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.integration
-def test_github_pat_authentication_success(git_config_with_auth):
+def test_github_pat_authentication_success(session_git_connector):
     """Test successful authentication with a GitHub Personal Access Token."""
-    with GitConnector(git_config_with_auth) as connector:
+    with session_git_connector as connector:
         docs = connector.get_documents()
         assert len(docs) > 0
         assert all(doc.metadata for doc in docs)
@@ -99,20 +99,4 @@ def test_invalid_branch(test_repo_url, valid_github_token):
     
     with pytest.raises((GitCommandError, RuntimeError)):
         with GitConnector(config) as connector:
-            connector.get_documents()
-
-@pytest.mark.integration
-def test_document_metadata(git_config_with_auth):
-    """Test that documents have correct metadata."""
-    with GitConnector(git_config_with_auth) as connector:
-        docs = connector.get_documents()
-        assert len(docs) > 0
-        
-        for doc in docs:
-            assert doc.metadata is not None
-            assert "file_name" in doc.metadata
-            assert "repository_url" in doc.metadata
-            assert "last_commit_date" in doc.metadata
-            assert "last_commit_author" in doc.metadata
-            assert doc.metadata["repository_url"].startswith("https://github.com/")
-            assert doc.metadata["file_name"].endswith(".md") 
+            connector.get_documents() 

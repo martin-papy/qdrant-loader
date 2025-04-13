@@ -1,7 +1,7 @@
 import os
 import pytest
 import logging
-from qdrant_loader.config import GitRepoConfig, GitAuthConfig
+
 from qdrant_loader.connectors.git import GitConnector
 
 # Set up logging
@@ -14,7 +14,7 @@ def is_github_actions():
     return os.getenv('GITHUB_ACTIONS') == 'true'
 
 @pytest.fixture(autouse=True)
-def disable_git_prompt():
+def setup_disable_git_prompt():
     """Disable Git credential prompts for all tests."""
     original_prompt = os.environ.get('GIT_TERMINAL_PROMPT')
     original_askpass = os.environ.get('GIT_ASKPASS')
@@ -46,13 +46,31 @@ def valid_github_token(test_settings):
     """Return the valid GitHub token from settings."""
     return test_settings.sources_config.git_repos["auth-test-repo"].token
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def git_config_with_auth(test_settings):
     """Return a GitRepoConfig with authentication from settings."""
     return test_settings.sources_config.git_repos["auth-test-repo"]
 
-@pytest.fixture(scope="function")
-def git_connector(git_config_with_auth):
+@pytest.fixture(scope="session")
+def session_git_connector(git_config_with_auth):
     """Create a GitConnector instance."""
-    logger.debug("Creating GitConnector instance")
+    logger.debug("Creating the GitConnector instance in the test session")
     return GitConnector(git_config_with_auth)
+
+@pytest.fixture(scope="function")
+def fresh_git_connector(git_config_with_auth):
+    """Create a GitConnector instance."""
+    logger.debug("Creating a fresh GitConnector instance")
+    return GitConnector(git_config_with_auth)
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_temp_dirs():
+    """Clean up any remaining temporary directories after all tests."""
+    yield  # This is where the tests run
+    # Cleanup code here will run after all tests are complete
+    import shutil
+    import tempfile
+    temp_dir = tempfile.gettempdir()
+    for item in os.listdir(temp_dir):
+        if item.startswith("qdrant-loader-"):
+            shutil.rmtree(os.path.join(temp_dir, item), ignore_errors=True)

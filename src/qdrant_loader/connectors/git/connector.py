@@ -512,31 +512,44 @@ class GitConnector:
             self.logger.error(f"Failed to process file {file_path}: {e}")
             raise
 
-    def get_documents(self) -> List[Document]:
+    async def get_documents(self) -> List[Document]:
         """Get all documents from the repository.
 
         Returns:
             List[Document]: List of documents
         """
-        documents = []
-
         try:
-            # List all files
             files = self.git_ops.list_files()
+            documents = []
 
-            # Process each file
             for file_path in files:
-                if self._should_process_file(file_path):
-                    try:
-                        document = self._process_file(file_path)
-                        documents.append(document)
-                        self.logger.info(f"Successfully processed file: {file_path}")
-                    except Exception as e:
-                        self.logger.error(f"Failed to process file {file_path}: {e}")
+                if not self._should_process_file(file_path):
+                    continue
+
+                try:
+                    content = self.git_ops.get_file_content(file_path)
+                    if not content:
                         continue
+
+                    last_commit_date = self.git_ops.get_last_commit_date(file_path)
+                    metadata = self.metadata_extractor.extract_all_metadata(file_path, content)
+
+                    document = Document(
+                        content=content,
+                        source=self.config.url,
+                        source_type="git",
+                        metadata=metadata,
+                        url=f"{self.config.url}/blob/{self.config.branch}/{file_path}",
+                        last_updated=last_commit_date
+                    )
+                    documents.append(document)
+
+                except Exception as e:
+                    logger.error(f"Failed to process file {file_path}: {str(e)}")
+                    continue
 
             return documents
 
         except Exception as e:
-            self.logger.error(f"Failed to get documents: {e}")
+            logger.error(f"Failed to get documents: {str(e)}")
             raise 

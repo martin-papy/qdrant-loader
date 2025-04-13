@@ -9,38 +9,38 @@ from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.jira.config import JiraConfig
 
 @pytest.mark.asyncio
-async def test_connector_initialization(connector):
+async def test_connector_initialization(jira_connector):
     """Test initializing the Jira connector."""
-    assert connector is not None
-    assert connector.config is not None
-    assert connector.client is not None
+    assert jira_connector is not None
+    assert jira_connector.config is not None
+    assert jira_connector.client is not None
 
 @pytest.mark.asyncio
-async def test_get_issues(connector):
+async def test_get_issues(jira_connector):
     """Test fetching issues from Jira."""
     issues = []
-    async for issue in connector.get_issues():
+    async for issue in jira_connector.get_issues():
         issues.append(issue)
     assert len(issues) > 0
 
 @pytest.mark.asyncio
-async def test_get_issues_with_filters(connector):
+async def test_get_issues_with_filters(jira_connector):
     """Test fetching issues with filters."""
     # Get issues updated in the last 7 days
     start_date = datetime.now(timezone.utc) - timedelta(days=365)  # Look back 1 year instead of 7 days
     issues = []
-    async for issue in connector.get_issues(updated_after=start_date):
+    async for issue in jira_connector.get_issues(updated_after=start_date):
         issues.append(issue)
         # Normalize timezones before comparison
         normalized_updated = issue.updated.astimezone(timezone.utc)
         assert normalized_updated >= start_date, f"Issue {issue.key} was updated at {normalized_updated} which is before start date {start_date}"
 
 @pytest.mark.asyncio
-async def test_get_issues_with_pagination(connector):
+async def test_get_issues_with_pagination(jira_connector):
     """Test fetching issues with pagination."""
     # Get first page
     issues_page1 = []
-    async for issue in connector.get_issues():
+    async for issue in jira_connector.get_issues():
         issues_page1.append(issue)
         if len(issues_page1) >= 10:
             break
@@ -49,11 +49,11 @@ async def test_get_issues_with_pagination(connector):
     assert len(issues_page1) <= 10
 
 @pytest.mark.asyncio
-async def test_get_issues_error_handling(connector):
+async def test_get_issues_error_handling(jira_connector):
     """Test error handling when fetching issues."""
     # Test with invalid project key
     invalid_config = JiraConfig(
-        base_url=connector.config.base_url,
+        base_url=jira_connector.config.base_url,
         project_key="INVALID",
         requests_per_minute=60,
         page_size=50
