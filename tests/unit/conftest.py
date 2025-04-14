@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from contextlib import ExitStack
 
 @pytest.fixture
 def mock_qdrant_manager():

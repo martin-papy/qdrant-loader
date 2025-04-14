@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import re
 from collections import deque
+from datetime import datetime
+from qdrant_loader.core.document import Document
 from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
 import asyncio
 
@@ -112,12 +114,12 @@ class PublicDocsConnector:
             logger.error("Failed to process page %s: %s", url, str(e))
             return None
     
-    async def get_documentation(self) -> List[str]:
+    async def get_documentation(self) -> List[Document]:
         """Fetch and process all documentation pages using crawling."""
         logger.info("Starting documentation fetch from %s (version: %s)", 
                    self.base_url, self.version)
         
-        content = []
+        documents = []
         # Start with the base URL
         self.url_queue.append(self.base_url)
         
@@ -136,13 +138,25 @@ class PublicDocsConnector:
                 continue
                 
             logger.debug("Processing page: %s", current_url)
-            page_content = await asyncio.to_thread(self._process_page, current_url)
+            page_content = await self._process_page(current_url)
             
             if page_content:
-                content.append(page_content)
+                doc = Document(
+                    id=current_url,
+                    content=page_content,
+                    source=self.base_url,
+                    source_type="public-docs",
+                    url=current_url,
+                    metadata={
+                        "version": self.version,
+                        "content_type": self.source_config.content_type
+                    },
+                    last_updated=datetime.now()
+                )
+                documents.append(doc)
                 logger.info("Successfully processed page: %s", current_url)
             else:
                 logger.warning("Failed to process page: %s", current_url)
                 
-        logger.info("Finished crawling. Processed %d pages.", len(content))
-        return content 
+        logger.info("Finished crawling. Processed %d pages.", len(documents))
+        return documents 

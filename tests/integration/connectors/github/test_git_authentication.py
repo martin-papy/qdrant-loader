@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.integration
-def test_github_pat_authentication_success(session_git_connector):
+@pytest.mark.asyncio
+async def test_github_pat_authentication_success(session_git_connector):
     """Test successful authentication with a GitHub Personal Access Token."""
     with session_git_connector as connector:
-        docs = connector.get_documents()
+        docs = await connector.get_documents()
         assert len(docs) > 0
         assert all(doc.metadata for doc in docs)
 

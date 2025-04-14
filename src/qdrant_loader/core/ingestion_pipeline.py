@@ -84,22 +84,26 @@ class IngestionPipeline:
             if filtered_config.public_docs:
                 for name, config in filtered_config.public_docs.items():
                     connector = PublicDocsConnector(config)
-                    public_docs = await connector.get_documentation()
+                    public_docs = await connector.get_documents()
                     documents.extend(public_docs)
 
             # Process all documents
             for doc in documents:
-                # Update document state
-                await self.state_manager.update_document_state(doc)
+                try:
+                    # Update document state
+                    await self.state_manager.update_document_state(doc)
 
-                # Chunk document
-                chunks = self.chunking_service.chunk_document(doc)
+                    # Chunk document
+                    chunks = self.chunking_service.chunk_document(doc)
 
-                # Get embeddings
-                embeddings = await self.embedding_service.get_embeddings(chunks)
+                    # Get embeddings
+                    embeddings = await self.embedding_service.get_embeddings(chunks)
 
-                # Update Qdrant
-                await self.qdrant_manager.upsert_points(chunks, embeddings)
+                    # Update Qdrant
+                    await self.qdrant_manager.upsert_points(chunks, embeddings)
+                except Exception as e:
+                    logger.error("Failed to process document", document_id=doc.id, error=str(e))
+                    raise
 
             return documents
 

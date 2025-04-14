@@ -166,7 +166,7 @@ async def test_process_documents_public_docs(test_settings, mock_documents):
         
         # Set up mocks
         mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documentation = AsyncMock(return_value=mock_documents)
+        mock_connector_instance.get_documents = AsyncMock(return_value=mock_documents)
         mock_connector.return_value = mock_connector_instance
         
         mock_chunking = MagicMock()
@@ -191,7 +191,7 @@ async def test_process_documents_public_docs(test_settings, mock_documents):
         documents = await pipeline.process_documents(test_settings.sources_config, source_type="public-docs")
 
         # Verify the mocks were called
-        mock_connector_instance.get_documentation.assert_awaited_once()
+        mock_connector_instance.get_documents.assert_awaited_once()
         mock_chunking.chunk_document.assert_called_once_with(mock_documents[0])
         mock_embedding.get_embeddings.assert_awaited_once_with([mock_documents[0]])
         mock_qdrant.upsert_points.assert_awaited_once()
@@ -280,8 +280,7 @@ async def test_process_documents_with_jira(test_settings):
          patch('qdrant_loader.core.ingestion_pipeline.StateManager') as mock_state_manager:
 
         # Set up mock services
-        mock_connector = AsyncMock()
-        mock_connector.get_documentation = AsyncMock(return_value=[Document(
+        test_doc = Document(
             id="TEST-1",
             content="Test Description",
             source="TEST",
@@ -289,7 +288,10 @@ async def test_process_documents_with_jira(test_settings):
             url="https://test.atlassian.net/browse/TEST-1",
             metadata={"key": "TEST-1", "summary": "Test Issue"},
             last_updated=datetime.now()
-        )])
+        )
+
+        mock_connector = AsyncMock()
+        mock_connector.get_documents = AsyncMock(return_value=[test_doc])
         mock_jira_connector_class.return_value = mock_connector
 
         mock_chunking = MagicMock()
@@ -321,7 +323,7 @@ async def test_process_documents_with_jira(test_settings):
         documents = await pipeline.process_documents(sources_config, source_type="jira")
 
         # Verify service calls
-        mock_connector.get_documentation.assert_awaited_once()
+        assert mock_connector.get_documents.await_count == 1
         mock_chunking.chunk_document.assert_called_once()
         mock_embedding.get_embeddings.assert_awaited_once()
         mock_qdrant.upsert_points.assert_awaited_once()
@@ -339,7 +341,7 @@ async def test_pipeline_process_empty_document(test_settings):
         
         # Set up connector mock
         mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documentation = AsyncMock(return_value=[])
+        mock_connector_instance.get_documents = AsyncMock(return_value=[])
         mock_connector.return_value = mock_connector_instance
         
         mock_chunking = MagicMock()
@@ -381,7 +383,7 @@ async def test_pipeline_process_invalid_document(test_settings):
         
         # Set up mocks to raise an error
         mock_connector_instance = AsyncMock()
-        mock_connector_instance.get_documentation = AsyncMock(return_value=[Document(
+        mock_connector_instance.get_documents = AsyncMock(return_value=[Document(
             id="invalid-doc",
             content="invalid content",
             source="test",
