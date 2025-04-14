@@ -76,8 +76,9 @@ def test_extract_content(mock_config, mock_html):
     assert "```" in content
     assert "print(\"Hello World\")" in content
 
+@pytest.mark.asyncio
 @patch("requests.Session")
-def test_process_page(mock_requests_session, mock_config, mock_html):
+async def test_process_page(mock_requests_session, mock_config, mock_html):
     # Setup mock response
     mock_response = Mock()
     mock_response.text = mock_html
@@ -85,15 +86,16 @@ def test_process_page(mock_requests_session, mock_config, mock_html):
     
     mock_requests_session.return_value.get.return_value = mock_response
     connector = PublicDocsConnector(mock_config)
-    content = connector._process_page("https://docs.example.com/page")
+    content = await connector._process_page("https://docs.example.com/page")
     
     assert content is not None
     assert "Main Content" in content
     assert "Navigation" not in content
     assert len(connector.url_queue) == 2  # Two internal links were found
 
+@pytest.mark.asyncio
 @patch("requests.Session")
-def test_get_documentation(mock_session, mock_config):
+async def test_get_documentation(mock_session, mock_config):
     # Setup mock responses for a simple site structure
     mock_responses = {
         "https://docs.example.com": Mock(
@@ -125,9 +127,9 @@ def test_get_documentation(mock_session, mock_config):
     mock_session.return_value.get.side_effect = mock_get
     
     connector = PublicDocsConnector(mock_config)
-    content = connector.get_documentation()
+    documents = await connector.get_documentation()
     
-    assert len(content) == 2
-    assert "Home Page" in content[0]
-    assert "Page 1 Content" in content[1]
+    assert len(documents) == 2
+    assert any("Home Page" in doc.content for doc in documents)
+    assert any("Page 1 Content" in doc.content for doc in documents)
     assert len(connector.visited_urls) == 2 

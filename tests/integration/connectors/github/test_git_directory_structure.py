@@ -1,10 +1,8 @@
 """
 Tests for Git directory structure handling.
 """
-import os
 import pytest
 import logging
-from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -15,14 +13,16 @@ def normalize_path(path: str) -> str:
     return path.strip("/").replace("\\", "/")
 
 @pytest.mark.integration
-def test_nested_directory_handling(session_git_connector, is_github_actions):
+@pytest.mark.asyncio
+async def test_nested_directory_handling(session_git_connector, is_github_actions):
     """Test handling of nested directories."""
     if is_github_actions:
         pytest.skip("Skipping test in GitHub Actions environment")
     with session_git_connector:
         logger.debug("Starting test_nested_directory_handling")
         # Get all documents
-        docs = list(session_git_connector.get_documents())
+        docs = await session_git_connector.get_documents()
+        assert len(docs) > 0
         
         logger.debug(f"Found {len(docs)} total documents")
         # Log each document's path
@@ -38,10 +38,16 @@ def test_nested_directory_handling(session_git_connector, is_github_actions):
         # Print directories for debugging
         logger.debug(f"Found directories: {directories}")
         
+        # Log all document paths and metadata for debugging
+        for doc in docs:
+            logger.debug(f"Document path: {doc.metadata.get('file_path', 'unknown')}")
+            logger.debug(f"Document directory: {doc.metadata.get('file_directory', 'unknown')}")
+            logger.debug(f"Document metadata: {doc.metadata}")
+        
         # Log specific directory checks
         docs_dirs = [dir for dir in directories if dir.startswith("docs")]
         src_dirs = [dir for dir in directories if dir.startswith("src")]
-        logger.debug(f"Docs directories found: {docs_dirs}  ")
+        logger.debug(f"Docs directories found: {docs_dirs}")
         logger.debug(f"Src directories found: {src_dirs}")
         
         # Verify we have documents from nested directories
@@ -169,6 +175,12 @@ def test_directory_pattern_matching(session_git_connector, is_github_actions):
         
         # Print directories for debugging
         logger.debug(f"Found directories: {directories}")
+        
+        # Log all document paths and metadata for debugging
+        for doc in docs:
+            logger.debug(f"Document path: {doc.metadata.get('file_path', 'unknown')}")
+            logger.debug(f"Document directory: {doc.metadata.get('file_directory', 'unknown')}")
+            logger.debug(f"Document metadata: {doc.metadata}")
         
         # Log specific directory checks
         has_root = any(dir == "" for dir in directories)  # For README.md
