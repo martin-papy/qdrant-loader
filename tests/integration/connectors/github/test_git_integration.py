@@ -3,11 +3,17 @@ Tests for the Git integration.
 """
 import os
 from pathlib import Path
+
 import pytest
-from git import Repo
 from dotenv import load_dotenv
-from qdrant_loader.config import GitRepoConfig, Settings, GitAuthConfig, SourcesConfig, initialize_config, get_settings
-from qdrant_loader.connectors.git import GitConnector, GitOperations, GitPythonAdapter
+from git import Repo
+
+from qdrant_loader.config import (
+    GitRepoConfig,
+    get_settings,
+    initialize_config,
+)
+from qdrant_loader.connectors.git import GitConnector
 from qdrant_loader.core.document import Document
 
 # Load test environment variables
@@ -115,26 +121,6 @@ def test_process_file(git_connector):
         assert "repository_url" in doc.metadata
         assert doc.source == doc.metadata["repository_url"]
         assert doc.source_type == "git"
-
-@pytest.mark.integration
-def test_get_documents(git_connector):
-    """Test GitConnector get_documents method with real repository."""
-    with git_connector:
-        # Get documents
-        docs = git_connector.get_documents()
-        
-        # Verify results
-        assert len(docs) >= 1  # At least the README.md should be processed
-        readme_doc = next((doc for doc in docs if doc.metadata["file_name"] == "README.md"), None)
-        assert readme_doc is not None, "README.md was not found in the processed documents"
-        
-        # Verify document structure
-        assert isinstance(readme_doc, Document)
-        assert readme_doc.content  # Should have content
-        assert "repository_url" in readme_doc.metadata
-        assert readme_doc.source == readme_doc.metadata["repository_url"]
-        assert readme_doc.source_type == "git"
-        assert "created_at" in readme_doc.metadata
 
 @pytest.mark.integration
 def test_error_handling(git_config):

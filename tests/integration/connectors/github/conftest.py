@@ -1,6 +1,7 @@
 import os
 import pytest
 import logging
+import asyncio
 
 from qdrant_loader.connectors.git import GitConnector
 
@@ -57,20 +58,34 @@ def session_git_connector(git_config_with_auth):
     logger.debug("Creating the GitConnector instance in the test session")
     return GitConnector(git_config_with_auth)
 
+@pytest.fixture(scope="session")
+async def session_documents(session_git_connector):
+    """Cache and provide documents for all tests in the session."""
+    logger.debug("Fetching documents for the test session")
+    with session_git_connector as connector:
+        docs = await connector.get_documents()
+        return docs
+
+_documents_cache = None
+@pytest.fixture(scope="session")
+def cached_documents(session_git_connector):
+    """Cache the documents for reuse across tests."""
+    global _documents_cache
+    if _documents_cache is None:
+        with session_git_connector as connector:
+            _documents_cache = asyncio.run(connector.get_documents())
+    return _documents_cache
+
 @pytest.fixture(scope="function")
 def fresh_git_connector(git_config_with_auth):
     """Create a GitConnector instance."""
     logger.debug("Creating a fresh GitConnector instance")
     return GitConnector(git_config_with_auth)
 
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_temp_dirs():
-    """Clean up any remaining temporary directories after all tests."""
-    yield  # This is where the tests run
-    # Cleanup code here will run after all tests are complete
-    import shutil
-    import tempfile
-    temp_dir = tempfile.gettempdir()
-    for item in os.listdir(temp_dir):
-        if item.startswith("qdrant-loader-"):
-            shutil.rmtree(os.path.join(temp_dir, item), ignore_errors=True)
+@pytest.fixture(scope="function")
+async def fresh_documents(fresh_git_connector):
+    """Provide fresh documents for each test function."""
+    logger.debug("Fetching fresh documents for the test function")
+    with fresh_git_connector as connector:
+        docs = await connector.get_documents()
+        return docs
