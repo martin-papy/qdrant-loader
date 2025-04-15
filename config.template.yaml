@@ -107,14 +107,13 @@ sources:
         - "*.rb"
       max_file_size: 1048576                    # Maximum file size in bytes (1MB)
       depth: 1                                  # Maximum directory depth to process
-      auth:
-        type: "none"                            # Authentication type: none, token, ssh
+      token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
 
     # Example configuration for a private GitHub repository
     private_github_repo:
       url: "${REPO_URL}"                        # Use environment variable
       branch: "main"
-      token: "${REPO_TOKEN}"                    # GitHub Personal Access Token
+      token: "${REPO_TOKEN}"                    # GitHub Personal Access Token or none
       include_paths:
         - "docs/**"
       file_types:
