@@ -4,6 +4,7 @@ Tests for Git authentication functionality.
 import logging
 
 import pytest
+import pytest_asyncio
 
 from git.exc import GitCommandError
 from pydantic import ValidationError
@@ -15,10 +16,8 @@ from qdrant_loader.connectors.git import GitConnector
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_github_pat_authentication_success(session_documents):
-    """Test successful authentication with a GitHub Personal Access Token."""
+@pytest_asyncio.fixture
+async def session_documents():
     # Await the documents from the fixture
     docs = await session_documents
     assert len(docs) > 0

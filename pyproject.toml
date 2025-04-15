@@ -68,7 +68,7 @@ python_files = [
 ]
 addopts = "--cov=src --cov-report=term-missing"
 asyncio_mode = "strict"
-asyncio_default_fixture_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "integration: mark test as integration test",
 ]
