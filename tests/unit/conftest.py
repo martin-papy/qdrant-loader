@@ -1,11 +1,21 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
+@pytest.fixture(autouse=True)
+def mock_qdrant_client():
+    """Mock the Qdrant client at the module level."""
+    with patch('qdrant_loader.core.qdrant_manager.QdrantClient') as mock_client:
+        # Setup mock client
+        mock_instance = MagicMock()
+        mock_instance.get_collections.return_value = MagicMock(collections=[])
+        mock_client.return_value = mock_instance
+        yield mock_client
+
 @pytest.fixture
-def mock_qdrant_manager():
+def mock_qdrant_manager(mock_qdrant_client):
     """Create a mock Qdrant manager with minimal required components."""
     mock_manager = MagicMock()
-    mock_manager.client = MagicMock()
+    mock_manager.client = mock_qdrant_client.return_value
     
     # Set up collections response
     collections_mock = MagicMock()
@@ -24,6 +34,8 @@ def mock_settings():
     """Create a mock settings object with required configuration."""
     mock_settings = MagicMock()
     mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
+    mock_settings.QDRANT_URL = "https://test-url"
+    mock_settings.QDRANT_API_KEY = "test-key"
     return mock_settings
 
 @pytest.fixture
@@ -46,19 +58,6 @@ def mock_pipeline():
     mock = MagicMock()
     mock.process_documents = MagicMock(return_value=None)
     return mock
-
-@pytest.fixture
-def patched_environment(mock_qdrant_manager, mock_pipeline, mock_settings):
-    """Create a context manager that patches the QdrantManager, IngestionPipeline, and settings."""
-    def _patched_environment():
-        return patch.multiple(
-            "qdrant_loader.cli.cli",
-            QdrantManager=MagicMock(return_value=mock_qdrant_manager),
-            IngestionPipeline=MagicMock(return_value=mock_pipeline),
-            get_settings=MagicMock(return_value=mock_settings)
-        )
-    
-    return _patched_environment
 
 @pytest.fixture
 def mock_init_collection():

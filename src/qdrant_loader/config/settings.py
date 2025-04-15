@@ -52,8 +52,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        env_file_encoding="utf-8",
-        extra="allow"  # Allow extra fields in environment variables
+        env_file_encoding="utf-8"
     ) 
 
     @classmethod
