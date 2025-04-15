@@ -15,6 +15,7 @@ global:
     connection_pool:
       size: 1  # Single connection for tests
       timeout: 5  # Shorter timeout for tests
+
 sources:
   public_docs:
     test-docs:
