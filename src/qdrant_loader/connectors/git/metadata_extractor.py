@@ -56,9 +56,11 @@ class GitMetadataExtractor:
 
     def _extract_file_metadata(self, file_path: str, content: str) -> Dict[str, Any]:
         """Extract metadata about the file itself."""
-        file_type = os.path.splitext(file_path)[1]
-        file_name = os.path.basename(file_path)
-        file_directory = os.path.dirname(file_path)
+        # Get relative path from repository root
+        rel_path = os.path.relpath(file_path, self.config.temp_dir)
+        file_type = os.path.splitext(rel_path)[1]
+        file_name = os.path.basename(rel_path)
+        file_directory = os.path.dirname(rel_path)
         file_encoding = self._detect_encoding(content)
         line_count = len(content.splitlines())
         word_count = len(content.split())
