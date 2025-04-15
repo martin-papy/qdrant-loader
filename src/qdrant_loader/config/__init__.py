@@ -15,8 +15,6 @@ import structlog
 import re
 
 # Import consolidated configs
-from .chunking import ChunkingConfig
-from .embedding import EmbeddingConfig
 from .global_ import GlobalConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
