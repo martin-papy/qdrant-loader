@@ -314,9 +314,7 @@ class GitConnector:
 
             # Get auth token from config
             auth_token = None
-            if self.config.auth and self.config.auth.token:
-                auth_token = self.config.auth.token
-            elif self.config.token:
+            if self.config.token:
                 auth_token = self.config.token
 
             # Clone repository
@@ -443,7 +441,6 @@ class GitConnector:
                     if rel_dir == "":
                         self.logger.info(f"Including {rel_path}: matches root pattern")
                         return True
-                    continue
                 if pattern.endswith("/**/*"):
                     dir_pattern = pattern[:-5]  # Remove /**/* suffix
                     if dir_pattern == "" or dir_pattern == "/":
@@ -459,7 +456,6 @@ class GitConnector:
                         if rel_dir == "":
                             self.logger.info(f"Including {rel_path}: matches root pattern")
                             return True
-                        continue
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
                         self.logger.info(f"Including {rel_path}: matches directory pattern {pattern}")
                         return True

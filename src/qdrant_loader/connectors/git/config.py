@@ -48,10 +48,7 @@ class GitRepoConfig(BaseModel):
         None,
         description="Authentication token for the repository"
     )
-    auth: Optional[GitAuthConfig] = Field(
-        None,
-        description="Authentication configuration"
-    )
+
     temp_dir: Optional[str] = Field(
         None,
         description="Temporary directory where the repository is cloned"

@@ -4,10 +4,11 @@ Tests for Git document handling functionality.
 import pytest
 
 @pytest.mark.integration
-def test_document_metadata(session_git_connector):
+@pytest.mark.asyncio
+async def test_document_metadata(session_git_connector):
     """Test that documents have correct metadata."""
-    with session_git_connector as connector:
-        docs = connector.get_documents()
+    with session_git_connector :
+        docs = await session_git_connector.get_documents()
         assert len(docs) > 0
         
         for doc in docs:

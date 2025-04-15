@@ -17,12 +17,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_github_pat_authentication_success(session_git_connector):
+async def test_github_pat_authentication_success(session_documents):
     """Test successful authentication with a GitHub Personal Access Token."""
-    with session_git_connector as connector:
-        docs = await connector.get_documents()
-        assert len(docs) > 0
-        assert all(doc.metadata for doc in docs)
+    # Await the documents from the fixture
+    docs = await session_documents
+    assert len(docs) > 0
+    assert all(doc.metadata for doc in docs)
 
 @pytest.mark.integration
 def test_missing_token_environment_variable(test_repo_url):
@@ -44,7 +44,8 @@ def test_missing_token_environment_variable(test_repo_url):
             raise ValueError("GitHub token is required for authentication") from e
 
 @pytest.mark.integration
-def test_invalid_token_authentication(test_repo_url):
+@pytest.mark.asyncio
+async def test_invalid_token_authentication(test_repo_url):
     """Test that the connector raises an error when an invalid token is provided."""
     config = GitRepoConfig(
         url=test_repo_url,
@@ -54,14 +55,15 @@ def test_invalid_token_authentication(test_repo_url):
         include_paths=["docs/"],
         exclude_paths=[],
         max_file_size=1024 * 1024,
-        auth=GitAuthConfig(token="invalid_token")
+        token="invalid_token"
     )
     with pytest.raises((GitCommandError, RuntimeError), match=r"(Authentication failed|Could not resolve host)"):
         with GitConnector(config) as connector:
-            connector.get_documents()
+            await connector.get_documents()
 
 @pytest.mark.integration
-def test_invalid_repository_url(valid_github_token):
+@pytest.mark.asyncio
+async def test_invalid_repository_url(valid_github_token):
     """Test authentication with an invalid repository URL."""
     if not valid_github_token:
         pytest.skip("REPO_TOKEN environment variable not set")
@@ -74,15 +76,16 @@ def test_invalid_repository_url(valid_github_token):
         include_paths=["."],
         exclude_paths=[],
         max_file_size=1024 * 1024,
-        auth=GitAuthConfig(token=valid_github_token)
+        token=valid_github_token
     )
     
     with pytest.raises((GitCommandError, RuntimeError)):
         with GitConnector(config) as connector:
-            connector.get_documents()
+            await connector.get_documents()
 
 @pytest.mark.integration
-def test_invalid_branch(test_repo_url, valid_github_token):
+@pytest.mark.asyncio
+async def test_invalid_branch(test_repo_url, valid_github_token):
     """Test authentication with an invalid branch."""
     if not valid_github_token:
         pytest.skip("REPO_TOKEN environment variable not set")
@@ -95,7 +98,7 @@ def test_invalid_branch(test_repo_url, valid_github_token):
         include_paths=["."],
         exclude_paths=[],
         max_file_size=1024 * 1024,
-        auth=GitAuthConfig(token=valid_github_token)
+        token=valid_github_token
     )
     
     with pytest.raises((GitCommandError, RuntimeError)):
