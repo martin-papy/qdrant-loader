@@ -381,27 +381,23 @@ async def test_cli_ingest_with_collection_not_found(runner, mock_qdrant_manager,
     mock_collections_response.collections = []  # Override to have no collections
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # First patch the QdrantClient at the module level
-    with patch('qdrant_loader.core.qdrant_manager.QdrantClient') as mock_client, \
-         patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager), \
-         patch("qdrant_loader.cli.cli.IngestionPipeline") as mock_pipeline_cls, \
-         patch("qdrant_loader.config.get_settings") as mock_get_settings:
-        # Setup mock client
-        mock_client_instance = MagicMock()
-        mock_client_instance.get_collections.return_value = mock_collections_response
-        mock_client.return_value = mock_client_instance
-        
-        # Mock the settings
-        mock_settings = MagicMock()
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        mock_get_settings.return_value = mock_settings
-        
-        # Setup mock pipeline
-        mock_pipeline = MagicMock()
-        mock_pipeline.process_documents = AsyncMock()
-        mock_pipeline_cls.return_value = mock_pipeline
+    # Mock settings for this test
+    mock_settings = MagicMock()
+    mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
+    
+    # Setup mock pipeline for this test
+    mock_pipeline = MagicMock()
+    mock_pipeline.process_documents = AsyncMock()
+    
+    # Patch all dependencies with proper cleanup
+    with patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager), \
+         patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline), \
+         patch("qdrant_loader.config.get_settings", return_value=mock_settings):
         
         result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
         assert result.exit_code == 1, f"CLI failed with output: {result.output}"
         assert "collection_not_found" in result.output
-        assert "collection=qdrant-loader-test" in result.output 
+        assert '"collection": "qdrant-loader-test"' in result.output
+        
+        # Verify mocks were called as expected
+        mock_qdrant_manager.client.get_collections.assert_called_once() 
