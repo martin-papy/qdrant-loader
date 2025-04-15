@@ -15,11 +15,6 @@ from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
 class SourcesConfig(BaseModel):
     """Configuration for all available data sources."""
     
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        extra="forbid"
-    )
-    
     public_docs: Dict[str, PublicDocsSourceConfig] = Field(
         default_factory=dict,
         description="Public documentation sources"

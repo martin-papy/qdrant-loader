@@ -88,16 +88,14 @@ async def test_cli_init_with_force(runner, mock_init_collection):
     mock_init_collection.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_init_with_config_path(runner, mock_init_collection, patched_environment):
+async def test_cli_init_with_config_path(runner, mock_init_collection):
     """Test the init command with config path."""
     # Setup mock init_collection
     mock_init_collection.return_value = None
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['init', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_init_collection.assert_called_once()
+    result = await runner.async_invoke(cli, ['init', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_init_collection.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_init_with_invalid_config(runner):
@@ -164,7 +162,7 @@ async def test_cli_ingest_with_source_type_and_name(runner, mock_pipeline, mock_
 async def test_cli_ingest_without_settings(runner):
     """Test the ingest command without settings."""
     with patch('qdrant_loader.cli.cli.get_settings', return_value=None):
-        result = await runner.async_invoke(cli, ['ingest'])
+        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
         assert result.exit_code == 1
         if is_github_actions():
             assert "No config file found" in result.output
@@ -186,83 +184,74 @@ async def test_cli_ingest_with_source_without_type(runner):
     assert "Source name provided without source type" in result.output
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_processing_error(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_processing_error(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test the ingest command with processing error."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
     # Setup mock pipeline with error
     mock_pipeline.process_documents = AsyncMock(side_effect=Exception("Processing failed"))
-    
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "Failed to process documents: Processing failed" in result.output
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+
+    result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 1, f"CLI failed with output: {result.output}"
+    assert "Failed to process documents: Processing failed" in result.output
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_nonexistent_source(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_nonexistent_source(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test the ingest command with nonexistent source."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
     # Setup mock pipeline with error
     mock_pipeline.process_documents = AsyncMock(side_effect=ValueError("Source not found"))
-    
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'nonexistent', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "Failed to process documents: Source not found" in result.output
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+   
+
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'confluence', '--source', 'nonexistent', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 1, f"CLI failed with output: {result.output}"
+    assert "Failed to process documents: Source not found" in result.output
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_all_source_types(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_all_source_types(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test the ingest command with all source types."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_verbose(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_verbose(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test the ingest command with verbose flag."""
     # Setup mock QdrantManager
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-    
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--verbose', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response  
+
+    result = await runner.async_invoke(cli, ['ingest', '--verbose', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_log_level(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_log_level(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test that the ingest command works with different log levels."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--log-level', 'DEBUG', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--log-level', 'DEBUG', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_init_without_settings(runner):
     """Test that the init command fails when settings are not available."""
     with patch('qdrant_loader.cli.cli.get_settings', return_value=None):
-        result = await runner.async_invoke(cli, ['init'])
+        result = await runner.async_invoke(cli, ['init', '--config', "tests/config.test.yaml"])
         assert result.exit_code == 1
         if is_github_actions():
             assert "No config file found" in result.output
@@ -278,7 +267,7 @@ async def test_cli_init_with_error(runner, mock_init_collection):
     assert "Failed to initialize collection" in result.output
 
 @pytest.mark.asyncio
-async def test_cli_ingest_pipeline_error(runner, mock_pipeline, mock_qdrant_manager, patched_environment):
+async def test_cli_ingest_pipeline_error(runner, mock_pipeline, mock_qdrant_manager):
     """Test that the ingest command handles pipeline errors."""
     # Setup mock QdrantManager
     mock_collections_response = MagicMock()
@@ -290,11 +279,9 @@ async def test_cli_ingest_pipeline_error(runner, mock_pipeline, mock_qdrant_mana
     # Setup mock pipeline with error
     mock_pipeline.process_documents = AsyncMock(side_effect=Exception("Pipeline error"))
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Failed to process documents: Pipeline error" in result.output
+    result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 1
+    assert "Failed to process documents: Pipeline error" in result.output
 
 @pytest.mark.asyncio
 async def test_cli_config_without_settings(runner):
@@ -319,43 +306,37 @@ def test_cli_log_level_validation(runner):
     assert "Invalid value for '--log-level'" in result.output
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_jira_source_type(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_jira_source_type(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test that the ingest command works with JIRA source type."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--source-type', 'jira', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'jira', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_jira_source_type_and_name(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_jira_source_type_and_name(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test that the ingest command works with JIRA source type and name."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--source-type', 'jira', '--source', 'project1', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--source-type', 'jira', '--source', 'project1', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_explicit_config(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, patched_environment):
+async def test_cli_ingest_with_explicit_config(runner, mock_pipeline, mock_qdrant_manager, mock_collections_response):
     """Test that the ingest command works with explicit config path."""
     # Setup mock QdrantManager
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 0, f"CLI failed with output: {result.output}"
+    mock_pipeline.process_documents.assert_awaited_once()
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_cli_init_with_explicit_config(runner, mock_init_collection):
@@ -380,7 +361,7 @@ async def test_cli_init_with_connection_error(runner, mock_init_collection):
     assert "Failed to initialize collection" in result.output
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_connection_error(runner, mock_qdrant_manager, patched_environment):
+async def test_cli_ingest_with_connection_error(runner, mock_qdrant_manager):
     """Test that the ingest command handles connection errors."""
     # Import the QdrantConnectionError class
     from qdrant_loader.core.qdrant_manager import QdrantConnectionError
@@ -388,24 +369,39 @@ async def test_cli_ingest_with_connection_error(runner, mock_qdrant_manager, pat
     # Setup mock QdrantManager with connection error
     mock_qdrant_manager.client.get_collections = MagicMock(side_effect=QdrantConnectionError("Connection refused"))
     
-    # Use the patched environment
-    with patched_environment():
-        result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "Failed to connect to Qdrant: Connection refused" in result.output
-        mock_qdrant_manager.client.get_collections.assert_called_once()
+    result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
+    assert result.exit_code == 1, f"CLI failed with output: {result.output}"
+    assert "Failed to connect to Qdrant: Connection refused" in result.output
+    mock_qdrant_manager.client.get_collections.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_collection_not_found(runner, mock_qdrant_manager, patched_environment):
+async def test_cli_ingest_with_collection_not_found(runner, mock_qdrant_manager, mock_collections_response):
     """Test that the ingest command handles collection not found errors."""
     # Setup mock QdrantManager with empty collections
-    mock_collections_response = MagicMock()
-    mock_collections_response.collections = []
+    mock_collections_response.collections = []  # Override to have no collections
     mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Use the patched environment
-    with patched_environment():
+    
+    # First patch the QdrantClient at the module level
+    with patch('qdrant_loader.core.qdrant_manager.QdrantClient') as mock_client, \
+         patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager), \
+         patch("qdrant_loader.cli.cli.IngestionPipeline") as mock_pipeline_cls, \
+         patch("qdrant_loader.config.get_settings") as mock_get_settings:
+        # Setup mock client
+        mock_client_instance = MagicMock()
+        mock_client_instance.get_collections.return_value = mock_collections_response
+        mock_client.return_value = mock_client_instance
+        
+        # Mock the settings
+        mock_settings = MagicMock()
+        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
+        mock_get_settings.return_value = mock_settings
+        
+        # Setup mock pipeline
+        mock_pipeline = MagicMock()
+        mock_pipeline.process_documents = AsyncMock()
+        mock_pipeline_cls.return_value = mock_pipeline
+        
         result = await runner.async_invoke(cli, ['ingest', '--config', "tests/config.test.yaml"])
         assert result.exit_code == 1, f"CLI failed with output: {result.output}"
         assert "collection_not_found" in result.output
-        assert '"collection": "qdrant-loader-test"' in result.output 
+        assert "collection=qdrant-loader-test" in result.output 

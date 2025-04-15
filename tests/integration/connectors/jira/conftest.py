@@ -14,7 +14,9 @@ def jira_config(test_settings):
         requests_per_minute=jira_settings.requests_per_minute,
         page_size=jira_settings.page_size,
         process_attachments=True,
-        track_last_sync=True
+        track_last_sync=True,
+        api_token=jira_settings.token,
+        email=jira_settings.email
     )
 
 @pytest.fixture

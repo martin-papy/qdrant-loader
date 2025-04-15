@@ -2,29 +2,12 @@
 
 import os
 import pytest
+from qdrant_loader.core.document import Document
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
-from qdrant_loader.core.document import Document
-
-@pytest.fixture
-def confluence_config():
-    """Create a Confluence configuration for testing."""
-    return ConfluenceSpaceConfig(
-        url="https://theorcs.atlassian.net/wiki",
-        space_key="THEORCS",
-        content_types=["page", "blogpost"],
-        include_labels=[],
-        exclude_labels=[],
-        token=os.getenv("CONFLUENCE_TOKEN"),
-        email=os.getenv("CONFLUENCE_EMAIL")
-    )
-
-@pytest.fixture
-def confluence_connector(confluence_config):
-    """Create a Confluence connector for testing."""
-    return ConfluenceConnector(confluence_config)
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_connector_initialization(confluence_config):
     """Test that the connector initializes correctly."""
     connector = ConfluenceConnector(confluence_config)
@@ -32,7 +15,8 @@ async def test_connector_initialization(confluence_config):
     assert connector.config == confluence_config
 
 @pytest.mark.integration
-def test_missing_token_environment_variable(confluence_config):
+@pytest.mark.asyncio
+async def test_missing_token_environment_variable(confluence_config):
     """Test that the connector raises an error when token is missing."""
     # Remove token from environment
     token = os.environ.pop("CONFLUENCE_TOKEN", None)
@@ -45,7 +29,8 @@ def test_missing_token_environment_variable(confluence_config):
             os.environ["CONFLUENCE_TOKEN"] = token
 
 @pytest.mark.integration
-def test_missing_email_environment_variable(confluence_config):
+@pytest.mark.asyncio
+async def test_missing_email_environment_variable(confluence_config):
     """Test that the connector raises an error when email is missing."""
     # Remove email from environment
     email = os.environ.pop("CONFLUENCE_EMAIL", None)
@@ -58,6 +43,7 @@ def test_missing_email_environment_variable(confluence_config):
             os.environ["CONFLUENCE_EMAIL"] = email
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_make_request(confluence_connector):
     """Test that the connector makes authenticated requests correctly."""
     # Test with a simple endpoint that should always exist
@@ -65,6 +51,7 @@ async def test_make_request(confluence_connector):
     assert isinstance(response, dict)
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_space_content(confluence_connector):
     """Test fetching content from a real Confluence space."""
     response = await confluence_connector._get_space_content()
@@ -72,6 +59,7 @@ async def test_get_space_content(confluence_connector):
     assert "results" in response
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_should_process_content(confluence_connector):
     """Test content filtering based on labels with real content."""
     # Get some real content from the space
@@ -83,6 +71,7 @@ async def test_should_process_content(confluence_connector):
     assert confluence_connector._should_process_content(content) in [True, False]
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_get_documents(confluence_connector):
     """Test fetching and processing documents from real Confluence space."""
     # Get only one page of content
@@ -90,6 +79,7 @@ async def test_get_documents(confluence_connector):
     assert isinstance(response, dict)
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_error_handling(confluence_config):
     """Test error handling with invalid Confluence configuration."""
     invalid_config = ConfluenceSpaceConfig(
@@ -107,6 +97,7 @@ async def test_error_handling(confluence_config):
         await connector._make_request("GET", "space")
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_pagination(confluence_connector):
     """Test pagination with real Confluence API."""
     # Test with very small page sizes to verify pagination
@@ -127,6 +118,7 @@ async def test_pagination(confluence_connector):
     assert len(documents_2) >= len(documents_1)
 
 @pytest.mark.integration
+@pytest.mark.asyncio
 async def test_content_processing(confluence_connector):
     """Test processing of real Confluence content."""
     # Get some real content

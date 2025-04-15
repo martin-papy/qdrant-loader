@@ -5,7 +5,7 @@ in the application. These serve as contracts that concrete configuration classes
 must implement.
 """
 
-from typing import Protocol, Any, Dict, Optional
+from typing import Protocol, Any, Dict
 from pydantic import BaseModel
 
 
@@ -51,7 +51,7 @@ class BaseConfig(BaseModel):
     class Config:
         """Pydantic configuration."""
         arbitrary_types_allowed = True
-        extra = "forbid"
+        extra = "allow"
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert the configuration to a dictionary.
