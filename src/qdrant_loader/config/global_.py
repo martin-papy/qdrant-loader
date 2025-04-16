@@ -16,11 +16,14 @@ from qdrant_loader.config.sources import SourcesConfig
 
 class LoggingConfig(BaseConfig):
     """Configuration for logging."""
-    level: str = Field(default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+
+    level: str = Field(
+        default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
     format: str = Field(default="json", description="Log format (json or text)")
     file: str = Field(default="qdrant-loader.log", description="Path to log file")
 
-    @field_validator('level')
+    @field_validator("level")
     def validate_level(cls, v: str, info: ValidationInfo) -> str:
         """Validate logging level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -28,7 +31,7 @@ class LoggingConfig(BaseConfig):
             raise ValueError(f"Invalid logging level. Must be one of: {', '.join(valid_levels)}")
         return v.upper()
 
-    @field_validator('format')
+    @field_validator("format")
     def validate_format(cls, v: str, info: ValidationInfo) -> str:
         """Validate log format."""
         valid_formats = ["json", "text"]
@@ -39,11 +42,14 @@ class LoggingConfig(BaseConfig):
 
 class GlobalConfig(BaseConfig):
     """Global configuration settings."""
-    
+
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
-    state_management: StateManagementConfig = Field(default_factory=StateManagementConfig)
+    state_management: StateManagementConfig = Field(
+        default_factory=lambda: StateManagementConfig(database_path=":memory:"),
+        description="State management configuration",
+    )
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
 
     def to_dict(self) -> GlobalConfigDict:
@@ -51,9 +57,9 @@ class GlobalConfig(BaseConfig):
         return {
             "chunking": {
                 "chunk_size": self.chunking.chunk_size,
-                "chunk_overlap": self.chunking.chunk_overlap
+                "chunk_overlap": self.chunking.chunk_overlap,
             },
             "embedding": self.embedding.model_dump(),
             "logging": self.logging.model_dump(),
-            "sources": self.sources.to_dict()
-        } 
+            "sources": self.sources.to_dict(),
+        }

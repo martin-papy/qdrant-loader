@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from pydantic import HttpUrl
 import pytest
 
 from qdrant_loader.config import PublicDocsSourceConfig, SelectorsConfig
@@ -9,15 +10,16 @@ from qdrant_loader.connectors.public_docs import PublicDocsConnector
 @pytest.fixture
 def mock_config():
     return PublicDocsSourceConfig(
-        base_url="https://docs.example.com",
+        base_url=HttpUrl("https://docs.example.com"),
         version="1.0",
         content_type="html",
         selectors=SelectorsConfig(
             content="article.main-content",
             remove=["nav", "header", "footer", ".sidebar"],
-            code_blocks="pre code"
-        )
+            code_blocks="pre code",
+        ),
     )
+
 
 @pytest.fixture
 def mock_html():
@@ -39,42 +41,46 @@ def mock_html():
     </html>
     """
 
+
 def test_should_process_url(mock_config):
     connector = PublicDocsConnector(mock_config)
-    
+
     # Test base URL
     assert connector._should_process_url("https://docs.example.com/page") is True
-    
+
     # Test excluded path
     mock_config.exclude_paths = ["/page1"]
     assert connector._should_process_url("https://docs.example.com/page1") is False
-    
+
     # Test path pattern
     mock_config.path_pattern = "/docs/{version}/.*"
     assert connector._should_process_url("https://docs.example.com/docs/1.0/page") is True
     assert connector._should_process_url("https://docs.example.com/other/page") is False
-    
+
     # Test external URL
     assert connector._should_process_url("https://other.com/page") is False
+
 
 def test_extract_links(mock_config, mock_html):
     connector = PublicDocsConnector(mock_config)
     links = connector._extract_links(mock_html, "https://docs.example.com")
-    
+
     assert len(links) == 2
     assert "https://docs.example.com/page1" in links
     assert "https://docs.example.com/page2" in links
     assert "https://external.com" not in links
 
+
 def test_extract_content(mock_config, mock_html):
     connector = PublicDocsConnector(mock_config)
     content = connector._extract_content(mock_html)
-    
+
     assert "Main Content" in content
     assert "Navigation" not in content
     assert "Footer" not in content
     assert "```" in content
-    assert "print(\"Hello World\")" in content
+    assert 'print("Hello World")' in content
+
 
 @pytest.mark.asyncio
 @patch("requests.Session")
@@ -83,15 +89,16 @@ async def test_process_page(mock_requests_session, mock_config, mock_html):
     mock_response = Mock()
     mock_response.text = mock_html
     mock_response.raise_for_status.return_value = None
-    
+
     mock_requests_session.return_value.get.return_value = mock_response
     connector = PublicDocsConnector(mock_config)
     content = await connector._process_page("https://docs.example.com/page")
-    
+
     assert content is not None
     assert "Main Content" in content
     assert "Navigation" not in content
     assert len(connector.url_queue) == 2  # Two internal links were found
+
 
 @pytest.mark.asyncio
 @patch("requests.Session")
@@ -107,7 +114,7 @@ async def test_get_documentation(mock_session, mock_config):
                 </body>
             </html>
             """,
-            raise_for_status=lambda: None
+            raise_for_status=lambda: None,
         ),
         "https://docs.example.com/page1": Mock(
             text="""
@@ -117,19 +124,19 @@ async def test_get_documentation(mock_session, mock_config):
                 </body>
             </html>
             """,
-            raise_for_status=lambda: None
-        )
+            raise_for_status=lambda: None,
+        ),
     }
-    
+
     def mock_get(url, *args, **kwargs):
         return mock_responses[url]
-    
+
     mock_session.return_value.get.side_effect = mock_get
-    
+
     connector = PublicDocsConnector(mock_config)
     documents = await connector.get_documentation()
-    
+
     assert len(documents) == 2
     assert any("Home Page" in doc.content for doc in documents)
     assert any("Page 1 Content" in doc.content for doc in documents)
-    assert len(connector.visited_urls) == 2 
+    assert len(connector.visited_urls) == 2

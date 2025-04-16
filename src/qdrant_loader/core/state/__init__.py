@@ -18,4 +18,4 @@ __all__ = [
     "StateError",
     "DatabaseError",
     "MigrationError",
-] 
+]

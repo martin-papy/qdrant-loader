@@ -24,7 +24,7 @@ aiosqlite>=0.19.0
 greenlet>=3.0.0
 
 # Git dependencies
-GitPython>=3.1.0
+GitPython>=3.1.40
 
 # Jira dependencies
 atlassian-python-api>=3.41.0 

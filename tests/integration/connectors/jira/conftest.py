@@ -4,6 +4,7 @@ import pytest
 from qdrant_loader.connectors.jira.config import JiraConfig
 from qdrant_loader.connectors.jira import JiraConnector
 
+
 @pytest.fixture
 def jira_config(test_settings):
     """Create a JiraConfig instance from test settings."""
@@ -16,8 +17,9 @@ def jira_config(test_settings):
         process_attachments=True,
         track_last_sync=True,
         api_token=jira_settings.token,
-        email=jira_settings.email
+        email=jira_settings.email,
     )
+
 
 @pytest.fixture
 def jira_connector(jira_config):

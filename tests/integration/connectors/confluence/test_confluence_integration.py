@@ -6,6 +6,7 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_connector_initialization(confluence_config):
@@ -13,6 +14,7 @@ async def test_connector_initialization(confluence_config):
     connector = ConfluenceConnector(confluence_config)
     assert connector is not None
     assert connector.config == confluence_config
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -28,6 +30,7 @@ async def test_missing_token_environment_variable(confluence_config):
         if token:
             os.environ["CONFLUENCE_TOKEN"] = token
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_missing_email_environment_variable(confluence_config):
@@ -42,6 +45,7 @@ async def test_missing_email_environment_variable(confluence_config):
         if email:
             os.environ["CONFLUENCE_EMAIL"] = email
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_make_request(confluence_connector):
@@ -49,6 +53,7 @@ async def test_make_request(confluence_connector):
     # Test with a simple endpoint that should always exist
     response = await confluence_connector._make_request("GET", "space")
     assert isinstance(response, dict)
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -58,6 +63,7 @@ async def test_get_space_content(confluence_connector):
     assert isinstance(response, dict)
     assert "results" in response
 
+
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_should_process_content(confluence_connector):
@@ -66,9 +72,10 @@ async def test_should_process_content(confluence_connector):
     response = await confluence_connector._get_space_content()
     if not response["results"]:
         pytest.skip("No content found in space to test with")
-        
+
     content = response["results"][0]
     assert confluence_connector._should_process_content(content) in [True, False]
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -77,6 +84,7 @@ async def test_get_documents(confluence_connector):
     # Get only one page of content
     response = await confluence_connector._get_space_content(limit=1)
     assert isinstance(response, dict)
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -89,12 +97,13 @@ async def test_error_handling(confluence_config):
         include_labels=confluence_config.include_labels,
         exclude_labels=confluence_config.exclude_labels,
         token=confluence_config.token,
-        email=confluence_config.email
+        email=confluence_config.email,
     )
-    
+
     with pytest.raises(Exception):
         connector = ConfluenceConnector(invalid_config)
         await connector._make_request("GET", "space")
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -103,19 +112,20 @@ async def test_pagination(confluence_connector):
     # Test with very small page sizes to verify pagination
     page_size_1 = 1
     page_size_2 = 2
-    
+
     # Get documents with page size 1
     documents_1 = []
     response = await confluence_connector._get_space_content(start=0, limit=page_size_1)
     results = response.get("results", [])
-    
+
     # Get documents with page size 2
     documents_2 = []
     response = await confluence_connector._get_space_content(start=0, limit=page_size_2)
     results = response.get("results", [])
-    
+
     # Verify that we got more or equal documents with larger page size
     assert len(documents_2) >= len(documents_1)
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
@@ -125,8 +135,8 @@ async def test_content_processing(confluence_connector):
     response = await confluence_connector._get_space_content()
     if not response["results"]:
         pytest.skip("No content found in space to test with")
-        
+
     content = response["results"][0]
     document = confluence_connector._process_content(content)
     assert document is not None
-    assert isinstance(document, Document) 
+    assert isinstance(document, Document)

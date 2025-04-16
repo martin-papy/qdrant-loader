@@ -18,9 +18,7 @@ def test_valid_config(temp_db_dir):
     """Test valid state management configuration."""
     db_path = str(Path(temp_db_dir) / "test.db")
     config = StateManagementConfig(
-        database_path=db_path,
-        table_prefix="test_",
-        connection_pool={"size": 5, "timeout": 30}
+        database_path=db_path, table_prefix="test_", connection_pool={"size": 5, "timeout": 30}
     )
     assert config.database_path == db_path
     assert config.table_prefix == "test_"
@@ -55,23 +53,25 @@ def test_invalid_database_path():
 def test_invalid_table_prefix(temp_db_dir):
     """Test invalid table prefix validation."""
     db_path = str(Path(temp_db_dir) / "test.db")
-    
+
     with pytest.raises(ValueError, match="Table prefix cannot be empty"):
         StateManagementConfig(database_path=db_path, table_prefix="")
-    
-    with pytest.raises(ValueError, match="Table prefix can only contain alphanumeric characters and underscores"):
+
+    with pytest.raises(
+        ValueError, match="Table prefix can only contain alphanumeric characters and underscores"
+    ):
         StateManagementConfig(database_path=db_path, table_prefix="test-prefix")
 
 
 def test_invalid_connection_pool(temp_db_dir):
     """Test invalid connection pool validation."""
     db_path = str(Path(temp_db_dir) / "test.db")
-    
+
     with pytest.raises(ValueError, match="Connection pool must specify 'size'"):
         StateManagementConfig(database_path=db_path, connection_pool={"timeout": 30})
-    
+
     with pytest.raises(ValueError, match="Connection pool size must be a positive integer"):
         StateManagementConfig(database_path=db_path, connection_pool={"size": 0, "timeout": 30})
-    
+
     with pytest.raises(ValueError, match="Connection pool must specify 'timeout'"):
         StateManagementConfig(database_path=db_path, connection_pool={"size": 5})

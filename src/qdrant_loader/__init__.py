@@ -7,10 +7,4 @@ from qdrant_loader.core.embedding_service import EmbeddingService
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core import Document, ChunkingStrategy
 
-__all__ = [
-    'Settings',
-    'EmbeddingService',
-    'QdrantManager',
-    'Document',
-    'ChunkingStrategy'
-]
+__all__ = ["Settings", "EmbeddingService", "QdrantManager", "Document", "ChunkingStrategy"]
