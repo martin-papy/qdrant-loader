@@ -386,17 +386,14 @@ async def test_cli_ingest_with_log_level(
 
 @pytest.mark.asyncio
 async def test_cli_init_without_settings(runner):
-    """Test that the init command fails when settings are not available."""
+    """Test the init command without settings."""
     with (
         patch("qdrant_loader.cli.cli.get_settings", return_value=None),
         patch("qdrant_loader.cli.cli._load_config", return_value=None),
     ):
         result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
         assert result.exit_code == 1
-        if is_github_actions():
-            assert "No config file found" in result.output
-        else:
-            assert "Settings not available" in result.output
+        assert "Settings not available" in result.output
 
 
 @pytest.mark.asyncio
