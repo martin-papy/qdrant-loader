@@ -79,16 +79,17 @@ def get_global_config() -> GlobalConfig:
     return get_settings().global_config
 
 
-def initialize_config(yaml_path: Path) -> None:
+def initialize_config(yaml_path: Path, skip_validation: bool = False) -> None:
     """Initialize the global configuration.
 
     Args:
         yaml_path: Path to the YAML configuration file.
+        skip_validation: If True, skip directory validation and creation.
     """
     global _global_settings
     try:
         logger.debug("Initializing configuration", yaml_path=str(yaml_path))
-        _global_settings = Settings.from_yaml(yaml_path)
+        _global_settings = Settings.from_yaml(yaml_path, skip_validation=skip_validation)
         logger.debug("Successfully initialized configuration")
     except Exception as e:
         logger.error("Failed to initialize configuration", error=str(e), yaml_path=str(yaml_path))
@@ -207,11 +208,12 @@ class Settings(BaseSettings):
         return data
 
     @classmethod
-    def from_yaml(cls, config_path: Path) -> "Settings":
+    def from_yaml(cls, config_path: Path, skip_validation: bool = False) -> "Settings":
         """Load configuration from a YAML file.
 
         Args:
             config_path: Path to the YAML configuration file.
+            skip_validation: If True, skip directory validation and creation.
 
         Returns:
             Settings: Loaded configuration.
@@ -226,7 +228,9 @@ class Settings(BaseSettings):
             config_data = cls._substitute_env_vars(config_data)
 
             # Create configuration instances
-            global_config = GlobalConfig(**config_data.get("global", {}))
+            global_config = GlobalConfig(
+                **config_data.get("global", {}), skip_validation=skip_validation
+            )
             sources_config = SourcesConfig(**config_data.get("sources", {}))
 
             # Create settings instance with environment variables and config objects
@@ -237,7 +241,7 @@ class Settings(BaseSettings):
                 "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
                 "QDRANT_COLLECTION_NAME": os.getenv("QDRANT_COLLECTION_NAME"),
                 "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-                "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
+                "STATE_DB_PATH": ":memory:" if skip_validation else os.getenv("STATE_DB_PATH"),
                 "REPO_TOKEN": os.getenv("REPO_TOKEN"),
                 "REPO_URL": os.getenv("REPO_URL"),
                 "CONFLUENCE_URL": os.getenv("CONFLUENCE_URL"),
@@ -251,7 +255,9 @@ class Settings(BaseSettings):
             }
 
             logger.debug("Creating Settings instance")
-            return cls(**settings_data)
+            settings = cls(**settings_data)
+
+            return settings
 
         except yaml.YAMLError as e:
             logger.error("Failed to parse YAML configuration", error=str(e))

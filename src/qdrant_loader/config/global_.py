@@ -52,6 +52,18 @@ class GlobalConfig(BaseConfig):
     )
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
 
+    def __init__(self, **data):
+        """Initialize global configuration."""
+        # If skip_validation is True, use in-memory database for state management
+        skip_validation = data.pop("skip_validation", False)
+        if skip_validation:
+            data["state_management"] = {
+                "database_path": ":memory:",
+                "table_prefix": "qdrant_loader_",
+                "connection_pool": {"size": 5, "timeout": 30},
+            }
+        super().__init__(**data)
+
     def to_dict(self) -> GlobalConfigDict:
         """Convert the configuration to a dictionary."""
         return {
