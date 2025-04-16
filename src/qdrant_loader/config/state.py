@@ -38,7 +38,8 @@ class StateManagementConfig(BaseConfig):
         if v == ":memory:":
             return v
 
-        path = Path(v)
+        # Expand the path first
+        path = Path(os.path.expanduser(v))
         if not path.parent.exists():
             raise DatabaseDirectoryError(path.parent)
         if not path.parent.is_dir():

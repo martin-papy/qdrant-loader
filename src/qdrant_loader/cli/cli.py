@@ -5,6 +5,7 @@ import importlib.metadata
 import logging
 from pathlib import Path
 from typing import Optional
+import os
 
 import click
 import structlog
@@ -85,15 +86,21 @@ def _load_config(config_path: Optional[Path] = None, skip_validation: bool = Fal
         if skip_validation:
             # For config display, we don't need to create the directory
             return
-        if not _create_database_directory(e.path):
+
+        # Get the path from the error and expand it properly
+        path = Path(os.path.expanduser(str(e.path)))
+        if not _create_database_directory(path):
             raise ClickException("Database directory creation declined. Exiting.")
-        # Retry loading config after directory creation
-        _load_config(config_path)
+
+        # No need to retry _load_config since the directory is now created
+        # Just initialize the config with the expanded path
+        if config_path is not None:
+            initialize_config(config_path, skip_validation=skip_validation)
+        else:
+            initialize_config(Path("config.yaml"), skip_validation=skip_validation)
+
     except ClickException:
         raise
-    except Exception as e:
-        logger.error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)}")
 
 
 def _check_settings():
@@ -250,6 +257,10 @@ def config(log_level: str, config: Optional[Path]):
 
         # Create a temporary Settings instance for validation
         settings = Settings.from_yaml(config_path, skip_validation=True)
+
+        # Get the expanded database path
+        expanded_path = os.path.expanduser(settings.STATE_DB_PATH)
+        settings.global_config.state_management.database_path = expanded_path
 
         echo("Current Configuration:")
         echo(settings.model_dump_json(indent=2))
