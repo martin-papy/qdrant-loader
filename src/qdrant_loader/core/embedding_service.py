@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Sequence
+from collections.abc import Sequence
 
 import structlog
 import tiktoken
@@ -27,6 +27,7 @@ class EmbeddingService:
         )
         self.model = settings.global_config.embedding.model
         self.tokenizer = settings.global_config.embedding.tokenizer
+        self.batch_size = settings.global_config.embedding.batch_size
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":
