@@ -1,10 +1,10 @@
 """Tests for Jira models."""
 
-import pytest
 from datetime import datetime, timezone
-from pydantic import ValidationError
 
-from qdrant_loader.connectors.jira.models import JiraUser, JiraAttachment, JiraIssue
+from pydantic import HttpUrl
+
+from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser
 
 
 def test_jira_user():
@@ -25,6 +25,7 @@ def test_jira_user_optional_email():
     user = JiraUser(
         account_id="123",
         display_name="Test User",
+        email_address=None,
     )
 
     assert user.account_id == "123"
@@ -39,7 +40,7 @@ def test_jira_attachment():
         filename="test.txt",
         size=1024,
         mime_type="text/plain",
-        content_url="https://test.atlassian.net/rest/api/2/attachment/123",
+        content_url=HttpUrl("https://test.atlassian.net/rest/api/2/attachment/123"),
         created=datetime(2024, 1, 1, tzinfo=timezone.utc),
         author=JiraUser(
             account_id="456",
@@ -112,15 +113,20 @@ def test_jira_issue_optional_fields():
         id="123",
         key="TEST-1",
         summary="Test Issue",
+        description=None,
         issue_type="Task",
         status="To Do",
+        priority=None,
         project_key="TEST",
         created=datetime(2024, 1, 1, tzinfo=timezone.utc),
         updated=datetime(2024, 1, 2, tzinfo=timezone.utc),
         reporter=JiraUser(
             account_id="456",
             display_name="Reporter",
+            email_address=None,
         ),
+        assignee=None,
+        parent_key=None,
     )
 
     assert issue.description is None
@@ -130,4 +136,4 @@ def test_jira_issue_optional_fields():
     assert issue.attachments == []
     assert issue.parent_key is None
     assert issue.subtasks == []
-    assert issue.linked_issues == [] 
+    assert issue.linked_issues == []
