@@ -1,5 +1,6 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
 
 
 @pytest.fixture(autouse=True)
@@ -13,7 +14,7 @@ def mock_qdrant_client():
         yield mock_client
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_qdrant_manager(mock_qdrant_client):
     """Create a mock Qdrant manager with minimal required components."""
     mock_manager = MagicMock()
