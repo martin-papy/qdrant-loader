@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import click
 import structlog
 from click.decorators import group, option
 from click.exceptions import ClickException
@@ -13,7 +14,8 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
-from qdrant_loader.config import get_settings, initialize_config
+from qdrant_loader.config import get_settings, initialize_config, Settings
+from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
@@ -30,21 +32,47 @@ def _setup_logging(log_level: str) -> None:
         raise ClickException(f"Invalid log level: {log_level}")
 
 
-def _load_config(config_path: Optional[Path] = None) -> None:
-    """Load configuration from file."""
+def _create_database_directory(path: Path) -> bool:
+    """Create database directory with user confirmation.
+
+    Args:
+        path: Path to the database directory
+
+    Returns:
+        bool: True if directory was created, False if user declined
+    """
+    try:
+        echo(f"The database directory does not exist: {path.absolute()}")
+        if click.confirm("Would you like to create this directory?", default=True):
+            path.mkdir(parents=True, mode=0o755)
+            echo(f"Created directory: {path.absolute()}")
+            return True
+        return False
+    except Exception as e:
+        logger.error("directory_creation_failed", error=str(e))
+        raise ClickException(f"Failed to create directory: {str(e)}")
+
+
+def _load_config(config_path: Optional[Path] = None, skip_validation: bool = False) -> None:
+    """Load configuration from file.
+
+    Args:
+        config_path: Optional path to config file
+        skip_validation: If True, skip directory validation and creation
+    """
     try:
         # Step 1: If config path is provided, use it
         if config_path is not None:
             if not config_path.exists():
                 logger.error("config_not_found", path=str(config_path))
                 raise ClickException(f"Config file not found: {str(config_path)}")
-            initialize_config(config_path)
+            initialize_config(config_path, skip_validation=skip_validation)
             return
 
         # Step 2: If no config path, look for config.yaml in current folder
         default_config = Path("config.yaml")
         if default_config.exists():
-            initialize_config(default_config)
+            initialize_config(default_config, skip_validation=skip_validation)
             return
 
         # Step 3: If no file is found, raise an error
@@ -53,6 +81,14 @@ def _load_config(config_path: Optional[Path] = None) -> None:
             "No config file found. Please specify a config file or create config.yaml in the current directory"
         )
 
+    except DatabaseDirectoryError as e:
+        if skip_validation:
+            # For config display, we don't need to create the directory
+            return
+        if not _create_database_directory(e.path):
+            raise ClickException("Database directory creation declined. Exiting.")
+        # Retry loading config after directory creation
+        _load_config(config_path)
     except ClickException:
         raise
     except Exception as e:
@@ -198,13 +234,26 @@ def ingest(
     default="INFO",
     help="Set the logging level.",
 )
-def config(log_level: str):
+@option("--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file.")
+def config(log_level: str, config: Optional[Path]):
     """Display current configuration."""
     try:
         _setup_logging(log_level)
-        settings = _check_settings()
+
+        # Load and validate config without initializing global settings
+        config_path = config or Path("config.yaml")
+        if not config_path.exists():
+            logger.error("config_not_found", path=str(config_path))
+            raise ClickException(
+                "No config file found. Please specify a config file or create config.yaml in the current directory"
+            )
+
+        # Create a temporary Settings instance for validation
+        settings = Settings.from_yaml(config_path, skip_validation=True)
+
         echo("Current Configuration:")
         echo(settings.model_dump_json(indent=2))
+
     except ClickException as e:
         logger.error("config_display_failed", error=str(e))
         raise

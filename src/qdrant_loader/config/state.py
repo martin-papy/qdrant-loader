@@ -13,6 +13,14 @@ from pydantic import Field, ValidationInfo, field_validator
 from qdrant_loader.config.base import BaseConfig
 
 
+class DatabaseDirectoryError(Exception):
+    """Exception raised when database directory needs to be created."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        super().__init__(f"Database directory does not exist: {path}")
+
+
 class StateManagementConfig(BaseConfig):
     """Configuration for state management."""
 
@@ -26,9 +34,13 @@ class StateManagementConfig(BaseConfig):
     @classmethod
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
         """Validate database path exists and is writable."""
+        # Special case for in-memory database
+        if v == ":memory:":
+            return v
+
         path = Path(v)
         if not path.parent.exists():
-            raise ValueError(f"Database directory does not exist: {path.parent}")
+            raise DatabaseDirectoryError(path.parent)
         if not path.parent.is_dir():
             raise ValueError(f"Database path is not a directory: {path.parent}")
         if not os.access(path.parent, os.W_OK):
@@ -62,3 +74,10 @@ class StateManagementConfig(BaseConfig):
             raise ValueError("Connection pool timeout must be a positive integer")
 
         return v
+
+    def __init__(self, **data):
+        """Initialize state management configuration."""
+        # If database_path is not provided, use in-memory database
+        if "database_path" not in data:
+            data["database_path"] = ":memory:"
+        super().__init__(**data)
