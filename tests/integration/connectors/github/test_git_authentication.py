@@ -6,7 +6,6 @@ import logging
 
 import pytest
 import pytest_asyncio
-
 from git.exc import GitCommandError
 from pydantic import ValidationError
 
@@ -29,7 +28,10 @@ async def session_documents(cached_documents):
 @pytest.mark.integration
 def test_missing_token_environment_variable(test_repo_url):
     """Test that the connector raises an error when REPO_TOKEN is missing."""
-    with pytest.raises(ValueError, match="GitHub token is required for authentication"):
+    with pytest.raises(
+        ValueError,
+        match="GitHub token is required for authentication. Set to None if you don't need authentication.",
+    ):
         try:
             GitRepoConfig(
                 url=test_repo_url,
@@ -39,12 +41,13 @@ def test_missing_token_environment_variable(test_repo_url):
                 include_paths=["docs/"],
                 exclude_paths=[],
                 max_file_size=1024 * 1024,
-                token=None,
                 temp_dir="/tmp/test",
-            )
+            )  # type: ignore
         except ValidationError as e:
             # Convert Pydantic validation error to our custom error
-            raise ValueError("GitHub token is required for authentication") from e
+            raise ValueError(
+                "GitHub token is required for authentication. Set to None if you don't need authentication."
+            ) from e
 
 
 @pytest.mark.integration
