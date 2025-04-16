@@ -444,6 +444,15 @@ async def test_cli_config_without_settings(runner):
         assert "No config file found" in result.output
 
 
+@pytest.mark.asyncio
+async def test_cli_config_with_wrong_path_to_settings(runner):
+    """Test that the config command fails when no configuration file is found."""
+    # Then test with explicit non-existent path
+    result = await runner.async_invoke(cli, ["config", "--config", "non-existing-file.yaml"])
+    assert result.exit_code == 2
+    assert "Invalid value for '--config'" in result.output
+
+
 def test_cli_ingest_with_missing_config_file(runner):
     """Test that the ingest command uses default config path when not specified."""
     with patch("pathlib.Path.exists", return_value=False):
