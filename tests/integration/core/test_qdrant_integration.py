@@ -13,9 +13,11 @@ def qdrant_manager(test_settings):
     yield manager
     # Cleanup: delete test collection after each test
     try:
-        manager.client.delete_collection(test_settings.QDRANT_COLLECTION_NAME)
+        if manager.client is not None:
+            manager.client.delete_collection(test_settings.QDRANT_COLLECTION_NAME)
     except Exception:
         pass  # Ignore cleanup errors
+
 
 @pytest.mark.integration
 def test_init_connection(test_settings):
@@ -24,13 +26,14 @@ def test_init_connection(test_settings):
     assert manager.client is not None
     assert manager.collection_name == test_settings.QDRANT_COLLECTION_NAME
 
+
 @pytest.mark.integration
 def test_collection_operations(qdrant_manager, test_settings):
     """Test collection operations with real Qdrant instance."""
     # Create the collection first
     qdrant_manager.client.create_collection(
         collection_name=test_settings.QDRANT_COLLECTION_NAME,
-        vectors_config={"size": 3, "distance": "Cosine"}
+        vectors_config={"size": 3, "distance": "Cosine"},
     )
 
     # Test collection creation
@@ -40,48 +43,35 @@ def test_collection_operations(qdrant_manager, test_settings):
 
     # Test point operations
     points = [
-        {
-            "id": 1,
-            "vector": [0.1, 0.2, 0.3],
-            "payload": {"text": "test document 1"}
-        },
-        {
-            "id": 2,
-            "vector": [0.4, 0.5, 0.6],
-            "payload": {"text": "test document 2"}
-        }
+        {"id": 1, "vector": [0.1, 0.2, 0.3], "payload": {"text": "test document 1"}},
+        {"id": 2, "vector": [0.4, 0.5, 0.6], "payload": {"text": "test document 2"}},
     ]
-    
+
     # Insert points
     qdrant_manager.client.upsert(
-        collection_name=test_settings.QDRANT_COLLECTION_NAME,
-        points=points
+        collection_name=test_settings.QDRANT_COLLECTION_NAME, points=points
     )
-    
+
     # Search for points
     search_result = qdrant_manager.client.query_points(
-        collection_name=test_settings.QDRANT_COLLECTION_NAME,
-        query=[0.1, 0.2, 0.3],
-        limit=1
+        collection_name=test_settings.QDRANT_COLLECTION_NAME, query=[0.1, 0.2, 0.3], limit=1
     )
-    
+
     assert len(search_result.points) == 1
     assert search_result.points[0].id == 1
     assert search_result.points[0].payload["text"] == "test document 1"
-    
+
     # Delete points
     qdrant_manager.client.delete(
-        collection_name=test_settings.QDRANT_COLLECTION_NAME,
-        points_selector=[1, 2]
+        collection_name=test_settings.QDRANT_COLLECTION_NAME, points_selector=[1, 2]
     )
-    
+
     # Verify deletion
     search_result = qdrant_manager.client.query_points(
-        collection_name=test_settings.QDRANT_COLLECTION_NAME,
-        query=[0.1, 0.2, 0.3],
-        limit=1
+        collection_name=test_settings.QDRANT_COLLECTION_NAME, query=[0.1, 0.2, 0.3], limit=1
     )
     assert len(search_result.points) == 0
+
 
 @pytest.mark.integration
 def test_error_handling(test_settings):
@@ -93,7 +83,7 @@ def test_error_handling(test_settings):
 
     # Skip test if using local instance (no authentication required)
     parsed_url = urlparse(test_settings.QDRANT_URL)
-    if any(host in parsed_url.netloc for host in ['localhost', '127.0.0.1']):
+    if any(host in parsed_url.netloc for host in ["localhost", "127.0.0.1"]):
         pytest.skip("Skipping error handling test for local instance (no authentication required)")
 
     # Test invalid API key
@@ -103,15 +93,25 @@ def test_error_handling(test_settings):
         QDRANT_COLLECTION_NAME=test_settings.QDRANT_COLLECTION_NAME,
         OPENAI_API_KEY=test_settings.OPENAI_API_KEY,
         STATE_DB_PATH=test_settings.STATE_DB_PATH,
+        REPO_TOKEN=test_settings.REPO_TOKEN,
+        REPO_URL=test_settings.REPO_URL,
+        CONFLUENCE_URL=test_settings.CONFLUENCE_URL,
+        CONFLUENCE_SPACE_KEY=test_settings.CONFLUENCE_SPACE_KEY,
+        CONFLUENCE_TOKEN=test_settings.CONFLUENCE_TOKEN,
+        CONFLUENCE_EMAIL=test_settings.CONFLUENCE_EMAIL,
+        JIRA_URL=test_settings.JIRA_URL,
+        JIRA_PROJECT_KEY=test_settings.JIRA_PROJECT_KEY,
+        JIRA_TOKEN=test_settings.JIRA_TOKEN,
+        JIRA_EMAIL=test_settings.JIRA_EMAIL,
         global_config=test_settings.global_config,
-        sources_config=test_settings.sources_config
+        sources_config=test_settings.sources_config,
     )
-    
+
     # Test that we can't perform operations with invalid credentials
     manager = QdrantManager(settings=invalid_settings)
     with pytest.raises(UnexpectedResponse):
         manager.create_collection()
-    
+
     # Test invalid URL
     invalid_settings = Settings(
         QDRANT_URL="https://invalid-url:6333",
@@ -119,11 +119,22 @@ def test_error_handling(test_settings):
         QDRANT_COLLECTION_NAME=test_settings.QDRANT_COLLECTION_NAME,
         OPENAI_API_KEY=test_settings.OPENAI_API_KEY,
         STATE_DB_PATH=test_settings.STATE_DB_PATH,
+        REPO_TOKEN=test_settings.REPO_TOKEN,
+        REPO_URL=test_settings.REPO_URL,
+        CONFLUENCE_URL=test_settings.CONFLUENCE_URL,
+        CONFLUENCE_SPACE_KEY=test_settings.CONFLUENCE_SPACE_KEY,
+        CONFLUENCE_TOKEN=test_settings.CONFLUENCE_TOKEN,
+        CONFLUENCE_EMAIL=test_settings.CONFLUENCE_EMAIL,
+        JIRA_URL=test_settings.JIRA_URL,
+        JIRA_PROJECT_KEY=test_settings.JIRA_PROJECT_KEY,
+        JIRA_TOKEN=test_settings.JIRA_TOKEN,
+        JIRA_EMAIL=test_settings.JIRA_EMAIL,
         global_config=test_settings.global_config,
-        sources_config=test_settings.sources_config
+        sources_config=test_settings.sources_config,
     )
-    
+
     with pytest.raises(ResponseHandlingException):
         manager = QdrantManager(settings=invalid_settings)
         # Try to perform an operation to trigger the connection error
-        manager.client.get_collections() 
+        if manager.client is not None:
+            manager.client.get_collections()

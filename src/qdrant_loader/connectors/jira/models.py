@@ -41,13 +41,7 @@ class JiraIssue(BaseModel):
     reporter: JiraUser = Field(..., description="Issue reporter")
     assignee: Optional[JiraUser] = Field(None, description="Issue assignee")
     labels: List[str] = Field(default_factory=list, description="Issue labels")
-    attachments: List[JiraAttachment] = Field(
-        default_factory=list, description="Issue attachments"
-    )
+    attachments: List[JiraAttachment] = Field(default_factory=list, description="Issue attachments")
     parent_key: Optional[str] = Field(None, description="Parent issue key for subtasks")
-    subtasks: List[str] = Field(
-        default_factory=list, description="List of subtask keys"
-    )
-    linked_issues: List[str] = Field(
-        default_factory=list, description="List of linked issue keys"
-    ) 
+    subtasks: List[str] = Field(default_factory=list, description="List of subtask keys")
+    linked_issues: List[str] = Field(default_factory=list, description="List of linked issue keys")

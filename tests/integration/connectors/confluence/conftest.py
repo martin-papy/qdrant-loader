@@ -4,6 +4,7 @@ import pytest
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 
+
 @pytest.fixture
 def confluence_config(test_settings):
     """Create a ConfluenceConfig instance from test settings."""
@@ -15,10 +16,11 @@ def confluence_config(test_settings):
         include_labels=confluence_settings.include_labels,
         exclude_labels=confluence_settings.exclude_labels,
         token=confluence_settings.token,
-        email=confluence_settings.email
+        email=confluence_settings.email,
     )
+
 
 @pytest.fixture
 def confluence_connector(confluence_config):
     """Create a ConfluenceConnector instance."""
-    return ConfluenceConnector(confluence_config) 
+    return ConfluenceConnector(confluence_config)

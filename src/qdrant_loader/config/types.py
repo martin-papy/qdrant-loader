@@ -10,6 +10,7 @@ from typing import TypedDict, Optional, List, Dict, Any
 
 class GitConfig(TypedDict):
     """Configuration for Git repositories."""
+
     url: str
     branch: str
     include_paths: List[str]
@@ -22,6 +23,7 @@ class GitConfig(TypedDict):
 
 class ConfluenceConfig(TypedDict):
     """Configuration for Confluence spaces."""
+
     url: str
     space_key: str
     content_types: List[str]
@@ -31,6 +33,7 @@ class ConfluenceConfig(TypedDict):
 
 class JiraConfig(TypedDict):
     """Configuration for Jira projects."""
+
     base_url: str
     project_key: str
     requests_per_minute: int
@@ -43,6 +46,7 @@ class JiraConfig(TypedDict):
 
 class PublicDocsConfig(TypedDict):
     """Configuration for public documentation sources."""
+
     base_url: str
     version: str
     content_type: str
@@ -52,6 +56,7 @@ class PublicDocsConfig(TypedDict):
 
 class SourcesConfigDict(TypedDict):
     """Configuration for all sources."""
+
     public_docs: Dict[str, PublicDocsConfig]
     git_repos: Dict[str, GitConfig]
     confluence: Dict[str, ConfluenceConfig]
@@ -60,6 +65,8 @@ class SourcesConfigDict(TypedDict):
 
 class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
+
     chunking: Dict[str, Any]
     embedding: Dict[str, Any]
-    logging: Dict[str, Any] 
+    logging: Dict[str, Any]
+    sources: Dict[str, Any]

@@ -2,36 +2,40 @@
 Ingestion pipeline for processing documents.
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, UTC
-import logging
-import structlog
+from datetime import UTC, datetime
 
-from ..config import Settings, GlobalConfig, SourcesConfig
-from ..connectors.git import GitConnector
+import structlog
+from pydantic import HttpUrl
+from qdrant_client.http import models
+
+from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
-from ..connectors.jira import JiraConnector
+from ..connectors.git import GitConnector
+from ..connectors.jira import JiraConfig, JiraConnector
 from ..connectors.public_docs import PublicDocsConnector
 from .chunking_service import ChunkingService
+from .document import Document
 from .embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
-from .document import Document
-from .state import StateManager
+from .state import DocumentState, StateManager
 
 logger = structlog.get_logger()
+
 
 class IngestionPipeline:
     """Pipeline for processing documents."""
 
     def __init__(self, settings: Settings):
         """Initialize the ingestion pipeline."""
-        if not settings:
+        if settings is None:
             raise ValueError("Settings not available. Please check your environment variables.")
 
         self.settings = settings
         self.config = settings.global_config
         if not self.config:
-            raise ValueError("Global configuration not available. Please check your configuration file.")
+            raise ValueError(
+                "Global configuration not available. Please check your configuration file."
+            )
 
         # Initialize services
         self.chunking_service = ChunkingService(config=self.config, settings=self.settings)
@@ -41,10 +45,10 @@ class IngestionPipeline:
 
     async def process_documents(
         self,
-        sources_config: Optional[SourcesConfig] = None,
-        source_type: Optional[str] = None,
-        source_name: Optional[str] = None
-    ) -> List[Document]:
+        sources_config: SourcesConfig | None = None,
+        source_type: str | None = None,
+        source_name: str | None = None,
+    ) -> list[Document]:
         """Process documents from all configured sources."""
         if not sources_config:
             sources_config = self.settings.sources_config
@@ -55,9 +59,9 @@ class IngestionPipeline:
 
         # Filter sources based on type and name
         filtered_config = self._filter_sources(sources_config, source_type, source_name)
-        
-        documents: List[Document] = []
-        
+
+        documents: list[Document] = []
+
         try:
             # Process Git repositories
             if filtered_config.git_repos:
@@ -76,7 +80,18 @@ class IngestionPipeline:
             # Process Jira projects
             if filtered_config.jira:
                 for name, config in filtered_config.jira.items():
-                    connector = JiraConnector(config)
+                    # Convert JiraProjectConfig to JiraConfig
+                    jira_config = JiraConfig(
+                        base_url=HttpUrl(config.base_url),
+                        project_key=config.project_key,
+                        requests_per_minute=config.requests_per_minute,
+                        page_size=config.page_size,
+                        process_attachments=config.process_attachments,
+                        track_last_sync=config.track_last_sync,
+                        api_token=config.token,
+                        email=config.email,
+                    )
+                    connector = JiraConnector(jira_config)
                     jira_docs = await connector.get_documents()
                     documents.extend(jira_docs)
 
@@ -84,38 +99,71 @@ class IngestionPipeline:
             if filtered_config.public_docs:
                 for name, config in filtered_config.public_docs.items():
                     connector = PublicDocsConnector(config)
-                    public_docs = await connector.get_documents()
+                    public_docs = await connector.get_documentation()
                     documents.extend(public_docs)
 
             # Process all documents
             for doc in documents:
                 try:
+                    # Convert Document to DocumentState
+                    doc_state = DocumentState(
+                        source_type=doc.source_type,
+                        source_name=doc.source,
+                        document_id=doc.id,
+                        last_updated=doc.last_updated or datetime.now(UTC),
+                        last_ingested=datetime.now(UTC),
+                        is_deleted=False,
+                        created_at=datetime.now(UTC),
+                        updated_at=datetime.now(UTC),
+                    )
                     # Update document state
-                    await self.state_manager.update_document_state(doc)
+                    await self.state_manager.update_document_state(doc_state)
 
                     # Chunk document
-                    chunks = self.chunking_service.chunk_document(doc)
+                    try:
+                        chunks = self.chunking_service.chunk_document(doc)
+                    except Exception as e:
+                        logger.error(f"Error chunking document {doc.id}: {e!s}")
+                        raise
 
                     # Get embeddings
-                    embeddings = await self.embedding_service.get_embeddings(chunks)
+                    chunk_contents = [chunk.content for chunk in chunks]
+                    embeddings = await self.embedding_service.get_embeddings(chunk_contents)
+
+                    # Create PointStruct instances
+                    points = []
+                    for chunk, embedding in zip(chunks, embeddings, strict=False):
+                        point = models.PointStruct(
+                            id=chunk.id,
+                            vector=embedding,
+                            payload={
+                                "content": chunk.content,
+                                "metadata": chunk.metadata,
+                                "source": chunk.source,
+                                "source_type": chunk.source_type,
+                                "created_at": chunk.created_at.isoformat(),
+                            },
+                        )
+                        points.append(point)
 
                     # Update Qdrant
-                    await self.qdrant_manager.upsert_points(chunks, embeddings)
+                    await self.qdrant_manager.upsert_points(points)
+
                 except Exception as e:
-                    logger.error("Failed to process document", document_id=doc.id, error=str(e))
+                    logger.error(f"Error processing document {doc.id}: {e!s}")
                     raise
 
-            return documents
-
         except Exception as e:
-            logger.error("Failed to process documents", error=str(e))
+            logger.error(f"Error in document processing pipeline: {e!s}")
             raise
+
+        return documents
 
     def _filter_sources(
         self,
         sources_config: SourcesConfig,
-        source_type: Optional[str] = None,
-        source_name: Optional[str] = None
+        source_type: str | None = None,
+        source_name: str | None = None,
     ) -> SourcesConfig:
         """Filter sources based on type and name."""
         if not source_type:
@@ -151,4 +199,4 @@ class IngestionPipeline:
             else:
                 filtered.public_docs = sources_config.public_docs
 
-        return filtered 
+        return filtered

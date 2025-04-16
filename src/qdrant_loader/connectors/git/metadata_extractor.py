@@ -10,6 +10,7 @@ from qdrant_loader.connectors.git.config import GitRepoConfig
 
 logger = get_logger(__name__)
 
+
 class GitMetadataExtractor:
     """Extract metadata from Git repository files."""
 
@@ -33,24 +34,19 @@ class GitMetadataExtractor:
             Dict[str, Any]: Dictionary containing all metadata.
         """
         self.logger.info(f"Starting metadata extraction for file: {file_path}")
-        
+
         file_metadata = self._extract_file_metadata(file_path, content)
         repo_metadata = self._extract_repo_metadata(file_path)
         git_metadata = self._extract_git_metadata(file_path)
-        
+
         # Only extract structure metadata for markdown files
         structure_metadata = {}
-        if file_path.lower().endswith('.md'):
+        if file_path.lower().endswith(".md"):
             self.logger.info(f"Processing markdown file: {file_path}")
             structure_metadata = self._extract_structure_metadata(content)
 
-        metadata = {
-            **file_metadata,
-            **repo_metadata,
-            **git_metadata,
-            **structure_metadata
-        }
-        
+        metadata = {**file_metadata, **repo_metadata, **git_metadata, **structure_metadata}
+
         self.logger.info(f"Completed metadata extraction for {file_path}. Results: {metadata}")
         return metadata
 
@@ -76,7 +72,7 @@ class GitMetadataExtractor:
             "file_size": file_size,
             "has_code_blocks": self._has_code_blocks(content),
             "has_images": self._has_images(content),
-            "has_links": self._has_links(content)
+            "has_links": self._has_links(content),
         }
 
     def _extract_repo_metadata(self, file_path: str) -> Dict[str, Any]:
@@ -95,22 +91,22 @@ class GitMetadataExtractor:
                 return {}
 
             # Extract repository name and owner from normalized URL
-            normalized_url = repo_url[:-4] if repo_url.endswith('.git') else repo_url
-            repo_parts = normalized_url.split('/')
+            normalized_url = repo_url[:-4] if repo_url.endswith(".git") else repo_url
+            repo_parts = normalized_url.split("/")
             if len(repo_parts) >= 2:
                 repo_owner = repo_parts[-2]
                 repo_name = repo_parts[-1]
             else:
-                repo_owner = ''
+                repo_owner = ""
                 repo_name = normalized_url
 
             # Initialize metadata with default values
             metadata = {
-                'repository_name': repo_name,
-                'repository_owner': repo_owner,
-                'repository_url': repo_url,
-                'repository_description': '',
-                'repository_language': ''
+                "repository_name": repo_name,
+                "repository_owner": repo_owner,
+                "repository_url": repo_url,
+                "repository_description": "",
+                "repository_language": "",
             }
 
             try:
@@ -118,12 +114,18 @@ class GitMetadataExtractor:
                 if repo and not repo.bare:
                     config = repo.config_reader()
                     # Try to get description from github section first
-                    if config.has_section('github'):
-                        metadata['repository_description'] = config.get_value('github', 'description', '')
-                        metadata['repository_language'] = config.get_value('github', 'language', '')
+                    if config.has_section("github"):
+                        metadata["repository_description"] = str(
+                            config.get_value("github", "description", "")
+                        )
+                        metadata["repository_language"] = str(
+                            config.get_value("github", "language", "")
+                        )
                     # Fall back to core section if needed
-                    if not metadata['repository_description'] and config.has_section('core'):
-                        metadata['repository_description'] = config.get_value('core', 'description', '')
+                    if not metadata["repository_description"] and config.has_section("core"):
+                        metadata["repository_description"] = str(
+                            config.get_value("core", "description", "")
+                        )
             except Exception as e:
                 self.logger.debug(f"Failed to read Git config: {e}")
 
@@ -137,51 +139,59 @@ class GitMetadataExtractor:
         try:
             repo = git.Repo(self.config.temp_dir)
             metadata = {}
-            
+
             try:
                 # Get the relative path from the repository root
                 rel_path = os.path.relpath(file_path, repo.working_dir)
-                
+
                 # Try to get commits for the file
                 commits = list(repo.iter_commits(paths=rel_path, max_count=1))
                 if commits:
                     last_commit = commits[0]
-                    metadata.update({
-                        "last_commit_date": last_commit.committed_datetime.isoformat(),
-                        "last_commit_author": last_commit.author.name,
-                        "last_commit_message": last_commit.message.strip()
-                    })
+                    metadata.update(
+                        {
+                            "last_commit_date": last_commit.committed_datetime.isoformat(),
+                            "last_commit_author": last_commit.author.name,
+                            "last_commit_message": last_commit.message.strip(),
+                        }
+                    )
                 else:
                     # If no commits found for the file, try getting the latest commit
                     commits = list(repo.iter_commits(max_count=1))
                     if commits:
                         last_commit = commits[0]
-                        metadata.update({
-                            "last_commit_date": last_commit.committed_datetime.isoformat(),
-                            "last_commit_author": last_commit.author.name,
-                            "last_commit_message": last_commit.message.strip()
-                        })
+                        metadata.update(
+                            {
+                                "last_commit_date": last_commit.committed_datetime.isoformat(),
+                                "last_commit_author": last_commit.author.name,
+                                "last_commit_message": last_commit.message.strip(),
+                            }
+                        )
                     else:
                         # If still no commits found, use repository's HEAD commit
                         head_commit = repo.head.commit
-                        metadata.update({
-                            "last_commit_date": head_commit.committed_datetime.isoformat(),
-                            "last_commit_author": head_commit.author.name,
-                            "last_commit_message": head_commit.message.strip()
-                        })
+                        metadata.update(
+                            {
+                                "last_commit_date": head_commit.committed_datetime.isoformat(),
+                                "last_commit_author": head_commit.author.name,
+                                "last_commit_message": head_commit.message.strip(),
+                            }
+                        )
             except Exception as e:
                 self.logger.debug(f"Failed to get commits: {e}")
                 # Try one last time with HEAD commit
                 try:
                     head_commit = repo.head.commit
-                    metadata.update({
-                        "last_commit_date": head_commit.committed_datetime.isoformat(),
-                        "last_commit_author": head_commit.author.name,
-                        "last_commit_message": head_commit.message.strip()
-                    })
+                    metadata.update(
+                        {
+                            "last_commit_date": head_commit.committed_datetime.isoformat(),
+                            "last_commit_author": head_commit.author.name,
+                            "last_commit_message": head_commit.message.strip(),
+                        }
+                    )
                 except Exception as e:
                     self.logger.debug(f"Failed to get HEAD commit: {e}")
-            
+
             return metadata
         except Exception as e:
             self.logger.warning(f"Failed to extract Git metadata: {str(e)}")
@@ -191,7 +201,7 @@ class GitMetadataExtractor:
         """Extract metadata about the document structure."""
         self.logger.info("Starting structure metadata extraction")
         self.logger.debug(f"Content to process:\n{content}")
-        
+
         has_toc = False
         heading_levels = []
         sections_count = 0
@@ -203,13 +213,15 @@ class GitMetadataExtractor:
         # 3. Continue until the next newline or end of content
         headings = re.findall(r"(?:^|\n)\s*(#{1,6})\s+(.+?)(?:\n|$)", content, re.MULTILINE)
         self.logger.info(f"Found {len(headings)} headers in content")
-        
+
         if headings:
             self.logger.debug(f"Headers found: {headings}")
             has_toc = "## Table of Contents" in content or "## Contents" in content
             heading_levels = [len(h[0]) for h in headings]
             sections_count = len(heading_levels)
-            self.logger.info(f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}")
+            self.logger.info(
+                f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}"
+            )
         else:
             self.logger.warning("No headers found in content")
             # Log the first few lines of content for debugging
@@ -221,16 +233,22 @@ class GitMetadataExtractor:
                 self.logger.info(f"Found {len(alt_headings)} headers using alternative pattern")
                 self.logger.debug(f"Alternative headers found: {alt_headings}")
                 has_toc = "## Table of Contents" in content or "## Contents" in content
-                heading_levels = [len(re.match(r"^(#{1,6})", h).group(1)) for h in alt_headings]
+                heading_levels = []
+                for h in alt_headings:
+                    match = re.match(r"^(#{1,6})", h)
+                    if match:
+                        heading_levels.append(len(match.group(1)))
                 sections_count = len(heading_levels)
-                self.logger.info(f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}")
+                self.logger.info(
+                    f"Has TOC: {has_toc}, Heading levels: {heading_levels}, Sections count: {sections_count}"
+                )
 
         metadata = {
             "has_toc": has_toc,
             "heading_levels": heading_levels,
-            "sections_count": sections_count
+            "sections_count": sections_count,
         }
-        
+
         self.logger.info(f"Structure metadata extraction completed: {metadata}")
         return metadata
 
@@ -241,8 +259,15 @@ class GitMetadataExtractor:
             config = repo.config_reader()
             try:
                 if config.has_section('remote "origin"'):
-                    description = config.get_value('remote "origin"', "description", default="")
-                    if description and description.strip() and "Unnamed repository;" not in description:
+                    description = str(
+                        config.get_value('remote "origin"', "description", default="")
+                    )
+                    if (
+                        description
+                        and isinstance(description, str)
+                        and description.strip()
+                        and "Unnamed repository;" not in description
+                    ):
                         return description.strip()
             except Exception as e:
                 self.logger.debug(f"Failed to read Git config: {e}")
@@ -275,7 +300,12 @@ class GitMetadataExtractor:
                                     in_title = True
                                     continue
                                 # Skip common sections
-                                if line.lower() in ["## installation", "## usage", "## contributing", "## license"]:
+                                if line.lower() in [
+                                    "## installation",
+                                    "## usage",
+                                    "## contributing",
+                                    "## license",
+                                ]:
                                     break
                                 in_title = False
                                 current_paragraph.append(line)
@@ -285,7 +315,9 @@ class GitMetadataExtractor:
 
                             # Find first meaningful paragraph
                             for paragraph in paragraphs:
-                                if len(paragraph) >= 50:  # Minimum length for a meaningful description
+                                if (
+                                    len(paragraph) >= 50
+                                ):  # Minimum length for a meaningful description
                                     # Clean up markdown links
                                     paragraph = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", paragraph)
                                     # Clean up HTML tags
@@ -318,7 +350,11 @@ class GitMetadataExtractor:
 
         try:
             result = chardet.detect(content.encode())
-            if result["encoding"] and result["encoding"].lower() != "ascii" and result["confidence"] > 0.8:
+            if (
+                result["encoding"]
+                and result["encoding"].lower() != "ascii"
+                and result["confidence"] > 0.8
+            ):
                 return result["encoding"].lower()
         except Exception as e:
             self.logger.error({"event": "Failed to detect encoding", "error": str(e)})
@@ -358,7 +394,7 @@ class GitMetadataExtractor:
             ".toml": "TOML",
             ".ini": "INI",
             ".cfg": "Configuration",
-            ".conf": "Configuration"
+            ".conf": "Configuration",
         }
         return language_map.get(ext, "Unknown")
 
@@ -377,4 +413,4 @@ class GitMetadataExtractor:
     def _get_heading_levels(self, content: str) -> List[int]:
         """Get list of heading levels in the content."""
         headings = re.findall(r"^(#+)\s", content, re.MULTILINE)
-        return [len(h) for h in headings] 
+        return [len(h) for h in headings]
