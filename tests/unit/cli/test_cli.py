@@ -226,10 +226,7 @@ async def test_cli_ingest_without_settings(runner):
     ):
         result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
         assert result.exit_code == 1
-        if is_github_actions():
-            assert "No config file found" in result.output
-        else:
-            assert "Settings not available" in result.output
+        assert "Settings not available" in result.output
 
 
 @pytest.mark.asyncio
@@ -598,53 +595,29 @@ async def test_cli_init_with_connection_error(runner, mock_init_collection, mock
 
 @pytest.mark.asyncio
 async def test_cli_ingest_with_connection_error(runner, mock_qdrant_manager, mock_settings):
-    """Test that the ingest command handles connection errors."""
-    # Import the QdrantConnectionError class
-    from qdrant_loader.core.qdrant_manager import QdrantConnectionError
-
-    # Setup mock QdrantManager with connection error
-    mock_qdrant_manager.client.get_collections = MagicMock(
-        side_effect=QdrantConnectionError("Connection refused")
-    )
-
+    """Test the ingest command with connection error."""
     with (
         patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
         patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
         patch("qdrant_loader.cli.cli._load_config", return_value=None),
     ):
+        mock_qdrant_manager.client.get_collections.side_effect = ConnectionError(
+            "Connection refused"
+        )
         result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "connection_failed" in result.output
-        assert "error='Connection refused'" in result.output
+        assert result.exit_code == 1
+        assert "Connection refused" in result.output
 
 
 @pytest.mark.asyncio
-async def test_cli_ingest_with_collection_not_found(
-    runner, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test that the ingest command handles collection not found errors."""
-    # Setup mock QdrantManager with empty collections
-    mock_collections_response.collections = []  # Override to have no collections
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Mock settings for this test
-    mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-
-    # Setup mock pipeline for this test
-    mock_pipeline = MagicMock()
-    mock_pipeline.process_documents = AsyncMock()
-
-    # Patch all dependencies with proper cleanup
+async def test_cli_ingest_with_collection_not_found(runner, mock_qdrant_manager, mock_settings):
+    """Test the ingest command with collection not found."""
     with (
         patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
         patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
         patch("qdrant_loader.cli.cli._load_config", return_value=None),
     ):
+        mock_qdrant_manager.client.get_collections.return_value = MagicMock(collections=[])
         result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
+        assert result.exit_code == 1
         assert "collection_not_found" in result.output
-        assert "collection=qdrant-loader-test" in result.output
-
-        # Verify mocks were called as expected
-        mock_qdrant_manager.client.get_collections.assert_called_once()

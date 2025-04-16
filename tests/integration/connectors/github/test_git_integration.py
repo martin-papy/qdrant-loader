@@ -145,7 +145,7 @@ async def test_error_handling(git_config):
         include_paths=git_config.include_paths,
         exclude_paths=git_config.exclude_paths,
         max_file_size=git_config.max_file_size,
-        token=None,
+        token="None",
         temp_dir="/tmp/test",
     )
 
