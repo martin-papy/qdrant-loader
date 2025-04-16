@@ -4,10 +4,11 @@ This module defines the configuration settings for state management,
 including database path, table prefix, and connection pool settings.
 """
 
-from typing import Dict, Any
-from pathlib import Path
-from pydantic import Field, field_validator, ValidationInfo
 import os
+from pathlib import Path
+from typing import Any
+
+from pydantic import Field, ValidationInfo, field_validator
 
 from qdrant_loader.config.base import BaseConfig
 
@@ -17,11 +18,12 @@ class StateManagementConfig(BaseConfig):
 
     database_path: str = Field(..., description="Path to SQLite database file")
     table_prefix: str = Field(default="qdrant_loader_", description="Prefix for database tables")
-    connection_pool: Dict[str, Any] = Field(
+    connection_pool: dict[str, Any] = Field(
         default_factory=lambda: {"size": 5, "timeout": 30}, description="Connection pool settings"
     )
 
     @field_validator("database_path")
+    @classmethod
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
         """Validate database path exists and is writable."""
         path = Path(v)
@@ -34,6 +36,7 @@ class StateManagementConfig(BaseConfig):
         return str(path)
 
     @field_validator("table_prefix")
+    @classmethod
     def validate_table_prefix(cls, v: str, info: ValidationInfo) -> str:
         """Validate table prefix format."""
         if not v:
@@ -45,7 +48,8 @@ class StateManagementConfig(BaseConfig):
         return v
 
     @field_validator("connection_pool")
-    def validate_connection_pool(cls, v: Dict[str, Any], info: ValidationInfo) -> Dict[str, Any]:
+    @classmethod
+    def validate_connection_pool(cls, v: dict[str, Any], info: ValidationInfo) -> dict[str, Any]:
         """Validate connection pool settings."""
         if "size" not in v:
             raise ValueError("Connection pool must specify 'size'")

@@ -122,16 +122,25 @@ async def test_error_handling(test_settings):
 @pytest.mark.asyncio
 async def test_rate_limiting(embedding_service):
     """Test rate limiting handling."""
-    texts = ["Test text"] * 10  # Create 10 identical texts
-    start_time = time.time()
+    # Temporarily override batch size for testing
+    original_batch_size = embedding_service.batch_size
+    embedding_service.batch_size = 5  # Small batch size to ensure multiple batches
 
-    # Get embeddings for all texts
-    embeddings = await embedding_service.get_embeddings(texts)
+    try:
+        texts = ["Test text"] * 10  # Create 10 identical texts
+        start_time = time.time()
 
-    end_time = time.time()
-    duration = end_time - start_time
+        # Get embeddings for all texts
+        embeddings = await embedding_service.get_embeddings(texts)
 
-    # Verify we got all embeddings
-    assert len(embeddings) == 10
-    # Verify the operation took at least 0.5 seconds (due to rate limiting)
-    assert duration >= 0.5
+        end_time = time.time()
+        duration = end_time - start_time
+
+        # Verify we got all embeddings
+        assert len(embeddings) == 10
+        # Verify the operation took at least 0.5 seconds (due to rate limiting between batches)
+        # 10 texts / 5 batch size = 2 batches, so at least 1 rate limit delay of 0.5s
+        assert duration >= 0.5
+    finally:
+        # Restore original batch size
+        embedding_service.batch_size = original_batch_size
