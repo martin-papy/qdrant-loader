@@ -437,11 +437,11 @@ async def test_cli_ingest_pipeline_error(runner, mock_pipeline, mock_qdrant_mana
 
 @pytest.mark.asyncio
 async def test_cli_config_without_settings(runner):
-    """Test that the config command fails when settings are not available."""
-    with patch("qdrant_loader.cli.cli.get_settings", return_value=None):
+    """Test that the config command fails when no configuration file is found."""
+    with patch("pathlib.Path.exists", return_value=False):
         result = await runner.async_invoke(cli, ["config"])
         assert result.exit_code == 1
-        assert "Settings not available" in result.output
+        assert "No config file found" in result.output
 
 
 def test_cli_ingest_with_missing_config_file(runner):
