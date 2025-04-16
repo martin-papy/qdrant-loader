@@ -34,10 +34,11 @@ from .global_ import GlobalConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 
-# Load environment variables from .env file
-load_dotenv()
-
 logger = structlog.get_logger(__name__)
+
+# Load environment variables from .env file
+logger.debug("Loading environment variables from .env")
+load_dotenv(override=False)
 
 __all__ = [
     "ChunkingConfig",
@@ -190,7 +191,11 @@ class Settings(BaseSettings):
             Processed data with environment variables substituted
         """
         if isinstance(data, str):
-            # Handle ${VAR_NAME} pattern
+            # First expand $HOME if present
+            if "$HOME" in data:
+                data = data.replace("$HOME", os.path.expanduser("~"))
+
+            # Then handle ${VAR_NAME} pattern
             pattern = r"\${([^}]+)}"
             matches = re.finditer(pattern, data)
             result = data
@@ -199,7 +204,12 @@ class Settings(BaseSettings):
                 env_value = os.getenv(var_name)
                 if env_value is None:
                     logger.warning("Environment variable not found", variable=var_name)
-                result = result.replace(f"${{{var_name}}}", env_value or "")
+                    continue
+                # If the environment variable contains $HOME, expand it
+                if "$HOME" in env_value:
+                    env_value = env_value.replace("$HOME", os.path.expanduser("~"))
+                result = result.replace(f"${{{var_name}}}", env_value)
+
             return result
         elif isinstance(data, dict):
             return {k: Settings._substitute_env_vars(v) for k, v in data.items()}
@@ -220,20 +230,25 @@ class Settings(BaseSettings):
         """
         logger.debug("Loading configuration from YAML", path=str(config_path))
         try:
+            # Step 1: Load YAML config
             with open(config_path, "r") as f:
                 config_data = yaml.safe_load(f)
 
-            # Substitute environment variables in the config data
-            logger.debug("Substituting environment variables in configuration")
+            # Step 2: Load environment variables
+            logger.debug("Loading environment variables")
+            load_dotenv(override=False)
+
+            # Step 3: Process all environment variables in config
+            logger.debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
 
-            # Create configuration instances
+            # Step 4: Create configuration instances with processed data
             global_config = GlobalConfig(
                 **config_data.get("global", {}), skip_validation=skip_validation
             )
             sources_config = SourcesConfig(**config_data.get("sources", {}))
 
-            # Create settings instance with environment variables and config objects
+            # Step 5: Create settings instance with environment variables and config objects
             settings_data = {
                 "global_config": global_config,
                 "sources_config": sources_config,
@@ -241,7 +256,7 @@ class Settings(BaseSettings):
                 "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
                 "QDRANT_COLLECTION_NAME": os.getenv("QDRANT_COLLECTION_NAME"),
                 "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-                "STATE_DB_PATH": ":memory:" if skip_validation else os.getenv("STATE_DB_PATH"),
+                "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
                 "REPO_TOKEN": os.getenv("REPO_TOKEN"),
                 "REPO_URL": os.getenv("REPO_URL"),
                 "CONFLUENCE_URL": os.getenv("CONFLUENCE_URL"),
@@ -254,7 +269,7 @@ class Settings(BaseSettings):
                 "JIRA_EMAIL": os.getenv("JIRA_EMAIL"),
             }
 
-            logger.debug("Creating Settings instance")
+            logger.debug("Creating Settings instance with data", settings_data=settings_data)
             settings = cls(**settings_data)
 
             return settings
