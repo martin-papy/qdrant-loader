@@ -1,36 +1,47 @@
 """CLI module for QDrant Loader."""
 
 import asyncio
-import importlib.metadata
-import logging
-from pathlib import Path
-from typing import Optional
 import os
+from pathlib import Path
 
 import click
-import structlog
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
-from qdrant_loader.config import get_settings, initialize_config, Settings
+from qdrant_loader.config import Settings, get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger()
+# Get logger without initializing it
+logger = LoggingConfig.get_logger(__name__)
 
 
 def _setup_logging(log_level: str) -> None:
     """Setup logging configuration."""
     try:
-        level = getattr(logging, log_level.upper())
-        structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(level))
-    except AttributeError:
-        raise ClickException(f"Invalid log level: {log_level}")
+        # Get logging configuration from settings if available
+        log_format = "console"
+        log_file = "qdrant-loader.log"
+
+        # Reconfigure logging with the provided configuration
+        LoggingConfig.setup(
+            level=log_level,
+            format=log_format,
+            file=log_file,
+        )
+
+        # Update the global logger with new configuration
+        global logger
+        logger = LoggingConfig.get_logger(__name__)
+
+    except Exception as e:
+        raise ClickException(f"Failed to setup logging: {str(e)!s}") from e
 
 
 def _create_database_directory(path: Path) -> bool:
@@ -51,10 +62,10 @@ def _create_database_directory(path: Path) -> bool:
         return False
     except Exception as e:
         logger.error("directory_creation_failed", error=str(e))
-        raise ClickException(f"Failed to create directory: {str(e)}")
+        raise ClickException(f"Failed to create directory: {str(e)!s}") from e
 
 
-def _load_config(config_path: Optional[Path] = None, skip_validation: bool = False) -> None:
+def _load_config(config_path: Path | None = None, skip_validation: bool = False) -> None:
     """Load configuration from file.
 
     Args:
@@ -66,7 +77,7 @@ def _load_config(config_path: Optional[Path] = None, skip_validation: bool = Fal
         if config_path is not None:
             if not config_path.exists():
                 logger.error("config_not_found", path=str(config_path))
-                raise ClickException(f"Config file not found: {str(config_path)}")
+                raise ClickException(f"Config file not found: {str(config_path)!s}")
             initialize_config(config_path, skip_validation=skip_validation)
             return
 
@@ -90,7 +101,7 @@ def _load_config(config_path: Optional[Path] = None, skip_validation: bool = Fal
         # Get the path from the error and expand it properly
         path = Path(os.path.expanduser(str(e.path)))
         if not _create_database_directory(path):
-            raise ClickException("Database directory creation declined. Exiting.")
+            raise ClickException("Database directory creation declined. Exiting.") from e
 
         # No need to retry _load_config since the directory is now created
         # Just initialize the config with the expanded path
@@ -99,8 +110,11 @@ def _load_config(config_path: Optional[Path] = None, skip_validation: bool = Fal
         else:
             initialize_config(Path("config.yaml"), skip_validation=skip_validation)
 
-    except ClickException:
-        raise
+    except ClickException as e:
+        raise e from None
+    except Exception as e:
+        logger.error("config_load_failed", error=str(e))
+        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
 
 def _check_settings():
@@ -113,9 +127,19 @@ def _check_settings():
 
 
 @group()
-def cli():
-    """QDrant Loader - A tool for collecting and vectorizing technical content."""
-    pass
+@option(
+    "--log-level",
+    type=Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
+    default="INFO",
+    help="Set the logging level.",
+)
+@click.version_option(
+    package_name="qdrant-loader",
+    message="qDrant Loader version %(version)s",
+)
+def cli(log_level: str = "INFO") -> None:
+    """QDrant Loader CLI."""
+    _setup_logging(log_level)
 
 
 @cli.command()
@@ -127,25 +151,25 @@ def cli():
     default="INFO",
     help="Set the logging level.",
 )
-def init(config: Optional[Path], force: bool, log_level: str):
+def init(config: Path | None, force: bool, log_level: str):
     """Initialize QDrant collection."""
     try:
         _setup_logging(log_level)
         _load_config(config)
         settings = _check_settings()
 
-        result = asyncio.run(init_collection(settings, force))
+        result = asyncio.run(init_collection(settings=settings, force=force))
         if result:
             logger.info("collection_initialized")
         else:
             logger.error("collection_initialization_failed")
             raise ClickException("Failed to initialize collection")
 
-    except ClickException:
-        raise
+    except ClickException as e:
+        raise e from None
     except Exception as e:
         logger.error("init_failed", error=str(e))
-        raise ClickException(f"Failed to initialize collection: {str(e)}")
+        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
 
 
 @cli.command()
@@ -160,15 +184,19 @@ def init(config: Optional[Path], force: bool, log_level: str):
     help="Set the logging level.",
 )
 def ingest(
-    config: Optional[Path],
-    source_type: Optional[str],
-    source: Optional[str],
+    config: Path | None,
+    source_type: str | None,
+    source: str | None,
     verbose: bool,
     log_level: str,
 ):
     """Ingest documents into QDrant."""
     try:
         _setup_logging(log_level)
+
+        logger.info("ingestion_started")
+
+        # First load the config
         _load_config(config)
         settings = _check_settings()
 
@@ -191,47 +219,27 @@ def ingest(
                 )
         except QdrantConnectionError as e:
             logger.error("connection_failed", error=str(e))
-            raise ClickException(str(e))
-        except Exception as e:
-            error_msg = str(e)
-            if "Connection refused" in error_msg:
-                raise QdrantConnectionError(
-                    "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
-                    original_error=error_msg,
-                    url=settings.QDRANT_URL,
-                )
-            elif "Invalid API key" in error_msg:
-                raise QdrantConnectionError(
-                    "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
-                    original_error=error_msg,
-                )
-            elif "timeout" in error_msg.lower():
-                raise QdrantConnectionError(
-                    "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
-                    original_error=error_msg,
-                    url=settings.QDRANT_URL,
-                )
-            else:
-                raise QdrantConnectionError(
-                    "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
-                    original_error=error_msg,
-                    url=settings.QDRANT_URL,
-                )
+            raise ClickException(f"{str(e)!s}") from e
 
-        pipeline = IngestionPipeline(settings=settings)
-        asyncio.run(
+        # Initialize ingestion pipeline
+        pipeline = IngestionPipeline(settings)
+
+        # Process documents
+        result = asyncio.run(
             pipeline.process_documents(
-                sources_config=settings.sources_config, source_type=source_type, source_name=source
+                source_type=source_type if source_type else None,
+                source_name=source if source else None,
             )
         )
-        logger.info("ingestion_completed")
+        if not result:
+            logger.error("ingestion_failed", error="Failed to process documents")
+            raise ClickException("Failed to process documents")
 
     except ClickException as e:
-        logger.error("ingestion_failed", error=str(e))
-        raise
+        raise e from None
     except Exception as e:
         logger.error("ingestion_failed", error=str(e))
-        raise ClickException(f"Failed to process documents: {str(e)}")
+        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
 
 
 @cli.command()
@@ -242,10 +250,12 @@ def ingest(
     help="Set the logging level.",
 )
 @option("--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file.")
-def config(log_level: str, config: Optional[Path]):
+def config(log_level: str, config: Path | None):
     """Display current configuration."""
     try:
         _setup_logging(log_level)
+
+        logger.info("qDrant Loader configuration display")
 
         # Load and validate config without initializing global settings
         config_path = config or Path("config.yaml")
@@ -267,28 +277,10 @@ def config(log_level: str, config: Optional[Path]):
 
     except ClickException as e:
         logger.error("config_display_failed", error=str(e))
-        raise
+        raise e from None
     except Exception as e:
         logger.error("config_display_failed", error=str(e))
-        raise ClickException(f"Failed to display configuration: {str(e)}")
-
-
-@cli.command()
-@option(
-    "--log-level",
-    type=Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
-    default="INFO",
-    help="Set the logging level.",
-)
-def version(log_level: str):
-    """Display QDrant Loader version."""
-    try:
-        _setup_logging(log_level)
-        version = importlib.metadata.version("qdrant-loader")
-        echo(f"QDrant Loader version {version}")
-    except Exception as e:
-        logger.error("version_display_failed", error=str(e))
-        raise ClickException(f"Failed to get version information: {str(e)}")
+        raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
 
 
 if __name__ == "__main__":

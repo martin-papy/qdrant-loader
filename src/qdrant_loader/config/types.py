@@ -5,7 +5,7 @@ used across the application. These types provide type safety and documentation
 for configuration data structures.
 """
 
-from typing import TypedDict, Optional, List, Dict, Any
+from typing import Any, TypedDict
 
 
 class GitConfig(TypedDict):
@@ -13,12 +13,12 @@ class GitConfig(TypedDict):
 
     url: str
     branch: str
-    include_paths: List[str]
-    exclude_paths: List[str]
-    file_types: List[str]
+    include_paths: list[str]
+    exclude_paths: list[str]
+    file_types: list[str]
     max_file_size: int
     depth: int
-    token: Optional[str]
+    token: str | None
 
 
 class ConfluenceConfig(TypedDict):
@@ -26,7 +26,7 @@ class ConfluenceConfig(TypedDict):
 
     url: str
     space_key: str
-    content_types: List[str]
+    content_types: list[str]
     token: str
     email: str
 
@@ -51,22 +51,22 @@ class PublicDocsConfig(TypedDict):
     version: str
     content_type: str
     path_pattern: str
-    exclude_paths: List[str]
+    exclude_paths: list[str]
 
 
 class SourcesConfigDict(TypedDict):
     """Configuration for all sources."""
 
-    public_docs: Dict[str, PublicDocsConfig]
-    git_repos: Dict[str, GitConfig]
-    confluence: Dict[str, ConfluenceConfig]
-    jira: Dict[str, JiraConfig]
+    public_docs: dict[str, PublicDocsConfig]
+    git_repos: dict[str, GitConfig]
+    confluence: dict[str, ConfluenceConfig]
+    jira: dict[str, JiraConfig]
 
 
 class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
 
-    chunking: Dict[str, Any]
-    embedding: Dict[str, Any]
-    logging: Dict[str, Any]
-    sources: Dict[str, Any]
+    chunking: dict[str, Any]
+    embedding: dict[str, Any]
+    sources: dict[str, Any]
+    state_management: dict[str, Any]

@@ -1,14 +1,16 @@
 import asyncio
-from typing import cast
+from typing import cast, Dict, List, Optional
 from urllib.parse import urlparse
 
 import structlog
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.models import Distance, VectorParams
 
-from qdrant_loader.config import Settings, get_global_config, get_settings
+from ..config import Settings, get_global_config, get_settings
+from ..utils.logging import LoggingConfig
 
-logger = structlog.get_logger()
+logger = LoggingConfig.get_logger(__name__)
 
 
 class QdrantConnectionError(Exception):
@@ -74,30 +76,30 @@ class QdrantManager:
                         "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
                         original_error=error_msg,
                         url=url,
-                    )
+                    ) from e
                 elif "Invalid API key" in error_msg:
                     raise QdrantConnectionError(
                         "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
                         original_error=error_msg,
-                    )
+                    ) from e
                 elif "timeout" in error_msg.lower():
                     raise QdrantConnectionError(
                         "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
                         original_error=error_msg,
                         url=url,
-                    )
+                    ) from e
                 else:
                     raise QdrantConnectionError(
                         "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
                         original_error=error_msg,
                         url=url,
-                    )
+                    ) from e
         except QdrantConnectionError:
             raise
         except Exception as e:
             raise QdrantConnectionError(
                 "Failed to connect to qDrant: Unexpected error", original_error=str(e), url=url
-            )
+            ) from e
 
     def _ensure_client_connected(self) -> QdrantClient:
         """Ensure the client is connected before performing operations."""

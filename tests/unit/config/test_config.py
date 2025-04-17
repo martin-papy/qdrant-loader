@@ -14,7 +14,7 @@ from qdrant_loader.config import (
     SourcesConfig,
     StateManagementConfig,
 )
-from qdrant_loader.config.global_ import LoggingConfig
+from qdrant_loader.utils.logging import LoggingConfig
 
 # Load test environment variables
 load_dotenv(Path(__file__).parent / ".env.test")
@@ -93,19 +93,13 @@ def test_invalid_log_level(test_global_config):
         ValidationError,
         match="Invalid logging level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL",
     ):
-        GlobalConfig(
-            state_management=test_global_config.state_management,
-            logging=LoggingConfig(level="INVALID"),
-        )
+        LoggingConfig.setup(level="INVALID")
 
 
 def test_invalid_log_format(test_global_config):
     """Test that invalid log format raises ValueError."""
     with pytest.raises(ValidationError, match="Invalid log format. Must be one of: json, text"):
-        GlobalConfig(
-            state_management=test_global_config.state_management,
-            logging=LoggingConfig(format="INVALID"),
-        )
+        LoggingConfig.setup(format="INVALID")
 
 
 def test_invalid_chunk_size(test_global_config):

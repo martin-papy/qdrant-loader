@@ -1,15 +1,16 @@
-from typing import List, Optional, Dict, Any
+import asyncio
 import os
+import re
+from typing import Optional
+
 import requests
 from requests.auth import HTTPBasicAuth
+
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 from qdrant_loader.core.document import Document
-from qdrant_loader.utils.logger import get_logger
-from datetime import datetime
-import re
-import asyncio
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class ConfluenceConnector:
@@ -47,7 +48,7 @@ class ConfluenceConnector:
         """
         return f"{self.base_url}/rest/api/{endpoint}"
 
-    async def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated request to the Confluence API.
 
         Args:
@@ -56,7 +57,7 @@ class ConfluenceConnector:
             **kwargs: Additional request parameters
 
         Returns:
-            Dict[str, Any]: Response data
+            dict: Response data
 
         Raises:
             requests.exceptions.RequestException: If the request fails
@@ -71,7 +72,7 @@ class ConfluenceConnector:
             logger.error(f"Failed to make request to {url}: {str(e)}")
             raise
 
-    async def _get_space_content(self, start: int = 0, limit: int = 25) -> Dict[str, Any]:
+    async def _get_space_content(self, start: int = 0, limit: int = 25) -> dict:
         """Fetch content from a Confluence space.
 
         Args:
@@ -79,7 +80,7 @@ class ConfluenceConnector:
             limit: Maximum number of items to return
 
         Returns:
-            Dict[str, Any]: Response containing space content
+            dict: Response containing space content
         """
         params = {
             "cql": f"space = {self.config.space_key} and type in (page, blogpost)",
@@ -102,7 +103,7 @@ class ConfluenceConnector:
         logger.debug("Confluence API response", response=response)
         return response
 
-    def _should_process_content(self, content: Dict[str, Any]) -> bool:
+    def _should_process_content(self, content: dict) -> bool:
         """Check if content should be processed based on labels.
 
         Args:
@@ -127,9 +128,7 @@ class ConfluenceConnector:
 
         return True
 
-    def _process_content(
-        self, content: Dict[str, Any], clean_html: bool = True
-    ) -> Optional[Document]:
+    def _process_content(self, content: dict, clean_html: bool = True) -> Optional[Document]:
         """Process a single content item from Confluence.
 
         Args:
@@ -229,11 +228,11 @@ class ConfluenceConnector:
         text = re.sub(r"\s+", " ", text)
         return text.strip()
 
-    async def get_documents(self) -> List[Document]:
+    async def get_documents(self) -> list[Document]:
         """Fetch and process documents from Confluence.
 
         Returns:
-            List[Document]: List of processed documents
+            list[Document]: List of processed documents
         """
         documents = []
         start = 0
