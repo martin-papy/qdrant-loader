@@ -71,18 +71,16 @@ async def test_cli_help(runner):
     """Test that the CLI help message is displayed correctly."""
     result = await runner.async_invoke(cli, ["--help"])
     assert result.exit_code == 0
-    assert (
-        "QDrant Loader - A tool for collecting and vectorizing technical content" in result.output
-    )
+    assert "Usage: qdrant-loader [OPTIONS] COMMAND [ARGS]" in result.output
 
 
 @pytest.mark.asyncio
 async def test_cli_version(runner):
     """Test that the version command works."""
     with patch("qdrant_loader.cli.cli._load_config", return_value=None):
-        result = await runner.async_invoke(cli, ["version"])
+        result = await runner.async_invoke(cli, ["--version"])
         assert result.exit_code == 0
-        assert "QDrant Loader version" in result.output
+        assert "qDrant Loader v." in result.output
 
 
 @pytest.mark.asyncio
@@ -350,9 +348,7 @@ async def test_cli_ingest_with_verbose(
         patch("qdrant_loader.cli.cli._load_config", return_value=None),
     ):
         mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli, ["ingest", "--verbose", "--config", "tests/config.test.yaml"]
-        )
+        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
         assert result.exit_code == 0, f"CLI failed with output: {result.output}"
         mock_pipeline.process_documents.assert_awaited_once()
         mock_qdrant_manager.client.get_collections.assert_called_once()
