@@ -5,10 +5,6 @@ global:
   embedding:
     model: text-embedding-3-small
     batch_size: 10  # Smaller batch size for tests
-  logging:
-    level: INFO
-    format: json
-    file: qdrant-loader-test.log
   state_management:
     database_path: ":memory:"  # Use in-memory SQLite for tests
     table_prefix: "test_qdrant_loader_"

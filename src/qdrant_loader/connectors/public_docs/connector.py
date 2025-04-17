@@ -1,20 +1,20 @@
 """Public documentation connector implementation."""
 
-from typing import List, Optional, Set
-import logging
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+import asyncio
 import re
 from collections import deque
 from datetime import datetime
-from qdrant_loader.core.document import Document
-from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
-import asyncio
-from bs4 import BeautifulSoup
-from typing import cast
+from typing import List, Optional, Set, cast
+from urllib.parse import urljoin, urlparse
 
-logger = logging.getLogger(__name__)
+import requests
+from bs4 import BeautifulSoup
+
+from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
+from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class PublicDocsConnector:
@@ -29,6 +29,7 @@ class PublicDocsConnector:
         self.session = requests.Session()
         self.visited_urls: Set[str] = set()
         self.url_queue: deque = deque()
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def _get_page_url(self, path: str) -> str:
         """Construct the full URL for a documentation page."""
@@ -86,9 +87,9 @@ class PublicDocsConnector:
         # Find main content
         content = soup.select_one(self.source_config.selectors.content)
         if not content:
-            logger.warning(
-                "Could not find main content using selector: %s",
-                self.source_config.selectors.content,
+            self.logger.warning(
+                "Could not find main content using selector",
+                selector=self.source_config.selectors.content,
             )
             return ""
 
@@ -116,13 +117,15 @@ class PublicDocsConnector:
                 return response.text
 
         except requests.RequestException as e:
-            logger.error("Failed to process page %s: %s", url, str(e))
+            self.logger.error("Failed to process page", url=url, error=str(e))
             return None
 
     async def get_documentation(self) -> List[Document]:
         """Fetch and process all documentation pages using crawling."""
-        logger.info(
-            "Starting documentation fetch from %s (version: %s)", self.base_url, self.version
+        self.logger.info(
+            "Starting documentation fetch",
+            base_url=self.base_url,
+            version=self.version,
         )
 
         documents = []
@@ -143,7 +146,7 @@ class PublicDocsConnector:
             if not self._should_process_url(current_url):
                 continue
 
-            logger.debug("Processing page: %s", current_url)
+            self.logger.debug("Processing page", url=current_url)
             page_content = await self._process_page(current_url)
 
             if page_content:
@@ -160,9 +163,13 @@ class PublicDocsConnector:
                     last_updated=datetime.now(),
                 )
                 documents.append(doc)
-                logger.info("Successfully processed page: %s", current_url)
+                self.logger.info("Successfully processed page", url=current_url)
             else:
-                logger.warning("Failed to process page: %s", current_url)
+                self.logger.warning("Failed to process page", url=current_url)
 
-        logger.info("Finished crawling. Processed %d pages.", len(documents))
+        self.logger.info(
+            "Finished crawling",
+            processed_pages=len(documents),
+            total_visited=len(self.visited_urls),
+        )
         return documents

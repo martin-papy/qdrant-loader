@@ -4,7 +4,6 @@ Ingestion pipeline for processing documents.
 
 from datetime import UTC, datetime
 
-import structlog
 from pydantic import HttpUrl
 from qdrant_client.http import models
 
@@ -13,13 +12,14 @@ from ..connectors.confluence import ConfluenceConnector
 from ..connectors.git import GitConnector
 from ..connectors.jira import JiraConfig, JiraConnector
 from ..connectors.public_docs import PublicDocsConnector
+from ..utils.logging import LoggingConfig
 from .chunking_service import ChunkingService
 from .document import Document
 from .embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
 from .state import DocumentState, StateManager
 
-logger = structlog.get_logger()
+logger = LoggingConfig.get_logger(__name__)
 
 
 class IngestionPipeline:
@@ -66,9 +66,10 @@ class IngestionPipeline:
             # Process Git repositories
             if filtered_config.git_repos:
                 for name, config in filtered_config.git_repos.items():
-                    connector = GitConnector(config)
-                    git_docs = await connector.get_documents()
-                    documents.extend(git_docs)
+                    logger.info(f"Processing Git repository: {name}")
+                    with GitConnector(config) as connector:
+                        git_docs = await connector.get_documents()
+                        documents.extend(git_docs)
 
             # Process Confluence spaces
             if filtered_config.confluence:
