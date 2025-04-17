@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import click
+import tomli
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
@@ -20,6 +21,17 @@ from qdrant_loader.utils.logging import LoggingConfig
 
 # Get logger without initializing it
 logger = LoggingConfig.get_logger(__name__)
+
+
+def _get_version() -> str:
+    """Get version from pyproject.toml."""
+    try:
+        with open("pyproject.toml", "rb") as f:
+            pyproject = tomli.load(f)
+            return pyproject["project"]["version"]
+    except Exception as e:
+        logger.warning("Failed to read version from pyproject.toml", error=str(e))
+        return "Unknown"  # Fallback version
 
 
 def _setup_logging(log_level: str) -> None:
@@ -124,7 +136,7 @@ def _check_settings():
     return settings
 
 
-@group()
+@group(name="qdrant-loader")
 @option(
     "--log-level",
     type=Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
@@ -132,8 +144,8 @@ def _check_settings():
     help="Set the logging level.",
 )
 @click.version_option(
-    package_name="qdrant-loader",
-    message="qDrant Loader version %(version)s",
+    version=_get_version(),
+    message="qDrant Loader v.%(version)s",
 )
 def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI."""
@@ -156,7 +168,7 @@ def init(config: Path | None, force: bool, log_level: str):
         _load_config(config)
         settings = _check_settings()
 
-        result = asyncio.run(init_collection(settings=settings, force=force))
+        result = asyncio.run(init_collection(settings, force))
         if result:
             logger.info("collection_initialized")
         else:
@@ -208,7 +220,7 @@ def ingest(
             collections = qdrant_manager.client.get_collections()
             if not any(c.name == settings.QDRANT_COLLECTION_NAME for c in collections.collections):
                 raise ClickException(
-                    f"Collection '{settings.QDRANT_COLLECTION_NAME}' does not exist. "
+                    f"collection_not_found: Collection '{settings.QDRANT_COLLECTION_NAME}' does not exist. "
                     "Please run 'qdrant-loader init' first to create the collection."
                 )
         except QdrantConnectionError as e:
@@ -225,11 +237,15 @@ def ingest(
                 source_name=source if source else None,
             )
         )
-        if not result:
+        if result is False:  # Only raise error if explicitly False
             raise ClickException("Failed to process documents")
 
+    except ClickException as e:
+        logger.error("Client Exited with Error", error=str(e))
+        raise e from None
     except Exception as e:
         logger.error("Client Exited with Error", error=str(e))
+        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
 
 
 @cli.command()

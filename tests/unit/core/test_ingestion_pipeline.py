@@ -18,6 +18,7 @@ from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig, 
 from qdrant_loader.core.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
+from qdrant_loader.connectors.git.config import GitRepoConfig
 
 logger = getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -259,9 +260,22 @@ async def test_process_documents_error(test_settings):
         # Create pipeline
         pipeline = IngestionPipeline(test_settings)
 
+        # Create sources config with Git repository
+        sources_config = SourcesConfig()
+        sources_config.git_repos = {
+            "test-repo": GitRepoConfig(
+                url="https://github.com/test/repo.git",
+                branch="main",
+                depth=1,
+                file_types=["*.md"],
+                token="",  # No token needed for public repo
+                temp_dir="",  # Will be set by GitConnector
+            )
+        }
+
         # Test error handling
         with pytest.raises(ValueError, match="Repository not initialized"):
-            await pipeline.process_documents()
+            await pipeline.process_documents(sources_config)
 
 
 def test_filter_sources(test_settings):

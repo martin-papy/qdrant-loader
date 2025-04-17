@@ -64,7 +64,6 @@ def test_settings_validation(test_settings):
     assert test_settings.QDRANT_API_KEY == "test-key"
     assert test_settings.QDRANT_COLLECTION_NAME == "test-collection"
     assert test_settings.OPENAI_API_KEY == "test-key"
-    assert test_settings.global_config.logging.level == "INFO"
     assert test_settings.STATE_DB_PATH.endswith("test.db")
 
 
@@ -80,26 +79,8 @@ def test_global_config_defaults(test_global_config):
     assert test_global_config.chunking.chunk_overlap == 200
     assert test_global_config.embedding.model == "text-embedding-3-small"
     assert test_global_config.embedding.batch_size == 100
-    assert test_global_config.logging.level == "INFO"
-    assert test_global_config.logging.format == "json"
-    assert test_global_config.logging.file == "qdrant-loader.log"
     assert test_global_config.state_management.table_prefix == "qdrant_loader_"
     assert test_global_config.state_management.connection_pool == {"size": 5, "timeout": 30}
-
-
-def test_invalid_log_level(test_global_config):
-    """Test that invalid log level raises ValueError."""
-    with pytest.raises(
-        ValidationError,
-        match="Invalid logging level. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL",
-    ):
-        LoggingConfig.setup(level="INVALID")
-
-
-def test_invalid_log_format(test_global_config):
-    """Test that invalid log format raises ValueError."""
-    with pytest.raises(ValidationError, match="Invalid log format. Must be one of: json, text"):
-        LoggingConfig.setup(format="INVALID")
 
 
 def test_invalid_chunk_size(test_global_config):

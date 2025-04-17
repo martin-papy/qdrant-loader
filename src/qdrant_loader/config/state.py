@@ -41,11 +41,15 @@ class StateManagementConfig(BaseConfig):
         # Expand the path first
         path = Path(os.path.expanduser(v))
         if not path.parent.exists():
-            raise DatabaseDirectoryError(path.parent)
+            raise ValueError("Database directory does not exist")
+
         if not path.parent.is_dir():
-            raise ValueError(f"Database path is not a directory: {path.parent}")
+            raise ValueError("Database path is not a directory")
+
+        # Check if directory is writable
         if not os.access(path.parent, os.W_OK):
-            raise ValueError(f"Database directory is not writable: {path.parent}")
+            raise ValueError("Database directory is not writable")
+
         return str(path)
 
     @field_validator("table_prefix")

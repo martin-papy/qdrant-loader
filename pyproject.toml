@@ -42,6 +42,12 @@ dependencies = [
     "numpy>=1.26.0,<2.0.0",
     "GitPython>=3.1.0",
     "atlassian-python-api>=3.41.0",
+    "tqdm>=4.66.0",
+    "SQLAlchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "appdirs>=1.4.4",
+    "aiosqlite>=0.19.0",
+    "greenlet>=3.0.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -58,6 +64,21 @@ Issues = "https://github.com/kheldar666/qdrant-loader/issues"
 
 [project.scripts]
 qdrant-loader = "qdrant_loader.main:cli"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-timeout>=2.3.0",
+    "responses>=0.24.1",
+    "black>=23.11.0",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+    "autoflake>=2.2.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = [

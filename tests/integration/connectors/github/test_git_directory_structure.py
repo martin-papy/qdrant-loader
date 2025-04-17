@@ -48,7 +48,7 @@ def test_root_directory_handling(cached_documents, is_github_actions):
     docs = cached_documents
 
     # Test root directory files
-    root_files = [doc for doc in docs if not doc.metadata.get("file_directory", "")]
+    root_files = [doc for doc in docs if not doc.metadata.get("file_directory", "/") == "/"]
     assert len(root_files) > 0, "Should find files in root directory"
 
 
@@ -77,9 +77,9 @@ def test_directory_inclusion(cached_documents, is_github_actions):
     # Get all documents
     docs = cached_documents
 
-    root_files = [doc for doc in docs if not doc.metadata.get("file_directory", "")]
-    src_files = [doc for doc in docs if "src" in doc.metadata.get("file_directory", "")]
-    docs_files = [doc for doc in docs if "docs" in doc.metadata.get("file_directory", "")]
+    root_files = [doc for doc in docs if not doc.metadata.get("file_directory", "/") == "/"]
+    src_files = [doc for doc in docs if "src" in doc.metadata.get("file_directory", "/")]
+    docs_files = [doc for doc in docs if "docs" in doc.metadata.get("file_directory", "/")]
 
     assert len(root_files) > 0, "Should find files in root directory"
     assert len(src_files) > 0, "Should find files in src directory"

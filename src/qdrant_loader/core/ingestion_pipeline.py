@@ -65,9 +65,18 @@ class IngestionPipeline:
             if filtered_config.git_repos:
                 for name, config in filtered_config.git_repos.items():
                     self.logger.info(f"Configuring Git repository: {name}")
-                    with GitConnector(config) as connector:
-                        git_docs = await connector.get_documents()
-                        documents.extend(git_docs)
+                    try:
+                        with GitConnector(config) as connector:
+                            git_docs = await connector.get_documents()
+                            documents.extend(git_docs)
+                    except Exception as e:
+                        self.logger.error(
+                            f"Failed to process Git repository {name}",
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            error_class=e.__class__.__name__,
+                        )
+                        raise
 
             # Process Confluence spaces
             if filtered_config.confluence:
@@ -169,11 +178,16 @@ class IngestionPipeline:
                     self.logger.error(f"Error processing document {doc.id}: {e!s}")
                     raise
 
-        except Exception as e:
-            self.logger.error(f"Error in document processing pipeline: {e!s}")
-            raise
+            return documents
 
-        return documents
+        except Exception as e:
+            self.logger.error(
+                "Failed to process documents",
+                error=str(e),
+                error_type=type(e).__name__,
+                error_class=e.__class__.__name__,
+            )
+            raise
 
     def _filter_sources(
         self,
