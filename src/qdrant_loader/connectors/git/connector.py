@@ -84,7 +84,7 @@ class GitOperations:
                     if auth_token and url.startswith("https://"):
                         # Insert token into URL: https://token@github.com/...
                         clone_url = url.replace("https://", f"https://{auth_token}@")
-                        self.logger.info("Using authenticated URL", url=clone_url)
+                        self.logger.debug("Using authenticated URL", url=clone_url)
 
                     self.logger.debug(
                         "Attempting to clone repository",
@@ -400,7 +400,8 @@ class GitConnector:
         self.metadata_extractor = GitMetadataExtractor(config=self.config)
         self.git_ops = GitOperations()
         self.logger = structlog.get_logger(__name__)
-        self.logger.info("Initializing GitConnector", config=config.model_dump())
+        self.logger.info("Initializing GitConnector")
+        self.logger.debug("GitConnector Configuration", config=config.model_dump())
         self._initialized = False
 
     def __enter__(self):
@@ -413,7 +414,7 @@ class GitConnector:
             # Create temporary directory
             self.temp_dir = tempfile.mkdtemp()
             self.config.temp_dir = self.temp_dir  # Update config with the actual temp dir
-            self.logger.info("Created temporary directory", temp_dir=self.temp_dir)
+            self.logger.debug("Created temporary directory", temp_dir=self.temp_dir)
 
             # Get auth token from config
             auth_token = None
@@ -457,7 +458,7 @@ class GitConnector:
             # Verify repository is valid
             try:
                 self.git_ops.repo.git.status()
-                self.logger.info("Repository is valid and accessible", temp_dir=self.temp_dir)
+                self.logger.debug("Repository is valid and accessible", temp_dir=self.temp_dir)
             except Exception as status_error:
                 self.logger.error(
                     "Failed to verify repository status",
@@ -498,7 +499,7 @@ class GitConnector:
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir)
-                self.logger.info(f"Cleaned up temporary directory: {self.temp_dir}")
+                self.logger.info("Cleaned up temporary directory")
             except Exception as e:
                 self.logger.error(f"Failed to clean up temporary directory: {e}")
 
