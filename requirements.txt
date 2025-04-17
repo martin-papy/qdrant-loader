@@ -15,6 +15,7 @@ langchain>=0.3.0
 langchain-core>=0.3.0
 langchain-community>=0.0.38
 numpy>=1.26.0,<2.0.0
+tqdm>=4.66.0
 
 # State management dependencies
 SQLAlchemy>=2.0.0

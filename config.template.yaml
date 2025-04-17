@@ -14,10 +14,10 @@ global:
   # Controls how text is converted to vectors
   embedding:
     endpoint: "http://localhost:8080/v1" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-    model: "text-embedding-3-small"  # Embedding model to use
+    model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
     batch_size: 100                  # Number of chunks to process in one batch
-    vector_size: 1536                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
-    tokenizer: "cl100k_base"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    vector_size: 384                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+    tokenizer: "none"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
 
   # State management configuration
   # Controls how document ingestion state is tracked
