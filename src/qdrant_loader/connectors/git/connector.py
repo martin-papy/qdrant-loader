@@ -453,7 +453,7 @@ class GitConnector:
             # Verify repository initialization
             if not self.git_ops.repo:
                 self.logger.error("Repository not initialized after clone", temp_dir=self.temp_dir)
-                raise RuntimeError("Repository not initialized after clone")
+                raise ValueError("Repository not initialized")
 
             # Verify repository is valid
             try:
@@ -470,6 +470,10 @@ class GitConnector:
 
             self._initialized = True
             return self
+        except ValueError as e:
+            # Preserve ValueError type
+            self.logger.error("Failed to set up Git repository", error=str(e))
+            raise ValueError(str(e)) from e  # Re-raise with the same message
         except Exception as e:
             self.logger.error(
                 "Failed to set up Git repository",
@@ -486,9 +490,7 @@ class GitConnector:
         """Ensure the repository is initialized before performing operations."""
         if not self._initialized:
             self.logger.error("Repository not initialized. Use the connector as a context manager.")
-            raise RuntimeError(
-                "Repository not initialized. Use the connector as a context manager."
-            )
+            raise ValueError("Repository not initialized")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Clean up resources."""
@@ -705,7 +707,12 @@ class GitConnector:
         """
         try:
             self._ensure_initialized()
-            files = self.git_ops.list_files()
+            try:
+                files = self.git_ops.list_files()  # This will raise ValueError if not initialized
+            except ValueError as e:
+                self.logger.error("Failed to list files", error=str(e))
+                raise ValueError("Repository not initialized") from e
+
             documents = []
 
             for file_path in files:
@@ -723,6 +730,10 @@ class GitConnector:
 
             return documents
 
+        except ValueError as e:
+            # Re-raise ValueError to maintain the error type
+            self.logger.error("Failed to get documents", error=str(e))
+            raise
         except Exception as e:
             self.logger.error("Failed to get documents", error=str(e))
             raise
