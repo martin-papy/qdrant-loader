@@ -2,32 +2,40 @@ import asyncio
 import time
 from collections.abc import Sequence
 
-import structlog
+import requests
 import tiktoken
 from openai import OpenAI
+from tqdm import tqdm
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger()
+logger = LoggingConfig.get_logger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating embeddings using OpenAI's API."""
+    """Service for generating embeddings using OpenAI's API or local service."""
 
     def __init__(self, settings: Settings):
         """Initialize the embedding service.
 
         Args:
-            settings: The application settings containing OpenAI API key and endpoint.
+            settings: The application settings containing API key and endpoint.
         """
         self.settings = settings
-        self.client = OpenAI(
-            api_key=settings.OPENAI_API_KEY, base_url=settings.global_config.embedding.endpoint
-        )
+        self.endpoint = settings.global_config.embedding.endpoint.rstrip("/")
         self.model = settings.global_config.embedding.model
         self.tokenizer = settings.global_config.embedding.tokenizer
         self.batch_size = settings.global_config.embedding.batch_size
+
+        # Initialize client based on endpoint
+        if "openai.com" in self.endpoint:
+            self.client = OpenAI(api_key=settings.OPENAI_API_KEY, base_url=self.endpoint)
+            self.use_openai = True
+        else:
+            self.client = None
+            self.use_openai = False
 
         # Initialize tokenizer based on configuration
         if self.tokenizer == "none":
@@ -54,20 +62,6 @@ class EmbeddingService:
             await asyncio.sleep(self.min_request_interval - time_since_last_request)
         self.last_request_time = time.time()
 
-    async def get_embedding(self, text: str) -> list[float]:
-        """Get embedding for a single text."""
-        try:
-            await self._apply_rate_limit()
-            response = await asyncio.to_thread(
-                self.client.embeddings.create,
-                model=self.model,
-                input=[text],  # OpenAI API expects a list
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            logger.error("Failed to get embedding", error=str(e))
-            raise
-
     async def get_embeddings(self, texts: Sequence[str | Document]) -> list[list[float]]:
         """Get embeddings for a list of texts."""
         if not texts:
@@ -75,19 +69,109 @@ class EmbeddingService:
 
         # Extract content if texts are Document objects
         contents = [text.content if isinstance(text, Document) else text for text in texts]
+        logger.debug("Starting batch embedding process", total_texts=len(contents))
 
-        # Process in smaller batches to respect rate limits
-        batch_size = 100
+        # Process in larger batches to improve performance
+        batch_size = min(self.batch_size * 4, 100)  # Increased batch size but capped at 100
         embeddings = []
+
+        # Create progress bar
+        pbar = tqdm(
+            total=len(contents),
+            desc="Generating embeddings",
+            unit="chunks",
+            ncols=100,
+        )
+
         for i in range(0, len(contents), batch_size):
             batch = contents[i : i + batch_size]
-            await self._apply_rate_limit()
-            batch_embeddings = await asyncio.to_thread(
-                self.client.embeddings.create, model=self.model, input=batch
+            batch_num = i // batch_size + 1
+            logger.debug(
+                "Processing batch",
+                batch_num=batch_num,
+                batch_size=len(batch),
             )
-            embeddings.extend([embedding.embedding for embedding in batch_embeddings.data])
+            await self._apply_rate_limit()
 
+            try:
+                if self.use_openai and self.client is not None:
+                    logger.debug("Getting batch embeddings from OpenAI", model=self.model)
+                    response = await asyncio.to_thread(
+                        self.client.embeddings.create, model=self.model, input=batch
+                    )
+                    embeddings.extend([embedding.embedding for embedding in response.data])
+                else:
+                    # Local service request
+                    logger.debug(
+                        "Getting batch embeddings from local service",
+                        model=self.model,
+                        endpoint=self.endpoint,
+                    )
+                    response = await asyncio.to_thread(
+                        requests.post,
+                        f"{self.endpoint}/embeddings",
+                        json={"input": batch, "model": self.model},
+                        headers={"Content-Type": "application/json"},
+                        timeout=60,  # Increased timeout for larger batches
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    if "data" not in data or not data["data"]:
+                        raise ValueError("Invalid response format from local embedding service")
+                    embeddings.extend([item["embedding"] for item in data["data"]])
+
+                # Update progress bar
+                pbar.update(len(batch))
+                logger.debug(
+                    "Completed batch processing",
+                    batch_num=batch_num,
+                    processed_embeddings=len(embeddings),
+                )
+
+            except Exception as e:
+                logger.error(
+                    "Failed to process batch",
+                    batch_num=batch_num,
+                    error=str(e),
+                )
+                pbar.close()
+                raise
+
+        pbar.close()
         return embeddings
+
+    async def get_embedding(self, text: str) -> list[float]:
+        """Get embedding for a single text."""
+        try:
+            await self._apply_rate_limit()
+            if self.use_openai and self.client is not None:
+                logger.debug("Getting embedding from OpenAI", model=self.model)
+                response = await asyncio.to_thread(
+                    self.client.embeddings.create,
+                    model=self.model,
+                    input=[text],  # OpenAI API expects a list
+                )
+                return response.data[0].embedding
+            else:
+                # Local service request
+                logger.debug(
+                    "Getting embedding from local service", model=self.model, endpoint=self.endpoint
+                )
+                response = await asyncio.to_thread(
+                    requests.post,
+                    f"{self.endpoint}/embeddings",
+                    json={"input": text, "model": self.model},
+                    headers={"Content-Type": "application/json"},
+                    timeout=30,  # 30 second timeout
+                )
+                response.raise_for_status()
+                data = response.json()
+                if "data" not in data or not data["data"]:
+                    raise ValueError("Invalid response format from local embedding service")
+                return data["data"][0]["embedding"]
+        except Exception as e:
+            logger.error("Failed to get embedding", error=str(e))
+            raise
 
     def count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
@@ -102,5 +186,4 @@ class EmbeddingService:
 
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
-        # For OpenAI's text-embedding-3-small model, the dimension is 1536
-        return 1536
+        return self.settings.global_config.embedding.vector_size or 1536

@@ -61,7 +61,6 @@ def _create_database_directory(path: Path) -> bool:
             return True
         return False
     except Exception as e:
-        logger.error("directory_creation_failed", error=str(e))
         raise ClickException(f"Failed to create directory: {str(e)!s}") from e
 
 
@@ -88,9 +87,8 @@ def _load_config(config_path: Path | None = None, skip_validation: bool = False)
             return
 
         # Step 3: If no file is found, raise an error
-        logger.error("config_not_found", path=str(default_config))
         raise ClickException(
-            "No config file found. Please specify a config file or create config.yaml in the current directory"
+            f"No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
         )
 
     except DatabaseDirectoryError as e:
@@ -176,7 +174,6 @@ def init(config: Path | None, force: bool, log_level: str):
 @option("--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file.")
 @option("--source-type", type=str, help="Source type to process (e.g., confluence, jira).")
 @option("--source", type=str, help="Source name to process.")
-@option("--verbose", is_flag=True, help="Enable verbose output.")
 @option(
     "--log-level",
     type=Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False),
@@ -187,21 +184,19 @@ def ingest(
     config: Path | None,
     source_type: str | None,
     source: str | None,
-    verbose: bool,
     log_level: str,
 ):
     """Ingest documents into QDrant."""
     try:
         _setup_logging(log_level)
 
-        logger.info("ingestion_started")
+        logger.info("Ingestion Started")
 
         # First load the config
         _load_config(config)
         settings = _check_settings()
 
         if source and not source_type:
-            logger.error("source_name_without_type")
             raise ClickException("Source name provided without source type")
 
         # Check if collection exists
@@ -212,13 +207,11 @@ def ingest(
 
             collections = qdrant_manager.client.get_collections()
             if not any(c.name == settings.QDRANT_COLLECTION_NAME for c in collections.collections):
-                logger.error("collection_not_found", collection=settings.QDRANT_COLLECTION_NAME)
                 raise ClickException(
                     f"Collection '{settings.QDRANT_COLLECTION_NAME}' does not exist. "
                     "Please run 'qdrant-loader init' first to create the collection."
                 )
         except QdrantConnectionError as e:
-            logger.error("connection_failed", error=str(e))
             raise ClickException(f"{str(e)!s}") from e
 
         # Initialize ingestion pipeline
@@ -227,19 +220,16 @@ def ingest(
         # Process documents
         result = asyncio.run(
             pipeline.process_documents(
+                sources_config=settings.sources_config,
                 source_type=source_type if source_type else None,
                 source_name=source if source else None,
             )
         )
         if not result:
-            logger.error("ingestion_failed", error="Failed to process documents")
             raise ClickException("Failed to process documents")
 
-    except ClickException as e:
-        raise e from None
     except Exception as e:
-        logger.error("ingestion_failed", error=str(e))
-        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
+        logger.error("Client Exited with Error", error=str(e))
 
 
 @cli.command()

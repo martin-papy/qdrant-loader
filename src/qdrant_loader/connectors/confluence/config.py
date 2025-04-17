@@ -1,8 +1,8 @@
 """Configuration for Confluence connector."""
 
-from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator, ConfigDict
 import os
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ConfluenceSpaceConfig(BaseModel):
@@ -12,18 +12,19 @@ class ConfluenceSpaceConfig(BaseModel):
 
     url: str = Field(..., description="Base URL of the Confluence instance")
     space_key: str = Field(..., description="Key of the Confluence space")
-    content_types: List[str] = Field(
+    content_types: list[str] = Field(
         default=["page", "blogpost"], description="Types of content to process"
     )
-    token: str = Field(..., description="Confluence API token")
-    email: str = Field(..., description="Email associated with the Confluence account")
-    include_labels: List[str] = Field(
+    token: str | None = Field(..., description="Confluence API token")
+    email: str | None = Field(..., description="Email associated with the Confluence account")
+    include_labels: list[str] = Field(
         default=[], description="List of labels to include (empty list means include all)"
     )
-    exclude_labels: List[str] = Field(default=[], description="List of labels to exclude")
+    exclude_labels: list[str] = Field(default=[], description="List of labels to exclude")
 
     @field_validator("content_types")
-    def validate_content_types(cls, v: List[str]) -> List[str]:
+    @classmethod
+    def validate_content_types(cls, v: list[str]) -> list[str]:
         """Validate content types."""
         valid_types = ["page", "blogpost", "comment"]
         for content_type in v:
@@ -32,11 +33,13 @@ class ConfluenceSpaceConfig(BaseModel):
         return [t.lower() for t in v]
 
     @field_validator("token", mode="after")
-    def load_token_from_env(cls, v: Optional[str]) -> Optional[str]:
+    @classmethod
+    def load_token_from_env(cls, v: str | None) -> str | None:
         """Load token from environment variable if not provided."""
         return v or os.getenv("CONFLUENCE_TOKEN")
 
     @field_validator("email", mode="after")
-    def load_email_from_env(cls, v: Optional[str]) -> Optional[str]:
+    @classmethod
+    def load_email_from_env(cls, v: str | None) -> str | None:
         """Load email from environment variable if not provided."""
         return v or os.getenv("CONFLUENCE_EMAIL")
