@@ -5,9 +5,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from git import Repo
 from git.exc import GitCommandError
+import structlog
 
 from qdrant_loader.connectors.git import GitPythonAdapter
-from qdrant_loader.utils.logger import get_logger
+
+logger = structlog.get_logger(__name__)
 
 
 @pytest.fixture

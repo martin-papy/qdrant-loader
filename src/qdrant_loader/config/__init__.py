@@ -4,20 +4,18 @@ This module provides the main configuration interface for the application.
 It combines global settings with source-specific configurations.
 """
 
+import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional
 
 import structlog
 import yaml
 from dotenv import load_dotenv
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     Field,
     ValidationError,
-    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -27,6 +25,7 @@ from ..connectors.confluence.config import ConfluenceSpaceConfig
 from ..connectors.git.config import GitAuthConfig, GitRepoConfig
 from ..connectors.jira.config import JiraProjectConfig
 from ..connectors.public_docs.config import PublicDocsSourceConfig, SelectorsConfig
+from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
 
 # Import consolidated configs
@@ -34,11 +33,11 @@ from .global_ import GlobalConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 
-logger = structlog.get_logger(__name__)
-
 # Load environment variables from .env file
-logger.debug("Loading environment variables from .env")
 load_dotenv(override=False)
+
+# Get logger without initializing it
+logger = LoggingConfig.get_logger(__name__)
 
 __all__ = [
     "ChunkingConfig",
@@ -89,9 +88,15 @@ def initialize_config(yaml_path: Path, skip_validation: bool = False) -> None:
     """
     global _global_settings
     try:
+        # First load the YAML config
+        with open(yaml_path) as f:
+            config_data = yaml.safe_load(f)
+
+        # Now proceed with initialization
         logger.debug("Initializing configuration", yaml_path=str(yaml_path))
         _global_settings = Settings.from_yaml(yaml_path, skip_validation=skip_validation)
         logger.debug("Successfully initialized configuration")
+
     except Exception as e:
         logger.error("Failed to initialize configuration", error=str(e), yaml_path=str(yaml_path))
         raise

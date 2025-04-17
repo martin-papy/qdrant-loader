@@ -84,7 +84,7 @@ qdrant-loader ingest --source-type jira       # Ingest only JIRA
 qdrant-loader config
 
 # Show version information
-qdrant-loader version
+qdrant-loader --version
 ```
 
 ## Documentation

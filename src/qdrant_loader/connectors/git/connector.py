@@ -1,35 +1,36 @@
 """Git repository connector implementation."""
 
-import os
-import tempfile
-import shutil
 import fnmatch
+import os
+import shutil
+import tempfile
+import time
 from datetime import datetime
-from typing import List, Optional
-import logging
+
+import git
+import structlog
 from git.exc import GitCommandError
 
-from qdrant_loader.core.document import Document
-from qdrant_loader.utils.logger import get_logger
-from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
 from qdrant_loader.connectors.git.config import GitRepoConfig
-import git
-import time
+from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
+from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class GitOperations:
     """Git operations wrapper."""
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: structlog.BoundLogger | None = None):
         """Initialize Git operations.
 
         Args:
-            logger (Optional[logging.Logger], optional): Logger instance. Defaults to None.
+            logger: Logger instance. Defaults to None.
         """
         self.repo = None
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger.info("Initializing GitOperations")
 
     def clone(
         self,
@@ -39,7 +40,7 @@ class GitOperations:
         depth: int,
         max_retries: int = 3,
         retry_delay: int = 2,
-        auth_token: Optional[str] = None,
+        auth_token: str | None = None,
     ) -> None:
         """Clone a Git repository.
 
@@ -55,10 +56,11 @@ class GitOperations:
         # Resolve the URL to an absolute path if it's a local path
         if os.path.exists(url):
             url = os.path.abspath(url)
-            self.logger.info(f"Using local repository at {url}")
+            self.logger.info("Using local repository", url=url)
 
             # Ensure the source is a valid Git repository
             if not os.path.exists(os.path.join(url, ".git")):
+                self.logger.error("Invalid Git repository", path=url)
                 raise ValueError(f"Path {url} is not a valid Git repository")
 
             # Copy the repository
@@ -82,9 +84,39 @@ class GitOperations:
                     if auth_token and url.startswith("https://"):
                         # Insert token into URL: https://token@github.com/...
                         clone_url = url.replace("https://", f"https://{auth_token}@")
+                        self.logger.info("Using authenticated URL", url=clone_url)
+
+                    self.logger.debug(
+                        "Attempting to clone repository",
+                        attempt=attempt + 1,
+                        max_attempts=max_retries,
+                        url=clone_url,
+                        branch=branch,
+                        depth=depth,
+                        to_path=to_path,
+                    )
+
+                    # Verify target directory is empty
+                    if os.path.exists(to_path) and os.listdir(to_path):
+                        self.logger.warning(
+                            "Target directory is not empty",
+                            to_path=to_path,
+                            contents=os.listdir(to_path),
+                        )
+                        shutil.rmtree(to_path)
+                        os.makedirs(to_path)
 
                     self.repo = git.Repo.clone_from(clone_url, to_path, multi_options=clone_args)
-                    self.logger.info(f"Successfully cloned repository from {url} to {to_path}")
+
+                    # Verify repository was cloned successfully
+                    if not self.repo or not os.path.exists(os.path.join(to_path, ".git")):
+                        raise RuntimeError("Repository was not cloned successfully")
+
+                    self.logger.info(
+                        "Successfully cloned repository",
+                        to_path=to_path,
+                        branch=self.repo.active_branch.name,
+                    )
                 finally:
                     # Restore original value
                     if original_prompt is not None:
@@ -93,13 +125,22 @@ class GitOperations:
                         del os.environ["GIT_TERMINAL_PROMPT"]
                 return
             except GitCommandError as e:
+                self.logger.error(
+                    "Git clone attempt failed",
+                    attempt=attempt + 1,
+                    max_attempts=max_retries,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    stderr=getattr(e, "stderr", None),
+                )
                 if attempt < max_retries - 1:
                     self.logger.warning(
-                        f"Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds..."
+                        f"Retrying in {retry_delay} seconds...",
+                        next_attempt=attempt + 2,
                     )
                     time.sleep(retry_delay)
                 else:
-                    self.logger.error(f"All clone attempts failed: {e}")
+                    self.logger.error("All clone attempts failed", error=str(e))
                     raise
 
     def get_file_content(self, file_path: str) -> str:
@@ -133,10 +174,12 @@ class GitOperations:
                     # File exists on disk but not in the repository
                     raise FileNotFoundError(
                         f"File {rel_path} exists on disk but not in the repository"
-                    )
+                    ) from e
                 elif "does not exist" in str(e):
                     # File does not exist in the repository
-                    raise FileNotFoundError(f"File {rel_path} does not exist in the repository")
+                    raise FileNotFoundError(
+                        f"File {rel_path} does not exist in the repository"
+                    ) from e
                 else:
                     # Other git command errors
                     raise
@@ -144,14 +187,14 @@ class GitOperations:
             self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
 
-    def get_last_commit_date(self, file_path: str) -> Optional[datetime]:
+    def get_last_commit_date(self, file_path: str) -> datetime | None:
         """Get the last commit date for a file.
 
         Args:
-            file_path (str): Path to the file
+            file_path: Path to the file
 
         Returns:
-            Optional[datetime]: Last commit date or None if not found
+            Last commit date or None if not found
         """
         try:
             if not self.repo:
@@ -159,22 +202,61 @@ class GitOperations:
 
             # Get the relative path from the repository root
             rel_path = os.path.relpath(file_path, self.repo.working_dir)
+            self.logger.debug("Getting last commit date", file_path=rel_path)
 
             # Get the last commit for the file
-            commits = list(self.repo.iter_commits(paths=rel_path, max_count=1))
-            if commits:
-                last_commit = commits[0]
-                return last_commit.committed_datetime
-            return None
+            try:
+                commits = list(self.repo.iter_commits(paths=rel_path, max_count=1))
+                if commits:
+                    last_commit = commits[0]
+                    self.logger.debug(
+                        "Found last commit",
+                        file_path=rel_path,
+                        commit_date=last_commit.committed_datetime,
+                        commit_hash=last_commit.hexsha,
+                    )
+                    return last_commit.committed_datetime
+                self.logger.debug("No commits found for file", file_path=rel_path)
+                return None
+            except GitCommandError as e:
+                self.logger.warning(
+                    "Failed to get commits for file",
+                    file_path=rel_path,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                return None
+            except BrokenPipeError as e:
+                self.logger.warning(
+                    "Git process terminated unexpectedly",
+                    file_path=rel_path,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                return None
+            except Exception as e:
+                self.logger.warning(
+                    "Unexpected error getting commits",
+                    file_path=rel_path,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                return None
+
         except Exception as e:
-            self.logger.error(f"Failed to get last commit date for {file_path}: {e}")
+            self.logger.error(
+                "Failed to get last commit date",
+                file_path=file_path,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
             return None
 
-    def list_files(self) -> List[str]:
+    def list_files(self) -> list[str]:
         """List all files in the repository.
 
         Returns:
-            List[str]: List of file paths
+            List of file paths
         """
         try:
             if not self.repo:
@@ -187,21 +269,21 @@ class GitOperations:
             # Convert relative paths to absolute paths
             return [os.path.join(self.repo.working_dir, f) for f in files]
         except Exception as e:
-            self.logger.error(f"Failed to list files: {e}")
+            self.logger.error("Failed to list files", error=str(e))
             raise
 
 
 class GitPythonAdapter:
     """Adapter for GitPython operations."""
 
-    def __init__(self, repo: Optional[git.Repo] = None) -> None:
+    def __init__(self, repo: git.Repo | None = None) -> None:
         """Initialize the adapter.
 
         Args:
-            repo (Optional[git.Repo]): Git repository instance
+            repo: Git repository instance
         """
         self.repo = repo
-        self.logger = get_logger(__name__)
+        self.logger = structlog.get_logger(__name__)
 
     def clone(self, url: str, to_path: str, branch: str, depth: int) -> None:
         """Clone a Git repository.
@@ -263,7 +345,7 @@ class GitPythonAdapter:
             self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
 
-    def get_last_commit_date(self, file_path: str) -> Optional[datetime]:
+    def get_last_commit_date(self, file_path: str) -> datetime | None:
         """Get the last commit date for a file.
 
         Args:
@@ -283,7 +365,7 @@ class GitPythonAdapter:
             self.logger.error(f"Failed to get last commit date for {file_path}: {e}")
             return None
 
-    def list_files(self, path: str = ".") -> List[str]:
+    def list_files(self, path: str = ".") -> list[str]:
         """List all files in the repository.
 
         Args:
@@ -317,7 +399,9 @@ class GitConnector:
         self.temp_dir = None  # Will be set in __enter__
         self.metadata_extractor = GitMetadataExtractor(config=self.config)
         self.git_ops = GitOperations()
-        self.logger = get_logger(__name__)
+        self.logger = structlog.get_logger(__name__)
+        self.logger.info("Initializing GitConnector", config=config.model_dump())
+        self._initialized = False
 
     def __enter__(self):
         """Set up the Git repository.
@@ -329,28 +413,81 @@ class GitConnector:
             # Create temporary directory
             self.temp_dir = tempfile.mkdtemp()
             self.config.temp_dir = self.temp_dir  # Update config with the actual temp dir
-            self.logger.info(f"Created temporary directory: {self.temp_dir}")
+            self.logger.info("Created temporary directory", temp_dir=self.temp_dir)
 
             # Get auth token from config
             auth_token = None
             if self.config.token:
                 auth_token = self.config.token
+                self.logger.debug("Using authentication token", token_length=len(auth_token))
 
             # Clone repository
-            self.git_ops.clone(
+            self.logger.debug(
+                "Attempting to clone repository",
                 url=self.config.url,
-                to_path=self.temp_dir,
                 branch=self.config.branch,
                 depth=self.config.depth,
-                auth_token=auth_token,
+                temp_dir=self.temp_dir,
             )
 
+            try:
+                self.git_ops.clone(
+                    url=self.config.url,
+                    to_path=self.temp_dir,
+                    branch=self.config.branch,
+                    depth=self.config.depth,
+                    auth_token=auth_token,
+                )
+            except Exception as clone_error:
+                self.logger.error(
+                    "Failed to clone repository",
+                    error=str(clone_error),
+                    error_type=type(clone_error).__name__,
+                    url=self.config.url,
+                    branch=self.config.branch,
+                    temp_dir=self.temp_dir,
+                )
+                raise
+
+            # Verify repository initialization
+            if not self.git_ops.repo:
+                self.logger.error("Repository not initialized after clone", temp_dir=self.temp_dir)
+                raise RuntimeError("Repository not initialized after clone")
+
+            # Verify repository is valid
+            try:
+                self.git_ops.repo.git.status()
+                self.logger.info("Repository is valid and accessible", temp_dir=self.temp_dir)
+            except Exception as status_error:
+                self.logger.error(
+                    "Failed to verify repository status",
+                    error=str(status_error),
+                    error_type=type(status_error).__name__,
+                    temp_dir=self.temp_dir,
+                )
+                raise
+
+            self._initialized = True
             return self
         except Exception as e:
+            self.logger.error(
+                "Failed to set up Git repository",
+                error=str(e),
+                error_type=type(e).__name__,
+                temp_dir=self.temp_dir,
+            )
             # Clean up if something goes wrong
             if self.temp_dir:
                 self._cleanup()
-            raise RuntimeError(f"Failed to set up Git repository: {e}")
+            raise RuntimeError(f"Failed to set up Git repository: {e}") from e
+
+    def _ensure_initialized(self):
+        """Ensure the repository is initialized before performing operations."""
+        if not self._initialized:
+            self.logger.error("Repository not initialized. Use the connector as a context manager.")
+            raise RuntimeError(
+                "Repository not initialized. Use the connector as a context manager."
+            )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Clean up resources."""
@@ -369,47 +506,49 @@ class GitConnector:
         """Check if a file should be processed based on configuration.
 
         Args:
-            file_path (str): Path to the file
+            file_path: Path to the file
 
         Returns:
-            bool: True if the file should be processed, False otherwise
+            True if the file should be processed, False otherwise
         """
         try:
-            self.logger.info(f"Checking if file should be processed: {file_path}")
-            self.logger.info(f"Current configuration:")
-            self.logger.info(f"  File types: {self.config.file_types}")
-            self.logger.info(f"  Include paths: {self.config.include_paths}")
-            self.logger.info(f"  Exclude paths: {self.config.exclude_paths}")
-            self.logger.info(f"  Max file size: {self.config.max_file_size}")
+            self.logger.debug("Checking if file should be processed", file_path=file_path)
+            self.logger.debug(
+                "Current configuration",
+                file_types=self.config.file_types,
+                include_paths=self.config.include_paths,
+                exclude_paths=self.config.exclude_paths,
+                max_file_size=self.config.max_file_size,
+            )
 
             # Check if file exists and is readable
             if not os.path.isfile(file_path):
-                self.logger.info(f"Skipping {file_path}: file does not exist")
+                self.logger.debug(f"Skipping {file_path}: file does not exist")
                 return False
             if not os.access(file_path, os.R_OK):
-                self.logger.info(f"Skipping {file_path}: file is not readable")
+                self.logger.debug(f"Skipping {file_path}: file is not readable")
                 return False
 
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
-            self.logger.info(f"Relative path: {rel_path}")
+            self.logger.debug(f"Relative path: {rel_path}")
 
             # Skip files that are just extensions without names (e.g. ".md")
             file_basename = os.path.basename(rel_path)
             if file_basename.startswith("."):
-                self.logger.info(f"Skipping {rel_path}: invalid filename (starts with dot)")
+                self.logger.debug(f"Skipping {rel_path}: invalid filename (starts with dot)")
                 return False
 
             # Check if file matches any exclude patterns first
             for pattern in self.config.exclude_paths:
                 pattern = pattern.lstrip("/")
-                self.logger.info(f"Checking exclude pattern: {pattern}")
+                self.logger.debug(f"Checking exclude pattern: {pattern}")
                 if pattern.endswith("/**"):
                     dir_pattern = pattern[:-3]  # Remove /** suffix
                     if dir_pattern == os.path.dirname(rel_path) or os.path.dirname(
                         rel_path
                     ).startswith(dir_pattern + "/"):
-                        self.logger.info(
+                        self.logger.debug(
                             f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
@@ -418,63 +557,63 @@ class GitConnector:
                     if os.path.dirname(rel_path) == dir_pattern or os.path.dirname(
                         rel_path
                     ).startswith(dir_pattern + "/"):
-                        self.logger.info(
+                        self.logger.debug(
                             f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
                 elif fnmatch.fnmatch(rel_path, pattern):
-                    self.logger.info(f"Skipping {rel_path}: matches exclude pattern {pattern}")
+                    self.logger.debug(f"Skipping {rel_path}: matches exclude pattern {pattern}")
                     return False
 
             # Check if file matches any file type patterns (case-insensitive)
             file_type_match = False
             file_ext = os.path.splitext(file_basename)[1].lower()  # Get extension with dot
-            self.logger.info(f"Checking file extension: {file_ext}")
+            self.logger.debug(f"Checking file extension: {file_ext}")
             for pattern in self.config.file_types:
-                self.logger.info(f"Checking file type pattern: {pattern}")
+                self.logger.debug(f"Checking file type pattern: {pattern}")
                 # Extract extension from pattern (e.g., "*.md" -> ".md")
                 pattern_ext = os.path.splitext(pattern)[1].lower()
                 if pattern_ext and file_ext == pattern_ext:
                     file_type_match = True
-                    self.logger.info(f"File {rel_path} matches file type pattern {pattern}")
+                    self.logger.debug(f"File {rel_path} matches file type pattern {pattern}")
                     break
 
             if not file_type_match:
-                self.logger.info(f"Skipping {rel_path}: does not match any file type patterns")
+                self.logger.debug(f"Skipping {rel_path}: does not match any file type patterns")
                 return False
 
             # Check file size
             file_size = os.path.getsize(file_path)
-            self.logger.info(f"File size: {file_size} bytes (max: {self.config.max_file_size})")
+            self.logger.debug(f"File size: {file_size} bytes (max: {self.config.max_file_size})")
             if file_size > self.config.max_file_size:
-                self.logger.info(f"Skipping {rel_path}: exceeds max file size")
+                self.logger.debug(f"Skipping {rel_path}: exceeds max file size")
                 return False
 
             # Check if file matches any include patterns
             if not self.config.include_paths:
                 # If no include paths specified, include everything
-                self.logger.info("No include paths specified, including all files")
+                self.logger.debug("No include paths specified, including all files")
                 return True
 
             # Get the file's directory relative to repo root
             rel_dir = os.path.dirname(rel_path)
-            self.logger.info(f"Checking include patterns for directory: {rel_dir}")
+            self.logger.debug(f"Checking include patterns for directory: {rel_dir}")
 
             for pattern in self.config.include_paths:
                 pattern = pattern.lstrip("/")
-                self.logger.info(f"Checking include pattern: {pattern}")
+                self.logger.debug(f"Checking include pattern: {pattern}")
                 if pattern == "" or pattern == "/":
                     # Root pattern means include only files in root directory
                     if rel_dir == "":
-                        self.logger.info(f"Including {rel_path}: matches root pattern")
+                        self.logger.debug(f"Including {rel_path}: matches root pattern")
                         return True
                 if pattern.endswith("/**/*"):
                     dir_pattern = pattern[:-5]  # Remove /**/* suffix
                     if dir_pattern == "" or dir_pattern == "/":
-                        self.logger.info(f"Including {rel_path}: matches root /**/* pattern")
+                        self.logger.debug(f"Including {rel_path}: matches root /**/* pattern")
                         return True  # Root pattern with /**/* means include everything
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
-                        self.logger.info(
+                        self.logger.debug(
                             f"Including {rel_path}: matches directory pattern {pattern}"
                         )
                         return True
@@ -483,19 +622,19 @@ class GitConnector:
                     if dir_pattern == "" or dir_pattern == "/":
                         # Root pattern with / means include only files in root directory
                         if rel_dir == "":
-                            self.logger.info(f"Including {rel_path}: matches root pattern")
+                            self.logger.debug(f"Including {rel_path}: matches root pattern")
                             return True
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
-                        self.logger.info(
+                        self.logger.debug(
                             f"Including {rel_path}: matches directory pattern {pattern}"
                         )
                         return True
                 elif fnmatch.fnmatch(rel_path, pattern):
-                    self.logger.info(f"Including {rel_path}: matches exact pattern {pattern}")
+                    self.logger.debug(f"Including {rel_path}: matches exact pattern {pattern}")
                     return True
 
             # If we have include patterns but none matched, exclude the file
-            self.logger.info(f"Skipping {rel_path}: not in include paths")
+            self.logger.debug(f"Skipping {rel_path}: not in include paths")
             return False
 
         except Exception as e:
@@ -506,10 +645,13 @@ class GitConnector:
         """Process a single file.
 
         Args:
-            file_path (str): Path to the file
+            file_path: Path to the file
 
         Returns:
-            Document: Document instance with file content and metadata
+            Document instance with file content and metadata
+
+        Raises:
+            Exception: If file processing fails
         """
         try:
             # Get relative path from repository root
@@ -534,6 +676,9 @@ class GitConnector:
                     "last_commit_date": last_commit_date.isoformat() if last_commit_date else None,
                 }
             )
+            # Get relative path from repository root
+            rel_path = os.path.relpath(file_path, self.temp_dir)
+            self.logger.info(f"Processed Git file: /{rel_path!s}")
 
             # Create document
             return Document(
@@ -541,21 +686,24 @@ class GitConnector:
                 metadata=metadata,
                 source=self.config.url,
                 source_type="git",
-                url=f"{self.config.url}/blob/{self.config.branch}/{rel_path}",
+                url=f"{self.config.url.replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
                 last_updated=last_commit_date,
             )
-
         except Exception as e:
-            self.logger.error(f"Failed to process file {file_path}: {e}")
+            self.logger.error("Failed to process file", file_path=file_path, error=str(e))
             raise
 
-    async def get_documents(self) -> List[Document]:
+    async def get_documents(self) -> list[Document]:
         """Get all documents from the repository.
 
         Returns:
-            List[Document]: List of documents
+            List of documents
+
+        Raises:
+            Exception: If document retrieval fails
         """
         try:
+            self._ensure_initialized()
             files = self.git_ops.list_files()
             documents = []
 
@@ -564,29 +712,16 @@ class GitConnector:
                     continue
 
                 try:
-                    content = self.git_ops.get_file_content(file_path)
-                    if not content:
-                        continue
-
-                    last_commit_date = self.git_ops.get_last_commit_date(file_path)
-                    metadata = self.metadata_extractor.extract_all_metadata(file_path, content)
-
-                    document = Document(
-                        content=content,
-                        source=self.config.url,
-                        source_type="git",
-                        metadata=metadata,
-                        url=f"{self.config.url}/blob/{self.config.branch}/{file_path}",
-                        last_updated=last_commit_date,
-                    )
+                    document = self._process_file(file_path)
+                    self.logger.debug(f"Git file Metadata: {document.metadata!s}")
                     documents.append(document)
 
                 except Exception as e:
-                    logger.error(f"Failed to process file {file_path}: {str(e)}")
+                    self.logger.error("Failed to process file", file_path=file_path, error=str(e))
                     continue
 
             return documents
 
         except Exception as e:
-            logger.error(f"Failed to get documents: {str(e)}")
+            self.logger.error("Failed to get documents", error=str(e))
             raise
