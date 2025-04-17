@@ -1,7 +1,12 @@
-from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from ..utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class Document(BaseModel):
@@ -9,18 +14,25 @@ class Document(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     content: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     source: str
     source_type: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    url: Optional[str] = None
-    project: Optional[str] = None
-    author: Optional[str] = None
-    last_updated: Optional[datetime] = None
+    url: str | None = None
+    project: str | None = None
+    author: str | None = None
+    last_updated: datetime | None = None
 
     def __init__(self, **data):
         # Initialize with provided data
         super().__init__(**data)
+
+        logger.debug(f"Creating document with id: {self.id}")
+        logger.debug(f"     Document content length: {len(self.content) if self.content else 0}")
+        logger.debug(f"     Document source: {self.source}")
+        logger.debug(f"     Document source_type: {self.source_type}")
+        logger.debug(f"     Document created_at: {self.created_at}")
+        logger.debug(f"     Document metadata: {self.metadata}")
 
         # Update metadata with core fields
         self.metadata.update(
@@ -41,7 +53,7 @@ class Document(BaseModel):
         if self.last_updated:
             self.metadata["last_updated"] = self.last_updated.isoformat()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert document to dictionary format for Qdrant."""
         return {
             "id": self.id,
@@ -53,7 +65,7 @@ class Document(BaseModel):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Document":
+    def from_dict(cls, data: dict[str, Any]) -> "Document":
         """Create document from dictionary format."""
         metadata = data.get("metadata", {})
         doc = cls(

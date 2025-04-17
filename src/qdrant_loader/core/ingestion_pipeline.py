@@ -3,6 +3,7 @@ Ingestion pipeline for processing documents.
 """
 
 from datetime import UTC, datetime
+import uuid
 
 from pydantic import HttpUrl
 from qdrant_client.http import models
@@ -27,8 +28,6 @@ class IngestionPipeline:
 
     def __init__(self, settings: Settings):
         """Initialize the ingestion pipeline."""
-        if settings is None:
-            raise ValueError("Settings not available. Please check your environment variables.")
 
         self.settings = settings
         self.config = settings.global_config
@@ -42,6 +41,7 @@ class IngestionPipeline:
         self.embedding_service = EmbeddingService(settings)
         self.qdrant_manager = QdrantManager(settings)
         self.state_manager = StateManager(self.config.state_management)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     async def process_documents(
         self,
@@ -52,9 +52,7 @@ class IngestionPipeline:
         """Process documents from all configured sources."""
         if not sources_config:
             sources_config = self.settings.sources_config
-
-        if not sources_config:
-            logger.warning("No sources configured")
+            self.logger.error("No sources configured")
             return []
 
         # Filter sources based on type and name
@@ -66,7 +64,7 @@ class IngestionPipeline:
             # Process Git repositories
             if filtered_config.git_repos:
                 for name, config in filtered_config.git_repos.items():
-                    logger.info(f"Processing Git repository: {name}")
+                    self.logger.info(f"Configuring Git repository: {name}")
                     with GitConnector(config) as connector:
                         git_docs = await connector.get_documents()
                         documents.extend(git_docs)
@@ -74,6 +72,7 @@ class IngestionPipeline:
             # Process Confluence spaces
             if filtered_config.confluence:
                 for name, config in filtered_config.confluence.items():
+                    self.logger.debug(f"Configuring Confluence space: {name}")
                     connector = ConfluenceConnector(config)
                     confluence_docs = await connector.get_documents()
                     documents.extend(confluence_docs)
@@ -81,6 +80,7 @@ class IngestionPipeline:
             # Process Jira projects
             if filtered_config.jira:
                 for name, config in filtered_config.jira.items():
+                    self.logger.debug(f"Configuring Jira project: {name}")
                     # Convert JiraProjectConfig to JiraConfig
                     jira_config = JiraConfig(
                         base_url=HttpUrl(config.base_url),
@@ -99,24 +99,28 @@ class IngestionPipeline:
             # Process public documentation
             if filtered_config.public_docs:
                 for name, config in filtered_config.public_docs.items():
+                    self.logger.debug(f"Configuring public documentation: {name}")
                     connector = PublicDocsConnector(config)
                     public_docs = await connector.get_documentation()
                     documents.extend(public_docs)
 
+            self.logger.debug(f"Found {len(documents)} documents to process", documents=documents)
             # Process all documents
             for doc in documents:
                 try:
                     # Convert Document to DocumentState
+                    now = datetime.now(UTC)
                     doc_state = DocumentState(
-                        source_type=doc.source_type,
-                        source_name=doc.source,
-                        document_id=doc.id,
-                        last_updated=doc.last_updated or datetime.now(UTC),
-                        last_ingested=datetime.now(UTC),
+                        source_type=doc.source_type or "unknown",
+                        source_name=doc.source or "unknown",
+                        document_id=doc.id or str(uuid.uuid4()),
+                        last_updated=doc.last_updated if doc.last_updated is not None else now,
+                        last_ingested=now,
                         is_deleted=False,
-                        created_at=datetime.now(UTC),
-                        updated_at=datetime.now(UTC),
+                        created_at=now,
+                        updated_at=now,
                     )
+                    self.logger.debug(f"Document state created: {doc_state}")
                     # Update document state
                     await self.state_manager.update_document_state(doc_state)
 
@@ -124,7 +128,7 @@ class IngestionPipeline:
                     try:
                         chunks = self.chunking_service.chunk_document(doc)
                     except Exception as e:
-                        logger.error(f"Error chunking document {doc.id}: {e!s}")
+                        self.logger.error(f"Error chunking document {doc.id}: {e!s}")
                         raise
 
                     # Get embeddings
@@ -134,6 +138,16 @@ class IngestionPipeline:
                     # Create PointStruct instances
                     points = []
                     for chunk, embedding in zip(chunks, embeddings, strict=False):
+                        self.logger.debug(f"Creating point for chunk {chunk.id}")
+                        self.logger.debug(
+                            f"Chunk content length: {len(chunk.content) if chunk.content else 0}"
+                        )
+                        self.logger.debug(f"Chunk metadata: {chunk.metadata}")
+                        self.logger.debug(f"Chunk source: {chunk.source}")
+                        self.logger.debug(f"Chunk source_type: {chunk.source_type}")
+                        self.logger.debug(f"Chunk created_at: {chunk.created_at}")
+                        self.logger.debug(f"Embedding length: {len(embedding) if embedding else 0}")
+
                         point = models.PointStruct(
                             id=chunk.id,
                             vector=embedding,
@@ -145,17 +159,18 @@ class IngestionPipeline:
                                 "created_at": chunk.created_at.isoformat(),
                             },
                         )
+                        self.logger.debug(f"Point created: {point}")
                         points.append(point)
 
                     # Update Qdrant
                     await self.qdrant_manager.upsert_points(points)
 
                 except Exception as e:
-                    logger.error(f"Error processing document {doc.id}: {e!s}")
+                    self.logger.error(f"Error processing document {doc.id}: {e!s}")
                     raise
 
         except Exception as e:
-            logger.error(f"Error in document processing pipeline: {e!s}")
+            self.logger.error(f"Error in document processing pipeline: {e!s}")
             raise
 
         return documents

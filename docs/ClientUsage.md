@@ -92,14 +92,13 @@ qdrant-loader ingest --source-type jira --source my-project
 qdrant-loader config
 
 # Show version information
-qdrant-loader version
+qdrant-loader --version
 ```
 
 ### Common Options
 
 All commands support:
 
-- `--verbose`: Enable verbose output
 - `--log-level LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `--config FILE`: Specify custom config file (defaults to config.yaml)
 
@@ -119,14 +118,6 @@ The logging level can be adjusted using the `--log-level` option:
 
 ```bash
 qdrant-loader ingest --log-level DEBUG
-```
-
-### Verbose Mode
-
-For detailed output during operations:
-
-```bash
-qdrant-loader ingest --verbose
 ```
 
 ## Troubleshooting

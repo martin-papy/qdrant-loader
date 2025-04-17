@@ -2,19 +2,25 @@
 SQLAlchemy models for state management database.
 """
 
-from datetime import datetime, UTC
-from typing import Optional
+from datetime import UTC
+
 from sqlalchemy import (
+    Boolean,
     Column,
+    Index,
     Integer,
     String,
-    Boolean,
-    DateTime as SQLDateTime,
-    Index,
-    UniqueConstraint,
     TypeDecorator,
+    UniqueConstraint,
+)
+from sqlalchemy import (
+    DateTime as SQLDateTime,
 )
 from sqlalchemy.orm import declarative_base
+
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class UTCDateTime(TypeDecorator):
