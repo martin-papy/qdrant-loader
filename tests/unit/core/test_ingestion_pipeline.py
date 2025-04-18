@@ -264,12 +264,14 @@ async def test_process_documents_error(test_settings):
         sources_config = SourcesConfig()
         sources_config.git_repos = {
             "test-repo": GitRepoConfig(
-                url="https://github.com/test/repo.git",
+                base_url=HttpUrl("https://github.com/test/repo.git"),
                 branch="main",
                 depth=1,
                 file_types=["*.md"],
                 token="",  # No token needed for public repo
                 temp_dir="",  # Will be set by GitConnector
+                source_type="git",
+                source_name="test-repo",
             )
         }
 
@@ -317,7 +319,9 @@ async def test_process_documents_with_jira(test_settings):
 
     # Configure sources
     jira_config = JiraProjectConfig(
-        base_url="https://test.atlassian.net",
+        base_url=HttpUrl("https://test.atlassian.net"),
+        source_type="jira",
+        source_name="TEST",
         project_key="TEST",
         page_size=100,
         requests_per_minute=60,
@@ -423,6 +427,8 @@ async def test_pipeline_process_empty_document(test_settings):
             SourcesConfig(
                 public_docs={
                     "test": PublicDocsSourceConfig(
+                        source_type="public-docs",
+                        source_name="test",
                         base_url=HttpUrl("https://test.com"),
                         version="1.0",
                         content_type="html",
@@ -479,6 +485,8 @@ async def test_pipeline_process_invalid_document(test_settings):
                 SourcesConfig(
                     public_docs={
                         "test": PublicDocsSourceConfig(
+                            source_type="public-docs",
+                            source_name="test",
                             base_url=HttpUrl("https://test.com"),
                             version="1.0",
                             content_type="html",

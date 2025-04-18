@@ -79,7 +79,7 @@ def test_environment_variable_substitution(test_settings):
     jira_settings = test_settings.sources_config.jira["test-project"]
 
     # Check that environment variables were substituted
-    assert jira_settings.base_url == os.getenv("JIRA_URL"), "JIRA_URL not properly substituted"
+    assert str(jira_settings.base_url) == os.getenv("JIRA_URL"), "JIRA_URL not properly substituted"
     assert jira_settings.project_key == os.getenv(
         "JIRA_PROJECT_KEY"
     ), "JIRA_PROJECT_KEY not properly substituted"

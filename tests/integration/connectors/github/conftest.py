@@ -1,7 +1,8 @@
-import os
-import pytest
-import logging
 import asyncio
+import logging
+import os
+
+import pytest
 
 from qdrant_loader.connectors.git import GitConnector
 
@@ -43,7 +44,7 @@ def setup_disable_git_prompt():
 @pytest.fixture
 def test_repo_url(test_settings):
     """Return the test repository URL from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"].url
+    return test_settings.sources_config.git_repos["auth-test-repo"].base_url
 
 
 @pytest.fixture

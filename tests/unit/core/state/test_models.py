@@ -7,7 +7,7 @@ from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.qdrant_loader.core.state.models import Base, IngestionHistory, DocumentState
+from src.qdrant_loader.core.state.models import Base, IngestionHistory, DocumentStateRecord
 
 
 @pytest.fixture
@@ -46,9 +46,9 @@ def test_ingestion_history_creation(db_session):
 
 
 def test_document_state_creation(db_session):
-    """Test creating a DocumentState record."""
+    """Test creating a DocumentStateRecord record."""
     now = datetime.now(UTC)
-    state = DocumentState(
+    state = DocumentStateRecord(
         source_type="git",
         source_name="test-repo",
         document_id="doc-1",
@@ -67,7 +67,7 @@ def test_document_state_creation(db_session):
 def test_document_state_unique_constraint(db_session):
     """Test the unique constraint on document states."""
     now = datetime.now(UTC)
-    state1 = DocumentState(
+    state1 = DocumentStateRecord(
         source_type="git",
         source_name="test-repo",
         document_id="doc-1",
@@ -78,7 +78,7 @@ def test_document_state_unique_constraint(db_session):
         updated_at=now,
     )
 
-    state2 = DocumentState(
+    state2 = DocumentStateRecord(
         source_type="git",
         source_name="test-repo",
         document_id="doc-1",  # Same document_id as state1
@@ -100,7 +100,7 @@ def test_document_state_unique_constraint(db_session):
 def test_document_state_mark_deleted(db_session):
     """Test marking a document as deleted."""
     now = datetime.now(UTC)
-    state = DocumentState(
+    state = DocumentStateRecord(
         source_type="git",
         source_name="test-repo",
         document_id="doc-1",
@@ -118,5 +118,5 @@ def test_document_state_mark_deleted(db_session):
     state.updated_at = datetime.now(UTC)  # type: ignore
     db_session.commit()
 
-    updated = db_session.query(DocumentState).filter_by(id=state.id).first()
+    updated = db_session.query(DocumentStateRecord).filter_by(id=state.id).first()
     assert updated.is_deleted is True

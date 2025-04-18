@@ -11,7 +11,7 @@ from typing import Any, TypedDict
 class GitConfig(TypedDict):
     """Configuration for Git repositories."""
 
-    url: str
+    base_url: str
     branch: str
     include_paths: list[str]
     exclude_paths: list[str]
@@ -24,7 +24,7 @@ class GitConfig(TypedDict):
 class ConfluenceConfig(TypedDict):
     """Configuration for Confluence spaces."""
 
-    url: str
+    base_url: str
     space_key: str
     content_types: list[str]
     token: str

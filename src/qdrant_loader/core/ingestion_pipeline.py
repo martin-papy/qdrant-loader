@@ -2,8 +2,8 @@
 Ingestion pipeline for processing documents.
 """
 
-from datetime import UTC, datetime
 import uuid
+from datetime import UTC, datetime
 
 from pydantic import HttpUrl
 from qdrant_client.http import models
@@ -18,7 +18,7 @@ from .chunking_service import ChunkingService
 from .document import Document
 from .embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
-from .state import DocumentState, StateManager
+from .state import DocumentStateRecord, StateManager
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -109,7 +109,7 @@ class IngestionPipeline:
             if filtered_config.public_docs:
                 for name, config in filtered_config.public_docs.items():
                     self.logger.debug(f"Configuring public documentation: {name}")
-                    connector = PublicDocsConnector(config)
+                    connector = PublicDocsConnector(config, self.state_manager)
                     public_docs = await connector.get_documentation()
                     documents.extend(public_docs)
 
@@ -117,9 +117,9 @@ class IngestionPipeline:
             # Process all documents
             for doc in documents:
                 try:
-                    # Convert Document to DocumentState
+                    # Convert Document to DocumentStateRecord
                     now = datetime.now(UTC)
-                    doc_state = DocumentState(
+                    doc_state = DocumentStateRecord(
                         source_type=doc.source_type or "unknown",
                         source_name=doc.source or "unknown",
                         document_id=doc.id or str(uuid.uuid4()),

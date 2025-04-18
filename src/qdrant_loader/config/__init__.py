@@ -4,13 +4,11 @@ This module provides the main configuration interface for the application.
 It combines global settings with source-specific configurations.
 """
 
-import logging
 import os
 import re
 from pathlib import Path
 from typing import Any, Optional
 
-import structlog
 import yaml
 from dotenv import load_dotenv
 from pydantic import (
@@ -88,11 +86,7 @@ def initialize_config(yaml_path: Path, skip_validation: bool = False) -> None:
     """
     global _global_settings
     try:
-        # First load the YAML config
-        with open(yaml_path) as f:
-            config_data = yaml.safe_load(f)
-
-        # Now proceed with initialization
+        # Proceed with initialization
         logger.debug("Initializing configuration", yaml_path=str(yaml_path))
         _global_settings = Settings.from_yaml(yaml_path, skip_validation=skip_validation)
         logger.debug("Successfully initialized configuration")
@@ -107,7 +101,7 @@ class Settings(BaseSettings):
 
     # qDrant Configuration
     QDRANT_URL: str = Field(..., description="qDrant server URL")
-    QDRANT_API_KEY: Optional[str] = Field(None, description="qDrant API key")
+    QDRANT_API_KEY: str | None = Field(None, description="qDrant API key")
     QDRANT_COLLECTION_NAME: str = Field(..., description="qDrant collection name")
 
     # OpenAI Configuration
@@ -117,18 +111,18 @@ class Settings(BaseSettings):
     STATE_DB_PATH: str = Field(..., description="Path to state management database")
 
     # Source-specific environment variables
-    REPO_TOKEN: Optional[str] = Field(None, description="Repository token")
-    REPO_URL: Optional[str] = Field(None, description="Repository URL")
+    REPO_TOKEN: str | None = Field(None, description="Repository token")
+    REPO_URL: str | None = Field(None, description="Repository URL")
 
-    CONFLUENCE_URL: Optional[str] = Field(None, description="Confluence URL")
-    CONFLUENCE_SPACE_KEY: Optional[str] = Field(None, description="Confluence space key")
-    CONFLUENCE_TOKEN: Optional[str] = Field(None, description="Confluence API token")
-    CONFLUENCE_EMAIL: Optional[str] = Field(None, description="Confluence user email")
+    CONFLUENCE_URL: str | None = Field(None, description="Confluence URL")
+    CONFLUENCE_SPACE_KEY: str | None = Field(None, description="Confluence space key")
+    CONFLUENCE_TOKEN: str | None = Field(None, description="Confluence API token")
+    CONFLUENCE_EMAIL: str | None = Field(None, description="Confluence user email")
 
-    JIRA_URL: Optional[str] = Field(None, description="Jira URL")
-    JIRA_PROJECT_KEY: Optional[str] = Field(None, description="Jira project key")
-    JIRA_TOKEN: Optional[str] = Field(None, description="Jira API token")
-    JIRA_EMAIL: Optional[str] = Field(None, description="Jira user email")
+    JIRA_URL: str | None = Field(None, description="Jira URL")
+    JIRA_PROJECT_KEY: str | None = Field(None, description="Jira project key")
+    JIRA_TOKEN: str | None = Field(None, description="Jira API token")
+    JIRA_EMAIL: str | None = Field(None, description="Jira user email")
 
     # Configuration objects
     global_config: GlobalConfig = Field(
@@ -251,7 +245,18 @@ class Settings(BaseSettings):
             global_config = GlobalConfig(
                 **config_data.get("global", {}), skip_validation=skip_validation
             )
-            sources_config = SourcesConfig(**config_data.get("sources", {}))
+
+            # Process each source type
+            # Get the sources section
+            sources_data = config_data.get("sources", {})
+
+            for source_type, sources in sources_data.items():
+                for source_name, source_config in sources.items():
+                    # Add source_type and source_name to the config
+                    source_config["source_type"] = source_type
+                    source_config["source_name"] = source_name
+
+            sources_config = SourcesConfig(**sources_data)
 
             # Step 5: Create settings instance with environment variables and config objects
             settings_data = {

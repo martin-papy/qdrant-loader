@@ -364,91 +364,21 @@ This revised structure:
 
 ### 1.3 Configuration Integration
 
-- [ ] Add state management configuration
-  - [ ] Create StateManagementConfig class
-    - [ ] Implement in `src/qdrant_loader/config/state.py`:
-
-      ```python
-      class StateManagementConfig(BaseConfig):
-          """Configuration for state management."""
-          database_path: str = Field(..., description="Path to SQLite database file")
-          table_prefix: str = Field(default="qdrant_loader_", description="Prefix for database tables")
-          connection_pool: Dict[str, Any] = Field(
-              default_factory=lambda: {"size": 5, "timeout": "30s"},
-              description="Connection pool settings"
-          )
-      ```
-
-    - [ ] Add validation rules:
-      - Validate database path exists and is writable
-      - Validate table prefix format
-      - Validate connection pool settings
-  - [ ] Update GlobalConfig
-    - [ ] Add state_management field to `src/qdrant_loader/config/global_.py`:
-
-      ```python
-      class GlobalConfig(BaseConfig):
-          chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
-          embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
-          logging: LoggingConfig = Field(default_factory=LoggingConfig)
-          state_management: StateManagementConfig = Field(default_factory=StateManagementConfig)
-      ```
-
-  - [ ] Update Settings class
-    - [ ] Add state management environment variables to `src/qdrant_loader/config/__init__.py`:
-
-      ```python
-      class Settings(BaseSettings):
-          # ... existing fields ...
-          STATE_DB_PATH: str = Field(..., description="Path to state management database")
-      ```
-
-    - [ ] Add validation for state management configuration
-      - Validate required environment variables
-      - Validate configuration consistency
-  - [ ] Update configuration loading
-    - [ ] The existing `from_yaml()` method in `Settings` class will handle the new configuration
-    - [ ] Add environment variable substitution for state management settings
-  - [ ] Add configuration tests
-    - [ ] Test StateManagementConfig validation
-      - [ ] Test valid configurations
-      - [ ] Test invalid configurations
-      - [ ] Test default values
-    - [ ] Test environment variable handling
-      - [ ] Test variable substitution
-      - [ ] Test missing variables
-      - [ ] Test invalid values
-    - [ ] Test integration with existing config
-      - [ ] Test loading from YAML
-      - [ ] Test environment variable precedence
-      - [ ] Test validation in context of full config
-
-The configuration will be added to `config.yaml` under the global section:
-
-```yaml
-global:
-  # ... existing settings ...
-  state_management:
-    database_path: "${STATE_DB_PATH}"  # Will be replaced with value from .env
-    table_prefix: "qdrant_loader_"
-    connection_pool:
-      size: 5
-      timeout: 30s
-```
-
-And the corresponding environment variable in `.env`:
-
-```env
-STATE_DB_PATH=/path/to/state.db
-```
-
-This approach:
-
-1. Follows the existing configuration pattern
-2. Integrates with the current validation system
-3. Supports environment variable substitution
-4. Maintains separation of sensitive configuration
-5. Provides comprehensive test coverage
+- [x] Add state management configuration
+  - [x] Create StateManagementConfig class
+    - Implemented in `src/qdrant_loader/config/state.py`:
+      - Added database path configuration
+      - Added table prefix configuration
+      - Added connection pool settings
+  - [x] Update GlobalConfig
+    - Added state_management field to `src/qdrant_loader/config/global_.py`
+  - [x] Update Settings class
+    - Added state management environment variables
+    - Added validation for state management configuration
+  - [x] Add configuration tests
+    - Test StateManagementConfig validation
+    - Test environment variable handling
+    - Test integration with existing config
 
 ## Phase 2: Change Detection Implementation
 
@@ -469,43 +399,36 @@ This approach:
     - [ ] Remove from Qdrant
   - [ ] Add Git change detection tests
     - [ ] Test file change detection
-      - [ ] Test modified files
-      - [ ] Test new files
-      - [ ] Test renamed files
     - [ ] Test timestamp tracking
-      - [ ] Test commit timestamps
-      - [ ] Test timezone handling
     - [ ] Test deletion handling
-      - [ ] Test deleted files
-      - [ ] Test state updates
-      - [ ] Test Qdrant removal
 
 ### 2.2 Confluence Change Detection
 
-- [ ] Implement Confluence change detection
-  - [ ] Track page updates
-    - [ ] Implement `ConfluenceChangeDetector` class
-    - [ ] Add page modification tracking
-    - [ ] Integrate with `StateManager` for state tracking
-  - [ ] Track page deletions
-    - [ ] Use Confluence API for deleted pages
-    - [ ] Update document states using `StateManager`
-    - [ ] Remove from Qdrant
-  - [ ] Track page moves/renames
-    - [ ] Detect page moves
-    - [ ] Update document URLs
-    - [ ] Update document states using `StateManager`
-  - [ ] Add Confluence change detection tests
-    - [ ] Test page update detection
-      - [ ] Test content updates
-      - [ ] Test metadata updates
-    - [ ] Test deletion detection
-      - [ ] Test page deletion
-      - [ ] Test state updates
-    - [ ] Test move/rename detection
-      - [ ] Test page moves
-      - [ ] Test page renames
-      - [ ] Test URL updates
+- [x] Implement Confluence change detection
+  - [x] Track page updates
+    - [x] Implement `ConfluenceChangeDetector` class
+    - [x] Add page modification tracking
+    - [x] Integrate with `StateManager` for state tracking
+  - [x] Track page deletions
+    - [x] Use Confluence API for deleted pages
+    - [x] Update document states using `StateManager`
+    - [x] Remove from Qdrant
+  - [x] Track page moves/renames
+    - [x] Detect page moves
+    - [x] Update document URLs
+    - [x] Update document states using `StateManager`
+  - [x] Add Confluence change detection tests
+    - [x] Test page update detection
+    - [x] Test deletion detection
+    - [x] Test move/rename detection
+  - [x] Improve code organization
+    - [x] Refactor `ConfluenceChangeDetector` to inherit from `BaseChangeDetector`
+    - [x] Update type hints to use modern Python syntax
+    - [x] Improve error handling and logging
+  - [x] Enhance state management
+    - [x] Add proper handling of document states
+    - [x] Implement robust URL tracking
+    - [x] Add version tracking for documents
 
 ### 2.3 Jira Change Detection
 
@@ -524,55 +447,58 @@ This approach:
     - [ ] Remove from Qdrant
   - [ ] Add Jira change detection tests
     - [ ] Test field change detection
-      - [ ] Test all field types
-      - [ ] Test multiple changes
     - [ ] Test update detection
-      - [ ] Test issue updates
-      - [ ] Test state updates
     - [ ] Test deletion detection
-      - [ ] Test issue deletion
-      - [ ] Test state updates
 
 ### 2.4 Public Docs Change Detection
 
-- [ ] Implement public docs change detection
-  - [ ] Track file modification times
-    - [ ] Implement `PublicDocsChangeDetector` class
-    - [ ] Add file modification tracking
-    - [ ] Integrate with `StateManager` for state tracking
-  - [ ] Track URL changes
-    - [ ] Monitor URL changes
-    - [ ] Update document states using `StateManager`
-    - [ ] Update Qdrant documents
-  - [ ] Add public docs change detection tests
-    - [ ] Test modification time tracking
-      - [ ] Test file updates
-      - [ ] Test timezone handling
-    - [ ] Test URL change detection
-      - [ ] Test URL changes
-      - [ ] Test state updates
+- [x] Implement public docs change detection
+  - [x] Track file modification times
+    - Implemented `PublicDocsChangeDetector` class
+    - Added file modification tracking
+    - Integrated with `StateManager` for state tracking
+  - [x] Track URL changes
+    - Implemented URL change tracking
+    - Added state updates using `StateManager`
+    - Added Qdrant document updates
+  - [x] Add public docs change detection tests
+    - [x] Test modification time tracking
+    - [x] Test URL change detection
+    - [x] Test state updates
+  - [x] Improve code organization
+    - [x] Create `BaseChangeDetector` abstract class
+    - [x] Refactor `PublicDocsChangeDetector` to inherit from base class
+    - [x] Update type hints to use modern Python syntax
+  - [x] Enhance error handling
+    - [x] Add defensive programming for missing fields
+    - [x] Improve handling of deleted documents
+    - [x] Add proper state management for document deletions
+  - [x] Improve test organization
+    - [x] Rename test files for better clarity
+    - [x] Clean up test imports
+    - [x] Ensure proper test isolation
 
 ## Phase 3: Incremental Ingestion Implementation
 
 ### 3.1 Ingestion Service Updates
 
-- [ ] Update ingestion service
-  - [ ] Add incremental ingestion mode
-    - [ ] Implement `IncrementalIngestionService` class
-    - [ ] Add change detection integration
-    - [ ] Add state management integration
-  - [ ] Add document update handling
-    - [ ] Process changed documents
-    - [ ] Update Qdrant vectors
-    - [ ] Update document states using `StateManager`
-  - [ ] Add document deletion handling
-    - [ ] Process deleted documents
-    - [ ] Remove from Qdrant
-    - [ ] Update document states using `StateManager`
-  - [ ] Add ingestion service tests
-    - [ ] Test incremental mode
-    - [ ] Test update handling
-    - [ ] Test deletion handling
+- [x] Update ingestion service
+  - [x] Add incremental ingestion mode
+    - Implemented in `PublicDocsConnector`
+    - Added change detection integration
+    - Added state management integration
+  - [x] Add document update handling
+    - Implemented document state updates
+    - Added Qdrant vector updates
+    - Added state management integration
+  - [x] Add document deletion handling
+    - Implemented deletion detection
+    - Added Qdrant removal
+    - Added state management integration
+  - [x] Add ingestion service tests
+    - [x] Test incremental mode
+    - [x] Test update handling
+    - [x] Test deletion handling
 
 ### 3.2 Performance Optimization
 
@@ -626,23 +552,23 @@ This approach:
 
 ### 4.2 Configuration Updates
 
-- [ ] Update configuration
-  - [ ] Add state management config
-    - [ ] Add database URL config
-    - [ ] Add table prefix config
-    - [ ] Add connection pool config
-  - [ ] Add change detection config
-    - [ ] Add source-specific settings
-    - [ ] Add detection intervals
-    - [ ] Add timeout settings
+- [x] Update configuration
+  - [x] Add state management config
+    - Added database URL config
+    - Added table prefix config
+    - Added connection pool config
+  - [x] Add change detection config
+    - Added source-specific settings
+    - Added detection intervals
+    - Added timeout settings
   - [ ] Add performance config
     - [ ] Add batch size settings
     - [ ] Add worker settings
     - [ ] Add retry settings
-  - [ ] Add config validation
-    - [ ] Validate required fields
-    - [ ] Validate value ranges
-    - [ ] Add config tests
+  - [x] Add config validation
+    - Added validation for required fields
+    - Added validation for value ranges
+    - Added config tests
 
 ### 4.3 Documentation Updates
 
@@ -664,15 +590,15 @@ This approach:
 
 ### 5.1 Testing
 
-- [ ] Add comprehensive tests
-  - [ ] Add end-to-end tests
-    - [ ] Test full ingestion flow
-    - [ ] Test incremental flow
-    - [ ] Test error scenarios
-  - [ ] Add integration tests
-    - [ ] Test source integration
-    - [ ] Test state management
-    - [ ] Test Qdrant integration
+- [x] Add comprehensive tests
+  - [x] Add end-to-end tests
+    - [x] Test full ingestion flow
+    - [x] Test incremental flow
+    - [x] Test error scenarios
+  - [x] Add integration tests
+    - [x] Test source integration
+    - [x] Test state management
+    - [x] Test Qdrant integration
   - [ ] Add performance tests
     - [ ] Test ingestion speed
     - [ ] Test memory usage
@@ -703,14 +629,8 @@ This approach:
     - [ ] Document extension points
   - [ ] Add documentation tests
     - [ ] Test configuration examples
-      - [ ] Test example validity
-      - [ ] Test example execution
     - [ ] Test usage examples
-      - [ ] Test example validity
-      - [ ] Test example execution
     - [ ] Test troubleshooting guide
-      - [ ] Test issue descriptions
-      - [ ] Test solution validity
 
 ## Phase 6: Performance Optimization (Future)
 
@@ -718,140 +638,29 @@ This approach:
 
 - [ ] Implement batch processing
   - [ ] Add batch configuration
-
-    ```yaml
-    ingestion:
-      batch:
-        size: 100
-        timeout: 30s
-        retry_attempts: 3
-        retry_delay: 5s
-    ```
-
   - [ ] Implement batch operations
-
-    ```python
-    class BatchProcessor:
-        def __init__(self, settings: Settings):
-            self.batch_size = settings.ingestion.batch.size
-            self.timeout = settings.ingestion.batch.timeout
-            self.retry_attempts = settings.ingestion.batch.retry_attempts
-            self.retry_delay = settings.ingestion.batch.retry_delay
-            
-        async def process_batch(self, documents: List[Document]) -> BatchResult:
-            """Process a batch of documents with retry logic."""
-            
-        async def process_stream(self, document_stream: AsyncIterator[Document]) -> StreamResult:
-            """Process a stream of documents in batches."""
-    ```
-
   - [ ] Add batch processing tests
-    - [ ] Test batch size limits
-    - [ ] Test timeout handling
-    - [ ] Test retry logic
-    - [ ] Test error recovery
 
 ### 6.2 Parallel Processing
 
 - [ ] Implement parallel processing
   - [ ] Add parallel configuration
-
-    ```yaml
-    ingestion:
-      parallel:
-        max_workers: 4
-        queue_size: 1000
-        timeout: 60s
-    ```
-
   - [ ] Implement parallel operations
-
-    ```python
-    class ParallelProcessor:
-        def __init__(self, settings: Settings):
-            self.max_workers = settings.ingestion.parallel.max_workers
-            self.queue_size = settings.ingestion.parallel.queue_size
-            self.timeout = settings.ingestion.parallel.timeout
-            
-        async def process_sources(self, sources: List[Source]) -> List[SourceResult]:
-            """Process multiple sources in parallel."""
-            
-        async def process_documents(self, documents: List[Document]) -> List[DocumentResult]:
-            """Process documents in parallel batches."""
-    ```
-
   - [ ] Add parallel processing tests
-    - [ ] Test worker limits
-    - [ ] Test queue management
-    - [ ] Test timeout handling
-    - [ ] Test error propagation
 
 ### 6.3 Performance Monitoring
 
 - [ ] Add performance monitoring
   - [ ] Add metrics collection
-
-    ```python
-    class PerformanceMonitor:
-        def __init__(self):
-            self.metrics = defaultdict(list)
-            
-        def record_metric(self, name: str, value: float):
-            """Record a performance metric."""
-            
-        def get_statistics(self) -> Dict[str, Statistics]:
-            """Get performance statistics."""
-    ```
-
   - [ ] Add monitoring configuration
-
-    ```yaml
-    monitoring:
-      metrics:
-        enabled: true
-        interval: 60s
-        retention: 24h
-    ```
-
   - [ ] Add monitoring tests
-    - [ ] Test metric collection
-    - [ ] Test statistics calculation
-    - [ ] Test retention policy
 
 ### 6.4 Resource Management
 
 - [ ] Implement resource management
   - [ ] Add resource limits
-
-    ```yaml
-    resources:
-      memory:
-        max_percentage: 80
-        check_interval: 30s
-      cpu:
-        max_percentage: 80
-        check_interval: 30s
-    ```
-
   - [ ] Implement resource monitoring
-
-    ```python
-    class ResourceMonitor:
-        def __init__(self, settings: Settings):
-            self.memory_limit = settings.resources.memory.max_percentage
-            self.cpu_limit = settings.resources.cpu.max_percentage
-            
-        async def check_resources(self) -> ResourceStatus:
-            """Check current resource usage."""
-            
-        async def enforce_limits(self):
-            """Enforce resource limits."""
-    ```
-
   - [ ] Add resource tests
-    - [ ] Test memory monitoring
-    - [ ] Test CPU monitoring
-    - [ ] Test limit enforcement
 
 ## Phase 7: Database Migration Support (Future)
 

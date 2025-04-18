@@ -2,21 +2,25 @@
 
 import asyncio
 import re
+import warnings
 from collections import deque
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import cast
 from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
-import warnings
+
+from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
+from qdrant_loader.core.document import Document
+from qdrant_loader.core.state.models import DocumentStateRecord
+from qdrant_loader.core.state.state_change_detector import StateChangeDetector
+from qdrant_loader.core.state.state_manager import StateManager
+from qdrant_loader.utils.logging import LoggingConfig
 
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
-from qdrant_loader.core.document import Document
-from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -24,7 +28,11 @@ logger = LoggingConfig.get_logger(__name__)
 class PublicDocsConnector:
     """Generic connector for public documentation websites."""
 
-    def __init__(self, source_config: PublicDocsSourceConfig):
+    def __init__(
+        self,
+        source_config: PublicDocsSourceConfig,
+        state_manager: StateManager,
+    ):
         """Initialize the connector with source configuration."""
         self.source_config = source_config
         # Convert HttpUrl to string before applying string operations
@@ -34,6 +42,8 @@ class PublicDocsConnector:
         self.visited_urls: set[str] = set()
         self.url_queue: deque = deque()
         self.logger = LoggingConfig.get_logger(__name__)
+        self.state_manager = state_manager
+        self.change_detector = StateChangeDetector(source_config, state_manager)
         self.logger.debug(
             "Initialized PublicDocsConnector",
             base_url=self.base_url,
@@ -163,6 +173,40 @@ class PublicDocsConnector:
         self.logger.debug("Content extraction completed", extracted_length=len(extracted_text))
         return extracted_text
 
+    def _extract_title(self, html: str) -> str:
+        """Extract the title from HTML content."""
+        self.logger.debug("Starting title extraction", html_length=len(html))
+        soup = BeautifulSoup(html, "html.parser")
+
+        # First try to find a title in the main content
+        content = soup.select_one(self.source_config.selectors.content)
+        if content:
+            # Look for h1 in the content
+            h1 = content.find("h1")
+            if h1:
+                title = h1.get_text(strip=True)
+                self.logger.debug("Found title in content", title=title)
+                return title
+
+            # Look for the first heading
+            heading = content.find(["h1", "h2", "h3", "h4", "h5", "h6"])
+            if heading:
+                title = heading.get_text(strip=True)
+                self.logger.debug("Found title in heading", title=title)
+                return title
+
+        # Fallback to page title
+        title_tag = soup.find("title")
+        if title_tag:
+            title = title_tag.get_text(strip=True)
+            self.logger.debug("Found title in title tag", title=title)
+            return title
+
+        # If no title found, use a default
+        default_title = "Untitled Document"
+        self.logger.warning("No title found, using default", default_title=default_title)
+        return default_title
+
     async def _process_page(self, url: str) -> str | None:
         """Process a single documentation page."""
         self.logger.debug("Starting page processing", url=url)
@@ -196,64 +240,82 @@ class PublicDocsConnector:
             return None
 
     async def get_documentation(self) -> list[Document]:
-        """Fetch and process all documentation pages using crawling."""
-        self.logger.info(
-            "Starting documentation fetch",
-            base_url=self.base_url,
-            version=self.version,
+        """Get all documentation pages."""
+        self.logger.info("Starting documentation retrieval", base_url=self.base_url)
+
+        # Get last ingestion time
+        last_ingestion = await self.state_manager.get_last_ingestion(
+            source_type="public_docs",
+            source_name=str(self.source_config.base_url),
         )
 
+        # Get all documents
         documents = []
-        # Start with the base URL
         self.url_queue.append(self.base_url)
-        self.logger.debug("Initialized queue with base URL", base_url=self.base_url)
 
         while self.url_queue:
-            current_url = self.url_queue.popleft()
-            self.logger.debug(
-                "Processing next URL from queue", url=current_url, queue_size=len(self.url_queue)
-            )
-
-            # Skip if already visited
-            if current_url in self.visited_urls:
-                self.logger.debug("Skipping already visited URL", url=current_url)
+            url = self.url_queue.popleft()
+            if url in self.visited_urls:
                 continue
 
-            # Mark as visited
-            self.visited_urls.add(current_url)
-            self.logger.debug(
-                "Marked URL as visited", url=current_url, total_visited=len(self.visited_urls)
-            )
+            self.visited_urls.add(url)
+            content = await self._process_page(url)
 
-            # Check if URL should be processed
-            if not self._should_process_url(current_url):
-                self.logger.debug("URL rejected by processing rules", url=current_url)
-                continue
-
-            self.logger.debug("Processing page", url=current_url)
-            page_content = await self._process_page(current_url)
-
-            if page_content:
+            if content:
                 doc = Document(
-                    id=current_url,
-                    content=page_content,
-                    source=self.base_url,
-                    source_type="public-docs",
-                    url=current_url,
+                    id=f"public_docs_{len(documents)}",
+                    content=content,
+                    source=str(self.source_config.base_url),
+                    source_type="public_docs",
                     metadata={
-                        "version": self.version,
-                        "content_type": self.source_config.content_type,
+                        "url": url,
+                        "title": self._extract_title(content),
+                        "content_hash": hash(content),
+                        "last_modified": datetime.now().isoformat(),
+                        "source": "public_docs",
+                        "source_id": str(self.source_config.base_url),
                     },
-                    last_updated=datetime.now(),
                 )
                 documents.append(doc)
-                self.logger.debug("Successfully created document", url=current_url, doc_id=doc.id)
-            else:
-                self.logger.warning("Failed to process page", url=current_url)
 
         self.logger.info(
-            "Finished crawling",
-            processed_pages=len(documents),
-            total_visited=len(self.visited_urls),
+            "Documentation retrieval completed",
+            page_count=len(documents),
+            visited_urls=len(self.visited_urls),
         )
+
+        # Detect changes
+        changes = await self.change_detector.detect_changes(
+            documents,
+            last_ingestion_time=last_ingestion.last_updated if last_ingestion else None,
+        )
+
+        # Update state for new and updated documents
+        for doc in changes["new"] + changes["updated"]:
+            doc_state = DocumentStateRecord(
+                source_type="public_docs",
+                source_name=str(self.source_config.base_url),
+                document_id=doc.id,
+                last_updated=datetime.now(UTC),
+                last_ingested=datetime.now(UTC),
+                is_deleted=False,
+            )
+            await self.state_manager.update_document_state(doc_state)
+
+        # Mark deleted documents
+        for doc in changes["deleted"]:
+            await self.state_manager.mark_document_deleted(
+                source_type="public_docs",
+                source_name=str(self.source_config.base_url),
+                document_id=doc.id,
+            )
+
+        # Update ingestion history
+        await self.state_manager.update_ingestion(
+            source_type="public_docs",
+            source_name=str(self.source_config.base_url),
+            status="success",
+            count=len(documents),
+        )
+
         return documents
