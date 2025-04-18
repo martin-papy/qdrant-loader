@@ -19,5 +19,5 @@ async def test_document_metadata(session_git_connector):
             assert "repository_url" in doc.metadata
             assert "last_commit_date" in doc.metadata
             assert "last_commit_author" in doc.metadata
-            assert doc.metadata["repository_url"].startswith("https://github.com/")
+            assert str(doc.metadata["repository_url"]).startswith("https://github.com/")
             assert doc.metadata["file_name"].endswith((".md", ".java"))

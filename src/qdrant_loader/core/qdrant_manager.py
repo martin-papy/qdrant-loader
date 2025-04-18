@@ -1,11 +1,9 @@
 import asyncio
-from typing import cast, Dict, List, Optional
+from typing import cast
 from urllib.parse import urlparse
 
-import structlog
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.http.models import Distance, VectorParams
 
 from ..config import Settings, get_global_config, get_settings
 from ..utils.logging import LoggingConfig

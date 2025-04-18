@@ -1,25 +1,25 @@
+import logging
 import os
 import tempfile
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
 import tomli
 import tomli_w
-from pathlib import Path
-import logging
 
 # Import the functions we want to test
 from release import (
-    get_current_version,
-    update_version,
-    run_command,
-    check_git_status,
     check_current_branch,
-    check_unpushed_commits,
-    get_github_token,
-    create_github_release,
-    check_main_up_to_date,
+    check_git_status,
     check_github_workflows,
+    check_main_up_to_date,
+    check_unpushed_commits,
+    create_github_release,
+    get_current_version,
+    get_github_token,
+    run_command,
     setup_logging,
+    update_version,
 )
 
 

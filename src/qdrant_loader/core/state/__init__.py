@@ -7,15 +7,23 @@ including last successful ingestion times, document states, and change detection
 
 __version__ = "0.1.0"
 
+from .exceptions import (
+    DatabaseError,
+    InvalidDocumentStateError,
+    MigrationError,
+    MissingMetadataError,
+    StateError,
+)
+from .models import DocumentStateRecord, IngestionHistory
 from .state_manager import StateManager
-from .models import DocumentState, IngestionHistory
-from .exceptions import StateError, DatabaseError, MigrationError
 
 __all__ = [
-    "StateManager",
-    "DocumentState",
-    "IngestionHistory",
-    "StateError",
     "DatabaseError",
+    "DocumentStateRecord",
+    "IngestionHistory",
+    "InvalidDocumentStateError",
     "MigrationError",
+    "MissingMetadataError",
+    "StateError",
+    "StateManager",
 ]

@@ -30,7 +30,7 @@ sources:
 
   git_repos:
     auth-test-repo:
-      url: "${REPO_URL}"
+      base_url: "${REPO_URL}"
       branch: "main"
       token: "${REPO_TOKEN}"
       include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
@@ -41,7 +41,7 @@ sources:
 
   confluence:
     test-space:
-      url: "${CONFLUENCE_URL}"
+      base_url: "${CONFLUENCE_URL}"
       space_key: "${CONFLUENCE_SPACE_KEY}"
       content_types:
         - "page"

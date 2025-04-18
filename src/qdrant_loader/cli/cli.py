@@ -168,14 +168,20 @@ def init(config: Path | None, force: bool, log_level: str):
         _load_config(config)
         settings = _check_settings()
 
-        result = asyncio.run(init_collection(settings, force))
-        if result:
-            logger.info("collection_initialized")
-        else:
-            logger.error("collection_initialization_failed")
-            raise ClickException("Failed to initialize collection")
+        async def run_init():
+            try:
+                result = await init_collection(settings, force)
+                if not result:
+                    raise ClickException("Failed to initialize collection")
+                logger.info("collection_initialized")
+            except Exception as e:
+                logger.error("init_failed", error=str(e))
+                raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+
+        asyncio.run(run_init())
 
     except ClickException as e:
+        logger.error("init_failed", error=str(e))
         raise e from None
     except Exception as e:
         logger.error("init_failed", error=str(e))

@@ -1,15 +1,18 @@
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
-from pydantic import HttpUrl
 import pytest
+from pydantic import HttpUrl
 
 from qdrant_loader.config import PublicDocsSourceConfig, SelectorsConfig
 from qdrant_loader.connectors.public_docs import PublicDocsConnector
+from qdrant_loader.core.state.state_manager import StateManager
 
 
 @pytest.fixture
 def mock_config():
     return PublicDocsSourceConfig(
+        source_type="public-docs",
+        source_name="test",
         base_url=HttpUrl("https://docs.example.com"),
         version="1.0",
         content_type="html",
@@ -42,8 +45,20 @@ def mock_html():
     """
 
 
-def test_should_process_url(mock_config):
-    connector = PublicDocsConnector(mock_config)
+@pytest.fixture
+def mock_state_manager():
+    """Create a mock state manager."""
+    manager = Mock(spec=StateManager)
+    manager.get_last_ingestion = AsyncMock(return_value=Mock(last_updated=None))
+    manager.get_document_states = AsyncMock(return_value=[])
+    manager.update_document_state = AsyncMock()
+    manager.mark_document_deleted = AsyncMock()
+    manager.update_ingestion = AsyncMock()
+    return manager
+
+
+def test_should_process_url(mock_config, mock_state_manager):
+    connector = PublicDocsConnector(mock_config, mock_state_manager)
 
     # Test base URL
     assert connector._should_process_url("https://docs.example.com/page") is True
@@ -61,8 +76,8 @@ def test_should_process_url(mock_config):
     assert connector._should_process_url("https://other.com/page") is False
 
 
-def test_extract_links(mock_config, mock_html):
-    connector = PublicDocsConnector(mock_config)
+def test_extract_links(mock_config, mock_html, mock_state_manager):
+    connector = PublicDocsConnector(mock_config, mock_state_manager)
     links = connector._extract_links(mock_html, "https://docs.example.com")
 
     assert len(links) == 2
@@ -71,8 +86,8 @@ def test_extract_links(mock_config, mock_html):
     assert "https://external.com" not in links
 
 
-def test_extract_content(mock_config, mock_html):
-    connector = PublicDocsConnector(mock_config)
+def test_extract_content(mock_config, mock_html, mock_state_manager):
+    connector = PublicDocsConnector(mock_config, mock_state_manager)
     content = connector._extract_content(mock_html)
 
     assert "Main Content" in content
@@ -84,14 +99,14 @@ def test_extract_content(mock_config, mock_html):
 
 @pytest.mark.asyncio
 @patch("requests.Session")
-async def test_process_page(mock_requests_session, mock_config, mock_html):
+async def test_process_page(mock_requests_session, mock_config, mock_html, mock_state_manager):
     # Setup mock response
     mock_response = Mock()
     mock_response.text = mock_html
     mock_response.raise_for_status.return_value = None
 
     mock_requests_session.return_value.get.return_value = mock_response
-    connector = PublicDocsConnector(mock_config)
+    connector = PublicDocsConnector(mock_config, mock_state_manager)
     content = await connector._process_page("https://docs.example.com/page")
 
     assert content is not None
@@ -102,7 +117,7 @@ async def test_process_page(mock_requests_session, mock_config, mock_html):
 
 @pytest.mark.asyncio
 @patch("requests.Session")
-async def test_get_documentation(mock_session, mock_config):
+async def test_get_documentation(mock_session, mock_config, mock_state_manager):
     # Setup mock responses for a simple site structure
     mock_responses = {
         "https://docs.example.com": Mock(
@@ -133,7 +148,7 @@ async def test_get_documentation(mock_session, mock_config):
 
     mock_session.return_value.get.side_effect = mock_get
 
-    connector = PublicDocsConnector(mock_config)
+    connector = PublicDocsConnector(mock_config, mock_state_manager)
     documents = await connector.get_documentation()
 
     assert len(documents) == 2
