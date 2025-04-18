@@ -2,15 +2,16 @@
 
 import os
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
+
+from qdrant_loader.config.source_config import SourceConfig
 
 
-class ConfluenceSpaceConfig(BaseModel):
+class ConfluenceSpaceConfig(SourceConfig):
     """Configuration for a Confluence space."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    url: str = Field(..., description="Base URL of the Confluence instance")
     space_key: str = Field(..., description="Key of the Confluence space")
     content_types: list[str] = Field(
         default=["page", "blogpost"], description="Types of content to process"

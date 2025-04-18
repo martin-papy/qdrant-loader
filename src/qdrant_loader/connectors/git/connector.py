@@ -425,7 +425,7 @@ class GitConnector:
             # Clone repository
             self.logger.debug(
                 "Attempting to clone repository",
-                url=self.config.url,
+                url=self.config.base_url,
                 branch=self.config.branch,
                 depth=self.config.depth,
                 temp_dir=self.temp_dir,
@@ -433,7 +433,7 @@ class GitConnector:
 
             try:
                 self.git_ops.clone(
-                    url=self.config.url,
+                    url=str(self.config.base_url),
                     to_path=self.temp_dir,
                     branch=self.config.branch,
                     depth=self.config.depth,
@@ -444,7 +444,7 @@ class GitConnector:
                     "Failed to clone repository",
                     error=str(clone_error),
                     error_type=type(clone_error).__name__,
-                    url=self.config.url,
+                    url=self.config.base_url,
                     branch=self.config.branch,
                     temp_dir=self.temp_dir,
                 )
@@ -674,7 +674,7 @@ class GitConnector:
             # Add Git-specific metadata
             metadata.update(
                 {
-                    "repository_url": self.config.url,
+                    "repository_url": self.config.base_url,
                     "branch": self.config.branch,
                     "last_commit_date": last_commit_date.isoformat() if last_commit_date else None,
                 }
@@ -687,9 +687,9 @@ class GitConnector:
             return Document(
                 content=content,
                 metadata=metadata,
-                source=self.config.url,
+                source=str(self.config.base_url),
                 source_type="git",
-                url=f"{self.config.url.replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
+                url=f"{str(self.config.base_url).replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
                 last_updated=last_commit_date,
             )
         except Exception as e:

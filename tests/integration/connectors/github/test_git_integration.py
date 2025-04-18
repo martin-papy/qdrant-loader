@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 from git import Repo
+from pydantic import HttpUrl
 
 from qdrant_loader.config import (
     GitRepoConfig,
@@ -129,7 +130,7 @@ def test_process_file(git_connector):
         assert isinstance(doc, Document)
         assert doc.content == content
         assert "repository_url" in doc.metadata
-        assert doc.source == doc.metadata["repository_url"]
+        assert doc.source == str(doc.metadata["repository_url"])
         assert doc.source_type == "git"
 
 
@@ -138,7 +139,9 @@ def test_process_file(git_connector):
 async def test_error_handling(git_config):
     """Test error handling with invalid repository URL."""
     invalid_config = GitRepoConfig(
-        url="https://github.com/invalid/repo.git",
+        source_type="git",
+        source_name="test",
+        base_url=HttpUrl("https://github.com/invalid/repo.git"),
         branch=git_config.branch,
         depth=git_config.depth,
         file_types=git_config.file_types,

@@ -36,7 +36,7 @@ def test_valid_config(mock_env_vars, test_settings):
         process_attachments=jira_settings.process_attachments,
         track_last_sync=jira_settings.track_last_sync,
     )
-    assert str(config.base_url) == jira_settings.base_url
+    assert str(config.base_url) == str(jira_settings.base_url)
     assert config.project_key == jira_settings.project_key
     assert config.requests_per_minute == jira_settings.requests_per_minute
     assert config.page_size == jira_settings.page_size
@@ -74,7 +74,7 @@ def test_default_values(mock_env_vars, test_settings):
         base_url=jira_settings.base_url,
         project_key=jira_settings.project_key,
     )
-    assert str(config.base_url) == jira_settings.base_url
+    assert str(config.base_url) == str(jira_settings.base_url)
     assert config.project_key == jira_settings.project_key
     assert config.requests_per_minute == 60  # default value
     assert config.page_size == 100  # default value

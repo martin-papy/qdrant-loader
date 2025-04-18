@@ -86,7 +86,7 @@ class GitMetadataExtractor:
         """
         try:
             # Get repository URL from config
-            repo_url = self.config.url
+            repo_url = str(self.config.base_url)
             if not repo_url:
                 return {}
 

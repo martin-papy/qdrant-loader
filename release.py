@@ -2,12 +2,8 @@
 
 import logging
 import os
-import re
 import subprocess
 import sys
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
 
 import requests
 import tomli
@@ -17,7 +13,7 @@ from click.termui import prompt
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=False)
 
 
 # Configure logging

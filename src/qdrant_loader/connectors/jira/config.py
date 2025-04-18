@@ -1,17 +1,19 @@
 """Configuration for Jira connector."""
 
-from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl, ConfigDict, field_validator, model_validator
 import os
+
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+
+from qdrant_loader.config.source_config import SourceConfig
 
 
 class JiraConfig(BaseModel):
     """Configuration for Jira connector."""
 
     # Authentication
-    api_token: Optional[str] = Field(default=None, description="Jira API token")
+    api_token: str | None = Field(default=None, description="Jira API token")
 
-    email: Optional[str] = Field(default=None, description="Email associated with the API token")
+    email: str | None = Field(default=None, description="Email associated with the API token")
 
     base_url: HttpUrl = Field(
         ..., description="Base URL of the Jira instance (e.g., 'https://your-domain.atlassian.net')"
@@ -41,11 +43,11 @@ class JiraConfig(BaseModel):
     )
 
     # Additional configuration
-    issue_types: List[str] = Field(
+    issue_types: list[str] = Field(
         default=[],
         description="Optional list of issue types to process (e.g., ['Bug', 'Story']). If empty, all types are processed.",
     )
-    include_statuses: List[str] = Field(
+    include_statuses: list[str] = Field(
         default=[],
         description="Optional list of statuses to include (e.g., ['Open', 'In Progress']). If empty, all statuses are included.",
     )
@@ -74,19 +76,18 @@ class JiraConfig(BaseModel):
 
     @field_validator("issue_types", "include_statuses")
     @classmethod
-    def validate_list_items(cls, v: List[str]) -> List[str]:
+    def validate_list_items(cls, v: list[str]) -> list[str]:
         """Validate that list items are not empty strings."""
         if any(not item.strip() for item in v):
             raise ValueError("List items cannot be empty strings")
         return [item.strip() for item in v]
 
 
-class JiraProjectConfig(BaseModel):
+class JiraProjectConfig(SourceConfig):
     """Configuration for a Jira project."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    base_url: str = Field(..., description="Base URL of the Jira instance")
     project_key: str = Field(..., description="Key of the Jira project")
     requests_per_minute: int = Field(
         default=60, description="Maximum number of requests per minute"

@@ -7,7 +7,7 @@ import logging
 import pytest
 import pytest_asyncio
 from git.exc import GitCommandError
-from pydantic import ValidationError
+from pydantic import HttpUrl, ValidationError
 
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
@@ -34,7 +34,9 @@ def test_missing_token_environment_variable(test_repo_url):
     ):
         try:
             GitRepoConfig(
-                url=test_repo_url,
+                source_type="git",
+                source_name="test",
+                base_url=HttpUrl(test_repo_url),
                 branch="main",
                 depth=1,
                 file_types=["*.md"],
@@ -55,7 +57,9 @@ def test_missing_token_environment_variable(test_repo_url):
 async def test_invalid_token_authentication(test_repo_url):
     """Test that the connector raises an error when an invalid token is provided."""
     config = GitRepoConfig(
-        url=test_repo_url,
+        source_type="git",
+        source_name="test",
+        base_url=HttpUrl(test_repo_url),
         branch="main",
         depth=1,
         file_types=["*.md"],
@@ -80,7 +84,9 @@ async def test_invalid_repository_url(valid_github_token):
         pytest.skip("REPO_TOKEN environment variable not set")
 
     config = GitRepoConfig(
-        url="https://github.com/invalid/invalid-repo",
+        source_type="git",
+        source_name="test",
+        base_url=HttpUrl("https://github.com/invalid/invalid-repo"),
         branch="main",
         depth=1,
         file_types=["*.md"],
@@ -104,7 +110,9 @@ async def test_invalid_branch(test_repo_url, valid_github_token):
         pytest.skip("REPO_TOKEN environment variable not set")
 
     config = GitRepoConfig(
-        url=test_repo_url,
+        source_type="git",
+        source_name="test",
+        base_url=HttpUrl(test_repo_url),
         branch="invalid-branch",
         depth=1,
         file_types=["*.md"],

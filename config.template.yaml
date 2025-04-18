@@ -78,7 +78,7 @@ sources:
   git_repos:
     # Example configuration for a public repository
     public_repo:
-      url: "https://github.com/example/repo.git"  # Repository URL
+      base_url: "https://github.com/example/repo.git"  # Repository URL
       branch: "main"                             # Branch to process
       include_paths:                             # Paths to include (glob patterns)
         - "docs/**"
@@ -104,7 +104,7 @@ sources:
 
     # Example configuration for a private GitHub repository
     private_github_repo:
-      url: "${REPO_URL}"                        # Use environment variable
+      base_url: "${REPO_URL}"                        # Use environment variable
       branch: "main"
       token: "${REPO_TOKEN}"                    # GitHub Personal Access Token or none
       include_paths:
@@ -115,7 +115,7 @@ sources:
   # Confluence documentation sources
   confluence:
     my-space:
-      url: "${CONFLUENCE_URL}"                  # Confluence instance URL
+      base_url: "${CONFLUENCE_URL}"                  # Confluence instance URL
       space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
       content_types:                            # Types of content to process
         - "page"

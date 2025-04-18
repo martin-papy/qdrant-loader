@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime, UTC
 from sqlalchemy import create_engine
 
-from qdrant_loader.core.state.models import Base, IngestionHistory, DocumentState
+from qdrant_loader.core.state.models import Base, IngestionHistory, DocumentStateRecord
 from qdrant_loader.core.state.state_manager import StateManager
 
 
@@ -39,7 +39,7 @@ def test_document_state_creation(state_manager):
     """Test creating a document state record."""
     with state_manager.Session() as session:
         now = datetime.now(UTC)
-        doc_state = DocumentState(
+        doc_state = DocumentStateRecord(
             source_type="test",
             source_name="test-source",
             document_id="doc-1",
@@ -58,7 +58,7 @@ def test_get_document_state(state_manager):
     """Test retrieving a document state."""
     with state_manager.Session() as session:
         now = datetime.now(UTC)
-        doc_state = DocumentState(
+        doc_state = DocumentStateRecord(
             source_type="test",
             source_name="test-source",
             document_id="doc-1",
@@ -71,7 +71,7 @@ def test_get_document_state(state_manager):
         session.add(doc_state)
         session.commit()
 
-        retrieved = session.query(DocumentState).filter_by(id=doc_state.id).first()
+        retrieved = session.query(DocumentStateRecord).filter_by(id=doc_state.id).first()
         assert retrieved is not None
         assert retrieved.source_type == "test"
         assert retrieved.document_id == "doc-1"
@@ -81,7 +81,7 @@ def test_update_document_state(state_manager):
     """Test updating a document state."""
     with state_manager.Session() as session:
         now = datetime.now(UTC)
-        doc_state = DocumentState(
+        doc_state = DocumentStateRecord(
             source_type="test",
             source_name="test-source",
             document_id="doc-1",
@@ -97,5 +97,5 @@ def test_update_document_state(state_manager):
         doc_state.is_deleted = True  # type: ignore
         session.commit()
 
-        updated = session.query(DocumentState).filter_by(id=doc_state.id).first()
+        updated = session.query(DocumentStateRecord).filter_by(id=doc_state.id).first()
         assert updated.is_deleted is True

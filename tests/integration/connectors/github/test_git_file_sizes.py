@@ -3,7 +3,9 @@ Tests for Git connector file size handling.
 """
 
 import os
+
 import pytest
+
 from qdrant_loader.config import GitRepoConfig
 from qdrant_loader.connectors.git import GitConnector
 
@@ -12,7 +14,9 @@ from qdrant_loader.connectors.git import GitConnector
 def git_config_with_size_limit(git_config_with_auth):
     """Create a GitRepoConfig instance with specific size limits."""
     return GitRepoConfig(
-        url=git_config_with_auth.url,
+        source_type="git",
+        source_name="test",
+        base_url=git_config_with_auth.base_url,
         branch=git_config_with_auth.branch,
         file_types=git_config_with_auth.file_types,
         include_paths=git_config_with_auth.include_paths,

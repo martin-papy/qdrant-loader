@@ -2,17 +2,17 @@
 
 import asyncio
 import logging
-from typing import List, Optional, AsyncGenerator, Dict, Any, Union
-from datetime import datetime
 import os
 import time
+from datetime import datetime
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-from pydantic import HttpUrl
 import structlog
 from atlassian import Jira
+from pydantic import HttpUrl
 
 from qdrant_loader.connectors.jira.config import JiraConfig
-from qdrant_loader.connectors.jira.models import JiraIssue, JiraUser, JiraAttachment
+from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser
 from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)

@@ -1,16 +1,21 @@
-import pytest
-from unittest.mock import patch, MagicMock
-import git
-from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
-from qdrant_loader.config import GitRepoConfig
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import git
+import pytest
+from pydantic import HttpUrl
+
+from qdrant_loader.config import GitRepoConfig
+from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
 
 
 @pytest.fixture
 def git_config():
     """Create a GitRepoConfig instance for testing."""
     return GitRepoConfig(
-        url="https://github.com/test/repo.git",
+        source_type="git",
+        source_name="test",
+        base_url=HttpUrl("https://github.com/test/repo.git"),
         branch="main",
         file_types=[".md", ".py"],  # Add some file types to pass validation
         temp_dir="/tmp/test",  # Add temp_dir to match mock_repo.working_dir

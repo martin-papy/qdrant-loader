@@ -1,10 +1,14 @@
 """Integration tests for the Confluence connector."""
 
 import os
+
 import pytest
-from qdrant_loader.core.document import Document
+from pydantic import HttpUrl
+import requests
+
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
+from qdrant_loader.core.document import Document
 
 
 @pytest.mark.integration
@@ -91,7 +95,9 @@ async def test_get_documents(confluence_connector):
 async def test_error_handling(confluence_config):
     """Test error handling with invalid Confluence configuration."""
     invalid_config = ConfluenceSpaceConfig(
-        url="https://invalid.atlassian.net/wiki",
+        source_type=confluence_config.source_type,
+        source_name=confluence_config.source_name,
+        base_url=HttpUrl("https://invalid.atlassian.net/wiki"),
         space_key="INVALID",
         content_types=confluence_config.content_types,
         include_labels=confluence_config.include_labels,
@@ -100,8 +106,8 @@ async def test_error_handling(confluence_config):
         email=confluence_config.email,
     )
 
-    with pytest.raises(Exception):
-        connector = ConfluenceConnector(invalid_config)
+    connector = ConfluenceConnector(invalid_config)
+    with pytest.raises(requests.exceptions.HTTPError):
         await connector._make_request("GET", "space")
 
 

@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from qdrant_loader.config.source_config import SourceConfig
+
 
 class GitAuthConfig(BaseModel):
     """Configuration for Git authentication."""
@@ -11,12 +13,11 @@ class GitAuthConfig(BaseModel):
     token: str = Field(..., description="Authentication token")
 
 
-class GitRepoConfig(BaseModel):
+class GitRepoConfig(SourceConfig):
     """Configuration for a Git repository."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
-    url: str = Field(..., description="URL of the Git repository")
     branch: str = Field(default="main", description="Branch to clone")
     include_paths: list[str] = Field(
         default_factory=list, description="Paths to include in the repository"
@@ -33,7 +34,7 @@ class GitRepoConfig(BaseModel):
         None, description="Temporary directory where the repository is cloned"
     )
 
-    @field_validator("url")
+    @field_validator("base_url")
     @classmethod
     def validate_url(cls, v: str) -> str:
         """Validate repository URL."""

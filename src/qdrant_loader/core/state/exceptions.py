@@ -37,3 +37,21 @@ class ConcurrentUpdateError(StateError):
     """Exception raised when concurrent updates are detected."""
 
     pass
+
+
+class ChangeDetectionError(StateError):
+    """Base exception for change detection errors."""
+
+    pass
+
+
+class InvalidDocumentStateError(ChangeDetectionError):
+    """Raised when a document state is invalid."""
+
+    pass
+
+
+class MissingMetadataError(ChangeDetectionError):
+    """Raised when required metadata is missing."""
+
+    pass

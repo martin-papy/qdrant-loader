@@ -1,7 +1,9 @@
-from qdrant_loader.core.qdrant_manager import QdrantManager
-from qdrant_loader.config import get_settings
-import structlog
 import asyncio
+
+import structlog
+
+from qdrant_loader.config import get_settings
+from qdrant_loader.core.qdrant_manager import QdrantManager
 
 logger = structlog.get_logger()
 

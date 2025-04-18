@@ -23,7 +23,7 @@ class ConfluenceConnector:
             config: Confluence configuration
         """
         self.config = config
-        self.base_url = config.url.rstrip("/")
+        self.base_url = config.base_url
 
         # Get authentication token and email
         self.token = os.getenv("CONFLUENCE_TOKEN")
@@ -69,7 +69,7 @@ class ConfluenceConnector:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to make request to {url}: {str(e)}")
+            logger.error(f"Failed to make request to {url}: {e}")
             raise
 
     async def _get_space_content(self, start: int = 0, limit: int = 25) -> dict:
