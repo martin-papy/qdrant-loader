@@ -2,19 +2,17 @@
 
 import os
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 from qdrant_loader.config.source_config import SourceConfig
 
 
-class JiraConfig(BaseModel):
-    """Configuration for Jira connector."""
+class JiraProjectConfig(SourceConfig):
+    """Configuration for a Jira project."""
 
     # Authentication
-    api_token: str | None = Field(default=None, description="Jira API token")
-
+    token: str | None = Field(default=None, description="Jira API token")
     email: str | None = Field(default=None, description="Email associated with the API token")
-
     base_url: HttpUrl = Field(
         ..., description="Base URL of the Jira instance (e.g., 'https://your-domain.atlassian.net')"
     )
@@ -52,7 +50,7 @@ class JiraConfig(BaseModel):
         description="Optional list of statuses to include (e.g., ['Open', 'In Progress']). If empty, all statuses are included.",
     )
 
-    model_config = ConfigDict(validate_default=True)
+    model_config = ConfigDict(validate_default=True, arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -81,21 +79,3 @@ class JiraConfig(BaseModel):
         if any(not item.strip() for item in v):
             raise ValueError("List items cannot be empty strings")
         return [item.strip() for item in v]
-
-
-class JiraProjectConfig(SourceConfig):
-    """Configuration for a Jira project."""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    project_key: str = Field(..., description="Key of the Jira project")
-    requests_per_minute: int = Field(
-        default=60, description="Maximum number of requests per minute"
-    )
-    page_size: int = Field(default=50, description="Number of issues to fetch per page")
-    process_attachments: bool = Field(
-        default=True, description="Whether to process issue attachments"
-    )
-    track_last_sync: bool = Field(default=True, description="Whether to track the last sync time")
-    token: str = Field(..., description="Jira API token")
-    email: str = Field(..., description="Email associated with the Jira account")

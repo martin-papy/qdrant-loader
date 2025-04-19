@@ -5,10 +5,17 @@ import os
 import pytest
 
 from qdrant_loader.connectors.git import GitConnector
+from qdrant_loader.core.state.state_manager import StateManager
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def state_manager(test_settings):
+    """Create a real StateManager instance for integration tests."""
+    return StateManager(test_settings.global_config.state_management)
 
 
 @pytest.fixture(scope="session")
@@ -44,19 +51,19 @@ def setup_disable_git_prompt():
 @pytest.fixture
 def test_repo_url(test_settings):
     """Return the test repository URL from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"].base_url
+    return test_settings.sources_config.git["auth-test-repo"].base_url
 
 
 @pytest.fixture
 def valid_github_token(test_settings):
     """Return the valid GitHub token from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"].token
+    return test_settings.sources_config.git["auth-test-repo"].token
 
 
 @pytest.fixture(scope="session")
 def git_config_with_auth(test_settings):
     """Return a GitRepoConfig with authentication from settings."""
-    return test_settings.sources_config.git_repos["auth-test-repo"]
+    return test_settings.sources_config.git["auth-test-repo"]
 
 
 @pytest.fixture(scope="session")

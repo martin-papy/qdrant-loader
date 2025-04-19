@@ -13,7 +13,7 @@ def confluence_config(test_settings):
     confluence_settings = test_settings.sources_config.confluence["test-space"]
     return ConfluenceSpaceConfig(
         source_type=confluence_settings.source_type,
-        source_name=confluence_settings.source_name,
+        source=confluence_settings.source,
         base_url=HttpUrl(confluence_settings.base_url),
         space_key=confluence_settings.space_key,
         content_types=confluence_settings.content_types,

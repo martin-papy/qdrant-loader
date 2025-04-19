@@ -52,7 +52,7 @@ class IngestionHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source_type = Column(String, nullable=False)
-    source_name = Column(String, nullable=False)
+    source = Column(String, nullable=False)
     last_successful_ingestion = Column(UTCDateTime(timezone=True), nullable=False)
     status = Column(String, nullable=False)
     document_count = Column(Integer, default=0)
@@ -60,7 +60,7 @@ class IngestionHistory(Base):
     created_at = Column(UTCDateTime(timezone=True), nullable=False)
     updated_at = Column(UTCDateTime(timezone=True), nullable=False)
 
-    __table_args__ = (UniqueConstraint("source_type", "source_name", name="uix_source"),)
+    __table_args__ = (UniqueConstraint("source_type", "source", name="uix_source"),)
 
 
 class DocumentStateRecord(Base):
@@ -70,10 +70,9 @@ class DocumentStateRecord(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     source_type = Column(String, nullable=False)
-    source_name = Column(String, nullable=False)
+    source = Column(String, nullable=False)
     document_id = Column(String, nullable=False)
-    url = Column(String)  # For Confluence and Public Docs
-    key = Column(String)  # For Jira issues
+    url = Column(String)
     title = Column(String)
     content = Column(String)
     content_hash = Column(String)
@@ -85,7 +84,6 @@ class DocumentStateRecord(Base):
     updated_at = Column(UTCDateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("source_type", "source_name", "document_id", name="uix_document"),
+        UniqueConstraint("source_type", "source", "document_id", name="uix_document"),
         Index("ix_document_url", "url"),
-        Index("ix_document_key", "key"),
     )

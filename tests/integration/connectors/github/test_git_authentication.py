@@ -35,7 +35,7 @@ def test_missing_token_environment_variable(test_repo_url):
         try:
             GitRepoConfig(
                 source_type="git",
-                source_name="test",
+                source="test",
                 base_url=HttpUrl(test_repo_url),
                 branch="main",
                 depth=1,
@@ -58,7 +58,7 @@ async def test_invalid_token_authentication(test_repo_url):
     """Test that the connector raises an error when an invalid token is provided."""
     config = GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=HttpUrl(test_repo_url),
         branch="main",
         depth=1,
@@ -85,7 +85,7 @@ async def test_invalid_repository_url(valid_github_token):
 
     config = GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=HttpUrl("https://github.com/invalid/invalid-repo"),
         branch="main",
         depth=1,
@@ -104,14 +104,14 @@ async def test_invalid_repository_url(valid_github_token):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_invalid_branch(test_repo_url, valid_github_token):
+async def test_invalid_branch(test_repo_url, valid_github_token, state_manager):
     """Test authentication with an invalid branch."""
     if not valid_github_token:
         pytest.skip("REPO_TOKEN environment variable not set")
 
     config = GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=HttpUrl(test_repo_url),
         branch="invalid-branch",
         depth=1,

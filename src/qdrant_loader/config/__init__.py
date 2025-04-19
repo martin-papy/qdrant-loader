@@ -22,7 +22,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from ..connectors.confluence.config import ConfluenceSpaceConfig
 from ..connectors.git.config import GitAuthConfig, GitRepoConfig
 from ..connectors.jira.config import JiraProjectConfig
-from ..connectors.public_docs.config import PublicDocsSourceConfig, SelectorsConfig
+from ..connectors.publicdocs.config import PublicDocsSourceConfig, SelectorsConfig
 from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
 
@@ -157,10 +157,8 @@ class Settings(BaseSettings):
                 )
 
         # Validate Git settings if Git sources are configured
-        if self.sources_config.git_repos:
-            if not self.REPO_TOKEN and any(
-                repo.token for repo in self.sources_config.git_repos.values()
-            ):
+        if self.sources_config.git:
+            if not self.REPO_TOKEN and any(repo.token for repo in self.sources_config.git.values()):
                 logger.error("Missing required Git repository token")
                 raise ValueError(
                     "Git repositories requiring authentication are configured but "
@@ -251,10 +249,10 @@ class Settings(BaseSettings):
             sources_data = config_data.get("sources", {})
 
             for source_type, sources in sources_data.items():
-                for source_name, source_config in sources.items():
-                    # Add source_type and source_name to the config
+                for source, source_config in sources.items():
+                    # Add source_type and source to the config
                     source_config["source_type"] = source_type
-                    source_config["source_name"] = source_name
+                    source_config["source"] = source
 
             sources_config = SourcesConfig(**sources_data)
 

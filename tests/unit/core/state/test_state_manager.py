@@ -2,27 +2,61 @@
 Unit tests for state manager.
 """
 
-import pytest
-from datetime import datetime, UTC
-from sqlalchemy import create_engine
+from datetime import UTC, datetime
 
-from qdrant_loader.core.state.models import Base, IngestionHistory, DocumentStateRecord
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.sql import select
+
+from qdrant_loader.core.state.models import Base, DocumentStateRecord, IngestionHistory
 from qdrant_loader.core.state.state_manager import StateManager
 
 
-@pytest.fixture
-def state_manager(test_global_config):
-    """Create test state manager."""
-    return StateManager(test_global_config.state_management)
+@pytest_asyncio.fixture
+async def async_engine(test_global_config):
+    """Create an async engine for testing."""
+    db_url = test_global_config.state_management.database_path
+    if not db_url.startswith("sqlite:///"):
+        db_url = f"sqlite:///{db_url}"
+
+    engine = create_async_engine(
+        f"sqlite+aiosqlite:///{db_url.replace('sqlite:///', '')}",
+    )
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield engine
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
-def test_ingestion_history_creation(state_manager):
+@pytest_asyncio.fixture
+async def async_session_factory(async_engine):
+    """Create an async session factory for testing."""
+    return async_sessionmaker(async_engine, expire_on_commit=False)
+
+
+@pytest_asyncio.fixture
+async def state_manager(test_global_config, async_engine):
+    """Create test state manager with async engine."""
+    manager = StateManager(test_global_config.state_management)
+    manager.engine = async_engine
+    manager.AsyncSession = async_sessionmaker(async_engine, expire_on_commit=False)
+    return manager
+
+
+@pytest.mark.asyncio
+async def test_ingestion_history_creation(state_manager):
     """Test creating an ingestion history record."""
-    with state_manager.Session() as session:
+    async with state_manager.AsyncSession() as session:
         now = datetime.now(UTC)
         history = IngestionHistory(
             source_type="test",
-            source_name="test-source",
+            source="test-source",
             last_successful_ingestion=now,
             status="completed",
             document_count=1,
@@ -31,17 +65,18 @@ def test_ingestion_history_creation(state_manager):
             updated_at=now,
         )
         session.add(history)
-        session.commit()
+        await session.commit()
         assert history.id is not None
 
 
-def test_document_state_creation(state_manager):
+@pytest.mark.asyncio
+async def test_document_state_creation(state_manager):
     """Test creating a document state record."""
-    with state_manager.Session() as session:
+    async with state_manager.AsyncSession() as session:
         now = datetime.now(UTC)
         doc_state = DocumentStateRecord(
             source_type="test",
-            source_name="test-source",
+            source="test-source",
             document_id="doc-1",
             last_updated=now,
             last_ingested=now,
@@ -50,17 +85,18 @@ def test_document_state_creation(state_manager):
             updated_at=now,
         )
         session.add(doc_state)
-        session.commit()
+        await session.commit()
         assert doc_state.id is not None
 
 
-def test_get_document_state(state_manager):
+@pytest.mark.asyncio
+async def test_get_document_state(state_manager):
     """Test retrieving a document state."""
-    with state_manager.Session() as session:
+    async with state_manager.AsyncSession() as session:
         now = datetime.now(UTC)
         doc_state = DocumentStateRecord(
             source_type="test",
-            source_name="test-source",
+            source="test-source",
             document_id="doc-1",
             last_updated=now,
             last_ingested=now,
@@ -69,21 +105,23 @@ def test_get_document_state(state_manager):
             updated_at=now,
         )
         session.add(doc_state)
-        session.commit()
+        await session.commit()
 
-        retrieved = session.query(DocumentStateRecord).filter_by(id=doc_state.id).first()
+        result = await session.execute(select(DocumentStateRecord).filter_by(id=doc_state.id))
+        retrieved = result.scalar_one_or_none()
         assert retrieved is not None
         assert retrieved.source_type == "test"
         assert retrieved.document_id == "doc-1"
 
 
-def test_update_document_state(state_manager):
+@pytest.mark.asyncio
+async def test_update_document_state(state_manager):
     """Test updating a document state."""
-    with state_manager.Session() as session:
+    async with state_manager.AsyncSession() as session:
         now = datetime.now(UTC)
         doc_state = DocumentStateRecord(
             source_type="test",
-            source_name="test-source",
+            source="test-source",
             document_id="doc-1",
             last_updated=now,
             last_ingested=now,
@@ -92,10 +130,13 @@ def test_update_document_state(state_manager):
             updated_at=now,
         )
         session.add(doc_state)
-        session.commit()
+        await session.commit()
 
+        # Update the document state
         doc_state.is_deleted = True  # type: ignore
-        session.commit()
+        await session.commit()
 
-        updated = session.query(DocumentStateRecord).filter_by(id=doc_state.id).first()
+        result = await session.execute(select(DocumentStateRecord).filter_by(id=doc_state.id))
+        updated = result.scalar_one_or_none()
+        assert updated is not None
         assert updated.is_deleted is True

@@ -2,17 +2,17 @@
 Ingestion pipeline for processing documents.
 """
 
-import uuid
 from datetime import UTC, datetime
 
-from pydantic import HttpUrl
 from qdrant_client.http import models
 
+from qdrant_loader.config.state import IngestionStatus
+from qdrant_loader.config.types import SourceType
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
 from ..connectors.git import GitConnector
-from ..connectors.jira import JiraConfig, JiraConnector
-from ..connectors.public_docs import PublicDocsConnector
+from ..connectors.jira import JiraConnector
+from ..connectors.publicdocs import PublicDocsConnector
 from ..utils.logging import LoggingConfig
 from .chunking_service import ChunkingService
 from .document import Document
@@ -26,7 +26,7 @@ logger = LoggingConfig.get_logger(__name__)
 class IngestionPipeline:
     """Pipeline for processing documents."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, qdrant_manager: QdrantManager):
         """Initialize the ingestion pipeline."""
 
         self.settings = settings
@@ -39,36 +39,58 @@ class IngestionPipeline:
         # Initialize services
         self.chunking_service = ChunkingService(config=self.config, settings=self.settings)
         self.embedding_service = EmbeddingService(settings)
-        self.qdrant_manager = QdrantManager(settings)
+        self.qdrant_manager = qdrant_manager
         self.state_manager = StateManager(self.config.state_management)
         self.logger = LoggingConfig.get_logger(__name__)
+
+    async def initialize(self):
+        """Initialize the pipeline services."""
+        await self.state_manager.initialize()
 
     async def process_documents(
         self,
         sources_config: SourcesConfig | None = None,
         source_type: str | None = None,
-        source_name: str | None = None,
+        source: str | None = None,
     ) -> list[Document]:
         """Process documents from all configured sources."""
+        # Ensure state manager is initialized
+        await self.state_manager.initialize()
+
         if not sources_config:
             sources_config = self.settings.sources_config
-            self.logger.error("No sources configured")
-            return []
 
         # Filter sources based on type and name
-        filtered_config = self._filter_sources(sources_config, source_type, source_name)
+        filtered_config = self._filter_sources(sources_config, source_type, source)
+
+        # Check if filtered config is empty
+        if source_type and not any(
+            [
+                filtered_config.git,
+                filtered_config.confluence,
+                filtered_config.jira,
+                filtered_config.publicdocs,
+            ]
+        ):
+            raise ValueError(f"No sources found for type '{source_type}'")
 
         documents: list[Document] = []
 
         try:
             # Process Git repositories
-            if filtered_config.git_repos:
-                for name, config in filtered_config.git_repos.items():
+            if filtered_config.git:
+                for name, config in filtered_config.git.items():
                     self.logger.info(f"Configuring Git repository: {name}")
                     try:
-                        with GitConnector(config) as connector:
+                        async with GitConnector(config) as connector:
                             git_docs = await connector.get_documents()
                             documents.extend(git_docs)
+                            await self.state_manager.update_last_ingestion(
+                                config.source_type,
+                                config.source,
+                                IngestionStatus.SUCCESS,
+                                len(git_docs),
+                            )
                     except Exception as e:
                         self.logger.error(
                             f"Failed to process Git repository {name}",
@@ -76,62 +98,122 @@ class IngestionPipeline:
                             error_type=type(e).__name__,
                             error_class=e.__class__.__name__,
                         )
+                        await self.state_manager.update_last_ingestion(
+                            config.source_type, config.source, IngestionStatus.FAILED
+                        )
                         raise
 
             # Process Confluence spaces
             if filtered_config.confluence:
                 for name, config in filtered_config.confluence.items():
                     self.logger.debug(f"Configuring Confluence space: {name}")
-                    connector = ConfluenceConnector(config)
-                    confluence_docs = await connector.get_documents()
-                    documents.extend(confluence_docs)
+                    try:
+                        async with ConfluenceConnector(config) as connector:
+                            confluence_docs = await connector.get_documents()
+                            documents.extend(confluence_docs)
+                            await self.state_manager.update_last_ingestion(
+                                config.source_type,
+                                config.source,
+                                IngestionStatus.SUCCESS,
+                                len(confluence_docs),
+                            )
+                    except Exception as e:
+                        self.logger.error(
+                            f"Failed to process Confluence space {name}",
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            error_class=e.__class__.__name__,
+                        )
+                        await self.state_manager.update_last_ingestion(
+                            config.source_type, config.source, IngestionStatus.FAILED
+                        )
+                        raise
 
             # Process Jira projects
             if filtered_config.jira:
                 for name, config in filtered_config.jira.items():
                     self.logger.debug(f"Configuring Jira project: {name}")
-                    # Convert JiraProjectConfig to JiraConfig
-                    jira_config = JiraConfig(
-                        base_url=HttpUrl(config.base_url),
-                        project_key=config.project_key,
-                        requests_per_minute=config.requests_per_minute,
-                        page_size=config.page_size,
-                        process_attachments=config.process_attachments,
-                        track_last_sync=config.track_last_sync,
-                        api_token=config.token,
-                        email=config.email,
-                    )
-                    connector = JiraConnector(jira_config)
-                    jira_docs = await connector.get_documents()
-                    documents.extend(jira_docs)
+                    try:
+                        async with JiraConnector(config) as connector:
+                            jira_docs = await connector.get_documents()
+                            documents.extend(jira_docs)
+                            await self.state_manager.update_last_ingestion(
+                                config.source_type,
+                                config.source,
+                                IngestionStatus.SUCCESS,
+                                len(jira_docs),
+                            )
+                    except Exception as e:
+                        self.logger.error(
+                            f"Failed to process Jira project {name}",
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            error_class=e.__class__.__name__,
+                        )
+                        await self.state_manager.update_last_ingestion(
+                            config.source_type, config.source, IngestionStatus.FAILED
+                        )
+                        raise
 
             # Process public documentation
-            if filtered_config.public_docs:
-                for name, config in filtered_config.public_docs.items():
+            if filtered_config.publicdocs:
+                for name, config in filtered_config.publicdocs.items():
                     self.logger.debug(f"Configuring public documentation: {name}")
-                    connector = PublicDocsConnector(config, self.state_manager)
-                    public_docs = await connector.get_documentation()
-                    documents.extend(public_docs)
+                    try:
+                        async with PublicDocsConnector(config) as connector:
+                            publicdocs = await connector.get_documentation()
+                            documents.extend(publicdocs)
+                            await self.state_manager.update_last_ingestion(
+                                config.source_type,
+                                config.source,
+                                IngestionStatus.SUCCESS,
+                                len(publicdocs),
+                            )
+                    except Exception as e:
+                        self.logger.error(
+                            f"Failed to process public documentation {name}",
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            error_class=e.__class__.__name__,
+                        )
+                        await self.state_manager.update_last_ingestion(
+                            config.source_type, config.source, IngestionStatus.FAILED
+                        )
+                        raise
 
             self.logger.debug(f"Found {len(documents)} documents to process", documents=documents)
-            # Process all documents
+
+            # Process all valid documents
             for doc in documents:
                 try:
                     # Convert Document to DocumentStateRecord
                     now = datetime.now(UTC)
                     doc_state = DocumentStateRecord(
-                        source_type=doc.source_type or "unknown",
-                        source_name=doc.source or "unknown",
-                        document_id=doc.id or str(uuid.uuid4()),
+                        source_type=doc.source_type,
+                        source=doc.source,
+                        document_id=doc.id,
                         last_updated=doc.last_updated if doc.last_updated is not None else now,
                         last_ingested=now,
                         is_deleted=False,
+                        content_hash=doc.content_hash,
                         created_at=now,
                         updated_at=now,
                     )
-                    self.logger.debug(f"Document state created: {doc_state}")
+                    self.logger.debug(
+                        "Document state created",
+                        doc_id=doc_state.document_id,
+                        content_hash=doc_state.content_hash,
+                        last_updated=doc_state.last_updated,
+                    )
+
                     # Update document state
-                    await self.state_manager.update_document_state(doc_state)
+                    updated_state = await self.state_manager.update_document_state(doc_state)
+                    self.logger.debug(
+                        "Document state updated",
+                        doc_id=updated_state.document_id,
+                        content_hash=updated_state.content_hash,
+                        last_updated=updated_state.last_updated,
+                    )
 
                     # Chunk document
                     try:
@@ -166,13 +248,18 @@ class IngestionPipeline:
                                 "source": chunk.source,
                                 "source_type": chunk.source_type,
                                 "created_at": chunk.created_at.isoformat(),
+                                "document_id": doc.id,  # Add reference to parent document
                             },
                         )
-                        self.logger.debug(f"Point created: {point}")
+                        self.logger.debug("Point created")
                         points.append(point)
 
                     # Update Qdrant
                     await self.qdrant_manager.upsert_points(points)
+                    self.logger.debug(
+                        f"Successfully processed document {doc.id}",
+                        points_count=len(points),
+                    )
 
                 except Exception as e:
                     self.logger.error(f"Error processing document {doc.id}: {e!s}")
@@ -193,7 +280,7 @@ class IngestionPipeline:
         self,
         sources_config: SourcesConfig,
         source_type: str | None = None,
-        source_name: str | None = None,
+        source: str | None = None,
     ) -> SourcesConfig:
         """Filter sources based on type and name."""
         if not source_type:
@@ -201,32 +288,32 @@ class IngestionPipeline:
 
         filtered = SourcesConfig()
 
-        if source_type == "git":
-            if source_name:
-                if source_name in sources_config.git_repos:
-                    filtered.git_repos = {source_name: sources_config.git_repos[source_name]}
+        if source_type == SourceType.GIT:
+            if source:
+                if source in sources_config.git:
+                    filtered.git = {source: sources_config.git[source]}
             else:
-                filtered.git_repos = sources_config.git_repos
+                filtered.git = sources_config.git
 
-        elif source_type == "confluence":
-            if source_name:
-                if source_name in sources_config.confluence:
-                    filtered.confluence = {source_name: sources_config.confluence[source_name]}
+        elif source_type == SourceType.CONFLUENCE:
+            if source:
+                if source in sources_config.confluence:
+                    filtered.confluence = {source: sources_config.confluence[source]}
             else:
                 filtered.confluence = sources_config.confluence
 
-        elif source_type == "jira":
-            if source_name:
-                if source_name in sources_config.jira:
-                    filtered.jira = {source_name: sources_config.jira[source_name]}
+        elif source_type == SourceType.JIRA:
+            if source:
+                if source in sources_config.jira:
+                    filtered.jira = {source: sources_config.jira[source]}
             else:
                 filtered.jira = sources_config.jira
 
-        elif source_type == "public-docs":
-            if source_name:
-                if source_name in sources_config.public_docs:
-                    filtered.public_docs = {source_name: sources_config.public_docs[source_name]}
+        elif source_type == SourceType.PUBLICDOCS:
+            if source:
+                if source in sources_config.publicdocs:
+                    filtered.publicdocs = {source: sources_config.publicdocs[source]}
             else:
-                filtered.public_docs = sources_config.public_docs
+                filtered.publicdocs = sources_config.publicdocs
 
         return filtered
