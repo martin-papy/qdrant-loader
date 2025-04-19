@@ -14,6 +14,8 @@ from git.exc import GitCommandError
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.state.state_change_detector import StateChangeDetector
+from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -394,6 +396,7 @@ class GitConnector:
 
         Args:
             config: Configuration for the Git repository
+            state_manager: State manager for tracking document states
         """
         self.config = config
         self.temp_dir = None  # Will be set in __enter__
@@ -402,6 +405,17 @@ class GitConnector:
         self.logger = structlog.get_logger(__name__)
         self.logger.info("Initializing GitConnector")
         self.logger.debug("GitConnector Configuration", config=config.model_dump())
+        self._initialized = False
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if not self._initialized:
+            self._initialized = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        self._cleanup()
         self._initialized = False
 
     def __enter__(self):
@@ -728,6 +742,7 @@ class GitConnector:
                     self.logger.error("Failed to process file", file_path=file_path, error=str(e))
                     continue
 
+            # Return all documents that need to be processed
             return documents
 
         except ValueError as e:

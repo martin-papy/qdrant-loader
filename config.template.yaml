@@ -32,9 +32,9 @@ global:
 # Each source type has its own configuration section
 sources:
   # Public documentation sources (websites, documentation)
-  public_docs:
+  publicdocs:
     # Example configuration for a documentation source
-    my_docs:
+    my-docs:
       # Base URL of the documentation website
       base_url: "https://docs.example.com"
       
@@ -75,7 +75,7 @@ sources:
         code_blocks: "pre code"
 
   # Git repository sources
-  git_repos:
+  git:
     # Example configuration for a public repository
     public_repo:
       base_url: "https://github.com/example/repo.git"  # Repository URL

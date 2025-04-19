@@ -14,7 +14,7 @@ def git_config():
     """Create a GitRepoConfig instance for testing."""
     return GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=HttpUrl("https://github.com/test/repo.git"),
         branch="main",
         file_types=[".md", ".py"],  # Add some file types to pass validation

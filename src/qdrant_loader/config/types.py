@@ -5,7 +5,17 @@ used across the application. These types provide type safety and documentation
 for configuration data structures.
 """
 
+from enum import Enum
 from typing import Any, TypedDict
+
+
+class SourceType(str, Enum):
+    """Enum for supported source types."""
+
+    PUBLICDOCS = "publicdocs"
+    GIT = "git"
+    CONFLUENCE = "confluence"
+    JIRA = "jira"
 
 
 class GitConfig(TypedDict):
@@ -40,8 +50,10 @@ class JiraConfig(TypedDict):
     page_size: int
     process_attachments: bool
     track_last_sync: bool
-    token: str
+    api_token: str
     email: str
+    issue_types: list[str]
+    include_statuses: list[str]
 
 
 class PublicDocsConfig(TypedDict):
@@ -57,8 +69,8 @@ class PublicDocsConfig(TypedDict):
 class SourcesConfigDict(TypedDict):
     """Configuration for all sources."""
 
-    public_docs: dict[str, PublicDocsConfig]
-    git_repos: dict[str, GitConfig]
+    publicdocs: dict[str, PublicDocsConfig]
+    git: dict[str, GitConfig]
     confluence: dict[str, ConfluenceConfig]
     jira: dict[str, JiraConfig]
 

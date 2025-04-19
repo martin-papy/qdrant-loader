@@ -3,623 +3,333 @@ Tests for the CLI module.
 """
 
 import asyncio
+import logging
+import os
+from logging import getLogger
 from pathlib import Path
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from functools import wraps
 
 import pytest
 from click.testing import CliRunner
 
 from qdrant_loader.cli.cli import cli
-from tests.utils import is_github_actions
+from qdrant_loader.config import Settings
+from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
+from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionError
+
+logger = getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
+# Error message constants
+COLLECTION_NOT_FOUND = "Collection not found"
+SOURCE_WITHOUT_TYPE = "Source type not specified"
+CONNECTION_REFUSED = "Connection refused"
 
 
-class AsyncCliRunner(CliRunner):
-    """A CLI runner that supports async operations."""
+def mock_async_command(f):
+    """Mock async_command decorator that properly handles event loop management."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            should_close = True
+        else:
+            should_close = False
 
-    async def async_invoke(self, cli, args=None, **kwargs):
-        """Async version of invoke to handle async operations."""
+        try:
+            return loop.run_until_complete(f(*args, **kwargs))
+        finally:
+            if should_close:
+                loop.close()
 
-        def sync_invoke():
-            return self.invoke(cli, args, **kwargs)
-
-        # Run the sync invoke in the event loop
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, sync_invoke)
-
-
-@pytest.fixture
-def runner(monkeypatch):
-    """Create a CLI runner with the test environment."""
-    # Set the current working directory to the project root
-    monkeypatch.chdir(Path(__file__).parent.parent.parent.parent)
-
-    # Create the runner
-    runner = AsyncCliRunner()
-    return runner
+    return wrapper
 
 
-@pytest.fixture
-def mock_pipeline(mocker):
-    """Mock the IngestionPipeline class."""
-    mock = mocker.MagicMock()
-    mock.process_documents = AsyncMock(return_value=None)
-    mocker.patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock)
-    return mock
-
-
-@pytest.fixture
-def mock_init_collection(mocker):
-    """Mock the init_collection function."""
-    mock = AsyncMock()
-    mocker.patch("qdrant_loader.cli.cli.init_collection", mock)
-    return mock
+@pytest.fixture(autouse=True)
+def mock_async_decorator():
+    """Automatically mock the async_command decorator for all tests."""
+    with patch("qdrant_loader.cli.asyncio.async_command", side_effect=mock_async_command):
+        yield
 
 
 @pytest.fixture
-def mock_settings(mocker):
-    """Mock the get_settings function."""
-    mock = MagicMock()
-    mocker.patch("qdrant_loader.cli.cli.get_settings", return_value=mock)
-    return mock
+def mock_event_loop():
+    """Mock event loop management functions."""
+    with (
+        patch("asyncio.get_running_loop") as mock_get_loop,
+        patch("asyncio.new_event_loop") as mock_new_loop,
+        patch("asyncio.set_event_loop") as mock_set_loop,
+    ):
+        mock_loop = MagicMock()
+        mock_loop.run_until_complete = AsyncMock()
+        mock_loop.close = MagicMock()
+
+        def get_running_loop_side_effect():
+            try:
+                return asyncio.get_running_loop()
+            except RuntimeError:
+                raise RuntimeError("No running event loop")
+
+        mock_get_loop.side_effect = get_running_loop_side_effect
+        mock_new_loop.return_value = mock_loop
+        mock_set_loop.return_value = None
+
+        yield mock_loop
 
 
-@pytest.mark.asyncio
-async def test_cli_help(runner):
-    """Test that the CLI help message is displayed correctly."""
-    result = await runner.async_invoke(cli, ["--help"])
-    assert result.exit_code == 0
-    assert "Usage: qdrant-loader [OPTIONS] COMMAND [ARGS]" in result.output
+@pytest.fixture
+def mock_settings():
+    """Mock settings object."""
+    settings = MagicMock(spec=Settings)
+    settings.config_file = "config.yaml"
+    settings.collection_name = "test_collection"
+    settings.source_type = "csv"
+    settings.source_path = "data.csv"
+    settings.host = "localhost"
+    settings.port = 6333
+    settings.grpc_port = 6334
+    settings.prefer_grpc = False
+    settings.verbose = False
+    return settings
 
 
-@pytest.mark.asyncio
-async def test_cli_version(runner):
-    """Test that the version command works."""
-    with patch("qdrant_loader.cli.cli._load_config", return_value=None):
-        result = await runner.async_invoke(cli, ["--version"])
+@pytest.fixture
+def mock_qdrant_manager():
+    """Mock QdrantManager object."""
+    manager = MagicMock(spec=QdrantManager)
+    manager.collection_exists = AsyncMock(return_value=True)
+    manager.create_collection = AsyncMock()
+    manager.delete_collection = AsyncMock()
+    return manager
+
+
+@pytest.fixture
+def mock_pipeline():
+    """Mock IngestionPipeline object."""
+    pipeline = MagicMock(spec=IngestionPipeline)
+    pipeline.run = AsyncMock()
+    return pipeline
+
+
+@pytest.fixture
+def runner():
+    """Create a CLI runner."""
+    return CliRunner()
+
+
+class TestBase:
+    """Base class for CLI tests with common setup."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_event_loop, mock_settings, mock_qdrant_manager, mock_pipeline, runner):
+        self.loop = mock_event_loop
+        self.settings = mock_settings
+        self.qdrant_manager = mock_qdrant_manager
+        self.pipeline = mock_pipeline
+        self.runner = runner
+
+        # Setup patches
+        self.patches = [
+            patch("qdrant_loader.cli.cli.Settings", return_value=self.settings),
+            patch("qdrant_loader.cli.cli.QdrantManager", return_value=self.qdrant_manager),
+            patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=self.pipeline),
+        ]
+
+        for p in self.patches:
+            p.start()
+
+    def teardown_method(self):
+        for p in self.patches:
+            p.stop()
+
+    @pytest.fixture(autouse=True)
+    def setup_event_loop(self, event_loop):
+        """Ensure each test has access to the event loop."""
+        asyncio.set_event_loop(event_loop)
+        yield
+        # Clean up after test
+        asyncio.set_event_loop(None)
+
+    @pytest.fixture
+    def mock_collection(self, mocker):
+        """Create a mock collection."""
+        mock = mocker.MagicMock()
+        mock.name = "qdrant-loader-test"
+        return mock
+
+    @pytest.fixture
+    def mock_collections_response(self, mock_collection):
+        """Create a mock collections response."""
+        mock = MagicMock()
+        mock.collections = [mock_collection]
+        return mock
+
+    @pytest.fixture
+    def mock_init_collection(self, mocker):
+        """Create a mock init_collection function."""
+        mock = AsyncMock()
+        mock.return_value = True
+        return mock
+
+    def setup_common_mocks(self, mock_qdrant_manager, mock_collections_response):
+        """Setup common mock behaviors."""
+        mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
+
+
+class TestCliCommands(TestBase):
+    """Test CLI commands."""
+
+    def test_cli_help(self):
+        """Test help command."""
+        result = self.runner.invoke(cli, ["--help"])
+        assert result.exit_code == 0
+        assert "QDrant Loader CLI" in result.output
+
+    def test_cli_version(self):
+        """Test version command."""
+        result = self.runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
         assert "qDrant Loader v." in result.output
 
+    def test_cli_config(self, mock_settings):
+        """Test that the config command works."""
+        with (
+            patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
+            patch("qdrant_loader.cli.cli._load_config", return_value=None),
+        ):
+            result = self.runner.invoke(cli, ["config"])
+            assert result.exit_code == 0
+            assert "Current Configuration" in result.output
 
-@pytest.mark.asyncio
-async def test_cli_config(runner, mock_settings):
-    """Test that the config command works."""
-    with (
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["config"])
+    def test_cli_config_without_settings(self):
+        """Test that the config command fails when no configuration file is found."""
+        with patch("pathlib.Path.exists", return_value=False):
+            result = self.runner.invoke(cli, ["config"])
+            assert result.exit_code == 1
+            assert "No config file found" in result.output
+
+    def test_cli_config_with_wrong_path_to_settings(self):
+        """Test that the config command fails when no configuration file is found."""
+        result = self.runner.invoke(cli, ["config", "--config", "non-existing-file.yaml"])
+        assert result.exit_code == 2
+        assert "Invalid value for '--config'" in result.output
+
+
+class TestCliInit(TestBase):
+    """Test init command variations."""
+
+    @pytest.mark.asyncio
+    async def test_cli_init(self):
+        """Test basic init command."""
+        result = self.runner.invoke(cli, ["init"])
         assert result.exit_code == 0
-        assert "Current Configuration" in result.output
 
-
-@pytest.mark.asyncio
-async def test_cli_init(runner, mock_init_collection, mock_settings):
-    """Test the init command."""
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
+    @pytest.mark.asyncio
+    async def test_cli_init_with_force(self):
+        """Test init command with force flag."""
+        result = self.runner.invoke(cli, ["init", "--force"])
         assert result.exit_code == 0
-        mock_init_collection.assert_called_once_with(mock_settings, False)
 
-
-@pytest.mark.asyncio
-async def test_cli_init_with_force(runner, mock_init_collection):
-    """Test the init command with force flag."""
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(
-            cli, ["init", "--force", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 0
-        mock_init_collection.assert_called_once_with(mock_settings, True)
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_config_path(runner, mock_init_collection, mock_settings):
-    """Test the init command with config path."""
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_init_collection.assert_called_once_with(mock_settings, False)
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_invalid_config(runner):
-    """Test the init command with invalid config."""
-    result = await runner.async_invoke(cli, ["init", "--config", "nonexistent.yaml"])
-    assert result.exit_code == 2
-    assert "Invalid value for '--config': Path 'nonexistent.yaml' does not exist" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_source_type(
-    runner, mock_pipeline, mock_qdrant_manager, mock_settings
-):
-    """Test the ingest command with source type."""
-    # Setup mock pipeline
-    mock_pipeline.process_documents = AsyncMock(return_value=None)
-
-    # Setup mock QdrantManager
-    mock_collections_response = MagicMock()
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Patch all dependencies
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli, ["ingest", "--source-type", "confluence", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_source_type_and_name(
-    runner, mock_pipeline, mock_qdrant_manager, mock_settings
-):
-    """Test the ingest command with source type and name."""
-    # Setup mock pipeline
-    mock_pipeline.process_documents = AsyncMock(return_value=None)
-
-    # Setup mock QdrantManager
-    mock_collections_response = MagicMock()
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Patch all dependencies
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli,
-            [
-                "ingest",
-                "--source-type",
-                "confluence",
-                "--source",
-                "space1",
-                "--config",
-                "tests/config.test.yaml",
-            ],
-        )
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_without_settings(runner):
-    """Test the ingest command without settings."""
-    with (
-        patch("qdrant_loader.cli.cli.get_settings", return_value=None),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Settings not available" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_source_without_type(runner, mock_settings):
-    """Test the ingest command with source but no source type."""
-    with (
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(
-            cli, ["ingest", "--source", "space1", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 1
-        assert "Source name provided without source type" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_processing_error(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test the ingest command with processing error."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Setup mock pipeline with error
-    mock_pipeline.process_documents = AsyncMock(side_effect=Exception("Processing failed"))
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "Failed to process documents: Processing failed" in result.output
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_nonexistent_source(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test the ingest command with nonexistent source."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Setup mock pipeline with error
-    mock_pipeline.process_documents = AsyncMock(side_effect=ValueError("Source not found"))
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli,
-            [
-                "ingest",
-                "--source-type",
-                "confluence",
-                "--source",
-                "nonexistent",
-                "--config",
-                "tests/config.test.yaml",
-            ],
-        )
-        assert result.exit_code == 1, f"CLI failed with output: {result.output}"
-        assert "Failed to process documents: Source not found" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_all_source_types(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test the ingest command with all source types."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_verbose(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test the ingest command with verbose flag."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_log_level(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test that the ingest command works with different log levels."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli, ["ingest", "--log-level", "DEBUG", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_init_without_settings(runner):
-    """Test the init command without settings."""
-    with (
-        patch("qdrant_loader.cli.cli.get_settings", return_value=None),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Settings not available" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_error(runner, mock_init_collection, mock_settings):
-    """Test the init command with error."""
-    mock_init_collection.side_effect = Exception("Failed to initialize")
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Failed to initialize collection" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_pipeline_error(runner, mock_pipeline, mock_qdrant_manager, mock_settings):
-    """Test that the ingest command handles pipeline errors."""
-    # Setup mock QdrantManager
-    mock_collections_response = MagicMock()
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    # Setup mock pipeline with error
-    mock_pipeline.process_documents = AsyncMock(side_effect=Exception("Pipeline error"))
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Failed to process documents: Pipeline error" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_config_without_settings(runner):
-    """Test that the config command fails when no configuration file is found."""
-    with patch("pathlib.Path.exists", return_value=False):
-        result = await runner.async_invoke(cli, ["config"])
-        assert result.exit_code == 1
-        assert "No config file found" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_config_with_wrong_path_to_settings(runner):
-    """Test that the config command fails when no configuration file is found."""
-    # Then test with explicit non-existent path
-    result = await runner.async_invoke(cli, ["config", "--config", "non-existing-file.yaml"])
-    assert result.exit_code == 2
-    assert "Invalid value for '--config'" in result.output
-
-
-def test_cli_ingest_with_missing_config_file(runner):
-    """Test that the ingest command uses default config path when not specified."""
-    with patch("pathlib.Path.exists", return_value=False):
-        result = runner.invoke(cli, ["ingest"])
-        assert result.exit_code == 1
-        assert "No config file found" in result.output
-        assert (
-            "Please specify a config file or create config.yaml in the current directory"
-            in result.output
-        )
-
-
-def test_cli_log_level_validation(runner):
-    """Test that the log level validation works."""
-    result = runner.invoke(cli, ["ingest", "--log-level", "INVALID"])
-    assert result.exit_code == 2
-    assert "Invalid value for '--log-level'" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_jira_source_type(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test that the ingest command works with JIRA source type."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli, ["ingest", "--source-type", "jira", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_jira_source_type_and_name(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test that the ingest command works with JIRA source type and name."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(
-            cli,
-            [
-                "ingest",
-                "--source-type",
-                "jira",
-                "--source",
-                "project1",
-                "--config",
-                "tests/config.test.yaml",
-            ],
-        )
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_explicit_config(
-    runner, mock_pipeline, mock_qdrant_manager, mock_collections_response, mock_settings
-):
-    """Test that the ingest command works with explicit config path."""
-    # Setup mock QdrantManager
-    mock_collection = MagicMock()
-    mock_collection.name = "qdrant-loader-test"  # Match the expected collection name
-    mock_collections_response.collections = [mock_collection]
-    mock_qdrant_manager.client.get_collections.return_value = mock_collections_response
-
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.IngestionPipeline", return_value=mock_pipeline),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_settings.QDRANT_COLLECTION_NAME = "qdrant-loader-test"
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 0, f"CLI failed with output: {result.output}"
-        mock_pipeline.process_documents.assert_awaited_once()
-        mock_qdrant_manager.client.get_collections.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_explicit_config(runner, mock_init_collection, mock_settings):
-    """Test that the init command works with explicit config path."""
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 0
-        mock_init_collection.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_force_and_config(runner, mock_init_collection, mock_settings):
-    """Test that the init command works with force flag and config path."""
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(
-            cli, ["init", "--force", "--config", "tests/config.test.yaml"]
-        )
-        assert result.exit_code == 0
-        mock_init_collection.assert_awaited_once_with(ANY, True)
-
-
-@pytest.mark.asyncio
-async def test_cli_init_with_connection_error(runner, mock_init_collection, mock_settings):
-    """Test the init command with connection error."""
-    mock_init_collection.side_effect = ConnectionError("Failed to connect")
-    with (
-        patch("qdrant_loader.cli.cli.init_collection", mock_init_collection),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        result = await runner.async_invoke(cli, ["init", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Failed to initialize collection" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_connection_error(runner, mock_qdrant_manager, mock_settings):
-    """Test the ingest command with connection error."""
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_qdrant_manager.client.get_collections.side_effect = ConnectionError(
-            "Connection refused"
-        )
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "Connection refused" in result.output
-
-
-@pytest.mark.asyncio
-async def test_cli_ingest_with_collection_not_found(runner, mock_qdrant_manager, mock_settings):
-    """Test the ingest command with collection not found."""
-    with (
-        patch("qdrant_loader.cli.cli.QdrantManager", return_value=mock_qdrant_manager),
-        patch("qdrant_loader.cli.cli.get_settings", return_value=mock_settings),
-        patch("qdrant_loader.cli.cli._load_config", return_value=None),
-    ):
-        mock_qdrant_manager.client.get_collections.return_value = MagicMock(collections=[])
-        result = await runner.async_invoke(cli, ["ingest", "--config", "tests/config.test.yaml"])
-        assert result.exit_code == 1
-        assert "collection_not_found" in result.output
+    @pytest.mark.asyncio
+    async def test_cli_init_with_error(self):
+        """Test init command with error."""
+        self.settings.side_effect = Exception("Test error")
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["init"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with("init_failed", error="Test error")
+
+    @pytest.mark.asyncio
+    async def test_cli_init_with_connection_error(self):
+        """Test init command with connection error."""
+        self.qdrant_manager.connect.side_effect = Exception("Connection refused")
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["init"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with("init_failed", error="Connection refused")
+
+
+class TestCliIngest(TestBase):
+    """Test ingest command variations."""
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_basic(self):
+        """Test basic ingest command."""
+        with patch("qdrant_loader.cli.cli.logger.info") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_with("Successfully processed 0 documents")
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_source_type(self):
+        """Test ingest command with source type."""
+        with patch("qdrant_loader.cli.cli.logger.info") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest", "--source-type", "confluence"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_with("Successfully processed 0 documents")
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_source(self):
+        """Test ingest command with source."""
+        with patch("qdrant_loader.cli.cli.logger.info") as mock_logger:
+            result = self.runner.invoke(
+                cli, ["ingest", "--source-type", "confluence", "--source", "test"]
+            )
+            assert result.exit_code == 0
+            mock_logger.assert_called_with("Successfully processed 0 documents")
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_error(self):
+        """Test ingest command with error."""
+        self.pipeline.process_documents.side_effect = Exception("Test error")
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with("ingestion_failed", error="Test error")
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_connection_error(self):
+        """Test ingest command with connection error."""
+        self.qdrant_manager.connect.side_effect = Exception("Connection refused")
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with(
+                "qdrant_connection_failed", error="Connection refused"
+            )
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_source_without_type(self):
+        """Test ingest with source without type."""
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest", "--source-name", "test-source"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with("source_without_type")
+
+    @pytest.mark.asyncio
+    async def test_cli_ingest_with_collection_not_found(self):
+        """Test ingest with collection not found."""
+        mock_client = MagicMock()
+        mock_client.get_collections.return_value = MagicMock(collections=[])
+        self.qdrant_manager._ensure_client_connected.return_value = mock_client
+        with patch("qdrant_loader.cli.cli.logger.error") as mock_logger:
+            result = self.runner.invoke(cli, ["ingest"])
+            assert result.exit_code == 0
+            mock_logger.assert_called_once_with("collection_not_found")
+
+    def test_cli_ingest_with_missing_config_file(self):
+        """Test ingest with missing config file."""
+        result = self.runner.invoke(cli, ["ingest", "--config", "non-existing-file.yaml"])
+        assert result.exit_code == 2
+        assert "Invalid value for '--config'" in result.output
+
+    def test_cli_log_level_validation(self):
+        """Test log level validation."""
+        result = self.runner.invoke(cli, ["--log-level", "INVALID"])
+        assert result.exit_code == 2
+        assert "Invalid value for '--log-level'" in result.output

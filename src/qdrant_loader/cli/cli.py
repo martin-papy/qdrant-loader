@@ -12,6 +12,7 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
+from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.config import Settings, get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
@@ -152,6 +153,18 @@ def cli(log_level: str = "INFO") -> None:
     _setup_logging(log_level)
 
 
+async def _run_init(settings: Settings, force: bool) -> None:
+    """Run initialization process."""
+    try:
+        result = await init_collection(settings, force)
+        if not result:
+            raise ClickException("Failed to initialize collection")
+        logger.info("collection_initialized")
+    except Exception as e:
+        logger.error("init_failed", error=str(e))
+        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+
+
 @cli.command()
 @option("--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file.")
 @option("--force", is_flag=True, help="Force reinitialization of collection.")
@@ -161,24 +174,29 @@ def cli(log_level: str = "INFO") -> None:
     default="INFO",
     help="Set the logging level.",
 )
-def init(config: Path | None, force: bool, log_level: str):
+@async_command
+async def init(config: Path | None, force: bool, log_level: str):
     """Initialize QDrant collection."""
     try:
         _setup_logging(log_level)
         _load_config(config)
         settings = _check_settings()
 
-        async def run_init():
-            try:
-                result = await init_collection(settings, force)
-                if not result:
-                    raise ClickException("Failed to initialize collection")
-                logger.info("collection_initialized")
-            except Exception as e:
-                logger.error("init_failed", error=str(e))
-                raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+        # Delete and recreate the database file if it exists
+        db_path = settings.global_config.state_management.database_path
+        if db_path != ":memory:":
+            # Ensure the directory exists
+            db_dir = Path(db_path).parent
+            if not db_dir.exists():
+                if not _create_database_directory(db_dir):
+                    raise ClickException("Database directory creation declined. Exiting.")
 
-        asyncio.run(run_init())
+            # Delete the database file if it exists and force is True
+            if os.path.exists(db_path) and force:
+                logger.info(f"Deleting existing database file: {db_path}")
+                os.remove(db_path)
+
+        await _run_init(settings, force)
 
     except ClickException as e:
         logger.error("init_failed", error=str(e))
@@ -186,6 +204,40 @@ def init(config: Path | None, force: bool, log_level: str):
     except Exception as e:
         logger.error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+
+
+async def _run_ingest(settings: Settings, source_type: str | None, source: str | None) -> None:
+    """Run ingestion process."""
+    try:
+        # Initialize QDrant manager
+        qdrant_manager = QdrantManager(settings)
+        qdrant_manager.connect()
+        logger.info("Successfully connected to qDrant")
+
+        # Check if collection exists
+        client = qdrant_manager._ensure_client_connected()
+        collections = client.get_collections()
+        if not any(c.name == qdrant_manager.collection_name for c in collections.collections):
+            logger.error("collection_not_found")
+            raise ClickException("Collection not found")
+
+        # Initialize pipeline
+        pipeline = IngestionPipeline(settings, qdrant_manager)
+        await pipeline.initialize()
+
+        # Process documents
+        documents = await pipeline.process_documents(
+            source_type=source_type,
+            source=source,
+        )
+        logger.info(f"Successfully processed {len(documents)} documents")
+
+    except QdrantConnectionError as e:
+        logger.error("qdrant_connection_failed", error=str(e))
+        raise ClickException(f"Failed to connect to QDrant: {str(e)!s}") from e
+    except Exception as e:
+        logger.error("ingestion_failed", error=str(e))
+        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
 
 
 @cli.command()
@@ -198,59 +250,30 @@ def init(config: Path | None, force: bool, log_level: str):
     default="INFO",
     help="Set the logging level.",
 )
-def ingest(
+@async_command
+async def ingest(
     config: Path | None,
     source_type: str | None,
     source: str | None,
     log_level: str,
 ):
-    """Ingest documents into QDrant."""
+    """Ingest documents into QDrant collection."""
     try:
         _setup_logging(log_level)
-
-        logger.info("Ingestion Started")
-
-        # First load the config
         _load_config(config)
         settings = _check_settings()
 
         if source and not source_type:
-            raise ClickException("Source name provided without source type")
+            logger.error("source_without_type")
+            raise ClickException("Source without type")
 
-        # Check if collection exists
-        try:
-            qdrant_manager = QdrantManager(settings)
-            if qdrant_manager.client is None:
-                raise ClickException("Failed to initialize Qdrant client")
-
-            collections = qdrant_manager.client.get_collections()
-            if not any(c.name == settings.QDRANT_COLLECTION_NAME for c in collections.collections):
-                raise ClickException(
-                    f"collection_not_found: Collection '{settings.QDRANT_COLLECTION_NAME}' does not exist. "
-                    "Please run 'qdrant-loader init' first to create the collection."
-                )
-        except QdrantConnectionError as e:
-            raise ClickException(f"{str(e)!s}") from e
-
-        # Initialize ingestion pipeline
-        pipeline = IngestionPipeline(settings)
-
-        # Process documents
-        result = asyncio.run(
-            pipeline.process_documents(
-                sources_config=settings.sources_config,
-                source_type=source_type if source_type else None,
-                source_name=source if source else None,
-            )
-        )
-        if result is False:  # Only raise error if explicitly False
-            raise ClickException("Failed to process documents")
+        await _run_ingest(settings, source_type, source)
 
     except ClickException as e:
-        logger.error("Client Exited with Error", error=str(e))
+        logger.error("ingest_failed", error=str(e))
         raise e from None
     except Exception as e:
-        logger.error("Client Exited with Error", error=str(e))
+        logger.error("ingest_failed", error=str(e))
         raise ClickException(f"Failed to process documents: {str(e)!s}") from e
 
 
@@ -266,32 +289,18 @@ def config(log_level: str, config: Path | None):
     """Display current configuration."""
     try:
         _setup_logging(log_level)
+        _load_config(config, skip_validation=True)
+        settings = _check_settings()
 
-        logger.info("qDrant Loader configuration display")
-
-        # Load and validate config without initializing global settings
-        config_path = config or Path("config.yaml")
-        if not config_path.exists():
-            logger.error("config_not_found", path=str(config_path))
-            raise ClickException(
-                "No config file found. Please specify a config file or create config.yaml in the current directory"
-            )
-
-        # Create a temporary Settings instance for validation
-        settings = Settings.from_yaml(config_path, skip_validation=True)
-
-        # Get the expanded database path
-        expanded_path = os.path.expanduser(settings.STATE_DB_PATH)
-        settings.global_config.state_management.database_path = expanded_path
-
+        # Display configuration
         echo("Current Configuration:")
-        echo(settings.model_dump_json(indent=2))
+        echo(str(settings))
 
     except ClickException as e:
-        logger.error("config_display_failed", error=str(e))
+        logger.error("config_failed", error=str(e))
         raise e from None
     except Exception as e:
-        logger.error("config_display_failed", error=str(e))
+        logger.error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
 
 

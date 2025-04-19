@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "qdrant-loader"
-version = "0.1.3b4"
+version = "0.2.0b1"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -78,6 +78,7 @@ dev = [
     "flake8>=6.1.0",
     "mypy>=1.7.0",
     "autoflake>=2.2.0",
+    "sqlite-web>=0.6.4",
 ]
 
 [tool.pytest.ini_options]

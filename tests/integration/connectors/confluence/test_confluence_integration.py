@@ -3,8 +3,8 @@
 import os
 
 import pytest
-from pydantic import HttpUrl
 import requests
+from pydantic import HttpUrl
 
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
@@ -96,7 +96,7 @@ async def test_error_handling(confluence_config):
     """Test error handling with invalid Confluence configuration."""
     invalid_config = ConfluenceSpaceConfig(
         source_type=confluence_config.source_type,
-        source_name=confluence_config.source_name,
+        source=confluence_config.source,
         base_url=HttpUrl("https://invalid.atlassian.net/wiki"),
         space_key="INVALID",
         content_types=confluence_config.content_types,
@@ -123,11 +123,13 @@ async def test_pagination(confluence_connector):
     documents_1 = []
     response = await confluence_connector._get_space_content(start=0, limit=page_size_1)
     results = response.get("results", [])
+    assert len(results) == page_size_1
 
     # Get documents with page size 2
     documents_2 = []
     response = await confluence_connector._get_space_content(start=0, limit=page_size_2)
     results = response.get("results", [])
+    assert len(results) == page_size_2
 
     # Verify that we got more or equal documents with larger page size
     assert len(documents_2) >= len(documents_1)

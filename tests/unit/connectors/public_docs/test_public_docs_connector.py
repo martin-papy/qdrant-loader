@@ -1,18 +1,31 @@
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import HttpUrl
 
 from qdrant_loader.config import PublicDocsSourceConfig, SelectorsConfig
-from qdrant_loader.connectors.public_docs import PublicDocsConnector
+from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.publicdocs import PublicDocsConnector
 from qdrant_loader.core.state.state_manager import StateManager
+
+
+class AsyncContextManagerMock:
+    def __init__(self, response):
+        self.response = response
+
+    async def __aenter__(self):
+        return self.response
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        return None
 
 
 @pytest.fixture
 def mock_config():
     return PublicDocsSourceConfig(
-        source_type="public-docs",
-        source_name="test",
+        source_type=SourceType.PUBLICDOCS,
+        source="test",
         base_url=HttpUrl("https://docs.example.com"),
         version="1.0",
         content_type="html",
@@ -47,9 +60,10 @@ def mock_html():
 
 @pytest.fixture
 def mock_state_manager():
-    """Create a mock state manager."""
     manager = Mock(spec=StateManager)
-    manager.get_last_ingestion = AsyncMock(return_value=Mock(last_updated=None))
+    manager.get_last_ingestion = AsyncMock(
+        return_value=Mock(last_successful_ingestion=datetime.now(UTC))
+    )
     manager.get_document_states = AsyncMock(return_value=[])
     manager.update_document_state = AsyncMock()
     manager.mark_document_deleted = AsyncMock()
@@ -57,8 +71,28 @@ def mock_state_manager():
     return manager
 
 
-def test_should_process_url(mock_config, mock_state_manager):
-    connector = PublicDocsConnector(mock_config, mock_state_manager)
+@pytest.fixture
+def mock_session_and_response(mock_html):
+    """Fixture that provides a mock aiohttp session and response setup."""
+    # Create mock response
+    mock_response = AsyncMock()
+    mock_response.text = AsyncMock(return_value=mock_html)
+    mock_response.raise_for_status = AsyncMock()  # This will return a coroutine by default
+    mock_response.status = 200
+
+    # Create mock session
+    mock_session = AsyncMock()
+    mock_session.close = AsyncMock()  # This will return a coroutine by default
+
+    # Set up the get method to return an async context manager
+    mock_context = AsyncContextManagerMock(mock_response)
+    mock_session.get = Mock(return_value=mock_context)
+
+    return mock_session, mock_response
+
+
+def test_should_process_url(mock_config):
+    connector = PublicDocsConnector(mock_config)
 
     # Test base URL
     assert connector._should_process_url("https://docs.example.com/page") is True
@@ -68,7 +102,7 @@ def test_should_process_url(mock_config, mock_state_manager):
     assert connector._should_process_url("https://docs.example.com/page1") is False
 
     # Test path pattern
-    mock_config.path_pattern = "/docs/{version}/.*"
+    mock_config.path_pattern = r"/docs/1\.0/.*"
     assert connector._should_process_url("https://docs.example.com/docs/1.0/page") is True
     assert connector._should_process_url("https://docs.example.com/other/page") is False
 
@@ -76,8 +110,8 @@ def test_should_process_url(mock_config, mock_state_manager):
     assert connector._should_process_url("https://other.com/page") is False
 
 
-def test_extract_links(mock_config, mock_html, mock_state_manager):
-    connector = PublicDocsConnector(mock_config, mock_state_manager)
+def test_extract_links(mock_config, mock_html):
+    connector = PublicDocsConnector(mock_config)
     links = connector._extract_links(mock_html, "https://docs.example.com")
 
     assert len(links) == 2
@@ -86,8 +120,8 @@ def test_extract_links(mock_config, mock_html, mock_state_manager):
     assert "https://external.com" not in links
 
 
-def test_extract_content(mock_config, mock_html, mock_state_manager):
-    connector = PublicDocsConnector(mock_config, mock_state_manager)
+def test_extract_content(mock_config, mock_html):
+    connector = PublicDocsConnector(mock_config)
     content = connector._extract_content(mock_html)
 
     assert "Main Content" in content
@@ -98,60 +132,48 @@ def test_extract_content(mock_config, mock_html, mock_state_manager):
 
 
 @pytest.mark.asyncio
-@patch("requests.Session")
-async def test_process_page(mock_requests_session, mock_config, mock_html, mock_state_manager):
-    # Setup mock response
-    mock_response = Mock()
-    mock_response.text = mock_html
-    mock_response.raise_for_status.return_value = None
+async def test_process_page(mock_config, mock_session_and_response):
+    mock_session, _ = mock_session_and_response
 
-    mock_requests_session.return_value.get.return_value = mock_response
-    connector = PublicDocsConnector(mock_config, mock_state_manager)
-    content = await connector._process_page("https://docs.example.com/page")
+    with patch("aiohttp.ClientSession", return_value=mock_session):
+        connector = PublicDocsConnector(mock_config)
+        async with connector:
+            content, title = await connector._process_page("https://docs.example.com/page")
 
-    assert content is not None
-    assert "Main Content" in content
-    assert "Navigation" not in content
-    assert len(connector.url_queue) == 2  # Two internal links were found
+            assert content is not None
+            assert "Main Content" in content
+            assert "Navigation" not in content
+            assert "Footer" not in content
+            assert title == "Test Page"
 
 
 @pytest.mark.asyncio
-@patch("requests.Session")
-async def test_get_documentation(mock_session, mock_config, mock_state_manager):
-    # Setup mock responses for a simple site structure
-    mock_responses = {
-        "https://docs.example.com": Mock(
-            text="""
-            <html>
-                <body>
-                    <article class="main-content">Home Page</article>
-                    <a href="/page1">Page 1</a>
-                </body>
-            </html>
-            """,
-            raise_for_status=lambda: None,
-        ),
-        "https://docs.example.com/page1": Mock(
-            text="""
-            <html>
-                <body>
-                    <article class="main-content">Page 1 Content</article>
-                </body>
-            </html>
-            """,
-            raise_for_status=lambda: None,
-        ),
-    }
+async def test_get_documentation(mock_config, mock_session_and_response):
+    mock_session, _ = mock_session_and_response
 
-    def mock_get(url, *args, **kwargs):
-        return mock_responses[url]
+    with patch("aiohttp.ClientSession", return_value=mock_session):
+        connector = PublicDocsConnector(mock_config)
+        async with connector:
+            documents = await connector.get_documentation()
 
-    mock_session.return_value.get.side_effect = mock_get
+            # We expect 3 documents: base URL, page1, and page2
+            assert len(documents) == 3
 
-    connector = PublicDocsConnector(mock_config, mock_state_manager)
-    documents = await connector.get_documentation()
+            # Check base URL document
+            base_doc = next(doc for doc in documents if doc.url == "https://docs.example.com/")
+            assert "Main Content" in base_doc.content
+            assert base_doc.metadata.get("title") == "Test Page"
 
-    assert len(documents) == 2
-    assert any("Home Page" in doc.content for doc in documents)
-    assert any("Page 1 Content" in doc.content for doc in documents)
-    assert len(connector.visited_urls) == 2
+            # Check page1 document
+            page1_doc = next(
+                doc for doc in documents if doc.url == "https://docs.example.com/page1"
+            )
+            assert "Main Content" in page1_doc.content
+            assert page1_doc.metadata.get("title") == "Test Page"
+
+            # Check page2 document
+            page2_doc = next(
+                doc for doc in documents if doc.url == "https://docs.example.com/page2"
+            )
+            assert "Main Content" in page2_doc.content
+            assert page2_doc.metadata.get("title") == "Test Page"

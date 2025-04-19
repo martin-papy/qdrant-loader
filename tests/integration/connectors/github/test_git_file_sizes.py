@@ -15,7 +15,7 @@ def git_config_with_size_limit(git_config_with_auth):
     """Create a GitRepoConfig instance with specific size limits."""
     return GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=git_config_with_auth.base_url,
         branch=git_config_with_auth.branch,
         file_types=git_config_with_auth.file_types,

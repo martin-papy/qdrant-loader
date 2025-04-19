@@ -3,10 +3,11 @@ Tests for the Git integration.
 """
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
-from dotenv import load_dotenv
 from git import Repo
 from pydantic import HttpUrl
 
@@ -17,9 +18,6 @@ from qdrant_loader.config import (
 )
 from qdrant_loader.connectors.git import GitConnector
 from qdrant_loader.core.document import Document
-
-# Load test environment variables
-load_dotenv(Path(__file__).parent.parent.parent / ".env.test")
 
 
 @pytest.fixture(scope="session")
@@ -37,8 +35,8 @@ def test_settings():
 def git_config(test_settings):
     """Create a GitRepoConfig instance with test settings."""
     # Get the first Git repo config from the test settings
-    repo_key = next(iter(test_settings.sources_config.git_repos.keys()))
-    return test_settings.sources_config.git_repos[repo_key]
+    repo_key = next(iter(test_settings.sources_config.git.keys()))
+    return test_settings.sources_config.git[repo_key]
 
 
 @pytest.fixture(scope="function")
@@ -80,6 +78,9 @@ def test_git_connector_cleanup(git_config):
         temp_dir = connector.temp_dir
         assert temp_dir is not None
         assert os.path.exists(temp_dir)
+
+    # Verify cleanup
+    assert not os.path.exists(temp_dir)
 
 
 @pytest.mark.integration
@@ -136,11 +137,11 @@ def test_process_file(git_connector):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_error_handling(git_config):
+async def test_error_handling(git_config, state_manager):
     """Test error handling with invalid repository URL."""
     invalid_config = GitRepoConfig(
         source_type="git",
-        source_name="test",
+        source="test",
         base_url=HttpUrl("https://github.com/invalid/repo.git"),
         branch=git_config.branch,
         depth=git_config.depth,
@@ -153,5 +154,47 @@ async def test_error_handling(git_config):
     )
 
     with pytest.raises(RuntimeError):
+        with GitConnector(invalid_config) as connector:
+            await connector.get_documents()
+
+
+@pytest.mark.integration
+async def test_git_connector_get_documents(git_config):
+    """Test document retrieval with state management."""
+    with GitConnector(git_config) as connector:
+        # Mock last ingestion time
+        last_ingestion = Mock()
+        last_ingestion.last_updated = datetime.now(timezone.utc)
+
+        # Get documents
+        documents = await connector.get_documents()
+        # Verify documents were processed
+        assert isinstance(documents, list)
+        for doc in documents:
+            assert doc.source_type == "git"
+            assert doc.source == str(git_config.base_url)
+            assert "path" in doc.metadata
+            assert "last_modified" in doc.metadata
+            assert "content_hash" in doc.metadata
+
+
+@pytest.mark.integration
+async def test_invalid_config(git_config, mock_state_manager):
+    """Test GitConnector with invalid configuration."""
+    invalid_config = GitRepoConfig(
+        source_type="git",
+        source="test",
+        base_url=HttpUrl("https://invalid-url.com"),
+        branch="main",
+        depth=1,
+        file_types=["*.md", "*.txt"],
+        include_paths=["docs/**/*"],
+        exclude_paths=["tests/**/*"],
+        max_file_size=1024 * 1024,  # 1MB
+        token="test-token",
+        temp_dir="/tmp/test",
+    )
+
+    with pytest.raises(Exception):
         with GitConnector(invalid_config) as connector:
             await connector.get_documents()
