@@ -1,5 +1,7 @@
 # QDrant Loader
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/39b50e3d2efe40d5be856afe871286e7)](https://app.codacy.com/gh/kheldar666/qdrant-loader?utm_source=github.com&utm_medium=referral&utm_content=kheldar666/qdrant-loader&utm_campaign=Badge_Grade)
+
 A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. The ultimate goal is to use the qdrant database for coding more effectively using AI Tooling like: Cursor, Windsurf (using mcp-qdrant-server) or GitHub Copilot.
 
 ## Features
