@@ -4,9 +4,9 @@ This module defines the configuration settings for state management,
 including database path, table prefix, and connection pool settings.
 """
 
-import os
 from pathlib import Path
 from typing import Any
+import os
 
 from pydantic import Field, ValidationInfo, field_validator
 
@@ -21,6 +21,16 @@ class DatabaseDirectoryError(Exception):
         super().__init__(f"Database directory does not exist: {path}")
 
 
+class IngestionStatus:
+    """Enum-like class for ingestion status values."""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+    IN_PROGRESS = "in_progress"
+    SKIPPED = "skipped"
+    CANCELLED = "cancelled"
+
+
 class StateManagementConfig(BaseConfig):
     """Configuration for state management."""
 
@@ -33,24 +43,20 @@ class StateManagementConfig(BaseConfig):
     @field_validator("database_path")
     @classmethod
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
-        """Validate database path exists and is writable."""
-        # Special case for in-memory database
-        if v == ":memory:":
-            return v
+        """Validate database path."""
+        path = Path(v)
+        parent_dir = path.parent
 
-        # Expand the path first
-        path = Path(os.path.expanduser(v))
-        if not path.parent.exists():
+        if not parent_dir.exists():
             raise ValueError("Database directory does not exist")
 
-        if not path.parent.is_dir():
+        if not parent_dir.is_dir():
             raise ValueError("Database path is not a directory")
 
-        # Check if directory is writable
-        if not os.access(path.parent, os.W_OK):
+        if not os.access(parent_dir, os.W_OK):
             raise ValueError("Database directory is not writable")
 
-        return str(path)
+        return v
 
     @field_validator("table_prefix")
     @classmethod

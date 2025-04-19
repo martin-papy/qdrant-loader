@@ -3,7 +3,7 @@ Tests for the ingestion pipeline.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from logging import getLogger
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,12 +13,15 @@ from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from qdrant_loader.config import Settings, SourcesConfig
+from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
-from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig, SelectorsConfig
+from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig, SelectorsConfig
 from qdrant_loader.core.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
-from qdrant_loader.connectors.git.config import GitRepoConfig
+from qdrant_loader.core.state.models import DocumentStateRecord
+from qdrant_loader.config.state import IngestionStatus
+from qdrant_loader.config.types import SourceType
 
 logger = getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -31,7 +34,7 @@ def mock_documents():
         Document(
             content="Test content 1",
             source="test-source",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={"space": "SPACE1", "content_type": "page"},
             created_at=datetime.now(),
             url="https://test.com/doc1",
@@ -102,7 +105,7 @@ async def test_ingestion_pipeline_init(test_settings):
         mock_state_manager_cls.return_value = mock_state_manager
 
         # Create pipeline
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant_manager)
 
         # Verify initialization
         assert pipeline.settings == test_settings
@@ -125,14 +128,16 @@ async def test_ingestion_pipeline_init_no_settings():
         ValueError,
         match="Global configuration not available. Please check your configuration file.",
     ):
+        mock_qdrant_manager = MagicMock()
+
         # Create pipeline with invalid settings
         mock_settings = MagicMock(spec=Settings)
         mock_settings.global_config = None
-        IngestionPipeline(mock_settings)
+        IngestionPipeline(mock_settings, mock_qdrant_manager)
 
 
 @pytest.mark.asyncio
-async def test_process_documents_no_sources(test_settings):
+async def test_process_documents_no_sources():
     """Test processing with no sources."""
     with (
         patch(
@@ -165,16 +170,17 @@ async def test_process_documents_no_sources(test_settings):
 
         # Make mock methods return coroutines
         mock_state_manager.update_document_state = AsyncMock(return_value=None)
+        mock_state_manager.initialize = AsyncMock(return_value=None)
         mock_embedding_service.get_embeddings = AsyncMock(return_value=[])
         mock_qdrant_manager.upsert_points = AsyncMock(return_value=None)
 
         # Create mock settings with no sources
         mock_settings_instance = MagicMock()
-        mock_settings_instance.sources_config = None
+        mock_settings_instance.sources_config = SourcesConfig()
         mock_settings.return_value = mock_settings_instance
 
         # Create pipeline
-        pipeline = IngestionPipeline(mock_settings_instance)
+        pipeline = IngestionPipeline(mock_settings_instance, mock_qdrant_manager)
 
         # Test processing with no sources
         result = await pipeline.process_documents()
@@ -182,7 +188,7 @@ async def test_process_documents_no_sources(test_settings):
 
 
 @pytest.mark.asyncio
-async def test_process_documents_public_docs(test_settings, mock_documents):
+async def test_process_documents_publicdocs(test_settings, mock_documents):
     """Test processing public docs."""
     with (
         patch("qdrant_loader.core.ingestion_pipeline.PublicDocsConnector") as mock_connector,
@@ -196,6 +202,10 @@ async def test_process_documents_public_docs(test_settings, mock_documents):
         mock_connector_instance.get_documentation = AsyncMock(return_value=mock_documents)
         mock_connector.return_value = mock_connector_instance
 
+        # Set up the connector to be used as a context manager
+        mock_connector_instance.__aenter__.return_value = mock_connector_instance
+        mock_connector_instance.__aexit__.return_value = None
+
         mock_chunking = MagicMock()
         mock_chunking.chunk_document.return_value = [mock_documents[0]]
         mock_chunking_service.return_value = mock_chunking
@@ -205,21 +215,35 @@ async def test_process_documents_public_docs(test_settings, mock_documents):
         mock_embedding_service.return_value = mock_embedding
 
         mock_qdrant = AsyncMock()
-        mock_qdrant.upsert_points = AsyncMock()
+        mock_qdrant.upsert_points = AsyncMock(return_value=None)
         mock_qdrant_manager.return_value = mock_qdrant
 
         mock_state = AsyncMock()
-        mock_state.update_document_state = AsyncMock()
+        mock_state.update_document_state = AsyncMock(
+            return_value=DocumentStateRecord(
+                source_type=SourceType.PUBLICDOCS,
+                source="test-docs",
+                document_id=mock_documents[0].id,
+                last_updated=datetime.now(UTC),
+                last_ingested=datetime.now(UTC),
+                is_deleted=False,
+                content_hash=mock_documents[0].content_hash,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
         mock_state_manager.return_value = mock_state
 
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant)
 
         # Process the documents
         documents = await pipeline.process_documents(
-            test_settings.sources_config, source_type="public-docs"
+            test_settings.sources_config, source_type=SourceType.PUBLICDOCS
         )
 
         # Verify the mocks were called
+        mock_connector.assert_called_once()
+        mock_connector_instance.__aenter__.assert_awaited_once()
         mock_connector_instance.get_documentation.assert_awaited_once()
         mock_chunking.chunk_document.assert_called_once_with(mock_documents[0])
         mock_embedding.get_embeddings.assert_awaited_once_with([mock_documents[0].content])
@@ -244,9 +268,9 @@ async def test_process_documents_error(test_settings):
     ):
         # Set up mock instances
         mock_chunking_service = MagicMock()
-        mock_embedding_service = MagicMock()
-        mock_qdrant_manager = MagicMock()
-        mock_state_manager = MagicMock()
+        mock_embedding_service = AsyncMock()
+        mock_qdrant_manager = AsyncMock()
+        mock_state_manager = AsyncMock()
 
         # Configure mock classes to return their instances
         mock_chunking_service_new.return_value = mock_chunking_service
@@ -254,15 +278,20 @@ async def test_process_documents_error(test_settings):
         mock_qdrant_manager_cls.return_value = mock_qdrant_manager
         mock_state_manager_cls.return_value = mock_state_manager
 
+        # Set up async methods
+        mock_state_manager.initialize = AsyncMock(return_value=None)
+        mock_embedding_service.get_embeddings = AsyncMock(return_value=[])
+        mock_qdrant_manager.upsert_points = AsyncMock(return_value=None)
+
         # Mock Git operations to raise an error
         mock_git_ops.return_value.list_files.side_effect = ValueError("Repository not initialized")
 
         # Create pipeline
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant_manager)
 
         # Create sources config with Git repository
         sources_config = SourcesConfig()
-        sources_config.git_repos = {
+        sources_config.git = {
             "test-repo": GitRepoConfig(
                 base_url=HttpUrl("https://github.com/test/repo.git"),
                 branch="main",
@@ -271,7 +300,7 @@ async def test_process_documents_error(test_settings):
                 token="",  # No token needed for public repo
                 temp_dir="",  # Will be set by GitConnector
                 source_type="git",
-                source_name="test-repo",
+                source="test-repo",
             )
         }
 
@@ -305,7 +334,7 @@ def test_filter_sources(test_settings):
         mock_state_manager_cls.return_value = mock_state_manager
 
         # Create pipeline
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant_manager)
 
         # Test source filtering
         filtered_config = pipeline._filter_sources(test_settings.sources_config)
@@ -320,8 +349,8 @@ async def test_process_documents_with_jira(test_settings):
     # Configure sources
     jira_config = JiraProjectConfig(
         base_url=HttpUrl("https://test.atlassian.net"),
-        source_type="jira",
-        source_name="TEST",
+        source_type=SourceType.JIRA,
+        source="TEST",
         project_key="TEST",
         page_size=100,
         requests_per_minute=60,
@@ -344,7 +373,7 @@ async def test_process_documents_with_jira(test_settings):
             id="TEST-1",
             content="Test Description",
             source="TEST",
-            source_type="jira",
+            source_type=SourceType.JIRA,
             url="https://test.atlassian.net/browse/TEST-1",
             metadata={"key": "TEST-1", "summary": "Test Issue"},
             last_updated=datetime.now(),
@@ -354,13 +383,17 @@ async def test_process_documents_with_jira(test_settings):
         mock_connector.get_documents = AsyncMock(return_value=[test_doc])
         mock_jira_connector_class.return_value = mock_connector
 
+        # Set up the connector to be used as a context manager
+        mock_connector.__aenter__.return_value = mock_connector
+        mock_connector.__aexit__.return_value = None
+
         mock_chunking = MagicMock()
         mock_chunking.chunk_document.return_value = [
             Document(
                 id="TEST-1-chunk-1",
                 content="Test Description",
                 source="TEST",
-                source_type="jira",
+                source_type=SourceType.JIRA,
                 url="https://test.atlassian.net/browse/TEST-1",
                 metadata={"key": "TEST-1", "summary": "Test Issue"},
                 last_updated=datetime.now(),
@@ -377,14 +410,28 @@ async def test_process_documents_with_jira(test_settings):
         mock_qdrant_manager.return_value = mock_qdrant
 
         mock_state = AsyncMock()
-        mock_state.update_document_state = AsyncMock(return_value=None)
+        mock_state.update_document_state = AsyncMock(
+            return_value=DocumentStateRecord(
+                source_type=SourceType.JIRA,
+                source="TEST",
+                document_id=test_doc.id,
+                last_updated=datetime.now(UTC),
+                last_ingested=datetime.now(UTC),
+                is_deleted=False,
+                content_hash=test_doc.content_hash,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
         mock_state_manager.return_value = mock_state
 
         # Create and test pipeline
-        pipeline = IngestionPipeline(test_settings)
-        documents = await pipeline.process_documents(sources_config, source_type="jira")
+        pipeline = IngestionPipeline(test_settings, mock_qdrant)
+        documents = await pipeline.process_documents(sources_config, source_type=SourceType.JIRA)
 
         # Verify service calls
+        mock_jira_connector_class.assert_called_once()
+        mock_connector.__aenter__.assert_awaited_once()
         assert mock_connector.get_documents.await_count == 1
         mock_chunking.chunk_document.assert_called_once()
         mock_embedding.get_embeddings.assert_awaited_once()
@@ -421,14 +468,14 @@ async def test_pipeline_process_empty_document(test_settings):
         mock_state = AsyncMock()
         mock_state_manager.return_value = mock_state
 
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant_manager)
 
         documents = await pipeline.process_documents(
             SourcesConfig(
-                public_docs={
+                publicdocs={
                     "test": PublicDocsSourceConfig(
-                        source_type="public-docs",
-                        source_name="test",
+                        source_type=SourceType.PUBLICDOCS,
+                        source="test",
                         base_url=HttpUrl("https://test.com"),
                         version="1.0",
                         content_type="html",
@@ -436,7 +483,7 @@ async def test_pipeline_process_empty_document(test_settings):
                     )
                 }
             ),
-            source_type="public-docs",
+            source_type=SourceType.PUBLICDOCS,
         )
 
         assert len(documents) == 0
@@ -469,24 +516,50 @@ async def test_pipeline_process_invalid_document(test_settings):
         )
         mock_connector.return_value = mock_connector_instance
 
+        # Set up the connector to be used as a context manager
+        mock_connector_instance.__aenter__.return_value = mock_connector_instance
+        mock_connector_instance.__aexit__.return_value = None
+
         mock_chunking = MagicMock()
         mock_chunking.chunk_document.side_effect = ValueError("Invalid document")
         mock_chunking_service.return_value = mock_chunking
 
+        # Set up embedding service
+        mock_embedding = AsyncMock()
+        mock_embedding.get_embeddings = AsyncMock(return_value=[[0.1] * 1536])
+        mock_embedding_service = AsyncMock()
+        mock_embedding_service.return_value = mock_embedding
+
+        mock_qdrant_manager = AsyncMock()
+        mock_qdrant_manager.upsert_points = AsyncMock(return_value=None)
+
         # Create a proper mock state manager object
-        mock_state = MagicMock()
-        mock_state.update_document_state = AsyncMock()
+        mock_state = AsyncMock()
+        mock_state.initialize = AsyncMock(return_value=None)
+        mock_state.update_document_state = AsyncMock(
+            return_value=DocumentStateRecord(
+                source_type=SourceType.PUBLICDOCS,
+                source="test",
+                document_id="invalid-doc",
+                last_updated=datetime.now(UTC),
+                last_ingested=datetime.now(UTC),
+                is_deleted=False,
+                content_hash="test-hash",
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
         mock_state_manager.return_value = mock_state
 
-        pipeline = IngestionPipeline(test_settings)
+        pipeline = IngestionPipeline(test_settings, mock_qdrant_manager)
 
         with pytest.raises(ValueError, match="Invalid document"):
             await pipeline.process_documents(
                 SourcesConfig(
-                    public_docs={
+                    publicdocs={
                         "test": PublicDocsSourceConfig(
-                            source_type="public-docs",
-                            source_name="test",
+                            source_type=SourceType.PUBLICDOCS,
+                            source="test",
                             base_url=HttpUrl("https://test.com"),
                             version="1.0",
                             content_type="html",
@@ -494,5 +567,5 @@ async def test_pipeline_process_invalid_document(test_settings):
                         )
                     }
                 ),
-                source_type="public-docs",
+                source_type=SourceType.PUBLICDOCS,
             )

@@ -7,7 +7,8 @@ from urllib.parse import quote
 import pytest
 from pydantic import HttpUrl
 
-from qdrant_loader.connectors.public_docs.config import PublicDocsSourceConfig
+from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.state_change_detector import DocumentState, StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
@@ -17,8 +18,8 @@ from qdrant_loader.core.state.state_manager import StateManager
 def source_config():
     """Create a test source configuration."""
     return PublicDocsSourceConfig(
-        source_type="public-docs",
-        source_name="test",
+        source_type=SourceType.PUBLICDOCS,
+        source="test",
         base_url=HttpUrl("https://example.com/docs"),
         version="1.0.0",
     )
@@ -48,7 +49,7 @@ def sample_documents():
             id="doc1",
             content="Content 1",
             source="https://example.com/docs",
-            source_type="public_docs",
+            source_type=SourceType.PUBLICDOCS,
             metadata={
                 "url": "https://example.com/docs/page1",
                 "title": "Page 1",
@@ -60,7 +61,7 @@ def sample_documents():
             id="doc2",
             content="Content 2",
             source="https://example.com/docs",
-            source_type="public_docs",
+            source_type=SourceType.PUBLICDOCS,
             metadata={
                 "url": "https://example.com/docs/page2",
                 "title": "Page 2",
@@ -89,7 +90,7 @@ async def test_detect_changes_updated_documents(change_detector, sample_document
     # Create previous state for doc1
     base_url = quote("https://example.com/docs", safe="")
     previous_state = DocumentState(
-        uri=f"public-docs:test:{base_url}:doc1",
+        uri=f"publicdocs:test:{base_url}:doc1",
         content_hash="old_hash",
         last_updated=datetime.now() - timedelta(days=1),
     )
@@ -115,7 +116,7 @@ async def test_detect_changes_deleted_documents(change_detector, sample_document
     # Mock last known URLs including the deleted one
     base_url = quote("https://example.com/docs", safe="")
     previous_state = DocumentState(
-        uri=f"public-docs:test:{base_url}:deleted",
+        uri=f"publicdocs:test:{base_url}:deleted",
         content_hash="deleted_hash",
         last_updated=datetime.now() - timedelta(days=1),
     )
@@ -125,14 +126,14 @@ async def test_detect_changes_deleted_documents(change_detector, sample_document
     expected_deleted_doc = Document(
         content="",
         source=quote(base_url, safe=""),  # Double encode the URL
-        source_type="public-docs",
+        source_type=SourceType.PUBLICDOCS,
         metadata={
-            "uri": f"public-docs:test:{base_url}:deleted",
+            "uri": f"publicdocs:test:{base_url}:deleted",
             "title": "Deleted Document",
             "last_modified": previous_state.last_updated.isoformat(),
             "content_hash": "deleted_hash",
             "source": quote(base_url, safe=""),  # Double encode the URL
-            "source_type": "public-docs",
+            "source_type": SourceType.PUBLICDOCS,
         },
     )
 
@@ -171,12 +172,12 @@ async def test_detect_changes_no_changes(change_detector, sample_documents, stat
     base_url = quote("https://example.com/docs", safe="")
     previous_states = [
         DocumentState(
-            uri=f"public-docs:test:{base_url}:doc1",
+            uri=f"publicdocs:test:{base_url}:doc1",
             content_hash="hash1",
             last_updated=datetime.fromisoformat(sample_documents[0].metadata["last_modified"]),
         ),
         DocumentState(
-            uri=f"public-docs:test:{base_url}:doc2",
+            uri=f"publicdocs:test:{base_url}:doc2",
             content_hash="hash2",
             last_updated=datetime.fromisoformat(sample_documents[1].metadata["last_modified"]),
         ),

@@ -1,13 +1,12 @@
 """Base classes for connectors and change detectors."""
 
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict
 
-from qdrant_loader.config.sources import SourceConfig
+from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import InvalidDocumentStateError
 from qdrant_loader.core.state.state_manager import StateManager
@@ -21,7 +20,7 @@ class DocumentState(BaseModel):
     all sources. It includes the essential fields needed for change detection.
     """
 
-    uri: str  # Universal identifier in format: {source_type}:{source_name}:{base_url}:{document_id}
+    uri: str  # Universal identifier in format: {source_type}:{source}:{base_url}:{document_id}
     content_hash: str  # Hash of document content
     last_updated: datetime  # Last update timestamp
 
@@ -50,11 +49,23 @@ class StateChangeDetector:
         self.source_config = source_config
         self.state_manager = state_manager
         self.logger = LoggingConfig.get_logger(self.__class__.__name__)
+        self._initialized = False
         self.logger.debug(
             "Initialized %s",
             self.__class__.__name__,
-            source_name=str(getattr(self.source_config, "base_url", "")),
+            source=str(getattr(self.source_config, "base_url", "")),
         )
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if not self._initialized:
+            await self.state_manager.initialize()
+            self._initialized = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        pass
 
     def _compute_content_hash(self, document: Document) -> str:
         """Compute a hash of the document's content.
@@ -122,13 +133,12 @@ class StateChangeDetector:
         Returns:
             A minimal Document object for deletion
         """
-        source_type, source_name, base_url, document_id = state.uri.split(":")
+        source_type, source, base_url, document_id = state.uri.split(":")
         base_url = quote(base_url, safe="")
         return Document(
             id=document_id,
             content="",
-            source=base_url,
-            source_name=source_name,
+            source=source,
             source_type=source_type,
             metadata={
                 "uri": state.uri,
@@ -139,9 +149,7 @@ class StateChangeDetector:
         )
 
     def _log_change_detection_start(
-        self,
-        document_count: int,
-        last_ingestion_time: datetime | None,
+        self, document_count: int, last_ingestion_time: datetime | None
     ):
         """Log the start of change detection.
 
@@ -152,7 +160,8 @@ class StateChangeDetector:
         self.logger.info(
             "Starting change detection",
             source_type=self.source_config.source_type,
-            source_name=str(self.source_config.base_url),
+            source=str(self.source_config.source),
+            base_url=str(self.source_config.base_url),
             document_count=document_count,
             last_ingestion_time=last_ingestion_time,
         )
@@ -166,7 +175,7 @@ class StateChangeDetector:
         self.logger.info(
             "Change detection completed",
             source_type=self.source_config.source_type,
-            source_name=str(self.source_config.source_name),
+            source=self.source_config.source,
             base_url=str(self.source_config.base_url),
             new_count=len(changes["new"]),
             updated_count=len(changes["updated"]),
@@ -185,9 +194,13 @@ class StateChangeDetector:
         Returns:
             List of previous document states
         """
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use the detector as an async context manager."
+            )
         states = await self.state_manager.get_document_states(
             source_type=self.source_config.source_type,
-            source_name=str(self.source_config.base_url),
+            source=self.source_config.source,
             since=last_ingestion_time,
         )
         return [self._state_to_document_state(state) for state in states]
@@ -218,9 +231,9 @@ class StateChangeDetector:
             return state
 
         base_url = self._normalize_base_url(str(self.source_config.base_url))
-        source_name = self.source_config.source_name
+        source = self.source_config.source
         source_type = self.source_config.source_type
-        uri = f"{source_type}:{source_name}:{base_url}:{state.document_id}"
+        uri = f"{source_type}:{source}:{base_url}:{state.document_id}"
         return DocumentState(
             uri=uri,
             content_hash=str(state.content_hash),
@@ -238,83 +251,47 @@ class StateChangeDetector:
             document: The document to generate URI for
 
         Returns:
-            A URI string in format: {source_type}:{source_name}:{base_url}:{documentId}
+            A URI string in format: {source_type}:{source}:{base_url}:{documentId}
         """
         base_url = self._normalize_base_url(str(self.source_config.base_url))
-        source_name = self.source_config.source_name
+        source = self.source_config.source
         source_type = self.source_config.source_type
 
-        uri = f"{source_type}:{source_name}:{base_url}:{document.id}"
+        uri = f"{source_type}:{source}:{base_url}:{document.id}"
 
         return uri
 
-    def _find_new_documents(
+    async def _find_new_documents(
         self,
         current_states: list[DocumentState],
         previous_states: list[DocumentState],
         documents: list[Document],
     ) -> list[Document]:
-        """Find new documents by comparing current and previous states.
-
-        Args:
-            current_states: List of current document states
-            previous_states: List of previous document states
-            documents: List of current documents
-
-        Returns:
-            List of new documents
-        """
-        # Create mappings of URIs to states
-        previous_states_dict = {state.uri: state for state in previous_states}
-        current_states_dict = {
-            state.uri: (state, doc) for state, doc in zip(current_states, documents, strict=False)
-        }
-
-        self.logger.debug(
-            "Finding new documents",
-            previous_uris=list(previous_states_dict.keys()),
-            current_uris=list(current_states_dict.keys()),
-        )
-
-        # Find documents that are truly new (not in previous states)
+        """Find new documents by comparing current and previous states."""
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use the detector as an async context manager."
+            )
+        previous_uris = {state.uri for state in previous_states}
         return [
-            doc
-            for state, doc in current_states_dict.values()
-            if state.uri not in previous_states_dict
+            doc for state, doc in zip(current_states, documents) if state.uri not in previous_uris
         ]
 
-    def _find_updated_documents(
+    async def _find_updated_documents(
         self,
         current_states: list[DocumentState],
         previous_states: list[DocumentState],
         documents: list[Document],
     ) -> list[Document]:
-        """Find updated documents by comparing current and previous states.
-
-        Args:
-            current_states: List of current document states
-            previous_states: List of previous document states
-            documents: List of current documents
-
-        Returns:
-            List of updated documents
-        """
-        # Create mappings of URIs to states
+        """Find updated documents by comparing current and previous states."""
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use the detector as an async context manager."
+            )
         previous_states_dict = {state.uri: state for state in previous_states}
-        current_states_dict = {
-            state.uri: (state, doc) for state, doc in zip(current_states, documents, strict=False)
-        }
-
-        self.logger.debug(
-            "Finding updated documents",
-            previous_uris=list(previous_states_dict.keys()),
-            current_uris=list(current_states_dict.keys()),
-        )
-
-        # Find documents that have been updated
         return [
             doc
-            for state, doc in current_states_dict.values()
+            for state, doc in zip(current_states, documents)
             if state.uri in previous_states_dict
             and self._is_document_updated(state, previous_states_dict[state.uri])
         ]
@@ -333,6 +310,10 @@ class StateChangeDetector:
         Returns:
             List of deleted documents
         """
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use the detector as an async context manager."
+            )
         current_uris = {state.uri for state in current_states}
         deleted_states = [state for state in previous_states if state.uri not in current_uris]
 
@@ -343,18 +324,11 @@ class StateChangeDetector:
         documents: list[Document],
         last_ingestion_time: datetime | None = None,
     ) -> dict[str, list[Document]]:
-        """Detect changes in documents.
-
-        Args:
-            documents: List of current documents
-            last_ingestion_time: Time of last successful ingestion
-
-        Returns:
-            Dictionary with keys:
-            - 'new': New documents
-            - 'updated': Updated documents
-            - 'deleted': Deleted documents
-        """
+        """Detect changes in documents."""
+        if not self._initialized:
+            raise RuntimeError(
+                "StateChangeDetector not initialized. Use the detector as an async context manager."
+            )
         self._log_change_detection_start(len(documents), last_ingestion_time)
 
         # Get current states
@@ -365,8 +339,10 @@ class StateChangeDetector:
 
         # Compare states
         changes = {
-            "new": self._find_new_documents(current_states, previous_states, documents),
-            "updated": self._find_updated_documents(current_states, previous_states, documents),
+            "new": await self._find_new_documents(current_states, previous_states, documents),
+            "updated": await self._find_updated_documents(
+                current_states, previous_states, documents
+            ),
             "deleted": await self._find_deleted_documents(current_states, previous_states),
         }
 

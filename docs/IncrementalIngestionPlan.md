@@ -175,7 +175,7 @@ src/qdrant_loader/
 │   │   ├── connector.py              # Existing Jira connector
 │   │   └── change_detector.py        # Jira-specific change detection
 │   │
-│   ├── public_docs/
+│   ├── publicdocs/
 │   │   ├── __init__.py
 │   │   ├── connector.py              # Existing Public Docs connector
 │   │   └── change_detector.py        # Public Docs-specific change detection
@@ -219,7 +219,7 @@ tests/
 │   │   │   ├── test_connector.py
 │   │   │   └── test_change_detector.py
 │   │   │
-│   │   └── public_docs/
+│   │   └── publicdocs/
 │   │       ├── test_connector.py
 │   │       └── test_change_detector.py
 │   │

@@ -2,7 +2,8 @@
 
 import pytest
 from pydantic import ValidationError, HttpUrl
-from qdrant_loader.connectors.jira.config import JiraConfig
+from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.jira.config import JiraProjectConfig
 from qdrant_loader.config import Settings
 from pathlib import Path
 
@@ -25,16 +26,20 @@ def test_settings():
     return Settings.from_yaml(config_path)
 
 
-def test_valid_config(mock_env_vars, test_settings):
-    """Test creating a valid JiraConfig."""
+def test_valid_config(test_settings):
+    """Test creating a valid JiraProjectConfig."""
     jira_settings = test_settings.sources_config.jira["test-project"]
-    config = JiraConfig(
+    config = JiraProjectConfig(
+        source_type=SourceType.JIRA,
+        source="test-project",
         base_url=jira_settings.base_url,
         project_key=jira_settings.project_key,
         requests_per_minute=jira_settings.requests_per_minute,
         page_size=jira_settings.page_size,
         process_attachments=jira_settings.process_attachments,
         track_last_sync=jira_settings.track_last_sync,
+        token=jira_settings.token,
+        email=jira_settings.email,
     )
     assert str(config.base_url) == str(jira_settings.base_url)
     assert config.project_key == jira_settings.project_key
@@ -42,17 +47,19 @@ def test_valid_config(mock_env_vars, test_settings):
     assert config.page_size == jira_settings.page_size
     assert config.process_attachments == jira_settings.process_attachments
     assert config.track_last_sync == jira_settings.track_last_sync
-    assert config.api_token == "${JIRA_TOKEN}"
+    assert config.token == "${JIRA_TOKEN}"
     assert config.email == "${JIRA_EMAIL}"
 
 
 def test_invalid_base_url():
     """Test that invalid base URL raises validation error."""
     with pytest.raises(ValidationError):
-        JiraConfig(
+        JiraProjectConfig(
+            source_type=SourceType.JIRA,
+            source="test",
             base_url=HttpUrl("not-a-url"),
             project_key="TEST",
-            api_token="test_token",
+            token="test_token",
             email="test@example.com",
         )
 
@@ -60,19 +67,25 @@ def test_invalid_base_url():
 def test_missing_project_key():
     """Test that missing project key raises validation error."""
     with pytest.raises(ValidationError):
-        JiraConfig(
+        JiraProjectConfig(
+            source_type=SourceType.JIRA,
+            source="test",
             base_url=HttpUrl("https://test.atlassian.net"),
-            api_token="test_token",
+            token="test_token",
             email="test@example.com",
         )  # type: ignore
 
 
 def test_default_values(mock_env_vars, test_settings):
-    """Test JiraConfig default values."""
+    """Test JiraProjectConfig default values."""
     jira_settings = test_settings.sources_config.jira["test-project"]
-    config = JiraConfig(
+    config = JiraProjectConfig(
+        source_type=SourceType.JIRA,
+        source="test-project",
         base_url=jira_settings.base_url,
         project_key=jira_settings.project_key,
+        token=jira_settings.token,
+        email=jira_settings.email,
     )
     assert str(config.base_url) == str(jira_settings.base_url)
     assert config.project_key == jira_settings.project_key
@@ -82,17 +95,19 @@ def test_default_values(mock_env_vars, test_settings):
     assert config.track_last_sync is True  # default value
     assert config.issue_types == []  # default value
     assert config.include_statuses == []  # default value
-    assert config.api_token == "${JIRA_TOKEN}"  # from env var
+    assert config.token == "${JIRA_TOKEN}"  # from env var
     assert config.email == "${JIRA_EMAIL}"  # from env var
 
 
 def test_invalid_requests_per_minute():
     """Test that invalid requests_per_minute raises validation error."""
     with pytest.raises(ValidationError):
-        JiraConfig(
+        JiraProjectConfig(
+            source_type=SourceType.JIRA,
+            source="test",
             base_url=HttpUrl("https://test.atlassian.net"),
             project_key="TEST",
-            api_token="test_token",
+            token="test_token",
             email="test@example.com",
             requests_per_minute=0,
         )
@@ -101,10 +116,12 @@ def test_invalid_requests_per_minute():
 def test_invalid_page_size():
     """Test that invalid page_size raises validation error."""
     with pytest.raises(ValidationError):
-        JiraConfig(
+        JiraProjectConfig(
+            source_type=SourceType.JIRA,
+            source="test",
             base_url=HttpUrl("https://test.atlassian.net"),
             project_key="TEST",
-            api_token="test_token",
+            token="test_token",
             email="test@example.com",
             page_size=0,
         )

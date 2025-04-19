@@ -1,12 +1,15 @@
 """Tests for the Jira connector."""
 
 import os
-import pytest
-from unittest.mock import patch, Mock
 from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
 from pydantic import HttpUrl
-from qdrant_loader.connectors.jira import JiraConnector, JiraConfig
-from qdrant_loader.connectors.jira.models import JiraIssue, JiraUser, JiraAttachment
+
+from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.jira import JiraConnector, JiraProjectConfig
+from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser
 from qdrant_loader.core.document import Document
 
 
@@ -18,21 +21,25 @@ def mock_env_vars():
 
 
 @pytest.fixture
-def config(mock_env_vars):
-    """Create a JiraConfig instance."""
-    return JiraConfig(
+def config():
+    """Create a JiraProjectConfig instance."""
+    return JiraProjectConfig(
+        source_type=SourceType.JIRA,
+        source="test",
         base_url=HttpUrl("https://test.atlassian.net"),
         project_key="TEST",
         requests_per_minute=60,
         page_size=50,
         process_attachments=True,
         track_last_sync=True,
+        token="test_token",
+        email="test@example.com",
     )
 
 
 @pytest.fixture
 def connector(config):
-    """Create a Jira connector."""
+    """Create a JiraConnector instance."""
     return JiraConnector(config)
 
 
@@ -247,7 +254,7 @@ async def test_get_documents(config, mock_jira_issue):
         assert doc.id == "12345"
         assert doc.content == "Test Issue\n\nTest Description"
         assert doc.source == "TEST"
-        assert doc.source_type == "jira"
+        assert doc.source_type == SourceType.JIRA
         assert doc.url == "https://test.atlassian.net/browse/TEST-123"
 
         # Verify metadata

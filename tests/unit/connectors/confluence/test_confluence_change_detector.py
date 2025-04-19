@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from pydantic import HttpUrl
 
+from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.models import DocumentStateRecord
@@ -27,8 +28,8 @@ def confluence_change_detector(mock_state_manager):
     return StateChangeDetector(
         state_manager=mock_state_manager,
         source_config=ConfluenceSpaceConfig(
-            source_type="confluence",
-            source_name="test",
+            source_type=SourceType.CONFLUENCE,
+            source="test",
             base_url=HttpUrl("https://confluence.example.com"),
             space_key="TEST",
             token="test-token",
@@ -45,7 +46,7 @@ async def test_detect_changes_new_document(confluence_change_detector, mock_stat
             id="123",
             content="Test content",
             source="https://confluence.example.com",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={
                 "key": "123",
                 "url": "https://confluence.example.com/pages/123",
@@ -76,7 +77,7 @@ async def test_detect_changes_updated_document(confluence_change_detector, mock_
             id="123",
             content="Updated content",
             source="https://confluence.example.com",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={
                 "key": "123",
                 "url": "https://confluence.example.com/pages/123",
@@ -88,8 +89,8 @@ async def test_detect_changes_updated_document(confluence_change_detector, mock_
         ),
     ]
     previous_state = DocumentStateRecord(
-        source_type="confluence",
-        source_name="test",
+        source_type=SourceType.CONFLUENCE,
+        source="test",
         document_id="123",
         content_hash="abc123",
         last_updated=datetime.now(timezone.utc),
@@ -117,7 +118,7 @@ async def test_detect_changes_deleted_document(confluence_change_detector, mock_
             id="123",
             content="Updated content",
             source="https://confluence.example.com",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={
                 "key": "123",
                 "url": "https://confluence.example.com/pages/123",
@@ -130,8 +131,8 @@ async def test_detect_changes_deleted_document(confluence_change_detector, mock_
     ]
     previous_states = [
         DocumentStateRecord(
-            source_type="confluence",
-            source_name="test",
+            source_type=SourceType.CONFLUENCE,
+            source="test",
             document_id="123",
             content_hash="abc123",
             last_updated=datetime.now(timezone.utc),
@@ -140,8 +141,8 @@ async def test_detect_changes_deleted_document(confluence_change_detector, mock_
             updated_at=datetime.now(timezone.utc),
         ),
         DocumentStateRecord(
-            source_type="confluence",
-            source_name="test",
+            source_type=SourceType.CONFLUENCE,
+            source="test",
             document_id="456",
             content_hash="xyz789",
             last_updated=datetime.now(timezone.utc),
@@ -158,7 +159,7 @@ async def test_detect_changes_deleted_document(confluence_change_detector, mock_
             id="456",
             content="Deleted content",
             source="https://confluence.example.com",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={
                 "key": "456",
                 "url": "https://confluence.example.com/pages/456",
@@ -190,7 +191,7 @@ async def test_detect_changes_no_changes(confluence_change_detector, mock_state_
             id="123",
             content="Test content",
             source="https://confluence.example.com",
-            source_type="confluence",
+            source_type=SourceType.CONFLUENCE,
             metadata={
                 "key": "123",
                 "url": "https://confluence.example.com/pages/123",
@@ -202,8 +203,8 @@ async def test_detect_changes_no_changes(confluence_change_detector, mock_state_
         ),
     ]
     previous_state = DocumentStateRecord(
-        source_type="confluence",
-        source_name="test",
+        source_type=SourceType.CONFLUENCE,
+        source="test",
         document_id="123",
         content_hash="abc123",
         last_updated=datetime.now(timezone.utc),

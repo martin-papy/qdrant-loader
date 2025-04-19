@@ -5,8 +5,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira import JiraConnector
-from qdrant_loader.connectors.jira.config import JiraConfig
+from qdrant_loader.connectors.jira.config import JiraProjectConfig
 
 
 @pytest.mark.asyncio
@@ -61,7 +62,9 @@ async def test_get_issues_with_pagination(jira_connector):
 async def test_get_issues_error_handling(jira_connector):
     """Test error handling when fetching issues."""
     # Test with invalid project key
-    invalid_config = JiraConfig(
+    invalid_config = JiraProjectConfig(
+        source_type=SourceType.JIRA,
+        source="test",
         base_url=jira_connector.config.base_url,
         project_key="INVALID",
         requests_per_minute=60,
@@ -69,7 +72,7 @@ async def test_get_issues_error_handling(jira_connector):
     )
     invalid_connector = JiraConnector(invalid_config)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         async for _ in invalid_connector.get_issues():
             pass  # We expect an error before getting any issues
 

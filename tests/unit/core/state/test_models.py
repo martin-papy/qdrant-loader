@@ -32,7 +32,7 @@ def test_ingestion_history_creation(db_session):
     now = datetime.now(UTC)
     history = IngestionHistory(
         source_type="test",
-        source_name="test-source",
+        source="test-source",
         last_successful_ingestion=now,
         status="completed",
         document_count=1,
@@ -50,7 +50,7 @@ def test_document_state_creation(db_session):
     now = datetime.now(UTC)
     state = DocumentStateRecord(
         source_type="git",
-        source_name="test-repo",
+        source="test-repo",
         document_id="doc-1",
         last_updated=now,
         last_ingested=now,
@@ -69,7 +69,7 @@ def test_document_state_unique_constraint(db_session):
     now = datetime.now(UTC)
     state1 = DocumentStateRecord(
         source_type="git",
-        source_name="test-repo",
+        source="test-repo",
         document_id="doc-1",
         last_updated=now,
         last_ingested=now,
@@ -80,7 +80,7 @@ def test_document_state_unique_constraint(db_session):
 
     state2 = DocumentStateRecord(
         source_type="git",
-        source_name="test-repo",
+        source="test-repo",
         document_id="doc-1",  # Same document_id as state1
         last_updated=now,
         last_ingested=now,
@@ -102,7 +102,7 @@ def test_document_state_mark_deleted(db_session):
     now = datetime.now(UTC)
     state = DocumentStateRecord(
         source_type="git",
-        source_name="test-repo",
+        source="test-repo",
         document_id="doc-1",
         last_updated=now,
         last_ingested=now,

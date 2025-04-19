@@ -76,7 +76,7 @@ qdrant-loader ingest
 # Run ingestion for specific source types
 qdrant-loader ingest --source-type confluence  # Ingest only Confluence
 qdrant-loader ingest --source-type git        # Ingest only Git
-qdrant-loader ingest --source-type public-docs # Ingest only public docs
+qdrant-loader ingest --source-type publicdocs # Ingest only public docs
 qdrant-loader ingest --source-type jira       # Ingest only JIRA
 
 # Run ingestion for specific sources

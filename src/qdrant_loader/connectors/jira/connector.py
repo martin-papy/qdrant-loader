@@ -1,17 +1,16 @@
 """Jira connector implementation."""
 
 import asyncio
-import logging
 import os
 import time
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import structlog
 from atlassian import Jira
-from pydantic import HttpUrl
 
-from qdrant_loader.connectors.jira.config import JiraConfig
+from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.jira.config import JiraProjectConfig
 from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser
 from qdrant_loader.core.document import Document
 
@@ -21,7 +20,7 @@ logger = structlog.get_logger(__name__)
 class JiraConnector:
     """Jira connector for fetching and processing issues."""
 
-    def __init__(self, config: JiraConfig):
+    def __init__(self, config: JiraProjectConfig):
         """Initialize the Jira connector.
 
         Args:
@@ -46,9 +45,20 @@ class JiraConnector:
             username=email,
             password=token,
         )
-        self._last_sync: Optional[datetime] = None
+        self._last_sync: datetime | None = None
         self._rate_limit_lock = asyncio.Lock()
         self._last_request_time = 0.0
+        self._initialized = False
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        if not self._initialized:
+            self._initialized = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        self._initialized = False
 
     def _make_sync_request(self, jql: str, **kwargs):
         """
@@ -89,7 +99,7 @@ class JiraConnector:
             return await asyncio.to_thread(self._make_sync_request, *args, **kwargs)
 
     async def get_issues(
-        self, updated_after: Optional[datetime] = None
+        self, updated_after: datetime | None = None
     ) -> AsyncGenerator[JiraIssue, None]:
         """
         Get all issues from Jira.
@@ -164,7 +174,7 @@ class JiraConnector:
             ],
         )
 
-    def _parse_user(self, raw_user: Optional[dict], required: bool = False) -> Optional[JiraUser]:
+    def _parse_user(self, raw_user: dict | None, required: bool = False) -> JiraUser | None:
         """Parse raw Jira user data into JiraUser model.
 
         Args:
@@ -210,7 +220,7 @@ class JiraConnector:
             author=author,
         )
 
-    async def get_documents(self) -> List[Document]:
+    async def get_documents(self) -> list[Document]:
         """Fetch and process documents from Jira.
 
         Returns:
@@ -231,7 +241,7 @@ class JiraConnector:
                 id=issue.id,
                 content=content,
                 source=self.config.project_key,
-                source_type="jira",
+                source_type=SourceType.JIRA,
                 url=f"{base_url}/browse/{issue.key}",
                 last_updated=issue.updated,
                 metadata={

@@ -58,7 +58,7 @@ qdrant-loader/
 │   │   │   ├── git/               # Git connector
 │   │   │   ├── confluence/        # Confluence connector
 │   │   │   ├── jira/             # Jira connector
-│   │   │   ├── public_docs/      # Public docs connector
+│   │   │   ├── publicdocs/      # Public docs connector
 │   │   │   └── base.py           # Base connector classes
 │   │   │
 │   │   ├── config/               # Configuration management
@@ -188,10 +188,10 @@ import structlog
 
 logger = structlog.get_logger()
 
-def process_incremental_changes(source_type: str, source_name: str):
+def process_incremental_changes(source_type: str, source: str):
     logger.info("processing_incremental_changes", 
                 source_type=source_type,
-                source_name=source_name)
+                source=source)
     try:
         # Processing logic
         logger.info("changes_processed_successfully",
@@ -200,7 +200,7 @@ def process_incremental_changes(source_type: str, source_name: str):
         logger.error("change_processing_failed",
                     error=str(e),
                     source_type=source_type,
-                    source_name=source_name)
+                    source=source)
         raise
 ```
 
