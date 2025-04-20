@@ -31,7 +31,6 @@ def config():
         requests_per_minute=60,
         page_size=50,
         process_attachments=True,
-        track_last_sync=True,
         token="test_token",
         email="test@example.com",
     )

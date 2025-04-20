@@ -22,17 +22,12 @@ def test_document_with_optional_fields():
         source="test_source",
         source_type="test_type",
         url="http://example.com",
-        last_updated=now,
-        project="test_project",
-        author="test_author",
+        updated_at=now,
     )
 
     assert doc.url == "http://example.com"
-    assert doc.last_updated == now
-    assert doc.project == "test_project"
-    assert doc.author == "test_author"
+    assert doc.updated_at == now
     assert doc.metadata["url"] == "http://example.com"
-    assert doc.metadata["last_updated"] == now.isoformat()
     assert doc.metadata["project"] == "test_project"
     assert doc.metadata["author"] == "test_author"
 
