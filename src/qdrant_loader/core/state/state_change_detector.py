@@ -41,7 +41,7 @@ class StateChangeDetector:
         state_manager: StateManager,
     ):
         """Initialize the change detector."""
-        self.logger = LoggingConfig.get_logger(self.__class__.__name__)
+        self.logger = LoggingConfig.get_logger(f"qdrant_loader.{self.__class__.__name__}")
         self._initialized = False
         self.state_manager = state_manager
         self.logger.debug(
@@ -124,6 +124,12 @@ class StateChangeDetector:
         Returns:
             True if the document has been updated, False otherwise
         """
+        self.logger.debug(
+            "Checking if document has been updated",
+            current_state=current_state.updated_at,
+            previous_state=previous_state.updated_at,
+            hash_diff=current_state.content_hash != previous_state.content_hash,
+        )
         return (
             current_state.content_hash != previous_state.content_hash
             or current_state.updated_at > previous_state.updated_at

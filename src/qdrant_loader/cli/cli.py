@@ -231,7 +231,9 @@ async def _run_ingest(settings: Settings, source_type: str | None, source: str |
             source_type=source_type,
             source=source,
         )
-        logger.info(f"Successfully processed {len(documents)} documents")
+
+        if documents:
+            logger.info(f"Successfully processed {len(documents)} documents")
 
     except QdrantConnectionError as e:
         logger.error("qdrant_connection_failed", error=str(e))
