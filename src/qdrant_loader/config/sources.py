@@ -4,7 +4,7 @@ This module defines the configuration for all data sources, including Git reposi
 Confluence spaces, Jira projects, and public documentation.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.types import SourceType
@@ -29,6 +29,8 @@ class SourcesConfig(BaseModel):
     jira: dict[str, JiraProjectConfig] = Field(
         default_factory=dict, description="Jira project sources"
     )
+
+    model_config = ConfigDict(arbitrary_types_allowed=False, extra="forbid")
 
     def get_source_config(self, source_type: str, source: str) -> SourceConfig | None:
         """Get the configuration for a specific source.
