@@ -331,5 +331,12 @@ class JiraConnector:
                 },
             )
             documents.append(document)
+            logger.debug(
+                f"Jira document created",
+                document_id=document.id,
+                source_type=document.source_type,
+                source=document.source,
+                title=document.title,
+            )
 
         return documents

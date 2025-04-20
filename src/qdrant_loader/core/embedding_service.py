@@ -5,7 +5,6 @@ from collections.abc import Sequence
 import requests
 import tiktoken
 from openai import OpenAI
-from tqdm import tqdm
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
@@ -75,14 +74,6 @@ class EmbeddingService:
         batch_size = min(self.batch_size * 4, 100)  # Increased batch size but capped at 100
         embeddings = []
 
-        # Create progress bar
-        pbar = tqdm(
-            total=len(contents),
-            desc="Generating embeddings",
-            unit="chunks",
-            ncols=100,
-        )
-
         for i in range(0, len(contents), batch_size):
             batch = contents[i : i + batch_size]
             batch_num = i // batch_size + 1
@@ -120,8 +111,6 @@ class EmbeddingService:
                         raise ValueError("Invalid response format from local embedding service")
                     embeddings.extend([item["embedding"] for item in data["data"]])
 
-                # Update progress bar
-                pbar.update(len(batch))
                 logger.debug(
                     "Completed batch processing",
                     batch_num=batch_num,
@@ -134,10 +123,8 @@ class EmbeddingService:
                     batch_num=batch_num,
                     error=str(e),
                 )
-                pbar.close()
                 raise
 
-        pbar.close()
         return embeddings
 
     async def get_embedding(self, text: str) -> list[float]:

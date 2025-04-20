@@ -135,7 +135,7 @@ class ChunkingStrategy:
             if start_idx >= len(tokens):
                 break
 
-        logger.info("Finished chunking", total_chunks=len(chunks), total_tokens=len(tokens))
+        logger.debug("Finished chunking", total_chunks=len(chunks), total_tokens=len(tokens))
 
         return chunks
 
@@ -172,7 +172,7 @@ class ChunkingStrategy:
 
             chunked_documents.append(chunk_doc)
 
-        logger.info(
+        logger.debug(
             "Chunked document",
             source=document.source,
             total_chunks=len(chunks),

@@ -149,6 +149,13 @@ class PublicDocsConnector:
                             doc_id=doc_id,
                         )
                         documents.append(doc)
+                        self.logger.debug(
+                            "Document created",
+                            url=page,
+                            content_length=len(content),
+                            title=title,
+                            doc_id=doc_id,
+                        )
                     else:
                         self.logger.warning(
                             "Skipping page with empty content",
@@ -162,12 +169,6 @@ class PublicDocsConnector:
             if not documents:
                 self.logger.warning("No valid documents found to process")
                 return []
-
-            # Detect changes
-            self.logger.debug(
-                "Found documents",
-                document_count=len(documents),
-            )
 
             return documents
 

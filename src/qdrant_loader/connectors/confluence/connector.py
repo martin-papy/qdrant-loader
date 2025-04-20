@@ -303,7 +303,7 @@ class ConfluenceConnector:
                             document = self._process_content(content, clean_html=False)
                             if document:
                                 documents.append(document)
-                                logger.info(
+                                logger.debug(
                                     f"Processed {content['type']} '{content['title']}' "
                                     f"(ID: {content['id']}) from space {self.config.space_key}"
                                 )

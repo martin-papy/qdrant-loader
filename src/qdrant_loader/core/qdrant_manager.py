@@ -146,7 +146,7 @@ class QdrantManager:
                 collection_name=self.collection_name,
                 points=points,
             )
-            logger.info(f"Successfully upserted {len(points)} points")
+            logger.debug(f"Successfully upserted {len(points)} points")
         except Exception as e:
             logger.error("Failed to upsert points", error=str(e))
             raise

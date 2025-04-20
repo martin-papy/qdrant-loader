@@ -2,7 +2,9 @@
 Ingestion pipeline for processing documents.
 """
 
+import logging
 from qdrant_client.http import models
+from tqdm import tqdm
 
 from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
@@ -76,12 +78,14 @@ class IngestionPipeline:
         documents: list[Document] = []
 
         try:
+            self.logger.info("Collecting documents from sources")
             # Process Git repositories
             if filtered_config.git:
                 for name, config in filtered_config.git.items():
                     self.logger.info(f"Configuring Git repository: {name}")
                     try:
                         async with GitConnector(config) as connector:
+                            self.logger.info("Getting documents from Git repository")
                             git_docs = await connector.get_documents()
                             documents.extend(git_docs)
                             await self.state_manager.update_last_ingestion(
@@ -108,9 +112,10 @@ class IngestionPipeline:
             # Process Confluence spaces
             if filtered_config.confluence:
                 for name, config in filtered_config.confluence.items():
-                    self.logger.debug(f"Configuring Confluence space: {name}")
+                    self.logger.info(f"Configuring Confluence space: {name}")
                     try:
                         async with ConfluenceConnector(config) as connector:
+                            self.logger.info("Getting documents from Confluence space")
                             confluence_docs = await connector.get_documents()
                             documents.extend(confluence_docs)
                             await self.state_manager.update_last_ingestion(
@@ -137,9 +142,10 @@ class IngestionPipeline:
             # Process Jira projects
             if filtered_config.jira:
                 for name, config in filtered_config.jira.items():
-                    self.logger.debug(f"Configuring Jira project: {name}")
+                    self.logger.info(f"Configuring Jira project: {name}")
                     try:
                         async with JiraConnector(config) as connector:
+                            self.logger.info("Getting documents from Jira project")
                             jira_docs = await connector.get_documents()
                             documents.extend(jira_docs)
                             await self.state_manager.update_last_ingestion(
@@ -166,9 +172,10 @@ class IngestionPipeline:
             # Process public documentation
             if filtered_config.publicdocs:
                 for name, config in filtered_config.publicdocs.items():
-                    self.logger.debug(f"Configuring public documentation: {name}")
+                    self.logger.info(f"Configuring public documentation: {name}")
                     try:
                         async with PublicDocsConnector(config) as connector:
+                            self.logger.info("Getting documents from public documentation")
                             publicdocs = await connector.get_documentation()
                             documents.extend(publicdocs)
                             await self.state_manager.update_last_ingestion(
@@ -192,72 +199,96 @@ class IngestionPipeline:
                         )
                         raise
 
-            self.logger.info(f"Found {len(documents)} documents to process")
-            self.logger.debug(f"Documents: {documents}")
+            self.logger.debug("Found documents to process", count=len(documents))
+            for doc in documents:
+                self.logger.debug(
+                    "Document details",
+                    id=doc.id,
+                    title=doc.title,
+                    content_length=len(doc.content) if doc.content else 0,
+                    metadata=doc.metadata,
+                    source_type=doc.source_type,
+                    source=doc.source,
+                    url=doc.url,
+                )
 
             # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones, and then figure out the one that were deleted.
 
             # Process all valid documents
-            for doc in documents:
-                try:
-                    # Update document state
-                    updated_state = await self.state_manager.update_document_state(doc)
-                    self.logger.debug(
-                        "Document state updated",
-                        doc_id=updated_state.document_id,
-                        content_hash=updated_state.content_hash,
-                        updated_at=updated_state.updated_at,
-                    )
-
-                    # Chunk document
+            total_steps = (
+                len(documents) * 4
+            )  # 4 steps per document: state update, chunking, embedding, upserting
+            with tqdm(total=total_steps, desc="Processing documents", unit="step") as pbar:
+                for doc in documents:
                     try:
-                        chunks = self.chunking_service.chunk_document(doc)
-                    except Exception as e:
-                        self.logger.error(f"Error chunking document {doc.id}: {e!s}")
-                        raise
-
-                    # Get embeddings
-                    chunk_contents = [chunk.content for chunk in chunks]
-                    embeddings = await self.embedding_service.get_embeddings(chunk_contents)
-
-                    # Create PointStruct instances
-                    points = []
-                    for chunk, embedding in zip(chunks, embeddings, strict=False):
-                        self.logger.debug(f"Creating point for chunk {chunk.id}")
+                        # Update document state
+                        updated_state = await self.state_manager.update_document_state(doc)
                         self.logger.debug(
-                            f"Chunk content length: {len(chunk.content) if chunk.content else 0}"
+                            "Document state updated",
+                            doc_id=updated_state.document_id,
+                            content_hash=updated_state.content_hash,
+                            updated_at=updated_state.updated_at,
                         )
-                        self.logger.debug(f"Chunk metadata: {chunk.metadata}")
-                        self.logger.debug(f"Chunk source: {chunk.source}")
-                        self.logger.debug(f"Chunk source_type: {chunk.source_type}")
-                        self.logger.debug(f"Chunk created_at: {chunk.created_at}")
-                        self.logger.debug(f"Embedding length: {len(embedding) if embedding else 0}")
+                        pbar.update(1)
+                        pbar.set_postfix({"step": "state update", "doc": doc.id})
 
-                        point = models.PointStruct(
-                            id=chunk.id,
-                            vector=embedding,
-                            payload={
-                                "content": chunk.content,
-                                "metadata": chunk.metadata,
-                                "source": chunk.source,
-                                "source_type": chunk.source_type,
-                                "created_at": chunk.created_at.isoformat(),
-                                "document_id": doc.id,  # Add reference to parent document
-                            },
+                        # Chunk document
+                        try:
+                            chunks = self.chunking_service.chunk_document(doc)
+                        except Exception as e:
+                            self.logger.error(f"Error chunking document {doc.id}: {e!s}")
+                            raise
+                        pbar.update(1)
+                        pbar.set_postfix({"step": "chunking", "doc": doc.id})
+
+                        # Get embeddings
+                        chunk_contents = [chunk.content for chunk in chunks]
+                        embeddings = await self.embedding_service.get_embeddings(chunk_contents)
+                        pbar.update(1)
+                        pbar.set_postfix({"step": "embedding", "doc": doc.id})
+
+                        # Create PointStruct instances
+                        points = []
+                        for chunk, embedding in zip(chunks, embeddings, strict=False):
+                            self.logger.debug(f"Creating point for chunk {chunk.id}")
+                            self.logger.debug(
+                                f"Chunk content length: {len(chunk.content) if chunk.content else 0}"
+                            )
+                            self.logger.debug(f"Chunk metadata: {chunk.metadata}")
+                            self.logger.debug(f"Chunk source: {chunk.source}")
+                            self.logger.debug(f"Chunk source_type: {chunk.source_type}")
+                            self.logger.debug(f"Chunk created_at: {chunk.created_at}")
+                            self.logger.debug(
+                                f"Embedding length: {len(embedding) if embedding else 0}"
+                            )
+
+                            point = models.PointStruct(
+                                id=chunk.id,
+                                vector=embedding,
+                                payload={
+                                    "content": chunk.content,
+                                    "metadata": chunk.metadata,
+                                    "source": chunk.source,
+                                    "source_type": chunk.source_type,
+                                    "created_at": chunk.created_at.isoformat(),
+                                    "document_id": doc.id,  # Add reference to parent document
+                                },
+                            )
+                            self.logger.debug("Point created")
+                            points.append(point)
+
+                        # Update Qdrant
+                        await self.qdrant_manager.upsert_points(points)
+                        self.logger.debug(
+                            f"Successfully processed document {doc.id}",
+                            points_count=len(points),
                         )
-                        self.logger.debug("Point created")
-                        points.append(point)
+                        pbar.update(1)
+                        pbar.set_postfix({"step": "upserting", "doc": doc.id})
 
-                    # Update Qdrant
-                    await self.qdrant_manager.upsert_points(points)
-                    self.logger.debug(
-                        f"Successfully processed document {doc.id}",
-                        points_count=len(points),
-                    )
-
-                except Exception as e:
-                    self.logger.error(f"Error processing document {doc.id}: {e!s}")
-                    raise
+                    except Exception as e:
+                        self.logger.error(f"Error processing document {doc.id}: {e!s}")
+                        raise
 
             return documents
 

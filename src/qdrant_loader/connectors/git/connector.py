@@ -121,6 +121,65 @@ class GitConnector:
         """Synchronous context manager entry."""
         if not self._initialized:
             self._initialized = True
+            # Create temporary directory
+            self.temp_dir = tempfile.mkdtemp()
+            self.config.temp_dir = self.temp_dir  # Update config with the actual temp dir
+            self.logger.debug("Created temporary directory", temp_dir=self.temp_dir)
+
+            # Initialize file processor
+            self.file_processor = FileProcessor(config=self.config, temp_dir=self.temp_dir)
+
+            # Get auth token from config
+            auth_token = None
+            if self.config.token:
+                auth_token = self.config.token
+                self.logger.debug("Using authentication token", token_length=len(auth_token))
+
+            # Clone repository
+            self.logger.debug(
+                "Attempting to clone repository",
+                url=self.config.base_url,
+                branch=self.config.branch,
+                depth=self.config.depth,
+                temp_dir=self.temp_dir,
+            )
+
+            try:
+                self.git_ops.clone(
+                    url=str(self.config.base_url),
+                    to_path=self.temp_dir,
+                    branch=self.config.branch,
+                    depth=self.config.depth,
+                    auth_token=auth_token,
+                )
+            except Exception as clone_error:
+                self.logger.error(
+                    "Failed to clone repository",
+                    error=str(clone_error),
+                    error_type=type(clone_error).__name__,
+                    url=self.config.base_url,
+                    branch=self.config.branch,
+                    temp_dir=self.temp_dir,
+                )
+                raise
+
+            # Verify repository initialization
+            if not self.git_ops.repo:
+                self.logger.error("Repository not initialized after clone", temp_dir=self.temp_dir)
+                raise ValueError("Repository not initialized")
+
+            # Verify repository is valid
+            try:
+                self.git_ops.repo.git.status()
+                self.logger.debug("Repository is valid and accessible", temp_dir=self.temp_dir)
+            except Exception as status_error:
+                self.logger.error(
+                    "Failed to verify repository status",
+                    error=str(status_error),
+                    error_type=type(status_error).__name__,
+                    temp_dir=self.temp_dir,
+                )
+                raise
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -180,7 +239,7 @@ class GitConnector:
             )
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
-            self.logger.info(f"Processed Git file: /{rel_path!s}")
+            self.logger.debug(f"Processed Git file: /{rel_path!s}")
 
             # Create document
             git_document = Document(
@@ -225,7 +284,6 @@ class GitConnector:
 
                 try:
                     document = self._process_file(file_path)
-                    self.logger.debug(f"Git file Metadata: {document.metadata!s}")
                     documents.append(document)
 
                 except Exception as e:
