@@ -1,6 +1,5 @@
 """CLI module for QDrant Loader."""
 
-import asyncio
 import json
 import os
 from pathlib import Path

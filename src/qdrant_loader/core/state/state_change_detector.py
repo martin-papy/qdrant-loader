@@ -1,12 +1,10 @@
 """Base classes for connectors and change detectors."""
 
 from datetime import datetime
-from typing import Any
 from urllib.parse import quote
 
 from pydantic import BaseModel, ConfigDict
 
-from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import InvalidDocumentStateError
@@ -57,7 +55,6 @@ class StateChangeDetector:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
-        pass
 
     async def detect_changes(
         self, documents: list[Document], filtered_config: SourcesConfig
