@@ -135,13 +135,14 @@ class PublicDocsConnector(BaseConnector):
                             metadata={
                                 "title": title,
                                 "url": page,
-                                "last_modified": datetime.now(timezone.utc).isoformat(),
                             },
                             source_type=self.config.source_type,
                             source=self.config.source,
                             url=page,
-                            created_at=datetime.now(timezone.utc),
-                            updated_at=datetime.now(timezone.utc),
+                            # For public docs, we don't have a created or updated date. So we use a very old date.
+                            # The content hash will be the same for the same page, so it will be update if the hash changes.
+                            created_at=datetime(1970, 1, 1, 0, 0, 0, 0, timezone.utc),
+                            updated_at=datetime(1970, 1, 1, 0, 0, 0, 0, timezone.utc),
                         )
                         self.logger.debug(
                             "Created document",
