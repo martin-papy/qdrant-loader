@@ -88,6 +88,13 @@ class LoggingConfig:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
+            structlog.processors.CallsiteParameterAdder(
+                [
+                    structlog.processors.CallsiteParameter.FILENAME,
+                    structlog.processors.CallsiteParameter.FUNC_NAME,
+                    structlog.processors.CallsiteParameter.LINENO,
+                ]
+            ),
         ]
 
         if format == "json":

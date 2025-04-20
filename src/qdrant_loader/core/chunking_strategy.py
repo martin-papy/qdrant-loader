@@ -1,6 +1,8 @@
-from typing import List, Optional, TYPE_CHECKING
-import tiktoken
+from typing import TYPE_CHECKING
+
 import structlog
+import tiktoken
+
 from qdrant_loader.core.document import Document
 
 if TYPE_CHECKING:
@@ -54,7 +56,7 @@ class ChunkingStrategy:
             return len(text)
         return len(self.encoding.encode(text))
 
-    def _split_text(self, text: str) -> List[str]:
+    def _split_text(self, text: str) -> list[str]:
         """Split text into chunks with overlap."""
         # Handle empty text case
         if not text:
@@ -137,7 +139,7 @@ class ChunkingStrategy:
 
         return chunks
 
-    def chunk_document(self, document: Document) -> List[Document]:
+    def chunk_document(self, document: Document) -> list[Document]:
         """
         Split a document into chunks while preserving metadata.
 
@@ -161,9 +163,11 @@ class ChunkingStrategy:
                 source_type=document.source_type,
                 metadata=metadata,
                 url=document.url,
-                project=document.project,
-                author=document.author,
-                last_updated=document.last_updated,
+                title=document.title,
+                content_hash=document.content_hash,
+                created_at=document.created_at,
+                updated_at=document.updated_at,
+                id=document.id,
             )
 
             chunked_documents.append(chunk_doc)

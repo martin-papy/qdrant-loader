@@ -13,6 +13,16 @@ class JiraUser(BaseModel):
     email_address: str | None = Field(None, description="User's email address")
 
 
+class JiraComment(BaseModel):
+    """Jira comment model."""
+
+    id: str = Field(..., description="Comment ID")
+    body: str = Field(..., description="Comment content")
+    created: datetime = Field(..., description="Comment creation timestamp")
+    updated: datetime | None = Field(None, description="Comment last update timestamp")
+    author: JiraUser = Field(..., description="User who created the comment")
+
+
 class JiraAttachment(BaseModel):
     """Jira attachment model."""
 
@@ -42,6 +52,7 @@ class JiraIssue(BaseModel):
     assignee: JiraUser | None = Field(None, description="Issue assignee")
     labels: list[str] = Field(default_factory=list, description="Issue labels")
     attachments: list[JiraAttachment] = Field(default_factory=list, description="Issue attachments")
+    comments: list[JiraComment] = Field(default_factory=list, description="Issue comments")
     parent_key: str | None = Field(None, description="Parent issue key for subtasks")
     subtasks: list[str] = Field(default_factory=list, description="List of subtask keys")
     linked_issues: list[str] = Field(default_factory=list, description="List of linked issue keys")

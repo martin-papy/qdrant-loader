@@ -1,6 +1,7 @@
 """Jira connector implementation."""
 
 import asyncio
+import json
 import os
 import time
 from collections.abc import AsyncGenerator
@@ -11,7 +12,7 @@ from atlassian import Jira
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
-from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser
+from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser, JiraComment
 from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)
@@ -63,16 +64,8 @@ class JiraConnector:
     def _make_sync_request(self, jql: str, **kwargs):
         """
         Make a synchronous request to the Jira API, converting parameters as needed:
-        - maxResults -> limit
-        - startAt -> start
         - Format datetime values in JQL to 'yyyy-MM-dd HH:mm' format
         """
-        # Convert pagination parameters
-        if "maxResults" in kwargs:
-            kwargs["limit"] = int(kwargs.pop("maxResults"))
-        if "startAt" in kwargs:
-            kwargs["start"] = int(kwargs.pop("startAt"))
-
         # Format datetime values in JQL query
         for key, value in kwargs.items():
             if isinstance(value, datetime):
@@ -111,26 +104,32 @@ class JiraConnector:
             JiraIssue objects
         """
         start_at = 0
+        page_size = self.config.page_size
+        total_issues = 0
 
         while True:
             jql = f'project = "{self.config.project_key}"'
             if updated_after:
                 jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
-            response = await self._make_request(
-                jql=jql, startAt=start_at, maxResults=self.config.page_size
-            )
+            response = await self._make_request(jql=jql, start=start_at, limit=page_size)
 
             if not response or not response.get("issues"):
                 break
-
+            logger.debug(
+                f"Make request to Jira API >> Start: {start_at}, Page size: {page_size}, Total issues: {total_issues}"
+            )
             issues = response["issues"]
             for issue in issues:
                 yield self._parse_issue(issue)
 
-            start_at += len(issues)
+            # Update total count if not set
+            if total_issues is None:
+                total_issues = response.get("total", 0)
 
-            if len(issues) < self.config.page_size:
+            # Check if we've processed all issues
+            start_at += len(issues)
+            if start_at >= total_issues:
                 break
 
     def _parse_issue(self, raw_issue: dict) -> JiraIssue:
@@ -150,7 +149,7 @@ class JiraConnector:
         reporter = self._parse_user(fields["reporter"], required=True)
         assert reporter is not None  # For type checker
 
-        return JiraIssue(
+        jira_issue = JiraIssue(
             id=raw_issue["id"],
             key=raw_issue["key"],
             summary=fields["summary"],
@@ -165,6 +164,10 @@ class JiraConnector:
             assignee=self._parse_user(fields.get("assignee")),
             labels=fields.get("labels", []),
             attachments=[self._parse_attachment(att) for att in fields.get("attachment", [])],
+            comments=[
+                self._parse_comment(comment)
+                for comment in fields.get("comment", {}).get("comments", [])
+            ],
             parent_key=parent_key,
             subtasks=[st["key"] for st in fields.get("subtasks", [])],
             linked_issues=[
@@ -173,6 +176,8 @@ class JiraConnector:
                 if "outwardIssue" in link
             ],
         )
+
+        return jira_issue
 
     def _parse_user(self, raw_user: dict | None, required: bool = False) -> JiraUser | None:
         """Parse raw Jira user data into JiraUser model.
@@ -220,6 +225,31 @@ class JiraConnector:
             author=author,
         )
 
+    def _parse_comment(self, raw_comment: dict) -> JiraComment:
+        """Parse raw Jira comment data into JiraComment model.
+
+        Args:
+            raw_comment: Raw comment data from Jira API
+
+        Returns:
+            Parsed JiraComment
+        """
+        # Parse author with type assertion since it's required
+        author = self._parse_user(raw_comment["author"], required=True)
+        assert author is not None  # For type checker
+
+        return JiraComment(
+            id=raw_comment["id"],
+            body=raw_comment["body"],
+            created=datetime.fromisoformat(raw_comment["created"].replace("Z", "+00:00")),
+            updated=(
+                datetime.fromisoformat(raw_comment["updated"].replace("Z", "+00:00"))
+                if "updated" in raw_comment
+                else None
+            ),
+            author=author,
+        )
+
     async def get_documents(self) -> list[Document]:
         """Fetch and process documents from Jira.
 
@@ -235,15 +265,31 @@ class JiraConnector:
 
         # Convert issues to documents
         for issue in issues:
-            content = f"{issue.summary}\n\n{issue.description or ''}"
+            # Build content including comments
+            content_parts = [issue.summary]
+            if issue.description:
+                content_parts.append(issue.description)
+
+            # Add comments to content
+            for comment in issue.comments:
+                content_parts.append(
+                    f"\nComment by {comment.author.display_name} on {comment.created.strftime('%Y-%m-%d %H:%M')}:"
+                )
+                content_parts.append(comment.body)
+
+            content = "\n\n".join(content_parts)
+
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,
                 content=content,
-                source=self.config.project_key,
+                source=self.config.source,
                 source_type=SourceType.JIRA,
+                created_at=issue.created,
                 url=f"{base_url}/browse/{issue.key}",
-                last_updated=issue.updated,
+                title=issue.summary,
+                updated_at=issue.updated,
+                is_deleted=False,
                 metadata={
                     "project": self.config.project_key,
                     "issue_type": issue.issue_type,
@@ -258,6 +304,16 @@ class JiraConnector:
                     "parent_key": issue.parent_key,
                     "subtasks": issue.subtasks,
                     "linked_issues": issue.linked_issues,
+                    "comments": [
+                        {
+                            "id": comment.id,
+                            "body": comment.body,
+                            "created": comment.created.isoformat(),
+                            "updated": comment.updated.isoformat() if comment.updated else None,
+                            "author": comment.author.display_name if comment.author else None,
+                        }
+                        for comment in issue.comments
+                    ],
                     "attachments": (
                         [
                             {
