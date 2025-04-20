@@ -77,4 +77,3 @@ class BaseSourceConfig(BaseConfig):
         This method should be overridden by subclasses to implement
         source-specific validation logic.
         """
-        pass

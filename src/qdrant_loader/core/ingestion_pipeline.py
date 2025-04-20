@@ -3,7 +3,6 @@ Ingestion pipeline for processing documents.
 """
 
 from collections.abc import Mapping
-import logging
 from qdrant_client.http import models
 from tqdm import tqdm
 from typing import Type
@@ -12,7 +11,6 @@ from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
-from qdrant_loader.connectors.exceptions import DocumentProcessingError
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 
 from ..config import Settings, SourcesConfig
