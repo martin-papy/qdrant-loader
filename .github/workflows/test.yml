@@ -57,7 +57,7 @@ jobs:
 
       - name: Run tests and generate coverage reports
         run: |
-          python -m pytest tests/ --cov=qdrant_loader --cov-report=html -v
+          python -m pytest tests/ --cov=qdrant_loader --cov-report=xml --cov-report=html -v
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -66,6 +66,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: htmlcov
+
+      - name: Upload coverage to Codacy
+        uses: codacy/codacy-coverage-reporter-action@master
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.xml
 
   deploy:
     runs-on: ubuntu-latest

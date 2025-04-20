@@ -76,7 +76,7 @@ qdrant-loader ingest
 # Run ingestion for specific source types
 qdrant-loader ingest --source-type confluence  # Ingest only Confluence
 qdrant-loader ingest --source-type git        # Ingest only Git
-qdrant-loader ingest --source-type public-docs # Ingest only public docs
+qdrant-loader ingest --source-type publicdocs # Ingest only public docs
 qdrant-loader ingest --source-type jira       # Ingest only JIRA
 
 # Run ingestion for specific sources
@@ -92,14 +92,13 @@ qdrant-loader ingest --source-type jira --source my-project
 qdrant-loader config
 
 # Show version information
-qdrant-loader version
+qdrant-loader --version
 ```
 
 ### Common Options
 
 All commands support:
 
-- `--verbose`: Enable verbose output
 - `--log-level LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - `--config FILE`: Specify custom config file (defaults to config.yaml)
 
@@ -119,14 +118,6 @@ The logging level can be adjusted using the `--log-level` option:
 
 ```bash
 qdrant-loader ingest --log-level DEBUG
-```
-
-### Verbose Mode
-
-For detailed output during operations:
-
-```bash
-qdrant-loader ingest --verbose
 ```
 
 ## Troubleshooting
@@ -171,4 +162,4 @@ Common error messages and their solutions:
 3. **Security**
    - Never commit API keys or tokens
    - Use secure methods for storing credentials
-   - Regularly rotate API keys and tokens 
+   - Regularly rotate API keys and tokens

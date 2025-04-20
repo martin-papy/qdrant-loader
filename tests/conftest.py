@@ -1,68 +1,90 @@
-"""Test configuration and fixtures."""
+"""Shared test fixtures and configuration.
 
-import os
-import pytest
+This module contains pytest fixtures that are shared across all test modules.
+"""
+
+import shutil
 from pathlib import Path
+import os
+
+import pytest
 from dotenv import load_dotenv
+from qdrant_loader.config import get_settings, initialize_config
 
-from qdrant_loader.config import (
-    Settings,
-    SourcesConfig,
-    GlobalConfig,
-    ChunkingConfig,
-    EmbeddingConfig
-)
 
-# Load test environment variables
-load_dotenv(Path(__file__).parent / ".env.test")
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Setup test environment before running tests."""
+    # Create necessary directories
+    data_dir = Path("./data")
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-@pytest.fixture
-def test_settings() -> Settings:
-    """Fixture that provides test settings for all tests."""
-    return Settings(
-        QDRANT_URL=os.getenv("QDRANT_URL"),
-        QDRANT_API_KEY=os.getenv("QDRANT_API_KEY"),
-        QDRANT_COLLECTION_NAME=os.getenv("QDRANT_COLLECTION_NAME"),
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY"),
-        LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO")
-    )
+    # Load test configuration
+    config_path = Path("tests/config.test.yaml")
+    env_path = Path("tests/.env.test")
 
-@pytest.fixture
-def test_global_config() -> GlobalConfig:
-    """Fixture that provides test global configuration."""
-    return GlobalConfig(
-        chunking={"size": 500, "overlap": 50},
-        embedding=EmbeddingConfig(
-            model="text-embedding-3-small",
-            batch_size=100
-        ),
-        logging={
-            "level": "INFO",
-            "format": "json",
-            "file": "qdrant-loader.log"
-        }
-    )
+    # Load environment variables first
+    load_dotenv(env_path, override=True)
 
-@pytest.fixture
-def test_sources_config() -> SourcesConfig:
-    """Fixture that provides test sources configuration."""
-    config_path = Path(__file__).parent / "config.test.yaml"
-    if not config_path.exists():
-        pytest.fail("Test configuration file not found")
-    
-    return SourcesConfig.from_yaml(config_path)
+    # Initialize config using the same function as CLI
+    initialize_config(config_path)
 
-@pytest.fixture
-def test_chunking_config() -> ChunkingConfig:
-    """Fixture that provides test chunking configuration."""
-    return ChunkingConfig(
-        chunk_size=1000,
-        chunk_overlap=200
-    )
+    yield
 
-def pytest_configure(config):
-    """Register custom markers."""
-    config.addinivalue_line(
-        "markers",
-        "integration: mark test as an integration test"
-    ) 
+    # Clean up after all tests
+    if data_dir.exists():
+        shutil.rmtree(data_dir)
+
+
+@pytest.fixture(scope="session")
+def test_settings():
+    """Get test settings."""
+    settings = get_settings()
+    return settings
+
+
+@pytest.fixture(scope="session")
+def test_global_config():
+    """Get test configuration."""
+    config = get_settings().global_config
+    return config
+
+
+@pytest.fixture(scope="session")
+def qdrant_client(test_global_config):
+    """Create and return a Qdrant client for testing."""
+    from qdrant_client import QdrantClient
+
+    client = QdrantClient(url=os.getenv("QDRANT_URL"), api_key=os.getenv("QDRANT_API_KEY"))
+    yield client
+    # Cleanup: Delete test collection after tests
+    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    if collection_name:
+        client.delete_collection(collection_name)
+
+
+@pytest.fixture(scope="function")
+def clean_collection(qdrant_client):
+    """Ensure the test collection is empty before each test."""
+    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    if collection_name:
+        qdrant_client.delete_collection(collection_name)
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config={"size": 1536, "distance": "Cosine"},  # OpenAI embedding size
+        )
+
+
+@pytest.fixture(scope="session")
+def mock_requests():
+    """Mock requests for external HTTP calls in unit tests."""
+    import requests_mock
+
+    with requests_mock.Mocker() as m:
+        yield m
+
+
+@pytest.fixture(scope="session")
+def test_data_dir():
+    """Return the path to the test data directory."""
+    return os.path.join(os.path.dirname(__file__), "fixtures")

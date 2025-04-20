@@ -14,25 +14,27 @@ global:
   # Controls how text is converted to vectors
   embedding:
     endpoint: "http://localhost:8080/v1" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-    model: "text-embedding-3-small"  # Embedding model to use
+    model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
     batch_size: 100                  # Number of chunks to process in one batch
-    vector_size: 1536                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
-    tokenizer: "cl100k_base"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    vector_size: 384                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+    tokenizer: "none"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
 
-  # Logging configuration
-  # Controls how logs are generated and stored
-  logging:
-    level: "INFO"    # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    format: "json"   # Log format: json (structured) or plain (human-readable)
-    file: "qdrant-loader.log"  # Path to log file (relative to current directory)
+  # State management configuration
+  # Controls how document ingestion state is tracked
+  state_management:
+    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file
+    table_prefix: "qdrant_loader_"     # Prefix for database tables
+    connection_pool:                   # Connection pool settings
+      size: 5                         # Maximum number of connections
+      timeout: 30                  # Connection timeout in seconds
 
 # Source-specific configurations
 # Each source type has its own configuration section
 sources:
   # Public documentation sources (websites, documentation)
-  public_docs:
+  publicdocs:
     # Example configuration for a documentation source
-    my_docs:
+    my-docs:
       # Base URL of the documentation website
       base_url: "https://docs.example.com"
       
@@ -73,10 +75,10 @@ sources:
         code_blocks: "pre code"
 
   # Git repository sources
-  git_repos:
+  git:
     # Example configuration for a public repository
     public_repo:
-      url: "https://github.com/example/repo.git"  # Repository URL
+      base_url: "https://github.com/example/repo.git"  # Repository URL
       branch: "main"                             # Branch to process
       include_paths:                             # Paths to include (glob patterns)
         - "docs/**"
@@ -98,14 +100,13 @@ sources:
         - "*.rb"
       max_file_size: 1048576                    # Maximum file size in bytes (1MB)
       depth: 1                                  # Maximum directory depth to process
-      auth:
-        type: "none"                            # Authentication type: none, token, ssh
+      token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
 
     # Example configuration for a private GitHub repository
     private_github_repo:
-      url: "${REPO_URL}"                        # Use environment variable
+      base_url: "${REPO_URL}"                        # Use environment variable
       branch: "main"
-      token: "${REPO_TOKEN}"                    # GitHub Personal Access Token
+      token: "${REPO_TOKEN}"                    # GitHub Personal Access Token or none
       include_paths:
         - "docs/**"
       file_types:
@@ -114,7 +115,7 @@ sources:
   # Confluence documentation sources
   confluence:
     my-space:
-      url: "${CONFLUENCE_URL}"                  # Confluence instance URL
+      base_url: "${CONFLUENCE_URL}"                  # Confluence instance URL
       space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
       content_types:                            # Types of content to process
         - "page"
