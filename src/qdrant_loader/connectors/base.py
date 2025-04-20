@@ -24,4 +24,3 @@ class BaseConnector(ABC):
     @abstractmethod
     async def get_documents(self) -> List[Document]:
         """Get documents from the source."""
-        pass

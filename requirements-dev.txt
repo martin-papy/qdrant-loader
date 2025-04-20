@@ -13,6 +13,7 @@ flake8>=6.1.0
 mypy>=1.7.0
 autoflake>=2.2.0
 sqlite-web>=0.6.4
+requests_mock>=1.11.0
 
 # Release script dependencies
 click>=8.1.7
