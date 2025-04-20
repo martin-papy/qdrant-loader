@@ -1,6 +1,8 @@
-"""Git repository connector."""
+"""Git connector package."""
 
-from qdrant_loader.connectors.git.config import GitAuthConfig, GitRepoConfig
-from qdrant_loader.connectors.git.connector import GitConnector, GitOperations, GitPythonAdapter
+from qdrant_loader.connectors.git.connector import GitConnector
+from qdrant_loader.connectors.git.operations import GitOperations
+from qdrant_loader.connectors.git.adapter import GitPythonAdapter
+from qdrant_loader.connectors.git.file_processor import FileProcessor
 
-__all__ = ["GitAuthConfig", "GitConnector", "GitOperations", "GitPythonAdapter", "GitRepoConfig"]
+__all__ = ["GitConnector", "GitOperations", "GitPythonAdapter", "FileProcessor"]
