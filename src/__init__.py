@@ -1,3 +1,3 @@
 """
 QDrant Loader package.
-""" 
+"""

@@ -5,12 +5,15 @@ global:
   embedding:
     model: text-embedding-3-small
     batch_size: 10  # Smaller batch size for tests
-  logging:
-    level: INFO
-    format: json
-    file: qdrant-loader-test.log
+  state_management:
+    database_path: ":memory:"  # Use in-memory SQLite for tests
+    table_prefix: "test_qdrant_loader_"
+    connection_pool:
+      size: 1  # Single connection for tests
+      timeout: 5  # Shorter timeout for tests
+
 sources:
-  public_docs:
+  publicdocs:
     test-docs:
       base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
       version: "3.12"
@@ -25,9 +28,9 @@ sources:
           - footer
         code_blocks: pre code
 
-  git_repos:
+  git:
     auth-test-repo:
-      url: "${REPO_URL}"
+      base_url: "${REPO_URL}"
       branch: "main"
       token: "${REPO_TOKEN}"
       include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
@@ -38,7 +41,7 @@ sources:
 
   confluence:
     test-space:
-      url: "${CONFLUENCE_URL}"
+      base_url: "${CONFLUENCE_URL}"
       space_key: "${CONFLUENCE_SPACE_KEY}"
       content_types:
         - "page"

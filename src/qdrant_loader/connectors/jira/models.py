@@ -1,7 +1,7 @@
 """Data models for Jira connector."""
 
 from datetime import datetime
-from typing import List, Optional
+
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -10,7 +10,17 @@ class JiraUser(BaseModel):
 
     account_id: str = Field(..., description="User's account ID")
     display_name: str = Field(..., description="User's display name")
-    email_address: Optional[str] = Field(None, description="User's email address")
+    email_address: str | None = Field(None, description="User's email address")
+
+
+class JiraComment(BaseModel):
+    """Jira comment model."""
+
+    id: str = Field(..., description="Comment ID")
+    body: str = Field(..., description="Comment content")
+    created: datetime = Field(..., description="Comment creation timestamp")
+    updated: datetime | None = Field(None, description="Comment last update timestamp")
+    author: JiraUser = Field(..., description="User who created the comment")
 
 
 class JiraAttachment(BaseModel):
@@ -31,23 +41,18 @@ class JiraIssue(BaseModel):
     id: str = Field(..., description="Issue ID")
     key: str = Field(..., description="Issue key")
     summary: str = Field(..., description="Issue summary")
-    description: Optional[str] = Field(None, description="Issue description")
+    description: str | None = Field(None, description="Issue description")
     issue_type: str = Field(..., description="Issue type")
     status: str = Field(..., description="Issue status")
-    priority: Optional[str] = Field(None, description="Issue priority")
+    priority: str | None = Field(None, description="Issue priority")
     project_key: str = Field(..., description="Project key")
     created: datetime = Field(..., description="Issue creation timestamp")
     updated: datetime = Field(..., description="Last update timestamp")
     reporter: JiraUser = Field(..., description="Issue reporter")
-    assignee: Optional[JiraUser] = Field(None, description="Issue assignee")
-    labels: List[str] = Field(default_factory=list, description="Issue labels")
-    attachments: List[JiraAttachment] = Field(
-        default_factory=list, description="Issue attachments"
-    )
-    parent_key: Optional[str] = Field(None, description="Parent issue key for subtasks")
-    subtasks: List[str] = Field(
-        default_factory=list, description="List of subtask keys"
-    )
-    linked_issues: List[str] = Field(
-        default_factory=list, description="List of linked issue keys"
-    ) 
+    assignee: JiraUser | None = Field(None, description="Issue assignee")
+    labels: list[str] = Field(default_factory=list, description="Issue labels")
+    attachments: list[JiraAttachment] = Field(default_factory=list, description="Issue attachments")
+    comments: list[JiraComment] = Field(default_factory=list, description="Issue comments")
+    parent_key: str | None = Field(None, description="Parent issue key for subtasks")
+    subtasks: list[str] = Field(default_factory=list, description="List of subtask keys")
+    linked_issues: list[str] = Field(default_factory=list, description="List of linked issue keys")

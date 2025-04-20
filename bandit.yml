@@ -1,0 +1,11 @@
+# Bandit configuration file
+
+# Test IDs to skip
+exclude_dirs:
+  - 'docs'
+
+# Assert used rule configuration
+assert_used:
+  skips:
+    - '*_test.py'
+    - '*test_*.py' 
