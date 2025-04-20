@@ -10,6 +10,7 @@ from urllib.parse import urljoin, urlparse
 import aiohttp
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 
+from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.exceptions import (
     ConnectorError,
     ConnectorNotInitializedError,
@@ -27,7 +28,7 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 logger = LoggingConfig.get_logger(__name__)
 
 
-class PublicDocsConnector:
+class PublicDocsConnector(BaseConnector):
     """Connector for public documentation sources."""
 
     def __init__(self, config: PublicDocsSourceConfig):
@@ -37,6 +38,7 @@ class PublicDocsConnector:
             config: Configuration for the public documentation source
             state_manager: State manager for tracking document states
         """
+        super().__init__(config)
         self.config = config
         self.logger = LoggingConfig.get_logger(__name__)
         self._initialized = False
@@ -95,7 +97,7 @@ class PublicDocsConnector:
 
         return True
 
-    async def get_documentation(self) -> list[Document]:
+    async def get_documents(self) -> list[Document]:
         """Get documentation pages from the source.
 
         Returns:
