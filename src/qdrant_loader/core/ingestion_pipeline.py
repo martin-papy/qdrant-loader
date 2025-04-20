@@ -2,12 +2,17 @@
 Ingestion pipeline for processing documents.
 """
 
+from collections.abc import Mapping
 import logging
 from qdrant_client.http import models
 from tqdm import tqdm
+from typing import Type
 
+from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.exceptions import DocumentProcessingError
 
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
@@ -81,125 +86,33 @@ class IngestionPipeline:
             self.logger.info("Collecting documents from sources")
             # Process Git repositories
             if filtered_config.git:
-                for name, config in filtered_config.git.items():
-                    self.logger.info(f"Configuring Git repository: {name}")
-                    try:
-                        async with GitConnector(config) as connector:
-                            self.logger.info("Getting documents from Git repository")
-                            git_docs = await connector.get_documents()
-                            documents.extend(git_docs)
-                            await self.state_manager.update_last_ingestion(
-                                config.source_type,
-                                config.source,
-                                IngestionStatus.SUCCESS,
-                                document_count=len(git_docs),
-                            )
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to process Git repository {name}",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            error_class=e.__class__.__name__,
-                        )
-                        await self.state_manager.update_last_ingestion(
-                            config.source_type,
-                            config.source,
-                            IngestionStatus.FAILED,
-                            error_message=str(e),
-                        )
-                        raise
+                documents.extend(
+                    await self._process_source_type(filtered_config.git, GitConnector, "Git")
+                )
 
             # Process Confluence spaces
             if filtered_config.confluence:
-                for name, config in filtered_config.confluence.items():
-                    self.logger.info(f"Configuring Confluence space: {name}")
-                    try:
-                        async with ConfluenceConnector(config) as connector:
-                            self.logger.info("Getting documents from Confluence space")
-                            confluence_docs = await connector.get_documents()
-                            documents.extend(confluence_docs)
-                            await self.state_manager.update_last_ingestion(
-                                config.source_type,
-                                config.source,
-                                IngestionStatus.SUCCESS,
-                                document_count=len(confluence_docs),
-                            )
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to process Confluence space {name}",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            error_class=e.__class__.__name__,
-                        )
-                        await self.state_manager.update_last_ingestion(
-                            config.source_type,
-                            config.source,
-                            IngestionStatus.FAILED,
-                            error_message=str(e),
-                        )
-                        raise
+                documents.extend(
+                    await self._process_source_type(
+                        filtered_config.confluence, ConfluenceConnector, "Confluence"
+                    )
+                )
 
             # Process Jira projects
             if filtered_config.jira:
-                for name, config in filtered_config.jira.items():
-                    self.logger.info(f"Configuring Jira project: {name}")
-                    try:
-                        async with JiraConnector(config) as connector:
-                            self.logger.info("Getting documents from Jira project")
-                            jira_docs = await connector.get_documents()
-                            documents.extend(jira_docs)
-                            await self.state_manager.update_last_ingestion(
-                                config.source_type,
-                                config.source,
-                                IngestionStatus.SUCCESS,
-                                document_count=len(jira_docs),
-                            )
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to process Jira project {name}",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            error_class=e.__class__.__name__,
-                        )
-                        await self.state_manager.update_last_ingestion(
-                            config.source_type,
-                            config.source,
-                            IngestionStatus.FAILED,
-                            error_message=str(e),
-                        )
-                        raise
+                documents.extend(
+                    await self._process_source_type(filtered_config.jira, JiraConnector, "Jira")
+                )
 
             # Process public documentation
             if filtered_config.publicdocs:
-                for name, config in filtered_config.publicdocs.items():
-                    self.logger.info(f"Configuring public documentation: {name}")
-                    try:
-                        async with PublicDocsConnector(config) as connector:
-                            self.logger.info("Getting documents from public documentation")
-                            publicdocs = await connector.get_documentation()
-                            documents.extend(publicdocs)
-                            await self.state_manager.update_last_ingestion(
-                                config.source_type,
-                                config.source,
-                                IngestionStatus.SUCCESS,
-                                document_count=len(publicdocs),
-                            )
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to process public documentation {name}",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            error_class=e.__class__.__name__,
-                        )
-                        await self.state_manager.update_last_ingestion(
-                            config.source_type,
-                            config.source,
-                            IngestionStatus.FAILED,
-                            error_message=str(e),
-                        )
-                        raise
+                documents.extend(
+                    await self._process_source_type(
+                        filtered_config.publicdocs, PublicDocsConnector, "Public Documentation"
+                    )
+                )
 
-            self.logger.debug("Found documents to process", count=len(documents))
+            self.logger.debug(f"Found {len(documents)} documents to process")
             for doc in documents:
                 self.logger.debug(
                     "Document details",
@@ -213,7 +126,6 @@ class IngestionPipeline:
                 )
 
             # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones, and then figure out the one that were deleted.
-
             # Process all valid documents
             total_steps = (
                 len(documents) * 4
@@ -300,6 +212,54 @@ class IngestionPipeline:
                 error_class=e.__class__.__name__,
             )
             raise
+
+    async def _process_source_type(
+        self,
+        source_configs: Mapping[str, SourceConfig],
+        connector_class: Type[BaseConnector],
+        source_type: str,
+    ) -> list[Document]:
+        """Process documents from a specific source type.
+
+        Args:
+            source_configs: Dictionary of source configurations
+            connector_class: The connector class to use
+            source_type: Name of the source type for logging
+        """
+        documents: list[Document] = []
+
+        for name, config in source_configs.items():
+            self.logger.info(f"Configuring {source_type} source: {name}")
+            try:
+                connector = connector_class(config)  # Instantiate first
+                async with connector:  # Then use as context manager
+                    self.logger.info(
+                        f"Getting documents from {source_type} source: {config.source}"
+                    )
+                    source_docs = await connector.get_documents()
+                    documents.extend(source_docs)
+                    await self.state_manager.update_last_ingestion(
+                        config.source_type,
+                        config.source,
+                        IngestionStatus.SUCCESS,
+                        document_count=len(source_docs),
+                    )
+            except Exception as e:
+                self.logger.error(
+                    f"Failed to process {source_type} source {name}",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    error_class=e.__class__.__name__,
+                )
+                await self.state_manager.update_last_ingestion(
+                    config.source_type,
+                    config.source,
+                    IngestionStatus.FAILED,
+                    error_message=str(e),
+                )
+                raise
+
+        return documents
 
     def _filter_sources(
         self,

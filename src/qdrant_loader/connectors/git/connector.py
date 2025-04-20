@@ -7,6 +7,7 @@ import tempfile
 import structlog
 
 from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.file_processor import FileProcessor
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
@@ -17,7 +18,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 logger = LoggingConfig.get_logger(__name__)
 
 
-class GitConnector:
+class GitConnector(BaseConnector):
     """Git repository connector."""
 
     def __init__(self, config: GitRepoConfig):
@@ -26,6 +27,7 @@ class GitConnector:
         Args:
             config: Configuration for the Git repository
         """
+        super().__init__(config)
         self.config = config
         self.temp_dir = None  # Will be set in __enter__
         self.metadata_extractor = GitMetadataExtractor(config=self.config)

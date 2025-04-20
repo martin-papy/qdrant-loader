@@ -10,6 +10,7 @@ import structlog
 from atlassian import Jira
 
 from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
 from qdrant_loader.connectors.jira.models import JiraAttachment, JiraComment, JiraIssue, JiraUser
 from qdrant_loader.core.document import Document
@@ -17,7 +18,7 @@ from qdrant_loader.core.document import Document
 logger = structlog.get_logger(__name__)
 
 
-class JiraConnector:
+class JiraConnector(BaseConnector):
     """Jira connector for fetching and processing issues."""
 
     def __init__(self, config: JiraProjectConfig):
@@ -29,6 +30,7 @@ class JiraConnector:
         Raises:
             ValueError: If required environment variables are not set.
         """
+        super().__init__(config)
         self.config = config
 
         # Validate required environment variables

@@ -6,6 +6,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
+from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -13,7 +14,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 logger = LoggingConfig.get_logger(__name__)
 
 
-class ConfluenceConnector:
+class ConfluenceConnector(BaseConnector):
     """Connector for Atlassian Confluence."""
 
     def __init__(self, config: ConfluenceSpaceConfig):
@@ -22,6 +23,7 @@ class ConfluenceConnector:
         Args:
             config: Confluence configuration
         """
+        super().__init__(config)
         self.config = config
         self.base_url = config.base_url
 
