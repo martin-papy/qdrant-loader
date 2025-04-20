@@ -72,7 +72,9 @@ class GitOperations:
                 # Store original value and disable credential prompts
                 original_prompt = os.environ.get("GIT_TERMINAL_PROMPT")
                 os.environ["GIT_TERMINAL_PROMPT"] = "0"
-
+                self.logger.info(
+                    f"Cloning repository : {url} | branch: {branch} | depth: {depth}",
+                )
                 try:
                     # If auth token is provided, modify the URL to include it
                     clone_url = url
@@ -107,11 +109,7 @@ class GitOperations:
                     if not self.repo or not os.path.exists(os.path.join(to_path, ".git")):
                         raise RuntimeError("Repository was not cloned successfully")
 
-                    self.logger.info(
-                        "Successfully cloned repository",
-                        to_path=to_path,
-                        branch=self.repo.active_branch.name,
-                    )
+                    self.logger.info("Successfully cloned repository")
                 finally:
                     # Restore original value
                     if original_prompt is not None:
