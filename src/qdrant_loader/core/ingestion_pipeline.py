@@ -126,88 +126,90 @@ class IngestionPipeline:
                     url=doc.url,
                 )
 
-            # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones
-            # and then figure out the one that were deleted.
+            # Filter documents based on state changes
             async with StateChangeDetector(self.state_manager) as detector:
                 filtered_documents = await detector.detect_changes(documents, filtered_config)
 
             documents = filtered_documents["new"] + filtered_documents["updated"]
 
-            # Process all valid documents
-            total_steps = (
-                len(documents) * 4
-            )  # 4 steps per document: state update, chunking, embedding, upserting
-            with tqdm(total=total_steps, desc="Processing documents", unit="step") as pbar:
-                for doc in documents:
-                    try:
-                        # Update document state
-                        updated_state = await self.state_manager.update_document_state(doc)
-                        self.logger.debug(
-                            "Document state updated",
-                            doc_id=updated_state.document_id,
-                            content_hash=updated_state.content_hash,
-                            updated_at=updated_state.updated_at,
-                        )
-                        pbar.update(1)
-                        pbar.set_postfix({"step": "state update", "doc": doc.id})
-
-                        # Chunk document
+            if documents:
+                # Process all valid documents
+                total_steps = (
+                    len(documents) * 4
+                )  # 4 steps per document: state update, chunking, embedding, upserting
+                with tqdm(total=total_steps, desc="Processing documents", unit="step") as pbar:
+                    for doc in documents:
                         try:
-                            chunks = self.chunking_service.chunk_document(doc)
+                            # Update document state
+                            updated_state = await self.state_manager.update_document_state(doc)
+                            self.logger.debug(
+                                "Document state updated",
+                                doc_id=updated_state.document_id,
+                                content_hash=updated_state.content_hash,
+                                updated_at=updated_state.updated_at,
+                            )
+                            pbar.update(1)
+                            pbar.set_postfix({"step": "state update", "doc": doc.id})
+
+                            # Chunk document
+                            try:
+                                chunks = self.chunking_service.chunk_document(doc)
+                            except Exception as e:
+                                self.logger.error(f"Error chunking document {doc.id}: {e!s}")
+                                raise
+                            pbar.update(1)
+                            pbar.set_postfix({"step": "chunking", "doc": doc.id})
+
+                            # Get embeddings
+                            chunk_contents = [chunk.content for chunk in chunks]
+                            embeddings = await self.embedding_service.get_embeddings(chunk_contents)
+                            pbar.update(1)
+                            pbar.set_postfix({"step": "embedding", "doc": doc.id})
+
+                            # Create PointStruct instances
+                            points = []
+                            for chunk, embedding in zip(chunks, embeddings, strict=False):
+                                self.logger.debug(f"Creating point for chunk {chunk.id}")
+                                self.logger.debug(
+                                    f"Chunk content length: {len(chunk.content) if chunk.content else 0}"
+                                )
+                                self.logger.debug(f"Chunk metadata: {chunk.metadata}")
+                                self.logger.debug(f"Chunk source: {chunk.source}")
+                                self.logger.debug(f"Chunk source_type: {chunk.source_type}")
+                                self.logger.debug(f"Chunk created_at: {chunk.created_at}")
+                                self.logger.debug(
+                                    f"Embedding length: {len(embedding) if embedding else 0}"
+                                )
+
+                                point = models.PointStruct(
+                                    id=chunk.id,
+                                    vector=embedding,
+                                    payload={
+                                        "content": chunk.content,
+                                        "metadata": chunk.metadata,
+                                        "source": chunk.source,
+                                        "source_type": chunk.source_type,
+                                        "created_at": chunk.created_at.isoformat(),
+                                        "document_id": doc.id,  # Add reference to parent document
+                                    },
+                                )
+                                self.logger.debug("Point created")
+                                points.append(point)
+
+                            # Update Qdrant
+                            await self.qdrant_manager.upsert_points(points)
+                            self.logger.debug(
+                                f"Successfully processed document {doc.id}",
+                                points_count=len(points),
+                            )
+                            pbar.update(1)
+                            pbar.set_postfix({"step": "upserting", "doc": doc.id})
+
                         except Exception as e:
-                            self.logger.error(f"Error chunking document {doc.id}: {e!s}")
+                            self.logger.error(f"Error processing document {doc.id}: {e!s}")
                             raise
-                        pbar.update(1)
-                        pbar.set_postfix({"step": "chunking", "doc": doc.id})
-
-                        # Get embeddings
-                        chunk_contents = [chunk.content for chunk in chunks]
-                        embeddings = await self.embedding_service.get_embeddings(chunk_contents)
-                        pbar.update(1)
-                        pbar.set_postfix({"step": "embedding", "doc": doc.id})
-
-                        # Create PointStruct instances
-                        points = []
-                        for chunk, embedding in zip(chunks, embeddings, strict=False):
-                            self.logger.debug(f"Creating point for chunk {chunk.id}")
-                            self.logger.debug(
-                                f"Chunk content length: {len(chunk.content) if chunk.content else 0}"
-                            )
-                            self.logger.debug(f"Chunk metadata: {chunk.metadata}")
-                            self.logger.debug(f"Chunk source: {chunk.source}")
-                            self.logger.debug(f"Chunk source_type: {chunk.source_type}")
-                            self.logger.debug(f"Chunk created_at: {chunk.created_at}")
-                            self.logger.debug(
-                                f"Embedding length: {len(embedding) if embedding else 0}"
-                            )
-
-                            point = models.PointStruct(
-                                id=chunk.id,
-                                vector=embedding,
-                                payload={
-                                    "content": chunk.content,
-                                    "metadata": chunk.metadata,
-                                    "source": chunk.source,
-                                    "source_type": chunk.source_type,
-                                    "created_at": chunk.created_at.isoformat(),
-                                    "document_id": doc.id,  # Add reference to parent document
-                                },
-                            )
-                            self.logger.debug("Point created")
-                            points.append(point)
-
-                        # Update Qdrant
-                        await self.qdrant_manager.upsert_points(points)
-                        self.logger.debug(
-                            f"Successfully processed document {doc.id}",
-                            points_count=len(points),
-                        )
-                        pbar.update(1)
-                        pbar.set_postfix({"step": "upserting", "doc": doc.id})
-
-                    except Exception as e:
-                        self.logger.error(f"Error processing document {doc.id}: {e!s}")
-                        raise
+            else:
+                self.logger.info("No new or updated documents to process.")
 
             return documents
 
