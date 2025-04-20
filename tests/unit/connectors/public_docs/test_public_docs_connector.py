@@ -77,16 +77,19 @@ def mock_session_and_response(mock_html):
     # Create mock response
     mock_response = AsyncMock()
     mock_response.text = AsyncMock(return_value=mock_html)
-    mock_response.raise_for_status = AsyncMock()  # This will return a coroutine by default
+    mock_response.raise_for_status = AsyncMock()
     mock_response.status = 200
 
     # Create mock session
     mock_session = AsyncMock()
-    mock_session.close = AsyncMock()  # This will return a coroutine by default
+    mock_session.close = AsyncMock()
 
     # Set up the get method to return an async context manager
     mock_context = AsyncContextManagerMock(mock_response)
     mock_session.get = Mock(return_value=mock_context)
+
+    # Ensure the text() method returns the HTML string directly
+    mock_response.text.return_value = mock_html
 
     return mock_session, mock_response
 

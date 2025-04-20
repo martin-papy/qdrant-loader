@@ -35,11 +35,6 @@ class JiraProjectConfig(SourceConfig):
         default=True, description="Whether to process issue attachments"
     )
 
-    # Incremental updates
-    track_last_sync: bool = Field(
-        default=True, description="Whether to track last sync timestamp for incremental updates"
-    )
-
     # Additional configuration
     issue_types: list[str] = Field(
         default=[],

@@ -128,16 +128,18 @@ class PublicDocsConnector:
                         doc_id = str(hash(page))  # Use URL hash as document ID
                         doc = Document(
                             id=doc_id,
+                            title=title,
                             content=content,
-                            content_hash=str(hash(content)),
                             metadata={
                                 "title": title,
                                 "url": page,
                                 "last_modified": datetime.now(timezone.utc).isoformat(),
                             },
-                            source=self.config.source,
                             source_type=self.config.source_type,
+                            source=self.config.source,
                             url=page,
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc),
                         )
                         self.logger.debug(
                             "Created document",
