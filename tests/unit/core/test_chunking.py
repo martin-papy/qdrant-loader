@@ -32,9 +32,7 @@ def test_document():
         metadata={"key": "value"},
         created_at=datetime.now(),
         url="http://test.com",
-        project="test_project",
-        author="test_author",
-        last_updated=datetime.now(),
+        updated_at=datetime.now(),
     )
 
 
@@ -77,7 +75,6 @@ def test_chunking_document(test_settings):
         assert chunk_doc.source == doc.source
         assert chunk_doc.source_type == doc.source_type
         assert chunk_doc.url == doc.url
-        assert chunk_doc.project == doc.project
         assert chunk_doc.metadata["chunk_index"] == i
         assert chunk_doc.metadata["total_chunks"] == len(chunked_docs)
         assert strategy._count_tokens(chunk_doc.content) <= 10

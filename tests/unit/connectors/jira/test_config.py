@@ -37,7 +37,6 @@ def test_valid_config(test_settings):
         requests_per_minute=jira_settings.requests_per_minute,
         page_size=jira_settings.page_size,
         process_attachments=jira_settings.process_attachments,
-        track_last_sync=jira_settings.track_last_sync,
         token=jira_settings.token,
         email=jira_settings.email,
     )
@@ -46,7 +45,6 @@ def test_valid_config(test_settings):
     assert config.requests_per_minute == jira_settings.requests_per_minute
     assert config.page_size == jira_settings.page_size
     assert config.process_attachments == jira_settings.process_attachments
-    assert config.track_last_sync == jira_settings.track_last_sync
     assert config.token == "${JIRA_TOKEN}"
     assert config.email == "${JIRA_EMAIL}"
 
@@ -92,7 +90,6 @@ def test_default_values(mock_env_vars, test_settings):
     assert config.requests_per_minute == 60  # default value
     assert config.page_size == 100  # default value
     assert config.process_attachments is True  # default value
-    assert config.track_last_sync is True  # default value
     assert config.issue_types == []  # default value
     assert config.include_statuses == []  # default value
     assert config.token == "${JIRA_TOKEN}"  # from env var

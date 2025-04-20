@@ -157,7 +157,7 @@ async def test_get_documentation(mock_config, mock_session_and_response):
     with patch("aiohttp.ClientSession", return_value=mock_session):
         connector = PublicDocsConnector(mock_config)
         async with connector:
-            documents = await connector.get_documentation()
+            documents = await connector.get_documents()
 
             # We expect 3 documents: base URL, page1, and page2
             assert len(documents) == 3
