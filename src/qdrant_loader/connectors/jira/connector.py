@@ -1,7 +1,6 @@
 """Jira connector implementation."""
 
 import asyncio
-import json
 import os
 import time
 from collections.abc import AsyncGenerator
@@ -12,7 +11,7 @@ from atlassian import Jira
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
-from qdrant_loader.connectors.jira.models import JiraAttachment, JiraIssue, JiraUser, JiraComment
+from qdrant_loader.connectors.jira.models import JiraAttachment, JiraComment, JiraIssue, JiraUser
 from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)
