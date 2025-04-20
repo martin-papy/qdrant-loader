@@ -1,6 +1,7 @@
 """CLI module for QDrant Loader."""
 
 import asyncio
+import json
 import os
 from pathlib import Path
 
@@ -294,11 +295,8 @@ def config(log_level: str, config: Path | None):
 
         # Display configuration
         echo("Current Configuration:")
-        echo(str(settings))
+        echo(json.dumps(settings.model_dump(mode="json"), indent=2))
 
-    except ClickException as e:
-        logger.error("config_failed", error=str(e))
-        raise e from None
     except Exception as e:
         logger.error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e

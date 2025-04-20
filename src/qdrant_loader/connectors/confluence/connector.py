@@ -1,7 +1,6 @@
 import asyncio
 import os
 import re
-from typing import Optional
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -84,22 +83,32 @@ class ConfluenceConnector:
             logger.error(f"Failed to make request to {url}: {e}")
             raise
 
-    async def _get_space_content(self, start: int = 0, limit: int = 25) -> dict:
+    async def _get_space_content(self, cursor: str | None = None) -> dict:
         """Fetch content from a Confluence space.
 
         Args:
-            start: Starting index for pagination
-            limit: Maximum number of items to return
+            cursor: Cursor for pagination. If None, starts from the beginning.
 
         Returns:
             dict: Response containing space content
         """
-        params = {
-            "cql": f"space = {self.config.space_key} and type in (page, blogpost)",
-            "expand": "body.storage,version,metadata.labels,history,space,extensions.position",
-            "start": start,
-            "limit": limit,
-        }
+        if not self.config.content_types:
+            params = {
+                "cql": f"space = {self.config.space_key}",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "limit": 25,  # Using a reasonable default limit
+            }
+        else:
+            params = {
+                "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "limit": 25,  # Using a reasonable default limit
+            }
+
+        # Add cursor if provided
+        if cursor:
+            params["cursor"] = cursor
+
         logger.debug(
             "Making Confluence API request",
             url=f"{self.base_url}/rest/api/content/search",
@@ -130,9 +139,9 @@ class ConfluenceConnector:
             for label in content.get("metadata", {}).get("labels", {}).get("results", [])
         }
 
-        # Check exclude labels first
-        if any(label in labels for label in self.config.exclude_labels):
-            return False
+        # Check exclude labels first, if there are any specified
+        if self.config.exclude_labels:
+            return any(label in labels for label in self.config.exclude_labels)
 
         # If include labels are specified, content must have at least one
         if self.config.include_labels:
@@ -140,7 +149,7 @@ class ConfluenceConnector:
 
         return True
 
-    def _process_content(self, content: dict, clean_html: bool = True) -> Optional[Document]:
+    def _process_content(self, content: dict, clean_html: bool = True) -> Document | None:
         """Process a single content item from Confluence.
 
         Args:
@@ -154,12 +163,14 @@ class ConfluenceConnector:
             ValueError: If required fields are missing or malformed
         """
         try:
+
             # Extract required fields
             content_id = content.get("id")
             title = content.get("title")
-            body = content.get("body", {}).get("storage", {}).get("value")
             space = content.get("space", {}).get("key")
+            logger.debug(f"Processing content: {title} - ({content_id}) in space {space}")
 
+            body = content.get("body", {}).get("storage", {}).get("value")
             # Check for missing or malformed body
             if not body:
                 raise ValueError("Content body is missing or malformed")
@@ -181,14 +192,36 @@ class ConfluenceConnector:
             version_number = version.get("number", 1) if isinstance(version, dict) else 1
 
             # Get URL and author information
-            url = content.get("_links", {}).get("webui", "")
             author = content.get("history", {}).get("createdBy", {}).get("displayName")
-            last_updated = None
-            if "version" in content and "when" in content["version"]:
+            created_at = None
+            if "history" in content and "createdDate" in content["history"]:
                 try:
-                    last_updated = content["version"]["when"]
+                    created_at = content["history"]["createdDate"]
                 except (ValueError, TypeError):
                     pass
+            updated_at = None
+            if "version" in content and "when" in content["version"]:
+                try:
+                    updated_at = content["version"]["when"]
+                except (ValueError, TypeError):
+                    pass
+
+            # Process comments
+            comments = []
+            if "children" in content and "comment" in content["children"]:
+                for comment in content["children"]["comment"]["results"]:
+                    comment_body = comment.get("body", {}).get("storage", {}).get("value", "")
+                    comment_author = (
+                        comment.get("history", {}).get("createdBy", {}).get("displayName", "")
+                    )
+                    comment_created = comment.get("history", {}).get("createdDate", "")
+                    comments.append(
+                        {
+                            "body": self._clean_html(comment_body) if clean_html else comment_body,
+                            "author": comment_author,
+                            "created_at": comment_created,
+                        }
+                    )
 
             # Create metadata
             metadata = {
@@ -197,30 +230,36 @@ class ConfluenceConnector:
                 "space": space,
                 "version": version_number,
                 "type": content.get("type", "unknown"),
+                "author": author,
                 "labels": [
                     label["name"]
                     for label in content.get("metadata", {}).get("labels", {}).get("results", [])
                 ],
-                "last_modified": last_updated,
+                "comments": comments,
+                "updated_at": updated_at,
+                "created_at": created_at,
             }
 
             # Clean content if requested
             content_text = self._clean_html(body) if clean_html else body
 
             # Create document with all fields
-            return Document(
-                id=content_id,
+            document = Document(
+                title=title,
                 content=content_text,
-                source=f"{self.base_url}/spaces/{space}/pages/{content_id}",
-                source_type=SourceType.CONFLUENCE,
                 metadata=metadata,
-                url=url,
-                author=author,
-                last_updated=last_updated,
-                project=space,
+                source_type=SourceType.CONFLUENCE,
+                source=self.config.source,
+                url=f"{self.base_url}/spaces/{space}/pages/{content_id}",
+                is_deleted=False,
+                updated_at=updated_at,
+                created_at=created_at,
             )
+
+            return document
+
         except Exception as e:
-            logger.error(f"Failed to process content: {str(e)}")
+            logger.error(f"Failed to process content: {e!s}")
             raise
 
     def _clean_html(self, html: str) -> str:
@@ -247,12 +286,11 @@ class ConfluenceConnector:
             list[Document]: List of processed documents
         """
         documents = []
-        start = 0
-        limit = 25
+        cursor = None
 
         while True:
             try:
-                response = await self._get_space_content(start, limit)
+                response = await self._get_space_content(cursor)
                 results = response.get("results", [])
 
                 if not results:
@@ -272,19 +310,29 @@ class ConfluenceConnector:
                         except Exception as e:
                             logger.error(
                                 f"Failed to process {content['type']} '{content['title']}' "
-                                f"(ID: {content['id']}): {str(e)}"
+                                f"(ID: {content['id']}): {e!s}"
                             )
 
-                # Check if there are more results using the size and start parameters
-                total_size = response.get("size", 0)
-                if start + limit >= total_size:
+                # Get the next cursor from the response
+                next_url = response.get("_links", {}).get("next")
+                if not next_url:
                     break
-                start += limit
+
+                # Extract just the cursor value from the URL
+                try:
+                    from urllib.parse import parse_qs, urlparse
+
+                    parsed_url = urlparse(next_url)
+                    query_params = parse_qs(parsed_url.query)
+                    cursor = query_params.get("cursor", [None])[0]
+                    if not cursor:
+                        break
+                except Exception as e:
+                    logger.error(f"Failed to parse next URL: {e!s}")
+                    break
 
             except Exception as e:
-                logger.error(
-                    f"Failed to fetch content from space {self.config.space_key}: {str(e)}"
-                )
+                logger.error(f"Failed to fetch content from space {self.config.space_key}: {e!s}")
                 raise
 
         logger.info(f"Processed {len(documents)} documents from space {self.config.space_key}")

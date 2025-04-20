@@ -69,17 +69,13 @@ class DocumentStateRecord(Base):
     __tablename__ = "document_states"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    document_id = Column(String, nullable=False)
     source_type = Column(String, nullable=False)
     source = Column(String, nullable=False)
-    document_id = Column(String, nullable=False)
-    url = Column(String)
-    title = Column(String)
-    content = Column(String)
-    content_hash = Column(String)
-    last_updated = Column(UTCDateTime(timezone=True), nullable=False)
-    last_ingested = Column(UTCDateTime(timezone=True), nullable=False)
+    url = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    content_hash = Column(String, nullable=False)
     is_deleted = Column(Boolean, default=False)
-    version = Column(Integer, default=1)
     created_at = Column(UTCDateTime(timezone=True), nullable=False)
     updated_at = Column(UTCDateTime(timezone=True), nullable=False)
 

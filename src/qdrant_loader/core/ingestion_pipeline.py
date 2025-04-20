@@ -2,12 +2,11 @@
 Ingestion pipeline for processing documents.
 """
 
-from datetime import UTC, datetime
-
 from qdrant_client.http import models
 
 from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
+
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
 from ..connectors.git import GitConnector
@@ -18,7 +17,7 @@ from .chunking_service import ChunkingService
 from .document import Document
 from .embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
-from .state import DocumentStateRecord, StateManager
+from .state.state_manager import StateManager
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -55,7 +54,7 @@ class IngestionPipeline:
     ) -> list[Document]:
         """Process documents from all configured sources."""
         # Ensure state manager is initialized
-        await self.state_manager.initialize()
+        await self.initialize()
 
         if not sources_config:
             sources_config = self.settings.sources_config
@@ -89,7 +88,7 @@ class IngestionPipeline:
                                 config.source_type,
                                 config.source,
                                 IngestionStatus.SUCCESS,
-                                len(git_docs),
+                                document_count=len(git_docs),
                             )
                     except Exception as e:
                         self.logger.error(
@@ -99,7 +98,10 @@ class IngestionPipeline:
                             error_class=e.__class__.__name__,
                         )
                         await self.state_manager.update_last_ingestion(
-                            config.source_type, config.source, IngestionStatus.FAILED
+                            config.source_type,
+                            config.source,
+                            IngestionStatus.FAILED,
+                            error_message=str(e),
                         )
                         raise
 
@@ -115,7 +117,7 @@ class IngestionPipeline:
                                 config.source_type,
                                 config.source,
                                 IngestionStatus.SUCCESS,
-                                len(confluence_docs),
+                                document_count=len(confluence_docs),
                             )
                     except Exception as e:
                         self.logger.error(
@@ -125,7 +127,10 @@ class IngestionPipeline:
                             error_class=e.__class__.__name__,
                         )
                         await self.state_manager.update_last_ingestion(
-                            config.source_type, config.source, IngestionStatus.FAILED
+                            config.source_type,
+                            config.source,
+                            IngestionStatus.FAILED,
+                            error_message=str(e),
                         )
                         raise
 
@@ -141,7 +146,7 @@ class IngestionPipeline:
                                 config.source_type,
                                 config.source,
                                 IngestionStatus.SUCCESS,
-                                len(jira_docs),
+                                document_count=len(jira_docs),
                             )
                     except Exception as e:
                         self.logger.error(
@@ -151,7 +156,10 @@ class IngestionPipeline:
                             error_class=e.__class__.__name__,
                         )
                         await self.state_manager.update_last_ingestion(
-                            config.source_type, config.source, IngestionStatus.FAILED
+                            config.source_type,
+                            config.source,
+                            IngestionStatus.FAILED,
+                            error_message=str(e),
                         )
                         raise
 
@@ -167,7 +175,7 @@ class IngestionPipeline:
                                 config.source_type,
                                 config.source,
                                 IngestionStatus.SUCCESS,
-                                len(publicdocs),
+                                document_count=len(publicdocs),
                             )
                     except Exception as e:
                         self.logger.error(
@@ -177,42 +185,28 @@ class IngestionPipeline:
                             error_class=e.__class__.__name__,
                         )
                         await self.state_manager.update_last_ingestion(
-                            config.source_type, config.source, IngestionStatus.FAILED
+                            config.source_type,
+                            config.source,
+                            IngestionStatus.FAILED,
+                            error_message=str(e),
                         )
                         raise
 
-            self.logger.debug(f"Found {len(documents)} documents to process", documents=documents)
+            self.logger.info(f"Found {len(documents)} documents to process")
+            self.logger.debug(f"Documents: {documents}")
+
+            # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones, and then figure out the one that were deleted.
 
             # Process all valid documents
             for doc in documents:
                 try:
-                    # Convert Document to DocumentStateRecord
-                    now = datetime.now(UTC)
-                    doc_state = DocumentStateRecord(
-                        source_type=doc.source_type,
-                        source=doc.source,
-                        document_id=doc.id,
-                        last_updated=doc.last_updated if doc.last_updated is not None else now,
-                        last_ingested=now,
-                        is_deleted=False,
-                        content_hash=doc.content_hash,
-                        created_at=now,
-                        updated_at=now,
-                    )
-                    self.logger.debug(
-                        "Document state created",
-                        doc_id=doc_state.document_id,
-                        content_hash=doc_state.content_hash,
-                        last_updated=doc_state.last_updated,
-                    )
-
                     # Update document state
-                    updated_state = await self.state_manager.update_document_state(doc_state)
+                    updated_state = await self.state_manager.update_document_state(doc)
                     self.logger.debug(
                         "Document state updated",
                         doc_id=updated_state.document_id,
                         content_hash=updated_state.content_hash,
-                        last_updated=updated_state.last_updated,
+                        updated_at=updated_state.updated_at,
                     )
 
                     # Chunk document
