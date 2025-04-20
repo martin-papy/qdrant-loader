@@ -17,7 +17,7 @@ class Document(BaseModel):
     title: str
     content: str
     metadata: dict[str, Any] = Field(default_factory=dict)
-    content_hash: str | None = None
+    content_hash: str
     source_type: str
     source: str
     url: str
