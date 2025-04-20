@@ -13,6 +13,7 @@ from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.exceptions import DocumentProcessingError
+from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
@@ -125,7 +126,13 @@ class IngestionPipeline:
                     url=doc.url,
                 )
 
-            # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones, and then figure out the one that were deleted.
+            # TODO: This is where the filtering will happen. We need to determine what are the new documents, the updated ones
+            # and then figure out the one that were deleted.
+            async with StateChangeDetector(self.state_manager) as detector:
+                filtered_documents = await detector.detect_changes(documents, filtered_config)
+
+            documents = filtered_documents["new"] + filtered_documents["updated"]
+
             # Process all valid documents
             total_steps = (
                 len(documents) * 4

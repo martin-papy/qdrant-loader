@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
 
@@ -158,7 +159,7 @@ class StateManager:
                 state.updated_at = now  # type: ignore
                 await session.commit()
 
-    async def get_document_state(
+    async def get_document_state_record(
         self, source_type: str, source: str, document_id: str
     ) -> DocumentStateRecord | None:
         """Get the state of a document."""
@@ -172,13 +173,14 @@ class StateManager:
             )
             return result.scalar_one_or_none()
 
-    async def get_document_states(
-        self, source_type: str, source: str, since: datetime | None = None
+    async def get_document_state_records(
+        self, source_config: SourceConfig, since: datetime | None = None
     ) -> list[DocumentStateRecord]:
         """Get all document states for a source, optionally filtered by date."""
         async with self._session_factory() as session:  # type: ignore
             query = select(DocumentStateRecord).filter(
-                DocumentStateRecord.source_type == source_type, DocumentStateRecord.source == source
+                DocumentStateRecord.source_type == source_config.source_type,
+                DocumentStateRecord.source == source_config.source,
             )
             if since:
                 query = query.filter(DocumentStateRecord.updated_at >= since)
