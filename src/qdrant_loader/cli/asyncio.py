@@ -4,20 +4,19 @@ This module provides a simplified interface to asyncio functionality
 that can be easily mocked in tests.
 """
 
+import asyncio
 from asyncio import (
     run,
     get_event_loop,
     new_event_loop,
     set_event_loop,
 )
+from functools import wraps
+from typing import Any, Callable, Coroutine
 
 __all__ = ["run", "get_event_loop", "new_event_loop", "set_event_loop"]
 
 """Async utilities for the CLI module."""
-
-import asyncio
-from functools import wraps
-from typing import Any, Callable, Coroutine
 
 
 def async_command(f: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Any]:

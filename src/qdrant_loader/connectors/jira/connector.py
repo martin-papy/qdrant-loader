@@ -334,7 +334,7 @@ class JiraConnector(BaseConnector):
             )
             documents.append(document)
             logger.debug(
-                f"Jira document created",
+                "Jira document created",
                 document_id=document.id,
                 source_type=document.source_type,
                 source=document.source,
