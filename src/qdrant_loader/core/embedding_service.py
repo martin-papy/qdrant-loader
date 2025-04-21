@@ -29,7 +29,7 @@ class EmbeddingService:
         self.batch_size = settings.global_config.embedding.batch_size
 
         # Initialize client based on endpoint
-        if "openai.com" in self.endpoint:
+        if "https://api.openai.com/v1" == self.endpoint:
             self.client = OpenAI(api_key=settings.OPENAI_API_KEY, base_url=self.endpoint)
             self.use_openai = True
         else:
