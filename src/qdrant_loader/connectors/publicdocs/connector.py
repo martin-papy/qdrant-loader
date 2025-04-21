@@ -9,6 +9,7 @@ from urllib.parse import urljoin, urlparse
 
 import aiohttp
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+import fnmatch
 
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.exceptions import (
@@ -76,25 +77,39 @@ class PublicDocsConnector(BaseConnector):
         return self._client
 
     def _should_process_url(self, url: str) -> bool:
-        """Determine if a URL should be processed based on configuration."""
-        # Check if URL matches the base URL
-        if not url.startswith(self.base_url):
+        """Check if a URL should be processed based on configuration."""
+        logger.debug(f"Checking if URL should be processed: {url}")
+        
+        # Check if URL matches base URL
+        if not url.startswith(str(self.base_url)):
+            logger.debug(f"URL does not match base URL: {url}")
             return False
-
-        # Get the path part of the URL
-        path = urlparse(url).path
-
-        # Check if URL is in exclude paths
+        logger.debug(f"URL matches base URL: {url}")
+        
+        # Extract path from URL
+        path = url[len(str(self.base_url)):]
+        logger.debug(f"Extracted path from URL: {path}")
+        
+        # Check exclude paths
         for exclude_path in self.config.exclude_paths:
-            if exclude_path in path:
+            logger.debug(f"Checking exclude path: {exclude_path} against {path}")
+            if fnmatch.fnmatch(path, exclude_path):
+                logger.debug(f"URL path matches exclude pattern: {path}")
                 return False
-
-        # Check if URL matches the path pattern if specified
-        if self.config.path_pattern:
-            pattern = self.config.path_pattern
-            if not re.match(pattern, path):
-                return False
-
+        logger.debug(f"URL path not in exclude paths: {path}")
+        
+        # Check path pattern
+        if self.config.path_pattern is None:
+            logger.debug("No path pattern specified, skipping pattern check")
+            return True
+        
+        logger.debug(f"Checking path pattern: {self.config.path_pattern}")
+        if not fnmatch.fnmatch(path, self.config.path_pattern):
+            logger.debug(f"URL path does not match pattern: {path}")
+            return False
+        logger.debug(f"URL path matches pattern: {path}")
+        
+        logger.debug(f"URL passed all checks, will be processed: {url}")
         return True
 
     async def get_documents(self) -> list[Document]:
@@ -123,6 +138,8 @@ class PublicDocsConnector(BaseConnector):
                     if not self._should_process_url(page):
                         self.logger.debug("Skipping URL", url=page)
                         continue
+
+                    self.logger.debug("Processing URL", url=page)
 
                     content, title = await self._process_page(page)
                     if content and content.strip():  # Only add documents with non-empty content
@@ -272,6 +289,7 @@ class PublicDocsConnector(BaseConnector):
     def _extract_content(self, html: str) -> str:
         """Extract the main content from HTML using configured selectors."""
         self.logger.debug("Starting content extraction", html_length=len(html))
+        self.logger.debug("HTML content preview", preview=html[:1000])
         soup = BeautifulSoup(html, "html.parser")
         self.logger.debug("HTML parsed successfully")
 
@@ -285,9 +303,9 @@ class PublicDocsConnector(BaseConnector):
 
         # Remove unwanted elements
         for selector in self.config.selectors.remove:
-            self.logger.debug(f"Removing elements matching selector: {selector}")
+            self.logger.debug(f"Processing selector: {selector}")
             elements = soup.select(selector)
-            self.logger.debug(f"Found {len(elements)} elements to remove")
+            self.logger.debug(f"Found {len(elements)} elements for selector: {selector}")
             for element in elements:
                 element.decompose()
 
@@ -440,7 +458,7 @@ class PublicDocsConnector(BaseConnector):
                                 )
                                 and (
                                     not self.config.path_pattern
-                                    or re.match(self.config.path_pattern, absolute_url)
+                                    or fnmatch.fnmatch(absolute_url, self.config.path_pattern)
                                 )
                             ):
                                 self.logger.debug("Found valid page URL", url=absolute_url)
