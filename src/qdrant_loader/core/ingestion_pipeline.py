@@ -130,7 +130,9 @@ class IngestionPipeline:
 
             documents = filtered_documents["new"] + filtered_documents["updated"]
 
-            if documents:
+            deleted_documents = filtered_documents["deleted"]
+
+            if documents or deleted_documents:
                 # Process all valid documents
                 total_steps = (
                     len(documents) * 4
@@ -206,8 +208,22 @@ class IngestionPipeline:
                         except Exception as e:
                             self.logger.error(f"Error processing document {doc.id}: {e!s}")
                             raise
+                    if deleted_documents:
+                        # Process deleted documents
+                        for doc in deleted_documents:
+                            try:
+                                # Delete points from Qdrant
+                                await self.qdrant_manager.delete_points_by_document_id(doc.id)
+                                # Mark document as deleted in state manager
+                                await self.state_manager.mark_document_deleted(
+                                    doc.source_type, doc.source, doc.id
+                                )
+                                self.logger.info(f"Successfully processed deleted document {doc.id}")
+                            except Exception as e:
+                                self.logger.error(f"Error processing deleted document {doc.id}: {e!s}")
+                                raise
             else:
-                self.logger.info("No new or updated documents to process.")
+                self.logger.info("No new, updated or deleted documents to process.")
 
             return documents
 

@@ -5,6 +5,7 @@ import logging
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking_strategy import ChunkingStrategy
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 
 class ChunkingService:
@@ -31,7 +32,7 @@ class ChunkingService:
         self.config = config
         self.settings = settings
         self.validate_config()
-        self.logger = logging.getLogger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
         self.chunking_strategy = ChunkingStrategy(
             settings=self.settings,
             chunk_size=config.chunking.chunk_size,
@@ -62,7 +63,7 @@ class ChunkingService:
         """
         if not document.content:
             # Return a single empty chunk if document has no content
-            empty_doc = document.copy()
+            empty_doc = document.model_copy()
             empty_doc.metadata.update({"chunk_index": 0, "total_chunks": 1})
             return [empty_doc]
 

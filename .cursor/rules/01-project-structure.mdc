@@ -1,0 +1,78 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Guide
+
+This guide outlines the core structure and organization of the QDrant Loader project.
+
+## Core Components
+
+The main source code is located in [src/qdrant_loader](mdc:src/qdrant_loader):
+
+```
+src/qdrant_loader/
+├── core/                    # Core functionality
+│   ├── state/              # State management
+│   ├── performance/        # Performance optimization
+│   └── ingestion_pipeline.py
+│
+├── connectors/             # Source connectors
+│   ├── git/               # Git connector
+│   ├── confluence/        # Confluence connector
+│   ├── jira/             # Jira connector
+│   ├── publicdocs/       # Public docs connector
+│   └── base.py           # Base connector classes
+│
+├── config/                # Configuration management
+├── cli/                  # Command line interface
+└── utils/               # Utility functions
+```
+
+## Configuration Files
+
+- [config.yaml](mdc:config.yaml): Main configuration file
+  - Contains source configurations
+  - Database connection settings
+  - Embedding model settings
+  
+- [config.template.yaml](mdc:config.template.yaml): Template for configuration
+  - Reference for all available settings
+  - Documentation for each configuration option
+  
+- [pyproject.toml](mdc:pyproject.toml): Project metadata and build settings
+  - Package dependencies
+  - Build configuration
+  - Development tools settings
+  
+- [requirements.txt](mdc:requirements.txt): Production dependencies
+- [requirements-dev.txt](mdc:requirements-dev.txt): Development dependencies
+
+## Documentation
+
+Key documentation is located in [docs/](mdc:docs):
+- [PRD.md](mdc:docs/PRD.md): Product Requirements Document
+- [CodingStandards.md](mdc:docs/CodingStandards.md): Coding standards and best practices
+- [TestingStrategy.md](mdc:docs/TestingStrategy.md): Testing strategy and guidelines
+
+## Test Organization
+
+Tests are organized in [tests/](mdc:tests):
+```
+tests/
+├── unit/                  # Unit tests
+│   ├── core/             # Core functionality tests
+│   ├── sources/          # Source-specific tests
+│   └── utils/            # Utility function tests
+├── integration/          # Integration tests
+└── fixtures/             # Test fixtures
+```
+
+## Development Environment
+
+- Python 3.12 or higher required
+- Use virtual environment (venv)
+- Install development dependencies: `pip install -r requirements-dev.txt`
+- Configure environment variables in `.env`
+- Use test configuration for testing: `.env.test` and `config.test.yaml`
