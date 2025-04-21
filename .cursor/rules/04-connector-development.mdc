@@ -1,0 +1,50 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Connector Development Guidelines
+
+## Connector Structure
+
+Each connector should be placed in [src/qdrant_loader/connectors](mdc:src/qdrant_loader/connectors) and follow these guidelines:
+
+- Implement both connector and change detection logic
+- Follow the base connector interface
+- Include comprehensive testing
+- Implement proper error handling
+
+## Base Classes
+
+Connectors should inherit from these base classes:
+```python
+from qdrant_loader.connectors.base import BaseConnector, BaseChangeDetector
+
+class CustomConnector(BaseConnector):
+    """Custom connector implementation."""
+    pass
+
+class CustomChangeDetector(BaseChangeDetector):
+    """Custom change detection implementation."""
+    pass
+```
+
+## Required Features
+
+Each connector must implement:
+- Document ingestion
+- Change detection
+- State management integration
+- Incremental updates
+- Error handling and recovery
+
+## Testing Requirements
+
+Connectors must include tests for:
+- Basic functionality
+- Change detection
+- Error handling
+- State management integration
+- Incremental ingestion
+
+For detailed connector development guidelines, refer to [CodingStandards.md](mdc:docs/CodingStandards.md)

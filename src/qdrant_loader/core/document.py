@@ -108,8 +108,36 @@ class Document(BaseModel):
         Returns:
             A consistent hash string of the content
         """
-        # Create a consistent string combining all content elements
-        content_string = f"{content}{title}{sorted(metadata.items())!s}"
+        import json
+        from typing import Any
+
+        def normalize_value(value: Any) -> Any:
+            """Normalize a value for consistent hashing."""
+            if value is None:
+                return "null"
+            if isinstance(value, (str, int, float, bool)):
+                return value
+            if isinstance(value, dict):
+                return {k: normalize_value(v) for k, v in sorted(value.items())}
+            if isinstance(value, (list, tuple)):
+                return [normalize_value(v) for v in value]
+            return str(value)
+
+        # Normalize all inputs
+        normalized_content = content.replace("\r\n", "\n")
+        normalized_title = title.replace("\r\n", "\n")
+        normalized_metadata = normalize_value(metadata)
+
+        # Create a consistent string representation
+        content_string = json.dumps(
+            {
+                "content": normalized_content,
+                "title": normalized_title,
+                "metadata": normalized_metadata
+            },
+            sort_keys=True,
+            ensure_ascii=False
+        )
 
         # Generate SHA-256 hash
         content_hash = hashlib.sha256(content_string.encode("utf-8")).hexdigest()
@@ -128,8 +156,70 @@ class Document(BaseModel):
         Returns:
             A consistent UUID string generated from the inputs
         """
+        from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+        from typing import Any
+        import logging
+
+        logger = LoggingConfig.get_logger(__name__)
+
+        def normalize_url(url: str) -> str:
+            """Normalize a URL for consistent hashing.
+            
+            This function normalizes URLs by:
+            1. Converting to lowercase
+            2. Removing trailing slashes
+            3. Removing query parameters
+            4. Removing fragments
+            5. Handling empty paths
+            6. Handling malformed URLs
+            """
+            try:
+                # Convert to lowercase first to handle case variations
+                url = url.lower().strip()
+                
+                # Parse the URL
+                parsed = urlparse(url)
+                
+                # Normalize the scheme and netloc (already lowercase from above)
+                scheme = parsed.scheme
+                netloc = parsed.netloc
+                
+                # Normalize the path
+                path = parsed.path.rstrip('/')
+                if not path:  # Handle empty paths
+                    path = '/'
+                
+                # Construct normalized URL without query parameters and fragments
+                normalized = urlunparse((
+                    scheme,
+                    netloc,
+                    path,
+                    '',  # params
+                    '',  # query
+                    ''   # fragment
+                ))
+                
+                logger.debug(f"Normalized URL: {normalized}")
+                return normalized
+            except Exception as e:
+                logger.error(f"Error normalizing URL {url}: {str(e)}")
+                # If URL parsing fails, return the original URL in lowercase
+                return url.lower().strip()
+
+        def normalize_string(s: str) -> str:
+            """Normalize a string for consistent hashing."""
+            normalized = s.strip().lower()
+            logger.debug(f"Normalized string '{s}' to '{normalized}'")
+            return normalized
+
+        # Normalize all inputs
+        normalized_source_type = normalize_string(source_type)
+        normalized_source = normalize_string(source)
+        normalized_url = normalize_url(url)
+
         # Create a consistent string combining all identifying elements
-        identifier = f"{source_type}:{source}:{url or ''}"
+        identifier = f"{normalized_source_type}:{normalized_source}:{normalized_url}"
+        logger.debug(f"Generated identifier: {identifier}")
 
         # Generate a SHA-256 hash of the identifier
         sha256_hash = hashlib.sha256(identifier.encode("utf-8")).digest()
@@ -137,5 +227,6 @@ class Document(BaseModel):
         # Convert the first 16 bytes to a UUID (UUID is 16 bytes)
         # This ensures a valid UUID that Qdrant will accept
         consistent_uuid = uuid.UUID(bytes=sha256_hash[:16])
+        logger.debug(f"Generated UUID: {consistent_uuid}")
 
         return str(consistent_uuid)

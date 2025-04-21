@@ -78,38 +78,38 @@ class PublicDocsConnector(BaseConnector):
 
     def _should_process_url(self, url: str) -> bool:
         """Check if a URL should be processed based on configuration."""
-        logger.debug(f"Checking if URL should be processed: {url}")
-        
+        self.logger.debug(f"Checking if URL should be processed: {url}")
+
         # Check if URL matches base URL
         if not url.startswith(str(self.base_url)):
-            logger.debug(f"URL does not match base URL: {url}")
+            self.logger.debug(f"URL does not match base URL: {url}")
             return False
-        logger.debug(f"URL matches base URL: {url}")
-        
+        self.logger.debug(f"URL matches base URL: {url}")
+
         # Extract path from URL
         path = url[len(str(self.base_url)):]
-        logger.debug(f"Extracted path from URL: {path}")
-        
+        self.logger.debug(f"Extracted path from URL: {path}")
+
         # Check exclude paths
         for exclude_path in self.config.exclude_paths:
-            logger.debug(f"Checking exclude path: {exclude_path} against {path}")
+            self.logger.debug(f"Checking exclude path: {exclude_path} against {path}")
             if fnmatch.fnmatch(path, exclude_path):
-                logger.debug(f"URL path matches exclude pattern: {path}")
+                self.logger.debug(f"URL path matches exclude pattern: {path}")
                 return False
-        logger.debug(f"URL path not in exclude paths: {path}")
+        self.logger.debug(f"URL path not in exclude paths: {path}")
         
         # Check path pattern
         if self.config.path_pattern is None:
-            logger.debug("No path pattern specified, skipping pattern check")
+            self.logger.debug("No path pattern specified, skipping pattern check")
             return True
         
-        logger.debug(f"Checking path pattern: {self.config.path_pattern}")
+        self.logger.debug(f"Checking path pattern: {self.config.path_pattern}")
         if not fnmatch.fnmatch(path, self.config.path_pattern):
-            logger.debug(f"URL path does not match pattern: {path}")
+            self.logger.debug(f"URL path does not match pattern: {path}")
             return False
-        logger.debug(f"URL path matches pattern: {path}")
+        self.logger.debug(f"URL path matches pattern: {path}")
         
-        logger.debug(f"URL passed all checks, will be processed: {url}")
+        self.logger.debug(f"URL passed all checks, will be processed: {url}")
         return True
 
     async def get_documents(self) -> list[Document]:

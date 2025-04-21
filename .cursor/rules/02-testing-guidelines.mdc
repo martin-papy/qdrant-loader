@@ -1,0 +1,51 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Testing Guidelines
+
+## Test Organization
+
+All tests should be placed in the [tests/](mdc:tests) directory following this structure:
+
+```
+tests/
+├── unit/                  # Unit tests
+│   ├── core/             # Core functionality tests
+│   ├── sources/          # Source-specific tests
+│   └── utils/            # Utility function tests
+├── integration/          # Integration tests
+└── fixtures/             # Test fixtures
+```
+
+## Test File Naming
+
+- Test files must be named `test_*.py`
+- Test functions must be named `test_*`
+- Test classes must be named `Test*`
+
+## Coverage Requirements
+
+- Minimum coverage threshold: 80%
+- Run tests with coverage: `pytest tests/ --cov=qdrant_loader --cov-report=html`
+- Coverage reports are generated in `htmlcov/` directory
+
+## Writing Tests
+
+### Unit Tests
+- Test each component in isolation
+- Mock external dependencies
+- Focus on business logic and edge cases
+- Test both success and failure scenarios
+
+### Integration Tests
+- Test complete workflows
+- Use real services when possible
+- Minimal mocking
+- Test actual data flow
+
+### Test Configuration
+- Use [.env.test](mdc:.env.test) for test environment variables
+- Use [config.test.yaml](mdc:config.test.yaml) for test configuration
+- Follow the same configuration loading logic as main application

@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Coding Standards
+
+## Python Code Style
+
+- Use Black for formatting with 88 characters line length
+- Use double quotes for strings
+- Use trailing commas in multi-line collections
+- Use type hints for all function parameters and return values
+
+## Naming Conventions
+
+- Classes: `PascalCase`
+- Functions and variables: `snake_case`
+- Constants: `UPPER_SNAKE_CASE`
+- Private members: `_leading_underscore`
+- Modules: `snake_case`
+
+## Documentation
+
+- Use Google-style docstrings
+- Include type hints in docstrings
+- Document all public functions, classes, and methods
+- Include examples for complex functions
+
+Example:
+```python
+def process_document(content: str, chunk_size: int = 500) -> List[str]:
+    """Process a document into chunks of specified size.
+
+    Args:
+        content: The document content to process
+        chunk_size: Maximum size of each chunk in tokens
+
+    Returns:
+        List of document chunks
+
+    Example:
+        >>> process_document("This is a test document", chunk_size=5)
+        ["This is a", "test document"]
+    """
+```
+
+## Error Handling
+
+- Use specific exceptions rather than generic ones
+- Include meaningful error messages
+- Log exceptions with context using structlog
+- Use custom exceptions for domain-specific errors
+
+## Logging
+
+- Use structlog for structured logging
+- Include context in log messages
+- Use appropriate log levels
+- Log important operations and state changes
+
+For detailed standards, refer to [CodingStandards.md](mdc:docs/CodingStandards.md)

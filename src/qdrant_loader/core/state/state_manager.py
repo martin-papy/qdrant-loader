@@ -11,10 +11,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 from .models import Base, DocumentStateRecord, IngestionHistory
 
-logger = logging.getLogger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class StateManager:
@@ -26,7 +27,7 @@ class StateManager:
         self._initialized = False
         self._engine = None
         self._session_factory = None
-        self.logger = logging.getLogger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -147,9 +148,19 @@ class StateManager:
         """Mark a document as deleted."""
         async with self._session_factory() as session:  # type: ignore
             now = datetime.now(UTC)
+            self.logger.debug(
+                "Searching for document to be deleted.",
+                extra={
+                    "document_id": document_id,
+                    "source_type": source_type,
+                    "source": source,
+                },
+            )
             result = await session.execute(
-                select(DocumentStateRecord).filter_by(
-                    source_type=source_type, source=source, document_id=document_id
+                select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == source_type,
+                    DocumentStateRecord.source == source,
+                    DocumentStateRecord.document_id == document_id,
                 )
             )
             state = result.scalar_one_or_none()
@@ -158,6 +169,14 @@ class StateManager:
                 state.is_deleted = True  # type: ignore
                 state.updated_at = now  # type: ignore
                 await session.commit()
+                self.logger.debug(
+                    "Document marked as deleted",
+                    extra={
+                        "document_id": document_id,
+                        "source_type": source_type,
+                        "source": source,
+                    },
+                )
 
     async def get_document_state_record(
         self, source_type: str, source: str, document_id: str
