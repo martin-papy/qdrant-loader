@@ -172,3 +172,28 @@ class QdrantManager:
         except Exception as e:
             logger.error("Failed to delete collection", error=str(e))
             raise
+
+    async def delete_points_by_document_id(self, document_id: str) -> None:
+        """Delete all points associated with a document ID.
+
+        Args:
+            document_id: The ID of the document whose points should be deleted
+        """
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.delete,
+                collection_name=self.collection_name,
+                points_selector=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="document_id",
+                            match=models.MatchValue(value=document_id),
+                        )
+                    ]
+                ),
+            )
+            logger.info(f"Successfully deleted points for document {document_id}")
+        except Exception as e:
+            logger.error(f"Failed to delete points for document {document_id}", error=str(e))
+            raise

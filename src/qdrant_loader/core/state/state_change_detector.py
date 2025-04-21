@@ -1,7 +1,7 @@
 """Base classes for connectors and change detectors."""
 
 from datetime import datetime
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from pydantic import BaseModel, ConfigDict
 
@@ -141,13 +141,21 @@ class StateChangeDetector:
         Returns:
             A minimal Document object for deletion
         """
-        source_type, source, url, document_id = document_state.uri.split(":")
-        url = quote(url, safe="")
+        source_type, source, url = document_state.uri.split(":")
+        url = unquote(url)
+        self.logger.critical(
+            "Creating deleted document",
+            uri=document_state.uri,
+            source_type=source_type,
+            source=source,
+            url=url,
+        )
         return Document(
-            id=document_id,
             content="",
             source=source,
             source_type=source_type,
+            url=url,
+            title="Deleted Document",
             metadata={
                 "uri": document_state.uri,
                 "title": "Deleted Document",
@@ -251,7 +259,7 @@ class StateChangeDetector:
             document: The document to generate URI for
 
         Returns:
-            A URI string in format: {source_type}:{source}:{base_url}:{documentId}
+            A URI string in format: {source_type}:{source}:{base_url}
         """
         return self._generate_uri(document.url, document.source, document.source_type, document.id)
 
@@ -262,8 +270,10 @@ class StateChangeDetector:
             url: The URL to generate URI for
             source: The source to generate URI for
             source_type: The source type to generate URI for
+            document_id: The document ID
         """
-        uri = f"{source_type}:{source}:{self._normalize_url(url)}:{document_id}"
+        # Use the same format as Document.generate_id
+        uri = f"{source_type}:{source}:{self._normalize_url(url)}"
         return uri
 
     async def _find_new_documents(

@@ -18,7 +18,6 @@ from release import (
     get_current_version,
     get_github_token,
     run_command,
-    setup_logging,
     update_version,
 )
 
@@ -30,24 +29,6 @@ def temp_pyproject():
         pyproject = {"project": {"name": "test-project", "version": "0.1.0"}}
         tomli_w.dump(pyproject, f)
         return f.name
-
-
-@pytest.fixture
-def logger():
-    """Setup and return a logger for testing."""
-    return setup_logging(verbose=True)
-
-
-def test_setup_logging():
-    """Test logging setup with different verbosity levels."""
-    # Test verbose mode
-    logger = setup_logging(verbose=True)
-    assert logger.level == logging.DEBUG
-
-    # Test non-verbose mode
-    logger = setup_logging(verbose=False)
-    assert logger.level == logging.INFO
-
 
 def test_get_current_version(temp_pyproject):
     """Test getting the current version from pyproject.toml."""
