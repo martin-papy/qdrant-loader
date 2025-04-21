@@ -101,7 +101,7 @@ git clone https://github.com/kheldar666/qdrant-loader.git
 cd qdrant-loader
 
 # Create and activate virtual environment
-python -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate  # On macOS/Linux
 # or
 .\venv\Scripts\activate  # On Windows

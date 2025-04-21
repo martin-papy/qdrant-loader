@@ -44,11 +44,12 @@ class StateManagementConfig(BaseConfig):
     @classmethod
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
         """Validate database path."""
-        path = Path(v)
+        # Expand environment variables, including $HOME
+        path = Path(os.path.expanduser(os.path.expandvars(v)))
         parent_dir = path.parent
 
         if not parent_dir.exists():
-            raise ValueError("Database directory does not exist")
+            raise DatabaseDirectoryError(parent_dir)
 
         if not parent_dir.is_dir():
             raise ValueError("Database path is not a directory")
