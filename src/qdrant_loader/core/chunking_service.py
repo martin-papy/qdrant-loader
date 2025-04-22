@@ -1,6 +1,5 @@
 """Service for chunking documents."""
 
-import logging
 
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking_strategy import ChunkingStrategy
