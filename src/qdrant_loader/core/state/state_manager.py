@@ -30,6 +30,8 @@ class StateManager:
 
     async def __aenter__(self):
         """Async context manager entry."""
+        if not self._initialized:
+            raise ValueError("StateManager not initialized. Call initialize() first.")
         await self.initialize()
         return self
 
@@ -107,8 +109,6 @@ class StateManager:
                 ingestion.document_count = document_count if document_count else ingestion.document_count  # type: ignore
                 ingestion.updated_at = now  # type: ignore
                 ingestion.error_message = error_message  # type: ignore
-                # In case a with the exact same url, source_type and source was previously deleted, we need to reset the is_deleted flag
-                ingestion.is_deleted = False  # type: ignore
             else:
                 ingestion = IngestionHistory(
                     source_type=source_type,
@@ -119,7 +119,6 @@ class StateManager:
                     error_message=error_message,
                     created_at=now,
                     updated_at=now,
-                    is_deleted=False,
                 )
                 session.add(ingestion)
             await session.commit()
@@ -230,7 +229,7 @@ class StateManager:
                     # Update existing record
                     document_state_record.title = document.title  # type: ignore
                     document_state_record.content_hash = document.content_hash  # type: ignore
-                    document_state_record.is_deleted = document.is_deleted  # type: ignore
+                    document_state_record.is_deleted = False  # type: ignore
                     document_state_record.updated_at = now  # type: ignore
                 else:
                     # Create new record

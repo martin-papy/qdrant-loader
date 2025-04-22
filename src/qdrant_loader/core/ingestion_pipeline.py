@@ -19,9 +19,9 @@ from ..connectors.git import GitConnector
 from ..connectors.jira import JiraConnector
 from ..connectors.publicdocs import PublicDocsConnector
 from ..utils.logging import LoggingConfig
-from .chunking_service import ChunkingService
+from .chunking.chunking_service import ChunkingService
 from .document import Document
-from .embedding_service import EmbeddingService
+from .embedding.embedding_service import EmbeddingService
 from .qdrant_manager import QdrantManager
 from .state.state_manager import StateManager
 
@@ -218,9 +218,13 @@ class IngestionPipeline:
                                 await self.state_manager.mark_document_deleted(
                                     doc.source_type, doc.source, doc.id
                                 )
-                                self.logger.info(f"Successfully processed deleted document {doc.id}")
+                                self.logger.info(
+                                    f"Successfully processed deleted document {doc.id}"
+                                )
                             except Exception as e:
-                                self.logger.error(f"Error processing deleted document {doc.id}: {e!s}")
+                                self.logger.error(
+                                    f"Error processing deleted document {doc.id}: {e!s}"
+                                )
                                 raise
             else:
                 self.logger.info("No new, updated or deleted documents to process.")
