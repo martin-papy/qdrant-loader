@@ -52,3 +52,6 @@ dist/
 build/ 
 config.yaml
 tests/config.test.yaml
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

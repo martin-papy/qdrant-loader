@@ -34,12 +34,12 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
     ```bash
     # Download and configure environment variables
-    curl -o .env https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/.env.template
+    curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/.env.template
     # Edit .env with your configuration
     # Add STATE_DB_PATH=/path/to/state.db for state management
 
     # Download and configure the main configuration file
-    curl -o config.yaml https://raw.githubusercontent.com/kheldar666/qdrant-loader/main/config.template.yaml
+    curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/config.template.yaml
     # Edit config.yaml with your source configurations
     # Add state management configuration under global section:
     # global:
@@ -97,7 +97,7 @@ For detailed documentation about the client usage, configuration options, and ad
 
 ```bash
 # Clone the repository
-git clone https://github.com/kheldar666/qdrant-loader.git
+git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Create and activate virtual environment
