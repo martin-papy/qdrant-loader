@@ -33,6 +33,12 @@ tests/
 
 ## Writing Tests
 
+### Core Principles
+- Never modify the source code of the application when writing or fixing tests
+- The application code is assumed to be working as expected
+- Test failures should only lead to modifications in test code or test setup
+- Any proposed changes to source code must be explicitly agreed upon and documented
+
 ### Unit Tests
 - Test each component in isolation
 - Mock external dependencies
