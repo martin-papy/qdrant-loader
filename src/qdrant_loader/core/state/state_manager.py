@@ -107,6 +107,8 @@ class StateManager:
                 ingestion.document_count = document_count if document_count else ingestion.document_count  # type: ignore
                 ingestion.updated_at = now  # type: ignore
                 ingestion.error_message = error_message  # type: ignore
+                # In case a with the exact same url, source_type and source was previously deleted, we need to reset the is_deleted flag
+                ingestion.is_deleted = False  # type: ignore
             else:
                 ingestion = IngestionHistory(
                     source_type=source_type,
@@ -117,6 +119,7 @@ class StateManager:
                     error_message=error_message,
                     created_at=now,
                     updated_at=now,
+                    is_deleted=False,
                 )
                 session.add(ingestion)
             await session.commit()
