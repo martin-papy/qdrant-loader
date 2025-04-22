@@ -3,16 +3,19 @@ State management service for tracking document ingestion state.
 """
 
 from datetime import UTC, datetime
+import os
+import sqlite3
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from structlog import get_logger
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
-
-from .models import Base, DocumentStateRecord, IngestionHistory
+from qdrant_loader.core.state.models import Base, DocumentStateRecord, IngestionHistory
+from qdrant_loader.core.state.exceptions import DatabaseError
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -48,6 +51,26 @@ class StateManager:
         if not db_url.startswith("sqlite:///"):
             db_url = f"sqlite:///{db_url}"
 
+        # Extract the actual file path from the URL
+        db_file = db_url.replace("sqlite:///", "")
+
+        # Skip file permission check for in-memory database
+        if db_file != ":memory:":
+            # Check if the database file exists and is writable
+            if os.path.exists(db_file) and not os.access(db_file, os.W_OK):
+                raise DatabaseError(
+                    f"Database file '{db_file}' exists but is not writable. "
+                    "Please check file permissions."
+                )
+            # If file doesn't exist, check if directory is writable
+            elif not os.path.exists(db_file):
+                db_dir = os.path.dirname(db_file) or "."
+                if not os.access(db_dir, os.W_OK):
+                    raise DatabaseError(
+                        f"Cannot create database file in '{db_dir}'. "
+                        "Directory is not writable. Please check directory permissions."
+                    )
+
         # Create async engine for async operations
         engine_args = {}
         if not db_url == "sqlite:///:memory:":
@@ -60,23 +83,31 @@ class StateManager:
                 }
             )
 
-        self._engine = create_async_engine(
-            f"sqlite+aiosqlite:///{db_url.replace('sqlite:///', '')}", **engine_args
-        )
+        try:
+            self._engine = create_async_engine(f"sqlite+aiosqlite:///{db_file}", **engine_args)
 
-        # Create async session factory
-        self._session_factory = async_sessionmaker(
-            bind=self._engine,
-            expire_on_commit=False,  # Prevent expired objects after commit
-            autoflush=False,  # Disable autoflush for better control
-        )
+            # Create async session factory
+            self._session_factory = async_sessionmaker(
+                bind=self._engine,
+                expire_on_commit=False,  # Prevent expired objects after commit
+                autoflush=False,  # Disable autoflush for better control
+            )
 
-        # Initialize schema
-        async with self._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            # Initialize schema
+            async with self._engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
 
-        self._initialized = True
-        self.logger.info("StateManager initialized successfully")
+            self._initialized = True
+            self.logger.info("StateManager initialized successfully")
+        except sqlite3.OperationalError as e:
+            # Handle specific SQLite errors
+            if "readonly database" in str(e).lower():
+                raise DatabaseError(
+                    f"Cannot write to database '{db_file}'. Database is read-only."
+                ) from e
+            raise DatabaseError(f"Failed to initialize database: {e}") from e
+        except Exception as e:
+            raise DatabaseError(f"Unexpected error initializing database: {e}") from e
 
     async def dispose(self):
         """Clean up resources."""
@@ -269,3 +300,8 @@ class StateManager:
                     },
                 )
                 raise
+
+    async def close(self):
+        """Close all database connections."""
+        if hasattr(self, "_engine") and self._engine is not None:
+            await self._engine.dispose()
