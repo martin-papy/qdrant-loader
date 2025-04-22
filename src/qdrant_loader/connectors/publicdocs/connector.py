@@ -1,11 +1,10 @@
 """Public documentation connector implementation."""
 
-import re
 import warnings
 from collections import deque
 from datetime import datetime, timezone
 from typing import cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import aiohttp
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
