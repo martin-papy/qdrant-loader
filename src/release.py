@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import subprocess
 import sys
@@ -7,19 +8,29 @@ import sys
 import requests
 import tomli
 import tomli_w
-from click.decorators import command, option
+from click import command, option
 from click.termui import prompt
 from dotenv import load_dotenv
-
-from qdrant_loader.utils.logging import LoggingConfig
 
 # Load environment variables from .env file
 load_dotenv(override=False)
 
 
+# Configure logging
+def setup_logging(verbose: bool = False):
+    """Configure logging based on verbosity level."""
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    logger = logging.getLogger(__name__)
+    logger.setLevel(level)  # Explicitly set the level on the logger
+    return logger
+
+
 def get_current_version() -> str:
     """Get the current version from pyproject.toml."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.debug("Reading current version from pyproject.toml")
     with open("pyproject.toml", "rb") as f:
         pyproject = tomli.load(f)
@@ -30,7 +41,7 @@ def get_current_version() -> str:
 
 def update_version(new_version: str, dry_run: bool = False) -> None:
     """Update the version in pyproject.toml."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     if dry_run:
         logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
         return
@@ -48,7 +59,7 @@ def update_version(new_version: str, dry_run: bool = False) -> None:
 
 def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
     """Run a shell command and return stdout and stderr."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     if dry_run and not cmd.startswith(
         (
             "git status",
@@ -73,7 +84,7 @@ def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
 
 def check_git_status(dry_run: bool = False) -> None:
     """Check if the working directory is clean."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.info("Starting git status check...")
     logger.debug("Checking git status")
     stdout, _ = run_command("git status --porcelain", dry_run)
@@ -86,7 +97,7 @@ def check_git_status(dry_run: bool = False) -> None:
 
 def check_current_branch(dry_run: bool = False) -> None:
     """Check if we're on the main branch."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.info("Starting current branch check...")
     logger.debug("Checking current branch")
     stdout, _ = run_command("git branch --show-current", dry_run)
@@ -99,7 +110,7 @@ def check_current_branch(dry_run: bool = False) -> None:
 
 def check_unpushed_commits(dry_run: bool = False) -> None:
     """Check if there are any unpushed commits."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.info("Starting unpushed commits check...")
     logger.debug("Checking for unpushed commits")
     stdout, _ = run_command("git log origin/main..HEAD", dry_run)
@@ -114,7 +125,7 @@ def check_unpushed_commits(dry_run: bool = False) -> None:
 
 def get_github_token(dry_run: bool = False) -> str:
     """Get GitHub token from environment variable."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.debug("Getting GitHub token from environment")
     token = os.getenv("GITHUB_TOKEN")
     if not token:
@@ -125,7 +136,7 @@ def get_github_token(dry_run: bool = False) -> str:
 
 def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
     """Create a GitHub release."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     if dry_run:
         logger.info(f"[DRY RUN] Would create GitHub release for version {version}")
         return
@@ -185,7 +196,7 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
 
 def check_main_up_to_date(dry_run: bool = False) -> None:
     """Check if local main branch is up to date with remote main."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.info("Starting main branch up-to-date check...")
     logger.debug("Checking if main branch is up to date")
     stdout, _ = run_command("git fetch origin main", dry_run)
@@ -201,7 +212,7 @@ def check_main_up_to_date(dry_run: bool = False) -> None:
 
 def check_github_workflows(dry_run: bool = False) -> None:
     """Check if all GitHub Actions workflows are passing."""
-    logger = LoggingConfig.get_logger(__name__)
+    logger = logging.getLogger(__name__)
     logger.info("Starting GitHub workflows check...")
     logger.info("Checking GitHub Actions workflow status")
 
@@ -315,7 +326,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
 def release(dry_run: bool, verbose: bool):
     """Create a new release and bump version."""
     # Setup logging
-    logger = LoggingConfig.get_logger(__name__)
+    logger = setup_logging(verbose)
 
     if dry_run:
         logger.info(
@@ -402,4 +413,4 @@ def release(dry_run: bool, verbose: bool):
 
 
 if __name__ == "__main__":
-    release(dry_run=False, verbose=False)
+    release()

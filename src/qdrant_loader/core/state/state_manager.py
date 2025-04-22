@@ -2,7 +2,6 @@
 State management service for tracking document ingestion state.
 """
 
-import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select

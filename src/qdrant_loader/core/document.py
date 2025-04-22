@@ -156,9 +156,7 @@ class Document(BaseModel):
         Returns:
             A consistent UUID string generated from the inputs
         """
-        from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-        from typing import Any
-        import logging
+        from urllib.parse import urlparse, urlunparse
 
         logger = LoggingConfig.get_logger(__name__)
 
