@@ -77,6 +77,8 @@ Our testing approach consists of:
 - ✅ `test_release.py` → Moved to `tests/unit/utils/`
 - ✅ `test_document_id.py` → Moved to `tests/unit/core/`
 - ✅ `test_embedding_service.py` → Located in `tests/unit/core/embedding/`
+- ✅ `test_state_manager.py` → Located in `tests/unit/core/state/`
+- ✅ `test_config_loader.py` → Located in `tests/unit/core/config/`
 
 ### Directory Structure Status
 
@@ -87,21 +89,43 @@ Our testing approach consists of:
 
 ### Overall Statistics
 
-- Current Coverage: 28% (as of latest test run)
+- Current Coverage: 25% (as of latest test run)
 - Target Coverage: 80% minimum
-- Embedding Service Coverage: 87%
+- Configuration Module Coverage:
+  - `config/__init__.py`: 88% coverage
+  - `config/base.py`: 88% coverage
+  - `config/chunking.py`: 90% coverage
+  - `config/embedding.py`: 100% coverage
+  - `config/global_config.py`: 95% coverage
+  - `config/source_config.py`: 100% coverage
+  - `config/sources.py`: 89% coverage
+  - `config/types.py`: 100% coverage
 
 ## Testing Priorities and Progress
 
 ### 1. Core Components (Priority: High)
 
+#### Configuration (`tests/unit/core/config/`) ✅
+
+- ✅ `test_config_loader.py`
+  - ✅ Basic configuration initialization
+  - ✅ Missing required fields validation
+  - ✅ Environment variable substitution
+  - ✅ Invalid YAML handling
+  - ✅ Source-specific configuration validation
+  - ✅ Configuration to dictionary conversion
+
 #### State Management (`tests/unit/core/state/`)
 
-- [ ] `test_state_manager.py`
-  - [ ] State initialization (Unit)
-  - [ ] State persistence (Integration)
-  - [ ] State recovery (Integration)
-  - [ ] Error handling (Both)
+- ✅ `test_state_manager.py`
+  - ✅ State initialization (Unit)
+  - ✅ State persistence (Integration)
+  - ✅ State recovery (Integration)
+  - ✅ Error handling (Both)
+  - ✅ Read-only database handling
+  - ✅ Context manager support
+  - ✅ Document state tracking
+  - ✅ Ingestion history management
 
 #### Embedding Service (`tests/unit/core/embedding/`)
 
@@ -115,15 +139,7 @@ Our testing approach consists of:
   - ✅ Local service support (Unit)
   - ✅ OpenAI integration (Unit)
 
-#### Configuration (`tests/unit/core/config/`)
-
-- [ ] `test_config_loader.py`
-  - [ ] YAML parsing (Unit)
-  - [ ] Environment variables (Unit)
-  - [ ] Validation (Unit)
-  - [ ] Integration tests (Integration)
-
-### 2. Source Connectors (Priority: High)
+### 2. Source Connectors (Priority: High) 🔄
 
 #### Base Classes (`tests/unit/sources/`)
 
@@ -182,46 +198,6 @@ Our testing approach consists of:
 - [ ] Search functionality
 - [ ] Update detection and processing
 
-## Implementation Guidelines
-
-### Test Structure
-
-```python
-def test_feature_success():
-    """Test successful execution of feature."""
-    pass
-
-def test_feature_edge_cases():
-    """Test edge cases and boundary conditions."""
-    pass
-
-def test_feature_error_handling():
-    """Test error scenarios and recovery."""
-    pass
-```
-
-### Best Practices
-
-1. **Test Isolation**
-   - Independent test execution
-   - Clean resource cleanup
-   - Appropriate fixture scoping
-
-2. **Test Data Management**
-   - Use fixture directory structure
-   - Maintain meaningful test data
-   - Keep test data current
-
-3. **Mocking Strategy**
-   - Mock external services in unit tests
-   - Use real services in integration tests
-   - Document mock behaviors
-
-4. **Error Handling**
-   - Test success and failure cases
-   - Verify error messages
-   - Cover edge cases
-
 ## Progress Tracking
 
 ### Phase 1 (Current)
@@ -233,13 +209,16 @@ def test_feature_error_handling():
   - [x] Configure pytest
   - [x] Set up coverage reporting
   - [x] Configure test environment
-- [x] Implement core unit tests (Embedding Service)
+- [x] Implement core unit tests
+  - [x] Embedding Service
+  - [x] State Management
+  - [x] Configuration Loader
 - [ ] Achieve 50% coverage
 
 Next steps:
 
-1. Implement remaining core component tests
-2. Start source connector tests
+1. Implement base connector tests
+2. Start source-specific connector tests
 3. Work towards 50% overall coverage
 
 ### Phase 2
