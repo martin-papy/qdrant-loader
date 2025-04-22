@@ -27,7 +27,7 @@ from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
 
 # Import consolidated configs
-from .global_ import GlobalConfig
+from .global_config import GlobalConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 
