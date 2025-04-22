@@ -142,8 +142,10 @@ class ConfluenceConnector(BaseConnector):
         }
 
         # Check exclude labels first, if there are any specified
-        if self.config.exclude_labels:
-            return any(label in labels for label in self.config.exclude_labels)
+        if self.config.exclude_labels and any(
+            label in labels for label in self.config.exclude_labels
+        ):
+            return False
 
         # If include labels are specified, content must have at least one
         if self.config.include_labels:
@@ -275,7 +277,8 @@ class ConfluenceConnector(BaseConnector):
         """
         # Remove HTML tags
         text = re.sub(r"<[^>]+>", " ", html)
-        # Replace special characters
+        # Replace HTML entities
+        text = text.replace("&amp;", "and")
         text = re.sub(r"&[^;]+;", " ", text)
         # Replace multiple spaces with single space
         text = re.sub(r"\s+", " ", text)
@@ -302,7 +305,7 @@ class ConfluenceConnector(BaseConnector):
                 for content in results:
                     if self._should_process_content(content):
                         try:
-                            document = self._process_content(content, clean_html=False)
+                            document = self._process_content(content, clean_html=True)
                             if document:
                                 documents.append(document)
                                 logger.debug(
