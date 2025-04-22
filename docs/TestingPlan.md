@@ -91,16 +91,16 @@ Our testing approach consists of:
 
 ### Overall Statistics
 
-- Current Coverage: 25% (as of latest test run)
+- Current Coverage: 29% (as of latest test run)
 - Target Coverage: 80% minimum
 - Configuration Module Coverage:
-  - `config/__init__.py`: 88% coverage
-  - `config/base.py`: 88% coverage
+  - `config/__init__.py`: 79% coverage
+  - `config/base.py`: 81% coverage
   - `config/chunking.py`: 90% coverage
   - `config/embedding.py`: 100% coverage
-  - `config/global_config.py`: 95% coverage
+  - `config/global_config.py`: 89% coverage
   - `config/source_config.py`: 100% coverage
-  - `config/connectors.py`: 89% coverage
+  - `config/sources.py`: 83% coverage
   - `config/types.py`: 100% coverage
 
 ## Testing Priorities and Progress
@@ -153,17 +153,44 @@ Our testing approach consists of:
 
 #### Source-Specific Implementation (`tests/unit/connectors/`)
 
-- [ ] Git Source (`git/`)
-  - [ ] Repository cloning (Integration)
-  - [ ] Change detection (Unit)
-  - [ ] Content extraction (Unit)
-  - [ ] Error scenarios (Both)
+- ✅ Git Source (`git/`)
+  - ✅ Repository cloning (Integration)
+    - ✅ Successful cloning
+    - ✅ Retry logic
+    - ✅ Error handling
+  - ✅ Change detection (Unit)
+    - ✅ File listing
+    - ✅ Last commit date tracking
+  - ✅ Content extraction (Unit)
+    - ✅ File content retrieval
+    - ✅ Error handling
+  - ✅ File processing (Unit)
+    - ✅ File type filtering
+    - ✅ Path inclusion/exclusion
+    - ✅ Size limits
+  - ✅ Metadata extraction (Unit)
+    - ✅ File metadata
+    - ✅ Repository metadata
+    - ✅ Git-specific metadata
+    - ✅ Encoding detection
+    - ✅ Markdown features
 
-- [ ] Confluence Source (`confluence/`)
-  - [ ] Authentication (Integration)
-  - [ ] Page retrieval (Integration)
+- ✅ Confluence Source (`confluence/`)
+  - ✅ Authentication (Unit)
+    - ✅ Environment variable validation
+    - ✅ Token and email validation
+  - ✅ API Integration (Unit)
+    - ✅ URL construction
+    - ✅ Request handling
+    - ✅ Error handling
+  - ✅ Content Processing (Unit)
+    - ✅ Space content retrieval
+    - ✅ Label-based filtering
+    - ✅ HTML cleaning
+    - ✅ Document creation
   - [ ] Change tracking (Unit)
-  - [ ] Error handling (Both)
+  - [ ] Pagination handling (Unit)
+  - [ ] Error scenarios (Both)
 
 - [ ] Jira Source (`jira/`)
   - [ ] Issue retrieval (Integration)
@@ -209,16 +236,24 @@ Our testing approach consists of:
   - [x] State Management
   - [x] Configuration Loader
   - [x] Base Connector
+- [x] Implement source connector tests
+  - [x] Git connector tests
+  - [x] Confluence connector tests (partial)
 - [ ] Achieve 50% coverage
 
 Next steps:
 
-1. Implement source-specific connector tests
-2. Work towards 50% overall coverage
+1. Complete remaining Confluence connector tests:
+   - Change tracking
+   - Pagination handling
+   - Error scenarios
+2. Implement Jira connector tests
+3. Implement Public Docs connector tests
+4. Work towards 50% overall coverage
 
 ### Phase 2
 
-- [ ] Implement source connector tests
+- [ ] Complete remaining source connector tests
 - [ ] Add integration tests
 - [ ] Reach 65% coverage
 
