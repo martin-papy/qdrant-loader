@@ -20,7 +20,7 @@ tests/
 │   │   ├── config/           # Configuration tests
 │   │   ├── embedding/        # Embedding service tests
 │   │   └── state/           # State management tests
-│   ├── sources/              # Source-specific tests
+│   ├── connectors/              # Source-specific tests
 │   │   ├── publicdocs/      # Public docs source tests
 │   │   ├── git/            # Git source tests
 │   │   ├── confluence/     # Confluence source tests
@@ -28,7 +28,7 @@ tests/
 │   └── utils/              # Utility function tests
 └── integration/            # Integration tests
     ├── core/              # Core integration tests
-    ├── sources/          # Source integration tests
+    ├── connectors/          # Source integration tests
     │   ├── publicdocs/  # Public docs integration
     │   ├── git/        # Git integration
     │   ├── confluence/ # Confluence integration
@@ -79,6 +79,7 @@ Our testing approach consists of:
 - ✅ `test_embedding_service.py` → Located in `tests/unit/core/embedding/`
 - ✅ `test_state_manager.py` → Located in `tests/unit/core/state/`
 - ✅ `test_config_loader.py` → Located in `tests/unit/core/config/`
+- ✅ `test_base_connector.py` → Located in `tests/unit/connectors/`
 
 ### Directory Structure Status
 
@@ -86,6 +87,7 @@ Our testing approach consists of:
 - ✅ All `__init__.py` files added
 - ✅ Test files organized in appropriate directories
 - ✅ Fixtures directories prepared
+- ✅ Moved source-specific tests to `connectors/` directory
 
 ### Overall Statistics
 
@@ -98,7 +100,7 @@ Our testing approach consists of:
   - `config/embedding.py`: 100% coverage
   - `config/global_config.py`: 95% coverage
   - `config/source_config.py`: 100% coverage
-  - `config/sources.py`: 89% coverage
+  - `config/connectors.py`: 89% coverage
   - `config/types.py`: 100% coverage
 
 ## Testing Priorities and Progress
@@ -141,15 +143,15 @@ Our testing approach consists of:
 
 ### 2. Source Connectors (Priority: High) 🔄
 
-#### Base Classes (`tests/unit/sources/`)
+#### Base Classes (`tests/unit/connectors/`)
 
-- [ ] `test_base_connector.py`
-  - [ ] Interface implementation (Unit)
-  - [ ] Common functionality (Unit)
-  - [ ] Error handling (Unit)
-  - [ ] Event handling (Integration)
+- ✅ `test_base_connector.py`
+  - ✅ Interface implementation (Unit)
+  - ✅ Common functionality (Unit)
+  - ✅ Error handling (Unit)
+  - ✅ Event handling (Integration)
 
-#### Source-Specific Implementation (`tests/unit/sources/`)
+#### Source-Specific Implementation (`tests/unit/connectors/`)
 
 - [ ] Git Source (`git/`)
   - [ ] Repository cloning (Integration)
@@ -184,19 +186,12 @@ Our testing approach consists of:
 - [ ] Configuration loading
 - [ ] Embedding service integration
 
-#### Source Integration (`tests/integration/sources/`)
+#### Source Integration (`tests/integration/connectors/`)
 
 - [ ] Git repository synchronization
 - [ ] Confluence space indexing
 - [ ] Jira project synchronization
 - [ ] Public docs crawling
-
-#### End-to-End (`tests/integration/end_to_end/`)
-
-- [ ] Complete document ingestion workflow
-- [ ] Multi-source synchronization
-- [ ] Search functionality
-- [ ] Update detection and processing
 
 ## Progress Tracking
 
@@ -213,13 +208,13 @@ Our testing approach consists of:
   - [x] Embedding Service
   - [x] State Management
   - [x] Configuration Loader
+  - [x] Base Connector
 - [ ] Achieve 50% coverage
 
 Next steps:
 
-1. Implement base connector tests
-2. Start source-specific connector tests
-3. Work towards 50% overall coverage
+1. Implement source-specific connector tests
+2. Work towards 50% overall coverage
 
 ### Phase 2
 
