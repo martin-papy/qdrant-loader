@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import requests
 from pydantic import HttpUrl
+import logging
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
@@ -46,6 +47,15 @@ def config():
 def connector(config, mock_env_vars):
     """Create a test connector instance."""
     return ConfluenceConnector(config)
+
+
+@pytest.fixture(autouse=True)
+def setup_logging():
+    """Configure logging for tests."""
+    from qdrant_loader.utils.logging import LoggingConfig
+
+    LoggingConfig.setup(level="ERROR")
+    yield
 
 
 class TestConfluenceConnector:
@@ -186,3 +196,369 @@ class TestConfluenceConnector:
             assert documents[0].title == "Test Page"
             assert documents[0].content == "Test content"
             assert documents[0].source_type == SourceType.CONFLUENCE
+
+    @pytest.mark.asyncio
+    async def test_change_tracking_version_comparison(self, connector):
+        """Test version comparison for change tracking."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page 1",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 1</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                },
+                {
+                    "id": "456",
+                    "title": "Test Page 2",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 2</p>"}},
+                    "version": {"number": 2, "when": "2024-01-02T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-02T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                },
+            ],
+            "_links": {},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 2
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+            assert documents[1].metadata["id"] == "456"
+            assert documents[0].metadata["version"] == 1
+            assert documents[1].metadata["version"] == 2
+
+    @pytest.mark.asyncio
+    async def test_change_tracking_missing_version(self, connector):
+        """Test handling of content with missing version information."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                    },
+                    "version": {"when": "2024-01-01T00:00:00Z"},
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 1
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+            assert documents[0].metadata["version"] == 1  # Default version when missing
+
+    @pytest.mark.asyncio
+    async def test_change_tracking_invalid_version(self, connector):
+        """Test handling of content with invalid version information."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "version": {"number": "invalid", "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 1
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+            # The connector preserves the invalid version as a string
+            assert documents[0].metadata["version"] == "invalid"
+
+    @pytest.mark.asyncio
+    async def test_pagination_multiple_pages(self, connector):
+        """Test handling of multiple pages of results."""
+        mock_content_page1 = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page 1",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 1</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {"next": "/rest/api/content?cursor=next_cursor"},
+        }
+
+        mock_content_page2 = {
+            "results": [
+                {
+                    "id": "456",
+                    "title": "Test Page 2",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 2</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(
+            connector,
+            "_get_space_content",
+            AsyncMock(side_effect=[mock_content_page1, mock_content_page2]),
+        ):
+            documents = await connector.get_documents()
+            assert len(documents) == 2
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+            assert documents[1].metadata["id"] == "456"
+
+    @pytest.mark.asyncio
+    async def test_pagination_invalid_cursor(self, connector):
+        """Test handling of invalid cursor in pagination."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {"next": "invalid-cursor"},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 1
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+
+    @pytest.mark.asyncio
+    async def test_pagination_missing_next_link(self, connector):
+        """Test handling of missing next link in pagination."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 1
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+
+    @pytest.mark.asyncio
+    async def test_network_error_handling(self, connector):
+        """Test handling of network errors during API requests."""
+        with patch.object(
+            connector,
+            "_make_request",
+            side_effect=requests.exceptions.RequestException("Network error"),
+        ):
+            with pytest.raises(requests.exceptions.RequestException, match="Network error"):
+                await connector.get_documents()
+
+    @pytest.mark.asyncio
+    async def test_invalid_response_format(self, connector):
+        """Test handling of invalid response format from API."""
+        invalid_response = {
+            "invalid_key": "invalid_value",  # Missing required 'results' key
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        with patch.object(
+            connector, "_get_space_content", AsyncMock(return_value=invalid_response)
+        ):
+            documents = await connector.get_documents()
+            assert len(documents) == 0
+
+    @pytest.mark.asyncio
+    async def test_missing_required_fields(self, connector):
+        """Test handling of content with missing required fields."""
+        mock_content = {
+            "results": [
+                {
+                    # Missing id
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 0  # Content with missing fields should be skipped
+
+    @pytest.mark.asyncio
+    async def test_malformed_content(self, connector):
+        """Test handling of malformed content."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    # Malformed body structure
+                    "body": "Invalid body structure",
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            documents = await connector.get_documents()
+            assert len(documents) == 0  # Malformed content should be skipped
+
+    @pytest.mark.asyncio
+    async def test_error_during_content_processing(self, connector):
+        """Test handling of errors during content processing."""
+        mock_content = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "_links": {},
+        }
+
+        def process_content_error(*args, **kwargs):
+            raise Exception("Error processing content")
+
+        with patch.object(connector, "_get_space_content", AsyncMock(return_value=mock_content)):
+            with patch.object(connector, "_process_content", side_effect=process_content_error):
+                documents = await connector.get_documents()
+                assert len(documents) == 0  # Content with processing errors should be skipped

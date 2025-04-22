@@ -263,7 +263,13 @@ class ConfluenceConnector(BaseConnector):
             return document
 
         except Exception as e:
-            logger.error(f"Failed to process content: {e!s}")
+            logger.error(
+                "Failed to process content",
+                content_id=content.get("id"),
+                content_title=content.get("title"),
+                content_type=content.get("type"),
+                error=str(e),
+            )
             raise
 
     def _clean_html(self, html: str) -> str:

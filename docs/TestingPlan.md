@@ -188,9 +188,20 @@ Our testing approach consists of:
     - ✅ Label-based filtering
     - ✅ HTML cleaning
     - ✅ Document creation
-  - [ ] Change tracking (Unit)
-  - [ ] Pagination handling (Unit)
-  - [ ] Error scenarios (Both)
+  - ✅ Change tracking (Unit)
+    - ✅ Version comparison
+    - ✅ Missing version handling
+    - ✅ Invalid version handling
+  - ✅ Pagination handling (Unit)
+    - ✅ Multiple pages
+    - ✅ Invalid cursor handling
+    - ✅ Missing next link handling
+  - ✅ Error scenarios (Both)
+    - ✅ Network error handling
+    - ✅ Invalid response format
+    - ✅ Missing required fields
+    - ✅ Malformed content
+    - ✅ Content processing errors
 
 - [ ] Jira Source (`jira/`)
   - [ ] Issue retrieval (Integration)
@@ -238,18 +249,14 @@ Our testing approach consists of:
   - [x] Base Connector
 - [x] Implement source connector tests
   - [x] Git connector tests
-  - [x] Confluence connector tests (partial)
+  - [x] Confluence connector tests (complete)
 - [ ] Achieve 50% coverage
 
 Next steps:
 
-1. Complete remaining Confluence connector tests:
-   - Change tracking
-   - Pagination handling
-   - Error scenarios
-2. Implement Jira connector tests
-3. Implement Public Docs connector tests
-4. Work towards 50% overall coverage
+1. Implement Jira connector tests
+2. Implement Public Docs connector tests
+3. Work towards 50% overall coverage
 
 ### Phase 2
 
