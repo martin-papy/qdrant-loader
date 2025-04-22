@@ -106,11 +106,9 @@ source venv/bin/activate  # On macOS/Linux
 # or
 .\venv\Scripts\activate  # On Windows
 
-# Install dependencies
-pip install -r requirements.txt -r requirements-dev.txt
-
 # Install in development mode
-pip install -e .
+pip install -e . # for core dependencies
+pip install -e ".[dev]" # for development dependencies
 ```
 
 ### Running Tests
