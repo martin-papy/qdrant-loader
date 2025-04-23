@@ -134,6 +134,43 @@ def get_github_token(dry_run: bool = False) -> str:
     return token
 
 
+def extract_repo_info(git_url: str) -> str:
+    """
+    Extract GitHub username and repository name from git remote URL.
+
+    Returns the repo info in format "username/repo"
+    """
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Extracting repo info from: {git_url}")
+
+    # Handle HTTPS URLs: https://github.com/username/repo.git
+    if git_url.startswith("https://github.com/"):
+        parts = git_url.replace("https://github.com/", "").replace(".git", "").split("/")
+        if len(parts) >= 2:
+            repo_path = "/".join(parts[:2])
+            logger.debug(f"Extracted repo path from HTTPS URL: {repo_path}")
+            return repo_path
+
+    # Handle SSH URLs with ssh:// prefix: ssh://git@github.com/username/repo.git
+    elif git_url.startswith("ssh://git@github.com/"):
+        parts = git_url.replace("ssh://git@github.com/", "").replace(".git", "").split("/")
+        if len(parts) >= 2:
+            repo_path = "/".join(parts[:2])
+            logger.debug(f"Extracted repo path from SSH URL (with prefix): {repo_path}")
+            return repo_path
+
+    # Handle SSH URLs without prefix: git@github.com:username/repo.git
+    elif git_url.startswith("git@github.com:"):
+        parts = git_url.replace("git@github.com:", "").replace(".git", "").split("/")
+        if len(parts) >= 1:
+            repo_path = "/".join(parts[:2]) if len(parts) >= 2 else parts[0]
+            logger.debug(f"Extracted repo path from SSH URL (without prefix): {repo_path}")
+            return repo_path
+
+    logger.error(f"Could not parse repository path from Git URL: {git_url}")
+    sys.exit(1)
+
+
 def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
     """Create a GitHub release."""
     logger = logging.getLogger(__name__)
@@ -160,29 +197,8 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
 
-    # Handle both SSH and HTTPS URLs
-    if stdout.startswith("https://"):
-        # Handle HTTPS URLs (https://github.com/username/repo.git)
-        repo_url = stdout.replace("https://", "").replace(".git", "")
-    elif stdout.startswith("ssh://"):
-        # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        # Remove ssh://git@ and .git, then split by / and take the last two parts
-        clean_url = stdout.replace("ssh://git@", "").replace(".git", "")
-        parts = clean_url.split("/")
-        if len(parts) >= 3:
-            repo_url = "/".join(parts[-2:])
-        else:
-            logger.error(f"Invalid repository URL format: {stdout}")
-            sys.exit(1)
-    else:
-        # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
-        repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
-
-    if not repo_url:
-        logger.error("Could not determine repository path from Git remote URL")
-        sys.exit(1)
-
-    logger.debug(f"Repository URL: {repo_url}")
+    repo_url = extract_repo_info(stdout)
+    logger.debug(f"Parsed repository URL: {repo_url}")
 
     response = requests.post(
         f"https://api.github.com/repos/{repo_url}/releases", headers=headers, json=data
@@ -220,29 +236,8 @@ def check_github_workflows(dry_run: bool = False) -> None:
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
 
-    # Handle both SSH and HTTPS URLs
-    if stdout.startswith("https://"):
-        # Handle HTTPS URLs (https://github.com/username/repo.git)
-        repo_url = stdout.replace("https://", "").replace(".git", "")
-    elif stdout.startswith("ssh://"):
-        # Handle SSH URLs with ssh:// prefix (ssh://git@github.com/username/repo.git)
-        # Remove ssh://git@ and .git, then split by / and take the last two parts
-        clean_url = stdout.replace("ssh://git@", "").replace(".git", "")
-        parts = clean_url.split("/")
-        if len(parts) >= 3:
-            repo_url = "/".join(parts[-2:])
-        else:
-            logger.error(f"Invalid repository URL format: {stdout}")
-            sys.exit(1)
-    else:
-        # Handle SSH URLs without ssh:// prefix (git@github.com:username/repo.git)
-        repo_url = stdout.replace("git@", "").replace(":", "/").replace(".git", "")
-
-    if not repo_url:
-        logger.error("Could not determine repository path from Git remote URL")
-        sys.exit(1)
-
-    logger.debug(f"Repository URL: {repo_url}")
+    repo_url = extract_repo_info(stdout)
+    logger.debug(f"Parsed repository URL: {repo_url}")
 
     # Get GitHub token
     token = get_github_token(dry_run)
@@ -323,7 +318,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
 @command()
 @option("--dry-run", is_flag=True, help="Simulate the release process without making any changes")
 @option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-def release(dry_run: bool, verbose: bool):
+def release(dry_run: bool = False, verbose: bool = False):
     """Create a new release and bump version."""
     # Setup logging
     logger = setup_logging(verbose)
