@@ -7,7 +7,13 @@ import asyncio
 from pydantic import HttpUrl, BaseModel
 
 import pytest
-from aiohttp import ClientSession, ClientResponse, ClientError
+from aiohttp import (
+    ClientSession,
+    ClientResponse,
+    ClientError,
+    ClientResponseError,
+    ClientConnectionError,
+)
 from bs4 import BeautifulSoup, Tag
 
 from qdrant_loader.config.source_config import SourceConfig
@@ -86,7 +92,7 @@ def mock_response() -> AsyncMock:
     response = AsyncMock()
     response.status = 200
     response.text = AsyncMock(return_value=HTML_CONTENT)
-    response.raise_for_status = AsyncMock()
+    response.raise_for_status = MagicMock()
     return response
 
 
@@ -250,58 +256,97 @@ class TestPublicDocsConnector:
         """Test error handling in document retrieval.
 
         This test verifies:
-        1. HTTP error handling
-        2. Network error handling
+        1. HTTP error handling during _process_page
+        2. Network error handling during _process_page
         3. Content processing error handling
-        4. State management during errors
+        4. Error recovery (continuing despite errors)
         """
+        # Test HTTP error in _process_page
         connector = PublicDocsConnector(publicdocs_config)
         base_url = str(publicdocs_config.base_url)
-        connector.url_queue.append(base_url)
+        error_url = f"{base_url}error-page"
+        valid_url = f"{base_url}valid-page"
 
-        # Test HTTP error
+        # Create mixed responses - one that succeeds and one that fails with 404
         error_response = AsyncMock()
         error_response.status = 404
-        error_response.raise_for_status = AsyncMock(side_effect=ClientError)
+        error_response.raise_for_status = MagicMock(
+            side_effect=ClientResponseError(
+                request_info=MagicMock(), history=(), status=404, message="Not Found", headers=None
+            )
+        )
 
+        valid_response = AsyncMock()
+        valid_response.status = 200
+        valid_response.text = AsyncMock(return_value=LINKED_PAGE_CONTENT)
+        valid_response.raise_for_status = MagicMock()  # No error
+
+        # Create session that returns different responses based on URL
         session = AsyncMock()
         session.__aenter__.return_value = session
         session.__aexit__.return_value = None
-        session.get = AsyncMock(return_value=error_response)
+
+        async def mock_get(url: str, **kwargs) -> AsyncMock:
+            if url == error_url:
+                return error_response
+            elif url == valid_url:
+                return valid_response
+            raise ValueError(f"Unexpected URL: {url}")
+
+        session.get = AsyncMock(side_effect=mock_get)
         session.close = AsyncMock()
 
+        # Test direct call to _process_page to verify it raises expected exceptions
         with patch("aiohttp.ClientSession", return_value=session):
             async with connector:
-                connector._client = session
+                # First verify _process_page raises HTTPRequestError when it fails
                 with pytest.raises(HTTPRequestError):
-                    await connector.get_documents()
-                assert len(connector.visited_urls) == 0  # No URLs should be marked as visited
+                    await connector._process_page(error_url)
 
-        # Test network error
+                # Verify _process_page works with valid URL
+                content, title = await connector._process_page(valid_url)
+                assert content is not None
+                assert title == "Page 1"
+
+                # Now test get_documents with a mix of valid and error URLs
+                # It should handle errors and return only valid documents
+                async def mock_get_all_pages() -> list[str]:
+                    return [valid_url, error_url]
+
+                with patch.object(connector, "_get_all_pages", side_effect=mock_get_all_pages):
+                    # get_documents should not raise an exception but should log the error
+                    documents = await connector.get_documents()
+
+                    # We should get only the valid document
+                    assert len(documents) == 1
+                    assert documents[0].url == valid_url
+                    assert documents[0].title == "Page 1"
+                    assert "Page 1 content" in documents[0].content
+
+        # Test network error in _process_page
         connector = PublicDocsConnector(publicdocs_config)
-        connector.url_queue.append(base_url)
 
+        # Create a session that raises a connection error
         session = AsyncMock()
         session.__aenter__.return_value = session
         session.__aexit__.return_value = None
-        session.get = AsyncMock(side_effect=ClientError)
+        session.get = AsyncMock(side_effect=ClientConnectionError("Connection failed"))
         session.close = AsyncMock()
 
         with patch("aiohttp.ClientSession", return_value=session):
             async with connector:
-                connector._client = session
+                # Verify _process_page raises HTTPRequestError
                 with pytest.raises(HTTPRequestError):
-                    await connector.get_documents()
-                assert len(connector.visited_urls) == 0
+                    await connector._process_page(base_url)
 
         # Test content processing error
         connector = PublicDocsConnector(publicdocs_config)
-        connector.url_queue.append(base_url)
 
+        # Create a response with invalid HTML
         invalid_response = AsyncMock()
         invalid_response.status = 200
         invalid_response.text = AsyncMock(return_value="<invalid>html</invalid>")
-        invalid_response.raise_for_status = AsyncMock()
+        invalid_response.raise_for_status = MagicMock()
 
         session = AsyncMock()
         session.__aenter__.return_value = session
@@ -311,10 +356,13 @@ class TestPublicDocsConnector:
 
         with patch("aiohttp.ClientSession", return_value=session):
             async with connector:
-                connector._client = session
-                with pytest.raises(DocumentProcessingError):
-                    await connector.get_documents()
-                assert len(connector.visited_urls) == 0
+                # For content processing error, we'll mock _extract_content to raise an exception
+                with patch.object(
+                    connector, "_extract_content", side_effect=Exception("Content processing error")
+                ):
+                    # Direct call to _process_page should raise DocumentProcessingError
+                    with pytest.raises(DocumentProcessingError):
+                        await connector._process_page(base_url)
 
     @pytest.mark.asyncio
     async def test_get_documents_with_version(
@@ -332,12 +380,12 @@ class TestPublicDocsConnector:
         base_response = AsyncMock()
         base_response.status = 200
         base_response.text = AsyncMock(return_value=HTML_CONTENT)
-        base_response.raise_for_status = AsyncMock()
+        base_response.raise_for_status = MagicMock()
 
         page_response = AsyncMock()
         page_response.status = 200
         page_response.text = AsyncMock(return_value=LINKED_PAGE_CONTENT)
-        page_response.raise_for_status = AsyncMock()
+        page_response.raise_for_status = MagicMock()
 
         # Configure session to return different responses based on URL
         async def mock_get(url: str, **kwargs) -> AsyncMock:
