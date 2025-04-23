@@ -1,0 +1,1 @@
+"""Git connector tests."""
