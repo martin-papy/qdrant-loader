@@ -86,7 +86,7 @@ class PublicDocsConnector(BaseConnector):
         self.logger.debug(f"URL matches base URL: {url}")
 
         # Extract path from URL
-        path = url[len(str(self.base_url)):]
+        path = url[len(str(self.base_url)) :]
         self.logger.debug(f"Extracted path from URL: {path}")
 
         # Check exclude paths
@@ -96,18 +96,18 @@ class PublicDocsConnector(BaseConnector):
                 self.logger.debug(f"URL path matches exclude pattern: {path}")
                 return False
         self.logger.debug(f"URL path not in exclude paths: {path}")
-        
+
         # Check path pattern
         if self.config.path_pattern is None:
             self.logger.debug("No path pattern specified, skipping pattern check")
             return True
-        
+
         self.logger.debug(f"Checking path pattern: {self.config.path_pattern}")
         if not fnmatch.fnmatch(path, self.config.path_pattern):
             self.logger.debug(f"URL path does not match pattern: {path}")
             return False
         self.logger.debug(f"URL path matches pattern: {path}")
-        
+
         self.logger.debug(f"URL passed all checks, will be processed: {url}")
         return True
 
@@ -151,6 +151,7 @@ class PublicDocsConnector(BaseConnector):
                             metadata={
                                 "title": title,
                                 "url": page,
+                                "version": self.version,
                             },
                             source_type=self.config.source_type,
                             source=self.config.source,
@@ -214,48 +215,47 @@ class PublicDocsConnector(BaseConnector):
                 )
 
             self.logger.debug("Making HTTP request", url=url)
-            async with aiohttp.ClientSession() as client:
-                try:
-                    response = await client.get(url)
-                    response.raise_for_status()
-                except aiohttp.ClientError as e:
-                    raise HTTPRequestError(url=url, message=str(e)) from e
+            try:
+                response = await self.client.get(url)
+                response.raise_for_status()  # This is a synchronous method, no need to await
+            except aiohttp.ClientError as e:
+                raise HTTPRequestError(url=url, message=str(e)) from e
 
-                self.logger.debug("HTTP request successful", url=url, status_code=response.status)
+            self.logger.debug("HTTP request successful", url=url, status_code=response.status)
 
-                try:
-                    # Extract links for crawling
-                    self.logger.debug("Extracting links from page", url=url)
-                    html = await response.text()
-                    links = self._extract_links(html, url)
-                    self.logger.debug("Adding new links to queue", url=url, new_links=len(links))
-                    for link in links:
-                        if link not in self.visited_urls:
-                            self.url_queue.append(link)
+            try:
+                # Extract links for crawling
+                self.logger.debug("Extracting links from page", url=url)
+                html = await response.text()
+                links = self._extract_links(html, url)
+                self.logger.debug("Adding new links to queue", url=url, new_links=len(links))
+                for link in links:
+                    if link not in self.visited_urls:
+                        self.url_queue.append(link)
 
-                    # Extract title from raw HTML
-                    title = self._extract_title(html)
-                    self.logger.debug("Extracted title", url=url, title=title)
+                # Extract title from raw HTML
+                title = self._extract_title(html)
+                self.logger.debug("Extracted title", url=url, title=title)
 
-                    if self.config.content_type == "html":
-                        self.logger.debug("Processing HTML content", url=url)
-                        content = self._extract_content(html)
-                        self.logger.debug(
-                            "HTML content processed",
-                            url=url,
-                            content_length=len(content) if content else 0,
-                        )
-                        return content, title
-                    else:
-                        self.logger.debug("Processing raw content", url=url)
-                        self.logger.debug(
-                            "Raw content length",
-                            url=url,
-                            content_length=len(html) if html else 0,
-                        )
-                        return html, title
-                except Exception as e:
-                    raise DocumentProcessingError(f"Failed to process page {url}: {e!s}") from e
+                if self.config.content_type == "html":
+                    self.logger.debug("Processing HTML content", url=url)
+                    content = self._extract_content(html)
+                    self.logger.debug(
+                        "HTML content processed",
+                        url=url,
+                        content_length=len(content) if content else 0,
+                    )
+                    return content, title
+                else:
+                    self.logger.debug("Processing raw content", url=url)
+                    self.logger.debug(
+                        "Raw content length",
+                        url=url,
+                        content_length=len(html) if html else 0,
+                    )
+                    return html, title
+            except Exception as e:
+                raise DocumentProcessingError(f"Failed to process page {url}: {e!s}") from e
 
         except (ConnectorNotInitializedError, HTTPRequestError, DocumentProcessingError):
             raise
