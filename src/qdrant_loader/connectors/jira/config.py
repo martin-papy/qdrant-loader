@@ -51,14 +51,14 @@ class JiraProjectConfig(SourceConfig):
     @classmethod
     def validate_env_vars(cls, values: dict) -> dict:
         """Load values from environment variables if not provided."""
-        if values.get("api_token") is None:
-            values["api_token"] = os.getenv("JIRA_TOKEN")
+        if values.get("token") is None:
+            values["token"] = os.getenv("JIRA_TOKEN")
         if values.get("email") is None:
             values["email"] = os.getenv("JIRA_EMAIL")
 
-        if not values.get("api_token"):
+        if not values.get("token"):
             raise ValueError(
-                "api_token must be provided either directly or via JIRA_TOKEN environment variable"
+                "token must be provided either directly or via JIRA_TOKEN environment variable"
             )
         if not values.get("email"):
             raise ValueError(
