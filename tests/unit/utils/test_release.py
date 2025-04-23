@@ -1,10 +1,14 @@
 import os
+import sys
 import tempfile
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 import tomli
 import tomli_w
+
+# Add the project root to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 # Import the functions we want to test
 from release import (
@@ -28,6 +32,7 @@ def temp_pyproject():
         pyproject = {"project": {"name": "test-project", "version": "0.1.0"}}
         tomli_w.dump(pyproject, f)
         return f.name
+
 
 def test_get_current_version(temp_pyproject):
     """Test getting the current version from pyproject.toml."""
