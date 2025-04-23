@@ -91,17 +91,23 @@ Our testing approach consists of:
 
 ### Overall Statistics
 
-- Current Coverage: 29% (as of latest test run)
+- Current Coverage: 61% (as of latest test run)
 - Target Coverage: 80% minimum
 - Configuration Module Coverage:
-  - `config/__init__.py`: 79% coverage
-  - `config/base.py`: 81% coverage
+  - `config/__init__.py`: 88% coverage
+  - `config/base.py`: 88% coverage
   - `config/chunking.py`: 90% coverage
   - `config/embedding.py`: 100% coverage
-  - `config/global_config.py`: 89% coverage
+  - `config/global_config.py`: 95% coverage
   - `config/source_config.py`: 100% coverage
-  - `config/sources.py`: 83% coverage
+  - `config/sources.py`: 89% coverage
   - `config/types.py`: 100% coverage
+- Connectors Module Coverage:
+  - `connectors/jira/connector.py`: 89% coverage
+  - `connectors/jira/models.py`: 100% coverage
+  - `connectors/jira/config.py`: 84% coverage
+  - `connectors/confluence/connector.py`: 83% coverage
+  - `connectors/git/adapter.py`: 93% coverage
 
 ## Testing Priorities and Progress
 
@@ -203,11 +209,27 @@ Our testing approach consists of:
     - ✅ Malformed content
     - ✅ Content processing errors
 
-- [ ] Jira Source (`jira/`)
-  - [ ] Issue retrieval (Integration)
-  - [ ] Field mapping (Unit)
-  - [ ] Update detection (Unit)
-  - [ ] Error scenarios (Both)
+- ✅ Jira Source (`jira/`)
+  - ✅ Authentication (Unit)
+    - ✅ Environment variable validation
+    - ✅ Token validation
+    - ✅ Email validation
+  - ✅ API Integration (Unit)
+    - ✅ URL construction
+    - ✅ JQL query formatting
+    - ✅ Request handling
+    - ✅ Error handling
+  - ✅ Content Processing (Unit)
+    - ✅ Issue data parsing
+    - ✅ Field mapping
+    - ✅ Document creation
+    - ✅ Metadata extraction
+  - ✅ Rate limiting (Unit)
+    - ✅ Request throttling
+  - ✅ Error scenarios (Unit)
+    - ✅ Network error handling
+    - ✅ Invalid response format
+    - ✅ Missing required fields
 
 - [ ] Public Docs Source (`publicdocs/`)
   - [ ] Document fetching (Integration)
@@ -249,14 +271,14 @@ Our testing approach consists of:
   - [x] Base Connector
 - [x] Implement source connector tests
   - [x] Git connector tests
-  - [x] Confluence connector tests (complete)
-- [ ] Achieve 50% coverage
+  - [x] Confluence connector tests
+  - [x] Jira connector tests
+- [✅] Achieve 50% coverage (Current: 61%)
 
 Next steps:
 
-1. Implement Jira connector tests
-2. Implement Public Docs connector tests
-3. Work towards 50% overall coverage
+1. Implement Public Docs connector tests
+2. Work towards 65% overall coverage
 
 ### Phase 2
 
