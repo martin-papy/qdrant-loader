@@ -1,29 +1,19 @@
 """Unit tests for Public Docs connector."""
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import AsyncGenerator, List, Optional
-import asyncio
-from pydantic import HttpUrl, BaseModel
+
+from pydantic import HttpUrl
 
 import pytest
 from aiohttp import (
-    ClientSession,
-    ClientResponse,
-    ClientError,
     ClientResponseError,
     ClientConnectionError,
 )
-from bs4 import BeautifulSoup, Tag
 
-from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig, SelectorsConfig
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector
-from qdrant_loader.core.document import Document
 from qdrant_loader.connectors.exceptions import (
-    ConnectorError,
-    ConnectorNotInitializedError,
     DocumentProcessingError,
     HTTPRequestError,
 )

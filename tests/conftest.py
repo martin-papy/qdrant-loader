@@ -6,10 +6,24 @@ This module contains pytest fixtures that are shared across all test modules.
 import shutil
 from pathlib import Path
 import os
+import sys
 
 import pytest
 from dotenv import load_dotenv
 from qdrant_loader.config import get_settings, initialize_config
+
+
+def pytest_configure(config):
+    """Configure pytest before test collection."""
+    # Add the tests directory to the Python path
+    # This ensures imports within tests use absolute paths
+    # rather than trying to resolve relative to the module name
+    tests_dir = os.path.dirname(os.path.abspath(__file__))
+    if tests_dir not in sys.path:
+        sys.path.insert(0, tests_dir)
+
+    # Suppress XMLParsedAsHTMLWarning from BeautifulSoup
+    config.addinivalue_line("filterwarnings", "ignore::bs4.XMLParsedAsHTMLWarning")
 
 
 @pytest.fixture(scope="session", autouse=True)
