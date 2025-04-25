@@ -251,6 +251,7 @@ class ConfluenceConnector(BaseConnector):
             document = Document(
                 title=title,
                 content=content_text,
+                content_type="html",
                 metadata=metadata,
                 source_type=SourceType.CONFLUENCE,
                 source=self.config.source,

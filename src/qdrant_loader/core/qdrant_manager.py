@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.models import Distance, OptimizersConfigDiff, PayloadFieldSchema, VectorParams
 
 from ..config import Settings, get_global_config, get_settings
 from ..utils.logging import LoggingConfig
@@ -126,10 +127,18 @@ class QdrantManager:
             # Create collection with basic configuration
             client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=models.VectorParams(
-                    size=vector_size, distance=models.Distance.COSINE
+                vectors_config=VectorParams(
+                    size=vector_size, distance=Distance.COSINE
                 ),
             )
+            
+            # Create index for document_id field
+            client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="document_id",
+                field_schema={"type": "keyword"}, # type: ignore
+            )
+            
             logger.info(
                 f"Collection {self.collection_name} created successfully with vector size {vector_size}"
             )

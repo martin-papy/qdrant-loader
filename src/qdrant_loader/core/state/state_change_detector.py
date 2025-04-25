@@ -143,7 +143,7 @@ class StateChangeDetector:
         """
         source_type, source, url = document_state.uri.split(":")
         url = unquote(url)
-        self.logger.critical(
+        self.logger.debug(
             "Creating deleted document",
             uri=document_state.uri,
             source_type=source_type,

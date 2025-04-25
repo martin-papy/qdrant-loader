@@ -15,6 +15,7 @@ class Document(BaseModel):
 
     id: str
     title: str
+    content_type: str
     content: str
     metadata: dict[str, Any] = Field(default_factory=dict)
     content_hash: str

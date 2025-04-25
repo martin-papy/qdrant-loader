@@ -247,6 +247,7 @@ class GitConnector(BaseConnector):
             git_document = Document(
                 title=os.path.basename(file_path),
                 content=content,
+                content_type=os.path.splitext(file_path)[1].lower(),
                 metadata=metadata,
                 source_type=SourceType.GIT,
                 source=self.config.source,
