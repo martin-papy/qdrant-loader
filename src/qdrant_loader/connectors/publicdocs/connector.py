@@ -148,6 +148,7 @@ class PublicDocsConnector(BaseConnector):
                             id=doc_id,
                             title=title,
                             content=content,
+                            content_type="html",
                             metadata={
                                 "title": title,
                                 "url": page,
