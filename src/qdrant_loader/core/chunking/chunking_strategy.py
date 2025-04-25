@@ -17,19 +17,19 @@ class ChunkingStrategy:
     def __init__(
         self,
         settings: "Settings",
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
     ):
         """
         Initialize the chunking strategy.
 
         Args:
             settings: The application settings
-            chunk_size: Maximum number of tokens per chunk
-            chunk_overlap: Number of tokens to overlap between chunks
+            chunk_size: Maximum number of tokens per chunk (optional, defaults to settings value)
+            chunk_overlap: Number of tokens to overlap between chunks (optional, defaults to settings value)
         """
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
+        self.chunk_size = chunk_size or settings.global_config.chunking.chunk_size
+        self.chunk_overlap = chunk_overlap or settings.global_config.chunking.chunk_overlap
         self.tokenizer = settings.global_config.embedding.tokenizer
 
         # Initialize tokenizer based on configuration
@@ -46,7 +46,7 @@ class ChunkingStrategy:
                 )
                 self.encoding = None
 
-        if chunk_overlap >= chunk_size:
+        if self.chunk_overlap >= self.chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
 
     def _count_tokens(self, text: str) -> int:
