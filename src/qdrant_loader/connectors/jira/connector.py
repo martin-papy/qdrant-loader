@@ -284,6 +284,7 @@ class JiraConnector(BaseConnector):
             document = Document(
                 id=issue.id,
                 content=content,
+                content_type="text",
                 source=self.config.source,
                 source_type=SourceType.JIRA,
                 created_at=issue.created,

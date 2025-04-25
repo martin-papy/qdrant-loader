@@ -1,60 +1,26 @@
+"""Default token-based chunking strategy."""
+
 from typing import TYPE_CHECKING
 
 import structlog
 import tiktoken
 
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
-class ChunkingStrategy:
-    """Handles text chunking with overlap and token counting."""
-
-    def __init__(
-        self,
-        settings: "Settings",
-        chunk_size: int | None = None,
-        chunk_overlap: int | None = None,
-    ):
-        """
-        Initialize the chunking strategy.
-
-        Args:
-            settings: The application settings
-            chunk_size: Maximum number of tokens per chunk (optional, defaults to settings value)
-            chunk_overlap: Number of tokens to overlap between chunks (optional, defaults to settings value)
-        """
-        self.chunk_size = chunk_size or settings.global_config.chunking.chunk_size
-        self.chunk_overlap = chunk_overlap or settings.global_config.chunking.chunk_overlap
-        self.tokenizer = settings.global_config.embedding.tokenizer
-
-        # Initialize tokenizer based on configuration
-        if self.tokenizer == "none":
-            self.encoding = None
-        else:
-            try:
-                self.encoding = tiktoken.get_encoding(self.tokenizer)
-            except Exception as e:
-                logger.warning(
-                    "Failed to initialize tokenizer, falling back to simple character counting",
-                    error=str(e),
-                    tokenizer=self.tokenizer,
-                )
-                self.encoding = None
-
-        if self.chunk_overlap >= self.chunk_size:
-            raise ValueError("Chunk overlap must be less than chunk size")
-
-    def _count_tokens(self, text: str) -> int:
-        """Count the number of tokens in a text string."""
-        if self.encoding is None:
-            # Fallback to character count if no tokenizer is available
-            return len(text)
-        return len(self.encoding.encode(text))
+class DefaultChunkingStrategy(BaseChunkingStrategy):
+    """Default token-based chunking strategy.
+    
+    This strategy splits text into chunks based on token count, with configurable
+    chunk size and overlap. It uses tiktoken for tokenization when available,
+    falling back to character-based splitting when no tokenizer is configured.
+    """
 
     def _split_text(self, text: str) -> list[str]:
         """Split text into chunks with overlap."""
@@ -140,8 +106,7 @@ class ChunkingStrategy:
         return chunks
 
     def chunk_document(self, document: Document) -> list[Document]:
-        """
-        Split a document into chunks while preserving metadata.
+        """Split a document into chunks while preserving metadata.
 
         Args:
             document: The document to chunk
@@ -153,23 +118,12 @@ class ChunkingStrategy:
         chunked_documents = []
 
         for i, chunk in enumerate(chunks):
-            # Create a new document for each chunk
-            metadata = document.metadata.copy()
-            metadata.update({"chunk_index": i, "total_chunks": len(chunks)})
-
-            chunk_doc = Document(
-                content=chunk,
-                source=document.source,
-                source_type=document.source_type,
-                metadata=metadata,
-                url=document.url,
-                title=document.title,
-                content_hash=document.content_hash,
-                created_at=document.created_at,
-                updated_at=document.updated_at,
-                id=document.id,
+            chunk_doc = self._create_chunk_document(
+                original_doc=document,
+                chunk_content=chunk,
+                chunk_index=i,
+                total_chunks=len(chunks)
             )
-
             chunked_documents.append(chunk_doc)
 
         logger.debug(
@@ -179,4 +133,4 @@ class ChunkingStrategy:
             avg_chunk_size=sum(len(c.content) for c in chunked_documents) / len(chunks),
         )
 
-        return chunked_documents
+        return chunked_documents 
