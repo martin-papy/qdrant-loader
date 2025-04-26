@@ -41,6 +41,7 @@ ENV/
 # Logs
 *.log
 logs/
+metrics/
 
 # Test coverage
 .coverage
