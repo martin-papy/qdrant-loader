@@ -84,9 +84,11 @@ class StateManager:
             )
 
         try:
+            self.logger.info(f"Creating async engine for database: {db_file}")
             self._engine = create_async_engine(f"sqlite+aiosqlite:///{db_file}", **engine_args)
 
             # Create async session factory
+            self.logger.info("Creating async session factory")
             self._session_factory = async_sessionmaker(
                 bind=self._engine,
                 expire_on_commit=False,  # Prevent expired objects after commit
@@ -94,6 +96,7 @@ class StateManager:
             )
 
             # Initialize schema
+            self.logger.info("Initializing database schema")
             async with self._engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
@@ -112,6 +115,7 @@ class StateManager:
     async def dispose(self):
         """Clean up resources."""
         if self._engine:
+            self.logger.info("Disposing database engine")
             await self._engine.dispose()
             self._engine = None
             self._session_factory = None
@@ -127,124 +131,182 @@ class StateManager:
         document_count: int = 0,
     ) -> None:
         """Update and get the last successful ingestion time for a source."""
-        async with self._session_factory() as session:  # type: ignore
-            now = datetime.now(UTC)
-            result = await session.execute(
-                select(IngestionHistory).filter_by(source_type=source_type, source=source)
-            )
-            ingestion = result.scalar_one_or_none()
-
-            if ingestion:
-                ingestion.last_successful_ingestion = now if status == IngestionStatus.SUCCESS else ingestion.last_successful_ingestion  # type: ignore
-                ingestion.status = status  # type: ignore
-                ingestion.document_count = document_count if document_count else ingestion.document_count  # type: ignore
-                ingestion.updated_at = now  # type: ignore
-                ingestion.error_message = error_message  # type: ignore
-            else:
-                ingestion = IngestionHistory(
-                    source_type=source_type,
-                    source=source,
-                    last_successful_ingestion=now,
-                    status=status,
-                    document_count=document_count,
-                    error_message=error_message,
-                    created_at=now,
-                    updated_at=now,
+        self.logger.info(f"Updating last ingestion for {source_type}:{source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {source_type}:{source}")
+                now = datetime.now(UTC)
+                self.logger.info(f"Executing query to find ingestion history for {source_type}:{source}")
+                result = await session.execute(
+                    select(IngestionHistory).filter_by(source_type=source_type, source=source)
                 )
-                session.add(ingestion)
-            await session.commit()
-            self.logger.debug(
-                "Ingestion history updated",
-                extra={
-                    "source_type": ingestion.source_type,
-                    "source": ingestion.source,
-                    "status": ingestion.status,
-                    "document_count": ingestion.document_count,
-                },
-            )
+                ingestion = result.scalar_one_or_none()
+                self.logger.info(f"Query result: {'Found' if ingestion else 'Not found'} ingestion history for {source_type}:{source}")
+
+                if ingestion:
+                    self.logger.info(f"Updating existing ingestion history for {source_type}:{source}")
+                    ingestion.last_successful_ingestion = now if status == IngestionStatus.SUCCESS else ingestion.last_successful_ingestion  # type: ignore
+                    ingestion.status = status  # type: ignore
+                    ingestion.document_count = document_count if document_count else ingestion.document_count  # type: ignore
+                    ingestion.updated_at = now  # type: ignore
+                    ingestion.error_message = error_message  # type: ignore
+                else:
+                    self.logger.info(f"Creating new ingestion history for {source_type}:{source}")
+                    ingestion = IngestionHistory(
+                        source_type=source_type,
+                        source=source,
+                        last_successful_ingestion=now,
+                        status=status,
+                        document_count=document_count,
+                        error_message=error_message,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    session.add(ingestion)
+                
+                self.logger.info(f"Committing changes for {source_type}:{source}")
+                await session.commit()
+                self.logger.info(f"Successfully committed changes for {source_type}:{source}")
+                
+                self.logger.debug(
+                    "Ingestion history updated",
+                    extra={
+                        "source_type": ingestion.source_type,
+                        "source": ingestion.source,
+                        "status": ingestion.status,
+                        "document_count": ingestion.document_count,
+                    },
+                )
+        except Exception as e:
+            self.logger.error(f"Error updating last ingestion for {source_type}:{source}: {str(e)}", exc_info=True)
+            raise
 
     async def get_last_ingestion(self, source_type: str, source: str) -> IngestionHistory | None:
         """Get the last ingestion record for a source."""
-        async with self._session_factory() as session:  # type: ignore
-            result = await session.execute(
-                select(IngestionHistory)
-                .filter(
-                    IngestionHistory.source_type == source_type,
-                    IngestionHistory.source == source,
+        self.logger.info(f"Getting last ingestion for {source_type}:{source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {source_type}:{source}")
+                self.logger.info(f"Executing query to find last ingestion for {source_type}:{source}")
+                result = await session.execute(
+                    select(IngestionHistory)
+                    .filter(
+                        IngestionHistory.source_type == source_type,
+                        IngestionHistory.source == source,
+                    )
+                    .order_by(IngestionHistory.last_successful_ingestion.desc())
                 )
-                .order_by(IngestionHistory.last_successful_ingestion.desc())
-            )
-            return result.scalar_one_or_none()
+                ingestion = result.scalar_one_or_none()
+                self.logger.info(f"Query result: {'Found' if ingestion else 'Not found'} last ingestion for {source_type}:{source}")
+                return ingestion
+        except Exception as e:
+            self.logger.error(f"Error getting last ingestion for {source_type}:{source}: {str(e)}", exc_info=True)
+            raise
 
     async def mark_document_deleted(self, source_type: str, source: str, document_id: str) -> None:
         """Mark a document as deleted."""
-        async with self._session_factory() as session:  # type: ignore
-            now = datetime.now(UTC)
-            self.logger.debug(
-                "Searching for document to be deleted.",
-                extra={
-                    "document_id": document_id,
-                    "source_type": source_type,
-                    "source": source,
-                },
-            )
-            result = await session.execute(
-                select(DocumentStateRecord).filter(
-                    DocumentStateRecord.source_type == source_type,
-                    DocumentStateRecord.source == source,
-                    DocumentStateRecord.document_id == document_id,
-                )
-            )
-            state = result.scalar_one_or_none()
-
-            if state:
-                state.is_deleted = True  # type: ignore
-                state.updated_at = now  # type: ignore
-                await session.commit()
+        self.logger.info(f"Marking document as deleted: {source_type}:{source}:{document_id}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {source_type}:{source}:{document_id}")
+                now = datetime.now(UTC)
                 self.logger.debug(
-                    "Document marked as deleted",
+                    "Searching for document to be deleted.",
                     extra={
                         "document_id": document_id,
                         "source_type": source_type,
                         "source": source,
                     },
                 )
+                self.logger.info(f"Executing query to find document {source_type}:{source}:{document_id}")
+                result = await session.execute(
+                    select(DocumentStateRecord).filter(
+                        DocumentStateRecord.source_type == source_type,
+                        DocumentStateRecord.source == source,
+                        DocumentStateRecord.document_id == document_id,
+                    )
+                )
+                state = result.scalar_one_or_none()
+                self.logger.info(f"Query result: {'Found' if state else 'Not found'} document {source_type}:{source}:{document_id}")
+
+                if state:
+                    self.logger.info(f"Updating document state for {source_type}:{source}:{document_id}")
+                    state.is_deleted = True  # type: ignore
+                    state.updated_at = now  # type: ignore
+                    self.logger.info(f"Committing changes for {source_type}:{source}:{document_id}")
+                    await session.commit()
+                    self.logger.info(f"Successfully committed changes for {source_type}:{source}:{document_id}")
+                    self.logger.debug(
+                        "Document marked as deleted",
+                        extra={
+                            "document_id": document_id,
+                            "source_type": source_type,
+                            "source": source,
+                        },
+                    )
+                else:
+                    self.logger.warning(f"Document not found: {source_type}:{source}:{document_id}")
+        except Exception as e:
+            self.logger.error(f"Error marking document as deleted {source_type}:{source}:{document_id}: {str(e)}", exc_info=True)
+            raise
 
     async def get_document_state_record(
         self, source_type: str, source: str, document_id: str
     ) -> DocumentStateRecord | None:
         """Get the state of a document."""
-        async with self._session_factory() as session:  # type: ignore
-            result = await session.execute(
-                select(DocumentStateRecord).filter(
-                    DocumentStateRecord.source_type == source_type,
-                    DocumentStateRecord.source == source,
-                    DocumentStateRecord.document_id == document_id,
+        self.logger.info(f"Getting document state for {source_type}:{source}:{document_id}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {source_type}:{source}:{document_id}")
+                self.logger.info(f"Executing query to find document state for {source_type}:{source}:{document_id}")
+                result = await session.execute(
+                    select(DocumentStateRecord).filter(
+                        DocumentStateRecord.source_type == source_type,
+                        DocumentStateRecord.source == source,
+                        DocumentStateRecord.document_id == document_id,
+                    )
                 )
-            )
-            return result.scalar_one_or_none()
+                state = result.scalar_one_or_none()
+                self.logger.info(f"Query result: {'Found' if state else 'Not found'} document state for {source_type}:{source}:{document_id}")
+                return state
+        except Exception as e:
+            self.logger.error(f"Error getting document state for {source_type}:{source}:{document_id}: {str(e)}", exc_info=True)
+            raise
 
     async def get_document_state_records(
         self, source_config: SourceConfig, since: datetime | None = None
     ) -> list[DocumentStateRecord]:
         """Get all document states for a source, optionally filtered by date."""
-        async with self._session_factory() as session:  # type: ignore
-            query = select(DocumentStateRecord).filter(
-                DocumentStateRecord.source_type == source_config.source_type,
-                DocumentStateRecord.source == source_config.source,
-            )
-            if since:
-                query = query.filter(DocumentStateRecord.updated_at >= since)
-            result = await session.execute(query)
-            return list(result.scalars().all())
+        self.logger.info(f"Getting document state records for {source_config.source_type}:{source_config.source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {source_config.source_type}:{source_config.source}")
+                query = select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == source_config.source_type,
+                    DocumentStateRecord.source == source_config.source,
+                )
+                if since:
+                    query = query.filter(DocumentStateRecord.updated_at >= since)
+                self.logger.info(f"Executing query for {source_config.source_type}:{source_config.source}")
+                result = await session.execute(query)
+                self.logger.info(f"Query executed, getting all records for {source_config.source_type}:{source_config.source}")
+                records = list(result.scalars().all())
+                self.logger.info(f"Got {len(records)} records for {source_config.source_type}:{source_config.source}")
+                return records
+        except Exception as e:
+            self.logger.error(f"Error getting document state records for {source_config.source_type}:{source_config.source}: {str(e)}", exc_info=True)
+            raise
 
     async def update_document_state(self, document: Document) -> DocumentStateRecord:
         """Update the state of a document."""
         if not self._initialized:
             raise RuntimeError("StateManager not initialized. Call initialize() first.")
 
-        async with self._session_factory() as session:  # type: ignore
-            try:
+        self.logger.info(f"Updating document state for {document.source_type}:{document.source}:{document.id}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                self.logger.info(f"Created database session for {document.source_type}:{document.source}:{document.id}")
+                self.logger.info(f"Executing query to find document state for {document.source_type}:{document.source}:{document.id}")
                 result = await session.execute(
                     select(DocumentStateRecord).filter(
                         DocumentStateRecord.source_type == document.source_type,
@@ -253,17 +315,20 @@ class StateManager:
                     )
                 )
                 document_state_record = result.scalar_one_or_none()
+                self.logger.info(f"Query result: {'Found' if document_state_record else 'Not found'} document state for {document.source_type}:{document.source}:{document.id}")
 
                 now = datetime.now(UTC)
 
                 if document_state_record:
                     # Update existing record
+                    self.logger.info(f"Updating existing document state for {document.source_type}:{document.source}:{document.id}")
                     document_state_record.title = document.title  # type: ignore
                     document_state_record.content_hash = document.content_hash  # type: ignore
                     document_state_record.is_deleted = False  # type: ignore
                     document_state_record.updated_at = now  # type: ignore
                 else:
                     # Create new record
+                    self.logger.info(f"Creating new document state for {document.source_type}:{document.source}:{document.id}")
                     document_state_record = DocumentStateRecord(
                         document_id=document.id,
                         source_type=document.source_type,
@@ -277,7 +342,9 @@ class StateManager:
                     )
                     session.add(document_state_record)
 
+                self.logger.info(f"Committing changes for {document.source_type}:{document.source}:{document.id}")
                 await session.commit()
+                self.logger.info(f"Successfully committed changes for {document.source_type}:{document.source}:{document.id}")
 
                 self.logger.debug(
                     "Document state updated",
@@ -288,20 +355,20 @@ class StateManager:
                     },
                 )
                 return document_state_record
-
-            except Exception as e:
-                await session.rollback()
-                self.logger.error(
-                    "Failed to update document state",
-                    extra={
-                        "document_id": document.id,
-                        "error": str(e),
-                        "error_type": type(e).__name__,
-                    },
-                )
-                raise
+        except Exception as e:
+            self.logger.error(
+                "Failed to update document state",
+                extra={
+                    "document_id": document.id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+            )
+            raise
 
     async def close(self):
         """Close all database connections."""
         if hasattr(self, "_engine") and self._engine is not None:
+            self.logger.info("Closing database connections")
             await self._engine.dispose()
+            self.logger.info("Database connections closed")
