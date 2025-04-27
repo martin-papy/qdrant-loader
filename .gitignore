@@ -56,3 +56,4 @@ tests/config.test.yaml
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+qdrant-loader.code-workspace
