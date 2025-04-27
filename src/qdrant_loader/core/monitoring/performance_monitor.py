@@ -39,6 +39,7 @@ class PerformanceMonitor:
 
         if config.metrics_dir:
             Path(config.metrics_dir).mkdir(parents=True, exist_ok=True)
+            logger.debug(f"Initialized metrics directory at {config.metrics_dir}")
 
     @classmethod
     def get_monitor(cls, metrics_dir: Optional[Path] = None) -> 'PerformanceMonitor':
@@ -47,11 +48,13 @@ class PerformanceMonitor:
         if loop not in cls._monitors:
             config = MonitorConfig(metrics_dir=str(metrics_dir) if metrics_dir else None)
             cls._monitors[loop] = cls(config)
+            logger.debug("Created new monitor instance for current event loop")
         return cls._monitors[loop]
 
     async def initialize(self):
         """Initialize the monitor."""
         await self.resource_manager.start_cleanup_task()
+        logger.debug("Performance monitor initialized")
 
     async def dispose(self):
         """Clean up resources."""
@@ -59,6 +62,7 @@ class PerformanceMonitor:
             await self.resource_manager.stop_cleanup_task()
             await self.operation_tracker.cleanup()
             await self.batch_tracker.cleanup()
+            logger.debug("Performance monitor resources cleaned up")
         except Exception as e:
             logger.error(f"Error during monitor disposal: {str(e)}", exc_info=True)
 
@@ -66,17 +70,21 @@ class PerformanceMonitor:
     async def track_operation(self, operation_type: str, metadata: Optional[Dict] = None):
         """Context manager for tracking operations."""
         async with self.operation_tracker.track_operation(operation_type, metadata) as operation_id:
+            logger.debug(f"Started tracking operation {operation_id} of type {operation_type}")
             yield operation_id
 
     @asynccontextmanager
     async def track_batch(self, batch_type: str, batch_size: int, metadata: Optional[Dict] = None):
         """Context manager for tracking batches."""
         async with self.batch_tracker.track_batch(batch_type, batch_size, metadata) as batch_id:
+            logger.debug(f"Started tracking batch {batch_id} of type {batch_type} with size {batch_size}")
             yield batch_id
 
     async def get_metrics_summary(self) -> Dict:
         """Get a summary of all collected metrics."""
-        return await self.metrics_collector.collect_metrics()
+        summary = await self.metrics_collector.collect_metrics()
+        logger.debug("Collected metrics summary")
+        return summary
 
     async def save_metrics(self, filename: Optional[str] = None):
         """Save collected metrics to a file."""
@@ -116,7 +124,7 @@ class PerformanceMonitor:
                 }
                 self.storage.current_operations.clear()
                 self.storage.current_batches.clear()
-                logger.info("Metrics cleared")
+                logger.debug("Metrics cleared")
         except Exception as e:
             logger.error(f"Failed to clear metrics: {str(e)}", exc_info=True)
             raise 

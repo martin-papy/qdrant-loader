@@ -22,6 +22,7 @@ class OperationTracker(BaseTracker):
     async def cleanup(self):
         """Clean up resources."""
         await self.lock_manager.cleanup()
+        logger.debug("Operation tracker resources cleaned up")
 
     @asynccontextmanager
     async def track_operation(self, operation_type: str, metadata: Optional[Dict] = None) -> AsyncGenerator[str, None]:
@@ -42,7 +43,7 @@ class OperationTracker(BaseTracker):
                     await self.end_operation(operation_id)
                     logger.debug(f"Successfully ended operation {operation_id}")
                 else:
-                    logger.warning(f"Operation {operation_id} not found or already completed")
+                    logger.debug(f"Operation {operation_id} not found or already completed")
             except Exception as e:
                 logger.error(f"Error ending operation {operation_id}: {str(e)}", exc_info=True)
 
@@ -57,6 +58,7 @@ class OperationTracker(BaseTracker):
                     metadata=metadata or {}
                 )
                 self.active_operations.add(operation_id)
+                logger.debug(f"Started operation {operation_id}")
                 return operation_id
             finally:
                 await self.lock_manager.release()
@@ -70,12 +72,12 @@ class OperationTracker(BaseTracker):
             await self.lock_manager.acquire(holder=f"end_operation_{operation_id}")
             try:
                 if operation_id not in self.storage.current_operations:
-                    logger.warning(f"Operation {operation_id} not found in current operations")
+                    logger.debug(f"Operation {operation_id} not found in current operations")
                     return
 
                 operation = self.storage.current_operations[operation_id]
                 if operation.is_completed:
-                    logger.warning(f"Operation {operation_id} already completed")
+                    logger.debug(f"Operation {operation_id} already completed")
                     return
 
                 operation.end_time = time.time()
@@ -96,6 +98,7 @@ class OperationTracker(BaseTracker):
                 # Remove from current operations
                 del self.storage.current_operations[operation_id]
                 self.active_operations.remove(operation_id)
+                logger.debug(f"Ended operation {operation_id}")
             finally:
                 await self.lock_manager.release()
         except Exception as e:
@@ -111,8 +114,12 @@ class OperationTracker(BaseTracker):
             'error': operation.error,
             'metadata': operation.metadata
         }
-        logger.info('Operation completed', **log_data)
+        if operation.success:
+            logger.info('Operation completed', **log_data)
+        else:
+            logger.error('Operation failed', **log_data)
 
     async def cleanup_operation(self, operation_id: str, success: bool = True, error: Optional[str] = None):
         """Clean up an operation."""
-        await self.end_operation(operation_id, success, error) 
+        await self.end_operation(operation_id, success, error)
+        logger.debug(f"Cleaned up operation {operation_id}") 
