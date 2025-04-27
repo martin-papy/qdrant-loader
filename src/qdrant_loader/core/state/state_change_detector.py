@@ -42,22 +42,22 @@ class StateChangeDetector:
         self.logger = LoggingConfig.get_logger(f"qdrant_loader.{self.__class__.__name__}")
         self._initialized = False
         self.state_manager = state_manager
-        self.logger.info(
+        self.logger.debug(
             "Initializing StateChangeDetector",
             state_manager=state_manager.__class__.__name__,
         )
 
     async def __aenter__(self):
         """Async context manager entry."""
-        self.logger.info("Entering StateChangeDetector context")
+        self.logger.debug("Entering StateChangeDetector context")
         if not self._initialized:
             self._initialized = True
-            self.logger.info("StateChangeDetector initialized")
+            self.logger.debug("StateChangeDetector initialized")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
-        self.logger.info("Exiting StateChangeDetector context")
+        self.logger.debug("Exiting StateChangeDetector context")
         if exc_type:
             self.logger.error(
                 "Error in StateChangeDetector context",
@@ -75,29 +75,29 @@ class StateChangeDetector:
             )
 
         self._log_change_detection_start(len(documents))
-        self.logger.info("Getting current states for documents")
+        self.logger.debug("Getting current states for documents")
 
         # Get current states
         current_states = [self._get_document_state(doc) for doc in documents]
-        self.logger.info(f"Got {len(current_states)} current states")
+        self.logger.debug(f"Got {len(current_states)} current states")
 
         # Get previous states
-        self.logger.info("Getting previous states from state manager")
+        self.logger.debug("Getting previous states from state manager")
         previous_states = await self._get_previous_states(filtered_config)
-        self.logger.info(f"Got {len(previous_states)} previous states")
+        self.logger.debug(f"Got {len(previous_states)} previous states")
 
         # Compare states
-        self.logger.info("Finding new documents")
+        self.logger.debug("Finding new documents")
         new_docs = await self._find_new_documents(current_states, previous_states, documents)
-        self.logger.info(f"Found {len(new_docs)} new documents")
+        self.logger.debug(f"Found {len(new_docs)} new documents")
 
-        self.logger.info("Finding updated documents")
+        self.logger.debug("Finding updated documents")
         updated_docs = await self._find_updated_documents(current_states, previous_states, documents)
-        self.logger.info(f"Found {len(updated_docs)} updated documents")
+        self.logger.debug(f"Found {len(updated_docs)} updated documents")
 
-        self.logger.info("Finding deleted documents")
+        self.logger.debug("Finding deleted documents")
         deleted_docs = await self._find_deleted_documents(current_states, previous_states)
-        self.logger.info(f"Found {len(deleted_docs)} deleted documents")
+        self.logger.debug(f"Found {len(deleted_docs)} deleted documents")
 
         changes = {
             "new": new_docs,
@@ -216,41 +216,41 @@ class StateChangeDetector:
                 "StateChangeDetector not initialized. Use the detector as an async context manager."
             )
 
-        self.logger.info("Starting to get previous states")
+        self.logger.debug("Starting to get previous states")
         previous_states_records: list[DocumentStateRecord] = []
 
         # Process each config individually
         if filtered_config.git:
-            self.logger.info("Getting Git states")
+            self.logger.debug("Getting Git states")
             for config in filtered_config.git.values():
                 records = await self.state_manager.get_document_state_records(config)
-                self.logger.info(f"Got {len(records)} Git records")
+                self.logger.debug(f"Got {len(records)} Git records")
                 previous_states_records.extend(records)
 
         if filtered_config.confluence:
-            self.logger.info("Getting Confluence states")
+            self.logger.debug("Getting Confluence states")
             for config in filtered_config.confluence.values():
                 records = await self.state_manager.get_document_state_records(config)
-                self.logger.info(f"Got {len(records)} Confluence records")
+                self.logger.debug(f"Got {len(records)} Confluence records")
                 previous_states_records.extend(records)
 
         # Process Jira projects
         if filtered_config.jira:
-            self.logger.info("Getting Jira states")
+            self.logger.debug("Getting Jira states")
             for config in filtered_config.jira.values():
                 records = await self.state_manager.get_document_state_records(config)
-                self.logger.info(f"Got {len(records)} Jira records")
+                self.logger.debug(f"Got {len(records)} Jira records")
                 previous_states_records.extend(records)
 
         # Process public documentation
         if filtered_config.publicdocs:
-            self.logger.info("Getting PublicDocs states")
+            self.logger.debug("Getting PublicDocs states")
             for config in filtered_config.publicdocs.values():
                 records = await self.state_manager.get_document_state_records(config)
-                self.logger.info(f"Got {len(records)} PublicDocs records")
+                self.logger.debug(f"Got {len(records)} PublicDocs records")
                 previous_states_records.extend(records)
 
-        self.logger.info(f"Converting {len(previous_states_records)} records to states")
+        self.logger.debug(f"Converting {len(previous_states_records)} records to states")
         previous_states = [
             DocumentState(
                 uri=self._generate_uri(state_record.url, state_record.source, state_record.source_type, state_record.document_id),  # type: ignore
@@ -259,7 +259,7 @@ class StateChangeDetector:
             )
             for state_record in previous_states_records
         ]
-        self.logger.info(f"Converted {len(previous_states)} records to states")
+        self.logger.debug(f"Converted {len(previous_states)} records to states")
         return previous_states
 
     def _normalize_url(self, url: str) -> str:
