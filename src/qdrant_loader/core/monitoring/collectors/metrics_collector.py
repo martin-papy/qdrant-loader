@@ -2,7 +2,7 @@
 Metrics collector for performance monitoring.
 """
 
-from typing import Dict, cast
+from typing import Dict, cast, Any
 from qdrant_loader.core.monitoring.managers.storage_manager import MetricsStorage
 
 
@@ -16,6 +16,8 @@ class MetricsCollector:
         return {
             'operations': await self._collect_operation_metrics(),
             'batches': await self._collect_batch_metrics(),
+            'documents': await self._collect_document_metrics(),
+            'chunks': await self._collect_chunk_metrics(),
             'overall': await self._collect_overall_metrics()
         }
 
@@ -42,6 +44,18 @@ class MetricsCollector:
             }
         return metrics
 
+    async def _collect_document_metrics(self) -> Dict[str, Any]:
+        """Collect document-specific metrics."""
+        doc_metrics = self.storage.document_metrics
+        return {
+            'total_documents': doc_metrics['total_documents'],
+            'documents_by_source': doc_metrics['documents_by_source'],
+            'documents_by_type': doc_metrics['documents_by_type'],
+            'average_document_size': sum(doc_metrics['document_sizes']) / len(doc_metrics['document_sizes']) if doc_metrics['document_sizes'] else 0,
+            'min_document_size': min(doc_metrics['document_sizes']) if doc_metrics['document_sizes'] else 0,
+            'max_document_size': max(doc_metrics['document_sizes']) if doc_metrics['document_sizes'] else 0
+        }
+
     async def _collect_batch_metrics(self) -> Dict:
         """Collect batch metrics."""
         metrics = {}
@@ -65,6 +79,19 @@ class MetricsCollector:
                 'durations': durations
             }
         return metrics
+
+    async def _collect_chunk_metrics(self) -> Dict[str, Any]:
+        """Collect chunk-specific metrics."""
+        chunk_metrics = self.storage.chunk_metrics
+        total_documents = len(chunk_metrics['chunks_per_document'])
+        return {
+            'total_chunks': chunk_metrics['total_chunks'],
+            'average_chunks_per_document': sum(chunk_metrics['chunks_per_document'].values()) / total_documents if total_documents > 0 else 0,
+            'average_chunk_size': sum(chunk_metrics['chunk_sizes']) / len(chunk_metrics['chunk_sizes']) if chunk_metrics['chunk_sizes'] else 0,
+            'min_chunk_size': min(chunk_metrics['chunk_sizes']) if chunk_metrics['chunk_sizes'] else 0,
+            'max_chunk_size': max(chunk_metrics['chunk_sizes']) if chunk_metrics['chunk_sizes'] else 0,
+            'chunk_strategies': chunk_metrics['chunk_strategies']
+        }
 
     async def _collect_overall_metrics(self) -> Dict:
         """Collect overall metrics."""

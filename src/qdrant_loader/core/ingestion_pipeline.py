@@ -17,6 +17,7 @@ from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.monitoring.performance_monitor import PerformanceMonitor
+from qdrant_loader.core.monitoring.models import MonitorConfig
 
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
@@ -57,7 +58,8 @@ class IngestionPipeline:
         metrics_dir = Path.cwd() / 'metrics'
         metrics_dir.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"Initializing metrics directory at {metrics_dir}")
-        self.monitor = PerformanceMonitor.get_monitor(metrics_dir)
+        config = MonitorConfig(metrics_dir=str(metrics_dir.absolute()))
+        self.monitor = PerformanceMonitor(str(metrics_dir.absolute()))
 
         # Configure batch sizes and timeouts
         self.embedding_batch_size = 32  # Number of texts to embed at once
@@ -177,8 +179,11 @@ class IngestionPipeline:
         # Ensure the pipeline is initialized
         await self.initialize()
         
+        # Reset metrics for new run
+        await self.monitor.reset_metrics()
+        
         async with self.monitor.track_operation(
-            'document_processing',
+            'ingestion_process',
             metadata={'source_type': source_type, 'source': source}
         ) as ingestion_op_id:
             try:
@@ -297,10 +302,9 @@ class IngestionPipeline:
                 else:
                     self.logger.info("No new, updated or deleted documents to process.")
 
-                # Save metrics after all operations are completed
-                metrics_filename = f"ingestion_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
-                await self.monitor.save_metrics(metrics_filename)
-                self.logger.info(f"Metrics saved successfully to {metrics_filename}")
+                # Save metrics
+                await self.monitor.save_metrics()
+                self.logger.info("Metrics saved successfully")
 
                 return documents
 
@@ -312,9 +316,8 @@ class IngestionPipeline:
                     error_class=e.__class__.__name__,
                 )
                 # Save metrics even on failure
-                metrics_filename = f"ingestion_failed_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
-                await self.monitor.save_metrics(metrics_filename)
-                self.logger.info(f"Metrics saved to {metrics_filename} after failure")
+                await self.monitor.save_metrics()
+                self.logger.info("Metrics saved after failure")
                 raise
 
     async def _process_source_type(

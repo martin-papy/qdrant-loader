@@ -141,15 +141,40 @@ class ConfluenceConnector(BaseConnector):
             for label in content.get("metadata", {}).get("labels", {}).get("results", [])
         }
 
+        # Log content details for debugging
+        logger.debug(
+            "Checking content for processing",
+            content_id=content.get("id"),
+            content_type=content.get("type"),
+            title=content.get("title"),
+            labels=labels,
+            exclude_labels=self.config.exclude_labels,
+            include_labels=self.config.include_labels
+        )
+
         # Check exclude labels first, if there are any specified
         if self.config.exclude_labels and any(
             label in labels for label in self.config.exclude_labels
         ):
+            logger.debug(
+                "Content excluded due to exclude labels",
+                content_id=content.get("id"),
+                title=content.get("title"),
+                matching_labels=[label for label in labels if label in self.config.exclude_labels]
+            )
             return False
 
         # If include labels are specified, content must have at least one
         if self.config.include_labels:
-            return any(label in labels for label in self.config.include_labels)
+            has_include_label = any(label in labels for label in self.config.include_labels)
+            if not has_include_label:
+                logger.debug(
+                    "Content excluded due to missing include labels",
+                    content_id=content.get("id"),
+                    title=content.get("title"),
+                    required_labels=self.config.include_labels
+                )
+            return has_include_label
 
         return True
 
@@ -167,16 +192,34 @@ class ConfluenceConnector(BaseConnector):
             ValueError: If required fields are missing or malformed
         """
         try:
-
             # Extract required fields
             content_id = content.get("id")
             title = content.get("title")
             space = content.get("space", {}).get("key")
-            logger.debug(f"Processing content: {title} - ({content_id}) in space {space}")
+            
+            # Log content details for debugging
+            logger.debug(
+                "Processing content",
+                content_id=content_id,
+                title=title,
+                space=space,
+                type=content.get("type"),
+                version=content.get("version", {}).get("number"),
+                has_body=bool(content.get("body", {}).get("storage", {}).get("value")),
+                comment_count=len(content.get("children", {}).get("comment", {}).get("results", [])),
+                label_count=len(content.get("metadata", {}).get("labels", {}).get("results", []))
+            )
 
             body = content.get("body", {}).get("storage", {}).get("value")
             # Check for missing or malformed body
             if not body:
+                logger.warning(
+                    "Content body is missing or malformed",
+                    content_id=content_id,
+                    title=title,
+                    content_type=content.get("type"),
+                    space=space
+                )
                 raise ValueError("Content body is missing or malformed")
 
             # Check for other missing required fields
@@ -189,6 +232,14 @@ class ConfluenceConnector(BaseConnector):
                 missing_fields.append("space")
 
             if missing_fields:
+                logger.warning(
+                    "Content is missing required fields",
+                    content_id=content_id,
+                    title=title,
+                    content_type=content.get("type"),
+                    missing_fields=missing_fields,
+                    space=space
+                )
                 raise ValueError(f"Content is missing required fields: {', '.join(missing_fields)}")
 
             # Get version information
@@ -270,6 +321,7 @@ class ConfluenceConnector(BaseConnector):
                 content_title=content.get("title"),
                 content_type=content.get("type"),
                 error=str(e),
+                error_type=type(e).__name__
             )
             raise
 
@@ -299,14 +351,22 @@ class ConfluenceConnector(BaseConnector):
         """
         documents = []
         cursor = None
+        page_count = 0
+        total_documents = 0
 
         while True:
             try:
+                page_count += 1
+                logger.debug(f"Fetching page {page_count} of Confluence content")
                 response = await self._get_space_content(cursor)
                 results = response.get("results", [])
 
                 if not results:
+                    logger.debug("No more results found, ending pagination")
                     break
+
+                total_documents += len(results)
+                logger.debug(f"Processing {len(results)} documents from page {page_count}")
 
                 # Process each content item
                 for content in results:
@@ -328,6 +388,7 @@ class ConfluenceConnector(BaseConnector):
                 # Get the next cursor from the response
                 next_url = response.get("_links", {}).get("next")
                 if not next_url:
+                    logger.debug("No next page link found, ending pagination")
                     break
 
                 # Extract just the cursor value from the URL
@@ -338,14 +399,19 @@ class ConfluenceConnector(BaseConnector):
                     query_params = parse_qs(parsed_url.query)
                     cursor = query_params.get("cursor", [None])[0]
                     if not cursor:
+                        logger.debug("No cursor found in next URL, ending pagination")
                         break
+                    logger.debug(f"Found next cursor: {cursor}")
                 except Exception as e:
                     logger.error(f"Failed to parse next URL: {e!s}")
-                    break
+                    # Don't break here, try to continue with the current page
+                    continue
 
             except Exception as e:
                 logger.error(f"Failed to fetch content from space {self.config.space_key}: {e!s}")
                 raise
 
-        logger.info(f"Processed {len(documents)} documents from space {self.config.space_key}")
+        logger.info(
+            f"Processed {len(documents)} documents from {total_documents} total results in {page_count} pages from space {self.config.space_key}"
+        )
         return documents
