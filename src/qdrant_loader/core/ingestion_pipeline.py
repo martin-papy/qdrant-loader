@@ -71,19 +71,12 @@ class IngestionPipeline:
         # No need to initialize the monitor, it's already initialized in the current event loop
 
     async def _process_document_batch(self, documents: List[Document]) -> Tuple[int, int, List[str]]:
-        """Process a batch of documents in parallel.
-
-        Args:
-            documents: List of documents to process
-
-        Returns:
-            Tuple of (success_count, error_count, errors)
-        """
+        """Process a batch of documents in parallel."""
         success_count = 0
         error_count = 0
         errors: List[str] = []
 
-        self.logger.info(f"Starting to process batch of {len(documents)} documents")
+        self.logger.debug(f"Starting to process batch of {len(documents)} documents")
 
         # Process documents in parallel with semaphore to limit concurrency
         semaphore = asyncio.Semaphore(self.max_workers)
@@ -91,11 +84,11 @@ class IngestionPipeline:
         async def process_with_semaphore(doc: Document) -> None:
             async with semaphore:
                 try:
-                    self.logger.info(f"Processing document {doc.id} from {doc.source_type}")
+                    self.logger.debug(f"Processing document {doc.id} from {doc.source_type}")
                     await self._process_single_document(doc)
                     nonlocal success_count
                     success_count += 1
-                    self.logger.info(f"Successfully processed document {doc.id}")
+                    self.logger.debug(f"Successfully processed document {doc.id}")
                 except Exception as e:
                     nonlocal error_count, errors
                     error_count += 1
@@ -114,18 +107,14 @@ class IngestionPipeline:
         return success_count, error_count, errors
 
     async def _process_single_document(self, doc: Document) -> None:
-        """Process a single document.
-
-        Args:
-            doc: Document to process
-        """
+        """Process a single document."""
         async with self.monitor.track_operation(
             'document_processing',
             metadata={'document_id': doc.id, 'source_type': doc.source_type}
         ) as doc_op_id:
             try:
                 # Update document state
-                self.logger.info(f"Updating state for document {doc.id}")
+                self.logger.debug(f"Updating state for document {doc.id}")
                 updated_state = await self.state_manager.update_document_state(doc)
                 self.logger.debug(
                     "Document state updated",
@@ -135,9 +124,9 @@ class IngestionPipeline:
                 )
 
                 # Chunk document
-                self.logger.info(f"Chunking document {doc.id}")
+                self.logger.debug(f"Chunking document {doc.id}")
                 chunks = self.chunking_service.chunk_document(doc)
-                self.logger.info(f"Document {doc.id} split into {len(chunks)} chunks")
+                self.logger.debug(f"Document {doc.id} split into {len(chunks)} chunks")
 
                 # Process chunks in batches
                 for i in range(0, len(chunks), self.embedding_batch_size):
@@ -145,9 +134,9 @@ class IngestionPipeline:
                     chunk_contents = [chunk.content for chunk in batch_chunks]
                     
                     # Get embeddings for batch
-                    self.logger.info(f"Getting embeddings for batch of {len(batch_chunks)} chunks from document {doc.id}")
+                    self.logger.debug(f"Getting embeddings for batch of {len(batch_chunks)} chunks from document {doc.id}")
                     embeddings = await self.embedding_service.get_embeddings(chunk_contents)
-                    self.logger.info(f"Successfully generated embeddings for {len(embeddings)} chunks from document {doc.id}")
+                    self.logger.debug(f"Successfully generated embeddings for {len(embeddings)} chunks from document {doc.id}")
 
                     # Create points for batch
                     points = []
@@ -169,9 +158,9 @@ class IngestionPipeline:
                     # Upsert points in smaller batches
                     for j in range(0, len(points), self.upsert_batch_size):
                         batch_points = points[j:j + self.upsert_batch_size]
-                        self.logger.info(f"Upserting batch of {len(batch_points)} points from document {doc.id}")
+                        self.logger.debug(f"Upserting batch of {len(batch_points)} points from document {doc.id}")
                         await self.qdrant_manager.upsert_points(batch_points)
-                        self.logger.info(f"Successfully upserted {len(batch_points)} points from document {doc.id}")
+                        self.logger.debug(f"Successfully upserted {len(batch_points)} points from document {doc.id}")
 
             except Exception as e:
                 error_msg = f"Error processing document {doc.id}: {str(e)}"
@@ -220,11 +209,7 @@ class IngestionPipeline:
                         filtered_config.confluence, ConfluenceConnector, "Confluence"
                     )
                     self.logger.info(f"Completed processing Confluence sources, got {len(confluence_docs)} documents")
-                    self.logger.debug(f"Current documents list length: {len(documents)}")
-                    self.logger.debug(f"Confluence docs type: {type(confluence_docs)}")
-                    self.logger.debug(f"Confluence docs length: {len(confluence_docs)}")
                     documents.extend(confluence_docs)
-                    self.logger.debug(f"After extend, documents list length: {len(documents)}")
 
                 if filtered_config.git:
                     self.logger.info("Starting to process Git sources")
@@ -254,16 +239,16 @@ class IngestionPipeline:
 
                 # Detect changes in documents
                 if documents:
-                    self.logger.info(f"Starting change detection for {len(documents)} documents")
+                    self.logger.debug(f"Starting change detection for {len(documents)} documents")
                     try:
-                        self.logger.info("Initializing StateChangeDetector...")
+                        self.logger.debug("Initializing StateChangeDetector...")
                         async with StateChangeDetector(self.state_manager) as change_detector:
-                            self.logger.info("StateChangeDetector initialized, detecting changes...")
+                            self.logger.debug("StateChangeDetector initialized, detecting changes...")
                             changes = await change_detector.detect_changes(documents, filtered_config)
                             self.logger.info(f"Change detection completed. New: {len(changes['new'])}, Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}")
                             documents = changes["new"] + changes["updated"]
                             deleted_documents = changes["deleted"]
-                            self.logger.info(f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete")
+                            self.logger.debug(f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete")
                     except Exception as e:
                         self.logger.error(f"Error during change detection: {str(e)}", exc_info=True)
                         raise
@@ -281,7 +266,7 @@ class IngestionPipeline:
                         errors: List[str] = []
 
                         # Split documents into batches for parallel processing
-                        batch_size = 5  # Process 5 documents at a time (reduced from 10)
+                        batch_size = 5  # Process 5 documents at a time
                         for i in range(0, len(documents), batch_size):
                             batch = documents[i:i + batch_size]
                             self.logger.info(f"Processing batch {i//batch_size + 1} of {(len(documents) + batch_size - 1)//batch_size} with {len(batch)} documents")
@@ -305,13 +290,9 @@ class IngestionPipeline:
                                     await self.state_manager.mark_document_deleted(
                                         doc.source_type, doc.source, doc.id
                                     )
-                                    self.logger.info(
-                                        f"Successfully processed deleted document {doc.id}"
-                                    )
+                                    self.logger.debug(f"Successfully processed deleted document {doc.id}")
                                 except Exception as e:
-                                    self.logger.error(
-                                        f"Error processing deleted document {doc.id}: {e!s}"
-                                    )
+                                    self.logger.error(f"Error processing deleted document {doc.id}: {e!s}")
                                     raise
                 else:
                     self.logger.info("No new, updated or deleted documents to process.")
@@ -342,13 +323,7 @@ class IngestionPipeline:
         connector_class: Type[BaseConnector],
         source_type: str,
     ) -> list[Document]:
-        """Process documents from a specific source type.
-
-        Args:
-            source_configs: Dictionary of source configurations
-            connector_class: The connector class to use
-            source_type: Name of the source type for logging
-        """
+        """Process documents from a specific source type."""
         documents: list[Document] = []
         self.logger.debug(f"Initializing documents list for {source_type}")
 
@@ -360,25 +335,23 @@ class IngestionPipeline:
                     metadata={'source_type': source_type, 'source': name}
                 ) as source_op_id:
                     try:
-                        self.logger.info(f"Creating connector for {source_type} source: {name}")
-                        connector = connector_class(config)  # Instantiate first
-                        self.logger.info(f"Connector created, getting documents from {source_type} source: {config.source}")
-                        async with connector:  # Then use as context manager
+                        self.logger.debug(f"Creating connector for {source_type} source: {name}")
+                        connector = connector_class(config)
+                        self.logger.debug(f"Connector created, getting documents from {source_type} source: {config.source}")
+                        async with connector:
                             source_docs = await connector.get_documents()
-                            self.logger.debug(f"Source docs type: {type(source_docs)}")
-                            self.logger.debug(f"Source docs length: {len(source_docs) if source_docs else 'None'}")
-                            self.logger.info(f"Got {len(source_docs)} documents from {source_type} source: {config.source}")
+                            self.logger.debug(f"Got {len(source_docs)} documents from {source_type} source: {config.source}")
                             documents.extend(source_docs)
                             self.logger.debug(f"Documents list length after extend: {len(documents)}")
-                            self.logger.info(f"Updating last ingestion state for {source_type} source: {config.source}")
+                            self.logger.debug(f"Updating last ingestion state for {source_type} source: {config.source}")
                             await self.state_manager.update_last_ingestion(
                                 config.source_type,
                                 config.source,
                                 IngestionStatus.SUCCESS,
                                 document_count=len(source_docs),
                             )
-                            self.logger.info(f"Successfully updated last ingestion state for {source_type} source: {config.source}")
-                            self.logger.info(f"Completed processing {source_type} source: {name}")
+                            self.logger.debug(f"Successfully updated last ingestion state for {source_type} source: {config.source}")
+                            self.logger.debug(f"Completed processing {source_type} source: {name}")
                     except Exception as e:
                         self.logger.error(
                             f"Failed to process {source_type} source {name}",
@@ -393,7 +366,7 @@ class IngestionPipeline:
                             IngestionStatus.FAILED,
                             error_message=str(e),
                         )
-                        self.logger.info(f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}")
+                        self.logger.debug(f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}")
                         raise
 
             except Exception as e:
