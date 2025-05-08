@@ -1,6 +1,7 @@
 """Service for chunking documents."""
 
 from typing import Type
+from pathlib import Path
 
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.strategy import (
@@ -10,7 +11,7 @@ from qdrant_loader.core.chunking.strategy import (
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.core.monitoring.performance_monitor import PerformanceMonitor
+from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 
 
 class ChunkingService:
@@ -38,7 +39,11 @@ class ChunkingService:
         self.settings = settings
         self.validate_config()
         self.logger = LoggingConfig.get_logger(__name__)
-        self.monitor = PerformanceMonitor.get_monitor()
+        
+        # Initialize metrics directory
+        metrics_dir = Path.cwd() / 'metrics'
+        metrics_dir.mkdir(parents=True, exist_ok=True)
+        self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
         
         # Initialize strategies
         self.strategies: dict[str, Type[BaseChunkingStrategy]] = {
@@ -104,38 +109,78 @@ class ChunkingService:
         Returns:
             List of chunked documents
         """
+        self.logger.debug(
+            "Starting document chunking",
+            extra={
+                "doc_id": document.id,
+                "source": document.source,
+                "source_type": document.source_type,
+                "content_size": len(document.content)
+            }
+        )
+        
         if not document.content:
             # Return a single empty chunk if document has no content
             empty_doc = document.model_copy()
             empty_doc.metadata.update({"chunk_index": 0, "total_chunks": 1})
+            self.logger.debug(
+                "Empty document, returning single empty chunk",
+                extra={
+                    "doc_id": document.id,
+                    "chunk_id": empty_doc.id
+                }
+            )
             return [empty_doc]
 
         try:
-            # Update document metrics
-            self.logger.debug(f"Updating document metrics for document {document.id}")
-            self.monitor.storage.document_metrics['total_documents'] += 1
-            self.monitor.storage.document_metrics['documents_by_source'][document.source] = self.monitor.storage.document_metrics['documents_by_source'].get(document.source, 0) + 1
-            self.monitor.storage.document_metrics['documents_by_type'][document.source_type] = self.monitor.storage.document_metrics['documents_by_type'].get(document.source_type, 0) + 1
-            self.monitor.storage.document_metrics['document_sizes'].append(len(document.content))
-            self.logger.debug(f"Document metrics updated: total_documents={self.monitor.storage.document_metrics['total_documents']}, source={document.source}, type={document.source_type}")
-            
             # Get appropriate strategy for document type
             strategy = self._get_strategy(document)
+            self.logger.debug(
+                "Using chunking strategy",
+                extra={
+                    "doc_id": document.id,
+                    "strategy": strategy.__class__.__name__
+                }
+            )
+            
+            # Start tracking chunking operation
+            self.monitor.start_operation(
+                f"chunk_{document.id}",
+                metadata={
+                    "doc_id": document.id,
+                    "strategy": strategy.__class__.__name__,
+                    "content_size": len(document.content)
+                }
+            )
             
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
             
             # Update chunk metrics
-            self.logger.debug(f"Updating chunk metrics for document {document.id}")
-            self.monitor.storage.chunk_metrics['total_chunks'] += len(chunked_docs)
-            self.monitor.storage.chunk_metrics['chunks_per_document'][document.id] = len(chunked_docs)
-            self.monitor.storage.chunk_metrics['chunk_sizes'].extend([len(doc.content) for doc in chunked_docs])
-            strategy_name = strategy.__class__.__name__
-            self.monitor.storage.chunk_metrics['chunk_strategies'][strategy_name] = self.monitor.storage.chunk_metrics['chunk_strategies'].get(strategy_name, 0) + 1
-            self.logger.debug(f"Chunk metrics updated: total_chunks={self.monitor.storage.chunk_metrics['total_chunks']}, chunks_per_document={len(chunked_docs)}, strategy={strategy_name}")
+            self.logger.debug(
+                "Chunking completed",
+                extra={
+                    "doc_id": document.id,
+                    "num_chunks": len(chunked_docs),
+                    "strategy": strategy.__class__.__name__
+                }
+            )
+            
+            # End tracking chunking operation
+            self.monitor.end_operation(
+                f"chunk_{document.id}",
+                success=True
+            )
             
             return chunked_docs
+            
         except Exception as e:
-            self.logger.error(f"Error updating metrics for document {document.id}: {str(e)}", exc_info=True)
+            self.logger.error(f"Error chunking document {document.id}: {str(e)}", exc_info=True)
+            # End tracking chunking operation with error
+            self.monitor.end_operation(
+                f"chunk_{document.id}",
+                success=False,
+                error=str(e)
+            )
             # Re-raise the exception to maintain the original error handling
             raise
