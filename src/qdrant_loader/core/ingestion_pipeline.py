@@ -10,14 +10,16 @@ from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, UTC
+import time
+import signal
+import atexit
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
-from qdrant_loader.core.monitoring.performance_monitor import PerformanceMonitor
-from qdrant_loader.core.monitoring.models import MonitorConfig
+from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor, BatchMetrics
 
 from ..config import Settings, SourcesConfig
 from ..connectors.confluence import ConfluenceConnector
@@ -58,19 +60,47 @@ class IngestionPipeline:
         metrics_dir = Path.cwd() / 'metrics'
         metrics_dir.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"Initializing metrics directory at {metrics_dir}")
-        config = MonitorConfig(metrics_dir=str(metrics_dir.absolute()))
-        self.monitor = PerformanceMonitor(str(metrics_dir.absolute()))
+        self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
 
         # Configure batch sizes and timeouts
         self.embedding_batch_size = 32  # Number of texts to embed at once
         self.upsert_batch_size = 50     # Number of points to upsert at once
         self.max_workers = 4            # Number of parallel workers
         self.timeout = 30               # Timeout in seconds for operations
+        
+        # Initialize thread pool
+        self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
+        
+        # Register cleanup handlers
+        atexit.register(self._cleanup)
+        signal.signal(signal.SIGINT, self._handle_sigint)
+        signal.signal(signal.SIGTERM, self._handle_sigterm)
+
+    def _cleanup(self):
+        """Clean up resources."""
+        try:
+            self.logger.info("Cleaning up resources...")
+            self.thread_pool.shutdown(wait=True)
+            self.monitor.save_metrics()
+            self.logger.info("Cleanup completed")
+        except Exception as e:
+            self.logger.error(f"Error during cleanup: {str(e)}")
+
+    def _handle_sigint(self, signum, frame):
+        """Handle SIGINT signal."""
+        self.logger.info("Received SIGINT, cleaning up...")
+        self._cleanup()
+        raise KeyboardInterrupt()
+
+    def _handle_sigterm(self, signum, frame):
+        """Handle SIGTERM signal."""
+        self.logger.info("Received SIGTERM, cleaning up...")
+        self._cleanup()
+        raise SystemExit(0)
 
     async def initialize(self):
         """Initialize the pipeline services."""
         await self.state_manager.initialize()
-        # No need to initialize the monitor, it's already initialized in the current event loop
 
     async def _process_document_batch(self, documents: List[Document]) -> Tuple[int, int, List[str]]:
         """Process a batch of documents in parallel."""
@@ -102,72 +132,107 @@ class IngestionPipeline:
         # Create tasks with semaphore
         tasks = [process_with_semaphore(doc) for doc in documents]
         
-        # Wait for all tasks to complete
-        await asyncio.gather(*tasks, return_exceptions=True)
+        try:
+            # Wait for all tasks to complete with timeout
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=self.timeout)
+        except asyncio.TimeoutError:
+            self.logger.error("Batch processing timed out")
+            raise
+        except Exception as e:
+            self.logger.error(f"Error during batch processing: {str(e)}")
+            raise
 
         self.logger.info(f"Batch processing completed. Success: {success_count}, Errors: {error_count}")
         return success_count, error_count, errors
 
     async def _process_single_document(self, doc: Document) -> None:
         """Process a single document."""
-        async with self.monitor.track_operation(
-            'document_processing',
-            metadata={'document_id': doc.id, 'source_type': doc.source_type}
-        ) as doc_op_id:
-            try:
-                # Update document state
-                self.logger.debug(f"Updating state for document {doc.id}")
-                updated_state = await self.state_manager.update_document_state(doc)
-                self.logger.debug(
-                    "Document state updated",
-                    doc_id=updated_state.document_id,
-                    content_hash=updated_state.content_hash,
-                    updated_at=updated_state.updated_at,
-                )
+        self.logger.debug(
+            "Starting document processing",
+            extra={
+                "doc_id": doc.id,
+                "source": doc.source,
+                "source_type": doc.source_type,
+                "content_size": len(doc.content)
+            }
+        )
+        
+        start_time = time.time()
+        try:
+            # Update document state
+            self.logger.debug(f"Updating state for document {doc.id}")
+            updated_state = await self.state_manager.update_document_state(doc)
+            self.logger.debug(
+                "Document state updated",
+                doc_id=updated_state.document_id,
+                content_hash=updated_state.content_hash,
+                updated_at=updated_state.updated_at,
+            )
 
-                # Chunk document
-                self.logger.debug(f"Chunking document {doc.id}")
-                chunks = self.chunking_service.chunk_document(doc)
-                self.logger.debug(f"Document {doc.id} split into {len(chunks)} chunks")
+            # Chunk document
+            self.logger.debug(f"Chunking document {doc.id}")
+            chunks = self.chunking_service.chunk_document(doc)
+            self.logger.debug(
+                "Document chunked",
+                extra={
+                    "doc_id": doc.id,
+                    "num_chunks": len(chunks)
+                }
+            )
 
-                # Process chunks in batches
-                for i in range(0, len(chunks), self.embedding_batch_size):
-                    batch_chunks = chunks[i:i + self.embedding_batch_size]
-                    chunk_contents = [chunk.content for chunk in batch_chunks]
-                    
-                    # Get embeddings for batch
-                    self.logger.debug(f"Getting embeddings for batch of {len(batch_chunks)} chunks from document {doc.id}")
-                    embeddings = await self.embedding_service.get_embeddings(chunk_contents)
-                    self.logger.debug(f"Successfully generated embeddings for {len(embeddings)} chunks from document {doc.id}")
+            # Process chunks in batches
+            for i in range(0, len(chunks), self.embedding_batch_size):
+                batch_chunks = chunks[i:i + self.embedding_batch_size]
+                chunk_contents = [chunk.content for chunk in batch_chunks]
+                
+                # Get embeddings for batch
+                self.logger.debug(f"Getting embeddings for batch of {len(batch_chunks)} chunks from document {doc.id}")
+                embeddings = await self.embedding_service.get_embeddings(chunk_contents)
+                self.logger.debug(f"Successfully generated embeddings for {len(embeddings)} chunks from document {doc.id}")
 
-                    # Create points for batch
-                    points = []
-                    for chunk, embedding in zip(batch_chunks, embeddings, strict=False):
-                        point = models.PointStruct(
-                            id=chunk.id,
-                            vector=embedding,
-                            payload={
-                                "content": chunk.content,
-                                "metadata": chunk.metadata,
-                                "source": chunk.source,
-                                "source_type": chunk.source_type,
-                                "created_at": chunk.created_at.isoformat(),
-                                "document_id": doc.id,
-                            },
-                        )
-                        points.append(point)
+                # Create points for batch
+                points = []
+                for chunk, embedding in zip(batch_chunks, embeddings, strict=False):
+                    point = models.PointStruct(
+                        id=chunk.id,
+                        vector=embedding,
+                        payload={
+                            "content": chunk.content,
+                            "metadata": chunk.metadata,
+                            "source": chunk.source,
+                            "source_type": chunk.source_type,
+                            "created_at": chunk.created_at.isoformat(),
+                            "document_id": doc.id,
+                        },
+                    )
+                    points.append(point)
 
-                    # Upsert points in smaller batches
-                    for j in range(0, len(points), self.upsert_batch_size):
-                        batch_points = points[j:j + self.upsert_batch_size]
-                        self.logger.debug(f"Upserting batch of {len(batch_points)} points from document {doc.id}")
-                        await self.qdrant_manager.upsert_points(batch_points)
-                        self.logger.debug(f"Successfully upserted {len(batch_points)} points from document {doc.id}")
+                # Upsert points in smaller batches
+                for j in range(0, len(points), self.upsert_batch_size):
+                    batch_points = points[j:j + self.upsert_batch_size]
+                    self.logger.debug(f"Upserting batch of {len(batch_points)} points from document {doc.id}")
+                    await self.qdrant_manager.upsert_points(batch_points)
+                    self.logger.debug(f"Successfully upserted {len(batch_points)} points from document {doc.id}")
 
-            except Exception as e:
-                error_msg = f"Error processing document {doc.id}: {str(e)}"
-                self.logger.error(error_msg)
-                raise
+            # Track document metrics after successful processing
+            processing_time = time.time() - start_time
+            self.monitor.start_operation(
+                f"doc_{doc.id}",
+                metadata={
+                    "source": doc.source,
+                    "source_type": doc.source_type,
+                    "size": len(doc.content),
+                    "num_chunks": len(chunks)
+                }
+            )
+            self.monitor.end_operation(f"doc_{doc.id}", success=True)
+
+        except Exception as e:
+            error_msg = f"Error processing document {doc.id}: {str(e)}"
+            self.logger.error(error_msg)
+            if f"doc_{doc.id}" in self.monitor.ingestion_metrics:
+                self.monitor.end_operation(f"doc_{doc.id}", success=False, error=error_msg)
+            raise
 
     async def process_documents(
         self,
@@ -180,145 +245,149 @@ class IngestionPipeline:
         await self.initialize()
         
         # Reset metrics for new run
-        await self.monitor.reset_metrics()
+        self.monitor.clear_metrics()
         
-        async with self.monitor.track_operation(
+        self.monitor.start_operation(
             'ingestion_process',
             metadata={'source_type': source_type, 'source': source}
-        ) as ingestion_op_id:
-            try:
-                if not sources_config:
-                    sources_config = self.settings.sources_config
+        )
+        
+        try:
+            if not sources_config:
+                sources_config = self.settings.sources_config
 
-                # Filter sources based on type and name
-                filtered_config = self._filter_sources(sources_config, source_type, source)
+            # Filter sources based on type and name
+            filtered_config = self._filter_sources(sources_config, source_type, source)
 
-                # Check if filtered config is empty
-                if source_type and not any(
-                    [
-                        filtered_config.git,
-                        filtered_config.confluence,
-                        filtered_config.jira,
-                        filtered_config.publicdocs,
-                    ]
-                ):
-                    raise ValueError(f"No sources found for type '{source_type}'")
+            # Check if filtered config is empty
+            if source_type and not any(
+                [
+                    filtered_config.git,
+                    filtered_config.confluence,
+                    filtered_config.jira,
+                    filtered_config.publicdocs,
+                ]
+            ):
+                raise ValueError(f"No sources found for type '{source_type}'")
 
-                documents: list[Document] = []
-                deleted_documents: list[Document] = []
+            documents: list[Document] = []
+            deleted_documents: list[Document] = []
 
-                # Process each source type
-                if filtered_config.confluence:
-                    self.logger.info("Starting to process Confluence sources")
-                    confluence_docs = await self._process_source_type(
-                        filtered_config.confluence, ConfluenceConnector, "Confluence"
-                    )
-                    self.logger.info(f"Completed processing Confluence sources, got {len(confluence_docs)} documents")
-                    documents.extend(confluence_docs)
-
-                if filtered_config.git:
-                    self.logger.info("Starting to process Git sources")
-                    git_docs = await self._process_source_type(
-                        filtered_config.git, GitConnector, "Git"
-                    )
-                    self.logger.info(f"Completed processing Git sources, got {len(git_docs)} documents")
-                    documents.extend(git_docs)
-
-                if filtered_config.jira:
-                    self.logger.info("Starting to process Jira sources")
-                    jira_docs = await self._process_source_type(
-                        filtered_config.jira, JiraConnector, "Jira"
-                    )
-                    self.logger.info(f"Completed processing Jira sources, got {len(jira_docs)} documents")
-                    documents.extend(jira_docs)
-
-                if filtered_config.publicdocs:
-                    self.logger.info("Starting to process PublicDocs sources")
-                    publicdocs_docs = await self._process_source_type(
-                        filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
-                    )
-                    self.logger.info(f"Completed processing PublicDocs sources, got {len(publicdocs_docs)} documents")
-                    documents.extend(publicdocs_docs)
-
-                self.logger.info(f"Completed processing all sources, total documents: {len(documents)}")
-
-                # Detect changes in documents
-                if documents:
-                    self.logger.debug(f"Starting change detection for {len(documents)} documents")
-                    try:
-                        self.logger.debug("Initializing StateChangeDetector...")
-                        async with StateChangeDetector(self.state_manager) as change_detector:
-                            self.logger.debug("StateChangeDetector initialized, detecting changes...")
-                            changes = await change_detector.detect_changes(documents, filtered_config)
-                            self.logger.info(f"Change detection completed. New: {len(changes['new'])}, Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}")
-                            documents = changes["new"] + changes["updated"]
-                            deleted_documents = changes["deleted"]
-                            self.logger.debug(f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete")
-                    except Exception as e:
-                        self.logger.error(f"Error during change detection: {str(e)}", exc_info=True)
-                        raise
-
-                if documents or deleted_documents:
-                    self.logger.info(f"Processing {len(documents)} documents and {len(deleted_documents)} deleted documents")
-                    async with self.monitor.track_batch(
-                        'document_batch',
-                        batch_size=len(documents),
-                        metadata={'source_type': source_type, 'source': source}
-                    ) as batch_id:
-                        # Process documents in parallel batches
-                        success_count = 0
-                        error_count = 0
-                        errors: List[str] = []
-
-                        # Split documents into batches for parallel processing
-                        batch_size = 5  # Process 5 documents at a time
-                        for i in range(0, len(documents), batch_size):
-                            batch = documents[i:i + batch_size]
-                            self.logger.info(f"Processing batch {i//batch_size + 1} of {(len(documents) + batch_size - 1)//batch_size} with {len(batch)} documents")
-                            batch_success, batch_error_count, batch_errors = await self._process_document_batch(batch)
-                            success_count += batch_success
-                            error_count += batch_error_count
-                            errors.extend(batch_errors)
-                            self.logger.info(f"Batch {i//batch_size + 1} completed. Success: {batch_success}, Errors: {batch_error_count}")
-
-                        # Update batch metrics
-                        await self.monitor.batch_tracker.end_batch(batch_id, success_count, error_count, errors)
-
-                        if deleted_documents:
-                            self.logger.info(f"Processing {len(deleted_documents)} deleted documents")
-                            # Process deleted documents
-                            for doc in deleted_documents:
-                                try:
-                                    # Delete points from Qdrant
-                                    await self.qdrant_manager.delete_points_by_document_id(doc.id)
-                                    # Mark document as deleted in state manager
-                                    await self.state_manager.mark_document_deleted(
-                                        doc.source_type, doc.source, doc.id
-                                    )
-                                    self.logger.debug(f"Successfully processed deleted document {doc.id}")
-                                except Exception as e:
-                                    self.logger.error(f"Error processing deleted document {doc.id}: {e!s}")
-                                    raise
-                else:
-                    self.logger.info("No new, updated or deleted documents to process.")
-
-                # Save metrics
-                await self.monitor.save_metrics()
-                self.logger.info("Metrics saved successfully")
-
-                return documents
-
-            except Exception as e:
-                self.logger.error(
-                    "Failed to process documents",
-                    error=str(e),
-                    error_type=type(e).__name__,
-                    error_class=e.__class__.__name__,
+            # Process each source type
+            if filtered_config.confluence:
+                self.logger.info("Starting to process Confluence sources")
+                confluence_docs = await self._process_source_type(
+                    filtered_config.confluence, ConfluenceConnector, "Confluence"
                 )
-                # Save metrics even on failure
-                await self.monitor.save_metrics()
-                self.logger.info("Metrics saved after failure")
-                raise
+                self.logger.info(f"Completed processing Confluence sources, got {len(confluence_docs)} documents")
+                documents.extend(confluence_docs)
+
+            if filtered_config.git:
+                self.logger.info("Starting to process Git sources")
+                git_docs = await self._process_source_type(
+                    filtered_config.git, GitConnector, "Git"
+                )
+                self.logger.info(f"Completed processing Git sources, got {len(git_docs)} documents")
+                documents.extend(git_docs)
+
+            if filtered_config.jira:
+                self.logger.info("Starting to process Jira sources")
+                jira_docs = await self._process_source_type(
+                    filtered_config.jira, JiraConnector, "Jira"
+                )
+                self.logger.info(f"Completed processing Jira sources, got {len(jira_docs)} documents")
+                documents.extend(jira_docs)
+
+            if filtered_config.publicdocs:
+                self.logger.info("Starting to process PublicDocs sources")
+                publicdocs_docs = await self._process_source_type(
+                    filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
+                )
+                self.logger.info(f"Completed processing PublicDocs sources, got {len(publicdocs_docs)} documents")
+                documents.extend(publicdocs_docs)
+
+            self.logger.info(f"Completed processing all sources, total documents: {len(documents)}")
+
+            # Detect changes in documents
+            if documents:
+                self.logger.debug(f"Starting change detection for {len(documents)} documents")
+                try:
+                    self.logger.debug("Initializing StateChangeDetector...")
+                    async with StateChangeDetector(self.state_manager) as change_detector:
+                        self.logger.debug("StateChangeDetector initialized, detecting changes...")
+                        changes = await change_detector.detect_changes(documents, filtered_config)
+                        self.logger.info(f"Change detection completed. New: {len(changes['new'])}, Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}")
+                        documents = changes["new"] + changes["updated"]
+                        deleted_documents = changes["deleted"]
+                        self.logger.debug(f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete")
+                except Exception as e:
+                    self.logger.error(f"Error during change detection: {str(e)}", exc_info=True)
+                    raise
+
+            if documents or deleted_documents:
+                self.logger.info(f"Processing {len(documents)} documents and {len(deleted_documents)} deleted documents")
+                self.monitor.start_batch(
+                    'document_batch',
+                    batch_size=len(documents),
+                    metadata={'source_type': source_type, 'source': source}
+                )
+                
+                # Process documents in parallel batches
+                success_count = 0
+                error_count = 0
+                errors: List[str] = []
+
+                # Split documents into batches for parallel processing
+                batch_size = 5  # Process 5 documents at a time
+                for i in range(0, len(documents), batch_size):
+                    batch = documents[i:i + batch_size]
+                    self.logger.info(f"Processing batch {i//batch_size + 1} of {(len(documents) + batch_size - 1)//batch_size} with {len(batch)} documents")
+                    batch_success, batch_error_count, batch_errors = await self._process_document_batch(batch)
+                    success_count += batch_success
+                    error_count += batch_error_count
+                    errors.extend(batch_errors)
+                    self.logger.info(f"Batch {i//batch_size + 1} completed. Success: {batch_success}, Errors: {batch_error_count}")
+
+                # Update batch metrics
+                self.monitor.end_batch('document_batch', success_count, error_count, errors)
+
+                if deleted_documents:
+                    self.logger.info(f"Processing {len(deleted_documents)} deleted documents")
+                    # Process deleted documents
+                    for doc in deleted_documents:
+                        try:
+                            # Delete points from Qdrant
+                            await self.qdrant_manager.delete_points_by_document_id(doc.id)
+                            # Mark document as deleted in state manager
+                            await self.state_manager.mark_document_deleted(
+                                doc.source_type, doc.source, doc.id
+                            )
+                            self.logger.debug(f"Successfully processed deleted document {doc.id}")
+                        except Exception as e:
+                            self.logger.error(f"Error processing deleted document {doc.id}: {e!s}")
+                            raise
+            else:
+                self.logger.info("No new, updated or deleted documents to process.")
+
+            # Save metrics
+            self.monitor.save_metrics()
+            self.logger.info("Metrics saved successfully")
+
+            return documents
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to process documents",
+                error=str(e),
+                error_type=type(e).__name__,
+                error_class=e.__class__.__name__,
+            )
+            # Save metrics even on failure
+            self.monitor.save_metrics()
+            self.logger.info("Metrics saved after failure")
+            raise
+        finally:
+            self.monitor.end_operation('ingestion_process', success=True)
 
     async def _process_source_type(
         self,
@@ -333,44 +402,47 @@ class IngestionPipeline:
         for name, config in source_configs.items():
             self.logger.info(f"Configuring {source_type} source: {name}")
             try:
-                async with self.monitor.track_operation(
-                    'source_processing',
+                self.monitor.start_operation(
+                    f'source_{name}',
                     metadata={'source_type': source_type, 'source': name}
-                ) as source_op_id:
-                    try:
-                        self.logger.debug(f"Creating connector for {source_type} source: {name}")
-                        connector = connector_class(config)
-                        self.logger.debug(f"Connector created, getting documents from {source_type} source: {config.source}")
-                        async with connector:
-                            source_docs = await connector.get_documents()
-                            self.logger.debug(f"Got {len(source_docs)} documents from {source_type} source: {config.source}")
-                            documents.extend(source_docs)
-                            self.logger.debug(f"Documents list length after extend: {len(documents)}")
-                            self.logger.debug(f"Updating last ingestion state for {source_type} source: {config.source}")
-                            await self.state_manager.update_last_ingestion(
-                                config.source_type,
-                                config.source,
-                                IngestionStatus.SUCCESS,
-                                document_count=len(source_docs),
-                            )
-                            self.logger.debug(f"Successfully updated last ingestion state for {source_type} source: {config.source}")
-                            self.logger.debug(f"Completed processing {source_type} source: {name}")
-                    except Exception as e:
-                        self.logger.error(
-                            f"Failed to process {source_type} source {name}",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            error_class=e.__class__.__name__,
-                        )
-                        self.logger.info(f"Updating last ingestion state to FAILED for {source_type} source: {config.source}")
+                )
+                
+                try:
+                    self.logger.debug(f"Creating connector for {source_type} source: {name}")
+                    connector = connector_class(config)
+                    self.logger.debug(f"Connector created, getting documents from {source_type} source: {config.source}")
+                    async with connector:
+                        source_docs = await connector.get_documents()
+                        self.logger.debug(f"Got {len(source_docs)} documents from {source_type} source: {config.source}")
+                        documents.extend(source_docs)
+                        self.logger.debug(f"Documents list length after extend: {len(documents)}")
+                        self.logger.debug(f"Updating last ingestion state for {source_type} source: {config.source}")
                         await self.state_manager.update_last_ingestion(
                             config.source_type,
                             config.source,
-                            IngestionStatus.FAILED,
-                            error_message=str(e),
+                            IngestionStatus.SUCCESS,
+                            document_count=len(source_docs),
                         )
-                        self.logger.debug(f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}")
-                        raise
+                        self.logger.debug(f"Successfully updated last ingestion state for {source_type} source: {config.source}")
+                        self.logger.debug(f"Completed processing {source_type} source: {name}")
+                        self.monitor.end_operation(f'source_{name}', success=True)
+                except Exception as e:
+                    self.logger.error(
+                        f"Failed to process {source_type} source {name}",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        error_class=e.__class__.__name__,
+                    )
+                    self.logger.info(f"Updating last ingestion state to FAILED for {source_type} source: {config.source}")
+                    await self.state_manager.update_last_ingestion(
+                        config.source_type,
+                        config.source,
+                        IngestionStatus.FAILED,
+                        error_message=str(e),
+                    )
+                    self.logger.debug(f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}")
+                    self.monitor.end_operation(f'source_{name}', success=False, error=str(e))
+                    raise
 
             except Exception as e:
                 self.logger.error(
