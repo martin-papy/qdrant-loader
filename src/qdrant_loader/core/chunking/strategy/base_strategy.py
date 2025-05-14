@@ -7,6 +7,7 @@ import structlog
 import tiktoken
 
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.text_processing.text_processor import TextProcessor
 from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
@@ -61,12 +62,63 @@ class BaseChunkingStrategy(ABC):
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
 
+        # Initialize text processor
+        self.text_processor = TextProcessor()
+
     def _count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
         if self.encoding is None:
             # Fallback to character count if no tokenizer is available
             return len(text)
         return len(self.encoding.encode(text))
+
+    def _process_text(self, text: str) -> dict:
+        """Process text using the text processor.
+        
+        Args:
+            text: Text to process
+            
+        Returns:
+            dict: Processed text features
+        """
+        return self.text_processor.process_text(text)
+
+    def _create_chunk_document(
+        self,
+        original_doc: Document,
+        chunk_content: str,
+        chunk_index: int,
+        total_chunks: int,
+    ) -> Document:
+        """Create a new document for a chunk with enhanced metadata.
+        
+        Args:
+            original_doc: Original document
+            chunk_content: Content of the chunk
+            chunk_index: Index of the chunk
+            total_chunks: Total number of chunks
+            
+        Returns:
+            Document: New document instance for the chunk
+        """
+        # Process the chunk text to get additional features
+        processed = self._process_text(chunk_content)
+        
+        # Create enhanced metadata
+        metadata = original_doc.metadata.copy()
+        metadata.update({
+            "chunk_index": chunk_index,
+            "total_chunks": total_chunks,
+            "entities": processed["entities"],
+            "pos_tags": processed["pos_tags"],
+        })
+        
+        return Document(
+            content=chunk_content,
+            metadata=metadata,
+            source=original_doc.source,
+            source_type=original_doc.source_type,
+        )
 
     @abstractmethod
     def chunk_document(self, document: Document) -> list[Document]:
@@ -107,51 +159,4 @@ class BaseChunkingStrategy(ABC):
         Raises:
             NotImplementedError: If the strategy doesn't implement this method
         """
-        raise NotImplementedError("Chunking strategy must implement _split_text method")
-
-    def _create_chunk_document(
-        self, 
-        original_doc: Document, 
-        chunk_content: str, 
-        chunk_index: int, 
-        total_chunks: int
-    ) -> Document:
-        """Create a new document for a chunk.
-        
-        This helper method creates a new Document instance for a chunk while
-        preserving the original document's metadata and adding chunk-specific
-        metadata.
-        
-        Args:
-            original_doc: The original document being chunked
-            chunk_content: The content for this chunk
-            chunk_index: The index of this chunk (0-based)
-            total_chunks: The total number of chunks
-            
-        Returns:
-            A new Document instance for the chunk
-        """
-        # Create a copy of the original metadata
-        metadata = original_doc.metadata.copy()
-        
-        # Add chunk-specific metadata
-        metadata.update({
-            "chunk_index": chunk_index,
-            "total_chunks": total_chunks,
-            "chunk_strategy": self.__class__.__name__
-        })
-        
-        # Create and return the new document
-        return Document(
-            content=chunk_content,
-            source=original_doc.source,
-            source_type=original_doc.source_type,
-            metadata=metadata,
-            url=original_doc.url,
-            title=original_doc.title,
-            content_hash=original_doc.content_hash,
-            created_at=original_doc.created_at,
-            updated_at=original_doc.updated_at,
-            id=original_doc.id,
-            content_type=original_doc.content_type
-        ) 
+        raise NotImplementedError("Chunking strategy must implement _split_text method") 

@@ -114,6 +114,16 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents with preserved metadata
         """
+        # First, process the entire document to get document-level features
+        doc_processed = self._process_text(document.content)
+        
+        # Add document-level features to metadata
+        document.metadata.update({
+            "document_entities": doc_processed["entities"],
+            "document_pos_tags": doc_processed["pos_tags"],
+        })
+        
+        # Split into chunks
         chunks = self._split_text(document.content)
         chunked_documents = []
 
