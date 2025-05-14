@@ -7,6 +7,7 @@ from typing import List, Optional
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document as LangChainDocument
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.config import Settings
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -14,8 +15,14 @@ logger = LoggingConfig.get_logger(__name__)
 class TextProcessor:
     """Text processing service integrating multiple NLP libraries."""
 
-    def __init__(self):
-        """Initialize the text processor with required models and configurations."""
+    def __init__(self, settings: Settings):
+        """Initialize the text processor with required models and configurations.
+        
+        Args:
+            settings: Application settings containing configuration for text processing
+        """
+        self.settings = settings
+        
         # Download required NLTK data
         try:
             nltk.data.find('tokenizers/punkt')
@@ -34,10 +41,10 @@ class TextProcessor:
             download("en_core_web_sm")
             self.nlp = spacy.load("en_core_web_sm")
 
-        # Initialize LangChain text splitter with smaller default chunk size
+        # Initialize LangChain text splitter with configuration from settings
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,  # Reduced from 1000
-            chunk_overlap=50,  # Reduced from 200
+            chunk_size=settings.global_config.chunking.chunk_size,
+            chunk_overlap=settings.global_config.chunking.chunk_overlap,
             length_function=len,
             separators=["\n\n", "\n", ".", "!", "?", " ", ""]  # Added sentence-ending punctuation
         )
