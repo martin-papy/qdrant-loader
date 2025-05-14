@@ -9,6 +9,7 @@ import tiktoken
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.text_processing.text_processor import TextProcessor
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.config import Settings
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
@@ -63,7 +64,7 @@ class BaseChunkingStrategy(ABC):
             raise ValueError("Chunk overlap must be less than chunk size")
 
         # Initialize text processor
-        self.text_processor = TextProcessor()
+        self.text_processor = TextProcessor(settings)
 
     def _count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""

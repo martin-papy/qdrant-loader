@@ -5,9 +5,13 @@ from qdrant_loader.core.text_processing.text_processor import TextProcessor
 
 
 @pytest.fixture
-def text_processor():
-    """Create a TextProcessor instance for testing."""
-    return TextProcessor()
+def text_processor(test_settings):
+    """Create a TextProcessor instance for testing.
+    
+    Args:
+        test_settings: Test settings fixture from conftest.py
+    """
+    return TextProcessor(test_settings)
 
 
 def test_process_text(text_processor):
@@ -54,8 +58,8 @@ def test_get_pos_tags(text_processor):
     assert all(len(tag) == 2 for tag in pos_tags)
 
 
-def test_split_into_chunks(text_processor):
-    """Test the split_into_chunks method."""
+def test_split_into_chunks(text_processor, test_settings):
+    """Test the split_into_chunks method with default settings."""
     text = "This is a test. " * 50  # Create a longer text
     
     chunks = text_processor.split_into_chunks(text)
@@ -64,6 +68,10 @@ def test_split_into_chunks(text_processor):
     assert len(chunks) > 1
     assert all(isinstance(chunk, str) for chunk in chunks)
     assert all(len(chunk) > 0 for chunk in chunks)
+    
+    # Verify chunks respect the configured size
+    max_chunk_size = test_settings.global_config.chunking.chunk_size
+    assert all(len(chunk) <= max_chunk_size for chunk in chunks)
 
 
 def test_split_into_chunks_with_custom_size(text_processor):
