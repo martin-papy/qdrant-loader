@@ -36,13 +36,13 @@ This plan outlines the improvements to be made to the metrics tracking system in
    - Implement custom JSON encoder for new data structures ✅
    - Create structured output format with separate sections ✅
 
-### Phase 2: Processing Rate Metrics (Partially Complete)
+### Phase 2: Processing Rate Metrics (Complete) ✅
 
 1. Implement overall processing rate calculation ✅
 2. Add per-source rate tracking ✅
 3. Add per-chunk rate tracking ✅
 4. Implement time-based rate tracking with 5-second windows ✅
-5. Add size-based rate tracking (Pending)
+5. Add size-based rate tracking ✅
 
 ### Phase 3: Batch Statistics (Complete) ✅
 
@@ -60,12 +60,12 @@ This plan outlines the improvements to be made to the metrics tracking system in
    - Per-source processing rates ✅
    - Per-source success rates ✅
 
-### Phase 4: Integration and Testing (Pending)
+### Phase 4: Integration and Testing (In Progress)
 
 1. Update `save_metrics()` to use new structure ✅
-2. Add unit tests for new functionality
-3. Add integration tests for full workflow
-4. Update documentation
+2. Add unit tests for new functionality (Pending)
+3. Add integration tests for full workflow (Pending)
+4. Update documentation (In Progress)
 
 ## Success Criteria
 
@@ -91,21 +91,24 @@ This plan outlines the improvements to be made to the metrics tracking system in
    - Time-based rate tracking with 5-second windows
    - Source-specific metrics
    - Rate calculations for documents and chunks
+   - Size-based rate tracking through batch summary integration
 
 2. __BatchSummary Class__
    - Comprehensive batch statistics
    - Size distribution analysis
    - Success/failure tracking
    - Source-specific metrics
+   - Detailed size and chunk statistics
 
 3. __Enhanced IngestionMonitor__
    - Integration with new metrics classes
    - Improved JSON output structure
    - Better type hints and error handling
+   - Structured metrics storage and retrieval
 
 ### Pending Features
 
-1. Size-based rate tracking
-2. Unit and integration tests
-3. Documentation updates
-4. Performance optimization
+1. Unit and integration tests
+2. Documentation updates
+3. Performance optimization
+4. Visualization capabilities
