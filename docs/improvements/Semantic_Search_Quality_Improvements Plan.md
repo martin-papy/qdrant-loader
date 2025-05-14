@@ -1,4 +1,4 @@
-# Semantic Search Quality Improvements
+# Semantic Search Quality Improvements Plan
 
 ## Overview
 
