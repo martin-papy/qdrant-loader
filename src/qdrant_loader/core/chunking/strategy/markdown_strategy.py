@@ -2,16 +2,15 @@
 
 import re
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Optional
 import concurrent.futures
 import structlog
-
-import spacy
-from spacy.cli.download import download
+from dataclasses import dataclass, field
+from enum import Enum
 
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.text_processing.topic_modeler import TopicModeler
+from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
 from qdrant_loader.config import Settings, GlobalConfig, SemanticAnalysisConfig
 
 if TYPE_CHECKING:
@@ -19,6 +18,30 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
+class SectionType(Enum):
+    """Types of sections in a markdown document."""
+    HEADER = "header"
+    CODE_BLOCK = "code_block"
+    LIST = "list"
+    TABLE = "table"
+    QUOTE = "quote"
+    PARAGRAPH = "paragraph"
+
+@dataclass
+class Section:
+    """Represents a section in a markdown document."""
+    type: SectionType
+    level: int
+    content: str
+    parent: Optional['Section'] = None
+    children: List['Section'] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        if self.children is None:
+            self.children = []
+        if self.metadata is None:
+            self.metadata = {}
 
 class MarkdownChunkingStrategy(BaseChunkingStrategy):
     """Strategy for chunking markdown documents based on sections.
@@ -40,16 +63,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         super().__init__(settings)
         self.logger = structlog.get_logger(__name__)
 
-        # Initialize spaCy for entity recognition
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            logger.info("Downloading spaCy model...")
-            download("en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
-
-        # Initialize topic modeler
-        self.topic_modeler = TopicModeler(
+        # Initialize semantic analyzer
+        self.semantic_analyzer = SemanticAnalyzer(
+            spacy_model="en_core_web_sm",
             num_topics=settings.global_config.semantic_analysis.num_topics,
             passes=settings.global_config.semantic_analysis.lda_passes
         )
@@ -60,32 +76,167 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Initialize thread pool for parallel processing
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
-    def _extract_entities(self, text: str) -> List[Dict[str, Any]]:
-        """Extract named entities from text using spaCy.
+    def _identify_section_type(self, content: str) -> SectionType:
+        """Identify the type of section based on its content.
 
         Args:
-            text: The text to analyze
+            content: The section content to analyze
 
         Returns:
-            List of dictionaries containing entity information
+            SectionType enum indicating the type of section
         """
-        self.logger.debug("Starting entity extraction", text_length=len(text))
-        doc = self.nlp(text)
-        entities = []
+        if re.match(r"^#{1,6}\s+", content):
+            return SectionType.HEADER
+        elif re.match(r"^```", content):
+            return SectionType.CODE_BLOCK
+        elif re.match(r"^[*-]\s+", content):
+            return SectionType.LIST
+        elif re.match(r"^\|", content):
+            return SectionType.TABLE
+        elif re.match(r"^>", content):
+            return SectionType.QUOTE
+        return SectionType.PARAGRAPH
 
-        for ent in doc.ents:
-            entities.append(
-                {
-                    "text": ent.text,
-                    "label": ent.label_,
-                    "start": ent.start_char,
-                    "end": ent.end_char,
-                    "description": self.nlp.vocab.strings[ent.label_],
-                }
-            )
+    def _extract_section_metadata(self, section: Section) -> Dict[str, Any]:
+        """Extract metadata from a section.
 
-        self.logger.debug("Entity extraction completed", entity_count=len(entities))
-        return entities
+        Args:
+            section: The section to analyze
+
+        Returns:
+            Dictionary containing section metadata
+        """
+        metadata = {
+            "type": section.type.value,
+            "level": section.level,
+            "word_count": len(section.content.split()),
+            "char_count": len(section.content),
+            "has_code": bool(re.search(r"```", section.content)),
+            "has_links": bool(re.search(r"\[.*?\]\(.*?\)", section.content)),
+            "has_images": bool(re.search(r"!\[.*?\]\(.*?\)", section.content)),
+        }
+
+        # Add parent section info if available
+        if section.parent:
+            metadata["parent_title"] = section.parent.content.split("\n")[0].strip("# ")
+            metadata["parent_level"] = section.parent.level
+
+        return metadata
+
+    def _build_section_tree(self, text: str) -> List[Section]:
+        """Build a tree of sections from markdown text.
+
+        Args:
+            text: The markdown text to analyze
+
+        Returns:
+            List of root sections with their hierarchy
+        """
+        lines = text.splitlines()
+        sections = []
+        current_section = None
+        section_stack = []
+
+        for line in lines:
+            # Check for headers
+            header_match = re.match(r"^(#{1,6})\s+(.+)$", line)
+            if header_match:
+                level = len(header_match.group(1))
+                content = line
+                
+                # Create new section
+                new_section = Section(
+                    type=SectionType.HEADER,
+                    level=level,
+                    content=content,
+                    metadata={}
+                )
+                
+                # Find parent section
+                while section_stack and section_stack[-1].level >= level:
+                    section_stack.pop()
+                
+                if section_stack:
+                    parent = section_stack[-1]
+                    new_section.parent = parent
+                    parent.children.append(new_section)
+                else:
+                    sections.append(new_section)
+                
+                section_stack.append(new_section)
+                current_section = new_section
+            else:
+                # Add content to current section or create new paragraph section
+                if current_section:
+                    current_section.content += "\n" + line
+                else:
+                    new_section = Section(
+                        type=SectionType.PARAGRAPH,
+                        level=0,
+                        content=line,
+                        metadata={}
+                    )
+                    sections.append(new_section)
+                    current_section = new_section
+
+        # Process all sections to identify their types and extract metadata
+        for section in sections:
+            section.type = self._identify_section_type(section.content)
+            section.metadata = self._extract_section_metadata(section)
+
+        return sections
+
+    def _analyze_section_relationships(self, sections: List[Section]) -> Dict[str, Any]:
+        """Analyze relationships between sections.
+
+        Args:
+            sections: List of sections to analyze
+
+        Returns:
+            Dictionary containing relationship information
+        """
+        relationships = {
+            "hierarchy": defaultdict(list),
+            "cross_references": [],
+            "related_sections": defaultdict(list)
+        }
+
+        # Build hierarchy
+        for section in sections:
+            if section.parent:
+                relationships["hierarchy"][section.parent.content].append(section.content)
+
+        # Find cross-references
+        for section in sections:
+            refs = self._detect_cross_references(section.content)
+            if refs:
+                relationships["cross_references"].extend(refs)
+
+        # Find related sections based on content similarity
+        for i, section1 in enumerate(sections):
+            for section2 in sections[i+1:]:
+                if self._are_sections_related(section1, section2):
+                    relationships["related_sections"][section1.content].append(section2.content)
+
+        return relationships
+
+    def _are_sections_related(self, section1: Section, section2: Section) -> bool:
+        """Determine if two sections are related based on content similarity.
+
+        Args:
+            section1: First section to compare
+            section2: Second section to compare
+
+        Returns:
+            Boolean indicating if sections are related
+        """
+        # Use semantic analyzer for similarity comparison
+        analysis1 = self.semantic_analyzer.analyze_text(section1.content)
+        analysis2 = self.semantic_analyzer.analyze_text(section2.content)
+        
+        # Compare document similarities
+        similarity = analysis1.document_similarity.get(section2.content, 0.0)
+        return similarity > 0.3
 
     def _detect_cross_references(self, text: str) -> List[Dict[str, Any]]:
         """Detect cross-references in markdown text.
@@ -114,121 +265,6 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         self.logger.debug("Cross-reference detection completed", ref_count=len(cross_refs))
         return cross_refs
 
-    def _analyze_topic(self, text: str) -> Dict[str, Any]:
-        """Analyze the main topics in the text using LDA.
-
-        Args:
-            text: The text to analyze
-
-        Returns:
-            Dictionary containing topic analysis results
-        """
-        # Check cache first
-        if text in self._processed_chunks:
-            return self._processed_chunks[text]["topic_analysis"]
-            
-        result = self.topic_modeler.infer_topics(text)
-        
-        # Cache the result
-        if text not in self._processed_chunks:
-            self._processed_chunks[text] = {}
-        self._processed_chunks[text]["topic_analysis"] = result
-        
-        return result
-
-    def _map_hierarchical_relationships(self, headers: List[Tuple[int, str]]) -> Dict[str, Any]:
-        """Map hierarchical relationships between sections.
-
-        Args:
-            headers: List of (level, text) tuples for each header
-
-        Returns:
-            Dictionary containing hierarchical relationship information
-        """
-        self.logger.debug("Starting hierarchical relationship mapping", header_count=len(headers))
-        hierarchy = defaultdict(list)
-        current_path = []
-
-        for level, text in headers:
-            # Pop levels until we find the parent
-            while current_path and current_path[-1][0] >= level:
-                current_path.pop()
-
-            # Add current header to path
-            current_path.append((level, text))
-
-            # Add to hierarchy
-            if len(current_path) > 1:
-                parent = current_path[-2][1]
-                hierarchy[parent].append(text)
-
-        self.logger.debug("Completed hierarchical mapping", hierarchy_size=len(hierarchy))
-        return dict(hierarchy)
-
-    def _split_text(self, text: str) -> list[str]:
-        """Split markdown text into chunks based on section headers.
-
-        The strategy:
-        1. Identifies all section headers (##, ###, etc.)
-        2. Creates chunks that include:
-           - The section header
-           - All content until the next header of same or higher level
-           - Parent section headers for context
-           - Semantic analysis results
-
-        Args:
-            text: The markdown text to split
-
-        Returns:
-            List of text chunks, each containing a complete section
-        """
-        self.logger.debug("Starting text splitting", text_length=len(text))
-        if not text:
-            self.logger.debug("Empty text, returning empty chunk")
-            return [""]
-
-        # Split text into lines for processing
-        lines = text.splitlines()
-        chunks = []
-        current_chunk = []
-        header_stack = []  # Stack to track parent headers
-        all_headers = []
-
-        for line in lines:
-            # Check if line is a header
-            header_match = re.match(r"^(#{1,6})\s+(.+)$", line)
-            
-            if header_match:
-                # If we have a current chunk, save it
-                if current_chunk:
-                    chunks.append("\n".join(current_chunk))
-                    current_chunk = []
-                
-                # Update header stack
-                level = len(header_match.group(1))
-                text = header_match.group(2)
-                
-                # Pop headers until we find the parent
-                while header_stack and header_stack[-1][0] >= level:
-                    header_stack.pop()
-                
-                # Add current header to stack
-                header_stack.append((level, text))
-                all_headers.append((level, text))
-                
-                # Start new chunk with header
-                current_chunk = [line]
-            else:
-                # Add non-header line to current chunk
-                current_chunk.append(line)
-
-        # Add the last chunk if it exists
-        if current_chunk:
-            chunks.append("\n".join(current_chunk))
-
-        self.logger.debug("Text splitting completed", num_chunks=len(chunks))
-        return chunks
-
     def _process_chunk(self, chunk: str, chunk_index: int, total_chunks: int) -> Dict[str, Any]:
         """Process a single chunk in parallel.
 
@@ -253,106 +289,233 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         # Perform semantic analysis
         self.logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
-        entities = self._extract_entities(chunk)
-        cross_refs = self._detect_cross_references(chunk)
-        topic_analysis = self._analyze_topic(chunk)
+        analysis_result = self.semantic_analyzer.analyze_text(chunk, doc_id=f"chunk_{chunk_index}")
         
         # Cache results
         results = {
-            "entities": entities,
-            "cross_refs": cross_refs,
-            "topic_analysis": topic_analysis
+            "entities": analysis_result.entities,
+            "pos_tags": analysis_result.pos_tags,
+            "dependencies": analysis_result.dependencies,
+            "topics": analysis_result.topics,
+            "key_phrases": analysis_result.key_phrases,
+            "document_similarity": analysis_result.document_similarity
         }
         self._processed_chunks[chunk] = results
         
         self.logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
         return results
 
-    def chunk_document(self, document: Document) -> list[Document]:
-        """Split a markdown document into chunks while preserving metadata.
+    def _split_text(self, text: str) -> List[str]:
+        """Split text into chunks based on Markdown headers.
 
         Args:
-            document: The markdown document to chunk
+            text: Text to split
 
         Returns:
-            List of chunked documents with preserved metadata and section info
+            List of text chunks
+        """
+        # Split by headers (lines starting with #)
+        lines = text.split('\n')
+        chunks = []
+        current_chunk = []
+        current_header = None
+
+        for line in lines:
+            if line.startswith('#'):
+                # If we have a current chunk, save it
+                if current_chunk:
+                    chunks.append('\n'.join(current_chunk))
+                    current_chunk = []
+                current_header = line
+                current_chunk.append(line)
+            else:
+                current_chunk.append(line)
+
+        # Add the last chunk if it exists
+        if current_chunk:
+            chunks.append('\n'.join(current_chunk))
+
+        return chunks
+
+    def chunk_document(self, document: Document) -> List[Document]:
+        """Chunk a Markdown document.
+
+        Args:
+            document: Document to chunk
+
+        Returns:
+            List of chunked documents
         """
         self.logger.debug(
-            "Starting document chunking",
-            document_id=document.id,
-            content_length=len(document.content),
-            source=document.source,
-            source_type=document.source_type
+            "Starting Markdown chunking",
+            extra={
+                "source": document.source,
+                "source_type": document.source_type
+            }
         )
 
-        chunks = self._split_text(document.content)
-        chunked_documents = []
-
-        # Extract all headers for hierarchical mapping
-        headers = re.findall(r"^(#{1,6})\s+(.+)$", document.content, re.MULTILINE)
-        header_info = [(len(h[0]), h[1]) for h in headers]
-        hierarchy = self._map_hierarchical_relationships(header_info)
-
-        # Train LDA model on all chunks if we have enough data
-        if len(chunks) >= 5:
-            self.logger.info("Training LDA model on document chunks", num_chunks=len(chunks))
-            self.topic_modeler.train_model(chunks)
-        else:
-            self.logger.warning(
-                "Skipping LDA training due to insufficient data",
-                num_chunks=len(chunks)
-            )
-
-        # Process chunks in parallel
-        futures = []
-        for i, chunk in enumerate(chunks):
-            future = self._executor.submit(self._process_chunk, chunk, i, len(chunks))
-            futures.append((i, future))
-
-        # Collect results and create documents
-        for i, future in futures:
-            try:
-                chunk = chunks[i]
-                results = future.result(timeout=30)  # 30 second timeout per chunk
+        try:
+            # Split text into chunks
+            text_chunks = self._split_text(document.content)
+            
+            # Create chunked documents
+            chunked_docs = []
+            for i, chunk in enumerate(text_chunks):
+                # Extract header if present
+                header = None
+                lines = chunk.split('\n')
+                if lines and lines[0].startswith('#'):
+                    header = lines[0].lstrip('#').strip()
                 
-                # Extract section information
-                first_line = chunk.splitlines()[0] if chunk else ""
-                header_match = re.match(r"^(#{1,6})\s+(.+)$", first_line)
-
-                section_metadata = {
-                    "section_level": len(header_match.group(1)) if header_match else 0,
-                    "section_title": header_match.group(2) if header_match else "Introduction",
-                    "is_section_start": True,
-                    "entities": results["entities"],
-                    "cross_references": results["cross_refs"],
-                    "topic_analysis": results["topic_analysis"],
-                    "hierarchy": hierarchy,
-                }
-
-                # Create chunk document with section metadata
-                self.logger.debug("Creating chunk document", chunk_index=i)
+                # Create chunk document with metadata
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk,
                     chunk_index=i,
-                    total_chunks=len(chunks)
+                    total_chunks=len(text_chunks)
                 )
-
-                # Add section-specific metadata
-                chunk_doc.metadata.update(section_metadata)
-                chunked_documents.append(chunk_doc)
-                self.logger.debug("Chunk document created", chunk_index=i, chunk_id=chunk_doc.id)
                 
-            except concurrent.futures.TimeoutError:
-                self.logger.error("Chunk processing timed out", chunk_index=i)
-                continue
-            except Exception as e:
-                self.logger.error("Error processing chunk", chunk_index=i, error=str(e))
-                continue
+                # Add Markdown-specific metadata
+                chunk_doc.metadata.update({
+                    "section_title": header or "Introduction",
+                    "cross_references": self._extract_cross_references(chunk),
+                    "entities": self._extract_entities(chunk),
+                    "hierarchy": self._map_hierarchical_relationships(chunk),
+                    "topic_analysis": self._analyze_topic(chunk)
+                })
+                
+                chunked_docs.append(chunk_doc)
+            
+            self.logger.debug(
+                "Completed Markdown chunking",
+                extra={
+                    "source": document.source,
+                    "chunk_count": len(chunked_docs)
+                }
+            )
+            
+            return chunked_docs
 
-        return chunked_documents
+        except Exception as e:
+            self.logger.error(
+                "Error in Markdown chunking",
+                extra={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "source": document.source
+                }
+            )
+            raise
+
+    def _extract_cross_references(self, text: str) -> List[Dict[str, str]]:
+        """Extract cross-references from text.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            List of cross-references
+        """
+        # Simple implementation - extract markdown links
+        references = []
+        lines = text.split('\n')
+        for line in lines:
+            if '[' in line and '](' in line:
+                # Extract link text and URL
+                parts = line.split('](')
+                if len(parts) == 2:
+                    link_text = parts[0].split('[')[1]
+                    url = parts[1].split(')')[0]
+                    references.append({
+                        "text": link_text,
+                        "url": url
+                    })
+        return references
+
+    def _extract_entities(self, text: str) -> List[Dict[str, str]]:
+        """Extract named entities from text.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            List of entities
+        """
+        # Simple implementation - extract capitalized phrases
+        entities = []
+        words = text.split()
+        current_entity = []
+        
+        for word in words:
+            if word[0].isupper():
+                current_entity.append(word)
+            elif current_entity:
+                entities.append({
+                    "text": " ".join(current_entity),
+                    "type": "UNKNOWN"  # Could be enhanced with NER
+                })
+                current_entity = []
+        
+        if current_entity:
+            entities.append({
+                "text": " ".join(current_entity),
+                "type": "UNKNOWN"
+            })
+        
+        return entities
+
+    def _map_hierarchical_relationships(self, text: str) -> Dict[str, Any]:
+        """Map hierarchical relationships in text.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            Dictionary of hierarchical relationships
+        """
+        hierarchy = {}
+        current_level = 0
+        current_path = []
+        
+        lines = text.split('\n')
+        for line in lines:
+            if line.startswith('#'):
+                level = len(line.split()[0])
+                title = line.lstrip('#').strip()
+                
+                # Update current path
+                while len(current_path) >= level:
+                    current_path.pop()
+                current_path.append(title)
+                
+                # Add to hierarchy
+                current = hierarchy
+                for part in current_path[:-1]:
+                    if part not in current:
+                        current[part] = {}
+                    current = current[part]
+                current[current_path[-1]] = {}
+        
+        return hierarchy
+
+    def _analyze_topic(self, text: str) -> Dict[str, Any]:
+        """Analyze topic of text.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            Dictionary with topic analysis results
+        """
+        # Simple implementation - return basic topic info
+        return {
+            "topics": ["general"],  # Could be enhanced with LDA
+            "coherence": 0.5  # Could be enhanced with topic coherence metrics
+        }
 
     def __del__(self):
         """Cleanup resources."""
         if hasattr(self, '_executor'):
             self._executor.shutdown(wait=False)
+        if hasattr(self, 'semantic_analyzer'):
+            self.semantic_analyzer.clear_cache()
