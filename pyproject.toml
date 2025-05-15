@@ -51,6 +51,8 @@ dependencies = [
     "spacy>=3.7.0",
     "nltk>=3.8.0",
     "gensim>=4.3.0",
+    "rank-bm25>=0.2.2",
+    "faiss-cpu>=1.7.4",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -189,3 +191,9 @@ known-first-party = [
 "tests/*" = [
     "S101",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qdrant_loader"]
