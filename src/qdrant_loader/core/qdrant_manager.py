@@ -24,11 +24,15 @@ class QdrantConnectionError(Exception):
 
 class QdrantManager:
     def __init__(self, settings: Settings | None = None):
-        self.client: QdrantClient | None = None
+        """Initialize the qDrant manager.
+
+        Args:
+            settings: The application settings
+        """
         self.settings = settings or get_settings()
-        if not self.settings:
-            raise ValueError("Settings must be provided either through environment or constructor")
+        self.client = None
         self.collection_name = self.settings.QDRANT_COLLECTION_NAME
+        self.logger = LoggingConfig.get_logger(__name__)
         self.batch_size = get_global_config().embedding.batch_size
         self.connect()
 
@@ -56,7 +60,7 @@ class QdrantManager:
                     host in parsed_url.netloc for host in ["localhost", "127.0.0.1"]
                 ):
                     url = url.replace("http://", "https://", 1)
-                    logger.warning("Forcing HTTPS connection due to API key usage")
+                    self.logger.warning("Forcing HTTPS connection due to API key usage")
 
             try:
                 self.client = QdrantClient(
@@ -64,37 +68,14 @@ class QdrantManager:
                     api_key=api_key,
                     timeout=60,  # 60 seconds timeout
                 )
-                # Note: The version check warning is expected when connecting to Qdrant Cloud instances.
-                # This occurs because the version check endpoint might not be accessible due to security restrictions.
-                # The warning can be safely ignored as it doesn't affect functionality.
-                logger.info("Successfully connected to qDrant")
+                self.logger.info("Successfully connected to qDrant")
             except Exception as e:
-                error_msg = str(e)
-                if "Connection refused" in error_msg:
-                    raise QdrantConnectionError(
-                        "Failed to connect to Qdrant: Connection refused. Please check if the Qdrant server is running and accessible at the specified URL.",
-                        original_error=error_msg,
-                        url=url,
-                    ) from e
-                elif "Invalid API key" in error_msg:
-                    raise QdrantConnectionError(
-                        "Failed to connect to Qdrant: Invalid API key. Please check your QDRANT_API_KEY environment variable.",
-                        original_error=error_msg,
-                    ) from e
-                elif "timeout" in error_msg.lower():
-                    raise QdrantConnectionError(
-                        "Failed to connect to Qdrant: Connection timeout. Please check if the Qdrant server is running and accessible at the specified URL.",
-                        original_error=error_msg,
-                        url=url,
-                    ) from e
-                else:
-                    raise QdrantConnectionError(
-                        "Failed to connect to Qdrant: Unexpected error. Please check your configuration and ensure the Qdrant server is running.",
-                        original_error=error_msg,
-                        url=url,
-                    ) from e
-        except QdrantConnectionError:
-            raise
+                raise QdrantConnectionError(
+                    "Failed to connect to qDrant: Connection error",
+                    original_error=str(e),
+                    url=url,
+                ) from e
+
         except Exception as e:
             raise QdrantConnectionError(
                 "Failed to connect to qDrant: Unexpected error", original_error=str(e), url=url
@@ -115,13 +96,13 @@ class QdrantManager:
             # Check if collection already exists
             collections = client.get_collections()
             if any(c.name == self.collection_name for c in collections.collections):
-                logger.info(f"Collection {self.collection_name} already exists")
+                self.logger.info(f"Collection {self.collection_name} already exists")
                 return
 
             # Get vector size from configuration
-            vector_size = self.settings.global_config.embedding.vector_size
+            vector_size = get_global_config().embedding.vector_size
             if not vector_size:
-                logger.warning("No vector_size specified in config, defaulting to 1536")
+                self.logger.warning("No vector_size specified in config, defaulting to 1536")
                 vector_size = 1536
 
             # Create collection with basic configuration
@@ -139,25 +120,48 @@ class QdrantManager:
                 field_schema={"type": "keyword"}, # type: ignore
             )
             
-            logger.info(
-                f"Collection {self.collection_name} created successfully with vector size {vector_size}"
-            )
+            self.logger.info(f"Successfully created collection {self.collection_name}")
         except Exception as e:
-            logger.error("Failed to create collection", error=str(e))
+            self.logger.error("Failed to create collection", error=str(e))
             raise
 
     async def upsert_points(self, points: list[models.PointStruct]) -> None:
-        """Upsert points to the collection."""
+        """Upsert points into the collection.
+
+        Args:
+            points: List of points to upsert
+        """
+        self.logger.debug(
+            "Upserting points",
+            extra={
+                "point_count": len(points),
+                "collection": self.collection_name
+            }
+        )
+        
         try:
             client = self._ensure_client_connected()
             await asyncio.to_thread(
                 client.upsert,
                 collection_name=self.collection_name,
-                points=points,
+                points=points
             )
-            logger.debug(f"Successfully upserted {len(points)} points")
+            self.logger.debug(
+                "Successfully upserted points",
+                extra={
+                    "point_count": len(points),
+                    "collection": self.collection_name
+                }
+            )
         except Exception as e:
-            logger.error("Failed to upsert points", error=str(e))
+            self.logger.error(
+                "Failed to upsert points",
+                extra={
+                    "error": str(e),
+                    "point_count": len(points),
+                    "collection": self.collection_name
+                }
+            )
             raise
 
     def search(self, query_vector: list[float], limit: int = 5) -> list[models.ScoredPoint]:
@@ -182,12 +186,20 @@ class QdrantManager:
             logger.error("Failed to delete collection", error=str(e))
             raise
 
-    async def delete_points_by_document_id(self, document_id: str) -> None:
-        """Delete all points associated with a document ID.
+    async def delete_points_by_document_id(self, document_ids: list[str]) -> None:
+        """Delete points from the collection by document ID.
 
         Args:
-            document_id: The ID of the document whose points should be deleted
+            document_ids: List of document IDs to delete
         """
+        self.logger.debug(
+            "Deleting points by document ID",
+            extra={
+                "document_count": len(document_ids),
+                "collection": self.collection_name
+            }
+        )
+        
         try:
             client = self._ensure_client_connected()
             await asyncio.to_thread(
@@ -197,12 +209,25 @@ class QdrantManager:
                     must=[
                         models.FieldCondition(
                             key="document_id",
-                            match=models.MatchValue(value=document_id),
+                            match=models.MatchAny(any=document_ids)
                         )
                     ]
-                ),
+                )
             )
-            logger.info(f"Successfully deleted points for document {document_id}")
+            self.logger.debug(
+                "Successfully deleted points",
+                extra={
+                    "document_count": len(document_ids),
+                    "collection": self.collection_name
+                }
+            )
         except Exception as e:
-            logger.error(f"Failed to delete points for document {document_id}", error=str(e))
+            self.logger.error(
+                "Failed to delete points",
+                extra={
+                    "error": str(e),
+                    "document_count": len(document_ids),
+                    "collection": self.collection_name
+                }
+            )
             raise

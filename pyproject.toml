@@ -50,6 +50,7 @@ dependencies = [
     "greenlet>=3.0.0",
     "spacy>=3.7.0",
     "nltk>=3.8.0",
+    "gensim>=4.3.0",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

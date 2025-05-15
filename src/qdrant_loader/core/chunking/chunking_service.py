@@ -115,7 +115,8 @@ class ChunkingService:
                 "doc_id": document.id,
                 "source": document.source,
                 "source_type": document.source_type,
-                "content_size": len(document.content)
+                "content_size": len(document.content),
+                "content_type": document.content_type
             }
         )
         
@@ -132,55 +133,37 @@ class ChunkingService:
             )
             return [empty_doc]
 
+        # Get the appropriate strategy for the document type
+        strategy = self._get_strategy(document)
+        self.logger.debug(
+            "Selected chunking strategy",
+            extra={
+                "doc_id": document.id,
+                "strategy": strategy.__class__.__name__,
+                "content_type": document.content_type
+            }
+        )
+
         try:
-            # Get appropriate strategy for document type
-            strategy = self._get_strategy(document)
-            self.logger.debug(
-                "Using chunking strategy",
-                extra={
-                    "doc_id": document.id,
-                    "strategy": strategy.__class__.__name__
-                }
-            )
-            
-            # Start tracking chunking operation
-            self.monitor.start_operation(
-                f"chunk_{document.id}",
-                metadata={
-                    "doc_id": document.id,
-                    "strategy": strategy.__class__.__name__,
-                    "content_size": len(document.content)
-                }
-            )
-            
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
-            
-            # Update chunk metrics
             self.logger.debug(
-                "Chunking completed",
+                "Document chunking completed",
                 extra={
                     "doc_id": document.id,
-                    "num_chunks": len(chunked_docs),
+                    "chunk_count": len(chunked_docs),
+                    "avg_chunk_size": sum(len(d.content) for d in chunked_docs) / len(chunked_docs) if chunked_docs else 0
+                }
+            )
+            return chunked_docs
+        except Exception as e:
+            self.logger.error(
+                f"Error chunking document {document.id}: {str(e)}",
+                extra={
+                    "doc_id": document.id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
                     "strategy": strategy.__class__.__name__
                 }
             )
-            
-            # End tracking chunking operation
-            self.monitor.end_operation(
-                f"chunk_{document.id}",
-                success=True
-            )
-            
-            return chunked_docs
-            
-        except Exception as e:
-            self.logger.error(f"Error chunking document {document.id}: {str(e)}", exc_info=True)
-            # End tracking chunking operation with error
-            self.monitor.end_operation(
-                f"chunk_{document.id}",
-                success=False,
-                error=str(e)
-            )
-            # Re-raise the exception to maintain the original error handling
             raise

@@ -11,7 +11,21 @@ from qdrant_loader.config.chunking import ChunkingConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
-from qdrant_loader.config.types import GlobalConfigDict
+from qdrant_loader.config.types import GlobalConfigDict, SemanticAnalysisConfigDict
+
+
+class SemanticAnalysisConfig(BaseConfig):
+    """Configuration for semantic analysis."""
+    
+    num_topics: int = Field(
+        default=3,
+        description="Number of topics to extract using LDA"
+    )
+    
+    lda_passes: int = Field(
+        default=10,
+        description="Number of passes for LDA training"
+    )
 
 
 class GlobalConfig(BaseConfig):
@@ -19,6 +33,10 @@ class GlobalConfig(BaseConfig):
 
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+    semantic_analysis: SemanticAnalysisConfig = Field(
+        default_factory=SemanticAnalysisConfig,
+        description="Semantic analysis configuration"
+    )
     state_management: StateManagementConfig = Field(
         default_factory=lambda: StateManagementConfig(database_path=":memory:"),
         description="State management configuration",
@@ -45,6 +63,10 @@ class GlobalConfig(BaseConfig):
                 "chunk_overlap": self.chunking.chunk_overlap,
             },
             "embedding": self.embedding.model_dump(),
+            "semantic_analysis": {
+                "num_topics": self.semantic_analysis.num_topics,
+                "lda_passes": self.semantic_analysis.lda_passes,
+            },
             "sources": self.sources.to_dict(),
             "state_management": self.state_management.to_dict(),
         }

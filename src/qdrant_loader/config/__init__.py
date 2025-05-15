@@ -27,7 +27,7 @@ from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
 
 # Import consolidated configs
-from .global_config import GlobalConfig
+from .global_config import GlobalConfig, SemanticAnalysisConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 
@@ -46,6 +46,7 @@ __all__ = [
     "JiraProjectConfig",
     "PublicDocsSourceConfig",
     "SelectorsConfig",
+    "SemanticAnalysisConfig",
     "Settings",
     "SourcesConfig",
     "StateManagementConfig",

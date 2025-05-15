@@ -119,6 +119,9 @@ class BaseChunkingStrategy(ABC):
             metadata=metadata,
             source=original_doc.source,
             source_type=original_doc.source_type,
+            url=original_doc.url,
+            title=original_doc.title,
+            content_type=original_doc.content_type,
         )
 
     @abstractmethod
