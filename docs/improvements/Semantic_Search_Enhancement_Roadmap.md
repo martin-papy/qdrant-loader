@@ -39,7 +39,7 @@ Key improvements include:
 1. **Core Architecture**
    - Base abstract class implementation
    - Default token-based strategy
-   - Markdown-specific strategy
+   - Markdown-specific strategy (Basic Implementation)
    - ChunkingService with strategy registry
    - Basic monitoring and metrics
 
@@ -59,6 +59,12 @@ Key improvements include:
    - Core text processing setup
    - Initial library evaluations
    - Basic integration tests
+
+2. **Markdown Strategy Enhancement**
+   - Semantic analysis integration
+   - Advanced structure preservation
+   - Performance optimization
+   - Quality metrics implementation
 
 ### Pending ❌
 
@@ -104,25 +110,46 @@ Key improvements include:
 
 ### Phase 2: Document Type Strategies (Weeks 3-4)
 
-1. **Code Files Strategy**
+1. **Markdown Strategy Enhancement**
+   - [x] Semantic Analysis
+     - Entity recognition and linking
+     - Topic modeling integration
+     - Cross-reference detection
+     - Hierarchical relationship mapping
+   - [ ] Structure Analysis
+     - Enhanced section relationship detection
+     - Cross-reference analysis
+     - Hierarchical content mapping
+     - Metadata enrichment
+   - [ ] Performance Optimization
+     - Section processing caching
+     - Large document streaming
+     - Batch processing implementation
+   - [ ] Quality Metrics
+     - Chunk quality scoring
+     - Section coherence metrics
+     - Content relevance indicators
+     - Processing performance tracking
+
+2. **Code Files Strategy**
    - [ ] Language detection
    - [ ] AST-based parsing
    - [ ] Structure preservation
    - [ ] Syntax highlighting
 
-2. **JSON/YAML Strategy**
+3. **JSON/YAML Strategy**
    - [ ] Structure-aware splitting
    - [ ] Schema validation
    - [ ] Path preservation
    - [ ] Type information
 
-3. **HTML Strategy**
+4. **HTML Strategy**
    - [ ] DOM parsing
    - [ ] Semantic extraction
    - [ ] Metadata handling
    - [ ] Link preservation
 
-4. **Plain Text Strategy**
+5. **Plain Text Strategy**
    - [ ] Language detection
    - [ ] Paragraph analysis
    - [ ] Topic segmentation
@@ -144,8 +171,8 @@ Key improvements include:
 2. **Embedding Enhancement**
    - [ ] Sentence transformer integration
      - Model selection and evaluation
-       - `all-MiniLM-L6-v2` (baseline)
-       - `BAAI/bge-small-en` (semantic search)
+       - `text-embedding-3-small` (baseline)
+       - `text-embedding-3-small` (semantic search)
        - `intfloat/e5-large` (cross-lingual)
      - Embedding generation
      - Similarity computation
