@@ -75,10 +75,18 @@ class SourcesConfigDict(TypedDict):
     jira: dict[str, JiraConfig]
 
 
+class SemanticAnalysisConfigDict(TypedDict):
+    """Configuration for semantic analysis."""
+
+    num_topics: int
+    lda_passes: int
+
+
 class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
 
     chunking: dict[str, Any]
     embedding: dict[str, Any]
+    semantic_analysis: SemanticAnalysisConfigDict
     sources: dict[str, Any]
     state_management: dict[str, Any]

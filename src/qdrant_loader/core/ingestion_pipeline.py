@@ -66,7 +66,7 @@ class IngestionPipeline:
         self.embedding_batch_size = 32  # Number of texts to embed at once
         self.upsert_batch_size = 50     # Number of points to upsert at once
         self.max_workers = 4            # Number of parallel workers
-        self.timeout = 30               # Timeout in seconds for operations
+        self.timeout = 120              # Timeout in seconds for operations
         
         # Initialize thread pool
         self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
@@ -148,54 +148,69 @@ class IngestionPipeline:
     async def _process_single_document(self, doc: Document) -> None:
         """Process a single document."""
         self.logger.debug(
-            "Starting document processing",
+            "Processing document",
             extra={
                 "doc_id": doc.id,
                 "source": doc.source,
                 "source_type": doc.source_type,
-                "content_size": len(doc.content)
+                "content_size": len(doc.content),
+                "content_type": doc.content_type
             }
         )
         
-        start_time = time.time()
         try:
-            # Update document state
-            self.logger.debug(f"Updating state for document {doc.id}")
-            updated_state = await self.state_manager.update_document_state(doc)
+            # Chunk the document
             self.logger.debug(
-                "Document state updated",
-                doc_id=updated_state.document_id,
-                content_hash=updated_state.content_hash,
-                updated_at=updated_state.updated_at,
-            )
-
-            # Chunk document
-            self.logger.debug(f"Chunking document {doc.id}")
-            chunks = self.chunking_service.chunk_document(doc)
-            self.logger.debug(
-                "Document chunked",
+                "Starting document chunking",
                 extra={
                     "doc_id": doc.id,
-                    "num_chunks": len(chunks)
+                    "chunking_strategy": self.chunking_service.__class__.__name__
+                }
+            )
+            chunks = self.chunking_service.chunk_document(doc)
+            self.logger.debug(
+                "Document chunking completed",
+                extra={
+                    "doc_id": doc.id,
+                    "chunk_count": len(chunks),
+                    "avg_chunk_size": sum(len(c.content) for c in chunks) / len(chunks) if chunks else 0
                 }
             )
 
-            # Process chunks in batches
-            for i in range(0, len(chunks), self.embedding_batch_size):
-                batch_chunks = chunks[i:i + self.embedding_batch_size]
-                chunk_contents = [chunk.content for chunk in batch_chunks]
+            # Process each chunk
+            for i, chunk in enumerate(chunks):
+                self.logger.debug(
+                    "Processing chunk",
+                    extra={
+                        "doc_id": doc.id,
+                        "chunk_index": i,
+                        "total_chunks": len(chunks),
+                        "chunk_size": len(chunk.content)
+                    }
+                )
                 
-                # Get embeddings for batch
-                self.logger.debug(f"Getting embeddings for batch of {len(batch_chunks)} chunks from document {doc.id}")
-                embeddings = await self.embedding_service.get_embeddings(chunk_contents)
-                self.logger.debug(f"Successfully generated embeddings for {len(embeddings)} chunks from document {doc.id}")
-
-                # Create points for batch
-                points = []
-                for chunk, embedding in zip(batch_chunks, embeddings, strict=False):
+                try:
+                    # Update document state
+                    self.logger.debug(
+                        "Updating document state",
+                        extra={
+                            "doc_id": doc.id,
+                            "chunk_index": i
+                        }
+                    )
+                    await self.state_manager.update_document_state(chunk)
+                    
+                    # Store chunk in qDrant
+                    self.logger.debug(
+                        "Storing chunk in qDrant",
+                        extra={
+                            "doc_id": doc.id,
+                            "chunk_index": i
+                        }
+                    )
                     point = models.PointStruct(
                         id=chunk.id,
-                        vector=embedding,
+                        vector=await self.embedding_service.get_embedding(chunk.content),
                         payload={
                             "content": chunk.content,
                             "metadata": chunk.metadata,
@@ -205,33 +220,43 @@ class IngestionPipeline:
                             "document_id": doc.id,
                         },
                     )
-                    points.append(point)
+                    await self.qdrant_manager.upsert_points([point])
+                    
+                    self.logger.debug(
+                        "Chunk processing completed",
+                        extra={
+                            "doc_id": doc.id,
+                            "chunk_index": i
+                        }
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"Error processing chunk {i} of document {doc.id}: {str(e)}",
+                        extra={
+                            "doc_id": doc.id,
+                            "chunk_index": i,
+                            "error": str(e),
+                            "error_type": type(e).__name__
+                        }
+                    )
+                    raise
 
-                # Upsert points in smaller batches
-                for j in range(0, len(points), self.upsert_batch_size):
-                    batch_points = points[j:j + self.upsert_batch_size]
-                    self.logger.debug(f"Upserting batch of {len(batch_points)} points from document {doc.id}")
-                    await self.qdrant_manager.upsert_points(batch_points)
-                    self.logger.debug(f"Successfully upserted {len(batch_points)} points from document {doc.id}")
-
-            # Track document metrics after successful processing
-            processing_time = time.time() - start_time
-            self.monitor.start_operation(
-                f"doc_{doc.id}",
-                metadata={
-                    "source": doc.source,
-                    "source_type": doc.source_type,
-                    "size": len(doc.content),
-                    "num_chunks": len(chunks)
+            self.logger.debug(
+                "Document processing completed",
+                extra={
+                    "doc_id": doc.id,
+                    "chunk_count": len(chunks)
                 }
             )
-            self.monitor.end_operation(f"doc_{doc.id}", success=True)
-
         except Exception as e:
-            error_msg = f"Error processing document {doc.id}: {str(e)}"
-            self.logger.error(error_msg)
-            if f"doc_{doc.id}" in self.monitor.ingestion_metrics:
-                self.monitor.end_operation(f"doc_{doc.id}", success=False, error=error_msg)
+            self.logger.error(
+                f"Error processing document {doc.id}: {str(e)}",
+                extra={
+                    "doc_id": doc.id,
+                    "error": str(e),
+                    "error_type": type(e).__name__
+                }
+            )
             raise
 
     async def process_documents(
@@ -357,7 +382,7 @@ class IngestionPipeline:
                     for doc in deleted_documents:
                         try:
                             # Delete points from Qdrant
-                            await self.qdrant_manager.delete_points_by_document_id(doc.id)
+                            await self.qdrant_manager.delete_points_by_document_id([doc.id])
                             # Mark document as deleted in state manager
                             await self.state_manager.mark_document_deleted(
                                 doc.source_type, doc.source, doc.id
