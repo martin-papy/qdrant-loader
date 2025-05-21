@@ -134,6 +134,13 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 chunk_index=i,
                 total_chunks=len(chunks)
             )
+            
+            # Generate unique chunk ID
+            chunk_doc.id = Document.generate_chunk_id(document.id, i)
+            
+            # Add parent document reference
+            chunk_doc.metadata["parent_document_id"] = document.id
+            
             chunked_documents.append(chunk_doc)
 
         logger.debug(

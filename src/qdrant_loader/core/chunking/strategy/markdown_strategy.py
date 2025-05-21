@@ -30,18 +30,16 @@ class SectionType(Enum):
 @dataclass
 class Section:
     """Represents a section in a markdown document."""
-    type: SectionType
-    level: int
     content: str
+    level: int = 0
+    type: SectionType = SectionType.PARAGRAPH
     parent: Optional['Section'] = None
     children: List['Section'] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
     
-    def __post_init__(self):
-        if self.children is None:
-            self.children = []
-        if self.metadata is None:
-            self.metadata = {}
+    def add_child(self, child: 'Section'):
+        """Add a child section."""
+        self.children.append(child)
+        child.parent = self
 
 class MarkdownChunkingStrategy(BaseChunkingStrategy):
     """Strategy for chunking markdown documents based on sections.
@@ -114,156 +112,290 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             "has_code": bool(re.search(r"```", section.content)),
             "has_links": bool(re.search(r"\[.*?\]\(.*?\)", section.content)),
             "has_images": bool(re.search(r"!\[.*?\]\(.*?\)", section.content)),
+            "is_top_level": section.level <= 2,  # Mark top-level sections
         }
 
         # Add parent section info if available
         if section.parent:
-            metadata["parent_title"] = section.parent.content.split("\n")[0].strip("# ")
-            metadata["parent_level"] = section.parent.level
+            header_match = re.match(r"^(#+)\s+(.*?)(?:\n|$)", section.parent.content)
+            if header_match:
+                parent_title = header_match.group(2).strip()
+                metadata["parent_title"] = parent_title
+                metadata["parent_level"] = section.parent.level
+                
+                # Add breadcrumb path for hierarchical context
+                breadcrumb = self._build_section_breadcrumb(section)
+                if breadcrumb:
+                    metadata["breadcrumb"] = breadcrumb
 
         return metadata
-
-    def _build_section_tree(self, text: str) -> List[Section]:
-        """Build a tree of sections from markdown text.
-
-        Args:
-            text: The markdown text to analyze
-
-        Returns:
-            List of root sections with their hierarchy
-        """
-        lines = text.splitlines()
-        sections = []
-        current_section = None
-        section_stack = []
-
-        for line in lines:
-            # Check for headers
-            header_match = re.match(r"^(#{1,6})\s+(.+)$", line)
-            if header_match:
-                level = len(header_match.group(1))
-                content = line
-                
-                # Create new section
-                new_section = Section(
-                    type=SectionType.HEADER,
-                    level=level,
-                    content=content,
-                    metadata={}
-                )
-                
-                # Find parent section
-                while section_stack and section_stack[-1].level >= level:
-                    section_stack.pop()
-                
-                if section_stack:
-                    parent = section_stack[-1]
-                    new_section.parent = parent
-                    parent.children.append(new_section)
-                else:
-                    sections.append(new_section)
-                
-                section_stack.append(new_section)
-                current_section = new_section
-            else:
-                # Add content to current section or create new paragraph section
-                if current_section:
-                    current_section.content += "\n" + line
-                else:
-                    new_section = Section(
-                        type=SectionType.PARAGRAPH,
-                        level=0,
-                        content=line,
-                        metadata={}
-                    )
-                    sections.append(new_section)
-                    current_section = new_section
-
-        # Process all sections to identify their types and extract metadata
-        for section in sections:
-            section.type = self._identify_section_type(section.content)
-            section.metadata = self._extract_section_metadata(section)
-
-        return sections
-
-    def _analyze_section_relationships(self, sections: List[Section]) -> Dict[str, Any]:
-        """Analyze relationships between sections.
-
-        Args:
-            sections: List of sections to analyze
-
-        Returns:
-            Dictionary containing relationship information
-        """
-        relationships = {
-            "hierarchy": defaultdict(list),
-            "cross_references": [],
-            "related_sections": defaultdict(list)
-        }
-
-        # Build hierarchy
-        for section in sections:
-            if section.parent:
-                relationships["hierarchy"][section.parent.content].append(section.content)
-
-        # Find cross-references
-        for section in sections:
-            refs = self._detect_cross_references(section.content)
-            if refs:
-                relationships["cross_references"].extend(refs)
-
-        # Find related sections based on content similarity
-        for i, section1 in enumerate(sections):
-            for section2 in sections[i+1:]:
-                if self._are_sections_related(section1, section2):
-                    relationships["related_sections"][section1.content].append(section2.content)
-
-        return relationships
-
-    def _are_sections_related(self, section1: Section, section2: Section) -> bool:
-        """Determine if two sections are related based on content similarity.
-
-        Args:
-            section1: First section to compare
-            section2: Second section to compare
-
-        Returns:
-            Boolean indicating if sections are related
-        """
-        # Use semantic analyzer for similarity comparison
-        analysis1 = self.semantic_analyzer.analyze_text(section1.content)
-        analysis2 = self.semantic_analyzer.analyze_text(section2.content)
         
-        # Compare document similarities
-        similarity = analysis1.document_similarity.get(section2.content, 0.0)
-        return similarity > 0.3
-
-    def _detect_cross_references(self, text: str) -> List[Dict[str, Any]]:
-        """Detect cross-references in markdown text.
-
+    def _build_section_breadcrumb(self, section: Section) -> str:
+        """Build a breadcrumb path of section titles to capture hierarchy.
+        
         Args:
-            text: The text to analyze
-
+            section: The section to build breadcrumb for
+            
         Returns:
-            List of dictionaries containing cross-reference information
+            String representing the hierarchical path
         """
-        self.logger.debug("Starting cross-reference detection", text_length=len(text))
-        cross_refs = []
+        breadcrumb_parts = []
+        current = section
+        
+        # Walk up the parent chain to build the breadcrumb
+        while current.parent:
+            header_match = re.match(r"^(#+)\s+(.*?)(?:\n|$)", current.parent.content)
+            if header_match:
+                parent_title = header_match.group(2).strip()
+                breadcrumb_parts.insert(0, parent_title)
+            current = current.parent
+            
+        # Add current section
+        header_match = re.match(r"^(#+)\s+(.*?)(?:\n|$)", section.content)
+        if header_match:
+            title = header_match.group(2).strip()
+            breadcrumb_parts.append(title)
+            
+        return " > ".join(breadcrumb_parts)
 
-        # Find markdown links
-        link_pattern = r"\[([^\]]+)\]\(([^)]+)\)"
-        for match in re.finditer(link_pattern, text):
-            cross_refs.append(
-                {
-                    "text": match.group(1),
-                    "link": match.group(2),
-                    "start": match.start(),
-                    "end": match.end(),
+    def _parse_document_structure(self, text: str) -> List[Dict[str, Any]]:
+        """Parse document into a structured representation.
+        
+        Args:
+            text: The document text
+            
+        Returns:
+            List of dictionaries representing document elements
+        """
+        elements = []
+        lines = text.split('\n')
+        current_block = []
+        in_code_block = False
+        
+        for line in lines:
+            # Check for code block markers
+            if line.startswith('```'):
+                in_code_block = not in_code_block
+                current_block.append(line)
+                continue
+                
+            # Inside code block, just accumulate lines
+            if in_code_block:
+                current_block.append(line)
+                continue
+                
+            # Check for headers
+            header_match = re.match(r'^(#{1,6})\s+(.*?)$', line)
+            if header_match and not in_code_block:
+                # If we have a current block, save it
+                if current_block:
+                    elements.append({
+                        "type": "content",
+                        "text": '\n'.join(current_block),
+                        "level": 0
+                    })
+                    current_block = []
+                
+                # Save the header
+                level = len(header_match.group(1))
+                elements.append({
+                    "type": "header",
+                    "text": line,
+                    "level": level,
+                    "title": header_match.group(2).strip()
+                })
+            else:
+                current_block.append(line)
+        
+        # Save the last block if not empty
+        if current_block:
+            elements.append({
+                "type": "content",
+                "text": '\n'.join(current_block),
+                "level": 0
+            })
+            
+        return elements
+
+    def _get_section_path(self, header_item: Dict[str, Any], structure: List[Dict[str, Any]]) -> List[str]:
+        """Get the path of parent headers for a section.
+        
+        Args:
+            header_item: The header item
+            structure: The document structure
+            
+        Returns:
+            List of parent section titles
+        """
+        path = []
+        current_level = header_item["level"]
+        
+        # Go backward through structure to find parent headers
+        for item in reversed(structure[:structure.index(header_item)]):
+            if item["type"] == "header" and item["level"] < current_level:
+                path.insert(0, item["title"])
+                current_level = item["level"]
+                
+        return path
+
+    def _merge_related_sections(self, sections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Merge small related sections to maintain context.
+        
+        Args:
+            sections: List of section dictionaries
+            
+        Returns:
+            List of merged section dictionaries
+        """
+        if not sections:
+            return []
+            
+        merged = []
+        current_section = sections[0].copy()
+        min_section_size = 500  # Minimum characters for a standalone section
+        
+        for i in range(1, len(sections)):
+            next_section = sections[i]
+            
+            # If current section is small and next section is a subsection, merge them
+            if (len(current_section["content"]) < min_section_size and 
+                next_section["level"] > current_section["level"]):
+                current_section["content"] += "\n" + next_section["content"]
+                # Keep other metadata from the parent section
+            else:
+                merged.append(current_section)
+                current_section = next_section.copy()
+                
+        # Add the last section
+        merged.append(current_section)
+        return merged
+
+    def _split_text(self, text: str) -> List[Dict[str, Any]]:
+        """Split text into semantically meaningful chunks.
+        
+        Returns list of dictionaries with chunk text and metadata.
+        """
+        # Parse document structure
+        structure = self._parse_document_structure(text)
+        
+        # Group content by semantic sections
+        sections = []
+        current_section = {"content": "", "level": 0, "title": "Introduction"}
+        
+        for item in structure:
+            if item["type"] == "header":
+                # Save current section if not empty
+                if current_section["content"].strip():
+                    sections.append(current_section)
+                
+                # Start new section
+                current_section = {
+                    "content": item["text"] + "\n",
+                    "level": item["level"],
+                    "title": item["title"],
+                    "path": self._get_section_path(item, structure)
                 }
-            )
+            else:
+                # Add content to current section
+                current_section["content"] += item["text"] + "\n"
+        
+        # Add the last section if not empty
+        if current_section["content"].strip():
+            sections.append(current_section)
+        
+        # Split large sections while preserving headers
+        max_size = self.settings.global_config.chunking.chunk_size
+        split_sections = []
+        
+        for section in sections:
+            content = section["content"]
+            if len(content) > max_size:
+                # Extract header if present
+                header = ""
+                content_lines = content.split('\n')
+                if content_lines[0].startswith('#'):
+                    header = content_lines[0] + '\n'
+                    content = '\n'.join(content_lines[1:])
+                
+                # Split content into smaller chunks
+                chunks = self._split_large_section(content, max_size - len(header))
+                
+                # Create sections for each chunk
+                for i, chunk in enumerate(chunks):
+                    split_sections.append({
+                        "content": header + chunk if header else chunk,
+                        "level": section["level"],
+                        "title": f"{section['title']}" if i == 0 else f"{section['title']} (Part {i+1})",
+                        "path": section["path"]
+                    })
+            else:
+                split_sections.append(section)
+        
+        # Ensure each section has proper metadata
+        for section in split_sections:
+            if "level" not in section:
+                section["level"] = 0
+            if "title" not in section:
+                section["title"] = self._extract_section_title(section["content"])
+            if "path" not in section:
+                section["path"] = []
+        
+        return split_sections
 
-        self.logger.debug("Cross-reference detection completed", ref_count=len(cross_refs))
-        return cross_refs
+    def _split_large_section(self, content: str, max_size: int) -> List[str]:
+        """Split a large section into smaller chunks while preserving markdown structure.
+        
+        Args:
+            content: Section content to split
+            max_size: Maximum chunk size
+            
+        Returns:
+            List of content chunks
+        """
+        chunks = []
+        current_chunk = ""
+        
+        # Split by paragraphs first
+        paragraphs = re.split(r'\n\s*\n', content)
+        
+        for para in paragraphs:
+            # If adding this paragraph would exceed max_size
+            if len(current_chunk) + len(para) + 2 > max_size:  # +2 for newlines
+                # If current chunk is not empty, save it
+                if current_chunk.strip():
+                    chunks.append(current_chunk.strip())
+                
+                # If paragraph itself is too large, split by sentences
+                if len(para) > max_size:
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
+                    current_chunk = ""
+                    
+                    for sentence in sentences:
+                        # If sentence itself is too large, split by words
+                        if len(sentence) > max_size:
+                            words = sentence.split()
+                            for word in words:
+                                if len(current_chunk) + len(word) + 1 > max_size:
+                                    chunks.append(current_chunk.strip())
+                                    current_chunk = word + " "
+                                else:
+                                    current_chunk += word + " "
+                        # Normal sentence handling
+                        elif len(current_chunk) + len(sentence) + 1 > max_size:
+                            chunks.append(current_chunk.strip())
+                            current_chunk = sentence + " "
+                        else:
+                            current_chunk += sentence + " "
+                else:
+                    current_chunk = para + "\n\n"
+            else:
+                current_chunk += para + "\n\n"
+        
+        # Add the last chunk if not empty
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+        
+        return chunks
 
     def _process_chunk(self, chunk: str, chunk_index: int, total_chunks: int) -> Dict[str, Any]:
         """Process a single chunk in parallel.
@@ -305,40 +437,33 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         self.logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
         return results
 
-    def _split_text(self, text: str) -> List[str]:
-        """Split text into chunks based on Markdown headers.
-
+    def _extract_section_title(self, chunk: str) -> str:
+        """Extract section title from a chunk.
+        
         Args:
-            text: Text to split
-
+            chunk: The text chunk
+            
         Returns:
-            List of text chunks
+            Section title or default title
         """
-        # Split by headers (lines starting with #)
-        lines = text.split('\n')
-        chunks = []
-        current_chunk = []
-        current_header = None
-
-        for line in lines:
-            if line.startswith('#'):
-                # If we have a current chunk, save it
-                if current_chunk:
-                    chunks.append('\n'.join(current_chunk))
-                    current_chunk = []
-                current_header = line
-                current_chunk.append(line)
-            else:
-                current_chunk.append(line)
-
-        # Add the last chunk if it exists
-        if current_chunk:
-            chunks.append('\n'.join(current_chunk))
-
-        return chunks
+        # Try to find header at the beginning of the chunk
+        header_match = re.match(r"^(#{1,6})\s+(.*?)(?:\n|$)", chunk)
+        if header_match:
+            return header_match.group(2).strip()
+            
+        # Try to find the first sentence if no header
+        first_sentence_match = re.match(r"^([^\.!?]+[\.!?])", chunk)
+        if first_sentence_match:
+            title = first_sentence_match.group(1).strip()
+            # Truncate if too long
+            if len(title) > 50:
+                title = title[:50] + "..."
+            return title
+            
+        return "Untitled Section"
 
     def chunk_document(self, document: Document) -> List[Document]:
-        """Chunk a Markdown document.
+        """Chunk a Markdown document using semantic boundaries.
 
         Args:
             document: Document to chunk
@@ -346,66 +471,144 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents
         """
-        self.logger.debug(
+        self.logger.info(
             "Starting Markdown chunking",
             extra={
                 "source": document.source,
-                "source_type": document.source_type
+                "source_type": document.source_type,
+                "content_length": len(document.content),
+                "file_name": document.metadata.get("file_name", "unknown")
             }
         )
 
         try:
-            # Split text into chunks
-            text_chunks = self._split_text(document.content)
+            # Split text into semantic chunks
+            self.logger.debug("Parsing document structure")
+            chunks_metadata = self._split_text(document.content)
+            self.logger.info(f"Split document into {len(chunks_metadata)} initial sections")
             
             # Create chunked documents
             chunked_docs = []
-            for i, chunk in enumerate(text_chunks):
-                # Extract header if present
-                header = None
-                lines = chunk.split('\n')
-                if lines and lines[0].startswith('#'):
-                    header = lines[0].lstrip('#').strip()
+            for i, chunk_meta in enumerate(chunks_metadata):
+                chunk_content = chunk_meta["content"]
+                self.logger.debug(
+                    f"Processing chunk {i+1}/{len(chunks_metadata)}",
+                    extra={
+                        "chunk_size": len(chunk_content),
+                        "chunk_title": chunk_meta.get("title", "unknown"),
+                        "chunk_level": chunk_meta.get("level", 0)
+                    }
+                )
                 
                 # Create chunk document with metadata
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
-                    chunk_content=chunk,
+                    chunk_content=chunk_content,
                     chunk_index=i,
-                    total_chunks=len(text_chunks)
+                    total_chunks=len(chunks_metadata)
                 )
                 
+                # Generate unique chunk ID
+                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+                
                 # Add Markdown-specific metadata
+                section_title = chunk_meta.get("title", self._extract_section_title(chunk_content))
                 chunk_doc.metadata.update({
-                    "section_title": header or "Introduction",
-                    "cross_references": self._extract_cross_references(chunk),
-                    "entities": self._extract_entities(chunk),
-                    "hierarchy": self._map_hierarchical_relationships(chunk),
-                    "topic_analysis": self._analyze_topic(chunk)
+                    "section_title": section_title,
+                    "section_level": chunk_meta.get("level", 0),
+                    "section_path": " > ".join(chunk_meta.get("path", [])),
+                    "is_top_level": chunk_meta.get("level", 0) <= 2,
+                    "cross_references": self._extract_cross_references(chunk_content),
+                    "entities": self._extract_entities(chunk_content),
+                    "hierarchy": self._map_hierarchical_relationships(chunk_content),
+                    "topic_analysis": self._analyze_topic(chunk_content),
+                    "chunk_index": i,
+                    "total_chunks": len(chunks_metadata),
+                    "parent_document_id": document.id  # Add reference to parent document
                 })
+                
+                self.logger.debug(
+                    f"Created chunk document",
+                    extra={
+                        "chunk_id": chunk_doc.id,
+                        "section_title": section_title,
+                        "section_path": chunk_doc.metadata.get("section_path"),
+                        "content_length": len(chunk_content)
+                    }
+                )
                 
                 chunked_docs.append(chunk_doc)
             
-            self.logger.debug(
+            self.logger.info(
                 "Completed Markdown chunking",
                 extra={
                     "source": document.source,
-                    "chunk_count": len(chunked_docs)
+                    "chunk_count": len(chunked_docs),
+                    "avg_chunk_size": sum(len(d.content) for d in chunked_docs) / len(chunked_docs) if chunked_docs else 0
                 }
             )
             
             return chunked_docs
-
+            
         except Exception as e:
             self.logger.error(
-                "Error in Markdown chunking",
+                f"Error chunking markdown document",
+                exc_info=True,
                 extra={
                     "error": str(e),
-                    "error_type": type(e).__name__,
-                    "source": document.source
+                    "source": document.source,
+                    "source_type": document.source_type
                 }
             )
-            raise
+            # Fallback to simple chunking on error
+            return self._fallback_chunking(document)
+
+    def _fallback_chunking(self, document: Document) -> List[Document]:
+        """Simple fallback chunking when the main strategy fails.
+        
+        Args:
+            document: Document to chunk
+            
+        Returns:
+            List of chunked documents
+        """
+        self.logger.info("Using fallback chunking strategy for document")
+        
+        # Simple chunking implementation based on fixed size
+        chunk_size = self.settings.global_config.chunking.chunk_size
+        overlap = self.settings.global_config.chunking.chunk_overlap
+        
+        text = document.content
+        chunks = []
+        
+        # Split by paragraphs first
+        paragraphs = re.split(r'\n\s*\n', text)
+        current_chunk = ""
+        
+        for para in paragraphs:
+            if len(current_chunk) + len(para) <= chunk_size:
+                current_chunk += para + "\n\n"
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = para + "\n\n"
+                
+        # Add the last chunk if not empty
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+            
+        # Create chunked documents
+        chunked_docs = []
+        for i, chunk_content in enumerate(chunks):
+            chunk_doc = self._create_chunk_document(
+                original_doc=document,
+                chunk_content=chunk_content,
+                chunk_index=i,
+                total_chunks=len(chunks)
+            )
+            chunked_docs.append(chunk_doc)
+            
+        return chunked_docs
 
     def _extract_cross_references(self, text: str) -> List[Dict[str, str]]:
         """Extract cross-references from text.
