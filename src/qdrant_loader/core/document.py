@@ -229,3 +229,25 @@ class Document(BaseModel):
         logger.debug(f"Generated UUID: {consistent_uuid}")
 
         return str(consistent_uuid)
+
+    @staticmethod
+    def generate_chunk_id(document_id: str, chunk_index: int) -> str:
+        """Generate a unique ID for a document chunk.
+
+        Args:
+            document_id: The parent document's ID
+            chunk_index: The index of the chunk
+
+        Returns:
+            A unique chunk ID
+        """
+        # Create a string combining document ID and chunk index
+        chunk_string = f"{document_id}_{chunk_index}"
+        
+        # Hash the string to get a consistent length ID
+        chunk_hash = hashlib.sha256(chunk_string.encode()).hexdigest()
+        
+        # Convert to UUID format for Qdrant compatibility
+        chunk_uuid = uuid.UUID(chunk_hash[:32])
+        
+        return str(chunk_uuid)

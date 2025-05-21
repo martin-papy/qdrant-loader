@@ -81,22 +81,35 @@ class ChunkingService:
             The appropriate chunking strategy for the document type
         """
         # Get file extension from the document content type
-        file_type = document.content_type.lower().lstrip(".")
+        file_type = document.content_type.lower()
+        
+        self.logger.debug(
+            "Selecting chunking strategy",
+            file_type=file_type,
+            available_strategies=list(self.strategies.keys()),
+            document_id=document.id,
+            document_source=document.source,
+            document_title=document.title
+        )
         
         # Get strategy class for file type
         strategy_class = self.strategies.get(file_type)
         
         if strategy_class:
-            self.logger.debug(
+            self.logger.info(
                 "Using specific strategy for file type",
                 file_type=file_type,
                 strategy=strategy_class.__name__,
+                document_id=document.id,
+                document_title=document.title
             )
             return strategy_class(self.settings)
         
-        self.logger.debug(
-            "Using default strategy for file type",
+        self.logger.warning(
+            "No specific strategy found for file type, using default strategy",
             file_type=file_type,
+            document_id=document.id,
+            document_title=document.title
         )
         return self.default_strategy
 

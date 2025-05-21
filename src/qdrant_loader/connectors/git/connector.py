@@ -243,11 +243,14 @@ class GitConnector(BaseConnector):
             rel_path = os.path.relpath(file_path, self.temp_dir)
             self.logger.debug(f"Processed Git file: /{rel_path!s}")
 
+            # Get file extension without the dot
+            file_ext = os.path.splitext(file_path)[1].lower().lstrip('.')
+
             # Create document
             git_document = Document(
                 title=os.path.basename(file_path),
                 content=content,
-                content_type=os.path.splitext(file_path)[1].lower(),
+                content_type=file_ext,  # Extension without the dot
                 metadata=metadata,
                 source_type=SourceType.GIT,
                 source=self.config.source,
