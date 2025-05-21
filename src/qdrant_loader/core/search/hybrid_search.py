@@ -1,6 +1,7 @@
 """Hybrid search implementation combining vector and keyword search."""
 
 import logging
+import re
 from typing import List, Dict, Any, Optional, cast
 from dataclasses import dataclass
 from rank_bm25 import BM25Okapi
@@ -29,8 +30,9 @@ class HybridSearchService:
         qdrant_client: QdrantClient,
         embedding_service: EmbeddingService,
         collection_name: str,
-        vector_weight: float = 0.7,
+        vector_weight: float = 0.6,  # Reduced from 0.7 to give more weight to keywords & metadata
         keyword_weight: float = 0.3,
+        metadata_weight: float = 0.1,  # Added metadata weight
         min_score: float = 0.3
     ):
         """Initialize the hybrid search service.
@@ -41,6 +43,7 @@ class HybridSearchService:
             collection_name: Name of the Qdrant collection
             vector_weight: Weight for vector search scores (0-1)
             keyword_weight: Weight for keyword search scores (0-1)
+            metadata_weight: Weight for metadata-based scoring (0-1)
             min_score: Minimum combined score threshold
         """
         self.qdrant_client = qdrant_client
@@ -48,8 +51,48 @@ class HybridSearchService:
         self.collection_name = collection_name
         self.vector_weight = vector_weight
         self.keyword_weight = keyword_weight
+        self.metadata_weight = metadata_weight
         self.min_score = min_score
         self.logger = logging.getLogger(__name__)
+        
+        # Common query expansions for frequently used terms
+        self.query_expansions = {
+            "product requirements": ["PRD", "requirements document", "product specification"],
+            "requirements": ["specs", "requirements document", "features"],
+            "architecture": ["system design", "technical architecture"],
+            "UI": ["user interface", "frontend", "design"],
+            "API": ["interface", "endpoints", "REST"],
+            "database": ["DB", "data storage", "persistence"],
+            "security": ["auth", "authentication", "authorization"]
+        }
+
+    async def _expand_query(self, query: str) -> str:
+        """Expand query with related terms for better matching.
+        
+        Args:
+            query: Original search query
+            
+        Returns:
+            Expanded query with relevant related terms
+        """
+        expanded_query = query
+        lower_query = query.lower()
+        
+        # Look for expansion matches
+        for key, expansions in self.query_expansions.items():
+            if key.lower() in lower_query:
+                expansion_terms = " ".join(expansions)
+                expanded_query = f"{query} {expansion_terms}"
+                self.logger.debug(
+                    "Expanded query",
+                    extra={
+                        "original_query": query,
+                        "expanded_query": expanded_query
+                    }
+                )
+                break
+                
+        return expanded_query
 
     async def search(
         self,
@@ -77,20 +120,28 @@ class HybridSearchService:
         )
 
         try:
-            # Get vector search results
-            vector_results = await self._vector_search(query, limit * 2, filter_conditions)
+            # Expand query with related terms
+            expanded_query = await self._expand_query(query)
             
-            # Get keyword search results
-            keyword_results = await self._keyword_search(query, limit * 2, filter_conditions)
+            # Get vector search results with expanded query to improve recall
+            vector_results = await self._vector_search(expanded_query, limit * 3, filter_conditions)
             
-            # Combine and rerank results
-            combined_results = self._combine_results(vector_results, keyword_results, limit)
+            # Get keyword search results with original query for precision
+            keyword_results = await self._keyword_search(query, limit * 3, filter_conditions)
+            
+            # Analyze query for context
+            query_context = self._analyze_query(query)
+            
+            # Combine and rerank results with metadata awareness
+            combined_results = self._combine_results(vector_results, keyword_results, query_context, limit)
             
             self.logger.debug(
                 "Completed hybrid search",
                 extra={
                     "query": query,
-                    "result_count": len(combined_results)
+                    "expanded_query": expanded_query,
+                    "result_count": len(combined_results),
+                    "query_context": query_context
                 }
             )
             
@@ -106,6 +157,37 @@ class HybridSearchService:
                 }
             )
             raise
+
+    def _analyze_query(self, query: str) -> Dict[str, Any]:
+        """Analyze query to determine intent and context.
+        
+        Args:
+            query: The search query
+            
+        Returns:
+            Dictionary containing query analysis results
+        """
+        context = {
+            "is_question": bool(re.search(r"\?|what|how|why|when|who|where", query.lower())),
+            "is_broad": len(query.split()) < 5,
+            "is_specific": len(query.split()) > 7,
+            "probable_intent": "informational",  # Default intent
+            "keywords": []
+        }
+        
+        # Extract key terms for relevance
+        lower_query = query.lower()
+        context["keywords"] = [word.lower() for word in re.findall(r'\b\w{3,}\b', lower_query)]
+        
+        # Detect probable intent
+        if "how to" in lower_query or "steps" in lower_query:
+            context["probable_intent"] = "procedural"
+        elif any(term in lower_query for term in ["requirements", "prd", "specification"]):
+            context["probable_intent"] = "requirements"
+        elif any(term in lower_query for term in ["architecture", "design", "structure"]):
+            context["probable_intent"] = "architecture"
+        
+        return context
 
     async def _vector_search(
         self,
@@ -192,6 +274,7 @@ class HybridSearchService:
         # Prepare documents for BM25
         documents = []
         doc_ids = []
+        metadata_list = []
         for point in scroll_results[0]:
             # Apply filter conditions if provided
             if filter_conditions and point.payload:
@@ -202,8 +285,10 @@ class HybridSearchService:
                     continue
             
             content = point.payload.get("content", "") if point.payload else ""
+            metadata = point.payload.get("metadata", {}) if point.payload else {}
             documents.append(content)
             doc_ids.append(point.id)
+            metadata_list.append(metadata)
         
         # Create BM25 index
         tokenized_docs = [doc.split() for doc in documents]
@@ -221,16 +306,66 @@ class HybridSearchService:
                 "id": doc_ids[idx],
                 "score": float(scores[idx]),
                 "content": documents[idx],
-                "metadata": {}  # Add metadata if needed
+                "metadata": metadata_list[idx]
             }
             for idx in top_indices
             if scores[idx] > 0
         ]
 
+    def _calculate_metadata_score(
+        self, 
+        metadata: Dict[str, Any],
+        query_context: Dict[str, Any]
+    ) -> float:
+        """Calculate score adjustment based on document metadata.
+        
+        Args:
+            metadata: Document metadata
+            query_context: Query context and intent information
+            
+        Returns:
+            Metadata score between 0.0 and 1.0
+        """
+        score = 0.0
+        
+        # Boost based on section level - higher level (lower number) sections get higher scores
+        section_level = metadata.get("section_level", metadata.get("level", 100))
+        if section_level < 100:  # Only if we have a valid level
+            level_score = max(0, 0.2 * (1.0 - (section_level / 6)))
+            score += level_score
+            
+        # For broad questions, boost overview/introduction sections
+        if query_context.get("is_broad", False):
+            section_title = metadata.get("section_title", "").lower()
+            if any(term in section_title for term in ["introduction", "overview", "about", "purpose", "summary"]):
+                score += 0.25
+                
+        # For requirements-focused queries, boost relevant sections
+        if query_context.get("probable_intent") == "requirements":
+            section_title = metadata.get("section_title", "").lower()
+            section_path = metadata.get("section_path", "").lower()
+            breadcrumb = metadata.get("breadcrumb", "").lower()
+            
+            # Check for requirements-related terms in section information
+            if any(term in section_title for term in ["requirement", "feature", "goal", "objective"]):
+                score += 0.3
+            elif any(term in section_path for term in ["requirement", "feature", "goal", "objective"]):
+                score += 0.2
+            elif any(term in breadcrumb for term in ["requirement", "feature", "goal", "objective"]):
+                score += 0.1
+                
+        # For top-level sections (important overviews)
+        if metadata.get("is_top_level", False):
+            score += 0.15
+            
+        # Cap at 1.0
+        return min(1.0, score)
+
     def _combine_results(
         self,
         vector_results: List[Dict[str, Any]],
         keyword_results: List[Dict[str, Any]],
+        query_context: Dict[str, Any],
         limit: int
     ) -> List[SearchResult]:
         """Combine and rerank results from vector and keyword search.
@@ -238,6 +373,7 @@ class HybridSearchService:
         Args:
             vector_results: Results from vector search
             keyword_results: Results from keyword search
+            query_context: Context information about the query
             limit: Maximum number of results to return
 
         Returns:
@@ -248,46 +384,66 @@ class HybridSearchService:
         keyword_dict = {r["id"]: r for r in keyword_results}
         
         # Combine scores for all unique documents
-        combined_scores = {}
-        for doc_id in set(list(vector_dict.keys()) + list(keyword_dict.keys())):
-            vector_score = vector_dict.get(doc_id, {}).get("score", 0)
-            keyword_score = keyword_dict.get(doc_id, {}).get("score", 0)
-            
-            # Normalize scores to 0-1 range
-            vector_score = (vector_score + 1) / 2  # Assuming cosine similarity
-            keyword_score = min(keyword_score / 10, 1)  # Normalize BM25 scores
-            
-            # Calculate combined score
-            combined_score = (
-                self.vector_weight * vector_score +
-                self.keyword_weight * keyword_score
-            )
-            
-            if combined_score >= self.min_score:
-                combined_scores[doc_id] = {
-                    "combined_score": combined_score,
-                    "vector_score": vector_score,
-                    "keyword_score": keyword_score,
-                    "content": vector_dict.get(doc_id, {}).get("content", ""),
-                    "metadata": vector_dict.get(doc_id, {}).get("metadata", {})
+        combined_dict = {}
+        
+        # Process vector results
+        for result in vector_results:
+            doc_id = result["id"]
+            if doc_id not in combined_dict:
+                combined_dict[doc_id] = {
+                    "id": doc_id,
+                    "content": result["content"],
+                    "metadata": result["metadata"],
+                    "vector_score": result["score"],
+                    "keyword_score": 0.0,
+                    "metadata_score": 0.0
                 }
         
-        # Sort by combined score and get top results
-        sorted_results = sorted(
-            combined_scores.items(),
-            key=lambda x: x[1]["combined_score"],
-            reverse=True
-        )[:limit]
+        # Process keyword results
+        for result in keyword_results:
+            doc_id = result["id"]
+            if doc_id in combined_dict:
+                combined_dict[doc_id]["keyword_score"] = result["score"]
+            else:
+                combined_dict[doc_id] = {
+                    "id": doc_id,
+                    "content": result["content"],
+                    "metadata": result["metadata"],
+                    "vector_score": 0.0,
+                    "keyword_score": result["score"],
+                    "metadata_score": 0.0
+                }
+                
+        # Calculate metadata score for relevance boosting
+        for doc_id, doc_info in combined_dict.items():
+            metadata_score = self._calculate_metadata_score(doc_info["metadata"], query_context)
+            doc_info["metadata_score"] = metadata_score
         
-        # Convert to SearchResult objects
-        return [
-            SearchResult(
-                id=doc_id,
-                score=result["combined_score"],
-                content=result["content"],
-                metadata=result["metadata"],
-                vector_score=result["vector_score"],
-                keyword_score=result["keyword_score"]
+        # Calculate combined scores
+        combined_results = []
+        for doc_id, doc_info in combined_dict.items():
+            # Apply weights to different score components
+            combined_score = (
+                self.vector_weight * doc_info["vector_score"] +
+                self.keyword_weight * doc_info["keyword_score"] +
+                self.metadata_weight * doc_info["metadata_score"]
             )
-            for doc_id, result in sorted_results
-        ] 
+            
+            # Filter out low-scoring results
+            if combined_score >= self.min_score:
+                combined_results.append(
+                    SearchResult(
+                        id=doc_id,
+                        score=combined_score,
+                        content=doc_info["content"],
+                        metadata=doc_info["metadata"],
+                        vector_score=doc_info["vector_score"],
+                        keyword_score=doc_info["keyword_score"]
+                    )
+                )
+        
+        # Sort by combined score
+        combined_results.sort(key=lambda x: x.score, reverse=True)
+        
+        # Return top results
+        return combined_results[:limit] 
