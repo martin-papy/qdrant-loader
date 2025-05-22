@@ -163,3 +163,39 @@ Common error messages and their solutions:
    - Never commit API keys or tokens
    - Use secure methods for storing credentials
    - Regularly rotate API keys and tokens
+
+# Local File Connector
+
+The localfile connector allows you to ingest files from local directories. It supports filtering by path, file type, and size.
+
+## Configuration Example
+
+```yaml
+sources:
+  localfile:
+    my-local-files:
+      base_path: "/path/to/local/files"
+      include_paths:
+        - "docs/**"
+        - "README.md"
+      exclude_paths:
+        - "docs/archive/**"
+        - "tmp/**"
+      file_types:
+        - "*.md"
+        - "*.txt"
+        - "*.py"
+        - "*.json"
+        - "*.yaml"
+      max_file_size: 1048576
+```
+
+## CLI Usage
+
+```bash
+# Ingest only local files
+qdrant-loader ingest --source-type localfile
+
+# Ingest a specific localfile source
+qdrant-loader ingest --source-type localfile --source my-local-files
+```

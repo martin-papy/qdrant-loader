@@ -16,6 +16,7 @@ class SourceType(str, Enum):
     GIT = "git"
     CONFLUENCE = "confluence"
     JIRA = "jira"
+    LOCALFILE = "localfile"
 
 
 class GitConfig(TypedDict):

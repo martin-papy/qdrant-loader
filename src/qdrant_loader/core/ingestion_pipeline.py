@@ -26,6 +26,7 @@ from ..connectors.confluence import ConfluenceConnector
 from ..connectors.git import GitConnector
 from ..connectors.jira import JiraConnector
 from ..connectors.publicdocs import PublicDocsConnector
+from ..connectors.localfile import LocalFileConnector
 from ..utils.logging import LoggingConfig
 from .chunking.chunking_service import ChunkingService
 from .document import Document
@@ -57,20 +58,20 @@ class IngestionPipeline:
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize performance monitor with absolute path
-        metrics_dir = Path.cwd() / 'metrics'
+        metrics_dir = Path.cwd() / "metrics"
         metrics_dir.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"Initializing metrics directory at {metrics_dir}")
         self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
 
         # Configure batch sizes and timeouts
         self.embedding_batch_size = 32  # Number of texts to embed at once
-        self.upsert_batch_size = 50     # Number of points to upsert at once
-        self.max_workers = 4            # Number of parallel workers
-        self.timeout = 120              # Timeout in seconds for operations
-        
+        self.upsert_batch_size = 50  # Number of points to upsert at once
+        self.max_workers = 4  # Number of parallel workers
+        self.timeout = 120  # Timeout in seconds for operations
+
         # Initialize thread pool
         self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
-        
+
         # Register cleanup handlers
         atexit.register(self._cleanup)
         signal.signal(signal.SIGINT, self._handle_sigint)
@@ -102,7 +103,9 @@ class IngestionPipeline:
         """Initialize the pipeline services."""
         await self.state_manager.initialize()
 
-    async def _process_document_batch(self, documents: List[Document]) -> Tuple[int, int, List[str]]:
+    async def _process_document_batch(
+        self, documents: List[Document]
+    ) -> Tuple[int, int, List[str]]:
         """Process a batch of documents in parallel."""
         success_count = 0
         error_count = 0
@@ -112,7 +115,7 @@ class IngestionPipeline:
 
         # Process documents in parallel with semaphore to limit concurrency
         semaphore = asyncio.Semaphore(self.max_workers)
-        
+
         async def process_with_semaphore(doc: Document) -> None:
             async with semaphore:
                 try:
@@ -131,10 +134,12 @@ class IngestionPipeline:
 
         # Create tasks with semaphore
         tasks = [process_with_semaphore(doc) for doc in documents]
-        
+
         try:
             # Wait for all tasks to complete with timeout
-            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=self.timeout)
+            await asyncio.wait_for(
+                asyncio.gather(*tasks, return_exceptions=True), timeout=self.timeout
+            )
         except asyncio.TimeoutError:
             self.logger.error("Batch processing timed out")
             raise
@@ -142,7 +147,9 @@ class IngestionPipeline:
             self.logger.error(f"Error during batch processing: {str(e)}")
             raise
 
-        self.logger.info(f"Batch processing completed. Success: {success_count}, Errors: {error_count}")
+        self.logger.info(
+            f"Batch processing completed. Success: {success_count}, Errors: {error_count}"
+        )
         return success_count, error_count, errors
 
     async def _process_single_document(self, doc: Document) -> None:
@@ -154,18 +161,18 @@ class IngestionPipeline:
                 "source": doc.source,
                 "source_type": doc.source_type,
                 "content_size": len(doc.content),
-                "content_type": doc.content_type
-            }
+                "content_type": doc.content_type,
+            },
         )
-        
+
         try:
             # Chunk the document
             self.logger.debug(
                 "Starting document chunking",
                 extra={
                     "doc_id": doc.id,
-                    "chunking_strategy": self.chunking_service.__class__.__name__
-                }
+                    "chunking_strategy": self.chunking_service.__class__.__name__,
+                },
             )
             chunks = self.chunking_service.chunk_document(doc)
             self.logger.debug(
@@ -173,8 +180,10 @@ class IngestionPipeline:
                 extra={
                     "doc_id": doc.id,
                     "chunk_count": len(chunks),
-                    "avg_chunk_size": sum(len(c.content) for c in chunks) / len(chunks) if chunks else 0
-                }
+                    "avg_chunk_size": (
+                        sum(len(c.content) for c in chunks) / len(chunks) if chunks else 0
+                    ),
+                },
             )
 
             # Process each chunk
@@ -185,28 +194,20 @@ class IngestionPipeline:
                         "doc_id": doc.id,
                         "chunk_index": i,
                         "total_chunks": len(chunks),
-                        "chunk_size": len(chunk.content)
-                    }
+                        "chunk_size": len(chunk.content),
+                    },
                 )
-                
+
                 try:
                     # Update document state
                     self.logger.debug(
-                        "Updating document state",
-                        extra={
-                            "doc_id": doc.id,
-                            "chunk_index": i
-                        }
+                        "Updating document state", extra={"doc_id": doc.id, "chunk_index": i}
                     )
                     await self.state_manager.update_document_state(chunk)
-                    
+
                     # Store chunk in qDrant
                     self.logger.debug(
-                        "Storing chunk in qDrant",
-                        extra={
-                            "doc_id": doc.id,
-                            "chunk_index": i
-                        }
+                        "Storing chunk in qDrant", extra={"doc_id": doc.id, "chunk_index": i}
                     )
                     point = models.PointStruct(
                         id=chunk.id,
@@ -221,13 +222,9 @@ class IngestionPipeline:
                         },
                     )
                     await self.qdrant_manager.upsert_points([point])
-                    
+
                     self.logger.debug(
-                        "Chunk processing completed",
-                        extra={
-                            "doc_id": doc.id,
-                            "chunk_index": i
-                        }
+                        "Chunk processing completed", extra={"doc_id": doc.id, "chunk_index": i}
                     )
                 except Exception as e:
                     self.logger.error(
@@ -236,26 +233,19 @@ class IngestionPipeline:
                             "doc_id": doc.id,
                             "chunk_index": i,
                             "error": str(e),
-                            "error_type": type(e).__name__
-                        }
+                            "error_type": type(e).__name__,
+                        },
                     )
                     raise
 
             self.logger.debug(
                 "Document processing completed",
-                extra={
-                    "doc_id": doc.id,
-                    "chunk_count": len(chunks)
-                }
+                extra={"doc_id": doc.id, "chunk_count": len(chunks)},
             )
         except Exception as e:
             self.logger.error(
                 f"Error processing document {doc.id}: {str(e)}",
-                extra={
-                    "doc_id": doc.id,
-                    "error": str(e),
-                    "error_type": type(e).__name__
-                }
+                extra={"doc_id": doc.id, "error": str(e), "error_type": type(e).__name__},
             )
             raise
 
@@ -268,15 +258,14 @@ class IngestionPipeline:
         """Process documents from all configured sources."""
         # Ensure the pipeline is initialized
         await self.initialize()
-        
+
         # Reset metrics for new run
         self.monitor.clear_metrics()
-        
+
         self.monitor.start_operation(
-            'ingestion_process',
-            metadata={'source_type': source_type, 'source': source}
+            "ingestion_process", metadata={"source_type": source_type, "source": source}
         )
-        
+
         try:
             if not sources_config:
                 sources_config = self.settings.sources_config
@@ -291,6 +280,7 @@ class IngestionPipeline:
                     filtered_config.confluence,
                     filtered_config.jira,
                     filtered_config.publicdocs,
+                    filtered_config.localfile,
                 ]
             ):
                 raise ValueError(f"No sources found for type '{source_type}'")
@@ -304,14 +294,14 @@ class IngestionPipeline:
                 confluence_docs = await self._process_source_type(
                     filtered_config.confluence, ConfluenceConnector, "Confluence"
                 )
-                self.logger.info(f"Completed processing Confluence sources, got {len(confluence_docs)} documents")
+                self.logger.info(
+                    f"Completed processing Confluence sources, got {len(confluence_docs)} documents"
+                )
                 documents.extend(confluence_docs)
 
             if filtered_config.git:
                 self.logger.info("Starting to process Git sources")
-                git_docs = await self._process_source_type(
-                    filtered_config.git, GitConnector, "Git"
-                )
+                git_docs = await self._process_source_type(filtered_config.git, GitConnector, "Git")
                 self.logger.info(f"Completed processing Git sources, got {len(git_docs)} documents")
                 documents.extend(git_docs)
 
@@ -320,7 +310,9 @@ class IngestionPipeline:
                 jira_docs = await self._process_source_type(
                     filtered_config.jira, JiraConnector, "Jira"
                 )
-                self.logger.info(f"Completed processing Jira sources, got {len(jira_docs)} documents")
+                self.logger.info(
+                    f"Completed processing Jira sources, got {len(jira_docs)} documents"
+                )
                 documents.extend(jira_docs)
 
             if filtered_config.publicdocs:
@@ -328,8 +320,20 @@ class IngestionPipeline:
                 publicdocs_docs = await self._process_source_type(
                     filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
                 )
-                self.logger.info(f"Completed processing PublicDocs sources, got {len(publicdocs_docs)} documents")
+                self.logger.info(
+                    f"Completed processing PublicDocs sources, got {len(publicdocs_docs)} documents"
+                )
                 documents.extend(publicdocs_docs)
+
+            if filtered_config.localfile:
+                self.logger.info("Starting to process LocalFile sources")
+                localfile_docs = await self._process_source_type(
+                    filtered_config.localfile, LocalFileConnector, "LocalFile"
+                )
+                self.logger.info(
+                    f"Completed processing LocalFile sources, got {len(localfile_docs)} documents"
+                )
+                documents.extend(localfile_docs)
 
             self.logger.info(f"Completed processing all sources, total documents: {len(documents)}")
 
@@ -341,22 +345,28 @@ class IngestionPipeline:
                     async with StateChangeDetector(self.state_manager) as change_detector:
                         self.logger.debug("StateChangeDetector initialized, detecting changes...")
                         changes = await change_detector.detect_changes(documents, filtered_config)
-                        self.logger.info(f"Change detection completed. New: {len(changes['new'])}, Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}")
+                        self.logger.info(
+                            f"Change detection completed. New: {len(changes['new'])}, Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}"
+                        )
                         documents = changes["new"] + changes["updated"]
                         deleted_documents = changes["deleted"]
-                        self.logger.debug(f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete")
+                        self.logger.debug(
+                            f"After change detection: {len(documents)} documents to process, {len(deleted_documents)} documents to delete"
+                        )
                 except Exception as e:
                     self.logger.error(f"Error during change detection: {str(e)}", exc_info=True)
                     raise
 
             if documents or deleted_documents:
-                self.logger.info(f"Processing {len(documents)} documents and {len(deleted_documents)} deleted documents")
-                self.monitor.start_batch(
-                    'document_batch',
-                    batch_size=len(documents),
-                    metadata={'source_type': source_type, 'source': source}
+                self.logger.info(
+                    f"Processing {len(documents)} documents and {len(deleted_documents)} deleted documents"
                 )
-                
+                self.monitor.start_batch(
+                    "document_batch",
+                    batch_size=len(documents),
+                    metadata={"source_type": source_type, "source": source},
+                )
+
                 # Process documents in parallel batches
                 success_count = 0
                 error_count = 0
@@ -365,16 +375,22 @@ class IngestionPipeline:
                 # Split documents into batches for parallel processing
                 batch_size = 5  # Process 5 documents at a time
                 for i in range(0, len(documents), batch_size):
-                    batch = documents[i:i + batch_size]
-                    self.logger.info(f"Processing batch {i//batch_size + 1} of {(len(documents) + batch_size - 1)//batch_size} with {len(batch)} documents")
-                    batch_success, batch_error_count, batch_errors = await self._process_document_batch(batch)
+                    batch = documents[i : i + batch_size]
+                    self.logger.info(
+                        f"Processing batch {i//batch_size + 1} of {(len(documents) + batch_size - 1)//batch_size} with {len(batch)} documents"
+                    )
+                    batch_success, batch_error_count, batch_errors = (
+                        await self._process_document_batch(batch)
+                    )
                     success_count += batch_success
                     error_count += batch_error_count
                     errors.extend(batch_errors)
-                    self.logger.info(f"Batch {i//batch_size + 1} completed. Success: {batch_success}, Errors: {batch_error_count}")
+                    self.logger.info(
+                        f"Batch {i//batch_size + 1} completed. Success: {batch_success}, Errors: {batch_error_count}"
+                    )
 
                 # Update batch metrics
-                self.monitor.end_batch('document_batch', success_count, error_count, errors)
+                self.monitor.end_batch("document_batch", success_count, error_count, errors)
 
                 if deleted_documents:
                     self.logger.info(f"Processing {len(deleted_documents)} deleted documents")
@@ -412,7 +428,7 @@ class IngestionPipeline:
             self.logger.info("Metrics saved after failure")
             raise
         finally:
-            self.monitor.end_operation('ingestion_process', success=True)
+            self.monitor.end_operation("ingestion_process", success=True)
 
     async def _process_source_type(
         self,
@@ -428,29 +444,36 @@ class IngestionPipeline:
             self.logger.info(f"Configuring {source_type} source: {name}")
             try:
                 self.monitor.start_operation(
-                    f'source_{name}',
-                    metadata={'source_type': source_type, 'source': name}
+                    f"source_{name}", metadata={"source_type": source_type, "source": name}
                 )
-                
+
                 try:
                     self.logger.debug(f"Creating connector for {source_type} source: {name}")
                     connector = connector_class(config)
-                    self.logger.debug(f"Connector created, getting documents from {source_type} source: {config.source}")
+                    self.logger.debug(
+                        f"Connector created, getting documents from {source_type} source: {config.source}"
+                    )
                     async with connector:
                         source_docs = await connector.get_documents()
-                        self.logger.debug(f"Got {len(source_docs)} documents from {source_type} source: {config.source}")
+                        self.logger.debug(
+                            f"Got {len(source_docs)} documents from {source_type} source: {config.source}"
+                        )
                         documents.extend(source_docs)
                         self.logger.debug(f"Documents list length after extend: {len(documents)}")
-                        self.logger.debug(f"Updating last ingestion state for {source_type} source: {config.source}")
+                        self.logger.debug(
+                            f"Updating last ingestion state for {source_type} source: {config.source}"
+                        )
                         await self.state_manager.update_last_ingestion(
                             config.source_type,
                             config.source,
                             IngestionStatus.SUCCESS,
                             document_count=len(source_docs),
                         )
-                        self.logger.debug(f"Successfully updated last ingestion state for {source_type} source: {config.source}")
+                        self.logger.debug(
+                            f"Successfully updated last ingestion state for {source_type} source: {config.source}"
+                        )
                         self.logger.debug(f"Completed processing {source_type} source: {name}")
-                        self.monitor.end_operation(f'source_{name}', success=True)
+                        self.monitor.end_operation(f"source_{name}", success=True)
                 except Exception as e:
                     self.logger.error(
                         f"Failed to process {source_type} source {name}",
@@ -458,15 +481,19 @@ class IngestionPipeline:
                         error_type=type(e).__name__,
                         error_class=e.__class__.__name__,
                     )
-                    self.logger.info(f"Updating last ingestion state to FAILED for {source_type} source: {config.source}")
+                    self.logger.info(
+                        f"Updating last ingestion state to FAILED for {source_type} source: {config.source}"
+                    )
                     await self.state_manager.update_last_ingestion(
                         config.source_type,
                         config.source,
                         IngestionStatus.FAILED,
                         error_message=str(e),
                     )
-                    self.logger.debug(f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}")
-                    self.monitor.end_operation(f'source_{name}', success=False, error=str(e))
+                    self.logger.debug(
+                        f"Successfully updated last ingestion state to FAILED for {source_type} source: {config.source}"
+                    )
+                    self.monitor.end_operation(f"source_{name}", success=False, error=str(e))
                     raise
 
             except Exception as e:
@@ -480,7 +507,9 @@ class IngestionPipeline:
 
         self.logger.debug(f"Final documents list length: {len(documents)}")
         self.logger.debug(f"Final documents list type: {type(documents)}")
-        self.logger.info(f"Completed processing {source_type} sources, total documents: {len(documents)}")
+        self.logger.info(
+            f"Completed processing {source_type} sources, total documents: {len(documents)}"
+        )
         return documents
 
     def _filter_sources(
@@ -522,5 +551,12 @@ class IngestionPipeline:
                     filtered.publicdocs = {source: sources_config.publicdocs[source]}
             else:
                 filtered.publicdocs = sources_config.publicdocs
+
+        elif source_type == SourceType.LOCALFILE:
+            if source:
+                if source in sources_config.localfile:
+                    filtered.localfile = {source: sources_config.localfile[source]}
+            else:
+                filtered.localfile = sources_config.localfile
 
         return filtered

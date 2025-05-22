@@ -136,3 +136,22 @@ sources:
       track_last_sync: true                    # Track last sync time for incremental updates
       token: "${JIRA_TOKEN}"                    # JIRA API token
       email: "${JIRA_EMAIL}"                    # JIRA user email
+
+  # Local file sources
+  localfile:
+    # Example configuration for a local file source
+    my-local-files:
+      base_path: "/path/to/local/files"  # Base directory to scan
+      include_paths:
+        - "docs/**"
+        - "README.md"
+      exclude_paths:
+        - "docs/archive/**"
+        - "tmp/**"
+      file_types:
+        - "*.md"
+        - "*.txt"
+        - "*.py"
+        - "*.json"
+        - "*.yaml"
+      max_file_size: 1048576  # Maximum file size in bytes (1MB)

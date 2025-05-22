@@ -24,7 +24,8 @@ tests/
 │   │   ├── publicdocs/      # Public docs source tests
 │   │   ├── git/            # Git source tests
 │   │   ├── confluence/     # Confluence source tests
-│   │   └── jira/          # Jira source tests
+│   │   ├── jira/           # Jira source tests
+│   │   └── localfile/      # Local file source tests
 │   └── utils/              # Utility function tests
 └── integration/            # Integration tests
     ├── core/              # Core integration tests
@@ -32,7 +33,8 @@ tests/
     │   ├── publicdocs/  # Public docs integration
     │   ├── git/        # Git integration
     │   ├── confluence/ # Confluence integration
-    │   └── jira/      # Jira integration
+    │   ├── jira/       # Jira integration
+    │   └── localfile/  # Local file integration
     └── end_to_end/    # End-to-end workflow tests
 ```
 
@@ -108,6 +110,7 @@ Our testing approach consists of:
   - `connectors/jira/config.py`: 84% coverage
   - `connectors/confluence/connector.py`: 83% coverage
   - `connectors/git/adapter.py`: 93% coverage
+  - `connectors/localfile/connector.py`: 100% coverage
 
 ## Testing Priorities and Progress
 
@@ -231,6 +234,14 @@ Our testing approach consists of:
     - ✅ Invalid response format
     - ✅ Missing required fields
 
+- ✅ LocalFile Source (`localfile/`)
+  - ✅ File discovery and filtering (Unit)
+  - ✅ Metadata extraction (Unit)
+  - ✅ Error handling (Unit)
+  - ✅ State management integration (Unit)
+  - ✅ Incremental ingestion (Unit)
+  - ✅ Integration with ingestion pipeline (Integration)
+
 - [ ] Public Docs Source (`publicdocs/`)
   - [ ] Document fetching (Integration)
   - [ ] Content parsing (Unit)
@@ -273,6 +284,7 @@ Our testing approach consists of:
   - [x] Git connector tests
   - [x] Confluence connector tests
   - [x] Jira connector tests
+  - [x] LocalFile connector tests
 - [✅] Achieve 50% coverage (Current: 61%)
 
 Next steps:

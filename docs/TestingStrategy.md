@@ -22,7 +22,8 @@ tests/
 │   │   ├── publicdocs/      # Public docs source tests
 │   │   ├── git/            # Git source tests
 │   │   ├── confluence/     # Confluence source tests
-│   │   └── jira/          # Jira source tests
+│   │   ├── jira/           # Jira source tests
+│   │   └── localfile/      # Local file source tests
 │   └── utils/              # Utility function tests
 └── integration/            # Integration tests
     ├── core/              # Core integration tests
@@ -30,7 +31,8 @@ tests/
     │   ├── publicdocs/  # Public docs integration
     │   ├── git/        # Git integration
     │   ├── confluence/ # Confluence integration
-    │   └── jira/      # Jira integration
+    │   ├── jira/       # Jira integration
+    │   └── localfile/  # Local file integration
     └── end_to_end/    # End-to-end workflow tests
 ├── .env.test          # Test environment configuration
 └── config.test.yaml   # Test application configuration
