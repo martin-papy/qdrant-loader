@@ -278,6 +278,8 @@ docs/update-api-documentation
 - Follow the base connector interface
 - Implement proper error handling
 - Include comprehensive testing
+- Standard connectors include: git, confluence, jira, publicdocs, localfile
+- New connectors should follow the structure and patterns of the git and localfile connectors
 
 Example:
 
