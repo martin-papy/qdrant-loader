@@ -156,25 +156,3 @@ For code contributions:
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-# Example localfile config
-
-```yaml
-sources:
-  localfile:
-    my-local-files:
-      base_path: "/path/to/local/files"
-      include_paths:
-        - "docs/**"
-        - "README.md"
-      exclude_paths:
-        - "docs/archive/**"
-        - "tmp/**"
-      file_types:
-        - "*.md"
-        - "*.txt"
-        - "*.py"
-        - "*.json"
-        - "*.yaml"
-      max_file_size: 1048576
-```
