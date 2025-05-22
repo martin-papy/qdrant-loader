@@ -20,6 +20,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 - **Confluence**: Extract technical documentation from Confluence spaces
 - **JIRA**: Collect technical specifications and documentation from JIRA issues
 - **Public Documentation**: Ingest public technical documentation from websites
+- **Local File**: Ingest files from local directories (docs, code, markdown, etc.)
 - **Custom Sources**: Extensible architecture for adding new data sources
 
 ## Quick Start
@@ -79,6 +80,7 @@ qdrant-loader ingest
 qdrant-loader ingest --source-type confluence  # Ingest only Confluence
 qdrant-loader ingest --source-type git        # Ingest only Git
 qdrant-loader ingest --source-type jira       # Ingest only JIRA
+qdrant-loader ingest --source-type localfile  # Ingest only Local Files
 
 # Show current configuration
 qdrant-loader config
@@ -130,6 +132,7 @@ pytest --cov=src tests/
 - OpenAI API key (if using OpenAI, but you can use a local embedding if you like)
 - Sufficient disk space for the vector database
 - Internet connection for API access
+- Access to local files for localfile connector
 
 ## Contributing
 
@@ -153,3 +156,25 @@ For code contributions:
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+# Example localfile config
+
+```yaml
+sources:
+  localfile:
+    my-local-files:
+      base_path: "/path/to/local/files"
+      include_paths:
+        - "docs/**"
+        - "README.md"
+      exclude_paths:
+        - "docs/archive/**"
+        - "tmp/**"
+      file_types:
+        - "*.md"
+        - "*.txt"
+        - "*.py"
+        - "*.json"
+        - "*.yaml"
+      max_file_size: 1048576
+```

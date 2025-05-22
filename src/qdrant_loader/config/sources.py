@@ -12,6 +12,7 @@ from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.jira.config import JiraProjectConfig
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
+from qdrant_loader.connectors.localfile.config import LocalFileConfig
 
 
 class SourcesConfig(BaseModel):
@@ -28,6 +29,9 @@ class SourcesConfig(BaseModel):
     )
     jira: dict[str, JiraProjectConfig] = Field(
         default_factory=dict, description="Jira project sources"
+    )
+    localfile: dict[str, LocalFileConfig] = Field(
+        default_factory=dict, description="Local file sources"
     )
 
     model_config = ConfigDict(arbitrary_types_allowed=False, extra="forbid")
@@ -56,4 +60,7 @@ class SourcesConfig(BaseModel):
                 name: config.model_dump() for name, config in self.confluence.items()
             },
             SourceType.JIRA: {name: config.model_dump() for name, config in self.jira.items()},
+            SourceType.LOCALFILE: {
+                name: config.model_dump() for name, config in self.localfile.items()
+            },
         }

@@ -36,6 +36,7 @@ To build a backend tool that collects and vectorizes technical content from mult
 | **Jira**       | Selected Projects                      | All tickets (open/closed), including description, comments, labels |
 | **Git Repos**  | Selected Repos                         | `README.md`, `/docs/`, code comments, design guides |
 | **Public Docs**| Curated list of 3rd-party tools/frameworks | Documentation for APIs, libraries, and SDKs |
+| **Local Files**| Selected Directories                     | Markdown, code, docs, and text files from local filesystem |
 
 ---
 
@@ -44,6 +45,7 @@ To build a backend tool that collects and vectorizes technical content from mult
 | Source         | Mode       | Trigger     |
 |----------------|------------|-------------|
 | All Sources    | Manual     | CLI or script executed by operator |
+| **Local Files**| Manual     | CLI or script executed by operator |
 
 ---
 
@@ -69,6 +71,7 @@ To build a backend tool that collects and vectorizes technical content from mult
 | qDrant Access        | API Key (Cloud-hosted endpoint) |
 | Operator Restriction | Only specific user(s) allowed to trigger ingestion |
 | Logging              | Logs timestamp, sources, # of documents, and errors per run |
+| **Local Files**      | File system access                | Directory path, file permissions |
 
 ---
 
@@ -92,6 +95,7 @@ To build a backend tool that collects and vectorizes technical content from mult
 | Connectors          | `atlassian-python-api`, `jira`, `gitpython`, `beautifulsoup4`, `requests` ||
 | Embedding Models    | OpenAI or HuggingFace models   | Configurable as needed |
 | Vector Server Layer | `mcp-server-qdrant`            | Already integrated with Cursor |
+| **Local Files**     | Python                         | Scans and ingests local files |
 
 ---
 
