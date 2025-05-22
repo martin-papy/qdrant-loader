@@ -71,7 +71,6 @@ To build a backend tool that collects and vectorizes technical content from mult
 | qDrant Access        | API Key (Cloud-hosted endpoint) |
 | Operator Restriction | Only specific user(s) allowed to trigger ingestion |
 | Logging              | Logs timestamp, sources, # of documents, and errors per run |
-| **Local Files**      | File system access                | Directory path, file permissions |
 
 ---
 

@@ -141,7 +141,7 @@ sources:
   localfile:
     # Example configuration for a local file source
     my-local-files:
-      base_path: "/path/to/local/files"  # Base directory to scan
+      base_url: "file:///path/to/local/files"  # Base directory to scan
       include_paths:
         - "docs/**"
         - "README.md"
