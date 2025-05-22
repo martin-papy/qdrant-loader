@@ -1,6 +1,7 @@
 import os
 from typing import List
 import structlog
+from urllib.parse import urlparse
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
 from .config import LocalFileConfig
@@ -14,8 +15,10 @@ class LocalFileConnector(BaseConnector):
     def __init__(self, config: LocalFileConfig):
         super().__init__(config)
         self.config = config
-        self.base_path = config.base_path
-        self.file_processor = LocalFileFileProcessor(config)
+        # Parse base_url (file://...) to get the local path
+        parsed = urlparse(str(config.base_url))
+        self.base_path = parsed.path
+        self.file_processor = LocalFileFileProcessor(config, self.base_path)
         self.metadata_extractor = LocalFileMetadataExtractor(self.base_path)
         self.logger = structlog.get_logger(__name__)
         self._initialized = True

@@ -9,9 +9,9 @@ from .config import LocalFileConfig
 class LocalFileFileProcessor:
     """Handles file processing and filtering logic for local files."""
 
-    def __init__(self, config: LocalFileConfig):
+    def __init__(self, config: LocalFileConfig, base_path: str):
         self.config = config
-        self.base_path = config.base_path
+        self.base_path = base_path
         self.logger = structlog.get_logger(__name__)
 
     def should_process_file(self, file_path: str) -> bool:
