@@ -21,7 +21,6 @@ except ImportError:
 
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
 from qdrant_loader.config import Settings
 
 if TYPE_CHECKING:
@@ -29,10 +28,12 @@ if TYPE_CHECKING:
 
 logger = LoggingConfig.get_logger(__name__)
 
-# Performance constants
-MAX_FILE_SIZE_FOR_AST = 100_000  # 100KB limit for AST parsing
-MAX_ELEMENTS_TO_PROCESS = 1000  # Limit number of elements to prevent timeouts
-CHUNK_SIZE_THRESHOLD = 50_000  # Files larger than this use simple chunking
+# Performance constants - Universal limits for all code files
+MAX_FILE_SIZE_FOR_AST = 75_000  # 75KB limit for AST parsing (balanced for all languages)
+MAX_ELEMENTS_TO_PROCESS = 800  # Limit number of elements to prevent timeouts
+CHUNK_SIZE_THRESHOLD = 40_000  # Files larger than this use simple chunking
+MAX_RECURSION_DEPTH = 8  # Limit AST recursion depth
+MAX_ELEMENT_SIZE = 20_000  # Skip individual elements larger than this
 
 
 class CodeElementType(Enum):
@@ -101,12 +102,8 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         super().__init__(settings)
         self.logger = structlog.get_logger(__name__)
 
-        # Initialize semantic analyzer
-        self.semantic_analyzer = SemanticAnalyzer(
-            spacy_model="en_core_web_sm",
-            num_topics=settings.global_config.semantic_analysis.num_topics,
-            passes=settings.global_config.semantic_analysis.lda_passes,
-        )
+        # Note: Semantic analyzer is now handled intelligently in base class
+        # No need to initialize it here since we'll only process comments/docstrings
 
         # Supported languages with tree-sitter
         self.supported_languages = {
@@ -190,10 +187,10 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of code elements
         """
-        # Performance check: skip AST parsing for very large files
+        # Performance check: universal size limit for all languages
         if len(content) > MAX_FILE_SIZE_FOR_AST:
             self.logger.info(
-                f"File too large for AST parsing ({len(content)} bytes), using fallback"
+                f"{language.title()} file too large for AST parsing ({len(content)} bytes), using fallback"
             )
             return []
 
@@ -208,10 +205,10 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             elements = []
             self._extract_ast_elements(root_node, content, elements, language)
 
-            # Limit number of elements to prevent timeouts
+            # Limit number of elements to prevent timeouts (universal limit)
             if len(elements) > MAX_ELEMENTS_TO_PROCESS:
                 self.logger.warning(
-                    f"Too many elements ({len(elements)}), truncating to {MAX_ELEMENTS_TO_PROCESS}"
+                    f"Too many {language} elements ({len(elements)}), truncating to {MAX_ELEMENTS_TO_PROCESS}"
                 )
                 elements = elements[:MAX_ELEMENTS_TO_PROCESS]
 
@@ -234,10 +231,10 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             level: Nesting level
         """
         # Performance check: limit recursion depth
-        if level > 10:  # Prevent deep recursion
+        if level > MAX_RECURSION_DEPTH:  # Prevent deep recursion
             return
 
-        # Performance check: limit total elements
+        # Performance check: limit total elements (universal limit)
         if len(elements) >= MAX_ELEMENTS_TO_PROCESS:
             return
 
@@ -314,9 +311,11 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             end_byte = node.end_byte
             element_content = content[start_byte:end_byte]
 
-            # Skip very large elements to prevent timeouts
-            if len(element_content) > CHUNK_SIZE_THRESHOLD:
-                self.logger.debug(f"Skipping large element {name} ({len(element_content)} bytes)")
+            # Skip very large elements to prevent timeouts (universal limit)
+            if len(element_content) > MAX_ELEMENT_SIZE:
+                self.logger.debug(
+                    f"Skipping large {language} element {name} ({len(element_content)} bytes)"
+                )
                 return
 
             # Create code element
@@ -338,12 +337,12 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             elements.append(element)
 
             # Process children with increased level (limited depth)
-            if level < 5:  # Limit recursion depth
+            if level < MAX_RECURSION_DEPTH - 3:  # Leave room for deeper nesting
                 for child in node.children:
                     self._extract_ast_elements(child, content, elements, language, level + 1)
         else:
             # Process children at same level (limited depth)
-            if level < 8:  # Limit recursion depth
+            if level < MAX_RECURSION_DEPTH:  # Use full depth limit
                 for child in node.children:
                     self._extract_ast_elements(child, content, elements, language, level)
 
@@ -456,7 +455,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         def visit_node(node, level=0, parent_element=None):
             """Recursively visit AST nodes."""
             # Performance checks
-            if level > 10:  # Limit recursion depth
+            if level > MAX_RECURSION_DEPTH:  # Limit recursion depth
                 return
             if len(elements) >= MAX_ELEMENTS_TO_PROCESS:
                 return
@@ -510,7 +509,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
             if element:
                 # Skip very large elements
-                if len(element.content) > CHUNK_SIZE_THRESHOLD:
+                if len(element.content) > MAX_ELEMENT_SIZE:
                     return
 
                 if parent_element:
@@ -519,12 +518,12 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                     elements.append(element)
 
                 # Recursively process children (limited depth)
-                if level < 5:
+                if level < MAX_RECURSION_DEPTH - 3:  # Leave room for deeper nesting
                     for child in ast.iter_child_nodes(node):
                         visit_node(child, level + 1, element)
             else:
                 # For nodes we don't handle, still process their children (limited depth)
-                if level < 8:
+                if level < MAX_RECURSION_DEPTH:  # Use full depth limit
                     for child in ast.iter_child_nodes(node):
                         visit_node(child, level, parent_element)
 
@@ -727,16 +726,16 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         )
 
         try:
-            # Performance check: for very large files, use simple chunking immediately
-            if len(document.content) > CHUNK_SIZE_THRESHOLD:
-                self.logger.info(
-                    f"Large file ({len(document.content)} bytes), using simple chunking"
-                )
-                return self._fallback_chunking(document)
-
-            # Detect language from file path
+            # Detect language from file path first for language-specific optimizations
             file_path = document.metadata.get("file_name", "") or document.source
             language = self._detect_language(file_path, document.content)
+
+            # Performance check: universal threshold for all code files
+            if len(document.content) > CHUNK_SIZE_THRESHOLD:
+                self.logger.info(
+                    f"Large {language} file ({len(document.content)} bytes), using simple chunking"
+                )
+                return self._fallback_chunking(document)
 
             self.logger.debug(f"Detected language: {language}")
 
@@ -768,6 +767,13 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             # Merge small elements and split large ones if needed
             merged_elements = self._merge_small_elements(elements)
             final_elements = []
+
+            # Early bailout for extremely complex files
+            if len(merged_elements) > MAX_ELEMENTS_TO_PROCESS:
+                self.logger.warning(
+                    f"File has too many elements ({len(merged_elements)}), using fallback chunking"
+                )
+                return self._fallback_chunking(document)
 
             for element in merged_elements:
                 if len(element.content) > self.chunk_size:
@@ -819,18 +825,20 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                     },
                 )
 
-                # Create chunk document with metadata
+                # Create chunk document with optimized metadata processing
+                # For code files, we'll let the base class handle smart NLP decisions
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=element.content,
                     chunk_index=i,
                     total_chunks=len(final_elements),
+                    skip_nlp=False,  # Let base class decide based on content type
                 )
 
                 # Generate unique chunk ID
                 chunk_doc.id = Document.generate_chunk_id(document.id, i)
 
-                # Add code-specific metadata
+                # Add code-specific metadata (including element_type for smart NLP)
                 code_metadata = self._extract_code_metadata(element, language)
                 code_metadata["parsing_method"] = parsing_method
                 chunk_doc.metadata.update(code_metadata)

@@ -68,14 +68,34 @@ class EmbeddingService:
 
         # Extract content if texts are Document objects
         contents = [text.content if isinstance(text, Document) else text for text in texts]
-        logger.debug("Starting batch embedding process", total_texts=len(contents))
+
+        # Filter out empty, None, or invalid content
+        valid_contents = []
+        valid_indices = []
+        for i, content in enumerate(contents):
+            if content and isinstance(content, str) and content.strip():
+                valid_contents.append(content.strip())
+                valid_indices.append(i)
+            else:
+                logger.warning(f"Skipping invalid content at index {i}: {repr(content)}")
+
+        if not valid_contents:
+            logger.warning("No valid content found in batch, returning empty embeddings")
+            return []
+
+        logger.debug(
+            "Starting batch embedding process",
+            total_texts=len(contents),
+            valid_texts=len(valid_contents),
+            filtered_out=len(contents) - len(valid_contents),
+        )
 
         # Process in larger batches to improve performance
         batch_size = min(self.batch_size * 4, 100)  # Increased batch size but capped at 100
         embeddings = []
 
-        for i in range(0, len(contents), batch_size):
-            batch = contents[i : i + batch_size]
+        for i in range(0, len(valid_contents), batch_size):
+            batch = valid_contents[i : i + batch_size]
             batch_num = i // batch_size + 1
             logger.debug(
                 "Processing batch",
@@ -142,6 +162,13 @@ class EmbeddingService:
 
     async def get_embedding(self, text: str) -> list[float]:
         """Get embedding for a single text."""
+        # Validate input
+        if not text or not isinstance(text, str) or not text.strip():
+            logger.warning(f"Invalid text for embedding: {repr(text)}")
+            raise ValueError(f"Invalid text for embedding: text must be a non-empty string")
+
+        clean_text = text.strip()
+
         try:
             await self._apply_rate_limit()
             if self.use_openai and self.client is not None:
@@ -150,7 +177,7 @@ class EmbeddingService:
                     asyncio.to_thread(
                         self.client.embeddings.create,
                         model=self.model,
-                        input=[text],  # OpenAI API expects a list
+                        input=[clean_text],  # OpenAI API expects a list
                     ),
                     timeout=60.0,  # 60 second timeout for single embedding
                 )
@@ -164,7 +191,7 @@ class EmbeddingService:
                     asyncio.to_thread(
                         requests.post,
                         f"{self.endpoint}/embeddings",
-                        json={"input": text, "model": self.model},
+                        json={"input": clean_text, "model": self.model},
                         headers={"Content-Type": "application/json"},
                         timeout=30,  # 30 second timeout
                     ),

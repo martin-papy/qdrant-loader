@@ -141,45 +141,8 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             },
         )
 
-        # Performance check: skip expensive NLP processing for large documents
-        skip_nlp = len(document.content) > MAX_DOCUMENT_SIZE_FOR_NLP
-
-        if skip_nlp:
-            logger.info(
-                f"Document too large for NLP processing ({len(document.content)} bytes), skipping"
-            )
-            # Add minimal document-level metadata without NLP processing
-            document.metadata.update(
-                {
-                    "document_entities": [],
-                    "document_pos_tags": [],
-                    "nlp_skipped": True,
-                    "skip_reason": "document_too_large",
-                }
-            )
-        else:
-            try:
-                # Process the entire document to get document-level features
-                doc_processed = self._process_text(document.content)
-
-                # Add document-level features to metadata
-                document.metadata.update(
-                    {
-                        "document_entities": doc_processed["entities"],
-                        "document_pos_tags": doc_processed["pos_tags"],
-                        "nlp_skipped": False,
-                    }
-                )
-            except Exception as e:
-                logger.warning(f"NLP processing failed for document: {e}")
-                document.metadata.update(
-                    {
-                        "document_entities": [],
-                        "document_pos_tags": [],
-                        "nlp_skipped": True,
-                        "skip_reason": "nlp_error",
-                    }
-                )
+        # Note: Document-level NLP processing is now handled intelligently
+        # by the base class on a per-chunk basis based on content type
 
         # Split into chunks
         chunks = self._split_text(document.content)
@@ -191,13 +154,13 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             logger.warning(f"Truncating chunks from {len(chunks)} to {MAX_CHUNKS_TO_PROCESS}")
 
         for i, chunk in enumerate(chunks_to_process):
-            # Create chunk document with optimized metadata processing
-            chunk_doc = self._create_optimized_chunk_document(
+            # Create chunk document - base class will handle smart NLP decisions
+            chunk_doc = self._create_chunk_document(
                 original_doc=document,
                 chunk_content=chunk,
                 chunk_index=i,
                 total_chunks=len(chunks_to_process),
-                skip_nlp=skip_nlp or len(chunk) > MAX_CHUNK_SIZE_FOR_NLP,
+                skip_nlp=False,  # Let base class decide based on content type
             )
 
             # Generate unique chunk ID
@@ -216,85 +179,9 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                     if chunked_documents
                     else 0
                 ),
-                "nlp_skipped": skip_nlp,
                 "total_original_chunks": len(chunks),
                 "processed_chunks": len(chunks_to_process),
             },
         )
 
         return chunked_documents
-
-    def _create_optimized_chunk_document(
-        self,
-        original_doc: Document,
-        chunk_content: str,
-        chunk_index: int,
-        total_chunks: int,
-        skip_nlp: bool = False,
-    ) -> Document:
-        """Create a new document for a chunk with optimized metadata processing.
-
-        Args:
-            original_doc: Original document
-            chunk_content: Content of the chunk
-            chunk_index: Index of the chunk
-            total_chunks: Total number of chunks
-            skip_nlp: Whether to skip expensive NLP processing
-
-        Returns:
-            Document: New document instance for the chunk
-        """
-        # Create enhanced metadata
-        metadata = original_doc.metadata.copy()
-        metadata.update(
-            {
-                "chunk_index": chunk_index,
-                "total_chunks": total_chunks,
-            }
-        )
-
-        if skip_nlp:
-            # Skip expensive NLP processing for large chunks
-            metadata.update(
-                {
-                    "entities": [],
-                    "pos_tags": [],
-                    "nlp_skipped": True,
-                    "skip_reason": (
-                        "chunk_too_large"
-                        if len(chunk_content) > MAX_CHUNK_SIZE_FOR_NLP
-                        else "document_too_large"
-                    ),
-                }
-            )
-        else:
-            try:
-                # Process the chunk text to get additional features
-                processed = self._process_text(chunk_content)
-                metadata.update(
-                    {
-                        "entities": processed["entities"],
-                        "pos_tags": processed["pos_tags"],
-                        "nlp_skipped": False,
-                    }
-                )
-            except Exception as e:
-                logger.warning(f"NLP processing failed for chunk {chunk_index}: {e}")
-                metadata.update(
-                    {
-                        "entities": [],
-                        "pos_tags": [],
-                        "nlp_skipped": True,
-                        "skip_reason": "nlp_error",
-                    }
-                )
-
-        return Document(
-            content=chunk_content,
-            metadata=metadata,
-            source=original_doc.source,
-            source_type=original_doc.source_type,
-            url=original_doc.url,
-            title=original_doc.title,
-            content_type=original_doc.content_type,
-        )

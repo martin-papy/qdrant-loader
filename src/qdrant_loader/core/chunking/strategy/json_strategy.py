@@ -18,8 +18,11 @@ logger = structlog.get_logger(__name__)
 
 # Performance constants to prevent timeouts
 MAX_JSON_SIZE_FOR_PARSING = 1_000_000  # 1MB limit for JSON parsing
-MAX_OBJECTS_TO_PROCESS = 500  # Limit number of objects to prevent timeouts
-MAX_CHUNK_SIZE_FOR_NLP = 20_000  # 20KB limit for NLP processing on chunks
+MAX_OBJECTS_TO_PROCESS = 200  # Reduced limit for objects to prevent timeouts
+MAX_CHUNK_SIZE_FOR_NLP = 20_000  # 20KB limit for NLP processing
+MAX_RECURSION_DEPTH = 5  # Limit recursion depth for nested structures
+MAX_ARRAY_ITEMS_TO_PROCESS = 50  # Limit array items to process
+MAX_OBJECT_KEYS_TO_PROCESS = 100  # Limit object keys to process
 SIMPLE_CHUNKING_THRESHOLD = 500_000  # Use simple chunking for files larger than 500KB
 
 
@@ -97,7 +100,12 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         try:
             data = json.loads(content)
             root_element = self._create_json_element("root", data, JSONElementType.ROOT, "root")
-            self._extract_json_elements(root_element, data, "root")
+            # Initialize processed count for this document
+            processed_count = [0]
+            self._extract_json_elements(root_element, data, "root", 0, processed_count)
+            self.logger.debug(
+                f"Processed {processed_count[0]} JSON elements (limit: {MAX_OBJECTS_TO_PROCESS})"
+            )
             return root_element
 
         except json.JSONDecodeError as e:
@@ -149,7 +157,12 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         )
 
     def _extract_json_elements(
-        self, parent_element: JSONElement, data: Any, path: str, level: int = 0
+        self,
+        parent_element: JSONElement,
+        data: Any,
+        path: str,
+        level: int = 0,
+        processed_count: Optional[List[int]] = None,
     ):
         """Recursively extract JSON elements.
 
@@ -158,18 +171,27 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             data: JSON data to process
             path: Current JSON path
             level: Current nesting level
+            processed_count: Mutable list to track total processed objects
         """
+        if processed_count is None:
+            processed_count = [0]
+
         # Performance checks
-        if level > 10:  # Limit recursion depth
+        if level > MAX_RECURSION_DEPTH:  # Limit recursion depth
             return
-        if len(parent_element.children) >= MAX_OBJECTS_TO_PROCESS:
+        if processed_count[0] >= MAX_OBJECTS_TO_PROCESS:  # Global limit
+            return
+        if len(parent_element.children) >= MAX_ARRAY_ITEMS_TO_PROCESS:  # Local limit
             return
 
         if isinstance(data, dict):
-            for key, value in data.items():
-                if len(parent_element.children) >= MAX_OBJECTS_TO_PROCESS:
+            for i, (key, value) in enumerate(data.items()):
+                if processed_count[0] >= MAX_OBJECTS_TO_PROCESS:
+                    break
+                if i >= MAX_OBJECT_KEYS_TO_PROCESS:  # Limit keys per object
                     break
 
+                processed_count[0] += 1
                 child_path = f"{path}.{key}"
 
                 if isinstance(value, (dict, list)):
@@ -184,7 +206,9 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
 
                     # Recursively process if not too large
                     if child_element.size < self.chunk_size:
-                        self._extract_json_elements(child_element, value, child_path, level + 1)
+                        self._extract_json_elements(
+                            child_element, value, child_path, level + 1, processed_count
+                        )
                 else:
                     # Create element for simple values
                     child_element = self._create_json_element(
@@ -194,9 +218,12 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
 
         elif isinstance(data, list):
             for i, item in enumerate(data):
-                if len(parent_element.children) >= MAX_OBJECTS_TO_PROCESS:
+                if processed_count[0] >= MAX_OBJECTS_TO_PROCESS:
+                    break
+                if i >= MAX_ARRAY_ITEMS_TO_PROCESS:  # Limit array items
                     break
 
+                processed_count[0] += 1
                 child_path = f"{path}[{i}]"
 
                 if isinstance(item, (dict, list)):
@@ -211,7 +238,9 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
 
                     # Recursively process if not too large
                     if child_element.size < self.chunk_size:
-                        self._extract_json_elements(child_element, item, child_path, level + 1)
+                        self._extract_json_elements(
+                            child_element, item, child_path, level + 1, processed_count
+                        )
                 else:
                     # Create element for simple array items
                     child_element = self._create_json_element(
@@ -240,7 +269,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             if (
                 element.size >= self.min_chunk_size
                 or element.element_type in [JSONElementType.OBJECT, JSONElementType.ARRAY]
-                or element.item_count > 10
+                or element.item_count > MAX_OBJECT_KEYS_TO_PROCESS
             ):
 
                 # First, add any accumulated small elements
