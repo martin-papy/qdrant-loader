@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive plan to improve the performance of the Qdrant Loader ingestion process. The current implementation processes documents sequentially, which can lead to suboptimal performance when dealing with large volumes of data. This plan proposes several optimizations to significantly improve ingestion speed while maintaining reliability and data integrity.
+This document presents a revised and aggressive plan to make the Qdrant Loader ingestion process **blazing fast**. Recent profiling and logs show that while some parallelism and batching have been introduced, the system is still bottlenecked by sequential stages, lack of deep pipeline parallelism, and insufficient caching. This plan introduces new strategies—pipeline parallelism, adaptive batching, aggressive caching, and resource-aware scheduling—to maximize throughput and efficiency while maintaining reliability and data integrity.
 
 ## Current Architecture Analysis
 
@@ -14,7 +14,7 @@ This document outlines a comprehensive plan to improve the performance of the Qd
    - Handles state management and error handling
 
 2. **Document Processing**
-   - Sequential processing of documents
+   - Sequential or batch processing of documents
    - Individual chunking, embedding, and upserting
    - State tracking for each document
 
@@ -23,249 +23,159 @@ This document outlines a comprehensive plan to improve the performance of the Qd
    - Individual state updates for each document
    - Change detection for incremental updates
 
-## Performance Bottlenecks
+## Performance Bottlenecks (as of May 2025)
 
-1. **Sequential Processing**
-   - Documents are processed one at a time
-   - No parallelization of CPU-intensive tasks
-   - Limited utilization of available resources
+1. **Stage-by-Stage Sequential Processing**
+   - Chunking, embedding, and upsert are not fully decoupled; each batch waits for all documents to finish chunking before embedding, and so on.
+   - Large files with many chunks slow down the pipeline.
 
-2. **Individual Operations**
-   - Each document undergoes separate:
-     - Chunking
-     - Embedding generation
-     - Qdrant upsert operations
-   - High overhead from individual API calls
+2. **Limited Parallelism**
+   - Parallelism is only at the batch level, not at the pipeline or per-document stage.
+   - No use of process pools for CPU-bound chunking.
 
-3. **State Management**
-   - Frequent database operations
-   - Individual state updates
-   - Redundant state checks
+3. **No Aggressive Caching**
+   - Embeddings, chunking results, and state are recomputed even for unchanged content.
+   - No persistent or distributed cache.
 
-## Improvement Strategies
+4. **No Fast-Path for Unchanged Documents**
+   - All documents are reprocessed even if their content and state are unchanged.
 
-### 1. Parallel Processing Implementation
+5. **Static Batch Sizes**
+   - Batch sizes are fixed and do not adapt to system load or downstream service latency.
 
-#### 1.1 Document Processing Parallelization
+6. **No Backpressure or Resource-Aware Scheduling**
+   - The system does not throttle or adapt based on CPU, memory, or network utilization.
 
-```python
-# Proposed implementation using asyncio and concurrent.futures
-async def process_documents_parallel(self, documents: list[Document], batch_size: int = 10):
-    # Split documents into batches
-    batches = [documents[i:i + batch_size] for i in range(0, len(documents), batch_size)]
-    
-    # Process batches concurrently
-    tasks = []
-    for batch in batches:
-        task = asyncio.create_task(self._process_batch(batch))
-        tasks.append(task)
-    
-    # Wait for all batches to complete
-    results = await asyncio.gather(*tasks)
-    return [doc for batch_result in results for doc in batch_result]
-```
+7. **Limited Monitoring and Profiling**
+   - No flamegraph/profiling support for pinpointing slow spots.
+   - Metrics are basic and not exposed for real-time observability.
 
-#### 1.2 Embedding Generation Parallelization
+## Revised Improvement Strategies
+
+### 1. Pipeline Parallelism (Deep Async Pipeline)
+
+- **Decouple chunking, embedding, and upsert** using asyncio queues. Each stage runs in parallel, and bottlenecks are isolated.
+- **Maximize parallelism at every stage:**
+  - **Chunking:** Use ThreadPoolExecutor or ProcessPoolExecutor to process multiple documents in parallel, especially for CPU-bound chunking strategies.
+  - **Embedding:** Use asyncio tasks or batch API calls to embed multiple chunks concurrently.
+  - **Upsert:** Batch and upsert points in parallel where possible.
+- **Eliminate sequential processing:** Only process sequentially where strictly necessary for correctness or resource constraints.
+- **Example:**
 
 ```python
-# Proposed implementation for parallel embedding generation
-async def generate_embeddings_parallel(self, texts: list[str], batch_size: int = 32):
-    # Split texts into batches
-    batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
-    
-    # Generate embeddings concurrently
-    tasks = []
-    for batch in batches:
-        task = asyncio.create_task(self.embedding_service.get_embeddings(batch))
-        tasks.append(task)
-    
-    # Wait for all embeddings to complete
-    results = await asyncio.gather(*tasks)
-    return [emb for batch_result in results for emb in batch_result]
+async def pipeline_ingest(self, documents: list[Document]):
+    chunk_queue = asyncio.Queue()
+    embedding_queue = asyncio.Queue()
+    upsert_queue = asyncio.Queue()
+
+    # Producer: chunk documents
+    async def chunker():
+        for doc in documents:
+            for chunk in self.chunking_service.chunk(doc):
+                await chunk_queue.put(chunk)
+        await chunk_queue.put(None)  # Sentinel
+
+    # Middle: embed chunks
+    async def embedder():
+        while True:
+            chunk = await chunk_queue.get()
+            if chunk is None:
+                await embedding_queue.put(None)
+                break
+            embedding = await self.embedding_service.get_embedding(chunk.content)
+            await embedding_queue.put((chunk, embedding))
+
+    # Consumer: upsert to Qdrant
+    async def upserter():
+        while True:
+            item = await embedding_queue.get()
+            if item is None:
+                break
+            chunk, embedding = item
+            point = self._create_point(chunk, embedding)
+            await self.qdrant_manager.upsert_points([point])
+
+    await asyncio.gather(chunker(), embedder(), upserter())
 ```
 
-### 2. Batch Processing Implementation
+### 2. Aggressive Caching (Embeddings, State, Chunking)
 
-#### 2.1 Qdrant Upsert Batching
+- **Persistent embedding cache** (disk-backed LRU or Redis) keyed by content hash.
+- **State cache** to skip unchanged documents at the earliest possible stage.
+- **Chunk cache** for unchanged files.
+- **Cache invalidation** on content/state change.
 
-```python
-# Proposed implementation for batch upserting
-async def upsert_points_batch(self, points: list[models.PointStruct], batch_size: int = 100):
-    # Split points into batches
-    batches = [points[i:i + batch_size] for i in range(0, len(points), batch_size)]
-    
-    # Upsert batches concurrently
-    tasks = []
-    for batch in batches:
-        task = asyncio.create_task(self.qdrant_manager.upsert_points(batch))
-        tasks.append(task)
-    
-    # Wait for all upserts to complete
-    await asyncio.gather(*tasks)
-```
+### 3. Adaptive Batching and Backpressure
 
-#### 2.2 State Management Batching
+- **Dynamic batch size**: Monitor Qdrant/OpenAI response times and system load, and adjust batch sizes in real time.
+- **Backpressure**: If Qdrant or embedding API slows, slow down upstream processing.
 
-```python
-# Proposed implementation for batch state updates
-async def update_document_states_batch(self, documents: list[Document]):
-    # Prepare batch update
-    states = [
-        DocumentStateRecord(
-            document_id=doc.id,
-            content_hash=doc.content_hash,
-            source_type=doc.source_type,
-            source=doc.source,
-            updated_at=datetime.now(UTC)
-        )
-        for doc in documents
-    ]
-    
-    # Perform batch update
-    async with self._session_factory() as session:
-        session.add_all(states)
-        await session.commit()
-```
+### 4. Fast-Path for Unchanged Documents
 
-### 3. Caching Implementation
+- **Skip all processing** for documents whose content hash and state are unchanged.
+- **Early exit** in the pipeline for such documents.
 
-#### 3.1 Embedding Cache
+### 5. Resource-Aware Scheduling
 
-```python
-# Proposed implementation for embedding caching
-class EmbeddingCache:
-    def __init__(self, max_size: int = 1000):
-        self.cache = {}
-        self.max_size = max_size
-    
-    def get(self, text: str) -> list[float] | None:
-        return self.cache.get(text)
-    
-    def set(self, text: str, embedding: list[float]):
-        if len(self.cache) >= self.max_size:
-            # Implement LRU eviction
-            self.cache.pop(next(iter(self.cache)))
-        self.cache[text] = embedding
-```
+- **Monitor CPU/memory/network** and throttle ingestion if system is overloaded.
+- **Optionally use uvloop** for faster asyncio event loop.
+- **Expose resource metrics** for observability.
 
-#### 3.2 State Cache
+### 6. Advanced Monitoring and Profiling
 
-```python
-# Proposed implementation for state caching
-class StateCache:
-    def __init__(self, ttl: int = 3600):
-        self.cache = {}
-        self.ttl = ttl
-    
-    async def get_state(self, doc_id: str) -> DocumentStateRecord | None:
-        if doc_id in self.cache:
-            state, timestamp = self.cache[doc_id]
-            if time.time() - timestamp < self.ttl:
-                return state
-        return None
-    
-    def set_state(self, doc_id: str, state: DocumentStateRecord):
-        self.cache[doc_id] = (state, time.time())
-```
+- **Integrate py-spy or similar** for flamegraph support.
+- **Expose Prometheus metrics** for all pipeline stages (chunking, embedding, upsert, cache hit/miss, etc).
+- **Track per-stage latency and throughput**.
 
-### 4. Memory Optimization
+### 7. Optional: Distributed/Clustered Processing
 
-#### 4.1 Streaming Document Processing
+- For very large corpora, allow running multiple loader instances with work partitioning.
 
-```python
-# Proposed implementation for streaming document processing
-async def process_document_stream(self, document: Document):
-    # Process document in chunks
-    async for chunk in self.chunking_service.stream_chunks(document):
-        # Process chunk immediately
-        embedding = await self.embedding_service.get_embedding(chunk.content)
-        point = self._create_point(chunk, embedding)
-        await self.qdrant_manager.upsert_points([point])
-```
+## Implementation Roadmap
 
-#### 4.2 Memory-Efficient Chunking
+### Phase 1: Immediate Wins
 
-```python
-# Proposed implementation for memory-efficient chunking
-class MemoryEfficientChunkingService:
-    def stream_chunks(self, document: Document):
-        # Implement streaming chunking
-        buffer = ""
-        for line in document.content.splitlines():
-            buffer += line + "\n"
-            if len(buffer) >= self.chunk_size:
-                yield buffer
-                buffer = ""
-        if buffer:
-            yield buffer
-```
+- [x] Implement pipeline parallelism with asyncio queues for chunking, embedding, and upsert.
+- [x] Replace legacy pipeline with async pipeline as the default and only option, providing blazing fast performance for all users.
+- [~] Persistent embedding and state cache: **Not needed for current usage.**
+  - State change detection is already robustly handled by StateManager.
+  - Persistent embedding cache is unnecessary unless duplicate content or frequent restarts become an issue. If this changes, revisit with a lightweight or persistent cache.
+- [x] Skip unchanged documents at the earliest possible stage.  
+  - This is handled by StateManager and StateChangeDetector, which filter out unchanged documents before ingestion. The async pipeline receives only changed/new documents, so this fast-path is already in effect for both pipelines.
+- [x] Add basic resource monitoring and log warnings if overloaded.
 
-## Implementation Status
+### Phase 2: Optimization (Actionable Steps)
 
-### Completed Features
+- [x] **Refactor chunking to use ThreadPoolExecutor or ProcessPoolExecutor for parallel document chunking.**
+  - Chunking is now truly parallelized in the async pipeline using ThreadPoolExecutor, allowing multiple documents to be chunked concurrently for improved throughput.
+- [x] **Implement async embedding batcher:**
+  - Embedding is now batched and processed concurrently in the async pipeline. Each embedder worker collects a batch of chunks and calls the embedding service's batch method, maximizing throughput and efficiency.
+- [x] **Parallelize upsert operations:**
+  - Upserts are now batched and processed concurrently in the async pipeline. Each upserter worker collects a batch of (chunk, embedding) pairs and upserts them together, maximizing throughput and efficiency.
+- [ ] **Adaptive batch sizing:**
+  - Monitor real-time metrics (latency, throughput, resource usage).
+  - Dynamically adjust batch sizes for chunking, embedding, and upsert.
+- [ ] **Implement backpressure and queueing:**
+  - Throttle upstream stages if downstream services (Qdrant, embedding API) slow down.
+  - Use asyncio queues with maxsize and flow control.
+- [ ] **Profile pipeline and optimize hot spots:**
+  - Use py-spy, cProfile, or similar tools to identify slowest functions.
+  - Optimize or parallelize bottleneck functions.
+- [ ] **Expose Prometheus metrics for all stages:**
+  - Add metrics endpoints for chunking, embedding, upsert, cache hit/miss, etc.
+  - Track per-stage latency, throughput, and error rates.
 
-1. **Parallel Processing**
-   - Document processing parallelization with configurable batch sizes
-   - Embedding generation parallelization with rate limiting
-   - Concurrent batch processing with error handling
+### Phase 3: Advanced/Optional (Actionable Steps)
 
-2. **Batch Processing**
-   - Qdrant upsert batching with configurable sizes
-   - Embedding batch processing with configurable sizes
-   - Batch metrics tracking and monitoring
-
-3. **Monitoring**
-   - Basic performance monitoring
-   - Batch success/error tracking
-   - Processing statistics and rate calculations
-
-### In Progress
-
-1. **State Management**
-   - Implementing batch state updates
-   - Optimizing state change detection
-   - Reducing database operations
-
-### Pending Features
-
-1. **Caching**
-   - Embedding cache implementation
-   - State cache implementation
-   - Cache invalidation strategies
-
-2. **Memory Optimization**
-   - Streaming document processing
-   - Memory-efficient chunking
-   - Resource utilization monitoring
-
-## Implementation Phases
-
-### Phase 1: Foundation ✅
-
-1. ✅ Implement parallel processing for document processing
-2. ✅ Add batch processing for Qdrant operations
-3. ✅ Implement basic performance monitoring
-
-### Phase 2: Optimization (Current)
-
-1. Implement state management batching
-2. Add memory optimizations
-3. Implement streaming document processing
-4. Add resource utilization monitoring
-
-### Phase 3: Advanced Features
-
-1. Implement caching strategies
-   - Embedding cache with LRU eviction
-   - State cache with TTL
-   - Cache invalidation mechanisms
-2. Implement adaptive batch sizing
-   - Dynamic batch size adjustment
-   - Resource-aware processing
-3. Add advanced monitoring
-   - Resource utilization tracking
-   - Performance bottleneck detection
-   - Automated optimization suggestions
+- [ ] **Enable distributed ingestion:**
+  - Partition work and allow multiple loader instances to run in parallel.
+  - Implement coordination (e.g., via database, message queue, or distributed lock).
+- [ ] **Implement advanced caching strategies:**
+  - Prefetch and cache embeddings/chunks for likely-to-be-reingested content.
+  - Implement cache warming and eviction policies.
+- [ ] **Automated optimization suggestions:**
+  - Analyze metrics and suggest configuration changes (batch size, concurrency, etc.) automatically.
+  - Alert on performance regressions or resource issues.
 
 ## Monitoring and Metrics
 
@@ -274,7 +184,7 @@ class MemoryEfficientChunkingService:
 1. **Processing Speed**
    - Documents processed per second
    - Average processing time per document
-   - Batch processing efficiency
+   - Batch and per-stage processing efficiency
 
 2. **Resource Utilization**
    - CPU usage
@@ -288,31 +198,16 @@ class MemoryEfficientChunkingService:
 
 ### Monitoring Implementation
 
-```python
-# Proposed implementation for performance monitoring
-class PerformanceMonitor:
-    def __init__(self):
-        self.metrics = {
-            'documents_processed': 0,
-            'processing_time': 0,
-            'errors': 0
-        }
-    
-    async def track_operation(self, operation: str, start_time: float):
-        end_time = time.time()
-        duration = end_time - start_time
-        
-        if operation == 'document_processing':
-            self.metrics['documents_processed'] += 1
-            self.metrics['processing_time'] += duration
-```
+- **Expose metrics via Prometheus** for all pipeline stages.
+- **Integrate profiling tools** for flamegraph and bottleneck analysis.
+- **Log resource utilization and trigger warnings if thresholds are exceeded.**
 
 ## Success Criteria
 
 1. **Performance Targets**
-   - 50% reduction in overall processing time
-   - 70% reduction in memory usage
-   - 90% reduction in database operations
+   - 5x+ reduction in overall processing time
+   - 70%+ reduction in memory usage
+   - 90%+ reduction in database operations
 
 2. **Reliability Metrics**
    - 99.9% successful document processing
@@ -326,23 +221,22 @@ class PerformanceMonitor:
 
 ## Conclusion
 
-This performance improvement plan provides a comprehensive approach to optimizing the Qdrant Loader ingestion process. By implementing parallel processing, batch operations, caching, and memory optimizations, we can significantly improve the performance while maintaining reliability and data integrity.
+This revised performance improvement plan provides a modern, aggressive approach to optimizing the Qdrant Loader ingestion process. By implementing deep pipeline parallelism, adaptive batching, aggressive caching, and resource-aware scheduling, we can achieve blazing fast performance while maintaining reliability and data integrity.
 
 The phased implementation approach allows for incremental improvements and validation at each step. Regular monitoring and metrics collection will ensure that we meet our performance targets and can make adjustments as needed.
 
 ## Next Steps
 
 1. **Immediate Priorities**
-   - Implement state management batching
-   - Add resource utilization monitoring
-   - Begin streaming document processing implementation
+   - Enable fast-path for unchanged documents
+   - Add resource utilization monitoring and basic backpressure
+   - Monitor performance improvements from the unified async pipeline
 
 2. **Short-term Goals**
-   - Implement basic caching for embeddings
-   - Add memory-efficient chunking
-   - Optimize state change detection
+   - Implement adaptive batch sizing and advanced monitoring
+   - Profile and optimize pipeline hot spots
+   - Expose metrics for real-time observability
 
 3. **Long-term Goals**
-   - Implement advanced caching strategies
-   - Add adaptive batch sizing
-   - Implement automated optimization
+   - Enable distributed ingestion for very large corpora
+   - Implement advanced caching and automated optimization
