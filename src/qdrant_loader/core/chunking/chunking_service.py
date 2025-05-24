@@ -8,6 +8,7 @@ from qdrant_loader.core.chunking.strategy import (
     BaseChunkingStrategy,
     DefaultChunkingStrategy,
     MarkdownChunkingStrategy,
+    HTMLChunkingStrategy,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -39,18 +40,19 @@ class ChunkingService:
         self.settings = settings
         self.validate_config()
         self.logger = LoggingConfig.get_logger(__name__)
-        
+
         # Initialize metrics directory
-        metrics_dir = Path.cwd() / 'metrics'
+        metrics_dir = Path.cwd() / "metrics"
         metrics_dir.mkdir(parents=True, exist_ok=True)
         self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
-        
+
         # Initialize strategies
         self.strategies: dict[str, Type[BaseChunkingStrategy]] = {
             "md": MarkdownChunkingStrategy,
+            "html": HTMLChunkingStrategy,
             # Add more strategies here as needed
         }
-        
+
         # Default strategy for unknown file types
         self.default_strategy = DefaultChunkingStrategy(
             settings=self.settings,
@@ -73,43 +75,43 @@ class ChunkingService:
 
     def _get_strategy(self, document: Document) -> BaseChunkingStrategy:
         """Get the appropriate chunking strategy for a document.
-        
+
         Args:
             document: The document to chunk
-            
+
         Returns:
             The appropriate chunking strategy for the document type
         """
         # Get file extension from the document content type
         file_type = document.content_type.lower()
-        
+
         self.logger.debug(
             "Selecting chunking strategy",
             file_type=file_type,
             available_strategies=list(self.strategies.keys()),
             document_id=document.id,
             document_source=document.source,
-            document_title=document.title
+            document_title=document.title,
         )
-        
+
         # Get strategy class for file type
         strategy_class = self.strategies.get(file_type)
-        
+
         if strategy_class:
             self.logger.info(
                 "Using specific strategy for file type",
                 file_type=file_type,
                 strategy=strategy_class.__name__,
                 document_id=document.id,
-                document_title=document.title
+                document_title=document.title,
             )
             return strategy_class(self.settings)
-        
+
         self.logger.warning(
             "No specific strategy found for file type, using default strategy",
             file_type=file_type,
             document_id=document.id,
-            document_title=document.title
+            document_title=document.title,
         )
         return self.default_strategy
 
@@ -129,20 +131,17 @@ class ChunkingService:
                 "source": document.source,
                 "source_type": document.source_type,
                 "content_size": len(document.content),
-                "content_type": document.content_type
-            }
+                "content_type": document.content_type,
+            },
         )
-        
+
         if not document.content:
             # Return a single empty chunk if document has no content
             empty_doc = document.model_copy()
             empty_doc.metadata.update({"chunk_index": 0, "total_chunks": 1})
             self.logger.debug(
                 "Empty document, returning single empty chunk",
-                extra={
-                    "doc_id": document.id,
-                    "chunk_id": empty_doc.id
-                }
+                extra={"doc_id": document.id, "chunk_id": empty_doc.id},
             )
             return [empty_doc]
 
@@ -153,8 +152,8 @@ class ChunkingService:
             extra={
                 "doc_id": document.id,
                 "strategy": strategy.__class__.__name__,
-                "content_type": document.content_type
-            }
+                "content_type": document.content_type,
+            },
         )
 
         try:
@@ -165,8 +164,12 @@ class ChunkingService:
                 extra={
                     "doc_id": document.id,
                     "chunk_count": len(chunked_docs),
-                    "avg_chunk_size": sum(len(d.content) for d in chunked_docs) / len(chunked_docs) if chunked_docs else 0
-                }
+                    "avg_chunk_size": (
+                        sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
+                        if chunked_docs
+                        else 0
+                    ),
+                },
             )
             return chunked_docs
         except Exception as e:
@@ -176,7 +179,7 @@ class ChunkingService:
                     "doc_id": document.id,
                     "error": str(e),
                     "error_type": type(e).__name__,
-                    "strategy": strategy.__class__.__name__
-                }
+                    "strategy": strategy.__class__.__name__,
+                },
             )
             raise
