@@ -25,6 +25,12 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 logger = structlog.get_logger(__name__)
 
+# Performance constants to prevent timeouts
+MAX_HTML_SIZE_FOR_PARSING = 500_000  # 500KB limit for complex HTML parsing
+MAX_SECTIONS_TO_PROCESS = 200  # Limit number of sections to prevent timeouts
+MAX_CHUNK_SIZE_FOR_NLP = 20_000  # 20KB limit for NLP processing on chunks
+SIMPLE_PARSING_THRESHOLD = 100_000  # Use simple parsing for files larger than 100KB
+
 
 class SectionType(Enum):
     """Types of sections in an HTML document."""
@@ -92,8 +98,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         # Cache for processed chunks
         self._processed_chunks = {}
 
-        # Initialize thread pool for parallel processing
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        # Initialize thread pool for parallel processing (reduced workers for performance)
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
         # Define semantic HTML elements that should be treated as section boundaries
         self.section_elements = {"article", "section", "main", "header", "footer", "nav", "aside"}
@@ -182,7 +188,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             metadata["parent_type"] = section.parent.type.value
             metadata["parent_level"] = section.parent.level
 
-            # Add breadcrumb path for hierarchical context
+            # Add breadcrumb path for hierarchical context (simplified)
             breadcrumb = self._build_section_breadcrumb(section)
             if breadcrumb:
                 metadata["breadcrumb"] = breadcrumb
@@ -199,163 +205,302 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             String representing the hierarchical path
         """
         breadcrumb_parts = []
-        current = section
+        current = section.parent
+        depth = 0
 
-        # Walk up the parent chain to build the breadcrumb
-        while current.parent:
-            parent_title = self._extract_title_from_content(current.parent.text_content)
-            if parent_title:
-                breadcrumb_parts.insert(0, parent_title)
+        # Limit breadcrumb depth to prevent performance issues
+        while current and depth < 5:
+            if (
+                current.tag_name in self.heading_elements
+                or current.tag_name in self.section_elements
+            ):
+                title = self._extract_title_from_content(current.text_content)
+                if title and title != "Untitled Section":
+                    breadcrumb_parts.append(title)
             current = current.parent
+            depth += 1
 
-        # Add current section title
-        current_title = self._extract_title_from_content(section.text_content)
-        if current_title:
-            breadcrumb_parts.append(current_title)
-
-        return " > ".join(breadcrumb_parts)
+        return " > ".join(reversed(breadcrumb_parts))
 
     def _extract_title_from_content(self, content: str) -> str:
         """Extract a title from content text.
 
         Args:
-            content: The content text
+            content: Text content to extract title from
 
         Returns:
-            Extracted title or empty string
+            Extracted title or "Untitled Section"
         """
         if not content:
-            return ""
+            return "Untitled Section"
 
-        # Take the first sentence or first 50 characters
-        first_sentence = content.split(".")[0].strip()
-        if len(first_sentence) <= 50:
-            return first_sentence
+        # Take first line or first 50 characters, whichever is shorter
+        lines = content.strip().split("\n")
+        first_line = lines[0].strip() if lines else ""
 
-        # If first sentence is too long, truncate
-        return content[:50].strip() + "..." if len(content) > 50 else content.strip()
+        if first_line:
+            # Limit title length for performance
+            return first_line[:100] if len(first_line) > 100 else first_line
+
+        return "Untitled Section"
 
     def _parse_html_structure(self, html: str) -> List[Dict[str, Any]]:
-        """Parse HTML into a structured representation.
+        """Parse HTML structure into semantic sections with performance optimizations.
 
         Args:
-            html: The HTML content
+            html: HTML content to parse
 
         Returns:
-            List of dictionaries representing HTML elements
+            List of section dictionaries
         """
-        soup = BeautifulSoup(html, "html.parser")
-        elements = []
+        # Performance check: use simple parsing for very large files
+        if len(html) > MAX_HTML_SIZE_FOR_PARSING:
+            self.logger.info(
+                f"HTML too large for complex parsing ({len(html)} bytes), using simple parsing"
+            )
+            return self._simple_html_parse(html)
 
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
+        try:
+            soup = BeautifulSoup(html, "html.parser")
 
-        def process_element(element, level=0):
-            """Recursively process HTML elements."""
-            if isinstance(element, NavigableString):
-                text = str(element).strip()
-                if text:
-                    elements.append(
-                        {"type": "text", "content": text, "level": level, "tag_name": "text"}
-                    )
-                return
+            # Remove script and style elements for cleaner processing
+            for script in soup(["script", "style"]):
+                script.decompose()
 
-            if isinstance(element, Tag):
-                tag_name = element.name.lower()
+            sections = []
+            section_count = 0
 
-                # Skip certain elements
-                if tag_name in ["script", "style", "meta", "link"]:
+            def process_element(element, level=0):
+                nonlocal section_count
+
+                # Performance check: limit total sections
+                if section_count >= MAX_SECTIONS_TO_PROCESS:
                     return
 
-                # Get element attributes
-                attributes = dict(element.attrs) if element.attrs else {}
+                # Performance check: limit recursion depth
+                if level > 10:
+                    return
 
-                # Get text content
-                text_content = element.get_text(separator=" ", strip=True)
+                if isinstance(element, Tag):
+                    tag_name = element.name.lower()
 
-                # Determine if this should be a section boundary
-                is_section_boundary = (
-                    tag_name in self.section_elements
-                    or tag_name in self.heading_elements
-                    or (tag_name in self.block_elements and len(text_content) > 50)
-                    or (tag_name == "div" and len(text_content) > 200)  # Include larger divs
-                )
+                    # Only process meaningful elements
+                    if (
+                        tag_name in self.section_elements
+                        or tag_name in self.heading_elements
+                        or tag_name in self.block_elements
+                    ):
+                        text_content = element.get_text(strip=True)
 
-                if is_section_boundary:
-                    elements.append(
-                        {
-                            "type": "section",
+                        # Skip empty or very small sections
+                        if len(text_content) < 10:
+                            return
+
+                        section_type = self._identify_section_type(element)
+
+                        # Get attributes (limited for performance)
+                        attributes = {}
+                        if element.attrs:
+                            # Only keep essential attributes
+                            for attr in ["id", "class", "role"]:
+                                if attr in element.attrs:
+                                    attributes[attr] = element.attrs[attr]
+
+                        section = {
                             "content": str(element),
                             "text_content": text_content,
-                            "level": (
-                                self._get_heading_level(element)
-                                if tag_name in self.heading_elements
-                                else level
-                            ),
                             "tag_name": tag_name,
+                            "level": level,
+                            "section_type": section_type,
                             "attributes": attributes,
-                            "section_type": self._identify_section_type(element),
+                            "title": self._extract_title_from_content(text_content),
                         }
-                    )
-                else:
-                    # Process children for non-section elements
+
+                        sections.append(section)
+                        section_count += 1
+
+                # Process children (limited depth)
+                if hasattr(element, "children") and level < 8:
                     for child in element.children:
                         process_element(child, level + 1)
 
-        # Process the entire document
-        for child in soup.children:
-            process_element(child)
+            # Start processing from body or root
+            body = soup.find("body")
+            if body:
+                process_element(body)
+            else:
+                process_element(soup)
 
-        return elements
+            return sections[:MAX_SECTIONS_TO_PROCESS]  # Ensure we don't exceed limit
 
-    def _merge_small_sections(self, sections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Merge small related sections to maintain context.
+        except Exception as e:
+            self.logger.warning(f"HTML parsing failed: {e}")
+            return self._simple_html_parse(html)
+
+    def _simple_html_parse(self, html: str) -> List[Dict[str, Any]]:
+        """Simple HTML parsing for large files or when complex parsing fails.
 
         Args:
-            sections: List of section dictionaries
+            html: HTML content to parse
 
         Returns:
-            List of merged section dictionaries
+            List of simple section dictionaries
+        """
+        try:
+            soup = BeautifulSoup(html, "html.parser")
+
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+
+            # Get clean text
+            text = soup.get_text(separator="\n", strip=True)
+
+            # Simple chunking by size
+            chunk_size = self.chunk_size
+            chunks = []
+
+            # Split by paragraphs first
+            paragraphs = re.split(r"\n\s*\n", text)
+            current_chunk = ""
+
+            for para in paragraphs:
+                if len(current_chunk) + len(para) <= chunk_size:
+                    current_chunk += para + "\n\n"
+                else:
+                    if current_chunk:
+                        chunks.append(current_chunk.strip())
+                    current_chunk = para + "\n\n"
+
+                # Limit total chunks
+                if len(chunks) >= MAX_SECTIONS_TO_PROCESS:
+                    break
+
+            # Add the last chunk if not empty
+            if current_chunk and len(chunks) < MAX_SECTIONS_TO_PROCESS:
+                chunks.append(current_chunk.strip())
+
+            # Convert to section format
+            sections = []
+            for i, chunk in enumerate(chunks):
+                section = {
+                    "content": chunk,
+                    "text_content": chunk,
+                    "tag_name": "div",
+                    "level": 0,
+                    "section_type": SectionType.DIV,
+                    "attributes": {},
+                    "title": self._extract_title_from_content(chunk),
+                }
+                sections.append(section)
+
+            return sections
+
+        except Exception as e:
+            self.logger.error(f"Simple HTML parsing failed: {e}")
+            # Ultimate fallback: return the entire content as one section
+            return [
+                {
+                    "content": html,
+                    "text_content": html,
+                    "tag_name": "div",
+                    "level": 0,
+                    "section_type": SectionType.DIV,
+                    "attributes": {},
+                    "title": "HTML Document",
+                }
+            ]
+
+    def _merge_small_sections(self, sections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Merge small sections to create more meaningful chunks.
+
+        Args:
+            sections: List of sections to merge
+
+        Returns:
+            List of merged sections
         """
         if not sections:
             return []
 
         merged = []
-        current_section = sections[0].copy()
-        min_section_size = 200  # Reduced minimum size for more granular chunks
+        current_group = []
+        current_size = 0
+        min_size = 200  # Minimum size for standalone sections
 
-        for i in range(1, len(sections)):
-            next_section = sections[i]
+        for section in sections:
+            section_size = len(section.get("text_content", ""))
 
-            # If current section is small and next section is related, merge them
-            # But be more conservative to avoid creating overly large chunks
-            should_merge = (
-                len(current_section["text_content"]) < min_section_size
-                and len(current_section["text_content"]) + len(next_section["text_content"])
-                < self.chunk_size * 0.8
-                and (
-                    # Same parent context
-                    next_section["level"] > current_section["level"]
-                    or
-                    # Sequential paragraphs only (not divs to avoid large merges)
-                    (current_section["tag_name"] == "p" and next_section["tag_name"] == "p")
-                )
-            )
+            # If section is large enough or is a significant element, keep it separate
+            if (
+                section_size >= min_size
+                or section.get("tag_name") in self.section_elements
+                or section.get("tag_name") in self.heading_elements
+            ):
 
-            if should_merge:
-                current_section["content"] += "\n" + next_section["content"]
-                current_section["text_content"] += " " + next_section["text_content"]
+                # First, add any accumulated small sections
+                if current_group:
+                    merged_section = self._create_merged_section(current_group)
+                    merged.append(merged_section)
+                    current_group = []
+                    current_size = 0
+
+                # Add the large section
+                merged.append(section)
             else:
-                merged.append(current_section)
-                current_section = next_section.copy()
+                # Accumulate small sections
+                current_group.append(section)
+                current_size += section_size
 
-        # Add the last section
-        merged.append(current_section)
+                # If accumulated size is large enough, create a merged section
+                if current_size >= min_size:
+                    merged_section = self._create_merged_section(current_group)
+                    merged.append(merged_section)
+                    current_group = []
+                    current_size = 0
+
+        # Handle remaining small sections
+        if current_group:
+            merged_section = self._create_merged_section(current_group)
+            merged.append(merged_section)
+
         return merged
 
+    def _create_merged_section(self, sections: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Create a merged section from a list of small sections.
+
+        Args:
+            sections: List of sections to merge
+
+        Returns:
+            Merged section dictionary
+        """
+        if not sections:
+            return {}
+
+        if len(sections) == 1:
+            return sections[0]
+
+        # Merge content
+        merged_content = "\n\n".join(section.get("content", "") for section in sections)
+        merged_text = "\n\n".join(section.get("text_content", "") for section in sections)
+
+        # Use the first section's metadata as base
+        merged_section = sections[0].copy()
+        merged_section.update(
+            {
+                "content": merged_content,
+                "text_content": merged_text,
+                "title": f"Merged Section ({len(sections)} parts)",
+                "tag_name": "div",  # Generic container
+                "section_type": SectionType.DIV,
+            }
+        )
+
+        return merged_section
+
     def _split_text(self, html: str) -> List[Dict[str, Any]]:
-        """Split HTML into chunks based on semantic structure.
+        """Split HTML text into chunks based on semantic structure.
 
         Args:
             html: The HTML content to split
@@ -363,180 +508,114 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of dictionaries with chunk content and metadata
         """
-        structure = self._parse_html_structure(html)
+        # Performance check: use simple parsing for large files
+        if len(html) > SIMPLE_PARSING_THRESHOLD:
+            self.logger.info(f"Using simple parsing for large HTML file ({len(html)} bytes)")
+            return self._simple_html_parse(html)
 
-        if not structure:
-            return []
+        # Parse HTML structure
+        sections = self._parse_html_structure(html)
 
-        # Filter out very small sections and merge related ones
-        filtered_sections = [s for s in structure if len(s.get("text_content", "")) > 50]
-        merged_sections = self._merge_small_sections(filtered_sections)
+        if not sections:
+            return self._simple_html_parse(html)
 
-        # Split large sections that exceed chunk size
+        # Merge small sections
+        merged_sections = self._merge_small_sections(sections)
+
+        # Split large sections if needed
         final_sections = []
         for section in merged_sections:
-            section_size = len(section.get("content", ""))
-
-            # If section is larger than chunk size, split it
-            if section_size > self.chunk_size:
-                self.logger.debug(
-                    f"Splitting large section of {section_size} characters",
-                    section_tag=section.get("tag_name", "unknown"),
-                    chunk_size=self.chunk_size,
-                )
-
-                # Split the large section into smaller chunks
-                sub_chunks = self._split_large_section(section["content"], self.chunk_size)
-
-                for i, sub_chunk in enumerate(sub_chunks):
-                    # Create a new section for each sub-chunk
-                    sub_section = section.copy()
-                    sub_section["content"] = sub_chunk
-                    sub_section["text_content"] = BeautifulSoup(sub_chunk, "html.parser").get_text(
-                        strip=True
+            content_size = len(section.get("content", ""))
+            if content_size > self.chunk_size:
+                # Split large sections
+                split_parts = self._split_large_section(section.get("content", ""), self.chunk_size)
+                for i, part in enumerate(split_parts):
+                    split_section = section.copy()
+                    split_section.update(
+                        {
+                            "content": part,
+                            "text_content": part,
+                            "title": f"{section.get('title', 'Section')} (Part {i+1})",
+                        }
                     )
-                    sub_section["title"] = f"{section.get('title', 'Section')} (Part {i+1})"
-                    final_sections.append(sub_section)
+                    final_sections.append(split_section)
             else:
                 final_sections.append(section)
 
-        # Ensure each section has proper metadata
-        for section in final_sections:
-            if "level" not in section:
-                section["level"] = 0
-            if "title" not in section:
-                section["title"] = self._extract_title_from_content(section.get("text_content", ""))
-            if "attributes" not in section:
-                section["attributes"] = {}
-
-        return final_sections
+        return final_sections[:MAX_SECTIONS_TO_PROCESS]  # Ensure we don't exceed limit
 
     def _split_large_section(self, content: str, max_size: int) -> List[str]:
-        """Split a large section into smaller chunks while preserving HTML structure.
+        """Split a large section into smaller parts.
 
         Args:
-            content: Section content to split
-            max_size: Maximum chunk size
+            content: Content to split
+            max_size: Maximum size per part
 
         Returns:
-            List of content chunks
+            List of content parts
         """
-        # Parse the HTML content
-        soup = BeautifulSoup(content, "html.parser")
-        chunks = []
-        current_chunk = ""
+        if len(content) <= max_size:
+            return [content]
 
-        def add_element_to_chunk(element):
-            nonlocal current_chunk, chunks
-            element_str = str(element)
+        # Simple splitting by size with word boundaries
+        parts = []
+        current_part = ""
+        words = content.split()
 
-            # If adding this element would exceed max_size
-            if len(current_chunk) + len(element_str) > max_size:
-                if current_chunk.strip():
-                    chunks.append(current_chunk.strip())
-
-                # If the element itself is too large, split it further
-                if len(element_str) > max_size:
-                    # For very large elements, split by text content
-                    if isinstance(element, Tag):
-                        text_content = element.get_text()
-                        if len(text_content) > max_size:
-                            # Split text into smaller pieces
-                            words = text_content.split()
-                            current_text = ""
-
-                            for word in words:
-                                if (
-                                    len(current_text) + len(word) + 1 > max_size * 0.8
-                                ):  # Leave some room for HTML tags
-                                    if current_text:
-                                        # Create a simple HTML wrapper for the text chunk
-                                        tag_name = (
-                                            element.name if hasattr(element, "name") else "div"
-                                        )
-                                        chunk_html = (
-                                            f"<{tag_name}>{current_text.strip()}</{tag_name}>"
-                                        )
-                                        chunks.append(chunk_html)
-                                        current_text = word + " "
-                                    else:
-                                        # Single word is too long, just add it
-                                        tag_name = (
-                                            element.name if hasattr(element, "name") else "div"
-                                        )
-                                        chunk_html = f"<{tag_name}>{word}</{tag_name}>"
-                                        chunks.append(chunk_html)
-                                else:
-                                    current_text += word + " "
-
-                            # Add remaining text
-                            if current_text.strip():
-                                tag_name = element.name if hasattr(element, "name") else "div"
-                                chunk_html = f"<{tag_name}>{current_text.strip()}</{tag_name}>"
-                                chunks.append(chunk_html)
-
-                            current_chunk = ""
-                            return
-
-                current_chunk = element_str
+        for word in words:
+            if len(current_part) + len(word) + 1 <= max_size:
+                current_part += word + " "
             else:
-                current_chunk += element_str
+                if current_part:
+                    parts.append(current_part.strip())
+                current_part = word + " "
 
-        # Process elements in order
-        for element in soup.children:
-            if isinstance(element, Tag):
-                add_element_to_chunk(element)
-            elif isinstance(element, NavigableString):
-                text = str(element).strip()
-                if text:
-                    add_element_to_chunk(element)
+                # Limit number of parts
+                if len(parts) >= 10:
+                    break
 
-        # Add the last chunk if not empty
-        if current_chunk.strip():
-            chunks.append(current_chunk.strip())
+        if current_part:
+            parts.append(current_part.strip())
 
-        return chunks if chunks else [content]
+        return parts
 
     def _extract_section_title(self, chunk: str) -> str:
-        """Extract section title from an HTML chunk.
+        """Extract a title from a chunk of HTML content.
 
         Args:
-            chunk: The HTML chunk
+            chunk: HTML chunk content
 
         Returns:
-            Section title or default title
+            Extracted title
         """
-        soup = BeautifulSoup(chunk, "html.parser")
+        try:
+            soup = BeautifulSoup(chunk, "html.parser")
 
-        # Try to find a heading element
-        for heading_tag in ["h1", "h2", "h3", "h4", "h5", "h6"]:
-            heading = soup.find(heading_tag)
-            if heading:
-                return heading.get_text(strip=True)
+            # Try to find title in various elements
+            for tag in ["h1", "h2", "h3", "h4", "h5", "h6", "title"]:
+                element = soup.find(tag)
+                if element:
+                    title = element.get_text(strip=True)
+                    if title:
+                        return title[:100]  # Limit title length
 
-        # Try to find title in common title attributes
-        for element in soup.find_all(attrs={"title": True}):
-            if isinstance(element, Tag) and "title" in element.attrs:
-                title = element.attrs["title"]
-                if isinstance(title, str) and len(title) < 100:
-                    return title
-                elif isinstance(title, list) and title and isinstance(title[0], str):
-                    return title[0]
+            # Try to find text in semantic elements
+            for tag in ["article", "section", "main"]:
+                element = soup.find(tag)
+                if element:
+                    text = element.get_text(strip=True)
+                    if text:
+                        return self._extract_title_from_content(text)
 
-        # Try to find text in semantic elements
-        for tag in ["article", "section", "main"]:
-            element = soup.find(tag)
-            if element:
-                text = element.get_text(strip=True)
-                if text:
-                    return self._extract_title_from_content(text)
+            # Fallback to first text content
+            text = soup.get_text(strip=True)
+            if text:
+                return self._extract_title_from_content(text)
 
-        # Fallback to first text content
-        text = soup.get_text(strip=True)
-        if text:
-            return self._extract_title_from_content(text)
+            return "Untitled Section"
 
-        return "Untitled Section"
+        except Exception:
+            return "Untitled Section"
 
     def shutdown(self):
         """Shutdown the thread pool executor."""
@@ -564,6 +643,13 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         )
 
         try:
+            # Performance check: use fallback for very large files
+            if len(document.content) > MAX_HTML_SIZE_FOR_PARSING:
+                self.logger.info(
+                    f"HTML file too large ({len(document.content)} bytes), using fallback chunking"
+                )
+                return self._fallback_chunking(document)
+
             # Split HTML into semantic chunks
             self.logger.debug("Parsing HTML structure")
             chunks_metadata = self._split_text(document.content)
@@ -573,12 +659,19 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                 # Fallback for empty or problematic HTML
                 return self._fallback_chunking(document)
 
+            # Limit chunks to process
+            chunks_to_process = chunks_metadata[:MAX_SECTIONS_TO_PROCESS]
+            if len(chunks_metadata) > MAX_SECTIONS_TO_PROCESS:
+                self.logger.warning(
+                    f"Truncating chunks from {len(chunks_metadata)} to {MAX_SECTIONS_TO_PROCESS}"
+                )
+
             # Create chunked documents
             chunked_docs = []
-            for i, chunk_meta in enumerate(chunks_metadata):
+            for i, chunk_meta in enumerate(chunks_to_process):
                 chunk_content = chunk_meta["content"]
                 self.logger.debug(
-                    f"Processing chunk {i+1}/{len(chunks_metadata)}",
+                    f"Processing chunk {i+1}/{len(chunks_to_process)}",
                     extra={
                         "chunk_size": len(chunk_content),
                         "chunk_title": chunk_meta.get("title", "unknown"),
@@ -586,13 +679,26 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                     },
                 )
 
-                # Create chunk document with metadata
-                chunk_doc = self._create_chunk_document(
-                    original_doc=document,
-                    chunk_content=chunk_content,
-                    chunk_index=i,
-                    total_chunks=len(chunks_metadata),
-                )
+                # Create chunk document with optimized metadata processing
+                skip_nlp = len(chunk_content) > MAX_CHUNK_SIZE_FOR_NLP
+
+                if skip_nlp:
+                    # Create chunk without expensive NLP processing
+                    chunk_doc = self._create_optimized_chunk_document(
+                        original_doc=document,
+                        chunk_content=chunk_content,
+                        chunk_index=i,
+                        total_chunks=len(chunks_to_process),
+                        skip_nlp=True,
+                    )
+                else:
+                    # Use normal processing for smaller chunks
+                    chunk_doc = self._create_chunk_document(
+                        original_doc=document,
+                        chunk_content=chunk_content,
+                        chunk_index=i,
+                        total_chunks=len(chunks_to_process),
+                    )
 
                 # Generate unique chunk ID
                 chunk_doc.id = Document.generate_chunk_id(document.id, i)
@@ -610,19 +716,10 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                         "is_heading": chunk_meta.get("tag_name", "") in self.heading_elements,
                         "text_content": chunk_meta.get("text_content", ""),
                         "chunk_index": i,
-                        "total_chunks": len(chunks_metadata),
+                        "total_chunks": len(chunks_to_process),
                         "parent_document_id": document.id,
+                        "nlp_skipped": skip_nlp,
                     }
-                )
-
-                self.logger.debug(
-                    f"Created chunk document",
-                    extra={
-                        "chunk_id": chunk_doc.id,
-                        "section_title": section_title,
-                        "section_tag": chunk_meta.get("tag_name"),
-                        "content_length": len(chunk_content),
-                    },
                 )
 
                 chunked_docs.append(chunk_doc)
@@ -644,18 +741,85 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
         except Exception as e:
             self.logger.error(
-                f"Error chunking HTML document",
-                exc_info=True,
+                f"Error chunking HTML document: {e}",
                 extra={
-                    "error": str(e),
                     "source": document.source,
                     "source_type": document.source_type,
                 },
             )
             # Fallback to simple chunking on error
             return self._fallback_chunking(document)
-        finally:
-            self.shutdown()
+
+    def _create_optimized_chunk_document(
+        self,
+        original_doc: Document,
+        chunk_content: str,
+        chunk_index: int,
+        total_chunks: int,
+        skip_nlp: bool = False,
+    ) -> Document:
+        """Create a chunk document with optimized processing.
+
+        Args:
+            original_doc: Original document
+            chunk_content: Content of the chunk
+            chunk_index: Index of the chunk
+            total_chunks: Total number of chunks
+            skip_nlp: Whether to skip NLP processing
+
+        Returns:
+            Document: New document instance for the chunk
+        """
+        # Create enhanced metadata
+        metadata = original_doc.metadata.copy()
+        metadata.update(
+            {
+                "chunk_index": chunk_index,
+                "total_chunks": total_chunks,
+            }
+        )
+
+        if skip_nlp:
+            # Skip expensive NLP processing for large chunks
+            metadata.update(
+                {
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": True,
+                    "skip_reason": "chunk_too_large",
+                }
+            )
+        else:
+            try:
+                # Process the chunk text to get additional features
+                processed = self._process_text(chunk_content)
+                metadata.update(
+                    {
+                        "entities": processed["entities"],
+                        "pos_tags": processed["pos_tags"],
+                        "nlp_skipped": False,
+                    }
+                )
+            except Exception as e:
+                self.logger.warning(f"NLP processing failed for chunk {chunk_index}: {e}")
+                metadata.update(
+                    {
+                        "entities": [],
+                        "pos_tags": [],
+                        "nlp_skipped": True,
+                        "skip_reason": "nlp_error",
+                    }
+                )
+
+        return Document(
+            content=chunk_content,
+            metadata=metadata,
+            source=original_doc.source,
+            source_type=original_doc.source_type,
+            url=original_doc.url,
+            title=original_doc.title,
+            content_type=original_doc.content_type,
+        )
 
     def _fallback_chunking(self, document: Document) -> List[Document]:
         """Simple fallback chunking when the main strategy fails.
@@ -668,52 +832,87 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         """
         self.logger.info("Using fallback chunking strategy for HTML document")
 
-        # Clean HTML and convert to text for simple chunking
-        soup = BeautifulSoup(document.content, "html.parser")
+        try:
+            # Clean HTML and convert to text for simple chunking
+            soup = BeautifulSoup(document.content, "html.parser")
 
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
 
-        text = soup.get_text(separator="\n", strip=True)
+            text = soup.get_text(separator="\n", strip=True)
 
-        # Simple chunking implementation based on fixed size
-        chunk_size = self.settings.global_config.chunking.chunk_size
+            # Simple chunking implementation based on fixed size
+            chunk_size = self.chunk_size
 
-        chunks = []
-        # Split by paragraphs first
-        paragraphs = re.split(r"\n\s*\n", text)
-        current_chunk = ""
+            chunks = []
+            # Split by paragraphs first
+            paragraphs = re.split(r"\n\s*\n", text)
+            current_chunk = ""
 
-        for para in paragraphs:
-            if len(current_chunk) + len(para) <= chunk_size:
-                current_chunk += para + "\n\n"
-            else:
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-                current_chunk = para + "\n\n"
+            for para in paragraphs:
+                if len(current_chunk) + len(para) <= chunk_size:
+                    current_chunk += para + "\n\n"
+                else:
+                    if current_chunk:
+                        chunks.append(current_chunk.strip())
+                    current_chunk = para + "\n\n"
 
-        # Add the last chunk if not empty
-        if current_chunk:
-            chunks.append(current_chunk.strip())
+                # Limit total chunks
+                if len(chunks) >= MAX_SECTIONS_TO_PROCESS:
+                    break
 
-        # Create chunked documents
-        chunked_docs = []
-        for i, chunk_content in enumerate(chunks):
-            chunk_doc = self._create_chunk_document(
-                original_doc=document,
-                chunk_content=chunk_content,
-                chunk_index=i,
-                total_chunks=len(chunks),
+            # Add the last chunk if not empty
+            if current_chunk and len(chunks) < MAX_SECTIONS_TO_PROCESS:
+                chunks.append(current_chunk.strip())
+
+            # Create chunked documents
+            chunked_docs = []
+            for i, chunk_content in enumerate(chunks):
+                # Use optimized chunk creation for fallback
+                chunk_doc = self._create_optimized_chunk_document(
+                    original_doc=document,
+                    chunk_content=chunk_content,
+                    chunk_index=i,
+                    total_chunks=len(chunks),
+                    skip_nlp=len(chunk_content) > MAX_CHUNK_SIZE_FOR_NLP,
+                )
+
+                # Generate unique chunk ID
+                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+                chunk_doc.metadata["parent_document_id"] = document.id
+                chunk_doc.metadata["chunking_method"] = "fallback_html"
+
+                chunked_docs.append(chunk_doc)
+
+            return chunked_docs
+
+        except Exception as e:
+            self.logger.error(f"Fallback chunking failed: {e}")
+            # Ultimate fallback: return original document as single chunk
+            chunk_doc = Document(
+                content=document.content,
+                metadata=document.metadata.copy(),
+                source=document.source,
+                source_type=document.source_type,
+                url=document.url,
+                title=document.title,
+                content_type=document.content_type,
             )
-
-            # Generate unique chunk ID
-            chunk_doc.id = Document.generate_chunk_id(document.id, i)
-            chunk_doc.metadata["parent_document_id"] = document.id
-
-            chunked_docs.append(chunk_doc)
-
-        return chunked_docs
+            chunk_doc.id = Document.generate_chunk_id(document.id, 0)
+            chunk_doc.metadata.update(
+                {
+                    "chunk_index": 0,
+                    "total_chunks": 1,
+                    "parent_document_id": document.id,
+                    "chunking_method": "fallback_single",
+                    "entities": [],
+                    "pos_tags": [],
+                    "nlp_skipped": True,
+                    "skip_reason": "fallback_error",
+                }
+            )
+            return [chunk_doc]
 
     def __del__(self):
         self.shutdown()

@@ -374,14 +374,32 @@ class AsyncIngestionPipeline:
                 error_count = 0
 
                 if documents and not self._shutdown_event.is_set():
-                    success_count, error_count = await self.process_documents_pipeline(documents)
+                    (
+                        success_count,
+                        error_count,
+                        successfully_processed_documents,
+                        failed_document_ids,
+                    ) = await self.process_documents_pipeline(documents)
 
                     # Update document states immediately after successful processing
                     if not self._shutdown_event.is_set():
-                        logger.debug(
-                            f"Updating document states for {len(documents)} processed documents"
+                        # Only update state for successfully processed documents
+                        successfully_processed_docs = [
+                            doc for doc in documents if doc.id in successfully_processed_documents
+                        ]
+
+                        logger.info(
+                            f"Updating document states for {len(successfully_processed_docs)} successfully processed documents "
+                            f"(out of {len(documents)} total documents)"
                         )
-                        for doc in documents:
+
+                        if failed_document_ids:
+                            logger.warning(
+                                f"Skipping state update for {len(failed_document_ids)} failed documents: "
+                                f"{list(failed_document_ids)[:5]}{'...' if len(failed_document_ids) > 5 else ''}"
+                            )
+
+                        for doc in successfully_processed_docs:
                             try:
                                 await self.state_manager.update_document_state(doc)
                                 logger.debug(f"Updated document state for {doc.id}")
@@ -580,7 +598,9 @@ class AsyncIngestionPipeline:
 
         return filtered
 
-    async def process_documents_pipeline(self, documents: List[Document]) -> Tuple[int, int]:
+    async def process_documents_pipeline(
+        self, documents: List[Document]
+    ) -> Tuple[int, int, set, set]:
         """
         Process documents using a parallel async pipeline:
         - Chunking -> Embedding -> Upsert
@@ -594,6 +614,10 @@ class AsyncIngestionPipeline:
         success_count = 0
         error_count = 0
         all_tasks = []
+
+        # Track which documents completed successfully
+        successfully_processed_documents = set()
+        failed_document_ids = set()
 
         async def chunker_worker(doc):
             logger.debug(f"Chunker_worker started for doc {doc.id}")
@@ -633,9 +657,11 @@ class AsyncIngestionPipeline:
                 raise
             except asyncio.TimeoutError:
                 logger.error(f"Chunking timed out for doc {doc.id}")
+                failed_document_ids.add(doc.id)
                 errors.append(f"Chunking timed out for doc {doc.id}")
             except Exception as e:
                 logger.error(f"Chunking failed for doc {doc.id}: {e}")
+                failed_document_ids.add(doc.id)
                 errors.append(f"Chunking failed for doc {doc.id}: {e}")
             logger.debug(f"Chunker_worker exiting for doc {doc.id}")
 
@@ -730,11 +756,19 @@ class AsyncIngestionPipeline:
                             logger.error(f"Embedder_worker {worker_id} timed out processing batch")
                             for chunk in batch:
                                 logger.error(f"Embedding timed out for chunk {chunk.id}")
+                                # Mark parent document as failed
+                                parent_doc = chunk.metadata.get("parent_document")
+                                if parent_doc:
+                                    failed_document_ids.add(parent_doc.id)
                                 errors.append(f"Embedding timed out for chunk {chunk.id}")
                         except Exception as e:
                             logger.error(f"Embedder_worker {worker_id} error processing batch: {e}")
                             for chunk in batch:
                                 logger.error(f"Embedding failed for chunk {chunk.id}: {e}")
+                                # Mark parent document as failed
+                                parent_doc = chunk.metadata.get("parent_document")
+                                if parent_doc:
+                                    failed_document_ids.add(parent_doc.id)
                                 errors.append(f"Embedding failed for chunk {chunk.id}: {e}")
 
                     # If sentinel received, exit after processing batch
@@ -790,9 +824,19 @@ class AsyncIngestionPipeline:
                                         await self.qdrant_manager.upsert_points(points)
                                         prometheus_metrics.INGESTED_DOCUMENTS.inc(len(points))
                                         success_count += len(points)
+
+                                        # Mark parent documents as successfully processed
+                                        for chunk, _ in batch:
+                                            parent_doc = chunk.metadata.get("parent_document")
+                                            if parent_doc:
+                                                successfully_processed_documents.add(parent_doc.id)
                                 except Exception as e:
                                     for chunk, _ in batch:
                                         logger.error(f"Upsert failed for chunk {chunk.id}: {e}")
+                                        # Mark parent document as failed
+                                        parent_doc = chunk.metadata.get("parent_document")
+                                        if parent_doc:
+                                            failed_document_ids.add(parent_doc.id)
                                         errors.append(f"Upsert failed for chunk {chunk.id}: {e}")
                                     error_count += len(batch)
                                 batch = []
@@ -826,9 +870,19 @@ class AsyncIngestionPipeline:
                                     await self.qdrant_manager.upsert_points(points)
                                     prometheus_metrics.INGESTED_DOCUMENTS.inc(len(points))
                                     success_count += len(points)
+
+                                    # Mark parent documents as successfully processed
+                                    for chunk, _ in batch:
+                                        parent_doc = chunk.metadata.get("parent_document")
+                                        if parent_doc:
+                                            successfully_processed_documents.add(parent_doc.id)
                             except Exception as e:
                                 for chunk, _ in batch:
                                     logger.error(f"Upsert failed for chunk {chunk.id}: {e}")
+                                    # Mark parent document as failed
+                                    parent_doc = chunk.metadata.get("parent_document")
+                                    if parent_doc:
+                                        failed_document_ids.add(parent_doc.id)
                                     errors.append(f"Upsert failed for chunk {chunk.id}: {e}")
                                 error_count += len(batch)
                             batch = []
@@ -925,7 +979,7 @@ class AsyncIngestionPipeline:
             logger.warning(" Received cancellation or SIGINT, initiating emergency shutdown...")
             await emergency_shutdown()
             # Don't re-raise, return current counts to allow graceful exit
-            return success_count, error_count
+            return success_count, error_count, successfully_processed_documents, failed_document_ids
         except Exception as e:
             logger.error(f" Unexpected error in pipeline: {e}")
             await emergency_shutdown()
@@ -955,6 +1009,9 @@ class AsyncIngestionPipeline:
                 self.chunk_executor.shutdown(wait=False)  # Don't wait to avoid hanging
 
         logger.info(f"Pipeline completed: {success_count} success, {error_count} errors")
+        logger.info(
+            f"Successfully processed {len(successfully_processed_documents)} documents, failed {len(failed_document_ids)} documents"
+        )
         logger.debug(" Active threads at pipeline end:")
         for t in threading.enumerate():
             logger.debug(
@@ -963,7 +1020,7 @@ class AsyncIngestionPipeline:
         logger.debug(" Active asyncio tasks at pipeline end:")
         for task in asyncio.all_tasks():
             logger.debug(f" Task: {task}")
-        return success_count, error_count
+        return success_count, error_count, successfully_processed_documents, failed_document_ids
 
     def cleanup(self):
         """Clean up resources to prevent hanging threads."""
