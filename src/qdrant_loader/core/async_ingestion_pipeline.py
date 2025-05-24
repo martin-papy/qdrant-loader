@@ -43,7 +43,7 @@ class AsyncIngestionPipeline:
         qdrant_manager: QdrantManager,
         state_manager: Optional[StateManager] = None,
         embedding_cache=None,  # Placeholder for future cache
-        max_chunk_workers: int = 2,
+        max_chunk_workers: int = 10,  # Increased to 10 for better parallel processing
         max_embed_workers: int = 4,
         max_upsert_workers: int = 4,
         queue_size: int = 1000,
@@ -632,12 +632,50 @@ class AsyncIngestionPipeline:
                 prometheus_metrics.CHUNK_QUEUE_SIZE.set(chunk_queue.qsize())
                 # Run chunking in a thread pool for true parallelism
                 with prometheus_metrics.CHUNKING_DURATION.time():
+                    # Adaptive timeout based on document size and queue pressure (universal approach)
+                    doc_size = len(doc.content)
+                    queue_pressure = chunk_queue.qsize() / self.queue_size
+
+                    # Universal scaling based on document characteristics
+                    # With semaphore-controlled concurrency, we can use shorter timeouts
+                    if doc_size < 1_000:  # Very small files (< 1KB) - like our failing Java files
+                        base_timeout = 10.0
+                    elif doc_size < 10_000:  # Small files (< 10KB)
+                        base_timeout = 20.0
+                    elif doc_size < 50_000:  # Medium files (10-50KB)
+                        base_timeout = 60.0
+                    elif doc_size < 100_000:  # Large files (50-100KB)
+                        base_timeout = 120.0
+                    else:  # Very large files (> 100KB)
+                        base_timeout = 180.0
+
+                    # Special handling for HTML files which can have complex structures
+                    if doc.content_type and doc.content_type.lower() == "html":
+                        base_timeout *= 1.5  # Give HTML files 50% more time
+
+                    # Additional scaling factors
+                    size_factor = min(doc_size / 50000, 4.0)  # Up to 4x for very large files
+                    pressure_factor = min(queue_pressure * 2, 2.0)  # Up to 2x for queue pressure
+
+                    # Final adaptive timeout
+                    adaptive_timeout = base_timeout * (1 + size_factor + pressure_factor)
+
+                    # Cap maximum timeout to prevent indefinite hanging
+                    adaptive_timeout = min(adaptive_timeout, 300.0)  # 5 minute maximum
+
+                    # Log timeout decision for debugging
+                    logger.debug(
+                        f"Adaptive timeout for {doc.url}: {adaptive_timeout:.1f}s "
+                        f"(base: {base_timeout}s, size: {doc_size} bytes, "
+                        f"size_factor: {size_factor:.2f}, pressure_factor: {pressure_factor:.2f})"
+                    )
+
                     # Add timeout to prevent hanging on chunking
                     chunks = await asyncio.wait_for(
                         asyncio.get_running_loop().run_in_executor(
                             self.chunk_executor, self.chunking_service.chunk_document, doc
                         ),
-                        timeout=30.0,  # 30 second timeout for chunking
+                        timeout=adaptive_timeout,
                     )
 
                     # Check for shutdown before putting chunks in queue
@@ -656,11 +694,11 @@ class AsyncIngestionPipeline:
                 logger.debug(f"Chunker_worker {doc.id} cancelled")
                 raise
             except asyncio.TimeoutError:
-                logger.error(f"Chunking timed out for doc {doc.id}")
+                logger.error(f"Chunking timed out for doc {doc.url}")
                 failed_document_ids.add(doc.id)
                 errors.append(f"Chunking timed out for doc {doc.id}")
             except Exception as e:
-                logger.error(f"Chunking failed for doc {doc.id}: {e}")
+                logger.error(f"Chunking failed for doc {doc.url}: {e}")
                 failed_document_ids.add(doc.id)
                 errors.append(f"Chunking failed for doc {doc.id}: {e}")
             logger.debug(f"Chunker_worker exiting for doc {doc.id}")
@@ -668,7 +706,16 @@ class AsyncIngestionPipeline:
         async def chunker():
             logger.debug(f"Chunker started")
             try:
-                tasks = [chunker_worker(doc) for doc in documents]
+                # Use semaphore to limit concurrent chunking operations
+                # This prevents thread pool starvation where small files wait behind large files
+                semaphore = asyncio.Semaphore(self.max_chunk_workers)
+
+                async def chunker_worker_with_semaphore(doc):
+                    async with semaphore:
+                        await chunker_worker(doc)
+
+                # Process documents with controlled concurrency
+                tasks = [chunker_worker_with_semaphore(doc) for doc in documents]
                 await asyncio.gather(*tasks)
 
                 # Check for shutdown before putting sentinels
