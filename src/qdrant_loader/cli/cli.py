@@ -3,6 +3,9 @@
 import json
 import os
 from pathlib import Path
+import asyncio
+import threading
+import signal
 
 import click
 import tomli
@@ -15,10 +18,11 @@ from click.utils import echo
 from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.config import Settings, get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
-from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+from qdrant_loader.core.monitoring.resource_monitor import monitor_resources
 
 # Get logger without initializing it
 logger = LoggingConfig.get_logger(__name__)
@@ -206,40 +210,11 @@ async def init(config: Path | None, force: bool, log_level: str):
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
 
 
-async def _run_ingest(settings: Settings, source_type: str | None, source: str | None) -> None:
-    """Run ingestion process."""
-    try:
-        # Initialize QDrant manager
-        qdrant_manager = QdrantManager(settings)
-        qdrant_manager.connect()
-        logger.info("Successfully connected to qDrant")
-
-        # Check if collection exists
-        client = qdrant_manager._ensure_client_connected()
-        collections = client.get_collections()
-        if not any(c.name == qdrant_manager.collection_name for c in collections.collections):
-            logger.error("collection_not_found")
-            raise ClickException("Collection not found")
-
-        # Initialize pipeline
-        pipeline = IngestionPipeline(settings, qdrant_manager)
-        await pipeline.initialize()
-
-        # Process documents
-        documents = await pipeline.process_documents(
-            source_type=source_type,
-            source=source,
-        )
-
-        if documents:
-            logger.info(f"Successfully processed {len(documents)} documents")
-
-    except QdrantConnectionError as e:
-        logger.error("qdrant_connection_failed", error=str(e))
-        raise ClickException(f"Failed to connect to QDrant: {str(e)!s}") from e
-    except Exception as e:
-        logger.error("ingestion_failed", error=str(e))
-        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
+async def _cancel_all_tasks():
+    tasks = [t for t in asyncio.all_tasks() if not t.done()]
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @cli.command()
@@ -252,31 +227,87 @@ async def _run_ingest(settings: Settings, source_type: str | None, source: str |
     default="INFO",
     help="Set the logging level.",
 )
+@option(
+    "--profile/--no-profile",
+    default=False,
+    help="Run the ingestion under cProfile and save output to 'profile.out' (for performance analysis).",
+)
 @async_command
 async def ingest(
     config: Path | None,
     source_type: str | None,
     source: str | None,
     log_level: str,
+    profile: bool,
 ):
-    """Ingest documents into QDrant collection."""
+    """Ingest documents from configured sources."""
+    _setup_logging(log_level)
+    _load_config(config)
+    settings = _check_settings()
+    qdrant_manager = QdrantManager(settings)
+
+    async def run_ingest():
+        pipeline = AsyncIngestionPipeline(settings, qdrant_manager)
+        try:
+            await pipeline.process_documents(
+                source_type=source_type,
+                source=source,
+            )
+        finally:
+            # Ensure proper cleanup of the async pipeline
+            pipeline.cleanup()
+
+    loop = asyncio.get_running_loop()
+    stop_event = asyncio.Event()
+
+    def _handle_sigint():
+        import structlog
+
+        logger = structlog.get_logger(__name__)
+        logger.debug("[DIAG] SIGINT received, cancelling all tasks...")
+        stop_event.set()
+
+    loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+
     try:
-        _setup_logging(log_level)
-        _load_config(config)
-        settings = _check_settings()
+        if profile:
+            import cProfile
 
-        if source and not source_type:
-            logger.error("source_without_type")
-            raise ClickException("Source without type")
+            profiler = cProfile.Profile()
+            profiler.enable()
+            try:
+                await run_ingest()
+            finally:
+                profiler.disable()
+                profiler.dump_stats("profile.out")
+                print("Profile saved to profile.out")
+        else:
+            await run_ingest()
+        import structlog
 
-        await _run_ingest(settings, source_type, source)
-
-    except ClickException as e:
-        logger.error("ingest_failed", error=str(e))
-        raise e from None
+        logger = structlog.get_logger(__name__)
+        logger.info("Pipeline finished, awaiting cleanup.")
+        # Wait for all pending tasks
+        pending = [
+            t for t in asyncio.all_tasks() if t is not asyncio.current_task() and not t.done()
+        ]
+        if pending:
+            logger.debug(f"[DIAG] Awaiting {len(pending)} pending tasks before exit...")
+            await asyncio.gather(*pending, return_exceptions=True)
+        await asyncio.sleep(0.1)
     except Exception as e:
-        logger.error("ingest_failed", error=str(e))
-        raise ClickException(f"Failed to process documents: {str(e)!s}") from e
+        import structlog
+
+        logger = structlog.get_logger(__name__)
+        logger.error(f"[DIAG] Exception in ingest: {e}")
+        raise
+    finally:
+        if stop_event.is_set():
+            await _cancel_all_tasks()
+            import structlog
+
+            logger = structlog.get_logger(__name__)
+            logger.debug("[DIAG] All tasks cancelled, exiting after SIGINT.")
 
 
 @cli.command()

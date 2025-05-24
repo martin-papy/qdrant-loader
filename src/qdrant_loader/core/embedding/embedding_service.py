@@ -87,8 +87,11 @@ class EmbeddingService:
             try:
                 if self.use_openai and self.client is not None:
                     logger.debug("Getting batch embeddings from OpenAI", model=self.model)
-                    response = await asyncio.to_thread(
-                        self.client.embeddings.create, model=self.model, input=batch
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            self.client.embeddings.create, model=self.model, input=batch
+                        ),
+                        timeout=90.0,  # 90 second timeout for OpenAI API
                     )
                     embeddings.extend([embedding.embedding for embedding in response.data])
                 else:
@@ -98,12 +101,15 @@ class EmbeddingService:
                         model=self.model,
                         endpoint=self.endpoint,
                     )
-                    response = await asyncio.to_thread(
-                        requests.post,
-                        f"{self.endpoint}/embeddings",
-                        json={"input": batch, "model": self.model},
-                        headers={"Content-Type": "application/json"},
-                        timeout=60,  # Increased timeout for larger batches
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            requests.post,
+                            f"{self.endpoint}/embeddings",
+                            json={"input": batch, "model": self.model},
+                            headers={"Content-Type": "application/json"},
+                            timeout=60,  # Increased timeout for larger batches
+                        ),
+                        timeout=90.0,  # 90 second timeout for local service
                     )
                     response.raise_for_status()
                     data = response.json()
@@ -117,6 +123,13 @@ class EmbeddingService:
                     processed_embeddings=len(embeddings),
                 )
 
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Timeout processing batch",
+                    batch_num=batch_num,
+                    batch_size=len(batch),
+                )
+                raise
             except Exception as e:
                 logger.error(
                     "Failed to process batch",
@@ -133,10 +146,13 @@ class EmbeddingService:
             await self._apply_rate_limit()
             if self.use_openai and self.client is not None:
                 logger.debug("Getting embedding from OpenAI", model=self.model)
-                response = await asyncio.to_thread(
-                    self.client.embeddings.create,
-                    model=self.model,
-                    input=[text],  # OpenAI API expects a list
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        self.client.embeddings.create,
+                        model=self.model,
+                        input=[text],  # OpenAI API expects a list
+                    ),
+                    timeout=60.0,  # 60 second timeout for single embedding
                 )
                 return response.data[0].embedding
             else:
@@ -144,18 +160,24 @@ class EmbeddingService:
                 logger.debug(
                     "Getting embedding from local service", model=self.model, endpoint=self.endpoint
                 )
-                response = await asyncio.to_thread(
-                    requests.post,
-                    f"{self.endpoint}/embeddings",
-                    json={"input": text, "model": self.model},
-                    headers={"Content-Type": "application/json"},
-                    timeout=30,  # 30 second timeout
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        requests.post,
+                        f"{self.endpoint}/embeddings",
+                        json={"input": text, "model": self.model},
+                        headers={"Content-Type": "application/json"},
+                        timeout=30,  # 30 second timeout
+                    ),
+                    timeout=60.0,  # 60 second timeout for local service
                 )
                 response.raise_for_status()
                 data = response.json()
                 if "data" not in data or not data["data"]:
                     raise ValueError("Invalid response format from local embedding service")
                 return data["data"][0]["embedding"]
+        except asyncio.TimeoutError:
+            logger.error("Timeout getting single embedding")
+            raise
         except Exception as e:
             logger.error("Failed to get embedding", error=str(e))
             raise
