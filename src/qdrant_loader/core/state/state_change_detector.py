@@ -92,7 +92,9 @@ class StateChangeDetector:
         self.logger.debug(f"Found {len(new_docs)} new documents")
 
         self.logger.debug("Finding updated documents")
-        updated_docs = await self._find_updated_documents(current_states, previous_states, documents)
+        updated_docs = await self._find_updated_documents(
+            current_states, previous_states, documents
+        )
         self.logger.debug(f"Found {len(updated_docs)} updated documents")
 
         self.logger.debug("Finding deleted documents")
@@ -248,6 +250,14 @@ class StateChangeDetector:
             for config in filtered_config.publicdocs.values():
                 records = await self.state_manager.get_document_state_records(config)
                 self.logger.debug(f"Got {len(records)} PublicDocs records")
+                previous_states_records.extend(records)
+
+        # Process local files
+        if filtered_config.localfile:
+            self.logger.debug("Getting LocalFile states")
+            for config in filtered_config.localfile.values():
+                records = await self.state_manager.get_document_state_records(config)
+                self.logger.debug(f"Got {len(records)} LocalFile records")
                 previous_states_records.extend(records)
 
         self.logger.debug(f"Converting {len(previous_states_records)} records to states")
