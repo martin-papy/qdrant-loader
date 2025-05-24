@@ -278,7 +278,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                 is_section_boundary = (
                     tag_name in self.section_elements
                     or tag_name in self.heading_elements
-                    or (tag_name in self.block_elements and len(text_content) > 100)
+                    or (tag_name in self.block_elements and len(text_content) > 50)
+                    or (tag_name == "div" and len(text_content) > 200)  # Include larger divs
                 )
 
                 if is_section_boundary:
@@ -322,23 +323,23 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
         merged = []
         current_section = sections[0].copy()
-        min_section_size = 300  # Minimum characters for a standalone section
+        min_section_size = 200  # Reduced minimum size for more granular chunks
 
         for i in range(1, len(sections)):
             next_section = sections[i]
 
             # If current section is small and next section is related, merge them
-            should_merge = len(current_section["text_content"]) < min_section_size and (
-                # Same parent context
-                next_section["level"] > current_section["level"]
-                or
-                # Similar content types
-                next_section["tag_name"] == current_section["tag_name"]
-                or
-                # Sequential paragraphs or divs
-                (
-                    current_section["tag_name"] in ["p", "div"]
-                    and next_section["tag_name"] in ["p", "div"]
+            # But be more conservative to avoid creating overly large chunks
+            should_merge = (
+                len(current_section["text_content"]) < min_section_size
+                and len(current_section["text_content"]) + len(next_section["text_content"])
+                < self.chunk_size * 0.8
+                and (
+                    # Same parent context
+                    next_section["level"] > current_section["level"]
+                    or
+                    # Sequential paragraphs only (not divs to avoid large merges)
+                    (current_section["tag_name"] == "p" and next_section["tag_name"] == "p")
                 )
             )
 
@@ -371,8 +372,36 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         filtered_sections = [s for s in structure if len(s.get("text_content", "")) > 50]
         merged_sections = self._merge_small_sections(filtered_sections)
 
-        # Ensure each section has proper metadata
+        # Split large sections that exceed chunk size
+        final_sections = []
         for section in merged_sections:
+            section_size = len(section.get("content", ""))
+
+            # If section is larger than chunk size, split it
+            if section_size > self.chunk_size:
+                self.logger.debug(
+                    f"Splitting large section of {section_size} characters",
+                    section_tag=section.get("tag_name", "unknown"),
+                    chunk_size=self.chunk_size,
+                )
+
+                # Split the large section into smaller chunks
+                sub_chunks = self._split_large_section(section["content"], self.chunk_size)
+
+                for i, sub_chunk in enumerate(sub_chunks):
+                    # Create a new section for each sub-chunk
+                    sub_section = section.copy()
+                    sub_section["content"] = sub_chunk
+                    sub_section["text_content"] = BeautifulSoup(sub_chunk, "html.parser").get_text(
+                        strip=True
+                    )
+                    sub_section["title"] = f"{section.get('title', 'Section')} (Part {i+1})"
+                    final_sections.append(sub_section)
+            else:
+                final_sections.append(section)
+
+        # Ensure each section has proper metadata
+        for section in final_sections:
             if "level" not in section:
                 section["level"] = 0
             if "title" not in section:
@@ -380,7 +409,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             if "attributes" not in section:
                 section["attributes"] = {}
 
-        return merged_sections
+        return final_sections
 
     def _split_large_section(self, content: str, max_size: int) -> List[str]:
         """Split a large section into smaller chunks while preserving HTML structure.
@@ -401,9 +430,54 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             nonlocal current_chunk, chunks
             element_str = str(element)
 
+            # If adding this element would exceed max_size
             if len(current_chunk) + len(element_str) > max_size:
                 if current_chunk.strip():
                     chunks.append(current_chunk.strip())
+
+                # If the element itself is too large, split it further
+                if len(element_str) > max_size:
+                    # For very large elements, split by text content
+                    if isinstance(element, Tag):
+                        text_content = element.get_text()
+                        if len(text_content) > max_size:
+                            # Split text into smaller pieces
+                            words = text_content.split()
+                            current_text = ""
+
+                            for word in words:
+                                if (
+                                    len(current_text) + len(word) + 1 > max_size * 0.8
+                                ):  # Leave some room for HTML tags
+                                    if current_text:
+                                        # Create a simple HTML wrapper for the text chunk
+                                        tag_name = (
+                                            element.name if hasattr(element, "name") else "div"
+                                        )
+                                        chunk_html = (
+                                            f"<{tag_name}>{current_text.strip()}</{tag_name}>"
+                                        )
+                                        chunks.append(chunk_html)
+                                        current_text = word + " "
+                                    else:
+                                        # Single word is too long, just add it
+                                        tag_name = (
+                                            element.name if hasattr(element, "name") else "div"
+                                        )
+                                        chunk_html = f"<{tag_name}>{word}</{tag_name}>"
+                                        chunks.append(chunk_html)
+                                else:
+                                    current_text += word + " "
+
+                            # Add remaining text
+                            if current_text.strip():
+                                tag_name = element.name if hasattr(element, "name") else "div"
+                                chunk_html = f"<{tag_name}>{current_text.strip()}</{tag_name}>"
+                                chunks.append(chunk_html)
+
+                            current_chunk = ""
+                            return
+
                 current_chunk = element_str
             else:
                 current_chunk += element_str

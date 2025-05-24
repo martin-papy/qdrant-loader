@@ -264,7 +264,7 @@ async def ingest(
         import structlog
 
         logger = structlog.get_logger(__name__)
-        logger.debug("[DIAG] SIGINT received, cancelling all tasks...")
+        logger.debug(" SIGINT received, cancelling all tasks...")
         stop_event.set()
 
     loop.add_signal_handler(signal.SIGINT, _handle_sigint)
@@ -292,14 +292,14 @@ async def ingest(
             t for t in asyncio.all_tasks() if t is not asyncio.current_task() and not t.done()
         ]
         if pending:
-            logger.debug(f"[DIAG] Awaiting {len(pending)} pending tasks before exit...")
+            logger.debug(f" Awaiting {len(pending)} pending tasks before exit...")
             await asyncio.gather(*pending, return_exceptions=True)
         await asyncio.sleep(0.1)
     except Exception as e:
         import structlog
 
         logger = structlog.get_logger(__name__)
-        logger.error(f"[DIAG] Exception in ingest: {e}")
+        logger.error(f" Exception in ingest: {e}")
         raise
     finally:
         if stop_event.is_set():
@@ -307,7 +307,7 @@ async def ingest(
             import structlog
 
             logger = structlog.get_logger(__name__)
-            logger.debug("[DIAG] All tasks cancelled, exiting after SIGINT.")
+            logger.debug(" All tasks cancelled, exiting after SIGINT.")
 
 
 @cli.command()

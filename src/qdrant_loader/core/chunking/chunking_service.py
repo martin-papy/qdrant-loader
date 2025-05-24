@@ -9,6 +9,7 @@ from qdrant_loader.core.chunking.strategy import (
     DefaultChunkingStrategy,
     MarkdownChunkingStrategy,
     HTMLChunkingStrategy,
+    CodeChunkingStrategy,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -50,6 +51,21 @@ class ChunkingService:
         self.strategies: dict[str, Type[BaseChunkingStrategy]] = {
             "md": MarkdownChunkingStrategy,
             "html": HTMLChunkingStrategy,
+            # Programming languages
+            "py": CodeChunkingStrategy,
+            "java": CodeChunkingStrategy,
+            "js": CodeChunkingStrategy,
+            "ts": CodeChunkingStrategy,
+            "go": CodeChunkingStrategy,
+            "rs": CodeChunkingStrategy,
+            "cpp": CodeChunkingStrategy,
+            "c": CodeChunkingStrategy,
+            "cs": CodeChunkingStrategy,
+            "php": CodeChunkingStrategy,
+            "rb": CodeChunkingStrategy,
+            "kt": CodeChunkingStrategy,
+            "swift": CodeChunkingStrategy,
+            "scala": CodeChunkingStrategy,
             # Add more strategies here as needed
         }
 

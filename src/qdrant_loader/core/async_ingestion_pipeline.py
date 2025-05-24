@@ -586,7 +586,7 @@ class AsyncIngestionPipeline:
         - Chunking -> Embedding -> Upsert
         Returns: (success_count, error_count)
         """
-        logger.debug(f"[DIAG] Starting process_documents_pipeline with {len(documents)} documents")
+        logger.debug(f" Starting process_documents_pipeline with {len(documents)} documents")
         chunk_queue = asyncio.Queue(self.queue_size)
         embed_queue = asyncio.Queue(self.queue_size)
         upsert_queue = asyncio.Queue(self.queue_size)
@@ -671,7 +671,7 @@ class AsyncIngestionPipeline:
                 raise
 
         async def embedder_worker(worker_id):
-            logger.debug(f"[DIAG] embedder_worker {worker_id} started")
+            logger.debug(f"Embedder_worker {worker_id} started")
             batch_size = self.embedding_service.batch_size
             try:
                 while not self._shutdown_event.is_set():
@@ -683,31 +683,27 @@ class AsyncIngestionPipeline:
                         try:
                             chunk = await asyncio.wait_for(chunk_queue.get(), timeout=1.0)
                             if chunk is None:
-                                logger.debug(
-                                    f"[DIAG] embedder_worker {worker_id} received sentinel"
-                                )
+                                logger.debug(f"Embedder_worker {worker_id} received sentinel")
                                 sentinel_received = True
                                 break
                             batch.append(chunk)
                         except asyncio.TimeoutError:
                             # Check shutdown and continue if no shutdown
                             if self._shutdown_event.is_set():
-                                logger.debug(
-                                    f"[DIAG] embedder_worker {worker_id} exiting due to shutdown"
-                                )
+                                logger.debug(f"Embedder_worker {worker_id} exiting due to shutdown")
                                 return
                             break  # Exit batch collection loop, process what we have
 
                     # If no items in batch and sentinel received, exit
                     if not batch and sentinel_received:
-                        logger.debug(f"[DIAG] embedder_worker {worker_id} exiting (no batch)")
+                        logger.debug(f"Embedder_worker {worker_id} exiting (no batch)")
                         break
 
                     # Process any remaining items in batch
                     if batch:
                         try:
                             logger.debug(
-                                f"[DIAG] embedder_worker {worker_id} processing batch of {len(batch)} items"
+                                f"Embedder_worker {worker_id} processing batch of {len(batch)} items"
                             )
                             with prometheus_metrics.EMBEDDING_DURATION.time():
                                 # Add timeout to prevent hanging and check for shutdown
@@ -724,23 +720,19 @@ class AsyncIngestionPipeline:
                                         await embed_queue.put((chunk, embedding))
                                 else:
                                     logger.debug(
-                                        f"[DIAG] embedder_worker {worker_id} skipping queue put due to shutdown"
+                                        f"Embedder_worker {worker_id} skipping queue put due to shutdown"
                                     )
 
                             logger.debug(
-                                f"[DIAG] embedder_worker {worker_id} completed batch of {len(batch)} items"
+                                f"Embedder_worker {worker_id} completed batch of {len(batch)} items"
                             )
                         except asyncio.TimeoutError:
-                            logger.error(
-                                f"[DIAG] embedder_worker {worker_id} timed out processing batch"
-                            )
+                            logger.error(f"Embedder_worker {worker_id} timed out processing batch")
                             for chunk in batch:
                                 logger.error(f"Embedding timed out for chunk {chunk.id}")
                                 errors.append(f"Embedding timed out for chunk {chunk.id}")
                         except Exception as e:
-                            logger.error(
-                                f"[DIAG] embedder_worker {worker_id} error processing batch: {e}"
-                            )
+                            logger.error(f"Embedder_worker {worker_id} error processing batch: {e}")
                             for chunk in batch:
                                 logger.error(f"Embedding failed for chunk {chunk.id}: {e}")
                                 errors.append(f"Embedding failed for chunk {chunk.id}: {e}")
@@ -748,18 +740,18 @@ class AsyncIngestionPipeline:
                     # If sentinel received, exit after processing batch
                     if sentinel_received:
                         logger.debug(
-                            f"[DIAG] embedder_worker {worker_id} exiting after processing final batch"
+                            f"Embedder_worker {worker_id} exiting after processing final batch"
                         )
                         break
             except asyncio.CancelledError:
-                logger.debug(f"[DIAG] embedder_worker {worker_id} cancelled")
+                logger.debug(f"Embedder_worker {worker_id} cancelled")
                 raise
             finally:
-                logger.debug(f"[DIAG] embedder_worker {worker_id} exited")
+                logger.debug(f"Embedder_worker {worker_id} exited")
 
         async def upserter_worker(worker_id):
             nonlocal success_count, error_count
-            logger.debug(f"[DIAG] upserter_worker {worker_id} started")
+            logger.debug(f" upserter_worker {worker_id} started")
             batch_size = self.upsert_batch_size
             batch = []
             try:
@@ -768,7 +760,7 @@ class AsyncIngestionPipeline:
                         item = await asyncio.wait_for(embed_queue.get(), timeout=1.0)
                         if item is None:
                             logger.debug(
-                                f"[DIAG] upserter_worker {worker_id} received sentinel, breaking"
+                                f" upserter_worker {worker_id} received sentinel, breaking"
                             )
                             # Upsert any remaining items in the batch before exiting
                             if batch:
@@ -843,31 +835,29 @@ class AsyncIngestionPipeline:
                     except asyncio.TimeoutError:
                         # Check shutdown and continue if no shutdown
                         if self._shutdown_event.is_set():
-                            logger.debug(
-                                f"[DIAG] upserter_worker {worker_id} exiting due to shutdown"
-                            )
+                            logger.debug(f" upserter_worker {worker_id} exiting due to shutdown")
                             break
                         continue
             except asyncio.CancelledError:
-                logger.debug(f"[DIAG] upserter_worker {worker_id} cancelled")
+                logger.debug(f" upserter_worker {worker_id} cancelled")
                 raise
             finally:
-                logger.debug(f"[DIAG] upserter_worker {worker_id} exited")
+                logger.debug(f" upserter_worker {worker_id} exited")
 
         # Create and start tasks
-        logger.debug(f"[DIAG] Creating chunker task")
+        logger.debug(f" Creating chunker task")
         chunker_task = asyncio.create_task(chunker())
         all_tasks.append(chunker_task)
         self._active_tasks.add(chunker_task)
 
-        logger.debug(f"[DIAG] Creating {self.max_embed_workers} embedder_tasks")
+        logger.debug(f" Creating {self.max_embed_workers} embedder_tasks")
         embedder_tasks = [
             asyncio.create_task(embedder_worker(i)) for i in range(self.max_embed_workers)
         ]
         all_tasks.extend(embedder_tasks)
         self._active_tasks.update(embedder_tasks)
 
-        logger.debug(f"[DIAG] Creating {self.max_upsert_workers} upserter_tasks")
+        logger.debug(f" Creating {self.max_upsert_workers} upserter_tasks")
         upserter_tasks = [
             asyncio.create_task(upserter_worker(i)) for i in range(self.max_upsert_workers)
         ]
@@ -876,7 +866,7 @@ class AsyncIngestionPipeline:
 
         async def emergency_shutdown():
             """Emergency shutdown procedure."""
-            logger.warning("[DIAG] Emergency shutdown initiated")
+            logger.warning(" Emergency shutdown initiated")
             self._shutdown_event.set()
 
             # Put emergency sentinels to unblock workers
@@ -906,42 +896,38 @@ class AsyncIngestionPipeline:
                     asyncio.gather(*all_tasks, return_exceptions=True), timeout=5.0
                 )
             except asyncio.TimeoutError:
-                logger.warning(
-                    "[DIAG] Some tasks did not complete within emergency shutdown timeout"
-                )
+                logger.warning(" Some tasks did not complete within emergency shutdown timeout")
 
         try:
             # Wait for chunker to complete
-            logger.debug(f"[DIAG] Awaiting chunker_task")
+            logger.debug(f" Awaiting chunker_task")
             await chunker_task
 
             # Wait for embedders to complete
-            logger.debug(f"[DIAG] Awaiting embedder_tasks")
+            logger.debug(f" Awaiting embedder_tasks")
             await asyncio.gather(*embedder_tasks)
 
             # Signal upserters to finish
             if not self._shutdown_event.is_set():
                 logger.debug(
-                    f"[DIAG] embedder_tasks completed, putting {self.max_upsert_workers} sentinels into embed_queue"
+                    f" embedder_tasks completed, putting {self.max_upsert_workers} sentinels into embed_queue"
                 )
                 for _ in range(self.max_upsert_workers):
                     await embed_queue.put(None)
-                logger.debug(f"[DIAG] embedder put all sentinels into embed_queue")
+                logger.debug(f" embedder put all sentinels into embed_queue")
 
             # Wait for upserters to complete
-            logger.debug(f"[DIAG] Awaiting upserter_tasks")
+            logger.debug(f" Awaiting upserter_tasks")
             await asyncio.gather(*upserter_tasks)
-            logger.debug(f"[DIAG] upserter_tasks completed")
+            logger.debug(f" upserter_tasks completed")
 
         except (asyncio.CancelledError, KeyboardInterrupt):
-            logger.warning(
-                "[DIAG] Received cancellation or SIGINT, initiating emergency shutdown..."
-            )
+            logger.warning(" Received cancellation or SIGINT, initiating emergency shutdown...")
             await emergency_shutdown()
             # Don't re-raise, return current counts to allow graceful exit
             return success_count, error_count
         except Exception as e:
-            logger.error(f"[DIAG] Unexpected error in pipeline: {e}")
+            logger.error(f" Unexpected error in pipeline: {e}")
             await emergency_shutdown()
             raise
         finally:
@@ -955,28 +941,28 @@ class AsyncIngestionPipeline:
             # Ensure all tasks are completed
             pending = [t for t in all_tasks if not t.done()]
             if pending:
-                logger.debug(f"[DIAG] Awaiting {len(pending)} pending tasks in finally block")
+                logger.debug(f" Awaiting {len(pending)} pending tasks in finally block")
                 try:
                     await asyncio.wait_for(
                         asyncio.gather(*pending, return_exceptions=True), timeout=3.0
                     )
                 except asyncio.TimeoutError:
-                    logger.warning("[DIAG] Some tasks did not complete within final timeout")
+                    logger.warning(" Some tasks did not complete within final timeout")
 
             # Properly shutdown the ThreadPoolExecutor to free resources
             if hasattr(self, "chunk_executor") and self.chunk_executor:
-                logger.debug("[DIAG] Shutting down chunk executor")
+                logger.debug(" Shutting down chunk executor")
                 self.chunk_executor.shutdown(wait=False)  # Don't wait to avoid hanging
 
         logger.info(f"Pipeline completed: {success_count} success, {error_count} errors")
-        logger.debug("[DIAG] Active threads at pipeline end:")
+        logger.debug(" Active threads at pipeline end:")
         for t in threading.enumerate():
             logger.debug(
-                f"[DIAG] Thread: {t.name}, Daemon: {t.daemon}, Alive: {t.is_alive()}, Ident: {t.ident}"
+                f" Thread: {t.name}, Daemon: {t.daemon}, Alive: {t.is_alive()}, Ident: {t.ident}"
             )
-        logger.debug("[DIAG] Active asyncio tasks at pipeline end:")
+        logger.debug(" Active asyncio tasks at pipeline end:")
         for task in asyncio.all_tasks():
-            logger.debug(f"[DIAG] Task: {task}")
+            logger.debug(f" Task: {task}")
         return success_count, error_count
 
     def cleanup(self):
@@ -984,7 +970,7 @@ class AsyncIngestionPipeline:
         if self._cleanup_done:
             return
 
-        logger.debug("[DIAG] Starting pipeline cleanup")
+        logger.debug(" Starting pipeline cleanup")
 
         try:
             # Set shutdown event
@@ -998,26 +984,26 @@ class AsyncIngestionPipeline:
 
             # Cancel active tasks
             if hasattr(self, "_active_tasks") and self._active_tasks:
-                logger.debug(f"[DIAG] Cancelling {len(self._active_tasks)} active tasks")
+                logger.debug(f" Cancelling {len(self._active_tasks)} active tasks")
                 for task in list(self._active_tasks):
                     if not task.done():
                         task.cancel()
 
             # Shutdown thread pool executor
             if hasattr(self, "chunk_executor") and self.chunk_executor:
-                logger.debug("[DIAG] Shutting down chunk executor")
+                logger.debug(" Shutting down chunk executor")
                 self.chunk_executor.shutdown(wait=False)  # Don't wait to avoid hanging
 
             # Stop metrics server if it was started
             try:
                 prometheus_metrics.stop_metrics_server()
             except Exception as e:
-                logger.warning(f"[DIAG] Error stopping metrics server: {e}")
+                logger.warning(f" Error stopping metrics server: {e}")
 
             self._cleanup_done = True
-            logger.debug("[DIAG] Pipeline cleanup completed")
+            logger.debug(" Pipeline cleanup completed")
         except Exception as e:
-            logger.error(f"[DIAG] Error during cleanup: {e}")
+            logger.error(f" Error during cleanup: {e}")
 
     def __del__(self):
         """Destructor to ensure cleanup on object deletion."""
@@ -1025,4 +1011,4 @@ class AsyncIngestionPipeline:
             if hasattr(self, "_cleanup_done"):
                 self.cleanup()
         except Exception as e:
-            logger.warning(f"[DIAG] Error in destructor cleanup: {e}")
+            logger.warning(f" Error in destructor cleanup: {e}")
