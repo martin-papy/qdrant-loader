@@ -596,11 +596,11 @@ class AsyncIngestionPipeline:
         all_tasks = []
 
         async def chunker_worker(doc):
-            logger.debug(f"[DIAG] chunker_worker started for doc {doc.id}")
+            logger.debug(f"Chunker_worker started for doc {doc.id}")
             try:
                 # Check for shutdown signal
                 if self._shutdown_event.is_set():
-                    logger.debug(f"[DIAG] chunker_worker {doc.id} exiting due to shutdown")
+                    logger.debug(f"Chunker_worker {doc.id} exiting due to shutdown")
                     return
 
                 prometheus_metrics.CPU_USAGE.set(psutil.cpu_percent())
@@ -619,7 +619,7 @@ class AsyncIngestionPipeline:
                     # Check for shutdown before putting chunks in queue
                     if self._shutdown_event.is_set():
                         logger.debug(
-                            f"[DIAG] chunker_worker {doc.id} exiting due to shutdown after chunking"
+                            f"Chunker_worker {doc.id} exiting due to shutdown after chunking"
                         )
                         return
 
@@ -629,7 +629,7 @@ class AsyncIngestionPipeline:
                         await chunk_queue.put(chunk)
                     logger.debug(f"Chunked doc {doc.id} into {len(chunks)} chunks")
             except asyncio.CancelledError:
-                logger.debug(f"[DIAG] chunker_worker {doc.id} cancelled")
+                logger.debug(f"Chunker_worker {doc.id} cancelled")
                 raise
             except asyncio.TimeoutError:
                 logger.error(f"Chunking timed out for doc {doc.id}")
@@ -637,33 +637,31 @@ class AsyncIngestionPipeline:
             except Exception as e:
                 logger.error(f"Chunking failed for doc {doc.id}: {e}")
                 errors.append(f"Chunking failed for doc {doc.id}: {e}")
-            logger.debug(f"[DIAG] chunker_worker exiting for doc {doc.id}")
+            logger.debug(f"Chunker_worker exiting for doc {doc.id}")
 
         async def chunker():
-            logger.debug(f"[DIAG] chunker started")
+            logger.debug(f"Chunker started")
             try:
                 tasks = [chunker_worker(doc) for doc in documents]
                 await asyncio.gather(*tasks)
 
                 # Check for shutdown before putting sentinels
                 if not self._shutdown_event.is_set():
-                    logger.info(
-                        f"[DIAG] chunker finished, putting {self.max_embed_workers} sentinels into chunk_queue"
+                    logger.debug(
+                        f"Chunker finished, putting {self.max_embed_workers} sentinels into chunk_queue"
                     )
                     for _ in range(self.max_embed_workers):
                         await chunk_queue.put(None)
-                    logger.debug(f"[DIAG] chunker put all sentinels into chunk_queue")
+                    logger.debug(f"Chunker put all sentinels into chunk_queue")
                 else:
-                    logger.debug(
-                        f"[DIAG] chunker exiting due to shutdown, putting emergency sentinels"
-                    )
+                    logger.debug(f"Chunker exiting due to shutdown, putting emergency sentinels")
                     for _ in range(self.max_embed_workers):
                         try:
                             chunk_queue.put_nowait(None)
                         except asyncio.QueueFull:
                             pass
             except asyncio.CancelledError:
-                logger.debug(f"[DIAG] chunker cancelled")
+                logger.debug(f"Chunker cancelled")
                 # Put emergency sentinels to unblock embedders
                 for _ in range(self.max_embed_workers):
                     try:

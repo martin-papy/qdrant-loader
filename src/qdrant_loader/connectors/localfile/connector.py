@@ -1,6 +1,7 @@
 import os
 from typing import List
 import structlog
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
@@ -34,6 +35,11 @@ class LocalFileConnector(BaseConnector):
                 try:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
+
+                    # Get file modification time
+                    file_mtime = os.path.getmtime(file_path)
+                    updated_at = datetime.fromtimestamp(file_mtime, tz=timezone.utc)
+
                     metadata = self.metadata_extractor.extract_all_metadata(file_path, content)
                     file_ext = os.path.splitext(file)[1].lower().lstrip(".")
                     rel_path = os.path.relpath(file_path, self.base_path)
@@ -44,8 +50,9 @@ class LocalFileConnector(BaseConnector):
                         metadata=metadata,
                         source_type="localfile",
                         source=self.config.source,
-                        url=f"file://{os.path.abspath(file_path)}",
+                        url=f"file://{os.path.realpath(file_path)}",
                         is_deleted=False,
+                        updated_at=updated_at,
                     )
                     documents.append(doc)
                 except Exception as e:
