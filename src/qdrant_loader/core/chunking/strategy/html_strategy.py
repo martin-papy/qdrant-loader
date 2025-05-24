@@ -14,7 +14,6 @@ import warnings
 
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
 from qdrant_loader.config import Settings, GlobalConfig, SemanticAnalysisConfig
 
 if TYPE_CHECKING:
@@ -88,12 +87,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         super().__init__(settings)
         self.logger = structlog.get_logger(__name__)
 
-        # Initialize semantic analyzer
-        self.semantic_analyzer = SemanticAnalyzer(
-            spacy_model="en_core_web_sm",
-            num_topics=settings.global_config.semantic_analysis.num_topics,
-            passes=settings.global_config.semantic_analysis.lda_passes,
-        )
+        # Note: Semantic analyzer is now handled intelligently in base class
+        # HTML content will get appropriate NLP processing based on content type
 
         # Cache for processed chunks
         self._processed_chunks = {}
@@ -668,40 +663,49 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             # Create chunked documents
             chunked_docs = []
+            valid_chunk_index = 0
             for i, chunk_meta in enumerate(chunks_to_process):
                 chunk_content = chunk_meta["content"]
+
+                # Validate chunk content before processing
+                if not chunk_content or not chunk_content.strip():
+                    self.logger.warning(f"Skipping empty chunk {i+1}")
+                    continue
+
+                # Extract text content for validation
+                try:
+                    soup = BeautifulSoup(chunk_content, "html.parser")
+                    text_content = soup.get_text(strip=True)
+                    if not text_content or len(text_content) < 5:
+                        self.logger.warning(
+                            f"Skipping chunk {i+1} with minimal text content: {repr(text_content)}"
+                        )
+                        continue
+                except Exception as e:
+                    self.logger.warning(f"Error validating chunk {i+1}: {e}")
+                    continue
+
                 self.logger.debug(
                     f"Processing chunk {i+1}/{len(chunks_to_process)}",
                     extra={
                         "chunk_size": len(chunk_content),
+                        "text_size": len(text_content),
                         "chunk_title": chunk_meta.get("title", "unknown"),
                         "chunk_tag": chunk_meta.get("tag_name", "unknown"),
                     },
                 )
 
-                # Create chunk document with optimized metadata processing
-                skip_nlp = len(chunk_content) > MAX_CHUNK_SIZE_FOR_NLP
-
-                if skip_nlp:
-                    # Create chunk without expensive NLP processing
-                    chunk_doc = self._create_optimized_chunk_document(
-                        original_doc=document,
-                        chunk_content=chunk_content,
-                        chunk_index=i,
-                        total_chunks=len(chunks_to_process),
-                        skip_nlp=True,
-                    )
-                else:
-                    # Use normal processing for smaller chunks
-                    chunk_doc = self._create_chunk_document(
-                        original_doc=document,
-                        chunk_content=chunk_content,
-                        chunk_index=i,
-                        total_chunks=len(chunks_to_process),
-                    )
+                # Create chunk document - base class will handle smart NLP decisions
+                chunk_doc = self._create_chunk_document(
+                    original_doc=document,
+                    chunk_content=chunk_content,
+                    chunk_index=valid_chunk_index,
+                    total_chunks=len(chunks_to_process),  # This will be updated at the end
+                    skip_nlp=False,  # Let base class decide based on content type
+                )
 
                 # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+                chunk_doc.id = Document.generate_chunk_id(document.id, valid_chunk_index)
 
                 # Add HTML-specific metadata
                 section_title = chunk_meta.get("title", self._extract_section_title(chunk_content))
@@ -715,14 +719,18 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                         "is_semantic": chunk_meta.get("tag_name", "") in self.section_elements,
                         "is_heading": chunk_meta.get("tag_name", "") in self.heading_elements,
                         "text_content": chunk_meta.get("text_content", ""),
-                        "chunk_index": i,
-                        "total_chunks": len(chunks_to_process),
+                        "chunk_index": valid_chunk_index,
+                        "total_chunks": len(chunks_to_process),  # This will be updated at the end
                         "parent_document_id": document.id,
-                        "nlp_skipped": skip_nlp,
                     }
                 )
 
                 chunked_docs.append(chunk_doc)
+                valid_chunk_index += 1
+
+            # Update total_chunks in all chunk metadata to reflect actual count
+            for chunk_doc in chunked_docs:
+                chunk_doc.metadata["total_chunks"] = len(chunked_docs)
 
             self.logger.info(
                 "Completed HTML chunking",
@@ -749,77 +757,6 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             )
             # Fallback to simple chunking on error
             return self._fallback_chunking(document)
-
-    def _create_optimized_chunk_document(
-        self,
-        original_doc: Document,
-        chunk_content: str,
-        chunk_index: int,
-        total_chunks: int,
-        skip_nlp: bool = False,
-    ) -> Document:
-        """Create a chunk document with optimized processing.
-
-        Args:
-            original_doc: Original document
-            chunk_content: Content of the chunk
-            chunk_index: Index of the chunk
-            total_chunks: Total number of chunks
-            skip_nlp: Whether to skip NLP processing
-
-        Returns:
-            Document: New document instance for the chunk
-        """
-        # Create enhanced metadata
-        metadata = original_doc.metadata.copy()
-        metadata.update(
-            {
-                "chunk_index": chunk_index,
-                "total_chunks": total_chunks,
-            }
-        )
-
-        if skip_nlp:
-            # Skip expensive NLP processing for large chunks
-            metadata.update(
-                {
-                    "entities": [],
-                    "pos_tags": [],
-                    "nlp_skipped": True,
-                    "skip_reason": "chunk_too_large",
-                }
-            )
-        else:
-            try:
-                # Process the chunk text to get additional features
-                processed = self._process_text(chunk_content)
-                metadata.update(
-                    {
-                        "entities": processed["entities"],
-                        "pos_tags": processed["pos_tags"],
-                        "nlp_skipped": False,
-                    }
-                )
-            except Exception as e:
-                self.logger.warning(f"NLP processing failed for chunk {chunk_index}: {e}")
-                metadata.update(
-                    {
-                        "entities": [],
-                        "pos_tags": [],
-                        "nlp_skipped": True,
-                        "skip_reason": "nlp_error",
-                    }
-                )
-
-        return Document(
-            content=chunk_content,
-            metadata=metadata,
-            source=original_doc.source,
-            source_type=original_doc.source_type,
-            url=original_doc.url,
-            title=original_doc.title,
-            content_type=original_doc.content_type,
-        )
 
     def _fallback_chunking(self, document: Document) -> List[Document]:
         """Simple fallback chunking when the main strategy fails.
@@ -868,22 +805,33 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             # Create chunked documents
             chunked_docs = []
+            valid_chunk_index = 0
             for i, chunk_content in enumerate(chunks):
-                # Use optimized chunk creation for fallback
-                chunk_doc = self._create_optimized_chunk_document(
+                # Validate chunk content
+                if not chunk_content or not chunk_content.strip():
+                    self.logger.warning(f"Skipping empty fallback chunk {i+1}")
+                    continue
+
+                # Use base class chunk creation
+                chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,
-                    chunk_index=i,
-                    total_chunks=len(chunks),
-                    skip_nlp=len(chunk_content) > MAX_CHUNK_SIZE_FOR_NLP,
+                    chunk_index=valid_chunk_index,
+                    total_chunks=len(chunks),  # Will be updated at the end
+                    skip_nlp=False,  # Let base class decide
                 )
 
                 # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+                chunk_doc.id = Document.generate_chunk_id(document.id, valid_chunk_index)
                 chunk_doc.metadata["parent_document_id"] = document.id
                 chunk_doc.metadata["chunking_method"] = "fallback_html"
 
                 chunked_docs.append(chunk_doc)
+                valid_chunk_index += 1
+
+            # Update total_chunks in all chunk metadata to reflect actual count
+            for chunk_doc in chunked_docs:
+                chunk_doc.metadata["total_chunks"] = len(chunked_docs)
 
             return chunked_docs
 
@@ -916,5 +864,4 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
     def __del__(self):
         self.shutdown()
-        if hasattr(self, "semantic_analyzer"):
-            self.semantic_analyzer.clear_cache()
+        # Note: semantic_analyzer is now handled in base class
