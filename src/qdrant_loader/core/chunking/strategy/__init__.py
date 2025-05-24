@@ -9,10 +9,12 @@ from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrat
 from qdrant_loader.core.chunking.strategy.default_strategy import DefaultChunkingStrategy
 from qdrant_loader.core.chunking.strategy.markdown_strategy import MarkdownChunkingStrategy
 from qdrant_loader.core.chunking.strategy.html_strategy import HTMLChunkingStrategy
+from qdrant_loader.core.chunking.strategy.code_strategy import CodeChunkingStrategy
 
 __all__ = [
     "BaseChunkingStrategy",
     "DefaultChunkingStrategy",
     "MarkdownChunkingStrategy",
     "HTMLChunkingStrategy",
+    "CodeChunkingStrategy",
 ]
