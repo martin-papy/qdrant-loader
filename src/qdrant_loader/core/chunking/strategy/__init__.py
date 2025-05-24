@@ -10,6 +10,7 @@ from qdrant_loader.core.chunking.strategy.default_strategy import DefaultChunkin
 from qdrant_loader.core.chunking.strategy.markdown_strategy import MarkdownChunkingStrategy
 from qdrant_loader.core.chunking.strategy.html_strategy import HTMLChunkingStrategy
 from qdrant_loader.core.chunking.strategy.code_strategy import CodeChunkingStrategy
+from qdrant_loader.core.chunking.strategy.json_strategy import JSONChunkingStrategy
 
 __all__ = [
     "BaseChunkingStrategy",
@@ -17,4 +18,5 @@ __all__ = [
     "MarkdownChunkingStrategy",
     "HTMLChunkingStrategy",
     "CodeChunkingStrategy",
+    "JSONChunkingStrategy",
 ]
