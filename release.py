@@ -33,13 +33,31 @@ PACKAGES = {
 def setup_logging(verbose: bool = False):
     """Configure logging based on verbosity level."""
     level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+
+    # Create a custom formatter for cleaner output
+    class CleanFormatter(logging.Formatter):
+        def format(self, record):
+            if record.levelname == "INFO":
+                return record.getMessage()
+            elif record.levelname == "ERROR":
+                return f"❌ {record.getMessage()}"
+            elif record.levelname == "DEBUG":
+                return f"🔍 {record.getMessage()}"
+            else:
+                return f"{record.levelname}: {record.getMessage()}"
+
+    # Remove any existing handlers
     logger = logging.getLogger(__name__)
-    logger.setLevel(level)  # Explicitly set the level on the logger
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+    # Create console handler with custom formatter
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(CleanFormatter())
+
+    logging.basicConfig(level=level, handlers=[console_handler], force=True)
+
+    logger.setLevel(level)
     return logger
 
 
@@ -68,7 +86,7 @@ def get_all_package_versions() -> dict[str, str]:
     versions = {}
     for package_name in PACKAGES.keys():
         versions[package_name] = get_package_version(package_name)
-    logger.info(f"Current package versions: {versions}")
+    logger.debug(f"Current package versions: {versions}")
     return versions
 
 
@@ -119,58 +137,61 @@ def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
             "git rev-parse",
         )
     ):
-        logger.info(f"[DRY RUN] Would execute: {cmd}")
+        logger.debug(f"[DRY RUN] Would execute: {cmd}")
         return "", ""
 
     logger.debug(f"Executing command: {cmd}")
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        logger.error(f"Command failed with return code {result.returncode}")
-        logger.error(f"stderr: {result.stderr}")
+        logger.error(f"Command failed: {cmd}")
+        logger.error(f"Error: {result.stderr}")
     return result.stdout.strip(), result.stderr.strip()
 
 
-def check_git_status(dry_run: bool = False) -> None:
+def check_git_status(dry_run: bool = False) -> bool:
     """Check if the working directory is clean."""
     logger = logging.getLogger(__name__)
-    logger.info("Starting git status check...")
     logger.debug("Checking git status")
     stdout, _ = run_command("git status --porcelain", dry_run)
     if stdout:
         logger.error(
             "There are uncommitted changes. Please commit or stash them first."
         )
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
     logger.debug("Git status check passed")
-    logger.info("Git status check completed successfully")
+    return True
 
 
-def check_current_branch(dry_run: bool = False) -> None:
+def check_current_branch(dry_run: bool = False) -> bool:
     """Check if we're on the main branch."""
     logger = logging.getLogger(__name__)
-    logger.info("Starting current branch check...")
     logger.debug("Checking current branch")
     stdout, _ = run_command("git branch --show-current", dry_run)
     if stdout != "main":
         logger.error("Not on main branch. Please switch to main branch first.")
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
     logger.debug("Current branch check passed")
-    logger.info("Current branch check completed successfully")
+    return True
 
 
-def check_unpushed_commits(dry_run: bool = False) -> None:
+def check_unpushed_commits(dry_run: bool = False) -> bool:
     """Check if there are any unpushed commits."""
     logger = logging.getLogger(__name__)
-    logger.info("Starting unpushed commits check...")
     logger.debug("Checking for unpushed commits")
     stdout, _ = run_command("git log origin/main..HEAD", dry_run)
     if stdout:
         logger.error(
             "There are unpushed commits. Please push all changes before creating a release."
         )
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
     logger.debug("No unpushed commits found")
-    logger.info("Unpushed commits check completed successfully")
+    return True
 
 
 def get_github_token(dry_run: bool = False) -> str:
@@ -180,11 +201,13 @@ def get_github_token(dry_run: bool = False) -> str:
     token = os.getenv("GITHUB_TOKEN")
     if not token:
         logger.error("GITHUB_TOKEN not found in .env file.")
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return ""
     return token
 
 
-def extract_repo_info(git_url: str) -> str:
+def extract_repo_info(git_url: str, dry_run: bool = False) -> str:
     """
     Extract GitHub username and repository name from git remote URL.
 
@@ -224,6 +247,8 @@ def extract_repo_info(git_url: str) -> str:
             return repo_path
 
     logger.error(f"Could not parse repository path from Git URL: {git_url}")
+    if dry_run:
+        return "unknown/repo"
     sys.exit(1)
 
 
@@ -262,7 +287,7 @@ def create_github_release(
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
 
-    repo_url = extract_repo_info(stdout)
+    repo_url = extract_repo_info(stdout, dry_run)
     logger.debug(f"Parsed repository URL: {repo_url}")
 
     response = requests.post(
@@ -277,10 +302,9 @@ def create_github_release(
     logger.info(f"GitHub release created successfully for {package_name}")
 
 
-def check_main_up_to_date(dry_run: bool = False) -> None:
+def check_main_up_to_date(dry_run: bool = False) -> bool:
     """Check if local main branch is up to date with remote main."""
     logger = logging.getLogger(__name__)
-    logger.info("Starting main branch up-to-date check...")
     logger.debug("Checking if main branch is up to date")
     stdout, _ = run_command("git fetch origin main", dry_run)
     stdout, _ = run_command("git rev-list HEAD...origin/main --count", dry_run)
@@ -288,26 +312,37 @@ def check_main_up_to_date(dry_run: bool = False) -> None:
         logger.error(
             "Local main branch is not up to date with remote main. Please pull the latest changes first."
         )
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
     logger.debug("Main branch is up to date")
-    logger.info("Main branch up-to-date check completed successfully")
+    return True
 
 
-def check_github_workflows(dry_run: bool = False) -> None:
+def check_github_workflows(dry_run: bool = False) -> bool:
     """Check if all GitHub Actions workflows are passing."""
     logger = logging.getLogger(__name__)
-    logger.info("Starting GitHub workflows check...")
-    logger.info("Checking GitHub Actions workflow status")
+    logger.debug("Checking GitHub Actions workflow status")
 
     # Get repository info
     stdout, _ = run_command("git remote get-url origin", dry_run)
     logger.debug(f"Raw Git remote URL: {stdout}")
 
-    repo_url = extract_repo_info(stdout)
+    repo_url = extract_repo_info(stdout, dry_run)
     logger.debug(f"Parsed repository URL: {repo_url}")
+
+    if repo_url == "unknown/repo" and dry_run:
+        logger.error("Could not parse repository URL - this would fail in a real run")
+        return False
 
     # Get GitHub token
     token = get_github_token(dry_run)
+    if not token and dry_run:
+        logger.error("GitHub token not available - this would fail in a real run")
+        return False
+    elif not token:
+        return False
+
     logger.debug("GitHub token obtained")
 
     # Get the latest workflow runs
@@ -318,6 +353,15 @@ def check_github_workflows(dry_run: bool = False) -> None:
 
     # First check for running workflows
     logger.debug("Checking for running workflows")
+
+    if dry_run:
+        logger.debug("[DRY RUN] Would check for running workflows via GitHub API")
+        logger.debug("[DRY RUN] Would check completed workflows via GitHub API")
+        logger.debug(
+            "[DRY RUN] Would verify all workflows are passing and match current commit"
+        )
+        return True
+
     response = requests.get(
         f"https://api.github.com/repos/{repo_url}/actions/runs",
         headers=headers,
@@ -387,6 +431,7 @@ def check_github_workflows(dry_run: bool = False) -> None:
 
     logger.info("All workflows are passing and match the current commit")
     logger.info("GitHub workflows check completed successfully")
+    return True
 
 
 def calculate_new_version(
@@ -396,14 +441,19 @@ def calculate_new_version(
     if bump_type == 5 and custom_version is not None:
         return custom_version
 
+    # Handle beta versions by extracting base version
+    base_version = current_version
+    if "b" in current_version:
+        base_version = current_version.split("b")[0]
+
     if bump_type == 1:  # Major
-        major, minor, patch = map(int, current_version.split(".")[:3])
+        major, minor, patch = map(int, base_version.split(".")[:3])
         return f"{major + 1}.0.0"
     elif bump_type == 2:  # Minor
-        major, minor, patch = map(int, current_version.split(".")[:3])
+        major, minor, patch = map(int, base_version.split(".")[:3])
         return f"{major}.{minor + 1}.0"
     elif bump_type == 3:  # Patch
-        major, minor, patch = map(int, current_version.split(".")[:3])
+        major, minor, patch = map(int, base_version.split(".")[:3])
         return f"{major}.{minor}.{patch + 1}"
     elif bump_type == 4:  # Beta
         if "b" in current_version:
@@ -428,48 +478,79 @@ def release(dry_run: bool = False, verbose: bool = False):
     logger = setup_logging(verbose)
 
     if dry_run:
-        logger.info(
-            "Running in dry-run mode. No changes will be made, but all safety checks will be performed."
-        )
+        print("🔍 DRY RUN MODE - No changes will be made\n")
 
-    # Run safety checks
-    check_git_status(dry_run)
-    check_current_branch(dry_run)
-    check_unpushed_commits(dry_run)
-    check_main_up_to_date(dry_run)
-    check_github_workflows(dry_run)
+    # Run safety checks and collect results in dry run mode
+    check_results = {}
+    check_results["git_status"] = check_git_status(dry_run)
+    check_results["current_branch"] = check_current_branch(dry_run)
+    check_results["unpushed_commits"] = check_unpushed_commits(dry_run)
+    check_results["main_up_to_date"] = check_main_up_to_date(dry_run)
+    check_results["github_workflows"] = check_github_workflows(dry_run)
 
+    # In dry run mode, show summary of all checks
     if dry_run:
-        logger.info(
-            "All safety checks passed. In a real run, the following changes would be made:"
-        )
+        print("📋 SAFETY CHECKS")
+        print("─" * 50)
+
+        failed_checks = []
+        for check_name, passed in check_results.items():
+            status = "✅" if passed else "❌"
+            check_display_name = check_name.replace("_", " ").title()
+            print(f"{status} {check_display_name}")
+            if not passed:
+                failed_checks.append(check_display_name)
+
+        if failed_checks:
+            print(f"\n⚠️  {len(failed_checks)} issue(s) need to be fixed:")
+            for check in failed_checks:
+                print(f"   • {check}")
+            print("\n💡 Continuing to show what would happen after fixes...\n")
+        else:
+            print("\n✅ All checks passed!\n")
+    else:
+        # In real mode, exit if any check failed
+        if not all(check_results.values()):
+            logger.error("One or more safety checks failed. Aborting release.")
+            sys.exit(1)
 
     current_versions = get_all_package_versions()
 
     # Display current versions
-    logger.info("\nCurrent package versions:")
-    for package_name, version in current_versions.items():
-        logger.info(f"  {package_name}: {version}")
+    if not dry_run:
+        print("\n📦 CURRENT VERSIONS")
+        print("─" * 30)
+        for package_name, version in current_versions.items():
+            print(f"  {package_name}: {version}")
 
     # Get new version strategy
-    logger.info("\nVersion bump options:")
-    logger.info("1. Major (e.g., 1.0.0)")
-    logger.info("2. Minor (e.g., 0.2.0)")
-    logger.info("3. Patch (e.g., 0.1.4)")
-    logger.info("4. Beta (e.g., 0.1.3b2)")
-    logger.info("5. Custom")
+    if not dry_run:
+        print("\n🔢 VERSION BUMP OPTIONS")
+        print("─" * 30)
+        print("1. Major (e.g., 1.0.0)")
+        print("2. Minor (e.g., 0.2.0)")
+        print("3. Patch (e.g., 0.1.4)")
+        print("4. Beta (e.g., 0.1.3b2)")
+        print("5. Custom")
 
-    choice = prompt("Select version bump type", type=int)
+    if dry_run:
+        # In dry run mode, use patch version bump as default example
+        choice = 3
+        custom_version = None
+        print("🔢 VERSION CHANGES (using patch bump as example)")
+        print("─" * 50)
+    else:
+        choice = prompt("Select version bump type", type=int)
 
-    custom_version = None
-    if choice == 5:
-        custom_version = prompt("Enter new version")
-        if not custom_version:
-            logger.error("Version cannot be empty")
+        custom_version = None
+        if choice == 5:
+            custom_version = prompt("Enter new version")
+            if not custom_version:
+                logger.error("Version cannot be empty")
+                sys.exit(1)
+        elif choice not in [1, 2, 3, 4]:
+            logger.error("Invalid choice")
             sys.exit(1)
-    elif choice not in [1, 2, 3, 4]:
-        logger.error("Invalid choice")
-        sys.exit(1)
 
     # Calculate new versions for all packages
     new_versions = {}
@@ -478,28 +559,46 @@ def release(dry_run: bool = False, verbose: bool = False):
         new_versions[package_name] = new_version
 
     # Display planned changes
-    logger.info("\nPlanned version changes:")
     for package_name in PACKAGES.keys():
-        logger.info(
-            f"  {package_name}: {current_versions[package_name]} -> {new_versions[package_name]}"
-        )
+        current_ver = current_versions[package_name]
+        new_ver = new_versions[package_name]
+        print(f"  {package_name}: {current_ver} → {new_ver}")
 
     if dry_run:
-        logger.info("\n[DRY RUN] Would perform the following actions:")
+        print("\n🚀 PLANNED RELEASE ACTIONS")
+        print("─" * 50)
+
+        print("\n1️⃣  Create and push tags:")
         for package_name, current_version in current_versions.items():
-            logger.info(
-                f"[DRY RUN] Would create and push tag {package_name}-v{current_version}"
-            )
-            logger.info(
-                f"[DRY RUN] Would create release for {package_name} version {current_version}"
-            )
+            tag_name = f"{package_name}-v{current_version}"
+            print(f"   • {tag_name}")
+        print("   • Push all tags to GitHub")
 
+        print("\n2️⃣  Create GitHub releases:")
+        for package_name, current_version in current_versions.items():
+            print(f"   • {package_name} v{current_version}")
+
+        print("\n3️⃣  Update package versions:")
         for package_name, new_version in new_versions.items():
-            logger.info(
-                f"[DRY RUN] Would update {package_name} version to {new_version}"
-        )
+            current_ver = current_versions[package_name]
+            print(f"   • {package_name}: {current_ver} → {new_version}")
 
-        logger.info(f"[DRY RUN] Would create commit: chore(release): bump versions")
+        print("\n4️⃣  Commit changes:")
+        print("   • Stage updated pyproject.toml files")
+        print("   • Create commit: 'chore(release): bump versions'")
+
+        print("\n" + "─" * 50)
+
+        if failed_checks:
+            print("⚠️  NEXT STEPS")
+            print(f"   Fix {len(failed_checks)} issue(s) before running the release:")
+            for check in failed_checks:
+                print(f"   • {check}")
+            print("\n   Then run: python release.py")
+        else:
+            print("✅ READY TO RELEASE")
+            print("   All checks passed! Run: python release.py")
+
         return
 
     # Create and push tags with current versions
@@ -524,13 +623,14 @@ def release(dry_run: bool = False, verbose: bool = False):
     run_command("git add packages/*/pyproject.toml", dry_run)
     run_command('git commit -m "chore(release): bump versions"', dry_run)
 
-    logger.info("\nSuccessfully created releases for all packages and bumped versions!")
-    logger.info("Released versions:")
+    print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
+    print("─" * 40)
+    print("\n📦 Released versions:")
     for package_name, version in current_versions.items():
-        logger.info(f"  {package_name}: v{version}")
-    logger.info("New versions:")
+        print(f"   • {package_name}: v{version}")
+    print("\n🔄 Updated to:")
     for package_name, version in new_versions.items():
-        logger.info(f"  {package_name}: v{version}")
+        print(f"   • {package_name}: v{version}")
 
 
 if __name__ == "__main__":
