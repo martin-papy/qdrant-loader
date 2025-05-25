@@ -8,7 +8,9 @@ import tomli
 import tomli_w
 
 # Add the project root to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
+)
 
 # Import the functions we want to test
 from release import (

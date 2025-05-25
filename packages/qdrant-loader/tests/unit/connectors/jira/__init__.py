@@ -1,1 +1,0 @@
-"""Jira connector tests."""

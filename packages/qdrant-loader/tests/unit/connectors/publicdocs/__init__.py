@@ -1,1 +1,0 @@
-"""Public docs connector tests."""

@@ -60,7 +60,15 @@ Content for subsection 1.1.
 ## Section 2
 Content for section 2.
 """
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
@@ -80,7 +88,15 @@ Content for section 2.
 def test_chunk_document_without_headers(markdown_strategy):
     """Test chunking a document without headers."""
     content = "This is a document without headers.\nIt has multiple lines."
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
@@ -97,7 +113,15 @@ This section has a [link](https://example.com) and a reference to [Section 2](#s
 # Section 2
 This section has a reference back to [Section 1](#section-1).
 """
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
@@ -111,7 +135,15 @@ def test_chunk_document_with_entities(markdown_strategy):
     content = """# Introduction
 This document mentions Google and Microsoft, which are companies in the United States.
 """
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
@@ -137,7 +169,15 @@ Content for subsubsection 1.1.
 ## Subsection 2
 Content for subsection 2.
 """
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
@@ -156,7 +196,15 @@ Content for section 1.
 # Section 2
 Content for section 2.
 """
-    document = Document(content=content, source="test.md", source_type="markdown")
+    document = Document(
+        content=content,
+        source="test.md",
+        source_type="markdown",
+        url="file://test.md",
+        content_type="text/markdown",
+        title="Test Document",
+        metadata={},
+    )
 
     chunks = markdown_strategy.chunk_document(document)
 
