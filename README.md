@@ -151,6 +151,7 @@ mypy packages/
 
 - [QDrant Loader Documentation](./packages/qdrant-loader/README.md)
 - [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
+- [Release Management Guide](./docs/RELEASE.md)
 - [Features Overview](./docs/Features.md)
 - [Client Usage Guide](./docs/ClientUsage.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
@@ -190,10 +191,27 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🏷️ Releases
 
-Both packages are versioned independently:
+Both packages use **unified versioning** - they always have the same version number:
 
 - **qdrant-loader**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 - **qdrant-loader-mcp-server**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
+
+### Release Management
+
+Use the `release.py` script to manage releases:
+
+```bash
+# Check release readiness (dry run)
+python release.py --dry-run
+
+# Sync package versions if needed
+python release.py --sync-versions
+
+# Create a new release
+python release.py
+```
+
+The script performs comprehensive safety checks and ensures both packages are released with the same version number.
 
 ## 🌟 Features
 

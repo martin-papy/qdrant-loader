@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved to monorepo structure under `packages/qdrant-loader/`
 - Updated license from GPL-3.0 to Apache-2.0
 - Improved project structure and organization
+- **BREAKING**: Implemented unified versioning across all packages in the monorepo
+- Enhanced release process with comprehensive safety checks and dry-run capabilities
 
 ## [0.2.0b2] - 2024-01-XX
 

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated license from GPL-3.0 to Apache-2.0
 - Improved project structure and organization
 - Added dependency on qdrant-loader package for shared functionality
+- **BREAKING**: Implemented unified versioning with qdrant-loader package
+- Enhanced release process with comprehensive safety checks and dry-run capabilities
 
 ## [0.1.0] - 2024-01-XX
 
