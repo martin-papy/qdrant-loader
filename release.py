@@ -80,13 +80,35 @@ def get_package_version(package_name: str) -> str:
     return version
 
 
+def get_current_version() -> str:
+    """Get the current version from the main package."""
+    logger = logging.getLogger(__name__)
+    # Use qdrant-loader as the source of truth for version
+    main_package = "qdrant-loader"
+    version = get_package_version(main_package)
+    logger.debug(f"Current version: {version}")
+    return version
+
+
 def get_all_package_versions() -> dict[str, str]:
-    """Get current versions for all packages."""
+    """Get current versions for all packages (should all be the same)."""
     logger = logging.getLogger(__name__)
     versions = {}
     for package_name in PACKAGES.keys():
         versions[package_name] = get_package_version(package_name)
     logger.debug(f"Current package versions: {versions}")
+
+    # Check if all versions are the same
+    unique_versions = set(versions.values())
+    if len(unique_versions) > 1:
+        logger.error(
+            f"❌ Version mismatch detected! All packages should have the same version."
+        )
+        for package_name, version in versions.items():
+            logger.error(f"   {package_name}: {version}")
+        logger.error("Please sync all package versions before running the release.")
+        sys.exit(1)
+
     return versions
 
 
@@ -121,6 +143,14 @@ def update_all_package_versions(
     logger = logging.getLogger(__name__)
     for package_name, new_version in new_versions.items():
         update_package_version(package_name, new_version, dry_run)
+
+
+def sync_all_package_versions(target_version: str, dry_run: bool = False) -> None:
+    """Sync all packages to the same version."""
+    logger = logging.getLogger(__name__)
+    logger.info(f"Syncing all packages to version {target_version}")
+    for package_name in PACKAGES.keys():
+        update_package_version(package_name, target_version, dry_run)
 
 
 def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
@@ -472,10 +502,48 @@ def calculate_new_version(
     help="Simulate the release process without making any changes",
 )
 @option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-def release(dry_run: bool = False, verbose: bool = False):
-    """Create a new release and bump version for both packages."""
+@option(
+    "--sync-versions",
+    is_flag=True,
+    help="Sync all packages to the same version (uses qdrant-loader as source of truth)",
+)
+def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = False):
+    """Create a new release with unified versioning for all packages.
+
+    All packages will always have the same version number. The qdrant-loader
+    package is used as the source of truth for the current version.
+    """
     # Setup logging
     logger = setup_logging(verbose)
+
+    # Handle version sync if requested
+    if sync_versions:
+        print("🔄 SYNCING PACKAGE VERSIONS")
+        print("─" * 40)
+
+        # Get the source version from qdrant-loader
+        source_version = get_package_version("qdrant-loader")
+        print(f"Using qdrant-loader version as source: {source_version}")
+
+        if dry_run:
+            print("\n[DRY RUN] Would sync all packages to this version:")
+            for package_name in PACKAGES.keys():
+                current_ver = get_package_version(package_name)
+                if current_ver != source_version:
+                    print(f"   • {package_name}: {current_ver} → {source_version}")
+                else:
+                    print(f"   • {package_name}: {current_ver} (already synced)")
+        else:
+            print("\nSyncing packages...")
+            sync_all_package_versions(source_version, dry_run)
+            run_command("git add packages/*/pyproject.toml", dry_run)
+            run_command(
+                f'git commit -m "chore: sync all packages to version {source_version}"',
+                dry_run,
+            )
+            print("✅ All packages synced successfully!")
+
+        return
 
     if dry_run:
         print("🔍 DRY RUN MODE - No changes will be made\n")
@@ -515,13 +583,13 @@ def release(dry_run: bool = False, verbose: bool = False):
             sys.exit(1)
 
     current_versions = get_all_package_versions()
+    current_version = get_current_version()
 
-    # Display current versions
+    # Display current version
     if not dry_run:
-        print("\n📦 CURRENT VERSIONS")
+        print(f"\n📦 CURRENT VERSION: {current_version}")
         print("─" * 30)
-        for package_name, version in current_versions.items():
-            print(f"  {package_name}: {version}")
+        print("All packages use the same version:")
 
     # Get new version strategy
     if not dry_run:
@@ -537,7 +605,7 @@ def release(dry_run: bool = False, verbose: bool = False):
         # In dry run mode, use patch version bump as default example
         choice = 3
         custom_version = None
-        print("🔢 VERSION CHANGES (using patch bump as example)")
+        print("🔢 VERSION CHANGE (using patch bump as example)")
         print("─" * 50)
     else:
         choice = prompt("Select version bump type", type=int)
@@ -552,36 +620,33 @@ def release(dry_run: bool = False, verbose: bool = False):
             logger.error("Invalid choice")
             sys.exit(1)
 
-    # Calculate new versions for all packages
+    # Calculate new version (same for all packages)
+    new_version = calculate_new_version(current_version, choice, custom_version)
+
+    # Apply the same version to all packages
     new_versions = {}
-    for package_name, current_version in current_versions.items():
-        new_version = calculate_new_version(current_version, choice, custom_version)
+    for package_name in PACKAGES.keys():
         new_versions[package_name] = new_version
 
-    # Display planned changes
-    for package_name in PACKAGES.keys():
-        current_ver = current_versions[package_name]
-        new_ver = new_versions[package_name]
-        print(f"  {package_name}: {current_ver} → {new_ver}")
+    # Display planned change
+    print(f"All packages: {current_version} → {new_version}")
 
     if dry_run:
         print("\n🚀 PLANNED RELEASE ACTIONS")
         print("─" * 50)
 
         print("\n1️⃣  Create and push tags:")
-        for package_name, current_version in current_versions.items():
+        for package_name in PACKAGES.keys():
             tag_name = f"{package_name}-v{current_version}"
             print(f"   • {tag_name}")
         print("   • Push all tags to GitHub")
 
         print("\n2️⃣  Create GitHub releases:")
-        for package_name, current_version in current_versions.items():
+        for package_name in PACKAGES.keys():
             print(f"   • {package_name} v{current_version}")
 
         print("\n3️⃣  Update package versions:")
-        for package_name, new_version in new_versions.items():
-            current_ver = current_versions[package_name]
-            print(f"   • {package_name}: {current_ver} → {new_version}")
+        print(f"   • All packages: {current_version} → {new_version}")
 
         print("\n4️⃣  Commit changes:")
         print("   • Stage updated pyproject.toml files")
@@ -601,8 +666,8 @@ def release(dry_run: bool = False, verbose: bool = False):
 
         return
 
-    # Create and push tags with current versions
-    for package_name, current_version in current_versions.items():
+    # Create and push tags with current version
+    for package_name in PACKAGES.keys():
         tag_name = f"{package_name}-v{current_version}"
         run_command(
             f'git tag -a {tag_name} -m "Release {package_name} v{current_version}"',
@@ -611,9 +676,9 @@ def release(dry_run: bool = False, verbose: bool = False):
 
     run_command("git push origin main --tags", dry_run)
 
-    # Create GitHub releases with current versions
+    # Create GitHub releases with current version
     token = get_github_token(dry_run)
-    for package_name, current_version in current_versions.items():
+    for package_name in PACKAGES.keys():
         create_github_release(package_name, current_version, token, dry_run)
 
     # Update versions for all packages
@@ -625,12 +690,10 @@ def release(dry_run: bool = False, verbose: bool = False):
 
     print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
     print("─" * 40)
-    print("\n📦 Released versions:")
-    for package_name, version in current_versions.items():
-        print(f"   • {package_name}: v{version}")
-    print("\n🔄 Updated to:")
-    for package_name, version in new_versions.items():
-        print(f"   • {package_name}: v{version}")
+    print(f"\n📦 Released version: v{current_version}")
+    print("   All packages released with the same version")
+    print(f"\n🔄 Updated to: v{new_version}")
+    print("   All packages now have the same new version")
 
 
 if __name__ == "__main__":

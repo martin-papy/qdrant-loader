@@ -231,16 +231,84 @@ When reporting issues:
 
 ## 🏷️ Release Process
 
-Releases are handled automatically via GitHub Actions:
+This project uses **unified versioning** - both packages always have the same version number. Releases are managed using the `release.py` script with comprehensive safety checks.
 
-1. **Create a release tag**:
-   - For loader: `qdrant-loader-vX.Y.Z`
-   - For MCP server: `qdrant-loader-mcp-server-vX.Y.Z`
+### Prerequisites
 
-2. **GitHub Actions will**:
-   - Run all tests
-   - Build the package
-   - Publish to PyPI
+1. **Environment Setup**:
+
+   ```bash
+   # Ensure you have a GitHub token in .env
+   echo "GITHUB_TOKEN=your_token_here" >> .env
+   ```
+
+2. **Clean Working Directory**:
+   - All changes must be committed
+   - No unpushed commits
+   - Local main branch up to date with remote
+   - All GitHub Actions workflows passing
+
+### Release Steps
+
+1. **Check Release Readiness**:
+
+   ```bash
+   # Dry run to see what would happen
+   python release.py --dry-run
+   ```
+
+2. **Sync Package Versions** (if needed):
+
+   ```bash
+   # Sync all packages to the same version
+   python release.py --sync-versions
+   ```
+
+3. **Create the Release**:
+
+   ```bash
+   # Interactive release process
+   python release.py
+   ```
+
+### Release Script Features
+
+The `release.py` script provides:
+
+- **Safety Checks**: Git status, branch, workflows, and more
+- **Unified Versioning**: Ensures both packages have the same version
+- **Dry Run Mode**: Preview changes without making them
+- **Version Sync**: Automatically sync package versions
+- **GitHub Integration**: Creates releases and tags automatically
+- **User-Friendly Output**: Clear, actionable feedback
+
+### Version Bump Options
+
+When creating a release, you can choose:
+
+1. **Major** (e.g., 1.0.0) - Breaking changes
+2. **Minor** (e.g., 0.2.0) - New features
+3. **Patch** (e.g., 0.1.4) - Bug fixes
+4. **Beta** (e.g., 0.1.3b2) - Pre-release versions
+5. **Custom** - Specify exact version
+
+### Automated Actions
+
+The script automatically:
+
+1. **Creates Git tags** for both packages
+2. **Pushes tags** to GitHub
+3. **Creates GitHub releases** with release notes
+4. **Updates package versions** in pyproject.toml files
+5. **Commits version changes** to the repository
+
+### GitHub Actions Integration
+
+After the release script completes, GitHub Actions will:
+
+- Run all tests
+- Build the packages
+- Publish to PyPI
 
 ## 🤝 Community Guidelines
 
@@ -251,6 +319,7 @@ Releases are handled automatically via GitHub Actions:
 
 ## 📚 Additional Resources
 
+- [Release Management Guide](./RELEASE.md) - Comprehensive release documentation
 - [QDrant Loader Documentation](../packages/qdrant-loader/README.md)
 - [MCP Server Documentation](../packages/qdrant-loader-mcp-server/README.md)
 - [Project Issues](https://github.com/martin-papy/qdrant-loader/issues)
