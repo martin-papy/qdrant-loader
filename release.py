@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import requests
 import tomli
@@ -15,46 +16,93 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv(override=False)
 
+# Package definitions
+PACKAGES = {
+    "qdrant-loader": {
+        "path": "packages/qdrant-loader",
+        "pyproject": "packages/qdrant-loader/pyproject.toml",
+    },
+    "qdrant-loader-mcp-server": {
+        "path": "packages/qdrant-loader-mcp-server",
+        "pyproject": "packages/qdrant-loader-mcp-server/pyproject.toml",
+    },
+}
+
 
 # Configure logging
 def setup_logging(verbose: bool = False):
     """Configure logging based on verbosity level."""
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
-        level=level, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        level=level,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)
     logger.setLevel(level)  # Explicitly set the level on the logger
     return logger
 
 
-def get_current_version() -> str:
-    """Get the current version from pyproject.toml."""
+def get_package_version(package_name: str) -> str:
+    """Get the current version from a package's pyproject.toml."""
     logger = logging.getLogger(__name__)
-    logger.debug("Reading current version from pyproject.toml")
-    with open("pyproject.toml", "rb") as f:
+    pyproject_path = PACKAGES[package_name]["pyproject"]
+    logger.debug(f"Reading current version from {pyproject_path}")
+
+    if not Path(pyproject_path).exists():
+        logger.error(
+            f"Package {package_name} pyproject.toml not found at {pyproject_path}"
+        )
+        sys.exit(1)
+
+    with open(pyproject_path, "rb") as f:
         pyproject = tomli.load(f)
     version = pyproject["project"]["version"]
-    logger.debug(f"Current version: {version}")
+    logger.debug(f"Current version for {package_name}: {version}")
     return version
 
 
-def update_version(new_version: str, dry_run: bool = False) -> None:
-    """Update the version in pyproject.toml."""
+def get_all_package_versions() -> dict[str, str]:
+    """Get current versions for all packages."""
     logger = logging.getLogger(__name__)
+    versions = {}
+    for package_name in PACKAGES.keys():
+        versions[package_name] = get_package_version(package_name)
+    logger.info(f"Current package versions: {versions}")
+    return versions
+
+
+def update_package_version(
+    package_name: str, new_version: str, dry_run: bool = False
+) -> None:
+    """Update the version in a package's pyproject.toml."""
+    logger = logging.getLogger(__name__)
+    pyproject_path = PACKAGES[package_name]["pyproject"]
+
     if dry_run:
-        logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
+        logger.info(
+            f"[DRY RUN] Would update version in {pyproject_path} to {new_version}"
+        )
         return
 
-    logger.info(f"Updating version in pyproject.toml to {new_version}")
-    with open("pyproject.toml", "rb") as f:
+    logger.info(f"Updating version in {pyproject_path} to {new_version}")
+    with open(pyproject_path, "rb") as f:
         pyproject = tomli.load(f)
 
     pyproject["project"]["version"] = new_version
 
-    with open("pyproject.toml", "wb") as f:
+    with open(pyproject_path, "wb") as f:
         tomli_w.dump(pyproject, f)
-    logger.debug("Version updated successfully")
+    logger.debug(f"Version updated successfully for {package_name}")
+
+
+def update_all_package_versions(
+    new_versions: dict[str, str], dry_run: bool = False
+) -> None:
+    """Update versions for all packages."""
+    logger = logging.getLogger(__name__)
+    for package_name, new_version in new_versions.items():
+        update_package_version(package_name, new_version, dry_run)
 
 
 def run_command(cmd: str, dry_run: bool = False) -> tuple[str, str]:
@@ -89,7 +137,9 @@ def check_git_status(dry_run: bool = False) -> None:
     logger.debug("Checking git status")
     stdout, _ = run_command("git status --porcelain", dry_run)
     if stdout:
-        logger.error("There are uncommitted changes. Please commit or stash them first.")
+        logger.error(
+            "There are uncommitted changes. Please commit or stash them first."
+        )
         sys.exit(1)
     logger.debug("Git status check passed")
     logger.info("Git status check completed successfully")
@@ -145,7 +195,9 @@ def extract_repo_info(git_url: str) -> str:
 
     # Handle HTTPS URLs: https://github.com/username/repo.git
     if git_url.startswith("https://github.com/"):
-        parts = git_url.replace("https://github.com/", "").replace(".git", "").split("/")
+        parts = (
+            git_url.replace("https://github.com/", "").replace(".git", "").split("/")
+        )
         if len(parts) >= 2:
             repo_path = "/".join(parts[:2])
             logger.debug(f"Extracted repo path from HTTPS URL: {repo_path}")
@@ -153,7 +205,9 @@ def extract_repo_info(git_url: str) -> str:
 
     # Handle SSH URLs with ssh:// prefix: ssh://git@github.com/username/repo.git
     elif git_url.startswith("ssh://git@github.com/"):
-        parts = git_url.replace("ssh://git@github.com/", "").replace(".git", "").split("/")
+        parts = (
+            git_url.replace("ssh://git@github.com/", "").replace(".git", "").split("/")
+        )
         if len(parts) >= 2:
             repo_path = "/".join(parts[:2])
             logger.debug(f"Extracted repo path from SSH URL (with prefix): {repo_path}")
@@ -164,30 +218,41 @@ def extract_repo_info(git_url: str) -> str:
         parts = git_url.replace("git@github.com:", "").replace(".git", "").split("/")
         if len(parts) >= 1:
             repo_path = "/".join(parts[:2]) if len(parts) >= 2 else parts[0]
-            logger.debug(f"Extracted repo path from SSH URL (without prefix): {repo_path}")
+            logger.debug(
+                f"Extracted repo path from SSH URL (without prefix): {repo_path}"
+            )
             return repo_path
 
     logger.error(f"Could not parse repository path from Git URL: {git_url}")
     sys.exit(1)
 
 
-def create_github_release(version: str, token: str, dry_run: bool = False) -> None:
-    """Create a GitHub release."""
+def create_github_release(
+    package_name: str, version: str, token: str, dry_run: bool = False
+) -> None:
+    """Create a GitHub release for a specific package."""
     logger = logging.getLogger(__name__)
+    tag_name = f"{package_name}-v{version}"
+
     if dry_run:
-        logger.info(f"[DRY RUN] Would create GitHub release for version {version}")
+        logger.info(
+            f"[DRY RUN] Would create GitHub release for {package_name} version {version} with tag {tag_name}"
+        )
         return
 
-    logger.info(f"Creating GitHub release for version {version}")
+    logger.info(f"Creating GitHub release for {package_name} version {version}")
     # Get the latest commits for release notes
     stdout, _ = run_command("git log --pretty=format:'%h %s' -n 10")
-    release_notes = f"## Changes\n\n```\n{stdout}\n```"
+    release_notes = f"## Changes for {package_name} v{version}\n\n```\n{stdout}\n```"
 
     # Create release
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
     data = {
-        "tag_name": f"v{version}",
-        "name": f"Release v{version}",
+        "tag_name": tag_name,
+        "name": f"{package_name} v{version}",
         "body": release_notes,
         "draft": False,
         "prerelease": "b" in version,
@@ -205,9 +270,11 @@ def create_github_release(version: str, token: str, dry_run: bool = False) -> No
     )
 
     if response.status_code != 201:
-        logger.error(f"Error creating GitHub release: {response.text}")
+        logger.error(
+            f"Error creating GitHub release for {package_name}: {response.text}"
+        )
         sys.exit(1)
-    logger.info("GitHub release created successfully")
+    logger.info(f"GitHub release created successfully for {package_name}")
 
 
 def check_main_up_to_date(dry_run: bool = False) -> None:
@@ -244,7 +311,10 @@ def check_github_workflows(dry_run: bool = False) -> None:
     logger.debug("GitHub token obtained")
 
     # Get the latest workflow runs
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
 
     # First check for running workflows
     logger.debug("Checking for running workflows")
@@ -260,7 +330,9 @@ def check_github_workflows(dry_run: bool = False) -> None:
 
     runs = response.json()["workflow_runs"]
     if runs:
-        logger.error("There are workflows still running. Please wait for them to complete.")
+        logger.error(
+            "There are workflows still running. Please wait for them to complete."
+        )
         for run in runs:
             logger.error(f"- {run['name']} is running: {run['html_url']}")
         sys.exit(1)
@@ -283,7 +355,9 @@ def check_github_workflows(dry_run: bool = False) -> None:
 
     runs = response.json()["workflow_runs"]
     if not runs:
-        logger.error("No recent workflow runs found. Please ensure workflows are running.")
+        logger.error(
+            "No recent workflow runs found. Please ensure workflows are running."
+        )
         sys.exit(1)
 
     # Check the most recent run for each workflow
@@ -315,11 +389,41 @@ def check_github_workflows(dry_run: bool = False) -> None:
     logger.info("GitHub workflows check completed successfully")
 
 
+def calculate_new_version(
+    current_version: str, bump_type: int, custom_version: str | None = None
+) -> str:
+    """Calculate new version based on bump type."""
+    if bump_type == 5 and custom_version is not None:
+        return custom_version
+
+    if bump_type == 1:  # Major
+        major, minor, patch = map(int, current_version.split(".")[:3])
+        return f"{major + 1}.0.0"
+    elif bump_type == 2:  # Minor
+        major, minor, patch = map(int, current_version.split(".")[:3])
+        return f"{major}.{minor + 1}.0"
+    elif bump_type == 3:  # Patch
+        major, minor, patch = map(int, current_version.split(".")[:3])
+        return f"{major}.{minor}.{patch + 1}"
+    elif bump_type == 4:  # Beta
+        if "b" in current_version:
+            base_version, beta_num = current_version.split("b")
+            return f"{base_version}b{int(beta_num) + 1}"
+        else:
+            return f"{current_version}b1"
+
+    return current_version
+
+
 @command()
-@option("--dry-run", is_flag=True, help="Simulate the release process without making any changes")
+@option(
+    "--dry-run",
+    is_flag=True,
+    help="Simulate the release process without making any changes",
+)
 @option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 def release(dry_run: bool = False, verbose: bool = False):
-    """Create a new release and bump version."""
+    """Create a new release and bump version for both packages."""
     # Setup logging
     logger = setup_logging(verbose)
 
@@ -336,12 +440,18 @@ def release(dry_run: bool = False, verbose: bool = False):
     check_github_workflows(dry_run)
 
     if dry_run:
-        logger.info("All safety checks passed. In a real run, the following changes would be made:")
+        logger.info(
+            "All safety checks passed. In a real run, the following changes would be made:"
+        )
 
-    current_version = get_current_version()
-    logger.info(f"Current version: {current_version}")
+    current_versions = get_all_package_versions()
 
-    # Get new version
+    # Display current versions
+    logger.info("\nCurrent package versions:")
+    for package_name, version in current_versions.items():
+        logger.info(f"  {package_name}: {version}")
+
+    # Get new version strategy
     logger.info("\nVersion bump options:")
     logger.info("1. Major (e.g., 1.0.0)")
     logger.info("2. Minor (e.g., 0.2.0)")
@@ -351,60 +461,76 @@ def release(dry_run: bool = False, verbose: bool = False):
 
     choice = prompt("Select version bump type", type=int)
 
-    new_version: str = ""
-    if choice == 1:
-        major, minor, patch = map(int, current_version.split(".")[:3])
-        new_version = f"{major + 1}.0.0"
-    elif choice == 2:
-        major, minor, patch = map(int, current_version.split(".")[:3])
-        new_version = f"{major}.{minor + 1}.0"
-    elif choice == 3:
-        major, minor, patch = map(int, current_version.split(".")[:3])
-        new_version = f"{major}.{minor}.{patch + 1}"
-    elif choice == 4:
-        if "b" in current_version:
-            base_version, beta_num = current_version.split("b")
-            new_version = f"{base_version}b{int(beta_num) + 1}"
-        else:
-            new_version = f"{current_version}b1"
-    elif choice == 5:
-        version_input = prompt("Enter new version")
-        if not version_input:
+    custom_version = None
+    if choice == 5:
+        custom_version = prompt("Enter new version")
+        if not custom_version:
             logger.error("Version cannot be empty")
             sys.exit(1)
-        new_version = version_input
-    else:
+    elif choice not in [1, 2, 3, 4]:
         logger.error("Invalid choice")
         sys.exit(1)
 
-    logger.info(f"Selected new version: {new_version}")
+    # Calculate new versions for all packages
+    new_versions = {}
+    for package_name, current_version in current_versions.items():
+        new_version = calculate_new_version(current_version, choice, custom_version)
+        new_versions[package_name] = new_version
+
+    # Display planned changes
+    logger.info("\nPlanned version changes:")
+    for package_name in PACKAGES.keys():
+        logger.info(
+            f"  {package_name}: {current_versions[package_name]} -> {new_versions[package_name]}"
+        )
 
     if dry_run:
-        logger.info(f"[DRY RUN] Would create and push tag v{current_version}")
-        logger.info(f"[DRY RUN] Would create release for version {current_version}")
-        logger.info(f"[DRY RUN] Would update version in pyproject.toml to {new_version}")
-        logger.info(
-            f"[DRY RUN] Would create commit: chore(release): bump version to v{new_version}"
+        logger.info("\n[DRY RUN] Would perform the following actions:")
+        for package_name, current_version in current_versions.items():
+            logger.info(
+                f"[DRY RUN] Would create and push tag {package_name}-v{current_version}"
+            )
+            logger.info(
+                f"[DRY RUN] Would create release for {package_name} version {current_version}"
+            )
+
+        for package_name, new_version in new_versions.items():
+            logger.info(
+                f"[DRY RUN] Would update {package_name} version to {new_version}"
         )
+
+        logger.info(f"[DRY RUN] Would create commit: chore(release): bump versions")
         return
 
-    # Create and push tag with current version
-    run_command(f'git tag -a v{current_version} -m "Release v{current_version}"', dry_run)
+    # Create and push tags with current versions
+    for package_name, current_version in current_versions.items():
+        tag_name = f"{package_name}-v{current_version}"
+        run_command(
+            f'git tag -a {tag_name} -m "Release {package_name} v{current_version}"',
+            dry_run,
+        )
+
     run_command("git push origin main --tags", dry_run)
 
-    # Create GitHub release with current version
+    # Create GitHub releases with current versions
     token = get_github_token(dry_run)
-    create_github_release(current_version, token, dry_run)
+    for package_name, current_version in current_versions.items():
+        create_github_release(package_name, current_version, token, dry_run)
 
-    # Update version
-    update_version(new_version, dry_run)
+    # Update versions for all packages
+    update_all_package_versions(new_versions, dry_run)
 
-    # Create commit
-    run_command(f'git commit -am "chore(release): bump version to v{new_version}"', dry_run)
+    # Create commit with all version updates
+    run_command("git add packages/*/pyproject.toml", dry_run)
+    run_command('git commit -m "chore(release): bump versions"', dry_run)
 
-    logger.info(
-        f"\nSuccessfully created release v{current_version} and bumped version to v{new_version}!"
-    )
+    logger.info("\nSuccessfully created releases for all packages and bumped versions!")
+    logger.info("Released versions:")
+    for package_name, version in current_versions.items():
+        logger.info(f"  {package_name}: v{version}")
+    logger.info("New versions:")
+    for package_name, version in new_versions.items():
+        logger.info(f"  {package_name}: v{version}")
 
 
 if __name__ == "__main__":

@@ -1,158 +1,214 @@
-# QDrant Loader
+# QDrant Loader Monorepo
 
-A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. The ultimate goal is to use the qdrant database for coding more effectively using AI Tooling like: Cursor, Windsurf (using mcp-qdrant-server) or GitHub Copilot.
+A comprehensive toolkit for loading data into Qdrant vector database with MCP server support.
 
-## Features
+## 📦 Packages
 
-- Ingestion of technical content from various sources
-- Smart chunking and preprocessing of documents
-- Vectorization using OpenAI embeddings or any OpenAI-compatible endpoint
-- Support for different embedding models (OpenAI, BAAI/bge-small-en-v1.5, etc.)
-- Storage in QDrant vector database
-- State management for incremental ingestion
-- Configurable through environment variables and YAML configuration
-- Command-line interface for easy operation
-- Comprehensive logging and debugging capabilities
+This monorepo contains two main packages:
 
-## Supported Connectors
+### 🔄 [qdrant-loader](./packages/qdrant-loader/)
 
-- **Git**: Ingest code and documentation from Git repositories
-- **Confluence**: Extract technical documentation from Confluence spaces
-- **JIRA**: Collect technical specifications and documentation from JIRA issues
-- **Public Documentation**: Ingest public technical documentation from websites
-- **Local File**: Ingest files from local directories (docs, code, markdown, etc.)
-- **Custom Sources**: Extensible architecture for adding new data sources
+A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database.
 
-## Quick Start
+**Features:**
 
-1. Install the package:
+- Multiple data source connectors (Git, Confluence, Jira, Public Docs)
+- Intelligent document processing and chunking
+- Vector embeddings with OpenAI
+- Incremental updates and change detection
+- Performance monitoring and optimization
 
-    ```bash
-    pip install qdrant-loader
-    ```
+### 🔌 [qdrant-loader-mcp-server](./packages/qdrant-loader-mcp-server/)
 
-2. Configure your environment:
+A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor and other LLM applications using Qdrant.
 
-    ```bash
-    # Download and configure environment variables
-    curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/.env.template
-    # Edit .env with your configuration
-    # Add STATE_DB_PATH=/path/to/state.db for state management
+**Features:**
 
-    # Download and configure the main configuration file
-    curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/config.template.yaml
-    # Edit config.yaml with your source configurations
-    # Add state management configuration under global section:
-    # global:
-    #   state_management:
-    #     database_path: "${STATE_DB_PATH}"
-    #     table_prefix: "qdrant_loader_"
-    #     connection_pool:
-    #       size: 5
-    #       timeout: 30s
-    ```
+- MCP protocol implementation for LLM integration
+- Semantic search capabilities
+- Real-time query processing
+- Integration with Cursor IDE
+- RESTful API endpoints
 
-3. Initialize the QDrant collection:
+## 🚀 Quick Start
 
-    ```bash
-    qdrant-loader init
-    ```
+### Installation
 
-4. Run the ingestion pipeline:
-
-    ```bash
-    qdrant-loader ingest
-    ```
-
-## Basic Commands
-
-```bash
-# Show help and available commands
-qdrant-loader --help
-
-# Initialize the QDrant collection
-qdrant-loader init
-
-# Run ingestion for all sources
-qdrant-loader ingest
-
-# Run ingestion for specific source types
-qdrant-loader ingest --source-type confluence  # Ingest only Confluence
-qdrant-loader ingest --source-type git        # Ingest only Git
-qdrant-loader ingest --source-type jira       # Ingest only JIRA
-qdrant-loader ingest --source-type localfile  # Ingest only Local Files
-
-# Show current configuration
-qdrant-loader config
-
-# Show version information
-qdrant-loader --version
-```
-
-## Documentation
-
-For detailed documentation about the client usage, configuration options, and advanced features, please refer to the [Client Usage Guide](docs/ClientUsage.md).
-
-## Development
-
-### Setup Development Environment
+Install both packages in development mode:
 
 ```bash
 # Clone the repository
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Create and activate virtual environment
-python3.12 -m venv venv
-source venv/bin/activate  # On macOS/Linux
-# or
-.\venv\Scripts\activate  # On Windows
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode
-pip install -e . # for core dependencies
-pip install -e ".[dev]" # for development dependencies
+pip install -e packages/qdrant-loader[dev]
+pip install -e packages/qdrant-loader-mcp-server[dev]
+```
+
+### Configuration
+
+1. Copy the configuration template:
+
+```bash
+cp packages/qdrant-loader/config.template.yaml config.yaml
+```
+
+2. Set up your environment variables:
+
+```bash
+cp .env.template .env
+# Edit .env with your API keys and configuration
+```
+
+### Usage
+
+#### QDrant Loader
+
+```bash
+# Initialize QDrant collection
+qdrant-loader init
+
+# Load data from configured sources
+qdrant-loader ingest
+
+# Check status
+qdrant-loader status
+
+# Show current configuration
+qdrant-loader config
+```
+
+#### MCP Server
+
+```bash
+# Start the MCP server
+mcp-qdrant-loader
+
+# Or run with custom configuration and port
+mcp-qdrant-loader --config custom-config.yaml --port 8080
+
+# Run with debug logging
+mcp-qdrant-loader --log-level DEBUG
+```
+
+## 🏗️ Development
+
+### Project Structure
+
+```
+qdrant-loader/
+├── packages/
+│   ├── qdrant-loader/           # Core loader functionality
+│   │   ├── src/qdrant_loader/
+│   │   ├── tests/
+│   │   ├── pyproject.toml
+│   │   └── README.md
+│   └── qdrant-loader-mcp-server/ # MCP server functionality
+│       ├── src/mcp_server/
+│       ├── tests/
+│       ├── pyproject.toml
+│       └── README.md
+├── docs/                        # Shared documentation
+├── .github/workflows/           # CI/CD pipelines
+├── pyproject.toml              # Workspace configuration
+└── README.md                   # This file
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-pytest tests/
+pytest
 
-# Run tests with coverage
-pytest --cov=src tests/
+# Run tests for specific package
+pytest packages/qdrant-loader/tests/
+pytest packages/qdrant-loader-mcp-server/tests/
+
+# Run with coverage
+pytest --cov=packages --cov-report=html
 ```
 
-> **Note on Environment Files**: During tests, both `.env` and `.env.test` files are loaded, with `.env.test` taking precedence and overriding any common variables. This allows tests to use specific test configurations while maintaining default values for non-test-specific settings.
+### Code Quality
 
-## Technical Requirements
+```bash
+# Format code
+black packages/
+isort packages/
 
-- Python 3.12 or higher
-- QDrant server (local or cloud instance)
-- OpenAI API key (if using OpenAI, but you can use a local embedding if you like)
-- Sufficient disk space for the vector database
-- Internet connection for API access
-- Access to local files for localfile connector
+# Lint code
+ruff check packages/
 
-## Contributing
+# Type checking
+mypy packages/
+```
 
-We welcome contributions! Please:
+## 📚 Documentation
 
-1. Check existing issues to avoid duplicates
-2. Create a new issue with:
-   - Clear, descriptive title
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Environment details
-   - Relevant error messages
+- [QDrant Loader Documentation](./packages/qdrant-loader/README.md)
+- [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
+- [Features Overview](./docs/Features.md)
+- [Client Usage Guide](./docs/ClientUsage.md)
+- [Contributing Guide](./docs/CONTRIBUTING.md)
+- [Product Requirements](./docs/PRD.md)
 
-For code contributions:
+## 🔧 Configuration
+
+Both packages share common configuration patterns but have their own specific settings:
+
+- **QDrant Loader**: Configured via `config.yaml` and environment variables
+- **MCP Server**: Configured via environment variables and command-line arguments
+
+See individual package documentation for detailed configuration options.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
+
+### Development Workflow
 
 1. Fork the repository
 2. Create a feature branch
-3. Submit a pull request with clear description
-4. Ensure all tests pass
+3. Make your changes in the appropriate package
+4. Add tests for your changes
+5. Run the test suite
+6. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- [Issues](https://github.com/martin-papy/qdrant-loader/issues)
+- [Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
+- [Documentation](./docs/)
+
+## 🏷️ Releases
+
+Both packages are versioned independently:
+
+- **qdrant-loader**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
+- **qdrant-loader-mcp-server**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
+
+## 🌟 Features
+
+### QDrant Loader
+
+- ✅ Multiple data source connectors
+- ✅ Intelligent document processing
+- ✅ Vector embeddings with OpenAI
+- ✅ Incremental updates
+- ✅ Performance monitoring
+
+### MCP Server
+
+- ✅ MCP protocol implementation
+- ✅ Semantic search capabilities
+- ✅ Real-time query processing
+- ✅ Cursor IDE integration
+- ✅ RESTful API endpoints

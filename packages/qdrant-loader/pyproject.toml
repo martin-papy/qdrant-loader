@@ -1,0 +1,92 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qdrant-loader"
+version = "0.2.0b2"
+description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0"
+keywords = [
+    "qdrant",
+    "vector-database",
+    "embeddings",
+    "document-processing",
+]
+authors = [
+    {name = "Martin Papy", email = "martin.papy@gmail.com"},
+]
+dependencies = [
+    "click>=8.1.7",
+    "requests>=2.31.0",
+    "tomli>=2.0.1",
+    "tomli-w>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "structlog>=23.0.0",
+    "httpx>=0.24.0",
+    "openai>=1.0.0",
+    "qdrant-client>=1.7.0",
+    "PyYAML>=6.0.0",
+    "beautifulsoup4>=4.12.0",
+    "chardet>=5.2.0",
+    "tiktoken>=0.5.0",
+    "langchain>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-community>=0.0.38",
+    "numpy>=1.26.0,<2.0.0",
+    "GitPython>=3.1.40",
+    "atlassian-python-api>=3.41.0",
+    "tqdm>=4.66.0",
+    "SQLAlchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "appdirs>=1.4.4",
+    "aiosqlite>=0.19.0",
+    "greenlet>=3.0.0",
+    "spacy>=3.7.0",
+    "nltk>=3.8.0",
+    "gensim>=4.3.0",
+    "rank-bm25>=0.2.2",
+    "faiss-cpu>=1.7.4",
+    "psutil>=5.9.0",
+    "tree-sitter-languages>=1.10.0",
+    "tree-sitter<0.21",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
+Repository = "https://github.com/martin-papy/qdrant-loader"
+Issues = "https://github.com/martin-papy/qdrant-loader/issues"
+
+[project.scripts]
+qdrant-loader = "qdrant_loader.main:cli"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-timeout>=2.3.0",
+    "responses>=0.24.1",
+    "requests_mock>=1.11.0",
+    "sqlite-web>=0.6.4",
+    "py-spy",
+    "snakeviz",
+    "memory_profiler",
+    "prometheus_client",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"] 
