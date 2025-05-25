@@ -32,8 +32,17 @@ class QueryProcessor:
             # Clean and normalize query
             cleaned_query = self._clean_query(query)
 
+            # Handle empty queries
+            if not cleaned_query:
+                return {
+                    "query": cleaned_query,
+                    "intent": "general",
+                    "source_type": None,
+                    "processed": False,
+                }
+
             # Infer query intent
-            intent = await self._infer_intent(cleaned_query)
+            intent, inference_failed = await self._infer_intent(cleaned_query)
 
             # Extract source type if present
             source_type = self._extract_source_type(cleaned_query, intent)
@@ -42,11 +51,17 @@ class QueryProcessor:
                 "query": cleaned_query,
                 "intent": intent,
                 "source_type": source_type,
-                "processed": True,
+                "processed": not inference_failed,
             }
         except Exception as e:
             self.logger.error("Query processing failed", error=str(e), query=query)
-            raise RuntimeError(f"Query processing failed: {str(e)}") from e
+            # Return fallback response instead of raising exception
+            return {
+                "query": query,
+                "intent": "general",
+                "source_type": None,
+                "processed": False,
+            }
 
     def _clean_query(self, query: str) -> str:
         """Clean and normalize the query.
@@ -61,14 +76,14 @@ class QueryProcessor:
         query = re.sub(r"\s+", " ", query.strip())
         return query
 
-    async def _infer_intent(self, query: str) -> str:
+    async def _infer_intent(self, query: str) -> tuple[str, bool]:
         """Infer the intent of the query using OpenAI.
 
         Args:
             query: The cleaned query string
 
         Returns:
-            Inferred intent (e.g., "code", "documentation", "issue")
+            Tuple of (inferred intent, whether inference failed)
         """
         try:
             if self.openai_client is None:
@@ -87,16 +102,19 @@ class QueryProcessor:
             )
 
             if not response.choices or not response.choices[0].message:
-                return "general"  # Default to general if no response
+                return "general", False  # Default to general if no response
 
             content = response.choices[0].message.content
             if not content:
-                return "general"  # Default to general if empty content
+                return "general", False  # Default to general if empty content
 
-            return content.strip().lower()
+            return content.strip().lower(), False
         except Exception as e:
             self.logger.error("Intent inference failed", error=str(e), query=query)
-            return "general"  # Default to general if inference fails
+            return (
+                "general",
+                True,
+            )  # Default to general if inference fails, mark as failed
 
     def _extract_source_type(self, query: str, intent: str) -> str | None:
         """Extract source type from query and intent.
