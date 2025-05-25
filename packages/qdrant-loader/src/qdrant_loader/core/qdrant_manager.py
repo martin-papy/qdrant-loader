@@ -1,0 +1,237 @@
+import asyncio
+from typing import cast
+from urllib.parse import urlparse
+
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+from qdrant_client.http.models import (
+    Distance,
+    VectorParams,
+)
+
+from ..config import Settings, get_global_config, get_settings
+from ..utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
+
+
+class QdrantConnectionError(Exception):
+    """Custom exception for Qdrant connection errors."""
+
+    def __init__(
+        self, message: str, original_error: str | None = None, url: str | None = None
+    ):
+        self.message = message
+        self.original_error = original_error
+        self.url = url
+        super().__init__(self.message)
+
+
+class QdrantManager:
+    def __init__(self, settings: Settings | None = None):
+        """Initialize the qDrant manager.
+
+        Args:
+            settings: The application settings
+        """
+        self.settings = settings or get_settings()
+        self.client = None
+        self.collection_name = self.settings.QDRANT_COLLECTION_NAME
+        self.logger = LoggingConfig.get_logger(__name__)
+        self.batch_size = get_global_config().embedding.batch_size
+        self.connect()
+
+    def _is_api_key_present(self) -> bool:
+        """
+        Check if a valid API key is present.
+        Returns True if the API key is a non-empty string that is not 'None' or 'null'.
+        """
+        api_key = self.settings.QDRANT_API_KEY
+        if not api_key:  # Catches None, empty string, etc.
+            return False
+        return api_key.lower() not in ["none", "null"]
+
+    def connect(self) -> None:
+        """Establish connection to qDrant server."""
+        try:
+            # Ensure HTTPS is used when API key is present, but only for non-local URLs
+            url = self.settings.QDRANT_URL
+            api_key = (
+                self.settings.QDRANT_API_KEY if self._is_api_key_present() else None
+            )
+
+            if api_key:
+                parsed_url = urlparse(url)
+                # Only force HTTPS for non-local URLs
+                if parsed_url.scheme != "https" and not any(
+                    host in parsed_url.netloc for host in ["localhost", "127.0.0.1"]
+                ):
+                    url = url.replace("http://", "https://", 1)
+                    self.logger.warning("Forcing HTTPS connection due to API key usage")
+
+            try:
+                self.client = QdrantClient(
+                    url=url,
+                    api_key=api_key,
+                    timeout=60,  # 60 seconds timeout
+                )
+                self.logger.info("Successfully connected to qDrant")
+            except Exception as e:
+                raise QdrantConnectionError(
+                    "Failed to connect to qDrant: Connection error",
+                    original_error=str(e),
+                    url=url,
+                ) from e
+
+        except Exception as e:
+            raise QdrantConnectionError(
+                "Failed to connect to qDrant: Unexpected error",
+                original_error=str(e),
+                url=url,
+            ) from e
+
+    def _ensure_client_connected(self) -> QdrantClient:
+        """Ensure the client is connected before performing operations."""
+        if self.client is None:
+            raise QdrantConnectionError(
+                "Qdrant client is not connected. Please call connect() first."
+            )
+        return cast(QdrantClient, self.client)
+
+    def create_collection(self) -> None:
+        """Create a new collection if it doesn't exist."""
+        try:
+            client = self._ensure_client_connected()
+            # Check if collection already exists
+            collections = client.get_collections()
+            if any(c.name == self.collection_name for c in collections.collections):
+                self.logger.info(f"Collection {self.collection_name} already exists")
+                return
+
+            # Get vector size from configuration
+            vector_size = get_global_config().embedding.vector_size
+            if not vector_size:
+                self.logger.warning(
+                    "No vector_size specified in config, defaulting to 1536"
+                )
+                vector_size = 1536
+
+            # Create collection with basic configuration
+            client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+            )
+
+            # Create index for document_id field
+            client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="document_id",
+                field_schema={"type": "keyword"},  # type: ignore
+            )
+
+            self.logger.info(f"Successfully created collection {self.collection_name}")
+        except Exception as e:
+            self.logger.error("Failed to create collection", error=str(e))
+            raise
+
+    async def upsert_points(self, points: list[models.PointStruct]) -> None:
+        """Upsert points into the collection.
+
+        Args:
+            points: List of points to upsert
+        """
+        self.logger.debug(
+            "Upserting points",
+            extra={"point_count": len(points), "collection": self.collection_name},
+        )
+
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.upsert, collection_name=self.collection_name, points=points
+            )
+            self.logger.debug(
+                "Successfully upserted points",
+                extra={"point_count": len(points), "collection": self.collection_name},
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to upsert points",
+                extra={
+                    "error": str(e),
+                    "point_count": len(points),
+                    "collection": self.collection_name,
+                },
+            )
+            raise
+
+    def search(
+        self, query_vector: list[float], limit: int = 5
+    ) -> list[models.ScoredPoint]:
+        """Search for similar vectors in the collection."""
+        try:
+            client = self._ensure_client_connected()
+            search_result = client.search(
+                collection_name=self.collection_name,
+                query_vector=query_vector,
+                limit=limit,
+            )
+            return search_result
+        except Exception as e:
+            logger.error("Failed to search collection", error=str(e))
+            raise
+
+    def delete_collection(self) -> None:
+        """Delete the collection."""
+        try:
+            client = self._ensure_client_connected()
+            client.delete_collection(collection_name=self.collection_name)
+            logger.info("Deleted collection", collection=self.collection_name)
+        except Exception as e:
+            logger.error("Failed to delete collection", error=str(e))
+            raise
+
+    async def delete_points_by_document_id(self, document_ids: list[str]) -> None:
+        """Delete points from the collection by document ID.
+
+        Args:
+            document_ids: List of document IDs to delete
+        """
+        self.logger.debug(
+            "Deleting points by document ID",
+            extra={
+                "document_count": len(document_ids),
+                "collection": self.collection_name,
+            },
+        )
+
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.delete,
+                collection_name=self.collection_name,
+                points_selector=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="document_id", match=models.MatchAny(any=document_ids)
+                        )
+                    ]
+                ),
+            )
+            self.logger.debug(
+                "Successfully deleted points",
+                extra={
+                    "document_count": len(document_ids),
+                    "collection": self.collection_name,
+                },
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to delete points",
+                extra={
+                    "error": str(e),
+                    "document_count": len(document_ids),
+                    "collection": self.collection_name,
+                },
+            )
+            raise

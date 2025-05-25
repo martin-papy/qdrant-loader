@@ -1,125 +1,348 @@
-# 🧠 Product Definition Requirements (PDR)
+# 🧠 Product Requirements Document (PRD)
 
 ## 📌 Product Name
 
-RAG Developer Context Ingestion System
+QDrant Loader Monorepo - RAG Developer Context System
 
 ## 🎯 Goal
 
-To build a backend tool that collects and vectorizes technical content from multiple sources—Confluence, Jira, Git repositories, and public documentation—and stores it in a qDrant vector database. This vector DB will be queried via `mcp-server-qdrant` by the AI Agent in the Cursor IDE, enabling developers to receive highly contextual and accurate assistance.
+To build a comprehensive RAG (Retrieval-Augmented Generation) ecosystem that collects, processes, and serves technical content from multiple sources through a unified monorepo. The system consists of two main components:
+
+1. **QDrant Loader**: Backend ingestion tool that vectorizes content from Confluence, Jira, Git repositories, public documentation, and local files
+2. **MCP Server**: Model Context Protocol server that provides AI development tools (Cursor, Windsurf, etc.) with contextual, accurate assistance through semantic search
 
 ---
 
-## 👤 Target Persona
+## 👤 Target Personas
 
-| Persona     | Description |
-|-------------|-------------|
-| **Developer** | Writes code in Cursor IDE and expects the integrated AI agent to suggest code and solutions based on real internal documentation and current tech stack usage. |
-| **Operator** | A designated team member (DevRel/Infra/Staff Eng) responsible for manually triggering ingestion and keeping the vector DB updated. |
-
----
-
-## 🧭 User Interaction Model
-
-| User Type   | Interaction Method                      | Description |
-|-------------|------------------------------------------|-------------|
-| Developer   | Indirect (via MCP Agent inside Cursor IDE using `mcp-server-qdrant`) | No direct access to the ingestion system or DB |
-| Operator    | Manual CLI/script trigger                | Runs ingestion pipeline locally, pushes to qDrant Cloud |
+| Persona | Description | Primary Interaction |
+|---------|-------------|-------------------|
+| **Developer** | Writes code in AI-powered IDEs and expects contextual assistance based on internal documentation and current tech stack | Indirect via MCP integration in Cursor/Windsurf |
+| **DevOps Engineer** | Manages infrastructure and deployment pipelines, needs access to operational documentation | Direct CLI usage + MCP integration |
+| **Technical Writer** | Creates and maintains documentation, needs to understand content coverage and gaps | CLI tools for analysis and validation |
+| **Team Lead** | Oversees development processes and ensures knowledge sharing | Dashboard and reporting tools |
 
 ---
 
-## 📥 Ingestion Scope
+## 🏗️ System Architecture
 
-| Source         | Scope Criteria                        | Included Content |
-|----------------|----------------------------------------|------------------|
-| **Confluence** | Selected Spaces                        | All available pages, attachments, technical diagrams |
-| **Jira**       | Selected Projects                      | All tickets (open/closed), including description, comments, labels |
-| **Git Repos**  | Selected Repos                         | `README.md`, `/docs/`, code comments, design guides |
-| **Public Docs**| Curated list of 3rd-party tools/frameworks | Documentation for APIs, libraries, and SDKs |
-| **Local Files**| Selected Directories                     | Markdown, code, docs, and text files from local filesystem |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    QDrant Loader Monorepo                  │
+├─────────────────────────────────────────────────────────────┤
+│  📦 qdrant-loader              │  🔌 qdrant-loader-mcp-server │
+│  ├── Data Ingestion            │  ├── MCP Protocol            │
+│  ├── Document Processing       │  ├── Semantic Search         │
+│  ├── Vector Embedding          │  ├── Query Processing        │
+│  ├── State Management          │  └── API Endpoints           │
+│  └── CLI Interface             │                              │
+├─────────────────────────────────────────────────────────────┤
+│                    Shared Infrastructure                    │
+│  ├── QDrant Vector Database    │  ├── Configuration System    │
+│  ├── Embedding Models          │  ├── Logging & Monitoring    │
+│  └── State Database (SQLite)   │  └── Testing Framework       │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🔄 Ingestion Frequency
+## 🧭 User Interaction Models
 
-| Source         | Mode       | Trigger     |
-|----------------|------------|-------------|
-| All Sources    | Manual     | CLI or script executed by operator |
-| **Local Files**| Manual     | CLI or script executed by operator |
+| User Type | Tool | Interaction Method | Use Cases |
+|-----------|------|-------------------|-----------|
+| **Developer** | Cursor/Windsurf | MCP Protocol | Code assistance, documentation lookup, API reference |
+| **Developer** | CLI | Direct commands | Data ingestion, status monitoring, troubleshooting |
+| **DevOps** | CLI + Scripts | Automated pipelines | Scheduled ingestion, monitoring, maintenance |
+| **Technical Writer** | CLI + API | Analysis tools | Content coverage analysis, gap identification |
 
 ---
 
-## 📦 Chunking & Preprocessing Strategy
+## 📥 Data Sources & Ingestion Scope
 
-| Step                  | Approach |
-|------------------------|----------|
-| **Chunking**           | Token-based chunks (e.g. 500–800 tokens with overlap) |
-| **Metadata**           | Attach metadata: `source`, `source_type`, `url`, `last_updated`, `project`, `author` |
-| **Cleaning**           | Strip HTML/Markdown tags, remove boilerplate, handle code blocks separately |
-| **Normalization**      | Markdown unification, semantic title/tag boosting |
+### Supported Connectors
+
+| Source | Scope Criteria | Included Content | Key Features |
+|--------|----------------|------------------|--------------|
+| **Git Repositories** | Selected repos/branches | README, docs/, code comments, design docs | Branch filtering, file type selection, commit metadata |
+| **Confluence** | Selected spaces | Pages, attachments, comments, diagrams | Label-based filtering, version tracking, rich content |
+| **Jira** | Selected projects | Tickets, descriptions, comments, attachments | Status filtering, incremental sync, relationship tracking |
+| **Public Documentation** | Curated URLs | API docs, framework guides, tutorials | CSS selector extraction, version detection |
+| **Local Files** | Selected directories | Markdown, code, docs, configuration files | Glob pattern matching, file type filtering |
+
+### Advanced Processing Features
+
+| Feature | Description | Benefits |
+|---------|-------------|----------|
+| **Intelligent Chunking** | Token-based chunking with semantic boundaries | Optimal context preservation |
+| **Metadata Extraction** | Rich metadata including authors, dates, relationships | Enhanced search relevance |
+| **Change Detection** | Incremental updates with state tracking | Efficient resource usage |
+| **Content Cleaning** | HTML/Markdown normalization, code block preservation | Consistent content quality |
+| **Batch Processing** | Optimized batch embedding with rate limiting | Scalable performance |
+
+---
+
+## 🔄 Ingestion & Update Strategy
+
+### Ingestion Modes
+
+| Mode | Trigger | Frequency | Use Case |
+|------|---------|-----------|----------|
+| **Manual** | CLI command | On-demand | Initial setup, troubleshooting |
+| **Incremental** | CLI with state tracking | Regular intervals | Efficient updates |
+| **Selective** | Source-specific commands | As needed | Targeted updates |
+| **Automated** | CI/CD integration | Scheduled | Production maintenance |
+
+### State Management
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Document State** | SQLite database | Track ingestion status, changes |
+| **Ingestion History** | SQLite tables | Audit trail, rollback capability |
+| **Change Detection** | File hashes, timestamps | Efficient incremental updates |
+| **Error Recovery** | Retry mechanisms | Robust operation |
+
+---
+
+## 📦 Chunking & Processing Strategy
+
+### Document Processing Pipeline
+
+```
+Raw Content → Cleaning → Chunking → Metadata → Embedding → Storage
+     ↓            ↓         ↓          ↓          ↓         ↓
+  HTML/MD     Normalize   Token     Extract    Vector    QDrant
+  Parsing     Content     Based     Metadata   Generate  Database
+```
+
+### Chunking Configuration
+
+| Parameter | Default | Range | Purpose |
+|-----------|---------|-------|---------|
+| **Chunk Size** | 500 tokens | 100-2000 | Balance context vs. precision |
+| **Overlap** | 50 tokens | 0-200 | Maintain context continuity |
+| **Batch Size** | 100 chunks | 10-500 | Optimize embedding performance |
+
+### Metadata Schema
+
+```yaml
+document_metadata:
+  core:
+    - id: unique_identifier
+    - title: document_title
+    - source: source_identifier
+    - source_type: [git, confluence, jira, publicdocs, localfile]
+    - url: original_url
+    - created_at: timestamp
+    - updated_at: timestamp
+  source_specific:
+    git:
+      - repository_url
+      - branch
+      - file_path
+      - last_commit_author
+      - last_commit_date
+    confluence:
+      - space_key
+      - page_id
+      - author
+      - labels
+      - comments
+    jira:
+      - project_key
+      - issue_type
+      - status
+      - assignee
+      - priority
+```
 
 ---
 
 ## 🔐 Security & Access Control
 
-| Component            | Control Mechanism |
-|----------------------|-------------------|
-| Confluence Access    | API Key / Service Account |
-| Jira Access          | API Key / Service Account |
-| Git Repos            | SSH or Access Tokens |
-| Public Docs          | Unauthenticated or scraping proxy (if needed) |
-| qDrant Access        | API Key (Cloud-hosted endpoint) |
-| Operator Restriction | Only specific user(s) allowed to trigger ingestion |
-| Logging              | Logs timestamp, sources, # of documents, and errors per run |
+### Authentication & Authorization
+
+| Component | Method | Scope |
+|-----------|--------|-------|
+| **Confluence** | API Token + Email | Space-level access |
+| **Jira** | API Token + Email | Project-level access |
+| **Git Repositories** | Personal Access Token | Repository access |
+| **QDrant** | API Key | Database access |
+| **MCP Server** | Environment variables | Server configuration |
+
+### Security Best Practices
+
+| Practice | Implementation |
+|----------|----------------|
+| **Credential Management** | Environment variables, no hardcoding |
+| **Access Logging** | Comprehensive audit trails |
+| **Rate Limiting** | API call throttling |
+| **Data Encryption** | TLS for all communications |
+| **Minimal Permissions** | Least privilege access |
 
 ---
 
 ## 🔁 Update & Deduplication Strategy
 
-| Concern             | Strategy |
-|---------------------|----------|
-| **Deduplication**   | Overwrite previous entries for each unique document/source |
-| **Versioning**      | Not retained (latest version only for clarity and performance) |
-| **Entry IDs**       | Use deterministic IDs (`source-type::path/url`) for easy replacement |
+### Content Management
+
+| Strategy | Implementation | Benefits |
+|----------|----------------|----------|
+| **Deduplication** | Deterministic document IDs | Prevent duplicates |
+| **Versioning** | Latest version only | Simplified management |
+| **Incremental Updates** | Change detection + state tracking | Efficient processing |
+| **Cleanup** | Automated removal of deleted content | Data consistency |
+
+### Document ID Strategy
+
+```
+Document ID Format: {source_type}::{source}::{path/identifier}
+
+Examples:
+- git::my-repo::docs/api.md
+- confluence::tech-space::123456
+- jira::backend-project::PROJ-123
+- publicdocs::api-docs::authentication
+- localfile::project-docs::README.md
+```
 
 ---
 
 ## ⚙️ Technology Stack
 
-| Component           | Tech/Tool                      | Notes |
-|---------------------|-------------------------------|-------|
-| Language            | Python                         | Core engine for pipeline |
-| Vector DB           | qDrant (Cloud-hosted)          | Queried via MCP Server |
-| Pipeline Execution  | Local CLI / Script             | Manual run by operator |
-| Connectors          | `atlassian-python-api`, `jira`, `gitpython`, `beautifulsoup4`, `requests` ||
-| Embedding Models    | OpenAI or HuggingFace models   | Configurable as needed |
-| Vector Server Layer | `mcp-server-qdrant`            | Already integrated with Cursor |
-| **Local Files**     | Python                         | Scans and ingests local files |
+### Core Technologies
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Language** | Python | 3.12+ | Core implementation |
+| **Vector DB** | QDrant | Latest | Vector storage & search |
+| **Embeddings** | OpenAI / Local models | Various | Text vectorization |
+| **State DB** | SQLite | 3.x | State management |
+| **Protocol** | MCP | 2024-11-05 | AI tool integration |
+
+### Dependencies
+
+| Category | Libraries | Purpose |
+|----------|-----------|---------|
+| **Web APIs** | `requests`, `aiohttp` | HTTP client operations |
+| **Atlassian** | `atlassian-python-api` | Confluence/Jira integration |
+| **Git** | `gitpython` | Repository operations |
+| **Parsing** | `beautifulsoup4`, `markdownify` | Content extraction |
+| **Database** | `sqlalchemy`, `sqlite3` | State management |
+| **ML/AI** | `openai`, `sentence-transformers` | Embeddings |
+| **CLI** | `click`, `rich` | Command-line interface |
 
 ---
 
-## 📊 Success Metrics (KPI)
+## 🔌 MCP Server Capabilities
 
-| Metric                         | Desired Outcome |
-|--------------------------------|-----------------|
-| **AI Error Reduction**         | Fewer hallucinations and incorrect code suggestions |
-| **Code Quality**               | AI respects internal conventions and architecture |
-| **Library Usage Awareness**    | AI correctly suggests usage of approved 3rd-party tools and frameworks |
-| **Developer Satisfaction**     | Qualitative improvements noted in feedback loops |
+### Protocol Implementation
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Initialize** | ✅ Complete | Server initialization and capability negotiation |
+| **Tools** | ✅ Complete | Search tool with advanced parameters |
+| **Resources** | ✅ Complete | Document and source listing |
+| **Prompts** | 🔄 Planned | Pre-defined query templates |
+| **Logging** | 🔄 Planned | Request/response logging |
+
+### Search Capabilities
+
+| Feature | Description | Parameters |
+|---------|-------------|------------|
+| **Semantic Search** | Vector-based similarity search | `query`, `limit`, `threshold` |
+| **Source Filtering** | Filter by source type or specific source | `source_types`, `sources` |
+| **Metadata Filtering** | Filter by document metadata | `filters` object |
+| **Hybrid Search** | Combine semantic + keyword search | `enable_hybrid` |
+| **Result Ranking** | Relevance-based result ordering | `ranking_algorithm` |
 
 ---
 
-## 🛠️ Future Enhancements (Out of Scope for MVP)
+## 📊 Success Metrics (KPIs)
 
-- Scheduled/automatic syncing (e.g. via Airflow or GitHub Actions)
-- Web UI for ingestion monitoring
-- Versioning or content diffing
-- Multi-tenant qDrant namespacing
-- Document summarization during ingest
-- Priority weighting / reranking by document type
+### Technical Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **Ingestion Speed** | >1000 docs/minute | Documents processed per minute |
+| **Search Latency** | <200ms | Average query response time |
+| **Search Accuracy** | >85% relevance | User feedback on result quality |
+| **System Uptime** | >99.5% | MCP server availability |
+| **Storage Efficiency** | <10MB per 1000 docs | Vector database size optimization |
+
+### User Experience Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **AI Accuracy** | Fewer hallucinations | Reduced incorrect suggestions |
+| **Context Relevance** | >90% relevant results | User satisfaction surveys |
+| **Developer Productivity** | 20% faster development | Time-to-completion metrics |
+| **Knowledge Discovery** | Increased documentation usage | Search query analytics |
+
+### Operational Metrics
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **Error Rate** | <1% failed operations | Error tracking and alerting |
+| **Resource Usage** | <4GB RAM, <50% CPU | System monitoring |
+| **Data Freshness** | <24h lag | Time between source update and availability |
+
+---
+
+## 🛠️ Future Enhancements
+
+### Short-term (Next 3 months)
+
+- [ ] **Web UI**: Dashboard for ingestion monitoring and analytics
+- [ ] **Advanced Caching**: Intelligent query result caching
+- [ ] **Batch Operations**: Bulk document operations and management
+- [ ] **Enhanced Filtering**: Advanced search filters and facets
+
+### Medium-term (3-6 months)
+
+- [ ] **Scheduled Ingestion**: Automated ingestion with cron-like scheduling
+- [ ] **Multi-tenant Support**: Namespace isolation for different teams
+- [ ] **Document Summarization**: AI-powered content summarization
+- [ ] **Analytics Dashboard**: Usage analytics and insights
+
+### Long-term (6+ months)
+
+- [ ] **Distributed Processing**: Scale ingestion across multiple workers
+- [ ] **Advanced AI Features**: Query expansion, intent recognition
+- [ ] **Integration Ecosystem**: Plugins for additional tools and platforms
+- [ ] **Enterprise Features**: SSO, advanced security, compliance
+
+---
+
+## 🎯 Success Criteria
+
+### MVP Success (Current State)
+
+- ✅ **Multi-source Ingestion**: All 5 connectors working reliably
+- ✅ **MCP Integration**: Full Cursor/Windsurf compatibility
+- ✅ **State Management**: Incremental updates and change detection
+- ✅ **Documentation**: Comprehensive setup and usage guides
+- ✅ **Testing**: >80% test coverage across both packages
+
+### Production Ready
+
+- [ ] **Performance**: Handle 100K+ documents efficiently
+- [ ] **Reliability**: 99.9% uptime with error recovery
+- [ ] **Scalability**: Support multiple concurrent users
+- [ ] **Monitoring**: Comprehensive observability and alerting
+- [ ] **Security**: Production-grade security controls
 
 ---
 
 ## 📝 Summary
 
-This RAG ingestion tool is an internal backend pipeline designed to fuel developer productivity through high-context AI completions in Cursor. By enriching qDrant with relevant, real-time content from multiple sources and maintaining a high standard of preprocessing and metadata, we empower the MCP Agent to assist with more accurate, context-aware code generation.
+The QDrant Loader Monorepo represents a complete RAG ecosystem designed to enhance developer productivity through AI-powered tools. By combining robust data ingestion capabilities with a standards-compliant MCP server, the system provides developers with contextual, accurate assistance based on their organization's actual documentation and codebase.
+
+The monorepo structure enables coordinated development of both components while maintaining clear separation of concerns. The comprehensive connector ecosystem, intelligent processing pipeline, and flexible deployment options make it suitable for organizations of all sizes looking to implement AI-enhanced development workflows.
+
+Key differentiators include:
+
+- **Unified ecosystem** with coordinated releases and shared infrastructure
+- **Production-ready** state management and incremental processing
+- **Standards compliance** with MCP protocol for broad tool compatibility
+- **Extensible architecture** supporting custom connectors and integrations
+- **Comprehensive documentation** and testing for reliable operation

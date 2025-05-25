@@ -1,11 +1,26 @@
 # QDrant Loader Client Usage Guide
 
-This guide provides comprehensive documentation for using the QDrant Loader client.
+This comprehensive guide covers all aspects of using the QDrant Loader ecosystem, including both the core loader and MCP server components.
 
-## Installation
+## 📦 Installation
+
+### Package Installation
 
 ```bash
+# Install core loader only
 pip install qdrant-loader
+
+# Install MCP server only
+pip install qdrant-loader-mcp-server
+
+# Install both packages
+pip install qdrant-loader qdrant-loader-mcp-server
+
+# Development installation from source
+git clone https://github.com/martin-papy/qdrant-loader.git
+cd qdrant-loader
+pip install -e packages/qdrant-loader[dev]
+pip install -e packages/qdrant-loader-mcp-server[dev]
 ```
 
 ## Configuration

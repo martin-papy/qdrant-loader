@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qdrant-loader-mcp-server"
+version = "0.1.0"
+description = "A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor using Qdrant."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0"
+keywords = [
+    "qdrant",
+    "vector-database",
+    "mcp",
+    "cursor",
+    "rag",
+    "embeddings",
+]
+authors = [
+    {name = "Martin Papy", email = "martin.papy@example.com"},
+]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "qdrant-client>=1.6.0",
+    "openai>=1.3.0",
+    "pydantic>=2.4.2",
+    "python-dotenv>=1.0.0",
+    "jsonrpcclient>=4.0.3",
+    "jsonrpcserver>=5.0.7",
+    "structlog>=23.0.0",
+    "PyYAML>=6.0.0",
+    "rank-bm25>=0.2.2",
+    "numpy>=1.26.0",
+    # Optional dependency on the loader package
+    "qdrant-loader",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
+Repository = "https://github.com/martin-papy/qdrant-loader"
+Issues = "https://github.com/martin-papy/qdrant-loader/issues"
+
+[project.scripts]
+mcp-qdrant-loader = "qdrant_loader_mcp_server.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pre-commit>=3.5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"] 

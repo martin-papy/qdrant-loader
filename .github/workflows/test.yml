@@ -17,7 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
+  test-loader:
+    name: Test QDrant Loader
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,14 +26,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13.2'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -e ".[dev]"
-      - name: Create .env.test file
+          pip install -e packages/qdrant-loader[dev]
+
+      - name: Create .env.test file for loader
         run: |
           cp tests/.env.test.template tests/.env.test
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
@@ -50,18 +51,90 @@ jobs:
           sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/.env.test
           sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
 
-      - name: Create config.test.yaml file
+      - name: Create config.test.yaml file for loader
         run: |
           cp tests/config.test.template.yaml tests/config.test.yaml
 
-      - name: Run tests and generate coverage reports
+      - name: Run loader tests and generate coverage reports
         run: |
-          python -m pytest tests/ --cov=qdrant_loader --cov-report=xml --cov-report=html -v
+          python -m pytest packages/qdrant-loader/tests/ --cov=packages/qdrant-loader/src --cov-report=xml:coverage-loader.xml --cov-report=html:htmlcov-loader -v
+
+      - name: Upload loader coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-loader
+          path: htmlcov-loader
+
+  test-mcp-server:
+    name: Test MCP Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/qdrant-loader[dev]
+          pip install -e packages/qdrant-loader-mcp-server[dev]
+
+      - name: Run MCP server tests and generate coverage reports
+        run: |
+          python -m pytest packages/qdrant-loader-mcp-server/tests/ --cov=packages/qdrant-loader-mcp-server/src --cov-report=xml:coverage-mcp.xml --cov-report=html:htmlcov-mcp -v
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_COLLECTION_NAME: ${{ secrets.QDRANT_COLLECTION_NAME }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload MCP server coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-mcp
+          path: htmlcov-mcp
+
+  combined-coverage:
+    name: Combined Coverage Report
+    runs-on: ubuntu-latest
+    needs: [test-loader, test-mcp-server]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/qdrant-loader[dev]
+          pip install -e packages/qdrant-loader-mcp-server[dev]
+          pip install coverage[toml]
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Run combined tests for coverage
+        run: |
+          python -m pytest packages/ --cov=packages --cov-report=xml --cov-report=html -v
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_COLLECTION_NAME: ${{ secrets.QDRANT_COLLECTION_NAME }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload coverage artifact
+      - name: Upload combined coverage artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: htmlcov
@@ -74,7 +147,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: test
+    needs: combined-coverage
     steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4

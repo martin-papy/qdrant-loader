@@ -89,7 +89,7 @@ tests/
 ### GitHub Actions
 
 - Single job approach for simplicity
-- Python 3.13.2
+- Python 3.12
 - Environment variables handled via secrets
 - Coverage reports generation and upload
 - Automatic deployment of coverage reports to GitHub Pages

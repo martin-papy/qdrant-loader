@@ -1,153 +1,66 @@
 [build-system]
-requires = [
-    "hatchling",
-]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "qdrant-loader"
-version = "0.2.0b2"
-description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
+name = "qdrant-loader-workspace"
+version = "0.1.0"
+description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
-requires-python = ">=3.12"
-license = "GPL-3.0"
-keywords = [
-    "qdrant",
-    "vector-database",
-    "embeddings",
-    "document-processing",
-]
+license = {file = "LICENSE"}
 authors = [
-    { name = "Martin Papy", email = "martin.papy@gmail.com" },
-]
-dependencies = [
-    "click>=8.1.7",
-    "requests>=2.31.0",
-    "tomli>=2.0.1",
-    "tomli-w>=1.0.0",
-    "python-dotenv>=1.0.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "structlog>=23.0.0",
-    "httpx>=0.24.0",
-    "openai>=1.0.0",
-    "qdrant-client>=1.7.0",
-    "PyYAML>=6.0.0",
-    "beautifulsoup4>=4.12.0",
-    "chardet>=5.2.0",
-    "tiktoken>=0.5.0",
-    "langchain>=0.3.0",
-    "langchain-core>=0.3.0",
-    "langchain-community>=0.0.38",
-    "numpy>=1.26.0,<2.0.0",
-    "GitPython>=3.1.40",
-    "atlassian-python-api>=3.41.0",
-    "tqdm>=4.66.0",
-    "SQLAlchemy>=2.0.0",
-    "alembic>=1.12.0",
-    "appdirs>=1.4.4",
-    "aiosqlite>=0.19.0",
-    "greenlet>=3.0.0",
-    "spacy>=3.7.0",
-    "nltk>=3.8.0",
-    "gensim>=4.3.0",
-    "rank-bm25>=0.2.2",
-    "faiss-cpu>=1.7.4",
-    "psutil>=5.9.0",
-    "tree-sitter-languages>=1.10.0",
-    "tree-sitter<0.21",
+    {name = "Martin Papy", email = "martin.papy@example.com"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.12"
 ]
+requires-python = ">=3.12"
 
-[project.urls]
-Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
-Repository = "https://github.com/martin-papy/qdrant-loader"
-Issues = "https://github.com/martin-papy/qdrant-loader/issues"
+# Workspace configuration - this makes it a monorepo
+[tool.setuptools.packages.find]
+where = ["packages"]
 
-[project.scripts]
-qdrant-loader = "qdrant_loader.main:cli"
-
+# Development dependencies for the entire workspace
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "pytest-mock>=3.10.0",
     "pytest-asyncio>=0.21.0",
-    "pytest-timeout>=2.3.0",
-    "responses>=0.24.1",
-    "requests_mock>=1.11.0",
-    "black>=23.11.0",
+    "black>=23.0.0",
     "isort>=5.12.0",
-    "flake8>=6.1.0",
-    "mypy>=1.7.0",
-    "autoflake>=2.2.0",
-    "sqlite-web>=0.6.4",
-    "py-spy",
-    "snakeviz",
-    "memory_profiler",
-    "prometheus_client",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
 ]
 
-[tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
-python_files = [
-    "test_*.py",
-]
-addopts = "--cov=src --cov-report=term-missing --import-mode=importlib"
-asyncio_mode = "strict"
-asyncio_default_fixture_loop_scope = "function"
-markers = [
-    "integration: mark test as integration test",
-]
-filterwarnings = [
-    "ignore::UserWarning:qdrant_loader.qdrant_manager",
-    "ignore:.*type_params.*:DeprecationWarning:pydantic.v1.typing",
-    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
-    "ignore:coroutine 'AsyncMockMixin._execute_mock_call' was never awaited:RuntimeWarning:yaml.scanner",
-]
-
-[tool.coverage.run]
-source = [
-    "src",
-]
-omit = [
-    "tests/*",
-]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "pass",
-    "raise ImportError",
-]
-
+# Tool configurations for the entire workspace
 [tool.black]
-line-length = 100
-target-version = [
-    "py312",
-]
-include = "\\.pyi?$"
-extend-exclude = "# A regex preceded with ^/ will apply only to files and directories\n# in the root of the project.\n^/docs/\n"
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
 
 [tool.isort]
 profile = "black"
 multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
 line_length = 88
+known_first_party = ["qdrant_loader", "mcp_server"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -162,45 +75,73 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
+strict_equality = true
+mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src"
 
-[tool.autoflake]
-in-place = true
-remove-all-unused-imports = true
-remove-unused-variables = true
-recursive = true
-exclude = [
-    "__init__.py",
+[tool.pytest.ini_options]
+testpaths = ["packages/*/tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["packages"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]
-line-length = 100
 target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
 select = [
-    "E",
-    "F",
-    "I",
-    "B",
-    "C4",
-    "UP",
-    "N",
-    "RUF",
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
 ]
 ignore = [
-    "E501",
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "B017",  # pytest.raises(Exception) is too broad
+    "B904",  # raise ... from err
 ]
 
-[tool.ruff.isort]
-known-first-party = [
-    "qdrant_loader",
-]
-
-[tool.ruff.per-file-ignores]
-"tests/*" = [
-    "S101",
-]
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/qdrant_loader"]
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["B011", "B017"]
