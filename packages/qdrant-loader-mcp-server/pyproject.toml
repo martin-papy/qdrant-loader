@@ -1,10 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-mcp-server"
-version = "0.1.0"
+version = "0.2.0b2"
 description = "A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor using Qdrant."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -18,7 +21,7 @@ keywords = [
     "embeddings",
 ]
 authors = [
-    {name = "Martin Papy", email = "martin.papy@example.com"},
+    { name = "Martin Papy", email = "martin.papy@example.com" },
 ]
 dependencies = [
     "fastapi>=0.104.0",
@@ -33,7 +36,6 @@ dependencies = [
     "PyYAML>=6.0.0",
     "rank-bm25>=0.2.2",
     "numpy>=1.26.0",
-    # Optional dependency on the loader package
     "qdrant-loader",
 ]
 classifiers = [
@@ -63,4 +65,6 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["src"] 
+where = [
+    "src",
+]
