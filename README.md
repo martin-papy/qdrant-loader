@@ -100,7 +100,7 @@ mcp-qdrant-loader --log-level DEBUG
 
 ### Project Structure
 
-```
+```text
 qdrant-loader/
 ├── packages/
 │   ├── qdrant-loader/           # Core loader functionality
