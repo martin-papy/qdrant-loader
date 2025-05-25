@@ -202,6 +202,7 @@ async def test_get_embeddings_batch(mock_openai, mock_settings):
         Document(
             title="Test 1",
             content="Test content 1",
+            content_type="text/plain",
             source_type="test",
             source="test_source",
             url="http://test.com/1",
@@ -210,6 +211,7 @@ async def test_get_embeddings_batch(mock_openai, mock_settings):
         Document(
             title="Test 2",
             content="Test content 2",
+            content_type="text/plain",
             source_type="test",
             source="test_source",
             url="http://test.com/2",

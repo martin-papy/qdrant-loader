@@ -66,3 +66,4 @@ packages/*/*.egg-info/
 .cursor/rules/codacy.mdc
 qdrant-loader.code-workspace
 packages/qdrant-loader-mcp-server/coverage.xml
+coverage.xml
