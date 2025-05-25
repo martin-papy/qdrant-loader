@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,7 +19,7 @@ keywords = [
     "document-processing",
 ]
 authors = [
-    {name = "Martin Papy", email = "martin.papy@gmail.com"},
+    { name = "Martin Papy", email = "martin.papy@gmail.com" },
 ]
 dependencies = [
     "click>=8.1.7",
@@ -89,4 +92,6 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["src"] 
+where = [
+    "src",
+]
