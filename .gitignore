@@ -46,6 +46,8 @@ metrics/
 # Test coverage
 .coverage
 htmlcov/
+htmlcov-*/
+coverage-*.xml
 .pytest_cache/
 
 # Distribution
@@ -54,6 +56,12 @@ build/
 config.yaml
 tests/config.test.yaml
 
-#Ignore cursor AI rules
+# Package-specific build artifacts
+packages/*/dist/
+packages/*/build/
+packages/*/*.egg-info/
+*.egg-info/
+
+# Ignore cursor AI rules
 .cursor/rules/codacy.mdc
 qdrant-loader.code-workspace
