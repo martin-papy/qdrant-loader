@@ -103,23 +103,23 @@ async def test_handle_initialize(mcp_handler):
     assert "result" in response
     assert response["result"]["protocolVersion"] == "2024-11-05"
     assert response["result"]["serverInfo"]["name"] == "Qdrant Loader MCP Server"
-    assert response["result"]["capabilities"]["supportsListOfferings"] is True
+    assert response["result"]["capabilities"]["tools"]["enabled"] is True
 
 
 @pytest.mark.asyncio
-async def test_handle_list_offerings(mcp_handler):
-    """Test handling list offerings request."""
-    request = {"jsonrpc": "2.0", "method": "ListOfferings", "params": {}, "id": 2}
+async def test_handle_list_tools(mcp_handler):
+    """Test handling tools/list request."""
+    request = {"jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 2}
     response = await mcp_handler.handle_request(request)
     assert response["jsonrpc"] == "2.0"
     assert response["id"] == 2
     assert "result" in response
-    assert "offerings" in response["result"]
-    assert len(response["result"]["offerings"]) == 1
-    offering = response["result"]["offerings"][0]
-    assert offering["id"] == "qdrant-loader"
-    assert offering["name"] == "Qdrant Loader"
-    assert offering["version"] == "1.0.0"
+    assert "tools" in response["result"]
+    assert len(response["result"]["tools"]) == 1
+    tool = response["result"]["tools"][0]
+    assert tool["name"] == "search"
+    assert "description" in tool
+    assert "inputSchema" in tool
 
 
 @pytest.mark.asyncio
