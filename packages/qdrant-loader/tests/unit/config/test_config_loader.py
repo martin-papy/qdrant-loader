@@ -144,24 +144,34 @@ def test_environment_variable_substitution(test_config_path: Path, test_env_path
 
     load_dotenv(test_env_path, override=True)
 
-    # Modify config to include environment variables
-    with open(test_config_path) as f:
-        import yaml
+    # Store original environment state
+    original_chunk_size = os.environ.get("CHUNK_SIZE")
 
-        config_data = yaml.safe_load(f)
+    try:
+        # Modify config to include environment variables
+        with open(test_config_path) as f:
+            import yaml
 
-    config_data["global"]["chunking"]["chunk_size"] = "${CHUNK_SIZE}"
-    os.environ["CHUNK_SIZE"] = "2000"
+            config_data = yaml.safe_load(f)
 
-    with open(test_config_path, "w") as f:
-        yaml.dump(config_data, f)
+        config_data["global"]["chunking"]["chunk_size"] = "${CHUNK_SIZE}"
+        os.environ["CHUNK_SIZE"] = "2000"
 
-    # Initialize config
-    initialize_config(test_config_path)
-    settings = get_settings()
+        with open(test_config_path, "w") as f:
+            yaml.dump(config_data, f)
 
-    # Verify substitution
-    assert settings.global_config.chunking.chunk_size == 2000
+        # Initialize config
+        initialize_config(test_config_path)
+        settings = get_settings()
+
+        # Verify substitution
+        assert settings.global_config.chunking.chunk_size == 2000
+    finally:
+        # Clean up environment variable
+        if original_chunk_size is None:
+            os.environ.pop("CHUNK_SIZE", None)
+        else:
+            os.environ["CHUNK_SIZE"] = original_chunk_size
 
 
 def test_invalid_yaml(test_config_path: Path):

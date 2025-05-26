@@ -40,16 +40,23 @@ class TextProcessor:
         try:
             self.nlp = spacy.load("en_core_web_sm")
             # Optimize spaCy pipeline for speed
-            # Disable unnecessary components for faster processing
+            # Select only essential components for faster processing
             if "parser" in self.nlp.pipe_names:
-                self.nlp.disable_pipes("parser")  # Disable dependency parsing for speed
-            # Keep only essential components: tokenizer, tagger, ner
+                # Keep only essential components: tokenizer, tagger, ner (exclude parser)
+                essential_pipes = [
+                    pipe for pipe in self.nlp.pipe_names if pipe != "parser"
+                ]
+                self.nlp.select_pipes(enable=essential_pipes)
         except OSError:
             logger.info("Downloading spaCy model...")
             download("en_core_web_sm")
             self.nlp = spacy.load("en_core_web_sm")
             if "parser" in self.nlp.pipe_names:
-                self.nlp.disable_pipes("parser")
+                # Keep only essential components: tokenizer, tagger, ner (exclude parser)
+                essential_pipes = [
+                    pipe for pipe in self.nlp.pipe_names if pipe != "parser"
+                ]
+                self.nlp.select_pipes(enable=essential_pipes)
 
         # Initialize LangChain text splitter with configuration from settings
         self.text_splitter = RecursiveCharacterTextSplitter(
