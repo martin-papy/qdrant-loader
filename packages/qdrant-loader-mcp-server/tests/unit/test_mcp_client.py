@@ -52,10 +52,7 @@ class MockMCPServer:
                         "name": "Qdrant Loader MCP Server",
                         "version": "1.0.0",
                     },
-                    "capabilities": {
-                        "tools": {"enabled": True},
-                        "supportsListOfferings": True,
-                    },
+                    "capabilities": {"tools": {"listChanged": False}},
                 },
             }
         elif method == "ListOfferings":
@@ -151,7 +148,7 @@ async def test_initialize(client: MockMCPServer):
     assert "result" in response
     assert response["result"]["protocolVersion"] == "2024-11-05"
     assert response["result"]["serverInfo"]["name"] == "Qdrant Loader MCP Server"
-    assert response["result"]["capabilities"]["supportsListOfferings"] is True
+    assert response["result"]["capabilities"]["tools"]["listChanged"] is False
 
 
 @pytest.mark.asyncio

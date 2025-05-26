@@ -127,3 +127,22 @@ async def test_process_query_jira_detection(query_processor, mock_openai_client)
 
         assert result["intent"] == "jira"
         assert result["source_type"] == "jira"
+
+
+@pytest.mark.asyncio
+async def test_process_query_localfile_detection(query_processor, mock_openai_client):
+    """Test localfile source detection."""
+    # Mock response for localfile-related query
+    chat_message = MagicMock()
+    chat_message.content = "general"
+    chat_choice = MagicMock()
+    chat_choice.message = chat_message
+    chat_response = MagicMock()
+    chat_response.choices = [chat_choice]
+    mock_openai_client.chat.completions.create.return_value = chat_response
+
+    with patch.object(query_processor, "openai_client", mock_openai_client):
+        result = await query_processor.process_query("find local files")
+
+        assert result["intent"] == "general"
+        assert result["source_type"] == "localfile"

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Local File Support**: Added support for searching local files through the new localfile connector
+- Enhanced source type filtering to include localfile alongside git, confluence, jira, and documentation
+- Improved query processing with localfile-specific keyword detection
+- Updated MCP tool definition to include localfile in source_types enum
+
 ### Changed
 
 - Moved to monorepo structure under `packages/qdrant-loader-mcp-server/`
