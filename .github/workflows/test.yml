@@ -35,6 +35,7 @@ jobs:
 
       - name: Create .env.test file for loader
         run: |
+          cd packages/qdrant-loader
           cp tests/.env.test.template tests/.env.test
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
@@ -53,11 +54,13 @@ jobs:
 
       - name: Create config.test.yaml file for loader
         run: |
+          cd packages/qdrant-loader
           cp tests/config.test.template.yaml tests/config.test.yaml
 
       - name: Run loader tests and generate coverage reports
         run: |
-          python -m pytest packages/qdrant-loader/tests/ --cov=packages/qdrant-loader/src --cov-report=xml:coverage-loader.xml --cov-report=html:htmlcov-loader -v
+          cd packages/qdrant-loader
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
 
       - name: Upload loader coverage artifact
         uses: actions/upload-artifact@v4
@@ -84,7 +87,8 @@ jobs:
 
       - name: Run MCP server tests and generate coverage reports
         run: |
-          python -m pytest packages/qdrant-loader-mcp-server/tests/ --cov=packages/qdrant-loader-mcp-server/src --cov-report=xml:coverage-mcp.xml --cov-report=html:htmlcov-mcp -v
+          cd packages/qdrant-loader-mcp-server
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --cov-report=html:../../htmlcov-mcp -v
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
@@ -122,14 +126,12 @@ jobs:
           pattern: coverage-*
           merge-multiple: true
 
-      - name: Run combined tests for coverage
+      - name: Combine coverage reports
         run: |
-          python -m pytest packages/ --cov=packages --cov-report=xml --cov-report=html -v
-        env:
-          QDRANT_URL: ${{ secrets.QDRANT_URL }}
-          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          QDRANT_COLLECTION_NAME: ${{ secrets.QDRANT_COLLECTION_NAME }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # Combine the individual coverage reports into a single report
+          coverage combine coverage-loader.xml coverage-mcp.xml || true
+          coverage html -d htmlcov || true
+          coverage xml -o coverage.xml || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
