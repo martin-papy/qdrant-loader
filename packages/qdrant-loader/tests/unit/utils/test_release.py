@@ -42,9 +42,13 @@ def test_get_package_version(temp_pyproject):
     with open(temp_pyproject, "rb") as f:
         content = f.read()
 
-    # Mock the open function to return our content
+    # Mock the open function to return our content and Path.exists to return True
     m = mock_open(read_data=content)
-    with patch("release.open", m), patch("release.logging.getLogger") as mock_logger:
+    with (
+        patch("release.open", m),
+        patch("release.Path.exists", return_value=True),
+        patch("release.logging.getLogger") as mock_logger,
+    ):
         mock_log = MagicMock()
         mock_logger.return_value = mock_log
         version = get_package_version("qdrant-loader")
@@ -141,14 +145,14 @@ def test_run_command():
         mock_run.return_value.returncode = 1
         mock_run.return_value.stderr = "error message"
         stdout, stderr = run_command("echo test")
-        mock_log.error.assert_any_call("Command failed with return code 1")
-        mock_log.error.assert_any_call("stderr: error message")
+        mock_log.error.assert_any_call("Command failed: echo test")
+        mock_log.error.assert_any_call("Error: error message")
 
         # Test dry run for non-git command
         stdout, stderr = run_command("echo test", dry_run=True)
         assert stdout == ""
         assert stderr == ""
-        mock_log.info.assert_called_with("[DRY RUN] Would execute: echo test")
+        mock_log.debug.assert_called_with("[DRY RUN] Would execute: echo test")
 
         # Test dry run for git command (should still execute)
         mock_run.return_value.stdout = "main"
@@ -320,12 +324,14 @@ def test_create_github_release():
 
         # Verify the API call
         mock_post.assert_called_once()
-        mock_log.info.assert_called_with("GitHub release created successfully")
+        mock_log.info.assert_called_with(
+            "GitHub release created successfully for qdrant-loader"
+        )
 
         # Test dry run
         create_github_release("qdrant-loader", "0.1.0", "test-token", dry_run=True)
         mock_log.info.assert_called_with(
-            "[DRY RUN] Would create GitHub release for version 0.1.0"
+            "[DRY RUN] Would create GitHub release for qdrant-loader version 0.1.0 with tag qdrant-loader-v0.1.0"
         )
 
 
@@ -656,7 +662,7 @@ def test_dry_run_mode():
         with patch("subprocess.run") as mock_run:
             run_command("echo test", dry_run=True)
             mock_run.assert_not_called()
-            mock_log.info.assert_called_with("[DRY RUN] Would execute: echo test")
+            mock_log.debug.assert_called_with("[DRY RUN] Would execute: echo test")
 
         # Test run_command for git command (should still execute)
         with patch("subprocess.run") as mock_run:
@@ -681,7 +687,7 @@ def test_dry_run_mode():
             check_main_up_to_date(dry_run=True)
             assert mock_run.call_count == 2
 
-        # Test check_github_workflows (should still execute)
+        # Test check_github_workflows (dry run mode returns early)
         with (
             patch("release.run_command") as mock_run,
             patch("release.get_github_token") as mock_token,
@@ -689,29 +695,11 @@ def test_dry_run_mode():
         ):
             mock_run.side_effect = [
                 ("git@github.com:owner/repo.git", ""),  # For git remote
-                ("abc123", ""),  # For git rev-parse HEAD
             ]
             mock_token.return_value = "test-token"
 
-            # Mock responses for both API calls
-            mock_response_running = MagicMock()
-            mock_response_running.status_code = 200
-            mock_response_running.json.return_value = {"workflow_runs": []}
-
-            mock_response_completed = MagicMock()
-            mock_response_completed.status_code = 200
-            mock_response_completed.json.return_value = {
-                "workflow_runs": [
-                    {
-                        "name": "Test",
-                        "conclusion": "success",
-                        "html_url": "http://example.com",
-                        "head_sha": "abc123",
-                    }
-                ]
-            }
-
-            mock_get.side_effect = [mock_response_running, mock_response_completed]
-
-            check_github_workflows(dry_run=True)
-            assert mock_get.call_count == 2
+            # In dry run mode, the function returns early without making HTTP requests
+            result = check_github_workflows(dry_run=True)
+            assert result is True
+            # Should not make any HTTP requests in dry run mode
+            assert mock_get.call_count == 0

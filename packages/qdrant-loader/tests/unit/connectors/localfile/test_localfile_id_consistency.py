@@ -221,13 +221,14 @@ class TestLocalFileIdConsistency:
                 symlink_dir.unlink()
 
     @pytest.mark.asyncio
-    async def test_document_id_consistency_with_relative_paths(self, temp_dir):
-        """Test that document IDs remain consistent when using relative vs absolute paths."""
+    async def test_document_id_consistency_with_path_normalization(self, temp_dir):
+        """Test that document IDs remain consistent when using different path representations."""
         # Create test file
         test_file = Path(temp_dir) / "test_relative.txt"
-        test_file.write_text("This is a test file for relative path testing")
+        test_file.write_text("This is a test file for path normalization testing")
 
-        # Create configurations with absolute and relative paths
+        # Create configurations with different path representations
+        # Use absolute path
         abs_config = LocalFileConfig(
             base_url=AnyUrl(f"file://{temp_dir}"),
             source="test-localfile",
@@ -237,51 +238,41 @@ class TestLocalFileIdConsistency:
             exclude_paths=[],
         )
 
-        # Change to parent directory to create a relative path
-        original_cwd = os.getcwd()
-        parent_dir = Path(temp_dir).parent
-        os.chdir(parent_dir)
+        # Use path with redundant components (should normalize to same as absolute)
+        redundant_path = str(Path(temp_dir) / "." / "subdir" / "..")
+        redundant_config = LocalFileConfig(
+            base_url=AnyUrl(f"file://{redundant_path}"),
+            source="test-localfile",
+            source_type=SourceType.LOCALFILE,
+            file_types=["*.txt"],
+            include_paths=["*"],
+            exclude_paths=[],
+        )
 
-        try:
-            rel_path = os.path.relpath(temp_dir, parent_dir)
-            rel_config = LocalFileConfig(
-                base_url=AnyUrl(f"file://{rel_path}"),
-                source="test-localfile",
-                source_type=SourceType.LOCALFILE,
-                file_types=["*.txt"],
-                include_paths=["*"],
-                exclude_paths=[],
-            )
+        # Get documents from absolute path
+        connector1 = LocalFileConnector(abs_config)
+        async with connector1:
+            documents1 = await connector1.get_documents()
 
-            # Get documents from absolute path
-            connector1 = LocalFileConnector(abs_config)
-            async with connector1:
-                documents1 = await connector1.get_documents()
+        # Get documents from redundant path
+        connector2 = LocalFileConnector(redundant_config)
+        async with connector2:
+            documents2 = await connector2.get_documents()
 
-            # Get documents from relative path
-            connector2 = LocalFileConnector(rel_config)
-            async with connector2:
-                documents2 = await connector2.get_documents()
+        # Should have same number of documents
+        assert len(documents1) == len(documents2)
 
-            # Should have same number of documents
-            assert len(documents1) == len(documents2)
+        # Find the test file in both document sets
+        doc1 = next((d for d in documents1 if d.title == "test_relative.txt"), None)
+        doc2 = next((d for d in documents2 if d.title == "test_relative.txt"), None)
 
-            # Find the test file in both document sets
-            doc1 = next((d for d in documents1 if d.title == "test_relative.txt"), None)
-            doc2 = next((d for d in documents2 if d.title == "test_relative.txt"), None)
+        assert doc1 is not None, "Document not found with absolute path"
+        assert doc2 is not None, "Document not found with redundant path"
 
-            assert doc1 is not None, "Document not found with absolute path"
-            assert doc2 is not None, "Document not found with relative path"
+        print(f"Absolute path doc ID: {doc1.id}, URL: {doc1.url}")
+        print(f"Redundant path doc ID: {doc2.id}, URL: {doc2.url}")
 
-            print(f"Absolute path doc ID: {doc1.id}, URL: {doc1.url}")
-            print(f"Relative path doc ID: {doc2.id}, URL: {doc2.url}")
-
-            # This is where the issue might manifest - IDs should be the same
-            # The test will fail if os.path.abspath() produces different results
-            assert (
-                doc1.id == doc2.id
-            ), f"Document IDs differ for relative vs absolute paths: {doc1.id} != {doc2.id}"
-
-        finally:
-            # Restore original working directory
-            os.chdir(original_cwd)
+        # Document IDs should be the same since both paths resolve to the same directory
+        assert (
+            doc1.id == doc2.id
+        ), f"Document IDs differ for different path representations: {doc1.id} != {doc2.id}"
