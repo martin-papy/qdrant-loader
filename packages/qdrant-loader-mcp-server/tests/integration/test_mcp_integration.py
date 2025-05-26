@@ -145,7 +145,7 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
         "method": "initialize",
         "params": {
             "protocolVersion": "2024-11-05",
-            "capabilities": {"tools": {"enabled": True}},
+            "capabilities": {"tools": {"listChanged": False}},
         },
         "id": 1,
     }

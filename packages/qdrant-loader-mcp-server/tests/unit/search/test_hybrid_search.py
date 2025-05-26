@@ -32,7 +32,16 @@ def mock_qdrant_client():
         "source_type": "confluence",
     }
 
-    client.search.return_value = [search_result1, search_result2]
+    search_result3 = MagicMock()
+    search_result3.id = "3"
+    search_result3.score = 0.6
+    search_result3.payload = {
+        "content": "Test content 3",
+        "metadata": {"title": "Test Doc 3", "file_path": "/path/to/file.txt"},
+        "source_type": "localfile",
+    }
+
+    client.search.return_value = [search_result1, search_result2, search_result3]
 
     # Create mock scroll results
     scroll_result1 = MagicMock()
@@ -51,7 +60,18 @@ def mock_qdrant_client():
         "source_type": "confluence",
     }
 
-    client.scroll.return_value = ([scroll_result1, scroll_result2], None)
+    scroll_result3 = MagicMock()
+    scroll_result3.id = "3"
+    scroll_result3.payload = {
+        "content": "Test content 3",
+        "metadata": {"title": "Test Doc 3", "file_path": "/path/to/file.txt"},
+        "source_type": "localfile",
+    }
+
+    client.scroll.return_value = (
+        [scroll_result1, scroll_result2, scroll_result3],
+        None,
+    )
     return client
 
 
@@ -107,6 +127,19 @@ async def test_search_with_source_type_filter(hybrid_search):
 
     assert len(results) > 0
     assert all(r.source_type == "git" for r in results)
+
+
+@pytest.mark.asyncio
+async def test_search_with_localfile_filter(hybrid_search):
+    """Test search with localfile source type filtering."""
+    # Mock the internal methods to avoid actual API calls
+    hybrid_search._get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3] * 512)
+    hybrid_search._expand_query = AsyncMock(return_value="test query")
+
+    results = await hybrid_search.search("test query", source_types=["localfile"])
+
+    assert len(results) > 0
+    assert all(r.source_type == "localfile" for r in results)
 
 
 @pytest.mark.asyncio

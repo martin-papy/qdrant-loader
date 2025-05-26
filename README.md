@@ -89,8 +89,11 @@ qdrant-loader config
 # Start the MCP server
 mcp-qdrant-loader
 
-# Or run with custom configuration and port
-mcp-qdrant-loader --config custom-config.yaml --port 8080
+# Show help and available options
+mcp-qdrant-loader --help
+
+# Show version information
+mcp-qdrant-loader --version
 
 # Run with debug logging
 mcp-qdrant-loader --log-level DEBUG
