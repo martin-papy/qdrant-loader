@@ -157,13 +157,7 @@ class MCPHandler:
             result={
                 "protocolVersion": "2024-11-05",
                 "serverInfo": {"name": "Qdrant Loader MCP Server", "version": "1.0.0"},
-                "capabilities": {
-                    "tools": {"enabled": True, "supported": ["search"]},
-                    "prompts": {"enabled": False},
-                    "resources": {"enabled": True},
-                    "logging": {"enabled": False},
-                    "roots": {"listChanged": False},
-                },
+                "capabilities": {"tools": {"listChanged": False}},
             },
         )
 
@@ -197,7 +191,13 @@ class MCPHandler:
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": ["git", "confluence", "jira", "documentation"],
+                            "enum": [
+                                "git",
+                                "confluence",
+                                "jira",
+                                "documentation",
+                                "localfile",
+                            ],
                         },
                         "description": "Optional list of source types to filter results",
                     },

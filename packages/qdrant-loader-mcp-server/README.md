@@ -9,7 +9,8 @@ A Model Context Protocol (MCP) server that provides Retrieval-Augmented Generati
 - **MCP Protocol Implementation**: Full compliance with MCP 2024-11-05 specification
 - **Semantic Search**: Advanced vector search across multiple data sources
 - **Real-time Processing**: Streaming responses for large result sets
-- **Multi-source Integration**: Search across Git, Confluence, Jira, and documentation sources
+- **Multi-source Integration**: Search across Git, Confluence, Jira, documentation, and local file sources
+- **Local File Support**: Index and search local files with configurable filtering and file type support
 - **Natural Language Queries**: Intelligent query processing and expansion
 
 ### Advanced Features
@@ -73,9 +74,11 @@ export OPENAI_API_KEY="your_openai_key"    # For embeddings
 
 # Optional configuration
 export QDRANT_COLLECTION_NAME="my_collection"  # Default: "documents"
-export SERVER_HOST="localhost"                 # Default: "localhost"
-export SERVER_PORT="8000"                     # Default: 8000
-export LOG_LEVEL="INFO"                       # Default: INFO
+
+# Optional MCP logging configuration
+export MCP_LOG_LEVEL="INFO"                    # Default: INFO
+export MCP_LOG_FILE="/path/to/logs/mcp.log"    # Recommended: log to file
+export MCP_DISABLE_CONSOLE_LOGGING="true"      # Recommended: true for Cursor
 ```
 
 ### 2. Start the Server
@@ -84,8 +87,11 @@ export LOG_LEVEL="INFO"                       # Default: INFO
 # Start MCP server
 mcp-qdrant-loader
 
-# With custom configuration
-mcp-qdrant-loader --config custom-config.yaml --port 8080
+# Show help and available options
+mcp-qdrant-loader --help
+
+# Show version information
+mcp-qdrant-loader --version
 
 # With debug logging
 mcp-qdrant-loader --log-level DEBUG
@@ -94,13 +100,11 @@ mcp-qdrant-loader --log-level DEBUG
 ### 3. Test the Server
 
 ```bash
-# Test basic connectivity
-curl http://localhost:8000/health
+# Test the MCP server with a manual JSON-RPC call
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | mcp-qdrant-loader
 
-# Test search functionality
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "authentication methods", "limit": 5}'
+# The server communicates via stdio (JSON-RPC), not HTTP
+# For integration testing, use it with Cursor or other MCP clients
 ```
 
 ## 🔧 Configuration
@@ -113,130 +117,147 @@ curl -X POST http://localhost:8000/search \
 | `QDRANT_API_KEY` | QDrant API key | None | Cloud only |
 | `QDRANT_COLLECTION_NAME` | Collection name | `documents` | No |
 | `OPENAI_API_KEY` | OpenAI API key | None | Yes |
-| `SERVER_HOST` | Server bind address | `localhost` | No |
-| `SERVER_PORT` | Server port | `8000` | No |
-| `LOG_LEVEL` | Logging level | `INFO` | No |
+| `MCP_LOG_LEVEL` | MCP-specific log level | `INFO` | No |
+| `MCP_LOG_FILE` | Path to MCP log file | None | No |
+| `MCP_DISABLE_CONSOLE_LOGGING` | Disable console logging | `false` | **Yes for Cursor** |
 
-### Configuration File
+### Configuration via Environment Variables
 
-Create a `config.yaml` file for advanced configuration:
+The MCP server is configured entirely through environment variables. Configuration files are not currently supported.
 
-```yaml
-# Server configuration
-server:
-  host: "0.0.0.0"
-  port: 8000
-  workers: 4
+**Important Notes:**
 
-# QDrant configuration
-qdrant:
-  url: "${QDRANT_URL}"
-  api_key: "${QDRANT_API_KEY}"
-  collection_name: "documents"
-  timeout: 30
-
-# Search configuration
-search:
-  default_limit: 10
-  max_limit: 100
-  similarity_threshold: 0.7
-  enable_hybrid_search: true
-
-# Embedding configuration
-embedding:
-  model: "text-embedding-3-small"
-  batch_size: 100
-  cache_embeddings: true
-
-# Logging configuration
-logging:
-  level: "INFO"
-  format: "json"
-  file: "mcp-server.log"
-```
+- The `--config` CLI option exists but is not yet implemented. All configuration must be done via environment variables as shown in the table above.
+- **For Cursor Integration**: Set `MCP_DISABLE_CONSOLE_LOGGING=true` to prevent console output from interfering with JSON-RPC communication over stdio.
+- **For Debugging**: Use `MCP_LOG_FILE` to write logs to a file when console logging is disabled.
 
 ## 🎯 Usage Examples
 
 ### Cursor Integration
 
-Add to your Cursor MCP configuration:
+Add to your Cursor MCP configuration (`.cursor/mcp.json`):
 
 ```json
 {
   "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
+    "mcp-qdrant-loader": {
+      "command": "/path/to/your/venv/bin/mcp-qdrant-loader",
       "args": [],
       "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "QDRANT_API_KEY": "your_api_key",
-        "OPENAI_API_KEY": "your_openai_key"
+        "QDRANT_URL": "https://your-cluster.gcp.cloud.qdrant.io",
+        "QDRANT_API_KEY": "your_qdrant_api_key",
+        "OPENAI_API_KEY": "sk-proj-your_openai_api_key",
+        "QDRANT_COLLECTION_NAME": "your_collection_name",
+        "MCP_LOG_LEVEL": "INFO",
+        "MCP_LOG_FILE": "/path/to/logs/mcp.log",
+        "MCP_DISABLE_CONSOLE_LOGGING": "true"
       }
     }
   }
 }
 ```
 
-### Search Queries
+**Important Configuration Notes:**
+
+- **`command`**: Use the full path to your virtual environment's `mcp-qdrant-loader` executable
+- **`QDRANT_URL`**: Your QDrant instance URL (local or cloud)
+- **`QDRANT_API_KEY`**: Required for QDrant Cloud, optional for local instances
+- **`OPENAI_API_KEY`**: Valid OpenAI API key for embeddings (starts with `sk-proj-` for project keys)
+- **`QDRANT_COLLECTION_NAME`**: Name of your QDrant collection containing the data
+- **`MCP_LOG_LEVEL`**: Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- **`MCP_LOG_FILE`**: Path where MCP server logs will be written (helpful for debugging)
+- **`MCP_DISABLE_CONSOLE_LOGGING`**: Set to "true" to disable console output and only log to file
+
+**Example with Local QDrant:**
+
+```json
+{
+  "mcpServers": {
+    "mcp-qdrant-loader": {
+      "command": "/Users/yourname/project/venv/bin/mcp-qdrant-loader",
+      "args": [],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "sk-proj-your_openai_api_key",
+        "QDRANT_COLLECTION_NAME": "documents",
+        "MCP_LOG_LEVEL": "INFO",
+        "MCP_LOG_FILE": "/Users/yourname/project/logs/mcp.log",
+        "MCP_DISABLE_CONSOLE_LOGGING":"true"
+      }
+    }
+  }
+}
+```
+
+### Manual MCP Testing
 
 ```bash
-# Basic search
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "How to implement authentication?",
-    "limit": 5
-  }'
+# Basic search via JSON-RPC
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"How to implement authentication?","limit":5}}}' | mcp-qdrant-loader
 
 # Filtered search
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "database migration",
-    "source_types": ["git", "confluence"],
-    "limit": 10
-  }'
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search","arguments":{"query":"database migration","source_types":["git","confluence"],"limit":10}}}' | mcp-qdrant-loader
 
-# Advanced search with metadata
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "API documentation",
-    "filters": {
-      "project": "backend-api",
-      "author": "john.doe"
-    },
-    "limit": 20
-  }'
+# Search local files
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"query":"configuration files","source_types":["localfile"],"limit":5}}}' | mcp-qdrant-loader
+
+# Note: The server communicates via JSON-RPC over stdio, not HTTP
+# For normal usage, integrate with Cursor or other MCP-compatible tools
 ```
 
 ### MCP Protocol Usage
 
+The server communicates via JSON-RPC over stdio. Here's how to integrate it programmatically:
+
 ```python
 import asyncio
-from mcp_client import MCPClient
+import json
+import subprocess
 
-async def search_documents():
-    client = MCPClient("http://localhost:8000")
+async def search_via_mcp(query: str, limit: int = 5):
+    """Search using the MCP server via subprocess."""
+    # Prepare the JSON-RPC request
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "search",
+            "arguments": {
+                "query": query,
+                "limit": limit
+            }
+        }
+    }
     
-    # Initialize connection
-    await client.initialize()
+    # Call the MCP server
+    process = subprocess.Popen(
+        ["mcp-qdrant-loader"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
     
-    # Search for documents
-    results = await client.call_tool("search", {
-        "query": "authentication implementation",
-        "source_types": ["git", "confluence"],
-        "limit": 5
-    })
+    stdout, stderr = process.communicate(json.dumps(request))
     
+    if process.returncode == 0:
+        response = json.loads(stdout)
+        return response.get("result", [])
+    else:
+        raise Exception(f"MCP server error: {stderr}")
+
+# Example usage
+async def main():
+    results = await search_via_mcp("authentication implementation", limit=3)
     for result in results:
-        print(f"Title: {result['title']}")
-        print(f"Source: {result['source']}")
-        print(f"Content: {result['content'][:200]}...")
+        print(f"Title: {result.get('title', 'N/A')}")
+        print(f"Source: {result.get('source', 'N/A')}")
+        print(f"Content: {result.get('content', '')[:200]}...")
         print("---")
 
 # Run the search
-asyncio.run(search_documents())
+asyncio.run(main())
 ```
 
 ## 🛠️ API Reference
@@ -250,7 +271,7 @@ Perform semantic search across data sources.
 **Parameters:**
 
 - `query` (string): Natural language search query
-- `source_types` (array, optional): Filter by source types (`git`, `confluence`, `jira`, `documentation`)
+- `source_types` (array, optional): Filter by source types (`git`, `confluence`, `jira`, `documentation`, `localfile`)
 - `limit` (integer, optional): Maximum number of results (default: 10, max: 100)
 - `filters` (object, optional): Additional metadata filters
 
@@ -279,37 +300,29 @@ Perform semantic search across data sources.
 }
 ```
 
-### REST API Endpoints
+### JSON-RPC Methods
 
-#### GET /health
+The server supports these JSON-RPC methods over stdio:
 
-Health check endpoint.
+#### tools/list
 
-#### POST /search
+List available tools.
 
-Direct search endpoint (same as MCP search tool).
+#### tools/call
 
-#### GET /stats
+Call a specific tool (currently only "search" is available).
 
-Server and collection statistics.
+#### initialize
 
-#### GET /sources
+Initialize the MCP session.
 
-List available data sources.
+**Note**: The server does not provide HTTP/REST endpoints. All communication is via JSON-RPC over stdio.
 
 ## 🔍 Advanced Features
 
 ### Hybrid Search
 
-Combines semantic vector search with keyword matching:
-
-```python
-# Enable hybrid search in configuration
-search:
-  enable_hybrid_search: true
-  semantic_weight: 0.7
-  keyword_weight: 0.3
-```
+The server automatically combines semantic vector search with keyword matching for optimal results. This feature is always enabled and does not require configuration.
 
 ### Query Expansion
 
@@ -322,15 +335,7 @@ Automatically expands queries with related terms:
 
 ### Result Caching
 
-Intelligent caching for improved performance:
-
-```python
-# Cache configuration
-cache:
-  enabled: true
-  ttl: 3600  # 1 hour
-  max_size: 1000  # Maximum cached queries
-```
+The server includes built-in caching for improved performance. Caching is automatically enabled and optimized for typical usage patterns.
 
 ## 🧪 Development
 
@@ -372,8 +377,8 @@ pytest packages/qdrant-loader-mcp-server/tests/integration/
 # Start development server with auto-reload
 mcp-qdrant-loader --dev --reload
 
-# Run with custom configuration
-mcp-qdrant-loader --config dev-config.yaml --log-level DEBUG
+# Run with debug logging
+mcp-qdrant-loader --log-level DEBUG
 ```
 
 ## 🔗 Integration Examples
@@ -385,6 +390,7 @@ mcp-qdrant-loader --config dev-config.yaml --log-level DEBUG
 qdrant-loader init
 qdrant-loader ingest --source-type git --source my-repo
 qdrant-loader ingest --source-type confluence --source tech-docs
+qdrant-loader ingest --source-type localfile --source /path/to/local/files
 
 # 2. Start MCP server
 mcp-qdrant-loader
@@ -396,30 +402,57 @@ mcp-qdrant-loader
 ### Custom Integration
 
 ```python
-import requests
+import json
+import subprocess
 
-class CustomRAGClient:
-    def __init__(self, server_url="http://localhost:8000"):
-        self.server_url = server_url
+class MCPRAGClient:
+    def __init__(self, mcp_command="mcp-qdrant-loader"):
+        self.mcp_command = mcp_command
     
     def search(self, query, **kwargs):
-        response = requests.post(
-            f"{self.server_url}/search",
-            json={"query": query, **kwargs}
+        """Search using the MCP server."""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "search",
+                "arguments": {"query": query, **kwargs}
+            }
+        }
+        
+        process = subprocess.Popen(
+            [self.mcp_command],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
         )
-        return response.json()
+        
+        stdout, stderr = process.communicate(json.dumps(request))
+        
+        if process.returncode == 0:
+            response = json.loads(stdout)
+            return response.get("result", [])
+        else:
+            raise Exception(f"MCP server error: {stderr}")
     
     def get_context(self, query, max_tokens=4000):
+        """Get context from search results."""
         results = self.search(query, limit=10)
         context = ""
-        for result in results["results"]:
-            if len(context) + len(result["content"]) < max_tokens:
-                context += f"{result['title']}\n{result['content']}\n\n"
+        for result in results:
+            content = f"{result.get('title', '')}\n{result.get('content', '')}\n\n"
+            if len(context) + len(content) < max_tokens:
+                context += content
+            else:
+                break
         return context
 
 # Usage
-client = CustomRAGClient()
+client = MCPRAGClient()
 context = client.get_context("How to implement caching?")
+print(context)
 ```
 
 ## 📋 Requirements
@@ -445,6 +478,70 @@ We welcome contributions! See the [Contributing Guide](../../docs/CONTRIBUTING.m
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](../../LICENSE) file for details.
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### MCP Tool Not Working in Cursor
+
+If the MCP search tool returns errors or no results:
+
+1. **Disable Console Logging**: Console output can interfere with JSON-RPC communication. Always set `MCP_DISABLE_CONSOLE_LOGGING=true` for Cursor.
+2. **Check API Keys**: Ensure your OpenAI API key is valid and has sufficient credits
+3. **Enable File Logging**: Add logging configuration to your `.cursor/mcp.json`:
+
+   ```json
+   "env": {
+     "MCP_LOG_LEVEL": "DEBUG",
+     "MCP_LOG_FILE": "/path/to/logs/mcp.log",
+     "MCP_DISABLE_CONSOLE_LOGGING": "true"
+   }
+   ```
+
+4. **Check Logs**: Monitor the log file for errors:
+
+   ```bash
+   tail -f /path/to/logs/mcp.log
+   ```
+
+5. **Verify Collection**: Ensure your QDrant collection exists and contains data
+6. **Test Manually**: Test the server directly:
+
+   ```bash
+   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | /path/to/venv/bin/mcp-qdrant-loader
+   ```
+
+#### Authentication Errors
+
+- **OpenAI 401 Error**: Invalid or expired OpenAI API key
+- **QDrant Connection Error**: Check QDrant URL and API key
+- **Collection Not Found**: Verify collection name matches your data
+
+#### Performance Issues
+
+- **Slow Responses**: Increase QDrant timeout or reduce search limit
+- **Memory Usage**: Monitor memory usage with large collections
+- **Network Latency**: Use QDrant Cloud regions close to your location
+
+### Debug Mode
+
+Enable debug logging for detailed troubleshooting:
+
+```json
+{
+  "mcpServers": {
+    "mcp-qdrant-loader": {
+      "command": "/path/to/venv/bin/mcp-qdrant-loader",
+      "args": ["--log-level", "DEBUG"],
+      "env": {
+        "MCP_LOG_LEVEL": "DEBUG",
+        "MCP_LOG_FILE": "/tmp/mcp-debug.log"
+      }
+    }
+  }
+}
+```
 
 ## 🆘 Support
 

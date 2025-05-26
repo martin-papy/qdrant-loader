@@ -131,6 +131,7 @@ class QueryProcessor:
             "git": ["git", "code", "repository", "repo"],
             "confluence": ["confluence", "doc", "documentation", "wiki"],
             "jira": ["jira", "issue", "ticket", "bug"],
+            "localfile": ["localfile", "local", "file", "files", "filesystem", "disk"],
         }
 
         # Check for explicit source type mentions

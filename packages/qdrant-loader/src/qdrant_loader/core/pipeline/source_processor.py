@@ -1,0 +1,75 @@
+"""Source processor for handling different source types."""
+
+import asyncio
+from collections.abc import Mapping
+from typing import List, Type
+
+from qdrant_loader.config.source_config import SourceConfig
+from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
+
+
+class SourceProcessor:
+    """Handles processing of different source types."""
+
+    def __init__(self, shutdown_event: asyncio.Event | None = None):
+        self.shutdown_event = shutdown_event or asyncio.Event()
+
+    async def process_source_type(
+        self,
+        source_configs: Mapping[str, SourceConfig],
+        connector_class: Type[BaseConnector],
+        source_type: str,
+    ) -> List[Document]:
+        """Process documents from a specific source type.
+
+        Args:
+            source_configs: Mapping of source name to source configuration
+            connector_class: The connector class to use for this source type
+            source_type: The type of source being processed
+
+        Returns:
+            List of documents from all sources of this type
+        """
+        logger.info(f"Processing {source_type} sources: {list(source_configs.keys())}")
+
+        all_documents = []
+
+        for source_name, source_config in source_configs.items():
+            if self.shutdown_event.is_set():
+                logger.info(
+                    f"Shutdown requested, skipping {source_type} source: {source_name}"
+                )
+                break
+
+            try:
+                logger.info(f"Processing {source_type} source: {source_name}")
+
+                # Create connector instance and use as async context manager
+                connector = connector_class(source_config)
+
+                # Use the connector as an async context manager to ensure proper initialization
+                async with connector:
+                    # Get documents from this source
+                    documents = await connector.get_documents()
+
+                    logger.info(
+                        f"Retrieved {len(documents)} documents from {source_type} source: {source_name}"
+                    )
+                    all_documents.extend(documents)
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to process {source_type} source {source_name}: {e}",
+                    exc_info=True,
+                )
+                # Continue processing other sources even if one fails
+                continue
+
+        logger.info(
+            f"Completed processing {source_type} sources. Total documents: {len(all_documents)}"
+        )
+        return all_documents

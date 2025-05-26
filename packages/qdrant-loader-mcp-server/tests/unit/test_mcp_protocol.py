@@ -103,7 +103,7 @@ async def test_handle_initialize(mcp_handler):
     assert "result" in response
     assert response["result"]["protocolVersion"] == "2024-11-05"
     assert response["result"]["serverInfo"]["name"] == "Qdrant Loader MCP Server"
-    assert response["result"]["capabilities"]["tools"]["enabled"] is True
+    assert response["result"]["capabilities"]["tools"]["listChanged"] is False
 
 
 @pytest.mark.asyncio

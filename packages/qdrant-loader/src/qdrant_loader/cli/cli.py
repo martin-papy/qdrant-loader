@@ -271,7 +271,7 @@ async def ingest(
             )
         finally:
             # Ensure proper cleanup of the async pipeline
-            pipeline.cleanup()
+            await pipeline.cleanup()
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
