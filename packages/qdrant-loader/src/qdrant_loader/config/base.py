@@ -7,7 +7,7 @@ must implement.
 
 from typing import Any, Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ConfigProtocol(Protocol):
@@ -49,11 +49,7 @@ class BaseConfig(BaseModel):
     It provides common functionality and implements the ConfigProtocol.
     """
 
-    class Config:
-        """Pydantic configuration."""
-
-        arbitrary_types_allowed = True
-        extra = "allow"
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary.
@@ -61,7 +57,7 @@ class BaseConfig(BaseModel):
         Returns:
             Dict[str, Any]: The configuration as a dictionary.
         """
-        return self.dict()
+        return self.model_dump()
 
 
 class BaseSourceConfig(BaseConfig):

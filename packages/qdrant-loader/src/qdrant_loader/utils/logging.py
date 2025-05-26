@@ -86,7 +86,7 @@ class LoggingConfig:
             structlog.stdlib.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
+            # Removed format_exc_info for prettier exception formatting
             structlog.processors.UnicodeDecoder(),
             structlog.processors.CallsiteParameterAdder(
                 [
