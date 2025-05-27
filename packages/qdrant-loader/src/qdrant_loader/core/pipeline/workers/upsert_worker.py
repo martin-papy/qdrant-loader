@@ -76,6 +76,17 @@ class UpsertWorker(BaseWorker):
                             "source": chunk.source,
                             "source_type": chunk.source_type,
                             "created_at": chunk.created_at.isoformat(),
+                            "updated_at": (
+                                getattr(
+                                    chunk, "updated_at", chunk.created_at
+                                ).isoformat()
+                                if hasattr(chunk, "updated_at")
+                                else chunk.created_at.isoformat()
+                            ),
+                            "title": getattr(
+                                chunk, "title", chunk.metadata.get("title", "")
+                            ),
+                            "url": getattr(chunk, "url", chunk.metadata.get("url", "")),
                             "document_id": chunk.metadata.get(
                                 "parent_document_id", chunk.id
                             ),
