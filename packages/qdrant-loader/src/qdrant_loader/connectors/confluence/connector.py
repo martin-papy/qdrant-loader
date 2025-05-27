@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+from datetime import datetime
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -375,20 +376,43 @@ class ConfluenceConnector(BaseConnector):
                 version.get("number", 1) if isinstance(version, dict) else 1
             )
 
-            # Get URL and author information
-            author = content.get("history", {}).get("createdBy", {}).get("displayName")
+            # Get author information with better error handling
+            author = None
+            try:
+                author = (
+                    content.get("history", {}).get("createdBy", {}).get("displayName")
+                )
+                if not author:
+                    # Fallback to version author for Data Center
+                    author = content.get("version", {}).get("by", {}).get("displayName")
+            except (AttributeError, TypeError):
+                logger.debug(
+                    "Could not extract author information", content_id=content_id
+                )
+
+            # Get timestamps with improved parsing for both Cloud and Data Center
             created_at = None
-            if "history" in content and "createdDate" in content["history"]:
-                try:
-                    created_at = content["history"]["createdDate"]
-                except (ValueError, TypeError):
-                    pass
             updated_at = None
-            if "version" in content and "when" in content["version"]:
-                try:
+
+            # Try to get creation date from history (both Cloud and Data Center)
+            try:
+                if "history" in content and "createdDate" in content["history"]:
+                    created_at = content["history"]["createdDate"]
+                elif "history" in content and "createdAt" in content["history"]:
+                    # Alternative field name in some Data Center versions
+                    created_at = content["history"]["createdAt"]
+            except (ValueError, TypeError, KeyError):
+                logger.debug("Could not parse creation date", content_id=content_id)
+
+            # Try to get update date from version (both Cloud and Data Center)
+            try:
+                if "version" in content and "when" in content["version"]:
                     updated_at = content["version"]["when"]
-                except (ValueError, TypeError):
-                    pass
+                elif "version" in content and "friendlyWhen" in content["version"]:
+                    # Some Data Center versions use friendlyWhen
+                    updated_at = content["version"]["friendlyWhen"]
+            except (ValueError, TypeError, KeyError):
+                logger.debug("Could not parse update date", content_id=content_id)
 
             # Process comments
             comments = []
@@ -415,7 +439,7 @@ class ConfluenceConnector(BaseConnector):
                         }
                     )
 
-            # Create metadata
+            # Create metadata with all available information
             metadata = {
                 "id": content_id,
                 "title": title,
@@ -437,7 +461,16 @@ class ConfluenceConnector(BaseConnector):
             # Clean content if requested
             content_text = self._clean_html(body) if clean_html else body
 
-            # Create document with all fields
+            # Construct URL based on deployment type
+            page_url = self._construct_page_url(
+                space or "", content_id or "", content.get("type", "page")
+            )
+
+            # Parse timestamps for Document constructor
+            parsed_created_at = self._parse_timestamp(created_at)
+            parsed_updated_at = self._parse_timestamp(updated_at)
+
+            # Create document with all fields properly populated
             document = Document(
                 title=title,
                 content=content_text,
@@ -445,10 +478,10 @@ class ConfluenceConnector(BaseConnector):
                 metadata=metadata,
                 source_type=SourceType.CONFLUENCE,
                 source=self.config.source,
-                url=f"{self.base_url}/spaces/{space}/pages/{content_id}",
+                url=page_url,
                 is_deleted=False,
-                updated_at=updated_at,
-                created_at=created_at,
+                updated_at=parsed_updated_at,
+                created_at=parsed_created_at,
             )
 
             return document
@@ -463,6 +496,80 @@ class ConfluenceConnector(BaseConnector):
                 error_type=type(e).__name__,
             )
             raise
+
+    def _construct_page_url(
+        self, space: str, content_id: str, content_type: str = "page"
+    ) -> str:
+        """Construct the appropriate URL for a Confluence page based on deployment type.
+
+        Args:
+            space: The space key
+            content_id: The content ID
+            content_type: The type of content (page, blogpost, etc.)
+
+        Returns:
+            The constructed URL
+        """
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            # Cloud URLs use a different format
+            if content_type == "blogpost":
+                return f"{self.base_url}/spaces/{space}/blog/{content_id}"
+            else:
+                return f"{self.base_url}/spaces/{space}/pages/{content_id}"
+        else:
+            # Data Center/Server URLs
+            if content_type == "blogpost":
+                return f"{self.base_url}/display/{space}/{content_id}"
+            else:
+                return f"{self.base_url}/display/{space}/{content_id}"
+
+    def _parse_timestamp(self, timestamp_str: str | None) -> "datetime | None":
+        """Parse a timestamp string into a datetime object.
+
+        Args:
+            timestamp_str: The timestamp string to parse
+
+        Returns:
+            Parsed datetime object or None if parsing fails
+        """
+        if not timestamp_str:
+            return None
+
+        try:
+            from datetime import datetime
+            import re
+
+            # Handle various timestamp formats from Confluence
+            # ISO format with timezone: 2024-05-24T20:57:56.130+07:00
+            if re.match(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}",
+                timestamp_str,
+            ):
+                return datetime.fromisoformat(timestamp_str)
+
+            # ISO format without microseconds: 2024-05-24T20:57:56+07:00
+            elif re.match(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}", timestamp_str
+            ):
+                return datetime.fromisoformat(timestamp_str)
+
+            # ISO format with Z timezone: 2024-05-24T20:57:56.130Z
+            elif re.match(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", timestamp_str
+            ):
+                return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+
+            # ISO format without timezone: 2024-05-24T20:57:56.130
+            elif re.match(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}", timestamp_str):
+                return datetime.fromisoformat(timestamp_str)
+
+            # Fallback: try direct parsing
+            else:
+                return datetime.fromisoformat(timestamp_str)
+
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.debug(f"Failed to parse timestamp '{timestamp_str}': {e}")
+            return None
 
     def _clean_html(self, html: str) -> str:
         """Clean HTML content by removing tags and special characters.

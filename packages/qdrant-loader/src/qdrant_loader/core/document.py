@@ -60,6 +60,7 @@ class Document(BaseModel):
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "title": self.title,
+            "url": self.url,
             "content_hash": self.content_hash,
             "is_deleted": self.is_deleted,
         }
