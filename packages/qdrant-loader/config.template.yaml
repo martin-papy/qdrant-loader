@@ -143,15 +143,28 @@ sources:
 
   # JIRA issue tracking sources
   jira:
-    my-project:
-      base_url: "${JIRA_URL}"                   # JIRA instance URL
+    # Example configuration for Jira Cloud
+    my-cloud-project:
+      base_url: "https://mycompany.atlassian.net"  # Jira Cloud URL
+      deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
       project_key: "${JIRA_PROJECT_KEY}"        # Project to process
       requests_per_minute: 60                   # Rate limit for API calls
       page_size: 50                            # Number of issues per API request
       process_attachments: true                 # Whether to process issue attachments
       track_last_sync: true                    # Track last sync time for incremental updates
-      token: "${JIRA_TOKEN}"                    # JIRA API token
-      email: "${JIRA_EMAIL}"                    # JIRA user email
+      token: "${JIRA_TOKEN}"                    # Jira API token (from id.atlassian.com)
+      email: "${JIRA_EMAIL}"                    # Jira user email
+
+    # Example configuration for Jira Data Center with Personal Access Token
+    my-datacenter-project:
+      base_url: "https://jira.mycompany.com"    # Jira Data Center URL
+      deployment_type: "datacenter"             # Deployment type: cloud, datacenter, or server
+      project_key: "${JIRA_PROJECT_KEY}"        # Project to process
+      requests_per_minute: 60                   # Rate limit for API calls
+      page_size: 50                            # Number of issues per API request
+      process_attachments: true                 # Whether to process issue attachments
+      track_last_sync: true                    # Track last sync time for incremental updates
+      token: "${JIRA_PAT}"                      # Personal Access Token (generated in Jira)
 
   # Local file sources
   localfile:

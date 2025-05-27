@@ -6,12 +6,13 @@ import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
 
+import requests
 import structlog
-from atlassian import Jira
+from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
-from qdrant_loader.connectors.jira.config import JiraProjectConfig
+from qdrant_loader.connectors.jira.config import JiraProjectConfig, JiraDeploymentType
 from qdrant_loader.connectors.jira.models import (
     JiraAttachment,
     JiraComment,
@@ -33,29 +34,66 @@ class JiraConnector(BaseConnector):
             config: The Jira configuration.
 
         Raises:
-            ValueError: If required environment variables are not set.
+            ValueError: If required authentication parameters are not set.
         """
         super().__init__(config)
         self.config = config
+        self.base_url = str(config.base_url).rstrip("/")
 
-        # Validate required environment variables
-        token = os.getenv("JIRA_TOKEN")
-        if token is None:
-            raise ValueError("JIRA_TOKEN environment variable is required")
+        # Initialize session
+        self.session = requests.Session()
 
-        email = os.getenv("JIRA_EMAIL")
-        if email is None:
-            raise ValueError("JIRA_EMAIL environment variable is required")
+        # Set up authentication based on deployment type
+        self._setup_authentication()
 
-        self.client = Jira(
-            url=str(config.base_url),
-            username=email,
-            password=token,
-        )
         self._last_sync: datetime | None = None
         self._rate_limit_lock = asyncio.Lock()
         self._last_request_time = 0.0
         self._initialized = False
+
+    def _setup_authentication(self):
+        """Set up authentication based on deployment type."""
+        if self.config.deployment_type == JiraDeploymentType.CLOUD:
+            # Cloud uses Basic Auth with email:api_token
+            if not self.config.token:
+                raise ValueError("API token is required for Jira Cloud")
+            if not self.config.email:
+                raise ValueError("Email is required for Jira Cloud")
+
+            self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
+            logger.info("Configured Jira Cloud authentication with email and API token")
+
+        else:
+            # Data Center/Server uses Personal Access Token with Bearer authentication
+            if not self.config.token:
+                raise ValueError(
+                    "Personal Access Token is required for Jira Data Center/Server"
+                )
+
+            self.session.headers.update(
+                {
+                    "Authorization": f"Bearer {self.config.token}",
+                    "Content-Type": "application/json",
+                }
+            )
+            logger.info(
+                "Configured Jira Data Center authentication with Personal Access Token"
+            )
+
+    def _auto_detect_deployment_type(self) -> JiraDeploymentType:
+        """Auto-detect deployment type based on URL pattern.
+
+        Returns:
+            JiraDeploymentType: Detected deployment type
+        """
+        base_url_str = str(self.base_url).lower()
+
+        # Cloud instances typically use *.atlassian.net
+        if ".atlassian.net" in base_url_str:
+            return JiraDeploymentType.CLOUD
+
+        # Everything else is likely Data Center/Server
+        return JiraDeploymentType.DATACENTER
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -66,6 +104,67 @@ class JiraConnector(BaseConnector):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         self._initialized = False
+
+    def _get_api_url(self, endpoint: str) -> str:
+        """Construct the full API URL for an endpoint.
+
+        Args:
+            endpoint: API endpoint path
+
+        Returns:
+            str: Full API URL
+        """
+        return f"{self.base_url}/rest/api/2/{endpoint}"
+
+    async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
+        """Make an authenticated request to the Jira API.
+
+        Args:
+            method: HTTP method
+            endpoint: API endpoint path
+            **kwargs: Additional request parameters
+
+        Returns:
+            dict: Response data
+
+        Raises:
+            requests.exceptions.RequestException: If the request fails
+        """
+        async with self._rate_limit_lock:
+            # Calculate time to wait based on rate limit
+            min_interval = 60.0 / self.config.requests_per_minute
+            now = time.time()
+            time_since_last_request = now - self._last_request_time
+
+            if time_since_last_request < min_interval:
+                await asyncio.sleep(min_interval - time_since_last_request)
+
+            self._last_request_time = time.time()
+
+            url = self._get_api_url(endpoint)
+            try:
+                # For Data Center with PAT, headers are already set
+                # For Cloud, use session auth
+                if not self.session.headers.get("Authorization"):
+                    kwargs["auth"] = self.session.auth
+
+                response = await asyncio.to_thread(
+                    self.session.request, method, url, **kwargs
+                )
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to make request to {url}: {e}")
+                # Log additional context for debugging
+                logger.error(
+                    "Request details",
+                    method=method,
+                    url=url,
+                    deployment_type=self.config.deployment_type,
+                    has_auth_header=bool(self.session.headers.get("Authorization")),
+                    has_session_auth=bool(self.session.auth),
+                )
+                raise
 
     def _make_sync_request(self, jql: str, **kwargs):
         """
@@ -78,24 +177,16 @@ class JiraConnector(BaseConnector):
                 formatted_date = value.strftime("%Y-%m-%d %H:%M")
                 jql = jql.replace(f"{{{key}}}", f"'{formatted_date}'")
 
-        return self.client.jql(jql, **kwargs)
+        # Use the new _make_request method for consistency
+        params = {
+            "jql": jql,
+            "startAt": kwargs.get("start", 0),
+            "maxResults": kwargs.get("limit", self.config.page_size),
+            "expand": "changelog",
+            "fields": "*all",
+        }
 
-    async def _make_request(self, *args, **kwargs):
-        """
-        Make an asynchronous request to the Jira API by running the synchronous request in a thread.
-        Applies rate limiting using asyncio.Lock.
-        """
-        async with self._rate_limit_lock:
-            # Calculate time to wait based on rate limit
-            min_interval = 60.0 / self.config.requests_per_minute
-            now = time.time()
-            time_since_last_request = now - self._last_request_time
-
-            if time_since_last_request < min_interval:
-                await asyncio.sleep(min_interval - time_since_last_request)
-
-            self._last_request_time = time.time()
-            return await asyncio.to_thread(self._make_sync_request, *args, **kwargs)
+        return asyncio.run(self._make_request("GET", "search", params=params))
 
     async def get_issues(
         self, updated_after: datetime | None = None
@@ -118,9 +209,15 @@ class JiraConnector(BaseConnector):
             if updated_after:
                 jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
-            response = await self._make_request(
-                jql=jql, start=start_at, limit=page_size
-            )
+            params = {
+                "jql": jql,
+                "startAt": start_at,
+                "maxResults": page_size,
+                "expand": "changelog",
+                "fields": "*all",
+            }
+
+            response = await self._make_request("GET", "search", params=params)
 
             if not response or not response.get("issues"):
                 break
@@ -132,7 +229,7 @@ class JiraConnector(BaseConnector):
                 yield self._parse_issue(issue)
 
             # Update total count if not set
-            if total_issues is None:
+            if total_issues == 0:
                 total_issues = response.get("total", 0)
 
             # Check if we've processed all issues
@@ -208,8 +305,23 @@ class JiraConnector(BaseConnector):
             if required:
                 raise ValueError("User data is required but not provided")
             return None
+
+        # Handle different user formats between Cloud and Data Center
+        # Cloud uses 'accountId', Data Center uses 'name' or 'key'
+        account_id = raw_user.get("accountId")
+        if not account_id:
+            # Fallback to 'name' or 'key' for Data Center
+            account_id = raw_user.get("name") or raw_user.get("key")
+
+        if not account_id:
+            if required:
+                raise ValueError(
+                    "User data missing required identifier (accountId, name, or key)"
+                )
+            return None
+
         return JiraUser(
-            account_id=raw_user["accountId"],
+            account_id=account_id,
             display_name=raw_user["displayName"],
             email_address=raw_user.get("emailAddress"),
         )

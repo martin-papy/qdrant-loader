@@ -8,7 +8,7 @@ QDrant Loader Monorepo - RAG Developer Context System
 
 To build a comprehensive RAG (Retrieval-Augmented Generation) ecosystem that collects, processes, and serves technical content from multiple sources through a unified monorepo. The system consists of two main components:
 
-1. **QDrant Loader**: Backend ingestion tool that vectorizes content from Confluence, Jira, Git repositories, public documentation, and local files
+1. **QDrant Loader**: Backend ingestion tool that vectorizes content from Confluence, JIRA, Git repositories, public documentation, and local files
 2. **MCP Server**: Model Context Protocol server that provides AI development tools (Cursor, Windsurf, etc.) with contextual, accurate assistance through semantic search
 
 ---
@@ -65,7 +65,7 @@ To build a comprehensive RAG (Retrieval-Augmented Generation) ecosystem that col
 |--------|----------------|------------------|--------------|
 | **Git Repositories** | Selected repos/branches | README, docs/, code comments, design docs | Branch filtering, file type selection, commit metadata |
 | **Confluence** | Selected spaces (Cloud & Data Center) | Pages, attachments, comments, diagrams | Label-based filtering, version tracking, rich content, secure authentication |
-| **Jira** | Selected projects | Tickets, descriptions, comments, attachments | Status filtering, incremental sync, relationship tracking |
+| **JIRA** | Selected projects (Cloud & Data Center) | Tickets, descriptions, comments, attachments | Status filtering, incremental sync, relationship tracking, cross-deployment compatibility |
 | **Public Documentation** | Curated URLs | API docs, framework guides, tutorials | CSS selector extraction, version detection |
 | **Local Files** | Selected directories | Markdown, code, docs, configuration files | Glob pattern matching, file type filtering |
 
@@ -164,7 +164,7 @@ document_metadata:
 | Component | Method | Scope |
 |-----------|--------|-------|
 | **Confluence** | API Token + Email (Cloud) / Personal Access Token (Data Center) | Space-level access |
-| **Jira** | API Token + Email | Project-level access |
+| **JIRA** | API Token + Email (Cloud) / Personal Access Token (Data Center) | Project-level access |
 | **Git Repositories** | Personal Access Token | Repository access |
 | **QDrant** | API Key | Database access |
 | **MCP Server** | Environment variables | Server configuration |

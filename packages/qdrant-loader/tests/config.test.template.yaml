@@ -54,6 +54,7 @@ sources:
   jira:
     test-project:
       base_url: "${JIRA_URL}"
+      deployment_type: "cloud"
       project_key: "${JIRA_PROJECT_KEY}"
       requests_per_minute: 60
       page_size: 50

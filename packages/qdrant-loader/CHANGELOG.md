@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **JIRA Data Center Support**: Added support for JIRA Data Center and Server deployments
+  - Personal Access Token (PAT) authentication for Data Center/Server
+  - Automatic deployment type detection based on URL patterns
+  - User field compatibility handling between Cloud (`accountId`) and Data Center (`name`/`key`)
+  - Deployment-specific authentication (Basic Auth for Cloud, Bearer tokens for Data Center)
+  - Optimized performance settings for each deployment type
+  - Cross-deployment feature compatibility
+
 ### Changed
 
 - Moved to monorepo structure under `packages/qdrant-loader/`
@@ -14,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved project structure and organization
 - **BREAKING**: Implemented unified versioning across all packages in the monorepo
 - Enhanced release process with comprehensive safety checks and dry-run capabilities
+- **JIRA Connector**: Enhanced to support both Cloud and Data Center deployments with secure authentication methods
 
 ## [0.2.0b2] - 2024-01-XX
 

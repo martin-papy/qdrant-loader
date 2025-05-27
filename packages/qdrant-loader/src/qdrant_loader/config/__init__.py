@@ -213,12 +213,34 @@ class Settings(BaseSettings):
 
         # Validate Jira settings if Jira sources are configured
         if self.sources_config.jira:
-            if not all([self.JIRA_TOKEN, self.JIRA_EMAIL]):
-                logger.error("Missing required Jira environment variables")
-                raise ValueError(
-                    "Jira sources are configured but required environment variables "
-                    "JIRA_TOKEN and/or JIRA_EMAIL are not set"
+            # Check each Jira source individually based on its deployment type
+            for source_name, source_config in self.sources_config.jira.items():
+                from qdrant_loader.connectors.jira.config import JiraDeploymentType
+
+                deployment_type = getattr(
+                    source_config, "deployment_type", JiraDeploymentType.CLOUD
                 )
+
+                if deployment_type == JiraDeploymentType.CLOUD:
+                    # Cloud requires token and email
+                    if not source_config.token or not source_config.email:
+                        logger.error(
+                            "Missing required Jira Cloud environment variables",
+                            source=source_name,
+                        )
+                        raise ValueError(
+                            f"Jira Cloud source '{source_name}' requires both token and email"
+                        )
+                else:
+                    # Data Center/Server requires Personal Access Token
+                    if not source_config.token:
+                        logger.error(
+                            "Missing required Jira Data Center environment variables",
+                            source=source_name,
+                        )
+                        raise ValueError(
+                            f"Jira Data Center source '{source_name}' requires a Personal Access Token"
+                        )
 
         logger.debug("Source configuration validation successful")
         return self

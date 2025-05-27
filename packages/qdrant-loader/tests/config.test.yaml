@@ -158,6 +158,7 @@ sources:
   jira:
     theorcs:
       base_url: "https://theorcs.atlassian.net"                   # JIRA instance URL
+      deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
       project_key: "THEORCS"        # Project to process
       requests_per_minute: 60                   # Rate limit for API calls
       page_size: 50                             # Number of issues per API request
