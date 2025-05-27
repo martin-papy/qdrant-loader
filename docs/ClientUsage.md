@@ -93,7 +93,7 @@ qdrant-loader ingest --source-type confluence  # Ingest only Confluence
 qdrant-loader ingest --source-type git        # Ingest only Git
 qdrant-loader ingest --source-type publicdocs # Ingest only public docs
 qdrant-loader ingest --source-type jira       # Ingest only JIRA
-qdrant-loader ingest --source-type localfiles # Ingest only local files
+qdrant-loader ingest --source-type localfile  # Ingest only local files
 
 # Run ingestion for specific sources
 qdrant-loader ingest --source-type confluence --source my-space
@@ -109,6 +109,47 @@ qdrant-loader config
 
 # Show version information
 qdrant-loader --version
+```
+
+### Command Options
+
+#### Initialize Command
+
+```bash
+# Initialize with custom config file
+qdrant-loader init --config custom_config.yaml
+
+# Force reinitialization (recreates collection)
+qdrant-loader init --force
+
+# Initialize with debug logging
+qdrant-loader init --log-level DEBUG
+```
+
+#### Ingest Command
+
+```bash
+# Ingest with custom config file
+qdrant-loader ingest --config custom_config.yaml
+
+# Ingest specific source type and source
+qdrant-loader ingest --source-type confluence --source my-space
+
+# Ingest with profiling enabled
+qdrant-loader ingest --profile
+
+# Ingest with debug logging
+qdrant-loader ingest --log-level DEBUG
+```
+
+#### Config Command
+
+```bash
+# Display config with custom config file
+qdrant-loader config --config custom_config.yaml
+
+# Display config with debug logging
+qdrant-loader config --log-level DEBUG
 ```
 
 ### Common Options
@@ -180,7 +221,7 @@ Common error messages and their solutions:
    - Use secure methods for storing credentials
    - Regularly rotate API keys and tokens
 
-## CLI Usage
+## Additional CLI Examples
 
 ```bash
 # Ingest only local files
@@ -188,4 +229,10 @@ qdrant-loader ingest --source-type localfile
 
 # Ingest a specific localfile source
 qdrant-loader ingest --source-type localfile --source my-local-files
+
+# Run with performance profiling
+qdrant-loader ingest --profile
+
+# Initialize with force flag (recreates collection)
+qdrant-loader init --force
 ```

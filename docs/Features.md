@@ -32,6 +32,8 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 
 #### Confluence Connector
 
+- **Multi-deployment support**: Works with Confluence Cloud, Data Center, and Server
+- **Secure authentication**: API tokens (Cloud) and Personal Access Tokens (Data Center/Server)
 - **Space-based ingestion**: Process entire Confluence spaces
 - **Content type filtering**: Select pages, blog posts, or both
 - **Label-based filtering**: Include/exclude content based on labels
@@ -39,6 +41,7 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 - **Comment processing**: Extract and process page comments
 - **Version tracking**: Track content versions and updates
 - **HTML cleaning**: Intelligent HTML-to-text conversion
+- **Deployment-specific pagination**: Optimized pagination for each deployment type
 
 **Advanced features:**
 
@@ -46,6 +49,8 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 - Metadata extraction (author, creation date, labels)
 - Hierarchical content structure preservation
 - Rate limiting to respect Confluence API limits
+- Auto-detection of deployment type based on URL patterns
+- Comprehensive error handling for secure authentication methods
 
 #### Jira Connector
 

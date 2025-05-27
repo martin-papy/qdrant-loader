@@ -78,19 +78,26 @@ def get_global_config() -> GlobalConfig:
     return get_settings().global_config
 
 
-def initialize_config(yaml_path: Path, skip_validation: bool = False) -> None:
+def initialize_config(
+    yaml_path: Path, env_path: Path | None = None, skip_validation: bool = False
+) -> None:
     """Initialize the global configuration.
 
     Args:
         yaml_path: Path to the YAML configuration file.
+        env_path: Optional path to the .env file.
         skip_validation: If True, skip directory validation and creation.
     """
     global _global_settings
     try:
         # Proceed with initialization
-        logger.debug("Initializing configuration", yaml_path=str(yaml_path))
+        logger.debug(
+            "Initializing configuration",
+            yaml_path=str(yaml_path),
+            env_path=str(env_path) if env_path else None,
+        )
         _global_settings = Settings.from_yaml(
-            yaml_path, skip_validation=skip_validation
+            yaml_path, env_path=env_path, skip_validation=skip_validation
         )
         logger.debug("Successfully initialized configuration")
 
@@ -123,6 +130,10 @@ class Settings(BaseSettings):
     CONFLUENCE_SPACE_KEY: str | None = Field(None, description="Confluence space key")
     CONFLUENCE_TOKEN: str | None = Field(None, description="Confluence API token")
     CONFLUENCE_EMAIL: str | None = Field(None, description="Confluence user email")
+
+    CONFLUENCE_PAT: str | None = Field(
+        None, description="Confluence Personal Access Token (Data Center)"
+    )
 
     JIRA_URL: str | None = Field(None, description="Jira URL")
     JIRA_PROJECT_KEY: str | None = Field(None, description="Jira project key")
@@ -158,12 +169,36 @@ class Settings(BaseSettings):
 
         # Validate Confluence settings if Confluence sources are configured
         if self.sources_config.confluence:
-            if not all([self.CONFLUENCE_TOKEN, self.CONFLUENCE_EMAIL]):
-                logger.error("Missing required Confluence environment variables")
-                raise ValueError(
-                    "Confluence sources are configured but required environment variables "
-                    "CONFLUENCE_TOKEN and/or CONFLUENCE_EMAIL are not set"
+            # Check each Confluence source individually based on its deployment type
+            for source_name, source_config in self.sources_config.confluence.items():
+                from qdrant_loader.connectors.confluence.config import (
+                    ConfluenceDeploymentType,
                 )
+
+                deployment_type = getattr(
+                    source_config, "deployment_type", ConfluenceDeploymentType.CLOUD
+                )
+
+                if deployment_type == ConfluenceDeploymentType.CLOUD:
+                    # Cloud requires token and email
+                    if not source_config.token or not source_config.email:
+                        logger.error(
+                            "Missing required Confluence Cloud environment variables",
+                            source=source_name,
+                        )
+                        raise ValueError(
+                            f"Confluence Cloud source '{source_name}' requires both token and email"
+                        )
+                else:
+                    # Data Center requires Personal Access Token
+                    if not source_config.token:
+                        logger.error(
+                            "Missing required Confluence Data Center environment variables",
+                            source=source_name,
+                        )
+                        raise ValueError(
+                            f"Confluence Data Center source '{source_name}' requires a Personal Access Token"
+                        )
 
         # Validate Git settings if Git sources are configured
         if self.sources_config.git:
@@ -226,11 +261,17 @@ class Settings(BaseSettings):
         return data
 
     @classmethod
-    def from_yaml(cls, config_path: Path, skip_validation: bool = False) -> "Settings":
+    def from_yaml(
+        cls,
+        config_path: Path,
+        env_path: Path | None = None,
+        skip_validation: bool = False,
+    ) -> "Settings":
         """Load configuration from a YAML file.
 
         Args:
             config_path: Path to the YAML configuration file.
+            env_path: Optional path to the .env file. If provided, only this file is loaded.
             skip_validation: If True, skip directory validation and creation.
 
         Returns:
@@ -243,8 +284,16 @@ class Settings(BaseSettings):
                 config_data = yaml.safe_load(f)
 
             # Step 2: Load environment variables
-            logger.debug("Loading environment variables")
-            load_dotenv(override=False)
+            if env_path is not None:
+                # Custom env file specified - load only this file
+                logger.debug("Loading custom environment file", path=str(env_path))
+                if not env_path.exists():
+                    raise FileNotFoundError(f"Environment file not found: {env_path}")
+                load_dotenv(env_path, override=True)
+            else:
+                # Load default .env file if it exists
+                logger.debug("Loading default environment variables")
+                load_dotenv(override=False)
 
             # Step 3: Process all environment variables in config
             logger.debug("Processing environment variables in configuration")
@@ -268,25 +317,58 @@ class Settings(BaseSettings):
             sources_config = SourcesConfig(**sources_data)
 
             # Step 5: Create settings instance with environment variables and config objects
-            settings_data = {
-                "global_config": global_config,
-                "sources_config": sources_config,
-                "QDRANT_URL": os.getenv("QDRANT_URL"),
-                "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
-                "QDRANT_COLLECTION_NAME": os.getenv("QDRANT_COLLECTION_NAME"),
-                "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-                "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
-                "REPO_TOKEN": os.getenv("REPO_TOKEN"),
-                "REPO_URL": os.getenv("REPO_URL"),
-                "CONFLUENCE_URL": os.getenv("CONFLUENCE_URL"),
-                "CONFLUENCE_SPACE_KEY": os.getenv("CONFLUENCE_SPACE_KEY"),
-                "CONFLUENCE_TOKEN": os.getenv("CONFLUENCE_TOKEN"),
-                "CONFLUENCE_EMAIL": os.getenv("CONFLUENCE_EMAIL"),
-                "JIRA_URL": os.getenv("JIRA_URL"),
-                "JIRA_PROJECT_KEY": os.getenv("JIRA_PROJECT_KEY"),
-                "JIRA_TOKEN": os.getenv("JIRA_TOKEN"),
-                "JIRA_EMAIL": os.getenv("JIRA_EMAIL"),
-            }
+            if env_path is not None:
+                # Custom env file specified - load only variables from that file
+                env_vars = {}
+                with open(env_path, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            key, value = line.split("=", 1)
+                            env_vars[key.strip()] = value.strip()
+
+                settings_data = {
+                    "global_config": global_config,
+                    "sources_config": sources_config,
+                    "QDRANT_URL": env_vars.get("QDRANT_URL"),
+                    "QDRANT_API_KEY": env_vars.get("QDRANT_API_KEY"),
+                    "QDRANT_COLLECTION_NAME": env_vars.get("QDRANT_COLLECTION_NAME"),
+                    "OPENAI_API_KEY": env_vars.get("OPENAI_API_KEY"),
+                    "STATE_DB_PATH": env_vars.get("STATE_DB_PATH"),
+                    "REPO_TOKEN": env_vars.get("REPO_TOKEN"),
+                    "REPO_URL": env_vars.get("REPO_URL"),
+                    "CONFLUENCE_URL": env_vars.get("CONFLUENCE_URL"),
+                    "CONFLUENCE_SPACE_KEY": env_vars.get("CONFLUENCE_SPACE_KEY"),
+                    "CONFLUENCE_TOKEN": env_vars.get("CONFLUENCE_TOKEN"),
+                    "CONFLUENCE_EMAIL": env_vars.get("CONFLUENCE_EMAIL"),
+                    "CONFLUENCE_PAT": env_vars.get("CONFLUENCE_PAT"),
+                    "JIRA_URL": env_vars.get("JIRA_URL"),
+                    "JIRA_PROJECT_KEY": env_vars.get("JIRA_PROJECT_KEY"),
+                    "JIRA_TOKEN": env_vars.get("JIRA_TOKEN"),
+                    "JIRA_EMAIL": env_vars.get("JIRA_EMAIL"),
+                }
+            else:
+                # Default behavior - use os.getenv()
+                settings_data = {
+                    "global_config": global_config,
+                    "sources_config": sources_config,
+                    "QDRANT_URL": os.getenv("QDRANT_URL"),
+                    "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
+                    "QDRANT_COLLECTION_NAME": os.getenv("QDRANT_COLLECTION_NAME"),
+                    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+                    "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
+                    "REPO_TOKEN": os.getenv("REPO_TOKEN"),
+                    "REPO_URL": os.getenv("REPO_URL"),
+                    "CONFLUENCE_URL": os.getenv("CONFLUENCE_URL"),
+                    "CONFLUENCE_SPACE_KEY": os.getenv("CONFLUENCE_SPACE_KEY"),
+                    "CONFLUENCE_TOKEN": os.getenv("CONFLUENCE_TOKEN"),
+                    "CONFLUENCE_EMAIL": os.getenv("CONFLUENCE_EMAIL"),
+                    "CONFLUENCE_PAT": os.getenv("CONFLUENCE_PAT"),
+                    "JIRA_URL": os.getenv("JIRA_URL"),
+                    "JIRA_PROJECT_KEY": os.getenv("JIRA_PROJECT_KEY"),
+                    "JIRA_TOKEN": os.getenv("JIRA_TOKEN"),
+                    "JIRA_EMAIL": os.getenv("JIRA_EMAIL"),
+                }
 
             logger.debug(
                 "Creating Settings instance with data", settings_data=settings_data

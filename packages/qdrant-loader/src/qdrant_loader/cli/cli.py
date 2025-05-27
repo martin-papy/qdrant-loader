@@ -17,6 +17,7 @@ from click.utils import echo
 from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.config import Settings, get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
+from dotenv import load_dotenv
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.core.qdrant_manager import QdrantManager
@@ -29,12 +30,27 @@ logger = LoggingConfig.get_logger(__name__)
 def _get_version() -> str:
     """Get version from pyproject.toml."""
     try:
-        with open("pyproject.toml", "rb") as f:
-            pyproject = tomli.load(f)
-            return pyproject["project"]["version"]
+        # Try to find pyproject.toml in the package directory or parent directories
+        current_dir = Path(__file__).parent
+        for _ in range(5):  # Look up to 5 levels up
+            pyproject_path = current_dir / "pyproject.toml"
+            if pyproject_path.exists():
+                with open(pyproject_path, "rb") as f:
+                    pyproject = tomli.load(f)
+                    return pyproject["project"]["version"]
+            current_dir = current_dir.parent
+
+        # If not found, try the workspace root
+        workspace_root = Path.cwd()
+        for package_dir in ["packages/qdrant-loader", "."]:
+            pyproject_path = workspace_root / package_dir / "pyproject.toml"
+            if pyproject_path.exists():
+                with open(pyproject_path, "rb") as f:
+                    pyproject = tomli.load(f)
+                    return pyproject["project"]["version"]
     except Exception as e:
         logger.warning("Failed to read version from pyproject.toml", error=str(e))
-        return "Unknown"  # Fallback version
+    return "Unknown"  # Fallback version
 
 
 def _setup_logging(log_level: str) -> None:
@@ -80,12 +96,15 @@ def _create_database_directory(path: Path) -> bool:
 
 
 def _load_config(
-    config_path: Path | None = None, skip_validation: bool = False
+    config_path: Path | None = None,
+    env_path: Path | None = None,
+    skip_validation: bool = False,
 ) -> None:
     """Load configuration from file.
 
     Args:
         config_path: Optional path to config file
+        env_path: Optional path to .env file
         skip_validation: If True, skip directory validation and creation
     """
     try:
@@ -94,16 +113,16 @@ def _load_config(
             if not config_path.exists():
                 logger.error("config_not_found", path=str(config_path))
                 raise ClickException(f"Config file not found: {str(config_path)!s}")
-            initialize_config(config_path, skip_validation=skip_validation)
+            initialize_config(config_path, env_path, skip_validation=skip_validation)
             return
 
         # Step 2: If no config path, look for config.yaml in current folder
         default_config = Path("config.yaml")
         if default_config.exists():
-            initialize_config(default_config, skip_validation=skip_validation)
+            initialize_config(default_config, env_path, skip_validation=skip_validation)
             return
 
-        # Step 3: If no file is found, raise an error
+        # Step 4: If no file is found, raise an error
         raise ClickException(
             f"No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
         )
@@ -123,9 +142,11 @@ def _load_config(
         # No need to retry _load_config since the directory is now created
         # Just initialize the config with the expanded path
         if config_path is not None:
-            initialize_config(config_path, skip_validation=skip_validation)
+            initialize_config(config_path, env_path, skip_validation=skip_validation)
         else:
-            initialize_config(Path("config.yaml"), skip_validation=skip_validation)
+            initialize_config(
+                Path("config.yaml"), env_path, skip_validation=skip_validation
+            )
 
     except ClickException as e:
         raise e from None
@@ -177,6 +198,7 @@ async def _run_init(settings: Settings, force: bool) -> None:
 @option(
     "--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file."
 )
+@option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
 @option("--force", is_flag=True, help="Force reinitialization of collection.")
 @option(
     "--log-level",
@@ -187,11 +209,11 @@ async def _run_init(settings: Settings, force: bool) -> None:
     help="Set the logging level.",
 )
 @async_command
-async def init(config: Path | None, force: bool, log_level: str):
+async def init(config: Path | None, env: Path | None, force: bool, log_level: str):
     """Initialize QDrant collection."""
     try:
         _setup_logging(log_level)
-        _load_config(config)
+        _load_config(config, env)
         settings = _check_settings()
 
         # Delete and recreate the database file if it exists
@@ -231,6 +253,7 @@ async def _cancel_all_tasks():
 @option(
     "--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file."
 )
+@option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
 @option(
     "--source-type", type=str, help="Source type to process (e.g., confluence, jira)."
 )
@@ -251,6 +274,7 @@ async def _cancel_all_tasks():
 @async_command
 async def ingest(
     config: Path | None,
+    env: Path | None,
     source_type: str | None,
     source: str | None,
     log_level: str,
@@ -258,7 +282,7 @@ async def ingest(
 ):
     """Ingest documents from configured sources."""
     _setup_logging(log_level)
-    _load_config(config)
+    _load_config(config, env)
     settings = _check_settings()
     qdrant_manager = QdrantManager(settings)
 
@@ -340,11 +364,12 @@ async def ingest(
 @option(
     "--config", type=ClickPath(exists=True, path_type=Path), help="Path to config file."
 )
-def config(log_level: str, config: Path | None):
+@option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
+def config(log_level: str, config: Path | None, env: Path | None):
     """Display current configuration."""
     try:
         _setup_logging(log_level)
-        _load_config(config, skip_validation=True)
+        _load_config(config, env, skip_validation=True)
         settings = _check_settings()
 
         # Display configuration

@@ -208,24 +208,27 @@ class AsyncIngestionPipeline:
         """Synchronous cleanup for destructor and signal handlers."""
         logger.info("Cleaning up pipeline resources (sync)")
 
+        # Save metrics
         try:
-            # Save metrics
             if hasattr(self, "monitor"):
                 self.monitor.save_metrics()
+        except Exception as e:
+            logger.error(f"Error saving metrics: {e}")
 
-            # Stop metrics server
-            try:
-                prometheus_metrics.stop_metrics_server()
-            except Exception as e:
-                logger.warning(f"Error stopping metrics server: {e}")
+        # Stop metrics server
+        try:
+            prometheus_metrics.stop_metrics_server()
+        except Exception as e:
+            logger.error(f"Error stopping metrics server: {e}")
 
-            # Use resource manager sync cleanup
+        # Use resource manager sync cleanup
+        try:
             if hasattr(self, "resource_manager"):
                 self.resource_manager._cleanup()
-
-            logger.info("Pipeline cleanup completed (sync)")
         except Exception as e:
-            logger.error(f"Error during pipeline cleanup: {e}")
+            logger.error(f"Error in resource manager cleanup: {e}")
+
+        logger.info("Pipeline cleanup completed (sync)")
 
     # Backward compatibility properties
     @property

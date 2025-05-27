@@ -64,7 +64,7 @@ To build a comprehensive RAG (Retrieval-Augmented Generation) ecosystem that col
 | Source | Scope Criteria | Included Content | Key Features |
 |--------|----------------|------------------|--------------|
 | **Git Repositories** | Selected repos/branches | README, docs/, code comments, design docs | Branch filtering, file type selection, commit metadata |
-| **Confluence** | Selected spaces | Pages, attachments, comments, diagrams | Label-based filtering, version tracking, rich content |
+| **Confluence** | Selected spaces (Cloud & Data Center) | Pages, attachments, comments, diagrams | Label-based filtering, version tracking, rich content, secure authentication |
 | **Jira** | Selected projects | Tickets, descriptions, comments, attachments | Status filtering, incremental sync, relationship tracking |
 | **Public Documentation** | Curated URLs | API docs, framework guides, tutorials | CSS selector extraction, version detection |
 | **Local Files** | Selected directories | Markdown, code, docs, configuration files | Glob pattern matching, file type filtering |
@@ -163,7 +163,7 @@ document_metadata:
 
 | Component | Method | Scope |
 |-----------|--------|-------|
-| **Confluence** | API Token + Email | Space-level access |
+| **Confluence** | API Token + Email (Cloud) / Personal Access Token (Data Center) | Space-level access |
 | **Jira** | API Token + Email | Project-level access |
 | **Git Repositories** | Personal Access Token | Repository access |
 | **QDrant** | API Key | Database access |
