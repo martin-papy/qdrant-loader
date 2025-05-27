@@ -114,16 +114,32 @@ sources:
 
   # Confluence documentation sources
   confluence:
-    my-space:
-      base_url: "${CONFLUENCE_URL}"                  # Confluence instance URL
+    # Example configuration for Confluence Cloud
+    my-cloud-space:
+      base_url: "https://mycompany.atlassian.net/wiki"  # Confluence Cloud URL
+      deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
       space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
       content_types:                            # Types of content to process
         - "page"
         - "blogpost"
       include_labels: []                        # Only process content with these labels
       exclude_labels: []                        # Skip content with these labels
-      token: "${CONFLUENCE_TOKEN}"              # Confluence API token
+      token: "${CONFLUENCE_TOKEN}"              # Confluence API token (from id.atlassian.com)
       email: "${CONFLUENCE_EMAIL}"              # Confluence user email
+
+    # Example configuration for Confluence Data Center with Personal Access Token
+    my-datacenter-space-pat:
+      base_url: "https://confluence.mycompany.com"  # Confluence Data Center URL
+      deployment_type: "datacenter"             # Deployment type: cloud, datacenter, or server
+      space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
+      content_types:                            # Types of content to process
+        - "page"
+        - "blogpost"
+      include_labels: []                        # Only process content with these labels
+      exclude_labels: []                        # Skip content with these labels
+      token: "${CONFLUENCE_PAT}"                # Personal Access Token (generated in Confluence)
+
+
 
   # JIRA issue tracking sources
   jira:

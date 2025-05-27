@@ -28,6 +28,7 @@ def settings():
         CONFLUENCE_SPACE_KEY="TEST",
         CONFLUENCE_TOKEN="test-token",
         CONFLUENCE_EMAIL="test@example.com",
+        CONFLUENCE_PAT=None,
         # Jira configuration
         JIRA_URL="https://test.atlassian.net",
         JIRA_PROJECT_KEY="TEST",

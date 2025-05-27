@@ -7,7 +7,10 @@ import pytest
 import requests
 from pydantic import HttpUrl
 from qdrant_loader.config.types import SourceType
-from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
+from qdrant_loader.connectors.confluence.config import (
+    ConfluenceSpaceConfig,
+    ConfluenceDeploymentType,
+)
 from qdrant_loader.connectors.confluence.connector import ConfluenceConnector
 from qdrant_loader.core.document import Document
 
@@ -32,6 +35,7 @@ def config():
         source="test-confluence",
         source_type=SourceType.CONFLUENCE,
         base_url=HttpUrl("https://test.atlassian.net"),
+        deployment_type=ConfluenceDeploymentType.CLOUD,
         space_key="TEST",
         content_types=["page", "blogpost"],
         include_labels=["include-test"],
@@ -65,29 +69,27 @@ class TestConfluenceConnector:
         connector = ConfluenceConnector(config)
         assert connector.config == config
         assert connector.base_url == config.base_url
-        assert connector.token == "test-token"
-        assert connector.email == "test@example.com"
         assert connector.session.auth is not None
 
     @pytest.mark.asyncio
     async def test_initialization_missing_env_vars(self, config):
         """Test initialization with missing environment variables."""
-        config_without_auth = ConfluenceSpaceConfig(
-            source="test-confluence",
-            source_type=SourceType.CONFLUENCE,
-            base_url=HttpUrl("https://test.atlassian.net"),
-            space_key="TEST",
-            content_types=["page", "blogpost"],
-            include_labels=["include-test"],
-            exclude_labels=["exclude-test"],
-            token=None,
-            email=None,
-        )
         with patch.dict(os.environ, {}, clear=True):  # Clear all environment variables
             with pytest.raises(
-                ValueError, match="CONFLUENCE_TOKEN environment variable is not set"
+                ValueError, match="Email is required for Confluence Cloud deployment"
             ):
-                ConfluenceConnector(config_without_auth)
+                ConfluenceSpaceConfig(
+                    source="test-confluence",
+                    source_type=SourceType.CONFLUENCE,
+                    base_url=HttpUrl("https://test.atlassian.net"),
+                    deployment_type=ConfluenceDeploymentType.CLOUD,
+                    space_key="TEST",
+                    content_types=["page", "blogpost"],
+                    include_labels=["include-test"],
+                    exclude_labels=["exclude-test"],
+                    token=None,
+                    email=None,
+                )
 
     @pytest.mark.asyncio
     async def test_api_url_construction(self, connector):
@@ -135,7 +137,7 @@ class TestConfluenceConnector:
         with patch.object(
             connector, "_make_request", AsyncMock(return_value=mock_response)
         ) as mock_request:
-            result = await connector._get_space_content()
+            result = await connector._get_space_content(0)
             assert result == mock_response
             mock_request.assert_called_once()
 
@@ -192,7 +194,7 @@ class TestConfluenceConnector:
         }
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 1
@@ -245,7 +247,7 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 2
@@ -283,7 +285,7 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 1
@@ -319,7 +321,7 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 1
@@ -331,7 +333,8 @@ class TestConfluenceConnector:
     @pytest.mark.asyncio
     async def test_pagination_multiple_pages(self, connector):
         """Test handling of multiple pages of results."""
-        mock_content_page1 = {
+        # Test for Cloud deployment (cursor-based pagination)
+        mock_content_page1_cloud = {
             "results": [
                 {
                     "id": "123",
@@ -349,10 +352,10 @@ class TestConfluenceConnector:
                     "children": {"comment": {"results": []}},
                 }
             ],
-            "_links": {"next": "/rest/api/content?cursor=next_cursor"},
+            "_links": {"next": "/rest/api/content/search?cursor=next_cursor"},
         }
 
-        mock_content_page2 = {
+        mock_content_page2_cloud = {
             "results": [
                 {
                     "id": "456",
@@ -370,17 +373,82 @@ class TestConfluenceConnector:
                     "children": {"comment": {"results": []}},
                 }
             ],
-            "_links": {},
+            "_links": {},  # No next page
         }
 
         # Configure connector to process all content
         connector.config.include_labels = []
         connector.config.exclude_labels = []
 
+        # Test Cloud pagination
         with patch.object(
             connector,
-            "_get_space_content",
-            AsyncMock(side_effect=[mock_content_page1, mock_content_page2]),
+            "_get_space_content_cloud",
+            AsyncMock(side_effect=[mock_content_page1_cloud, mock_content_page2_cloud]),
+        ):
+            documents = await connector.get_documents()
+            assert len(documents) == 2
+            # Verify metadata instead of direct ID comparison
+            assert documents[0].metadata["id"] == "123"
+            assert documents[1].metadata["id"] == "456"
+
+    @pytest.mark.asyncio
+    async def test_pagination_multiple_pages_datacenter(self, connector):
+        """Test handling of multiple pages of results for Data Center deployment."""
+        # Change deployment type to Data Center for this test
+        connector.config.deployment_type = ConfluenceDeploymentType.DATACENTER
+
+        mock_content_page1_dc = {
+            "results": [
+                {
+                    "id": "123",
+                    "title": "Test Page 1",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 1</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "totalSize": 50,  # Total of 50 documents
+        }
+
+        mock_content_page2_dc = {
+            "results": [
+                {
+                    "id": "456",
+                    "title": "Test Page 2",
+                    "type": "page",
+                    "space": {"key": "TEST"},
+                    "body": {"storage": {"value": "<p>Test content 2</p>"}},
+                    "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+                    "history": {
+                        "createdBy": {"displayName": "Test User"},
+                        "createdDate": "2024-01-01T00:00:00Z",
+                        "lastUpdated": "2024-01-01T00:00:00Z",
+                    },
+                    "metadata": {"labels": {"results": []}},
+                    "children": {"comment": {"results": []}},
+                }
+            ],
+            "totalSize": 50,  # Total of 50 documents
+        }
+
+        # Configure connector to process all content
+        connector.config.include_labels = []
+        connector.config.exclude_labels = []
+
+        # Test Data Center pagination
+        with patch.object(
+            connector,
+            "_get_space_content_datacenter",
+            AsyncMock(side_effect=[mock_content_page1_dc, mock_content_page2_dc]),
         ):
             documents = await connector.get_documents()
             assert len(documents) == 2
@@ -417,7 +485,7 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 1
@@ -453,7 +521,7 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 1
@@ -485,7 +553,9 @@ class TestConfluenceConnector:
         connector.config.exclude_labels = []
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=invalid_response)
+            connector,
+            "_get_space_content_cloud",
+            AsyncMock(return_value=invalid_response),
         ):
             documents = await connector.get_documents()
             assert len(documents) == 0
@@ -515,7 +585,7 @@ class TestConfluenceConnector:
         }
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 0  # Content with missing fields should be skipped
@@ -546,7 +616,7 @@ class TestConfluenceConnector:
         }
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             documents = await connector.get_documents()
             assert len(documents) == 0  # Malformed content should be skipped
@@ -579,7 +649,7 @@ class TestConfluenceConnector:
             raise Exception("Error processing content")
 
         with patch.object(
-            connector, "_get_space_content", AsyncMock(return_value=mock_content)
+            connector, "_get_space_content_cloud", AsyncMock(return_value=mock_content)
         ):
             with patch.object(
                 connector, "_process_content", side_effect=process_content_error

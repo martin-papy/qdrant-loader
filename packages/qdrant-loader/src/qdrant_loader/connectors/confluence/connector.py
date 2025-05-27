@@ -7,7 +7,10 @@ from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
-from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
+from qdrant_loader.connectors.confluence.config import (
+    ConfluenceSpaceConfig,
+    ConfluenceDeploymentType,
+)
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -27,18 +30,58 @@ class ConfluenceConnector(BaseConnector):
         self.config = config
         self.base_url = config.base_url
 
-        # Get authentication token and email
-        self.token = os.getenv("CONFLUENCE_TOKEN")
-        self.email = os.getenv("CONFLUENCE_EMAIL")
-        if not self.token:
-            raise ValueError("CONFLUENCE_TOKEN environment variable is not set")
-        if not self.email:
-            raise ValueError("CONFLUENCE_EMAIL environment variable is not set")
-
-        # Initialize session with authentication
+        # Initialize session
         self.session = requests.Session()
-        self.session.auth = HTTPBasicAuth(self.email, self.token)
+
+        # Set up authentication based on deployment type
+        self._setup_authentication()
         self._initialized = False
+
+    def _setup_authentication(self):
+        """Set up authentication based on deployment type."""
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            # Cloud uses Basic Auth with email:api_token
+            if not self.config.token:
+                raise ValueError("API token is required for Confluence Cloud")
+            if not self.config.email:
+                raise ValueError("Email is required for Confluence Cloud")
+
+            self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
+            logger.info(
+                "Configured Confluence Cloud authentication with email and API token"
+            )
+
+        else:
+            # Data Center/Server uses Personal Access Token with Bearer authentication
+            if not self.config.token:
+                raise ValueError(
+                    "Personal Access Token is required for Confluence Data Center/Server"
+                )
+
+            self.session.headers.update(
+                {
+                    "Authorization": f"Bearer {self.config.token}",
+                    "Content-Type": "application/json",
+                }
+            )
+            logger.info(
+                "Configured Confluence Data Center authentication with Personal Access Token"
+            )
+
+    def _auto_detect_deployment_type(self) -> ConfluenceDeploymentType:
+        """Auto-detect deployment type based on URL pattern.
+
+        Returns:
+            ConfluenceDeploymentType: Detected deployment type
+        """
+        base_url_str = str(self.base_url).lower()
+
+        # Cloud instances typically use *.atlassian.net
+        if ".atlassian.net" in base_url_str:
+            return ConfluenceDeploymentType.CLOUD
+
+        # Everything else is likely Data Center/Server
+        return ConfluenceDeploymentType.DATACENTER
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -77,7 +120,11 @@ class ConfluenceConnector(BaseConnector):
         """
         url = self._get_api_url(endpoint)
         try:
-            kwargs["auth"] = self.session.auth
+            # For Data Center with PAT, headers are already set
+            # For Cloud or Data Center with basic auth, use session auth
+            if not self.session.headers.get("Authorization"):
+                kwargs["auth"] = self.session.auth
+
             response = await asyncio.to_thread(
                 self.session.request, method, url, **kwargs
             )
@@ -85,10 +132,19 @@ class ConfluenceConnector(BaseConnector):
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to make request to {url}: {e}")
+            # Log additional context for debugging
+            logger.error(
+                "Request details",
+                method=method,
+                url=url,
+                deployment_type=self.config.deployment_type,
+                has_auth_header=bool(self.session.headers.get("Authorization")),
+                has_session_auth=bool(self.session.auth),
+            )
             raise
 
-    async def _get_space_content(self, cursor: str | None = None) -> dict:
-        """Fetch content from a Confluence space.
+    async def _get_space_content_cloud(self, cursor: str | None = None) -> dict:
+        """Fetch content from a Confluence Cloud space using cursor-based pagination.
 
         Args:
             cursor: Cursor for pagination. If None, starts from the beginning.
@@ -109,24 +165,79 @@ class ConfluenceConnector(BaseConnector):
                 "limit": 25,  # Using a reasonable default limit
             }
 
-        # Add cursor if provided
         if cursor:
             params["cursor"] = cursor
 
         logger.debug(
-            "Making Confluence API request",
+            "Making Confluence Cloud API request",
             url=f"{self.base_url}/rest/api/content/search",
             params=params,
         )
         response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
             logger.info(
-                f"Found {len(response['results'])} documents in Confluence space",
+                f"Found {len(response['results'])} documents in Confluence Cloud space",
                 count=len(response["results"]),
-                total_size=response.get("size", 0),
+                cursor=cursor,
             )
-        logger.debug("Confluence API response", response=response)
+        logger.debug("Confluence Cloud API response", response=response)
         return response
+
+    async def _get_space_content_datacenter(self, start: int = 0) -> dict:
+        """Fetch content from a Confluence Data Center space using start/limit pagination.
+
+        Args:
+            start: Starting index for pagination. Defaults to 0.
+
+        Returns:
+            dict: Response containing space content
+        """
+        if not self.config.content_types:
+            params = {
+                "cql": f"space = {self.config.space_key}",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "limit": 25,  # Using a reasonable default limit
+                "start": start,
+            }
+        else:
+            params = {
+                "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "limit": 25,  # Using a reasonable default limit
+                "start": start,
+            }
+
+        logger.debug(
+            "Making Confluence Data Center API request",
+            url=f"{self.base_url}/rest/api/content/search",
+            params=params,
+        )
+        response = await self._make_request("GET", "content/search", params=params)
+        if response and "results" in response:
+            logger.info(
+                f"Found {len(response['results'])} documents in Confluence Data Center space (page {start//25 + 1})",
+                count=len(response["results"]),
+                total_size=response.get("totalSize", response.get("size", 0)),
+                start=start,
+            )
+        logger.debug("Confluence Data Center API response", response=response)
+        return response
+
+    async def _get_space_content(self, start: int = 0) -> dict:
+        """Backward compatibility method for tests.
+
+        Args:
+            start: Starting index for pagination. Defaults to 0.
+
+        Returns:
+            dict: Response containing space content
+        """
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            # For Cloud, ignore start parameter and use cursor=None
+            return await self._get_space_content_cloud(None)
+        else:
+            # For Data Center, use start parameter
+            return await self._get_space_content_datacenter(start)
 
     def _should_process_content(self, content: dict) -> bool:
         """Check if content should be processed based on labels.
@@ -378,70 +489,137 @@ class ConfluenceConnector(BaseConnector):
             list[Document]: List of processed documents
         """
         documents = []
-        cursor = None
         page_count = 0
         total_documents = 0
 
-        while True:
-            try:
-                page_count += 1
-                logger.debug(f"Fetching page {page_count} of Confluence content")
-                response = await self._get_space_content(cursor)
-                results = response.get("results", [])
+        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+            # Cloud uses cursor-based pagination
+            cursor = None
 
-                if not results:
-                    logger.debug("No more results found, ending pagination")
-                    break
-
-                total_documents += len(results)
-                logger.debug(
-                    f"Processing {len(results)} documents from page {page_count}"
-                )
-
-                # Process each content item
-                for content in results:
-                    if self._should_process_content(content):
-                        try:
-                            document = self._process_content(content, clean_html=True)
-                            if document:
-                                documents.append(document)
-                                logger.debug(
-                                    f"Processed {content['type']} '{content['title']}' "
-                                    f"(ID: {content['id']}) from space {self.config.space_key}"
-                                )
-                        except Exception as e:
-                            logger.error(
-                                f"Failed to process {content['type']} '{content['title']}' "
-                                f"(ID: {content['id']}): {e!s}"
-                            )
-
-                # Get the next cursor from the response
-                next_url = response.get("_links", {}).get("next")
-                if not next_url:
-                    logger.debug("No next page link found, ending pagination")
-                    break
-
-                # Extract just the cursor value from the URL
+            while True:
                 try:
-                    from urllib.parse import parse_qs, urlparse
+                    page_count += 1
+                    logger.debug(
+                        f"Fetching page {page_count} of Confluence content (cursor={cursor})"
+                    )
+                    response = await self._get_space_content_cloud(cursor)
+                    results = response.get("results", [])
 
-                    parsed_url = urlparse(next_url)
-                    query_params = parse_qs(parsed_url.query)
-                    cursor = query_params.get("cursor", [None])[0]
-                    if not cursor:
-                        logger.debug("No cursor found in next URL, ending pagination")
+                    if not results:
+                        logger.debug("No more results found, ending pagination")
                         break
-                    logger.debug(f"Found next cursor: {cursor}")
-                except Exception as e:
-                    logger.error(f"Failed to parse next URL: {e!s}")
-                    # Don't break here, try to continue with the current page
-                    continue
 
-            except Exception as e:
-                logger.error(
-                    f"Failed to fetch content from space {self.config.space_key}: {e!s}"
-                )
-                raise
+                    total_documents += len(results)
+                    logger.debug(
+                        f"Processing {len(results)} documents from page {page_count}"
+                    )
+
+                    # Process each content item
+                    for content in results:
+                        if self._should_process_content(content):
+                            try:
+                                document = self._process_content(
+                                    content, clean_html=True
+                                )
+                                if document:
+                                    documents.append(document)
+                                    logger.debug(
+                                        f"Processed {content['type']} '{content['title']}' "
+                                        f"(ID: {content['id']}) from space {self.config.space_key}"
+                                    )
+                            except Exception as e:
+                                logger.error(
+                                    f"Failed to process {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}): {e!s}"
+                                )
+
+                    # Get the next cursor from the response
+                    next_url = response.get("_links", {}).get("next")
+                    if not next_url:
+                        logger.debug("No next page link found, ending pagination")
+                        break
+
+                    # Extract just the cursor value from the URL
+                    try:
+                        from urllib.parse import parse_qs, urlparse
+
+                        parsed_url = urlparse(next_url)
+                        query_params = parse_qs(parsed_url.query)
+                        cursor = query_params.get("cursor", [None])[0]
+                        if not cursor:
+                            logger.debug(
+                                "No cursor found in next URL, ending pagination"
+                            )
+                            break
+                        logger.debug(f"Found next cursor: {cursor}")
+                    except Exception as e:
+                        logger.error(f"Failed to parse next URL: {e!s}")
+                        break
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
+                    )
+                    raise
+        else:
+            # Data Center/Server uses start/limit pagination
+            start = 0
+            limit = 25
+
+            while True:
+                try:
+                    page_count += 1
+                    logger.debug(
+                        f"Fetching page {page_count} of Confluence content (start={start})"
+                    )
+                    response = await self._get_space_content_datacenter(start)
+                    results = response.get("results", [])
+
+                    if not results:
+                        logger.debug("No more results found, ending pagination")
+                        break
+
+                    total_documents += len(results)
+                    logger.debug(
+                        f"Processing {len(results)} documents from page {page_count}"
+                    )
+
+                    # Process each content item
+                    for content in results:
+                        if self._should_process_content(content):
+                            try:
+                                document = self._process_content(
+                                    content, clean_html=True
+                                )
+                                if document:
+                                    documents.append(document)
+                                    logger.debug(
+                                        f"Processed {content['type']} '{content['title']}' "
+                                        f"(ID: {content['id']}) from space {self.config.space_key}"
+                                    )
+                            except Exception as e:
+                                logger.error(
+                                    f"Failed to process {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}): {e!s}"
+                                )
+
+                    # Check if there are more pages
+                    total_size = response.get("totalSize", response.get("size", 0))
+                    if start + limit >= total_size:
+                        logger.debug(
+                            f"Reached end of results: {start + limit} >= {total_size}"
+                        )
+                        break
+
+                    # Move to next page
+                    start += limit
+                    logger.debug(f"Moving to next page with start={start}")
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
+                    )
+                    raise
 
         logger.info(
             f"Processed {len(documents)} documents from {total_documents} total results in {page_count} pages from space {self.config.space_key}"

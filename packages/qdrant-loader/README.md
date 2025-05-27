@@ -6,12 +6,23 @@ A powerful tool for collecting and vectorizing technical content from multiple s
 
 ### Core Capabilities
 
-- **Multi-source ingestion**: Collect content from Git, Confluence, Jira, public documentation, and local files
+- **Multi-source ingestion**: Collect content from Git, Confluence Cloud & Data Center, Jira, public documentation, and local files
 - **Intelligent processing**: Smart chunking, preprocessing, and metadata extraction
 - **Flexible embeddings**: Support for OpenAI, local models (BAAI/bge-small-en-v1.5), and custom endpoints
 - **Vector storage**: Optimized storage in QDrant vector database
 - **State management**: Incremental updates with SQLite-based state tracking
 - **Performance monitoring**: Comprehensive logging and debugging capabilities
+
+### 🆕 New: Confluence Data Center Support
+
+QDrant Loader now supports **both Confluence Cloud and Data Center/Server** deployments with:
+
+- **Secure authentication methods**: API tokens (Cloud) and Personal Access Tokens (Data Center)
+- **Deployment-specific optimization**: Proper pagination and API handling for each deployment type
+- **Seamless migration**: Easy transition from Cloud to Data Center configurations
+- **Auto-detection**: Automatic deployment type detection based on URL patterns
+
+See our [Confluence Data Center Support Guide](../../docs/ConfluenceDataCenterSupport.md) for detailed setup instructions.
 
 ### Advanced Features
 
@@ -26,7 +37,7 @@ A powerful tool for collecting and vectorizing technical content from multiple s
 | Connector | Description | Key Features |
 |-----------|-------------|--------------|
 | **Git** | Code and documentation from repositories | Branch selection, file filtering, commit metadata |
-| **Confluence** | Technical documentation from Atlassian | Space filtering, label-based selection, comment processing |
+| **Confluence** | Technical documentation from Atlassian Cloud & Data Center | Space filtering, label-based selection, comment processing, secure authentication |
 | **Jira** | Issues and specifications | Project filtering, attachment processing, incremental sync |
 | **Public Docs** | External documentation websites | CSS selector-based extraction, version detection |
 | **Local Files** | Local directories and files | Glob pattern matching, file type filtering |
@@ -57,7 +68,7 @@ pip install -e packages/qdrant-loader[dev]
 ```bash
 # Download configuration templates
 curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/config.template.yaml
-curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/.env.template
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/env.template
 
 # Edit configuration files
 # .env: Add your API keys and database paths
@@ -88,11 +99,14 @@ Source-specific variables (as needed):
 REPO_TOKEN=your_github_token
 REPO_URL=https://github.com/user/repo.git
 
-# Confluence
+# Confluence (Cloud)
 CONFLUENCE_URL=https://your-domain.atlassian.net
 CONFLUENCE_SPACE_KEY=SPACE
 CONFLUENCE_TOKEN=your_token
 CONFLUENCE_EMAIL=your_email
+
+# Confluence (Data Center/Server) - Personal Access Token
+CONFLUENCE_PAT=your_personal_access_token
 
 # Jira
 JIRA_URL=https://your-domain.atlassian.net
@@ -157,12 +171,24 @@ sources:
 ```yaml
 sources:
   confluence:
-    tech-docs:
+    # Confluence Cloud
+    tech-docs-cloud:
       base_url: "${CONFLUENCE_URL}"
+      deployment_type: "cloud"
       space_key: "TECH"
       content_types: ["page", "blogpost"]
       include_labels: ["public", "documentation"]
       exclude_labels: ["draft", "archived"]
+      token: "${CONFLUENCE_TOKEN}"
+      email: "${CONFLUENCE_EMAIL}"
+    
+    # Confluence Data Center with Personal Access Token
+    tech-docs-datacenter:
+      base_url: "https://confluence.company.com"
+      deployment_type: "datacenter"
+      space_key: "TECH"
+      content_types: ["page", "blogpost"]
+      token: "${CONFLUENCE_PAT}"
 ```
 
 #### Local Files
