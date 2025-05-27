@@ -12,7 +12,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
 **Features:**
 
-- Multiple data source connectors (Git, Confluence Cloud & Data Center, Jira, Public Docs)
+- Multiple data source connectors (Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, Public Docs)
 - Intelligent document processing and chunking
 - Vector embeddings with OpenAI
 - Incremental updates and change detection
@@ -157,6 +157,7 @@ mypy packages/
 - [Release Management Guide](./docs/RELEASE.md)
 - [Features Overview](./docs/Features.md)
 - [Confluence Data Center Support](./docs/ConfluenceDataCenterSupport.md)
+- [JIRA Data Center Support](./docs/JiraDataCenterSupport.md)
 - [Client Usage Guide](./docs/ClientUsage.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
 - [Product Requirements](./docs/PRD.md)

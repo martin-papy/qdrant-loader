@@ -54,6 +54,8 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 
 #### Jira Connector
 
+- **Multi-deployment support**: Works with JIRA Cloud, Data Center, and Server
+- **Secure authentication**: API tokens (Cloud) and Personal Access Tokens (Data Center/Server)
 - **Project-based ingestion**: Process entire Jira projects
 - **Issue type filtering**: Select specific issue types to process
 - **Status-based filtering**: Include/exclude based on issue status
@@ -61,14 +63,25 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 - **Comment extraction**: Process issue comments and discussions
 - **Relationship tracking**: Capture issue links and dependencies
 - **Incremental sync**: Track last sync time for efficient updates
+- **User field compatibility**: Handles different user formats between deployments
+- **Deployment-specific optimization**: Optimized settings for each deployment type
+
+**Advanced features:**
+
+- Automatic deployment type detection based on URL patterns
+- Deployment-specific authentication (Basic Auth for Cloud, Bearer tokens for Data Center)
+- User data format handling (`accountId` for Cloud, `name`/`key` for Data Center)
+- Rate limiting optimized for each deployment type
+- Comprehensive error handling for secure authentication methods
 
 **Metadata captured:**
 
-- Issue details (key, summary, description, status)
-- User information (reporter, assignee, commenters)
+- Issue details (key, summary, description, status, priority)
+- User information (reporter, assignee, commenters) with cross-deployment compatibility
 - Timestamps (created, updated, resolved)
 - Custom fields and labels
-- Issue relationships and subtasks
+- Issue relationships, subtasks, and linked issues
+- Attachment metadata with author information
 
 #### Public Documentation Connector
 

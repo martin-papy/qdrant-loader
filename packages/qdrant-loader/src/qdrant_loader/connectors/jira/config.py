@@ -1,19 +1,31 @@
 """Configuration for Jira connector."""
 
 import os
+from enum import Enum
+from typing import Self
 
 from pydantic import ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 from qdrant_loader.config.source_config import SourceConfig
 
 
+class JiraDeploymentType(str, Enum):
+    """Jira deployment types."""
+
+    CLOUD = "cloud"
+    DATACENTER = "datacenter"
+    SERVER = "server"  # Legacy, treated same as datacenter
+
+
 class JiraProjectConfig(SourceConfig):
     """Configuration for a Jira project."""
 
     # Authentication
-    token: str | None = Field(default=None, description="Jira API token")
+    token: str | None = Field(
+        default=None, description="Jira API token or Personal Access Token"
+    )
     email: str | None = Field(
-        default=None, description="Email associated with the API token"
+        default=None, description="Email associated with the API token (Cloud only)"
     )
     base_url: HttpUrl = Field(
         ...,
@@ -23,6 +35,12 @@ class JiraProjectConfig(SourceConfig):
     # Project configuration
     project_key: str = Field(
         ..., description="Project key to process (e.g., 'PROJ')", min_length=1
+    )
+
+    # Deployment type
+    deployment_type: JiraDeploymentType = Field(
+        default=JiraDeploymentType.CLOUD,
+        description="Jira deployment type (cloud, datacenter, or server)",
     )
 
     # Rate limiting
@@ -55,25 +73,45 @@ class JiraProjectConfig(SourceConfig):
 
     model_config = ConfigDict(validate_default=True, arbitrary_types_allowed=True)
 
-    @model_validator(mode="before")
+    @field_validator("deployment_type", mode="before")
     @classmethod
-    def validate_env_vars(cls, values: dict) -> dict:
-        """Load values from environment variables if not provided."""
-        if values.get("token") is None:
-            values["token"] = os.getenv("JIRA_TOKEN")
-        if values.get("email") is None:
-            values["email"] = os.getenv("JIRA_EMAIL")
+    def auto_detect_deployment_type(
+        cls, v: str | JiraDeploymentType
+    ) -> JiraDeploymentType:
+        """Auto-detect deployment type if not specified."""
+        if isinstance(v, str):
+            return JiraDeploymentType(v.lower())
+        return v
 
-        if not values.get("token"):
-            raise ValueError(
-                "token must be provided either directly or via JIRA_TOKEN environment variable"
-            )
-        if not values.get("email"):
-            raise ValueError(
-                "email must be provided either directly or via JIRA_EMAIL environment variable"
-            )
+    @field_validator("token", mode="after")
+    @classmethod
+    def load_token_from_env(cls, v: str | None) -> str | None:
+        """Load token from environment variable if not provided."""
+        return v or os.getenv("JIRA_TOKEN")
 
-        return values
+    @field_validator("email", mode="after")
+    @classmethod
+    def load_email_from_env(cls, v: str | None) -> str | None:
+        """Load email from environment variable if not provided."""
+        return v or os.getenv("JIRA_EMAIL")
+
+    @model_validator(mode="after")
+    def validate_auth_config(self) -> Self:
+        """Validate authentication configuration based on deployment type."""
+        if self.deployment_type == JiraDeploymentType.CLOUD:
+            # Cloud requires email and token
+            if not self.email:
+                raise ValueError("Email is required for Jira Cloud deployment")
+            if not self.token:
+                raise ValueError("API token is required for Jira Cloud deployment")
+        else:
+            # Data Center/Server requires Personal Access Token
+            if not self.token:
+                raise ValueError(
+                    "Personal Access Token is required for Jira Data Center/Server deployment"
+                )
+
+        return self
 
     @field_validator("issue_types", "include_statuses")
     @classmethod

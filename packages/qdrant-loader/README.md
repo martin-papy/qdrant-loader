@@ -6,23 +6,35 @@ A powerful tool for collecting and vectorizing technical content from multiple s
 
 ### Core Capabilities
 
-- **Multi-source ingestion**: Collect content from Git, Confluence Cloud & Data Center, Jira, public documentation, and local files
+- **Multi-source ingestion**: Collect content from Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, public documentation, and local files
 - **Intelligent processing**: Smart chunking, preprocessing, and metadata extraction
 - **Flexible embeddings**: Support for OpenAI, local models (BAAI/bge-small-en-v1.5), and custom endpoints
 - **Vector storage**: Optimized storage in QDrant vector database
 - **State management**: Incremental updates with SQLite-based state tracking
 - **Performance monitoring**: Comprehensive logging and debugging capabilities
 
-### 🆕 New: Confluence Data Center Support
+### 🆕 New: Data Center Support
 
-QDrant Loader now supports **both Confluence Cloud and Data Center/Server** deployments with:
+QDrant Loader now supports **both Cloud and Data Center/Server** deployments for Atlassian products:
+
+#### Confluence Data Center Support
 
 - **Secure authentication methods**: API tokens (Cloud) and Personal Access Tokens (Data Center)
 - **Deployment-specific optimization**: Proper pagination and API handling for each deployment type
 - **Seamless migration**: Easy transition from Cloud to Data Center configurations
 - **Auto-detection**: Automatic deployment type detection based on URL patterns
 
-See our [Confluence Data Center Support Guide](../../docs/ConfluenceDataCenterSupport.md) for detailed setup instructions.
+#### JIRA Data Center Support
+
+- **Multi-deployment authentication**: Basic Auth (Cloud) and Bearer tokens (Data Center)
+- **User field compatibility**: Handles different user formats between deployments
+- **Optimized performance**: Deployment-specific rate limiting and page sizes
+- **Cross-deployment features**: All JIRA features work across both deployment types
+
+See our detailed guides:
+
+- [Confluence Data Center Support Guide](../../docs/ConfluenceDataCenterSupport.md)
+- [JIRA Data Center Support Guide](../../docs/JiraDataCenterSupport.md)
 
 ### Advanced Features
 
@@ -38,7 +50,7 @@ See our [Confluence Data Center Support Guide](../../docs/ConfluenceDataCenterSu
 |-----------|-------------|--------------|
 | **Git** | Code and documentation from repositories | Branch selection, file filtering, commit metadata |
 | **Confluence** | Technical documentation from Atlassian Cloud & Data Center | Space filtering, label-based selection, comment processing, secure authentication |
-| **Jira** | Issues and specifications | Project filtering, attachment processing, incremental sync |
+| **JIRA** | Issues and specifications from Cloud & Data Center | Project filtering, attachment processing, incremental sync, cross-deployment compatibility |
 | **Public Docs** | External documentation websites | CSS selector-based extraction, version detection |
 | **Local Files** | Local directories and files | Glob pattern matching, file type filtering |
 
@@ -108,11 +120,14 @@ CONFLUENCE_EMAIL=your_email
 # Confluence (Data Center/Server) - Personal Access Token
 CONFLUENCE_PAT=your_personal_access_token
 
-# Jira
+# JIRA (Cloud)
 JIRA_URL=https://your-domain.atlassian.net
 JIRA_PROJECT_KEY=PROJ
 JIRA_TOKEN=your_token
 JIRA_EMAIL=your_email
+
+# JIRA (Data Center/Server) - Personal Access Token
+JIRA_PAT=your_personal_access_token
 ```
 
 ### 3. Basic Usage
@@ -189,6 +204,31 @@ sources:
       space_key: "TECH"
       content_types: ["page", "blogpost"]
       token: "${CONFLUENCE_PAT}"
+```
+
+#### JIRA Project
+
+```yaml
+sources:
+  jira:
+    # JIRA Cloud
+    support-cloud:
+      base_url: "https://mycompany.atlassian.net"
+      deployment_type: "cloud"
+      project_key: "SUPPORT"
+      token: "${JIRA_TOKEN}"
+      email: "${JIRA_EMAIL}"
+      page_size: 50
+      requests_per_minute: 60
+    
+    # JIRA Data Center with Personal Access Token
+    engineering-datacenter:
+      base_url: "https://jira.company.com"
+      deployment_type: "datacenter"
+      project_key: "ENG"
+      token: "${JIRA_PAT}"
+      page_size: 100
+      requests_per_minute: 120
 ```
 
 #### Local Files
