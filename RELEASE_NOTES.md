@@ -1,6 +1,19 @@
-# 🚀 Release Process Updates
+# 🚀 Release Notes
 
-## 📋 Summary
+## 🆕 Latest Features
+
+### Confluence Data Center Support
+
+QDrant Loader now supports **both Confluence Cloud and Data Center/Server** deployments:
+
+- **Secure authentication methods**: API tokens (Cloud) and Personal Access Tokens (Data Center)
+- **Deployment-specific optimization**: Proper pagination and API handling for each deployment type
+- **Seamless migration**: Easy transition from Cloud to Data Center configurations
+- **Auto-detection**: Automatic deployment type detection based on URL patterns
+
+See our [Confluence Data Center Support Guide](./docs/ConfluenceDataCenterSupport.md) for detailed setup instructions.
+
+## 📋 Release Process Updates
 
 The QDrant Loader project has been updated with a new unified versioning approach and enhanced release management system.
 

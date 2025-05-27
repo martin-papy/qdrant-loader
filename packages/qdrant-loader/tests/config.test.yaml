@@ -144,6 +144,7 @@ sources:
   confluence:
     theorcs:
       base_url: "https://theorcs.atlassian.net/wiki"                  # Confluence instance URL
+      deployment_type: "cloud"                 # Deployment type: cloud, datacenter, or server
       space_key: "THEORCS"      # Space to process
       content_types:                            # Types of content to process
         - "page"

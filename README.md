@@ -12,7 +12,7 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
 **Features:**
 
-- Multiple data source connectors (Git, Confluence, Jira, Public Docs)
+- Multiple data source connectors (Git, Confluence Cloud & Data Center, Jira, Public Docs)
 - Intelligent document processing and chunking
 - Vector embeddings with OpenAI
 - Incremental updates and change detection
@@ -61,7 +61,7 @@ cp packages/qdrant-loader/config.template.yaml config.yaml
 2. Set up your environment variables:
 
 ```bash
-cp .env.template .env
+cp env.template .env
 # Edit .env with your API keys and configuration
 ```
 
@@ -156,6 +156,7 @@ mypy packages/
 - [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
 - [Release Management Guide](./docs/RELEASE.md)
 - [Features Overview](./docs/Features.md)
+- [Confluence Data Center Support](./docs/ConfluenceDataCenterSupport.md)
 - [Client Usage Guide](./docs/ClientUsage.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
 - [Product Requirements](./docs/PRD.md)
