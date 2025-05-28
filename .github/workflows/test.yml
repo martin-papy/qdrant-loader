@@ -66,7 +66,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-loader
-          path: htmlcov-loader
+          path: |
+            htmlcov-loader
+            coverage-loader.xml
 
   test-mcp-server:
     name: Test MCP Server
@@ -99,7 +101,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-mcp
-          path: htmlcov-mcp
+          path: |
+            htmlcov-mcp
+            coverage-mcp.xml
 
   combined-coverage:
     name: Combined Coverage Report
@@ -124,20 +128,46 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: coverage-*
-          merge-multiple: true
+          merge-multiple: false
 
       - name: Combine coverage reports
         run: |
           # Check what coverage files we have
-          ls -la *coverage* || true
-          ls -la htmlcov* || true
+          echo "=== Root directory contents ==="
+          ls -la || true
           
-          # Use the existing HTML coverage from loader (which has the most comprehensive coverage)
-          if [ -d "htmlcov-loader" ]; then
-            cp -r htmlcov-loader htmlcov
+          echo "=== Looking for coverage directories ==="
+          find . -name "coverage-*" -type d || true
+          
+          echo "=== Looking for HTML coverage files ==="
+          find . -name "index.html" || true
+          
+          echo "=== Looking for XML coverage files ==="
+          find . -name "*.xml" || true
+          
+          # Artifacts are downloaded into separate directories when merge-multiple is false
+          # Look for coverage directories
+          if [ -d "coverage-loader" ]; then
+            echo "Found loader coverage directory"
+            echo "Contents of coverage-loader:"
+            ls -la coverage-loader/ || true
+            # Copy HTML coverage files
+            if [ -d "coverage-loader/htmlcov-loader" ]; then
+              cp -r coverage-loader/htmlcov-loader htmlcov
+            else
+              cp -r coverage-loader htmlcov
+            fi
             echo "Using loader HTML coverage report"
-          elif [ -d "htmlcov-mcp" ]; then
-            cp -r htmlcov-mcp htmlcov
+          elif [ -d "coverage-mcp" ]; then
+            echo "Found MCP coverage directory"
+            echo "Contents of coverage-mcp:"
+            ls -la coverage-mcp/ || true
+            # Copy HTML coverage files  
+            if [ -d "coverage-mcp/htmlcov-mcp" ]; then
+              cp -r coverage-mcp/htmlcov-mcp htmlcov
+            else
+              cp -r coverage-mcp htmlcov
+            fi
             echo "Using MCP HTML coverage report"
           else
             echo "No HTML coverage reports found, creating empty directory"
@@ -145,20 +175,21 @@ jobs:
             echo "<html><body><h1>No coverage reports available</h1></body></html>" > htmlcov/index.html
           fi
           
-          # Combine XML reports if they exist
-          if [ -f "coverage-loader.xml" ] && [ -f "coverage-mcp.xml" ]; then
-            # Install coverage if not already installed
-            pip install coverage[toml] || true
+          # Handle XML reports if they exist (these would be inside the artifact directories)
+          if [ -f "coverage-loader/coverage-loader.xml" ] && [ -f "coverage-mcp/coverage-mcp.xml" ]; then
             # Create a simple combined XML (just use the loader one as primary)
-            cp coverage-loader.xml coverage.xml
+            cp coverage-loader/coverage-loader.xml coverage.xml
             echo "Combined coverage reports"
-          elif [ -f "coverage-loader.xml" ]; then
-            cp coverage-loader.xml coverage.xml
+          elif [ -f "coverage-loader/coverage-loader.xml" ]; then
+            cp coverage-loader/coverage-loader.xml coverage.xml
             echo "Using loader coverage report"
-          elif [ -f "coverage-mcp.xml" ]; then
-            cp coverage-mcp.xml coverage.xml
+          elif [ -f "coverage-mcp/coverage-mcp.xml" ]; then
+            cp coverage-mcp/coverage-mcp.xml coverage.xml
             echo "Using MCP coverage report"
           fi
+          
+          echo "=== Final htmlcov directory contents ==="
+          ls -la htmlcov/ || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -169,6 +200,7 @@ jobs:
           path: htmlcov
 
   deploy:
+    name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: combined-coverage
     steps:

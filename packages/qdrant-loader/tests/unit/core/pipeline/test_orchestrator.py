@@ -1,16 +1,16 @@
 """Tests for PipelineOrchestrator module."""
 
-import pytest
 from typing import cast
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
 from qdrant_loader.core.pipeline.orchestrator import (
     PipelineComponents,
     PipelineOrchestrator,
 )
-from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
 from qdrant_loader.core.pipeline.source_filter import SourceFilter
 from qdrant_loader.core.pipeline.source_processor import SourceProcessor
 from qdrant_loader.core.state.state_manager import StateManager
@@ -219,7 +219,7 @@ class TestPipelineOrchestrator:
         self.source_filter.filter_sources.return_value = filtered_config
 
         # Patch the logger to prevent Rich formatting issues during exception logging
-        with patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger:
+        with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
             # Execute and verify exception
             with pytest.raises(ValueError, match="No sources found for type 'git'"):
                 await self.orchestrator.process_documents(source_type="git")
@@ -279,7 +279,7 @@ class TestPipelineOrchestrator:
         )
 
         # Patch the logger to prevent Rich formatting issues during exception logging
-        with patch("qdrant_loader.core.pipeline.orchestrator.logger") as mock_logger:
+        with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
             # Execute and verify exception
             with pytest.raises(Exception, match="Collection failed"):
                 await self.orchestrator.process_documents()
@@ -468,7 +468,7 @@ class TestPipelineOrchestrator:
             # Patch the logger to prevent Rich formatting issues during exception logging
             with patch(
                 "qdrant_loader.core.pipeline.orchestrator.logger"
-            ) as mock_logger:
+            ):
                 # Execute and verify exception
                 with pytest.raises(Exception, match="Change detection failed"):
                     await self.orchestrator._detect_document_changes(mock_documents, filtered_config)  # type: ignore

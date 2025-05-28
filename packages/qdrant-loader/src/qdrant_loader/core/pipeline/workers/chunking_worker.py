@@ -2,7 +2,7 @@
 
 import asyncio
 import concurrent.futures
-from typing import AsyncIterator, List
+from collections.abc import AsyncIterator
 
 import psutil
 
@@ -32,7 +32,7 @@ class ChunkingWorker(BaseWorker):
         self.chunk_executor = chunk_executor
         self.shutdown_event = shutdown_event or asyncio.Event()
 
-    async def process(self, document: Document) -> List:
+    async def process(self, document: Document) -> list:
         """Process a single document into chunks.
 
         Args:
@@ -98,7 +98,7 @@ class ChunkingWorker(BaseWorker):
             logger.error(f"Chunking failed for doc {document.url}: {e}")
             raise
 
-    async def process_documents(self, documents: List[Document]) -> AsyncIterator:
+    async def process_documents(self, documents: list[Document]) -> AsyncIterator:
         """Process documents into chunks.
 
         Args:

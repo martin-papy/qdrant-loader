@@ -2,7 +2,7 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, AsyncIterator
+from typing import Any
 
 from qdrant_loader.utils.logging import LoggingConfig
 

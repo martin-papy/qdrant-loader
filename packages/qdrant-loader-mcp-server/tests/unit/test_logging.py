@@ -3,15 +3,14 @@
 import logging
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-import pytest
 
+import pytest
 from qdrant_loader_mcp_server.utils.logging import (
-    QdrantVersionFilter,
     ApplicationFilter,
     CleanFormatter,
     LoggingConfig,
+    QdrantVersionFilter,
 )
 
 

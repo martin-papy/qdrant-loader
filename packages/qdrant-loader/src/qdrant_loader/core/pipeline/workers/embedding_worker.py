@@ -1,7 +1,8 @@
 """Embedding worker for processing chunks into embeddings."""
 
 import asyncio
-from typing import AsyncIterator, List, Tuple, Any
+from collections.abc import AsyncIterator
+from typing import Any
 
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
 from qdrant_loader.core.monitoring import prometheus_metrics
@@ -26,7 +27,7 @@ class EmbeddingWorker(BaseWorker):
         self.embedding_service = embedding_service
         self.shutdown_event = shutdown_event or asyncio.Event()
 
-    async def process(self, chunks: List[Any]) -> List[Tuple[Any, List[float]]]:
+    async def process(self, chunks: list[Any]) -> list[tuple[Any, list[float]]]:
         """Process a batch of chunks into embeddings.
 
         Args:
@@ -66,7 +67,7 @@ class EmbeddingWorker(BaseWorker):
 
     async def process_chunks(
         self, chunks: AsyncIterator[Any]
-    ) -> AsyncIterator[Tuple[Any, List[float]]]:
+    ) -> AsyncIterator[tuple[Any, list[float]]]:
         """Process chunks into embeddings.
 
         Args:

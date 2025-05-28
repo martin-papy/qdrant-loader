@@ -117,7 +117,7 @@ public class Calculator {
 
 
 class TestCodeChunkingStrategy:
-    """Test cases for CodeChunkingStrategy."""
+    """Test CodeChunkingStrategy functionality."""
 
     @patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer")
     def test_initialization(self, mock_semantic_analyzer, mock_settings):
@@ -131,10 +131,27 @@ class TestCodeChunkingStrategy:
         assert ".js" in strategy.supported_languages
 
     @patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer")
+    @patch("qdrant_loader.core.text_processing.text_processor.TextProcessor")
+    @patch("aiohttp.ClientSession")
+    @patch("asyncio.new_event_loop")
+    @patch("asyncio.set_event_loop")
     def test_detect_language_python(
-        self, mock_semantic_analyzer, mock_settings, sample_python_code
+        self,
+        mock_set_event_loop,
+        mock_new_event_loop,
+        mock_client_session,
+        mock_text_processor,
+        mock_semantic_analyzer,
+        mock_settings,
+        sample_python_code,
     ):
         """Test language detection for Python."""
+        # Mock event loop to prevent real loop creation
+        mock_loop = Mock()
+        mock_loop.is_closed.return_value = False
+        mock_loop.close = Mock()
+        mock_new_event_loop.return_value = mock_loop
+
         strategy = CodeChunkingStrategy(mock_settings)
 
         # Test with file extension

@@ -5,8 +5,6 @@ This module provides functionality for tracking the state of document ingestion,
 including last successful ingestion times, document states, and change detection.
 """
 
-__version__ = "0.1.0"
-
 from .exceptions import (
     DatabaseError,
     InvalidDocumentStateError,

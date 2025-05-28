@@ -2,10 +2,9 @@
 
 import asyncio
 import concurrent.futures
-from unittest.mock import AsyncMock, Mock, patch, call
+from unittest.mock import Mock, call, patch
 
 import pytest
-
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.workers.chunking_worker import ChunkingWorker

@@ -65,7 +65,7 @@ docs: ## Generate documentation
 	@echo "Documentation generation not yet implemented"
 
 setup-dev: ## Set up development environment
-	python -m venv venv
+	python3.12 -m venv venv
 	@echo "Virtual environment created. Activate with:"
 	@echo "  source venv/bin/activate  # On macOS/Linux"
 	@echo "  venv\\Scripts\\activate     # On Windows"

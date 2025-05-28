@@ -1,17 +1,16 @@
 """Tests for the ChunkingService."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.chunking.strategy import (
-    MarkdownChunkingStrategy,
-    HTMLChunkingStrategy,
-    JSONChunkingStrategy,
     CodeChunkingStrategy,
     DefaultChunkingStrategy,
+    HTMLChunkingStrategy,
+    JSONChunkingStrategy,
+    MarkdownChunkingStrategy,
 )
 from qdrant_loader.core.document import Document
 

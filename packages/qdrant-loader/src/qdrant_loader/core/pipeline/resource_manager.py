@@ -4,7 +4,6 @@ import asyncio
 import atexit
 import concurrent.futures
 import signal
-from typing import Set
 
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -16,7 +15,7 @@ class ResourceManager:
 
     def __init__(self):
         self.shutdown_event = asyncio.Event()
-        self.active_tasks: Set[asyncio.Task] = set()
+        self.active_tasks: set[asyncio.Task] = set()
         self.cleanup_done = False
         self.chunk_executor: concurrent.futures.ThreadPoolExecutor | None = None
 
@@ -135,7 +134,6 @@ class ResourceManager:
     def _force_immediate_exit(self):
         """Force immediate exit."""
         import os
-        import sys
 
         logger.warning("Forcing immediate exit")
         try:

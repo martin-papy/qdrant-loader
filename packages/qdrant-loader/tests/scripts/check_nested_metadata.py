@@ -7,7 +7,6 @@ information that's being captured from Confluence Data Center.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -15,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-from qdrant_loader.config import initialize_config, get_settings
+from qdrant_loader.config import get_settings, initialize_config
 
 
 def load_config(config_path: str, env_path: str | None = None):
@@ -108,7 +107,7 @@ def analyze_nested_metadata(client: QdrantClient, collection_name: str, limit: i
             print("\nAll nested metadata keys:")
             for key in sorted(nested_metadata.keys()):
                 value = nested_metadata[key]
-                if isinstance(value, (list, dict)):
+                if isinstance(value, list | dict):
                     print(f"  {key}: {type(value).__name__} (length: {len(value)})")
                 else:
                     print(f"  {key}: {value}")
@@ -116,12 +115,12 @@ def analyze_nested_metadata(client: QdrantClient, collection_name: str, limit: i
             print("-" * 80)
 
         # Summary analysis
-        print(f"\n=== NESTED METADATA ANALYSIS SUMMARY ===")
+        print("\n=== NESTED METADATA ANALYSIS SUMMARY ===")
         print(f"Total documents analyzed: {len(points)}")
         print(f"Unique nested metadata fields found: {len(all_nested_keys)}")
         print(f"All nested fields: {sorted(all_nested_keys)}")
 
-        print(f"\n=== NESTED FIELD ANALYSIS ===")
+        print("\n=== NESTED FIELD ANALYSIS ===")
         for field in sorted(all_nested_keys):
             analysis = nested_metadata_analysis[field]
             print(f"\nField: {field}")
@@ -145,7 +144,7 @@ def analyze_nested_metadata(client: QdrantClient, collection_name: str, limit: i
             "created_at",
         ]
 
-        print(f"\n=== EXPECTED CONFLUENCE FIELDS CHECK ===")
+        print("\n=== EXPECTED CONFLUENCE FIELDS CHECK ===")
         for field in expected_confluence_fields:
             if field in all_nested_keys:
                 analysis = nested_metadata_analysis[field]

@@ -1,7 +1,5 @@
 """Main orchestrator for the ingestion pipeline."""
 
-import asyncio
-from typing import List
 
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.confluence import ConfluenceConnector
@@ -49,7 +47,7 @@ class PipelineOrchestrator:
         sources_config: SourcesConfig | None = None,
         source_type: str | None = None,
         source: str | None = None,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Main entry point for document processing.
 
         Args:
@@ -119,7 +117,7 @@ class PipelineOrchestrator:
 
     async def _collect_documents_from_sources(
         self, filtered_config: SourcesConfig
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Collect documents from all configured sources."""
         documents = []
 
@@ -162,8 +160,8 @@ class PipelineOrchestrator:
         return documents
 
     async def _detect_document_changes(
-        self, documents: List[Document], filtered_config: SourcesConfig
-    ) -> List[Document]:
+        self, documents: list[Document], filtered_config: SourcesConfig
+    ) -> list[Document]:
         """Detect changes in documents and return only new/updated ones."""
         if not documents:
             return []
@@ -196,7 +194,7 @@ class PipelineOrchestrator:
             raise
 
     async def _update_document_states(
-        self, documents: List[Document], successfully_processed_doc_ids: set
+        self, documents: list[Document], successfully_processed_doc_ids: set
     ):
         """Update document states for successfully processed documents."""
         successfully_processed_docs = [

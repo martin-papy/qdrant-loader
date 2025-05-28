@@ -8,8 +8,8 @@ import requests
 from pydantic import HttpUrl
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import (
-    ConfluenceSpaceConfig,
     ConfluenceDeploymentType,
+    ConfluenceSpaceConfig,
 )
 from qdrant_loader.connectors.confluence.connector import ConfluenceConnector
 from qdrant_loader.core.document import Document

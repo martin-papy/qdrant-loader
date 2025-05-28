@@ -2,7 +2,6 @@
 
 import asyncio
 from collections.abc import Mapping
-from typing import List, Type
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector
@@ -21,9 +20,9 @@ class SourceProcessor:
     async def process_source_type(
         self,
         source_configs: Mapping[str, SourceConfig],
-        connector_class: Type[BaseConnector],
+        connector_class: type[BaseConnector],
         source_type: str,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Process documents from a specific source type.
 
         Args:

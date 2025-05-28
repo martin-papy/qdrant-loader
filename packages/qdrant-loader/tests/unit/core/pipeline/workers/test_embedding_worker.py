@@ -4,7 +4,6 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
 from qdrant_loader.core.pipeline.workers.embedding_worker import EmbeddingWorker
 
 
@@ -126,7 +125,7 @@ class TestEmbeddingWorker:
 
         # Setup embedding service to timeout
         self.mock_embedding_service.get_embeddings = AsyncMock(
-            side_effect=asyncio.TimeoutError()
+            side_effect=TimeoutError()
         )
 
         with patch(

@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 from datetime import datetime
 
@@ -9,8 +8,8 @@ from requests.auth import HTTPBasicAuth
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.confluence.config import (
-    ConfluenceSpaceConfig,
     ConfluenceDeploymentType,
+    ConfluenceSpaceConfig,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -536,8 +535,8 @@ class ConfluenceConnector(BaseConnector):
             return None
 
         try:
-            from datetime import datetime
             import re
+            from datetime import datetime
 
             # Handle various timestamp formats from Confluence
             # ISO format with timezone: 2024-05-24T20:57:56.130+07:00

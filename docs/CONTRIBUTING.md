@@ -1,10 +1,10 @@
-# Contributing to QDrant Loader Monorepo
+# Contributing to QDrant Loader
 
 We welcome contributions to both the QDrant Loader and MCP Server packages! This guide will help you get started.
 
 ## 🏗️ Project Structure
 
-This is a monorepo containing two main packages:
+This is a repository containing two main packages:
 
 ```text
 qdrant-loader/
@@ -29,7 +29,7 @@ qdrant-loader/
 1. **Fork and clone the repository**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/qdrant-loader.git
+   git clone https://github.com/martin-papy/qdrant-loader.git
    cd qdrant-loader
    ```
 

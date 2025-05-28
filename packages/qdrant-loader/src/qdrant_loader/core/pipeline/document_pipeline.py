@@ -1,7 +1,5 @@
 """Document processing pipeline that coordinates chunking, embedding, and upserting."""
 
-import asyncio
-from typing import List
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -25,7 +23,7 @@ class DocumentPipeline:
         self.embedding_worker = embedding_worker
         self.upsert_worker = upsert_worker
 
-    async def process_documents(self, documents: List[Document]) -> PipelineResult:
+    async def process_documents(self, documents: list[Document]) -> PipelineResult:
         """Process documents through the pipeline.
 
         Args:

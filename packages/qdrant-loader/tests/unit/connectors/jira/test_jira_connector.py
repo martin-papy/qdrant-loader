@@ -4,10 +4,9 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-import requests_mock
 from pydantic import HttpUrl
 from qdrant_loader.config.types import SourceType
-from qdrant_loader.connectors.jira.config import JiraProjectConfig, JiraDeploymentType
+from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
 from qdrant_loader.connectors.jira.connector import JiraConnector
 from qdrant_loader.connectors.jira.models import (
     JiraIssue,
@@ -296,8 +295,8 @@ class TestJiraConnector:
 
         # Mock an HTTP error
         async def mock_make_request(*args, **kwargs):
-            from requests.exceptions import HTTPError
             import requests
+            from requests.exceptions import HTTPError
 
             response = requests.Response()
             response.status_code = 400

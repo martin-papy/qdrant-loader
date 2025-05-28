@@ -1,8 +1,6 @@
 """Refactored async ingestion pipeline using the new modular architecture."""
 
-import asyncio
 from pathlib import Path
-from typing import List
 
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.document import Document
@@ -13,8 +11,8 @@ from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .pipeline import (
-    PipelineConfig,
     PipelineComponentsFactory,
+    PipelineConfig,
     PipelineOrchestrator,
     ResourceManager,
 )
@@ -120,7 +118,7 @@ class AsyncIngestionPipeline:
         sources_config: SourcesConfig | None = None,
         source_type: str | None = None,
         source: str | None = None,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Process documents from all configured sources.
 
         Args:

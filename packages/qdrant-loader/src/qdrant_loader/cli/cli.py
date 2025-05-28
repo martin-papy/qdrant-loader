@@ -17,7 +17,6 @@ from click.utils import echo
 from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.config import Settings, get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
-from dotenv import load_dotenv
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.init_collection import init_collection
 from qdrant_loader.core.qdrant_manager import QdrantManager

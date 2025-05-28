@@ -1,14 +1,13 @@
 """Tests for the AsyncIngestionPipeline."""
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+from qdrant_loader.core.document import Document
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.document import Document
 
 
 class TestAsyncIngestionPipeline:
@@ -73,7 +72,7 @@ class TestAsyncIngestionPipeline:
             ) as mock_resource_manager,
             patch(
                 "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
-            ) as mock_monitor,
+            ),
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
             patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
@@ -166,7 +165,7 @@ class TestAsyncIngestionPipeline:
             mock_factory.return_value = mock_factory_instance
             mock_factory_instance.create_components.return_value = Mock()
 
-            pipeline = AsyncIngestionPipeline(
+            AsyncIngestionPipeline(
                 settings=mock_settings,
                 qdrant_manager=mock_qdrant_manager,
                 enable_metrics=False,

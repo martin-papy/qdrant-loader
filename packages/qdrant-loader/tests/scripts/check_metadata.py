@@ -7,7 +7,6 @@ to verify what information is being extracted from Confluence Data Center.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -15,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-from qdrant_loader.config import initialize_config, get_settings
+from qdrant_loader.config import get_settings, initialize_config
 
 
 def load_config(config_path: str, env_path: str | None = None):
@@ -103,12 +102,12 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
                 print("-" * 40)
 
         # Summary analysis
-        print(f"\n=== METADATA ANALYSIS SUMMARY ===")
+        print("\n=== METADATA ANALYSIS SUMMARY ===")
         print(f"Total documents analyzed: {len(points)}")
         print(f"Unique metadata fields found: {len(all_keys)}")
         print(f"All fields: {sorted(all_keys)}")
 
-        print(f"\n=== FIELD ANALYSIS ===")
+        print("\n=== FIELD ANALYSIS ===")
         for field in sorted(all_keys):
             analysis = metadata_analysis[field]
             print(f"\nField: {field}")
@@ -130,7 +129,7 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
             "metadata",
         ]
 
-        print(f"\n=== EXPECTED FIELDS CHECK ===")
+        print("\n=== EXPECTED FIELDS CHECK ===")
         for field in expected_fields:
             if field in all_keys:
                 analysis = metadata_analysis[field]

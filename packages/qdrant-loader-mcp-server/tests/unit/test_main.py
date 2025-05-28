@@ -1,11 +1,9 @@
 """Tests for main module and entry points."""
 
-import asyncio
 import os
-import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-import pytest_asyncio
 
 
 def test_main_entry_point():
@@ -54,7 +52,7 @@ async def test_shutdown():
 
     with patch("asyncio.all_tasks", return_value=[mock_task1, mock_task2]):
         with patch("asyncio.current_task", return_value=None):
-            with patch("asyncio.gather", return_value=None) as mock_gather:
+            with patch("asyncio.gather", return_value=None):
                 await shutdown(mock_loop)
 
                 # Verify tasks were cancelled
@@ -68,7 +66,7 @@ async def test_shutdown():
 def test_cli_imports():
     """Test that CLI module imports work correctly."""
     # Test that we can import the CLI components
-    from qdrant_loader_mcp_server.cli import cli, _get_version, _setup_logging
+    from qdrant_loader_mcp_server.cli import _get_version, _setup_logging, cli
 
     # Verify the components are available
     assert cli is not None
@@ -180,8 +178,8 @@ async def test_handle_stdio_success():
 
 def test_cli_click_integration():
     """Test that Click CLI integration works."""
-    from qdrant_loader_mcp_server.cli import cli
     from click.testing import CliRunner
+    from qdrant_loader_mcp_server.cli import cli
 
     runner = CliRunner()
 

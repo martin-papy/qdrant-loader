@@ -1,15 +1,12 @@
 """Tests for the DefaultChunkingStrategy."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from typing import List
+from unittest.mock import Mock, patch
 
+import pytest
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.default_strategy import (
-    DefaultChunkingStrategy,
     MAX_CHUNKS_TO_PROCESS,
-    MAX_DOCUMENT_SIZE_FOR_NLP,
-    MAX_CHUNK_SIZE_FOR_NLP,
+    DefaultChunkingStrategy,
 )
 from qdrant_loader.core.document import Document
 
@@ -437,7 +434,7 @@ class TestDefaultChunkingStrategy:
                     with patch(
                         "qdrant_loader.core.chunking.strategy.default_strategy.logger"
                     ) as mock_logger:
-                        result = strategy.chunk_document(sample_document)
+                        strategy.chunk_document(sample_document)
 
                         # Verify logging calls
                         assert mock_logger.info.call_count >= 2  # Start and end logging

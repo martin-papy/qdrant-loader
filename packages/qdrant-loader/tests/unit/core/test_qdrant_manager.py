@@ -1,13 +1,10 @@
 """Tests for QdrantManager."""
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from urllib.parse import urlparse
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from qdrant_client.http import models
 from qdrant_client.http.models import Distance, VectorParams
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
 
@@ -196,7 +193,7 @@ class TestQdrantManager:
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
-            manager = QdrantManager(mock_settings_with_api_key)
+            QdrantManager(mock_settings_with_api_key)
 
             mock_client_class.assert_called_once_with(
                 url="http://localhost:6333", api_key="test_api_key", timeout=60
@@ -213,7 +210,7 @@ class TestQdrantManager:
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
-            manager = QdrantManager(mock_settings_cloud)
+            QdrantManager(mock_settings_cloud)
 
             mock_client_class.assert_called_once_with(
                 url="https://cloud.qdrant.io", api_key="test_api_key", timeout=60
@@ -231,7 +228,7 @@ class TestQdrantManager:
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
-            manager = QdrantManager(mock_settings_with_api_key)
+            QdrantManager(mock_settings_with_api_key)
 
             mock_client_class.assert_called_once_with(
                 url="http://127.0.0.1:6333", api_key="test_api_key", timeout=60
@@ -478,7 +475,7 @@ class TestQdrantManager:
             ),
         ):
             manager = QdrantManager(mock_settings)
-            results = manager.search(query_vector)
+            manager.search(query_vector)
 
             mock_qdrant_client.search.assert_called_once_with(
                 collection_name="test_collection", query_vector=query_vector, limit=5
