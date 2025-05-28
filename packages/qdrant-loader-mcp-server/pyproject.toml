@@ -21,7 +21,7 @@ keywords = [
     "embeddings",
 ]
 authors = [
-    { name = "Martin Papy", email = "martin.papy@example.com" },
+    { name = "Martin Papy", email = "martin.papy@gmail.com" },
 ]
 dependencies = [
     "fastapi>=0.104.0",
