@@ -154,7 +154,10 @@ class TopicModeler:
                 return {"topics": [], "coherence": 0.0}
 
             # Create document-term matrix
-            [self.dictionary.doc2bow(tokens)]
+            doc_bow = self.dictionary.doc2bow(tokens)
+
+            # Get topic distribution for this document
+            doc_topics = self.lda_model[doc_bow]
 
             # Get topics without coherence calculation for speed
             topics = self.lda_model.print_topics(num_words=5)
@@ -174,7 +177,11 @@ class TopicModeler:
                 except Exception as e:
                     logger.warning("Failed to calculate coherence", error=str(e))
 
-            result = {"topics": topics, "coherence": coherence}
+            result = {
+                "topics": topics,
+                "doc_topics": doc_topics,
+                "coherence": coherence,
+            }
 
             # Cache the result
             self._cached_topics[text] = result
