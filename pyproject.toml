@@ -1,30 +1,30 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-workspace"
-version = "0.3.0b1"
+version = "0.3.0b2"
 description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
-license = {file = "LICENSE"}
 authors = [
-    {name = "Martin Papy", email = "martin.papy@gmail.com"},
+    { name = "Martin Papy", email = "martin.papy@gmail.com" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.12"
 
-# Workspace configuration - this makes it a monorepo
-[tool.setuptools.packages.find]
-where = ["packages"]
+[project.license]
+file = "LICENSE"
 
-# Development dependencies for the entire workspace
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
@@ -37,30 +37,27 @@ dev = [
     "pre-commit>=3.0.0",
 ]
 
-# Tool configurations for the entire workspace
+[tool.setuptools.packages.find]
+where = [
+    "packages",
+]
+
 [tool.black]
 line-length = 88
-target-version = ['py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
+target-version = [
+    "py312",
+]
+include = "\\.pyi?$"
+extend-exclude = "/(\n  # directories\n  \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | build\n  | dist\n)/\n"
 
 [tool.isort]
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["qdrant_loader", "mcp_server"]
+known_first_party = [
+    "qdrant_loader",
+    "mcp_server",
+]
 
 [tool.mypy]
 python_version = "3.12"
@@ -79,10 +76,19 @@ strict_equality = true
 mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src"
 
 [tool.pytest.ini_options]
-testpaths = ["packages/*/tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
+testpaths = [
+    "packages/*/tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+]
+python_classes = [
+    "Test*",
+]
+python_functions = [
+    "test_*",
+]
 addopts = [
     "--strict-markers",
     "--strict-config",
@@ -98,7 +104,9 @@ markers = [
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-source = ["packages"]
+source = [
+    "packages",
+]
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -127,22 +135,27 @@ line-length = 88
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
 ]
 ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-    "B017",  # pytest.raises(Exception) is too broad
-    "B904",  # raise ... from err
+    "E501",
+    "B008",
+    "C901",
+    "B017",
+    "B904",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/*" = ["B011", "B017"]
+"__init__.py" = [
+    "F401",
+]
+"tests/*" = [
+    "B011",
+    "B017",
+]
