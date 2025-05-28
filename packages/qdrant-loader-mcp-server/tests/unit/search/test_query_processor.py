@@ -1,8 +1,8 @@
 """Tests for the query processor implementation."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
 
 

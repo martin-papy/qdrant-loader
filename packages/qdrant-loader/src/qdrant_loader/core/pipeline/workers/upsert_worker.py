@@ -1,7 +1,8 @@
 """Upsert worker for upserting embedded chunks to Qdrant."""
 
 import asyncio
-from typing import AsyncIterator, List, Tuple, Any, Set
+from collections.abc import AsyncIterator
+from typing import Any
 
 from qdrant_client.http import models
 
@@ -20,9 +21,9 @@ class PipelineResult:
     def __init__(self):
         self.success_count: int = 0
         self.error_count: int = 0
-        self.successfully_processed_documents: Set[str] = set()
-        self.failed_document_ids: Set[str] = set()
-        self.errors: List[str] = []
+        self.successfully_processed_documents: set[str] = set()
+        self.failed_document_ids: set[str] = set()
+        self.errors: list[str] = []
 
 
 class UpsertWorker(BaseWorker):
@@ -42,8 +43,8 @@ class UpsertWorker(BaseWorker):
         self.shutdown_event = shutdown_event or asyncio.Event()
 
     async def process(
-        self, batch: List[Tuple[Any, List[float]]]
-    ) -> Tuple[int, int, Set[str], List[str]]:
+        self, batch: list[tuple[Any, list[float]]]
+    ) -> tuple[int, int, set[str], list[str]]:
         """Process a batch of embedded chunks.
 
         Args:
@@ -118,7 +119,7 @@ class UpsertWorker(BaseWorker):
         return success_count, error_count, successful_doc_ids, errors
 
     async def process_embedded_chunks(
-        self, embedded_chunks: AsyncIterator[Tuple[Any, List[float]]]
+        self, embedded_chunks: AsyncIterator[tuple[Any, list[float]]]
     ) -> PipelineResult:
         """Upsert embedded chunks to Qdrant.
 

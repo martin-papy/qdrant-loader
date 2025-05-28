@@ -1,13 +1,12 @@
 """Integration tests for MCP server functionality."""
 
-import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+import pytest_asyncio
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
-from qdrant_loader_mcp_server.search.models import SearchResult
 
 
 @pytest_asyncio.fixture
@@ -71,7 +70,7 @@ async def integration_handler():
     ):
 
         # Initialize components
-        from qdrant_loader_mcp_server.config import QdrantConfig, OpenAIConfig
+        from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 
         qdrant_config = QdrantConfig(api_key="test_key")
         openai_config = OpenAIConfig(api_key="test_key")

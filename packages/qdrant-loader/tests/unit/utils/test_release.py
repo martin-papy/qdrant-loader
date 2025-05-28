@@ -20,8 +20,8 @@ from release import (
     check_main_up_to_date,
     check_unpushed_commits,
     create_github_release,
-    get_package_version,
     get_github_token,
+    get_package_version,
     run_command,
     update_package_version,
 )

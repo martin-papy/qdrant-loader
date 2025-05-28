@@ -1,12 +1,9 @@
 """Tests for the CLI asyncio module."""
 
 import asyncio
-import pytest
-import warnings
-import gc
-from unittest.mock import Mock, patch, MagicMock
-from typing import Any
+from unittest.mock import Mock, patch
 
+import pytest
 from qdrant_loader.cli.asyncio import async_command
 
 

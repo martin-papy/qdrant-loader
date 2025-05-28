@@ -1,6 +1,5 @@
 """Tests for PipelineConfig."""
 
-import pytest
 
 from qdrant_loader.core.pipeline.config import PipelineConfig
 
