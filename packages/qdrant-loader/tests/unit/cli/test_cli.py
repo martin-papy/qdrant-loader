@@ -274,16 +274,22 @@ class TestLoadConfig:
         with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
             mock_init.side_effect = DatabaseDirectoryError(path=Path("/tmp/test_db"))
 
-            # Should not raise exception when skip_validation=True
-            _load_config(skip_validation=True)
+            # Mock the Path.exists() method to simulate config.yaml exists
+            with patch("pathlib.Path.exists", return_value=True):
+                # Should not raise exception when skip_validation=True
+                _load_config(skip_validation=True)
 
     def test_load_config_generic_exception(self):
         """Test loading config with generic exception."""
         with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
             mock_init.side_effect = Exception("Generic error")
 
-            with pytest.raises(ClickException, match="Failed to load configuration"):
-                _load_config()
+            # Mock the Path.exists() method to simulate config.yaml exists
+            with patch("pathlib.Path.exists", return_value=True):
+                with pytest.raises(
+                    ClickException, match="Failed to load configuration"
+                ):
+                    _load_config()
 
 
 class TestCheckSettings:

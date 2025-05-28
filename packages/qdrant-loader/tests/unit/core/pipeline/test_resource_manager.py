@@ -139,10 +139,14 @@ class TestResourceManager:
         with patch(
             "qdrant_loader.core.pipeline.resource_manager.logger"
         ) as mock_logger:
-            self.resource_manager._cleanup()
+            # Mock asyncio.run to prevent the coroutine warning
+            with patch("asyncio.run") as mock_asyncio_run:
+                self.resource_manager._cleanup()
 
-            # Verify error is logged
-            mock_logger.error.assert_called_with("Error during cleanup: Test exception")
+                # Verify error is logged
+                mock_logger.error.assert_called_with(
+                    "Error during cleanup: Test exception"
+                )
 
     @pytest.mark.asyncio
     async def test_async_cleanup_success(self):
@@ -424,16 +428,18 @@ class TestResourceManager:
             with patch(
                 "qdrant_loader.core.pipeline.resource_manager.logger"
             ) as mock_logger:
-                self.resource_manager._force_immediate_exit()
+                # Mock asyncio.run to prevent coroutine warning
+                with patch("asyncio.run") as mock_asyncio_run:
+                    self.resource_manager._force_immediate_exit()
 
-                # Verify cleanup is attempted
-                mock_cleanup.assert_called_once()
+                    # Verify cleanup is attempted
+                    mock_cleanup.assert_called_once()
 
-                # Verify warning message
-                mock_logger.warning.assert_called_with("Forcing immediate exit")
+                    # Verify warning message
+                    mock_logger.warning.assert_called_with("Forcing immediate exit")
 
-                # Verify os._exit is called
-                mock_os_exit.assert_called_once_with(1)
+                    # Verify os._exit is called
+                    mock_os_exit.assert_called_once_with(1)
 
     @patch("os._exit")
     def test_force_immediate_exit_cleanup_exception(self, mock_os_exit):

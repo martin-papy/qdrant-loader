@@ -311,7 +311,6 @@ Next steps:
 - Coverage report generation
 - Automatic report upload to:
   - GitHub Pages
-  - Codacy
 
 ## Definition of Done
 

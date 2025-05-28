@@ -82,8 +82,7 @@ tests/
 - Coverage reports generated in:
   - Local development
   - CI pipeline
-  - Uploaded to Codacy
-
+  
 ## CI Pipeline
 
 ### GitHub Actions
