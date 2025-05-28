@@ -239,6 +239,7 @@ class TestPublicDocsConnector:
             patch("aiohttp.ClientSession", return_value=mock_session),
             patch.object(connector, "_get_all_pages", side_effect=mock_get_all_pages),
         ):
+            # Use the connector as an async context manager
             async with connector:
                 documents = await connector.get_documents()
 

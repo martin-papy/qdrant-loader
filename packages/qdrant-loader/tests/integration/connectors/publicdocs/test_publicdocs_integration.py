@@ -49,7 +49,8 @@ class TestPublicDocsIntegration:
     async def test_document_crawling(self, publicdocs_config):
         """Test document crawling with real configuration."""
         # Create the connector with the real configuration
-        async with PublicDocsConnector(publicdocs_config) as connector:
+        connector = PublicDocsConnector(publicdocs_config)
+        async with connector:
             # Get the documents from the real source
             documents = await connector.get_documents()
 
