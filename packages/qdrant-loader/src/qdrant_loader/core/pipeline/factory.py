@@ -71,7 +71,7 @@ class PipelineComponentsFactory:
         # Create performance monitor
         metrics_dir = Path.cwd() / "metrics"
         metrics_dir.mkdir(parents=True, exist_ok=True)
-        monitor = IngestionMonitor(str(metrics_dir.absolute()))
+        IngestionMonitor(str(metrics_dir.absolute()))
 
         # Calculate upsert batch size
         upsert_batch_size = (

@@ -1,10 +1,10 @@
-# QDrant Loader Monorepo
+# QDrant Loader
 
 A comprehensive toolkit for loading data into Qdrant vector database with MCP server support.
 
 ## 📦 Packages
 
-This monorepo contains two main packages:
+This repository contains two main packages:
 
 ### 🔄 [qdrant-loader](./packages/qdrant-loader/)
 
@@ -186,7 +186,7 @@ We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTIN
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU GPLv3 - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 

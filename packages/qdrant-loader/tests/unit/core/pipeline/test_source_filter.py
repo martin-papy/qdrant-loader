@@ -1,6 +1,5 @@
 """Tests for SourceFilter."""
 
-import pytest
 
 from qdrant_loader.config import SourcesConfig
 from qdrant_loader.core.pipeline.source_filter import SourceFilter

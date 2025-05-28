@@ -1,18 +1,12 @@
 """Tests for CLI module."""
 
-import asyncio
-import json
-import os
-import signal
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, mock_open, patch
+from unittest.mock import AsyncMock, Mock, mock_open, patch
 
 import pytest
-import tomli
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli.cli import (
     _check_settings,
     _create_database_directory,
@@ -21,9 +15,6 @@ from qdrant_loader.cli.cli import (
     _run_init,
     _setup_logging,
     cli,
-    config,
-    init,
-    ingest,
 )
 from qdrant_loader.config.state import DatabaseDirectoryError
 
@@ -97,7 +88,7 @@ class TestGetVersion:
             mock_path_class.cwd.return_value = mock_workspace_root
 
             # Mock open to raise an exception
-            with patch("builtins.open", side_effect=IOError("File read error")):
+            with patch("builtins.open", side_effect=OSError("File read error")):
                 with patch("qdrant_loader.cli.cli.logger") as mock_logger:
                     version = _get_version()
                     assert version == "Unknown"

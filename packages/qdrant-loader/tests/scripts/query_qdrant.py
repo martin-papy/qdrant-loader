@@ -7,17 +7,14 @@ files used for ingestion to verify the content that was ingested.
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
 
 # Add the qdrant-loader package to the path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue
-from qdrant_loader.config import initialize_config, get_settings
+from qdrant_loader.config import get_settings, initialize_config
 
 
 def load_config(config_path: str, env_path: str | None = None):

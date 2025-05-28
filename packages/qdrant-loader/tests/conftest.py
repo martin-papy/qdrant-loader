@@ -12,8 +12,6 @@ import pytest
 from dotenv import load_dotenv
 
 # Add the src directory to Python path for imports
-import sys
-from pathlib import Path
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:

@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from dotenv import load_dotenv
 
 # Add the src directory to Python path for imports

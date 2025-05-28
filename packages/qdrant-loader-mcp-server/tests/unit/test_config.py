@@ -1,10 +1,9 @@
 """Tests for configuration module."""
 
 import os
-import pytest
 from unittest.mock import patch
 
-from qdrant_loader_mcp_server.config import Config, QdrantConfig, OpenAIConfig
+from qdrant_loader_mcp_server.config import Config, OpenAIConfig, QdrantConfig
 
 
 def test_config_creation():

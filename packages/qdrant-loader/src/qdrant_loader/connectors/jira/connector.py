@@ -1,7 +1,6 @@
 """Jira connector implementation."""
 
 import asyncio
-import os
 import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -12,7 +11,7 @@ from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
-from qdrant_loader.connectors.jira.config import JiraProjectConfig, JiraDeploymentType
+from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
 from qdrant_loader.connectors.jira.models import (
     JiraAttachment,
     JiraComment,

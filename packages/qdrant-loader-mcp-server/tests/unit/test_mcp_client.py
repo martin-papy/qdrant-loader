@@ -1,10 +1,8 @@
 """Test script for MCP server compatibility with Cursor client."""
 
 import asyncio
-import json
 import logging
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio

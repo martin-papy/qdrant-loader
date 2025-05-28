@@ -1,14 +1,11 @@
 """Tests for ResourceManager module."""
 
 import asyncio
-import atexit
 import concurrent.futures
 import signal
-import sys
-from unittest.mock import AsyncMock, Mock, patch, call
+from unittest.mock import Mock, call, patch
 
 import pytest
-
 from qdrant_loader.core.pipeline.resource_manager import ResourceManager
 
 
@@ -118,10 +115,16 @@ class TestResourceManager:
         self.resource_manager.shutdown_event = Mock()
         self.resource_manager.shutdown_event.is_set.return_value = False
 
+        # Manually mock _async_cleanup to return a regular value, not a coroutine
+        self.resource_manager._async_cleanup = Mock(return_value=None)
+
         with patch(
             "qdrant_loader.core.pipeline.resource_manager.logger"
         ) as mock_logger:
             self.resource_manager._cleanup()
+
+            # Verify asyncio.run was called (the exception will be caught)
+            mock_asyncio_run.assert_called_once()
 
             # Verify error is logged
             mock_logger.error.assert_called_with(
@@ -140,7 +143,7 @@ class TestResourceManager:
             "qdrant_loader.core.pipeline.resource_manager.logger"
         ) as mock_logger:
             # Mock asyncio.run to prevent the coroutine warning
-            with patch("asyncio.run") as mock_asyncio_run:
+            with patch("asyncio.run"):
                 self.resource_manager._cleanup()
 
                 # Verify error is logged
@@ -195,7 +198,7 @@ class TestResourceManager:
         self.resource_manager.active_tasks = {mock_task}
 
         with patch("asyncio.wait_for") as mock_wait_for:
-            with patch("asyncio.gather") as mock_gather:
+            with patch("asyncio.gather"):
                 with patch(
                     "qdrant_loader.core.pipeline.resource_manager.logger"
                 ) as mock_logger:
@@ -263,6 +266,9 @@ class TestResourceManager:
         # Setup shutdown event as already set
         self.resource_manager.shutdown_event = Mock()
         self.resource_manager.shutdown_event.is_set.return_value = True
+
+        # Mock _cleanup to prevent async cleanup coroutine creation
+        self.resource_manager._cleanup = Mock()
 
         with patch.object(
             self.resource_manager, "_force_immediate_exit"
@@ -343,6 +349,9 @@ class TestResourceManager:
         # Setup shutdown event as already set
         self.resource_manager.shutdown_event = Mock()
         self.resource_manager.shutdown_event.is_set.return_value = True
+
+        # Mock _cleanup to prevent async cleanup coroutine creation
+        self.resource_manager._cleanup = Mock()
 
         with patch.object(
             self.resource_manager, "_force_immediate_exit"
@@ -429,7 +438,7 @@ class TestResourceManager:
                 "qdrant_loader.core.pipeline.resource_manager.logger"
             ) as mock_logger:
                 # Mock asyncio.run to prevent coroutine warning
-                with patch("asyncio.run") as mock_asyncio_run:
+                with patch("asyncio.run"):
                     self.resource_manager._force_immediate_exit()
 
                     # Verify cleanup is attempted

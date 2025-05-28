@@ -342,7 +342,7 @@ class Settings(BaseSettings):
             if env_path is not None:
                 # Custom env file specified - load only variables from that file
                 env_vars = {}
-                with open(env_path, "r") as f:
+                with open(env_path) as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#") and "=" in line:

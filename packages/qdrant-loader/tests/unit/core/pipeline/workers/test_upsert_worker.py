@@ -5,8 +5,6 @@ from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from qdrant_client.http import models
-
 from qdrant_loader.core.pipeline.workers.upsert_worker import (
     PipelineResult,
     UpsertWorker,

@@ -18,13 +18,20 @@ load_dotenv(override=False)
 
 # Package definitions
 PACKAGES = {
+    "qdrant-loader-workspace": {
+        "path": ".",
+        "pyproject": "pyproject.toml",
+        "create_release": False,  # Workspace config, no need for GitHub release
+    },
     "qdrant-loader": {
         "path": "packages/qdrant-loader",
         "pyproject": "packages/qdrant-loader/pyproject.toml",
+        "create_release": True,
     },
     "qdrant-loader-mcp-server": {
         "path": "packages/qdrant-loader-mcp-server",
         "pyproject": "packages/qdrant-loader-mcp-server/pyproject.toml",
+        "create_release": True,
     },
 }
 
@@ -102,7 +109,7 @@ def get_all_package_versions() -> dict[str, str]:
     unique_versions = set(versions.values())
     if len(unique_versions) > 1:
         logger.error(
-            f"❌ Version mismatch detected! All packages should have the same version."
+            "❌ Version mismatch detected! All packages should have the same version."
         )
         for package_name, version in versions.items():
             logger.error(f"   {package_name}: {version}")
@@ -140,7 +147,7 @@ def update_all_package_versions(
     new_versions: dict[str, str], dry_run: bool = False
 ) -> None:
     """Update versions for all packages."""
-    logger = logging.getLogger(__name__)
+    logging.getLogger(__name__)
     for package_name, new_version in new_versions.items():
         update_package_version(package_name, new_version, dry_run)
 
@@ -536,7 +543,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         else:
             print("\nSyncing packages...")
             sync_all_package_versions(source_version, dry_run)
-            run_command("git add packages/*/pyproject.toml", dry_run)
+            run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
             run_command(
                 f'git commit -m "chore: sync all packages to version {source_version}"',
                 dry_run,
@@ -582,7 +589,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             logger.error("One or more safety checks failed. Aborting release.")
             sys.exit(1)
 
-    current_versions = get_all_package_versions()
+    get_all_package_versions()
     current_version = get_current_version()
 
     # Display current version
@@ -636,14 +643,16 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("─" * 50)
 
         print("\n1️⃣  Create and push tags:")
-        for package_name in PACKAGES.keys():
-            tag_name = f"{package_name}-v{current_version}"
-            print(f"   • {tag_name}")
+        for package_name, package_info in PACKAGES.items():
+            if package_info.get("create_release", True):
+                tag_name = f"{package_name}-v{current_version}"
+                print(f"   • {tag_name}")
         print("   • Push all tags to GitHub")
 
         print("\n2️⃣  Create GitHub releases:")
-        for package_name in PACKAGES.keys():
-            print(f"   • {package_name} v{current_version}")
+        for package_name, package_info in PACKAGES.items():
+            if package_info.get("create_release", True):
+                print(f"   • {package_name} v{current_version}")
 
         print("\n3️⃣  Update package versions:")
         print(f"   • All packages: {current_version} → {new_version}")
@@ -667,25 +676,27 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         return
 
     # Create and push tags with current version
-    for package_name in PACKAGES.keys():
-        tag_name = f"{package_name}-v{current_version}"
-        run_command(
-            f'git tag -a {tag_name} -m "Release {package_name} v{current_version}"',
-            dry_run,
-        )
+    for package_name, package_info in PACKAGES.items():
+        if package_info.get("create_release", True):
+            tag_name = f"{package_name}-v{current_version}"
+            run_command(
+                f'git tag -a {tag_name} -m "Release {package_name} v{current_version}"',
+                dry_run,
+            )
 
     run_command("git push origin main --tags", dry_run)
 
     # Create GitHub releases with current version
     token = get_github_token(dry_run)
-    for package_name in PACKAGES.keys():
-        create_github_release(package_name, current_version, token, dry_run)
+    for package_name, package_info in PACKAGES.items():
+        if package_info.get("create_release", True):
+            create_github_release(package_name, current_version, token, dry_run)
 
     # Update versions for all packages
     update_all_package_versions(new_versions, dry_run)
 
     # Create commit with all version updates
-    run_command("git add packages/*/pyproject.toml", dry_run)
+    run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
     run_command('git commit -m "chore(release): bump versions"', dry_run)
 
     print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")

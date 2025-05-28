@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0b1] - 2024-12-XX
+
 ### Added
 
 - **JIRA Data Center Support**: Added support for JIRA Data Center and Server deployments
@@ -20,11 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Moved to monorepo structure under `packages/qdrant-loader/`
-- Updated license from GPL-3.0 to Apache-2.0
 - Improved project structure and organization
 - **BREAKING**: Implemented unified versioning across all packages in the monorepo
 - Enhanced release process with comprehensive safety checks and dry-run capabilities
-- **JIRA Connector**: Enhanced to support both Cloud and Data Center deployments with secure authentication methods
+- **JIRA and Confluence Connectors**: Enhanced to support both Cloud and Data Center deployments with secure authentication methods
 
 ## [0.2.0b2] - 2024-01-XX
 

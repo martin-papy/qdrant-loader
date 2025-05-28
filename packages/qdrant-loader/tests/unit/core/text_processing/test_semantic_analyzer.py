@@ -4,10 +4,6 @@ import logging
 from unittest.mock import Mock, patch
 
 import pytest
-import spacy
-from gensim import corpora
-from gensim.models import LdaModel
-
 from qdrant_loader.core.text_processing.semantic_analyzer import (
     SemanticAnalysisResult,
     SemanticAnalyzer,
