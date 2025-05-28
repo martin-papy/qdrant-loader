@@ -13,6 +13,7 @@ from qdrant_loader.connectors.confluence.config import (
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
+from urllib.parse import urlparse
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -69,19 +70,29 @@ class ConfluenceConnector(BaseConnector):
             )
 
     def _auto_detect_deployment_type(self) -> ConfluenceDeploymentType:
-        """Auto-detect deployment type based on URL pattern.
+        """Auto-detect the Confluence deployment type based on the base URL.
 
         Returns:
             ConfluenceDeploymentType: Detected deployment type
         """
-        base_url_str = str(self.base_url).lower()
+        try:
+            parsed_url = urlparse(str(self.base_url))
+            hostname = parsed_url.hostname
 
-        # Cloud instances typically use *.atlassian.net
-        if ".atlassian.net" in base_url_str:
-            return ConfluenceDeploymentType.CLOUD
+            if hostname is None:
+                # If we can't parse the hostname, default to DATACENTER
+                return ConfluenceDeploymentType.DATACENTER
 
-        # Everything else is likely Data Center/Server
-        return ConfluenceDeploymentType.DATACENTER
+            # Cloud instances use *.atlassian.net domains
+            # Use proper hostname checking with endswith to ensure it's a subdomain
+            if hostname.endswith(".atlassian.net") or hostname == "atlassian.net":
+                return ConfluenceDeploymentType.CLOUD
+
+            # Everything else is likely Data Center/Server
+            return ConfluenceDeploymentType.DATACENTER
+        except Exception:
+            # If URL parsing fails, default to DATACENTER
+            return ConfluenceDeploymentType.DATACENTER
 
     async def __aenter__(self):
         """Async context manager entry."""

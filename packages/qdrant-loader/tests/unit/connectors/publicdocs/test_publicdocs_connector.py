@@ -1,6 +1,7 @@
 """Unit tests for Public Docs connector."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from urllib.parse import urlparse
 
 import pytest
 from aiohttp import (
@@ -161,7 +162,13 @@ class TestPublicDocsConnector:
             == 2
         )
         # Test that external URLs are not included (as per connector implementation)
-        assert not any(link.startswith("https://docs.example.com") for link in links)
+        external_test_url = "https://docs.example.com"
+        external_parsed = urlparse(external_test_url)
+        assert not any(
+            urlparse(link).netloc == external_parsed.netloc
+            and urlparse(link).scheme == external_parsed.scheme
+            for link in links
+        )
 
     @pytest.mark.asyncio
     async def test_error_handling(
