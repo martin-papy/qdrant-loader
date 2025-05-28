@@ -61,7 +61,7 @@ cp packages/qdrant-loader/config.template.yaml config.yaml
 2. Set up your environment variables:
 
 ```bash
-cp env.template .env
+cp .env.template .env
 # Edit .env with your API keys and configuration
 ```
 
@@ -112,7 +112,7 @@ qdrant-loader/
 │   │   ├── pyproject.toml
 │   │   └── README.md
 │   └── qdrant-loader-mcp-server/ # MCP server functionality
-│       ├── src/mcp_server/
+│       ├── src/qdrant_loader_mcp_server/
 │       ├── tests/
 │       ├── pyproject.toml
 │       └── README.md
