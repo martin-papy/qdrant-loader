@@ -28,7 +28,6 @@ A Model Context Protocol (MCP) server that provides Retrieval-Augmented Generati
 | **Cursor** | ✅ Full Support | Context-aware code assistance, documentation lookup |
 | **Windsurf** | ✅ Compatible | MCP protocol integration |
 | **Claude Desktop** | ✅ Compatible | Direct MCP integration |
-| **Custom Tools** | ✅ RESTful API | HTTP endpoints for custom integrations |
 
 ## 📦 Installation
 
