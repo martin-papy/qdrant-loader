@@ -4,6 +4,7 @@ import asyncio
 import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
+from urllib.parse import urlparse
 
 import requests
 import structlog
@@ -80,19 +81,29 @@ class JiraConnector(BaseConnector):
             )
 
     def _auto_detect_deployment_type(self) -> JiraDeploymentType:
-        """Auto-detect deployment type based on URL pattern.
+        """Auto-detect the Jira deployment type based on the base URL.
 
         Returns:
             JiraDeploymentType: Detected deployment type
         """
-        base_url_str = str(self.base_url).lower()
+        try:
+            parsed_url = urlparse(str(self.base_url))
+            hostname = parsed_url.hostname
 
-        # Cloud instances typically use *.atlassian.net
-        if ".atlassian.net" in base_url_str:
-            return JiraDeploymentType.CLOUD
+            if hostname is None:
+                # If we can't parse the hostname, default to DATACENTER
+                return JiraDeploymentType.DATACENTER
 
-        # Everything else is likely Data Center/Server
-        return JiraDeploymentType.DATACENTER
+            # Cloud instances use *.atlassian.net domains
+            # Use proper hostname checking with endswith to ensure it's a subdomain
+            if hostname.endswith(".atlassian.net") or hostname == "atlassian.net":
+                return JiraDeploymentType.CLOUD
+
+            # Everything else is likely Data Center/Server
+            return JiraDeploymentType.DATACENTER
+        except Exception:
+            # If URL parsing fails, default to DATACENTER
+            return JiraDeploymentType.DATACENTER
 
     async def __aenter__(self):
         """Async context manager entry."""

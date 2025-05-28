@@ -4,10 +4,16 @@ on:
   release:
     types: [created]
 
+# Set minimal permissions for the workflow
+permissions:
+  contents: read
+
 jobs:
   determine-package:
     name: Determine which package to publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       publish-loader: ${{ steps.check.outputs.publish-loader }}
       publish-mcp-server: ${{ steps.check.outputs.publish-mcp-server }}
