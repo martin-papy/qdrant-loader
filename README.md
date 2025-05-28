@@ -28,7 +28,6 @@ A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor a
 - Semantic search capabilities
 - Real-time query processing
 - Integration with Cursor IDE
-- RESTful API endpoints
 
 ## 🚀 Quick Start
 
