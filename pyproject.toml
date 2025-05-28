@@ -9,7 +9,7 @@ description = "A comprehensive toolkit for loading data into Qdrant vector datab
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Martin Papy", email = "martin.papy@example.com"},
+    {name = "Martin Papy", email = "martin.papy@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -53,7 +53,7 @@ qdrant-loader/
 
    ```bash
    cp config.template.yaml config.yaml
-   cp env.template .env
+   cp .env.template .env
    # Edit these files with your configuration
    ```
 
