@@ -1,5 +1,9 @@
 # 🧪 QDrant Loader Test Fixing Plan
 
+## Context
+
+This Plan is designed for the tests in packages/qdrant-loader
+
 ## 📊 Current Status Summary
 
 **Current Coverage**: 64% (2,398 missed lines out of 6,592 total)
