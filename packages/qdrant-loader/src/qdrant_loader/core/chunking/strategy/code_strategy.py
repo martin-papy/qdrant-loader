@@ -5,8 +5,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-import structlog
-
 from qdrant_loader.utils.logging import LoggingConfig
 
 # Tree-sitter imports with error handling
@@ -102,7 +100,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             settings: The application settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Note: Semantic analyzer is now handled intelligently in base class
         # No need to initialize it here since we'll only process comments/docstrings

@@ -6,17 +6,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-import structlog
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class SectionType(Enum):
@@ -64,7 +63,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             settings: The application settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize semantic analyzer
         self.semantic_analyzer = SemanticAnalyzer(

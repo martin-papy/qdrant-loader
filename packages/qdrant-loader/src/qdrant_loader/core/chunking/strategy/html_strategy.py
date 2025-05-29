@@ -7,12 +7,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-import structlog
 from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 # Performance constants to prevent timeouts
 MAX_HTML_SIZE_FOR_PARSING = 500_000  # 500KB limit for complex HTML parsing
@@ -83,7 +83,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             settings: The application settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Note: Semantic analyzer is now handled intelligently in base class
         # HTML content will get appropriate NLP processing based on content type

@@ -1,21 +1,23 @@
-"""Search engine implementation using Qdrant."""
+"""Search engine implementation for the MCP server."""
 
-import structlog
+from typing import Any, Dict, List, Optional
+
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.models import Filter
 
-from ..config import OpenAIConfig, QdrantConfig
-from ..utils import LoggingConfig
 from .hybrid_search import HybridSearchEngine
 from .models import SearchResult
+from .processor import QueryProcessor
+from ..config import OpenAIConfig, QdrantConfig
+from ..utils.logging import LoggingConfig
 
-# Get logger for this module
-logger = LoggingConfig.get_logger("src.search.engine")
+logger = LoggingConfig.get_logger(__name__)
 
 
 class SearchEngine:
-    """Search engine implementation using Qdrant."""
+    """Main search engine that orchestrates query processing and search."""
 
     def __init__(self):
         """Initialize the search engine."""
@@ -23,7 +25,7 @@ class SearchEngine:
         self.config: QdrantConfig | None = None
         self.openai_client: AsyncOpenAI | None = None
         self.hybrid_search: HybridSearchEngine | None = None
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     async def initialize(
         self, config: QdrantConfig, openai_config: OpenAIConfig

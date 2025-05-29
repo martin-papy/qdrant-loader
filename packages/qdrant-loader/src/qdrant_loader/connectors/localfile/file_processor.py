@@ -3,7 +3,7 @@
 import fnmatch
 import os
 
-import structlog
+from qdrant_loader.utils.logging import LoggingConfig
 
 from .config import LocalFileConfig
 
@@ -14,7 +14,7 @@ class LocalFileFileProcessor:
     def __init__(self, config: LocalFileConfig, base_path: str):
         self.config = config
         self.base_path = base_path
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def should_process_file(self, file_path: str) -> bool:
         try:
