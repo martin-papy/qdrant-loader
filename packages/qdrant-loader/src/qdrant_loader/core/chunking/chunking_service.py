@@ -100,6 +100,30 @@ class ChunkingService:
         Returns:
             The appropriate chunking strategy for the document type
         """
+        # Check if this is a converted file
+        conversion_method = document.metadata.get("conversion_method")
+        if conversion_method == "markitdown":
+            # Files converted with MarkItDown are now in markdown format
+            self.logger.info(
+                "Using markdown strategy for converted file",
+                original_file_type=document.metadata.get("original_file_type"),
+                conversion_method=conversion_method,
+                document_id=document.id,
+                document_title=document.title,
+            )
+            return MarkdownChunkingStrategy(self.settings)
+        elif conversion_method == "markitdown_fallback":
+            # Fallback documents are also in markdown format
+            self.logger.info(
+                "Using markdown strategy for fallback converted file",
+                original_file_type=document.metadata.get("original_file_type"),
+                conversion_method=conversion_method,
+                conversion_failed=document.metadata.get("conversion_failed", False),
+                document_id=document.id,
+                document_title=document.title,
+            )
+            return MarkdownChunkingStrategy(self.settings)
+
         # Get file extension from the document content type
         file_type = document.content_type.lower()
 
@@ -110,6 +134,7 @@ class ChunkingService:
             document_id=document.id,
             document_source=document.source,
             document_title=document.title,
+            conversion_method=conversion_method,
         )
 
         # Get strategy class for file type

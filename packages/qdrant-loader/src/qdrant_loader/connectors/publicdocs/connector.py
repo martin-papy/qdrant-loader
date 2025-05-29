@@ -5,7 +5,7 @@ import warnings
 from collections import deque
 from datetime import UTC, datetime
 from typing import cast
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import aiohttp
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
@@ -18,7 +18,16 @@ from qdrant_loader.connectors.exceptions import (
     HTTPRequestError,
 )
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentDownloader,
+    AttachmentMetadata,
+)
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import (
+    FileConversionConfig,
+    FileConverter,
+    FileDetector,
+)
 from qdrant_loader.utils.logging import LoggingConfig
 
 # Suppress XML parsing warning
@@ -54,11 +63,29 @@ class PublicDocsConnector(BaseConnector):
             path_pattern=config.path_pattern,
         )
 
+        # Initialize file conversion components if enabled
+        self.file_converter: FileConverter | None = None
+        self.file_detector: FileDetector | None = None
+        self.attachment_downloader: AttachmentDownloader | None = None
+
+        if config.enable_file_conversion:
+            self.file_detector = FileDetector()
+            # FileConverter will be initialized when file_conversion_config is set
+
     async def __aenter__(self):
         """Async context manager entry."""
         if not self._initialized:
             self._client = aiohttp.ClientSession()
             self._initialized = True
+
+            # Initialize attachment downloader with aiohttp session if needed
+            if self.config.download_attachments:
+                # Convert aiohttp session to requests session for compatibility
+                import requests
+
+                session = requests.Session()
+                self.attachment_downloader = AttachmentDownloader(session=session)
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -76,6 +103,26 @@ class PublicDocsConnector(BaseConnector):
                 "Client session not initialized. Use async context manager."
             )
         return self._client
+
+    def set_file_conversion_config(self, config: FileConversionConfig) -> None:
+        """Set the file conversion configuration.
+
+        Args:
+            config: File conversion configuration
+        """
+        if self.config.enable_file_conversion and self.file_detector:
+            self.file_converter = FileConverter(config)
+            if self.config.download_attachments and self.attachment_downloader:
+                # Reinitialize attachment downloader with file conversion config
+                import requests
+
+                session = requests.Session()
+                self.attachment_downloader = AttachmentDownloader(
+                    session=session,
+                    file_conversion_config=config,
+                    enable_file_conversion=True,
+                    max_attachment_size=config.max_file_size,
+                )
 
     def _should_process_url(self, url: str) -> bool:
         """Check if a URL should be processed based on configuration."""
@@ -181,6 +228,42 @@ class PublicDocsConnector(BaseConnector):
                             title=title,
                             doc_id=doc_id,
                         )
+
+                        # Process attachments if enabled
+                        if (
+                            self.config.download_attachments
+                            and self.attachment_downloader
+                        ):
+                            # We need to get the HTML again to extract attachments
+                            try:
+                                response = await self.client.get(page)
+                                html = await response.text()
+                                attachment_metadata = self._extract_attachments(
+                                    html, page, doc_id
+                                )
+
+                                if attachment_metadata:
+                                    self.logger.info(
+                                        "Processing attachments for PublicDocs page",
+                                        page_url=page,
+                                        attachment_count=len(attachment_metadata),
+                                    )
+
+                                    attachment_documents = await self.attachment_downloader.download_and_process_attachments(
+                                        attachment_metadata, doc
+                                    )
+                                    documents.extend(attachment_documents)
+
+                                    self.logger.info(
+                                        "Processed attachments for PublicDocs page",
+                                        page_url=page,
+                                        processed_count=len(attachment_documents),
+                                    )
+                            except Exception as e:
+                                self.logger.error(
+                                    f"Failed to process attachments for page {page}: {e}"
+                                )
+                                # Continue processing even if attachment processing fails
                     else:
                         self.logger.warning(
                             "Skipping page with empty content",
@@ -415,6 +498,98 @@ class PublicDocsConnector(BaseConnector):
             "No title found, using default", default_title=default_title
         )
         return default_title
+
+    def _extract_attachments(
+        self, html: str, page_url: str, document_id: str
+    ) -> list[AttachmentMetadata]:
+        """Extract attachment links from HTML content.
+
+        Args:
+            html: HTML content to parse
+            page_url: URL of the current page
+            document_id: ID of the parent document
+
+        Returns:
+            List of attachment metadata objects
+        """
+        if not self.config.download_attachments:
+            return []
+
+        self.logger.debug("Starting attachment extraction", page_url=page_url)
+        soup = BeautifulSoup(html, "html.parser")
+        attachments = []
+
+        # Use configured selectors to find attachment links
+        for selector in self.config.attachment_selectors:
+            links = soup.select(selector)
+            self.logger.debug(f"Found {len(links)} links for selector: {selector}")
+
+            for link in links:
+                href = link.get("href")
+                if not href:
+                    continue
+
+                # Convert relative URLs to absolute
+                absolute_url = urljoin(page_url, str(href))
+
+                # Extract filename from URL
+                parsed_url = urlparse(absolute_url)
+                filename = (
+                    parsed_url.path.split("/")[-1] if parsed_url.path else "unknown"
+                )
+
+                # Try to determine file extension and MIME type
+                file_ext = filename.split(".")[-1].lower() if "." in filename else ""
+                mime_type = self._get_mime_type_from_extension(file_ext)
+
+                # Create attachment metadata
+                attachment = AttachmentMetadata(
+                    id=f"{document_id}_{len(attachments)}",  # Simple ID generation
+                    filename=filename,
+                    size=0,  # We don't know the size until we download
+                    mime_type=mime_type,
+                    download_url=absolute_url,
+                    parent_document_id=document_id,
+                    created_at=None,
+                    updated_at=None,
+                    author=None,
+                )
+                attachments.append(attachment)
+
+                self.logger.debug(
+                    "Found attachment",
+                    filename=filename,
+                    url=absolute_url,
+                    mime_type=mime_type,
+                )
+
+        self.logger.debug(f"Extracted {len(attachments)} attachments from page")
+        return attachments
+
+    def _get_mime_type_from_extension(self, extension: str) -> str:
+        """Get MIME type from file extension.
+
+        Args:
+            extension: File extension (without dot)
+
+        Returns:
+            MIME type string
+        """
+        mime_types = {
+            "pdf": "application/pdf",
+            "doc": "application/msword",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xls": "application/vnd.ms-excel",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "ppt": "application/vnd.ms-powerpoint",
+            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "txt": "text/plain",
+            "csv": "text/csv",
+            "json": "application/json",
+            "xml": "application/xml",
+            "zip": "application/zip",
+        }
+        return mime_types.get(extension, "application/octet-stream")
 
     async def _get_all_pages(self) -> list[str]:
         """Get all pages from the source.
