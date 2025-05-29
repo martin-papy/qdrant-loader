@@ -44,25 +44,113 @@ jobs:
         run: |
           cd packages/qdrant-loader
           cp tests/.env.test.template tests/.env.test
+          
+          # Check if required secrets are set
+          if [ -z "${{ secrets.QDRANT_URL }}" ]; then
+            echo "Error: QDRANT_URL secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.QDRANT_API_KEY }}" ]; then
+            echo "Error: QDRANT_API_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.QDRANT_COLLECTION_NAME }}" ]; then
+            echo "Error: QDRANT_COLLECTION_NAME secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "Error: OPENAI_API_KEY secret is not set"
+            exit 1
+          fi
+          
+          # Replace environment variables with proper escaping
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
-          sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
-          sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_TOKEN }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/.env.test
-          sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/.env.test
-          sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
-          sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
-          sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/.env.test
-          sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
+          sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/.env.test
+          
+          # Optional secrets - only replace if they exist
+          if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
+            sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.REPO_URL }}" ]; then
+            sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_TOKEN }}" ]; then
+            sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_TOKEN }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_EMAIL }}" ]; then
+            sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_URL }}" ]; then
+            sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_SPACE_KEY }}" ]; then
+            sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.JIRA_TOKEN }}" ]; then
+            sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.JIRA_EMAIL }}" ]; then
+            sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.JIRA_URL }}" ]; then
+            sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/.env.test
+          fi
+          if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
+            sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
+          fi
+          
+          echo "Created .env.test file successfully"
+          echo "Contents (with secrets masked):"
+          sed 's/=.*/=***/' tests/.env.test
 
       - name: Create config.test.yaml file for loader
         run: |
           cd packages/qdrant-loader
           cp tests/config.test.template.yaml tests/config.test.yaml
+          
+          # Replace environment variables in YAML config
+          sed -i "s|\${QDRANT_URL}|${{ secrets.QDRANT_URL }}|g" tests/config.test.yaml
+          sed -i "s|\${QDRANT_API_KEY}|${{ secrets.QDRANT_API_KEY }}|g" tests/config.test.yaml
+          sed -i "s|\${QDRANT_COLLECTION_NAME}|${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config.test.yaml
+          
+          # Optional environment variables - only replace if they exist
+          if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
+            sed -i "s|\${REPO_TOKEN}|${{ secrets.REPO_TOKEN }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.REPO_URL }}" ]; then
+            sed -i "s|\${REPO_URL}|${{ secrets.REPO_URL }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_TOKEN }}" ]; then
+            sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_TOKEN }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_EMAIL }}" ]; then
+            sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_URL }}" ]; then
+            sed -i "s|\${CONFLUENCE_URL}|${{ secrets.CONFLUENCE_URL }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.CONFLUENCE_SPACE_KEY }}" ]; then
+            sed -i "s|\${CONFLUENCE_SPACE_KEY}|${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.JIRA_TOKEN }}" ]; then
+            sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.JIRA_EMAIL }}" ]; then
+            sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.JIRA_URL }}" ]; then
+            sed -i "s|\${JIRA_URL}|${{ secrets.JIRA_URL }}|g" tests/config.test.yaml
+          fi
+          if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
+            sed -i "s|\${JIRA_PROJECT_KEY}|${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config.test.yaml
+          fi
+          
+          echo "Created config.test.yaml file successfully"
+          echo "YAML config structure:"
+          head -20 tests/config.test.yaml
 
       - name: Run loader tests and generate coverage reports
         run: |
