@@ -2,15 +2,14 @@
 
 from typing import TYPE_CHECKING
 
-import structlog
-
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     pass
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 # Performance constants to prevent timeouts
 MAX_DOCUMENT_SIZE_FOR_NLP = 50_000  # 50KB limit for NLP processing

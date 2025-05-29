@@ -2,18 +2,19 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
-import structlog
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.models import Filter, PointStruct, ScoredPoint
 from rank_bm25 import BM25Okapi
 
 from .models import SearchResult
+from ..utils.logging import LoggingConfig
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 @dataclass
@@ -43,6 +44,9 @@ class HybridSearchEngine:
         keyword_weight: float = 0.3,
         metadata_weight: float = 0.1,
         min_score: float = 0.3,
+        dense_vector_name: str = "dense",
+        sparse_vector_name: str = "sparse",
+        alpha: float = 0.5,
     ):
         """Initialize the hybrid search service.
 
@@ -54,6 +58,9 @@ class HybridSearchEngine:
             keyword_weight: Weight for keyword search scores (0-1)
             metadata_weight: Weight for metadata-based scoring (0-1)
             min_score: Minimum combined score threshold
+            dense_vector_name: Name of the dense vector field
+            sparse_vector_name: Name of the sparse vector field
+            alpha: Weight for dense search (1-alpha for sparse search)
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client
@@ -62,7 +69,10 @@ class HybridSearchEngine:
         self.keyword_weight = keyword_weight
         self.metadata_weight = metadata_weight
         self.min_score = min_score
-        self.logger = structlog.get_logger(__name__)
+        self.dense_vector_name = dense_vector_name
+        self.sparse_vector_name = sparse_vector_name
+        self.alpha = alpha
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Common query expansions for frequently used terms
         self.query_expansions = {

@@ -5,16 +5,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
-import structlog
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     pass
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 # Performance constants to prevent timeouts
 MAX_JSON_SIZE_FOR_PARSING = 1_000_000  # 1MB limit for JSON parsing
@@ -75,7 +74,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             settings: The application settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Minimum size for standalone chunks
         self.min_chunk_size = 200

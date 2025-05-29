@@ -5,9 +5,10 @@ import time
 from datetime import datetime
 
 import git
-import structlog
 
-logger = structlog.get_logger(__name__)
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class GitPythonAdapter:
@@ -20,7 +21,7 @@ class GitPythonAdapter:
             repo: Git repository instance
         """
         self.repo = repo
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def clone(self, url: str, to_path: str, branch: str, depth: int) -> None:
         """Clone a Git repository.

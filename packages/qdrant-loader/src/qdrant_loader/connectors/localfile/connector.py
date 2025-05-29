@@ -2,10 +2,9 @@ import os
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 
-import structlog
-
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 from .config import LocalFileConfig
 from .file_processor import LocalFileFileProcessor
@@ -23,7 +22,7 @@ class LocalFileConnector(BaseConnector):
         self.base_path = parsed.path
         self.file_processor = LocalFileFileProcessor(config, self.base_path)
         self.metadata_extractor = LocalFileMetadataExtractor(self.base_path)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
         self._initialized = True
 
     async def get_documents(self) -> list[Document]:

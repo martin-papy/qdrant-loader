@@ -7,7 +7,6 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-import structlog
 from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
@@ -20,8 +19,9 @@ from qdrant_loader.connectors.jira.models import (
     JiraUser,
 )
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class JiraConnector(BaseConnector):

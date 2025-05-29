@@ -6,8 +6,6 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-import structlog
-
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.file_conversion.exceptions import (
@@ -20,7 +18,7 @@ from qdrant_loader.core.file_conversion.exceptions import (
 from qdrant_loader.core.file_conversion.file_detector import FileDetector
 from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class FileConverter:

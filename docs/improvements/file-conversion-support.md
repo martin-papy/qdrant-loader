@@ -191,9 +191,61 @@ sources:
 - ✅ Configuration serialization to dictionary
 - ✅ Validation and error handling examples
 
-### 🔄 Phase 3: Connector Extensions
+### ✅ Phase 3: Connector Extensions (IN PROGRESS)
 
-#### 3.1 File Download Capability
+#### 3.1 Git Connector Extensions ✅
+
+**Status**: COMPLETED
+
+**Location**: `packages/qdrant-loader/src/qdrant_loader/connectors/git/`
+
+**Implemented Changes**:
+
+- ✅ **File Conversion Integration**: Added file conversion imports and initialization
+- ✅ **FileConverter and FileDetector**: Initialized when `enable_file_conversion=True`
+- ✅ **Configuration Method**: Added `set_file_conversion_config()` method for global config integration
+- ✅ **File Processing Logic**: Modified `_process_file()` method to handle file conversion
+- ✅ **File Type Detection**: Extended `FileProcessor` to consider files that can be converted
+- ✅ **Metadata Enhancement**: Added conversion metadata (conversion_method, conversion_failed, original_file_type)
+- ✅ **Error Handling**: Graceful fallback when conversion fails
+- ✅ **Content Type Management**: Converted files use "md" content type
+
+**Key Features Implemented**:
+
+- ✅ Automatic detection of files that need conversion
+- ✅ Conversion using MarkItDown with fallback document creation
+- ✅ Integration with existing file filtering logic
+- ✅ Proper metadata tracking for converted files
+- ✅ Backward compatibility (disabled by default)
+
+**Testing**:
+
+- ✅ **Demo Script**: `tests/demo_phase3_git_integration.py`
+- ✅ **Functional Testing**: Verified with and without file conversion
+- ✅ **File Type Coverage**: Tested with JSON, XML, Markdown, and text files
+- ✅ **Conversion Verification**: Confirmed proper conversion and metadata
+
+**Demo Results**:
+
+- Without conversion: 2 documents (README.md, guide.txt)
+- With conversion: 4 documents (all files processed, JSON/XML converted to markdown)
+
+#### 3.2 Local File Connector Extensions
+
+**Status**: IN PROGRESS
+
+**Location**: `packages/qdrant-loader/src/qdrant_loader/connectors/localfile/`
+
+**Planned Changes**:
+
+- Detect supported file types in local directories
+- Apply file conversion when `enable_file_conversion: true`
+- Maintain existing file type filtering logic
+- Skip conversion for files already handled by specific strategies (e.g., HTML, Markdown)
+
+#### 3.3 File Download Capability
+
+**Status**: PLANNED
 
 **Locations**:
 
@@ -213,27 +265,6 @@ sources:
 - Extract attachment metadata (size, modification date, etc.)
 - Create parent-child document relationships
 - Clean up temporary files after processing
-
-#### 3.2 Git Connector Extensions
-
-**Location**: `packages/qdrant-loader/src/qdrant_loader/connectors/git/`
-
-**Changes**:
-
-- Detect supported file types in repositories
-- Apply file conversion when `enable_file_conversion: true`
-- Maintain existing file type filtering logic
-- Skip conversion for files already handled by specific strategies (e.g., HTML, Markdown)
-
-#### 3.3 Local File Connector Extensions
-
-**Location**: `packages/qdrant-loader/src/qdrant_loader/connectors/localfile/`
-
-**Changes**:
-
-- Detect supported file types in local directories
-- Apply file conversion when `enable_file_conversion: true`
-- Maintain existing file type filtering logic
 
 ### Phase 4: Integration Layer
 
@@ -408,7 +439,11 @@ dependencies = [
 
 #### 7.4 Demo Implementation ✅
 
-**Location**: `packages/qdrant-loader/tests/demo_file_conversion.py`
+**Locations**:
+
+- ✅ `packages/qdrant-loader/tests/demo_file_conversion.py` - Core file conversion demo
+- ✅ `packages/qdrant-loader/tests/demo_phase2_configuration.py` - Configuration demo
+- ✅ `packages/qdrant-loader/tests/demo_phase3_git_integration.py` - Git connector integration demo
 
 **Implemented Features**:
 
@@ -417,6 +452,7 @@ dependencies = [
 - ✅ Conversion workflow demonstration
 - ✅ Error handling examples
 - ✅ Fallback document generation
+- ✅ End-to-end connector integration testing
 
 ### Phase 8: Documentation and Migration
 
@@ -446,17 +482,18 @@ dependencies = [
 - ✅ Add error handling and fallbacks
 - ✅ Create demo script
 
-### 🔄 Week 3: Configuration System (IN PROGRESS)
+### ✅ Week 3: Configuration System (COMPLETED)
 
-- Add global and per-connector configuration
-- Update all configuration files
-- Implement configuration validation
+- ✅ Add global and per-connector configuration
+- ✅ Update all configuration files
+- ✅ Implement configuration validation
 
-### Week 4-5: Connector Extensions
+### 🔄 Week 4-5: Connector Extensions (IN PROGRESS)
 
-- Add download capabilities to Confluence/JIRA/PublicDocs
-- Extend Git and LocalFile connectors
-- Implement attachment handling
+- ✅ **Git Connector**: Complete file conversion integration
+- 🔄 **Local File Connector**: Add file conversion support
+- 📋 **Attachment Connectors**: Add download capabilities to Confluence/JIRA/PublicDocs
+- 📋 **Attachment Handling**: Implement attachment processing
 
 ### Week 6: Integration and Testing
 
@@ -472,29 +509,34 @@ dependencies = [
 
 ## Current Status Summary
 
-### ✅ Completed (Phases 1-2)
+### ✅ Completed (Phases 1-2 + 3.1)
 
 1. **Core Infrastructure (Phase 1)**: Complete file conversion service with MarkItDown integration
 2. **File Detection**: Comprehensive MIME type and extension-based detection
 3. **Configuration Models**: Pydantic-based configuration with validation
 4. **Exception Handling**: Complete exception hierarchy with specific error types
 5. **Testing**: 50+ passing unit tests + integration tests (33 file conversion + 17 configuration)
-6. **Demo**: Working demonstration scripts for both phases
+6. **Demo**: Working demonstration scripts for all completed phases
 7. **Configuration System (Phase 2)**: Complete integration of file conversion settings
 8. **Global Configuration**: File conversion settings in global config with validation
 9. **Source Configuration**: Per-connector file conversion and attachment settings
 10. **Template Updates**: Configuration templates updated with file conversion examples
+11. **Git Connector Integration (Phase 3.1)**: Complete file conversion support for Git repositories
 
-### 🔄 Next Steps (Phase 3)
+### 🔄 In Progress (Phase 3.2)
 
-1. **Connector Extensions**: Add file conversion capabilities to existing connectors
-2. **Attachment Handling**: Implement download and processing for Confluence/JIRA/PublicDocs
-3. **Git Integration**: Add file conversion support to Git connector
-4. **LocalFile Integration**: Add file conversion support to LocalFile connector
+1. **Local File Connector**: Adding file conversion capabilities to local file processing
+
+### 📋 Next Steps (Phase 3.3-4)
+
+1. **Attachment Handling**: Implement download and processing for Confluence/JIRA/PublicDocs
+2. **Integration Pipeline**: Hook file conversion into main ingestion pipeline
+3. **Document Model Extensions**: Add attachment and conversion metadata fields
+4. **Chunking Strategy Updates**: Route converted files to markdown chunking
 
 ### 📋 Remaining Work
 
-1. **Phase 3**: Connector extensions for attachment handling and file conversion integration
+1. **Phase 3**: Complete connector extensions for attachment handling
 2. **Phase 4**: Integration with ingestion pipeline and document model extensions
 3. **Phase 5**: Complete error handling integration
 4. **Phase 6**: Documentation and migration guides
@@ -516,8 +558,8 @@ dependencies = [
 ### Compatibility Risks
 
 - ✅ **Existing Workflows**: File conversion disabled by default
-- **Configuration Changes**: Backward compatible configuration (to be implemented)
-- **API Changes**: Maintain existing connector interfaces (to be implemented)
+- ✅ **Configuration Changes**: Backward compatible configuration implemented
+- ✅ **API Changes**: Maintain existing connector interfaces (Git connector completed)
 
 ## Success Metrics
 
@@ -525,7 +567,7 @@ dependencies = [
 
 - ✅ Support for all MarkItDown file formats
 - ✅ Comprehensive error handling and fallbacks
-- ✅ Zero breaking changes to existing functionality (no changes made yet)
+- ✅ Zero breaking changes to existing functionality (verified with Git connector)
 
 ### Performance Metrics
 
