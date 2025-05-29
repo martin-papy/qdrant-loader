@@ -35,7 +35,7 @@ class LocalFileConnector(BaseConnector):
         self.file_converter = None
         self.file_detector = None
         if self.config.enable_file_conversion:
-            self.logger.info("File conversion enabled for LocalFile connector")
+            self.logger.debug("File conversion enabled for LocalFile connector")
             # File conversion config will be set from global config during ingestion
             self.file_detector = FileDetector()
             # Update file processor with file detector

@@ -1,6 +1,5 @@
 """Document processing pipeline that coordinates chunking, embedding, and upserting."""
 
-
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -32,9 +31,7 @@ class DocumentPipeline:
         Returns:
             PipelineResult with processing statistics
         """
-        logger.info(
-            f"Starting document pipeline processing for {len(documents)} documents"
-        )
+        logger.info(f"⚙️ Processing {len(documents)} documents through pipeline")
 
         try:
             # Step 1: Chunk documents
@@ -52,15 +49,14 @@ class DocumentPipeline:
             )
 
             logger.info(
-                f"Document pipeline completed. Success: {result.success_count}, "
-                f"Errors: {result.error_count}, "
-                f"Successfully processed documents: {len(result.successfully_processed_documents)}"
+                f"✅ Pipeline completed: {result.success_count} chunks processed, "
+                f"{result.error_count} errors"
             )
 
             return result
 
         except Exception as e:
-            logger.error(f"Document pipeline failed: {e}", exc_info=True)
+            logger.error(f"❌ Document pipeline failed: {e}", exc_info=True)
             # Return a result with error information
             result = PipelineResult()
             result.error_count = len(documents)

@@ -102,7 +102,7 @@ class StateManager:
                 await conn.run_sync(Base.metadata.create_all)
 
             self._initialized = True
-            self.logger.info("StateManager initialized successfully")
+            self.logger.debug("StateManager initialized successfully")
         except sqlite3.OperationalError as e:
             # Handle specific SQLite errors
             if "readonly database" in str(e).lower():

@@ -45,7 +45,7 @@ class PipelineComponentsFactory:
         Returns:
             PipelineComponents with all initialized components
         """
-        logger.info("Creating pipeline components")
+        logger.debug("Creating pipeline components")
 
         # Create resource manager if not provided
         if not resource_manager:
@@ -127,5 +127,5 @@ class PipelineComponentsFactory:
             state_manager=state_manager,
         )
 
-        logger.info("Pipeline components created successfully")
+        logger.debug("Pipeline components created successfully")
         return components

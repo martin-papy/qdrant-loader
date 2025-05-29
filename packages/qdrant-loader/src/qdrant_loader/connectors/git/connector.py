@@ -38,7 +38,7 @@ class GitConnector(BaseConnector):
         self.git_ops = GitOperations()
         self.file_processor = None  # Will be initialized in __enter__
         self.logger = LoggingConfig.get_logger(__name__)
-        self.logger.info("Initializing GitConnector")
+        self.logger.debug("Initializing GitConnector")
         self.logger.debug("GitConnector Configuration", config=config.model_dump())
         self._initialized = False
 
@@ -46,7 +46,7 @@ class GitConnector(BaseConnector):
         self.file_converter = None
         self.file_detector = None
         if self.config.enable_file_conversion:
-            self.logger.info("File conversion enabled for Git connector")
+            self.logger.debug("File conversion enabled for Git connector")
             # File conversion config will be set from global config during ingestion
             self.file_detector = FileDetector()
         else:
@@ -246,7 +246,7 @@ class GitConnector(BaseConnector):
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir)
-                self.logger.info("Cleaned up temporary directory")
+                self.logger.debug("Cleaned up temporary directory")
             except Exception as e:
                 self.logger.error(f"Failed to clean up temporary directory: {e}")
 

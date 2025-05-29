@@ -24,6 +24,13 @@ global:
     batch_size: 100                  # Number of chunks to process in one batch
     vector_size: 384                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
     tokenizer: "none"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    # Token limits (adjust based on your embedding model):
+    # - OpenAI text-embedding-3-small/large: 8192 tokens max
+    # - OpenAI text-embedding-ada-002: 8192 tokens max  
+    # - BAAI/bge-small-en-v1.5: 512 tokens max
+    # - sentence-transformers models: varies (typically 256-512)
+    max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
+    max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
 
   # State management configuration
   # Controls how document ingestion state is tracked

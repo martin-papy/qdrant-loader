@@ -94,7 +94,7 @@ class ConfluenceConnector(BaseConnector):
                 raise ValueError("Email is required for Confluence Cloud")
 
             self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-            logger.info(
+            logger.debug(
                 "Configured Confluence Cloud authentication with email and API token"
             )
 
@@ -111,7 +111,7 @@ class ConfluenceConnector(BaseConnector):
                     "Content-Type": "application/json",
                 }
             )
-            logger.info(
+            logger.debug(
                 "Configured Confluence Data Center authentication with Personal Access Token"
             )
 
@@ -232,12 +232,13 @@ class ConfluenceConnector(BaseConnector):
         )
         response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
-            logger.info(
-                f"Found {len(response['results'])} documents in Confluence Cloud space",
-                count=len(response["results"]),
-                cursor=cursor,
-            )
-        logger.debug("Confluence Cloud API response", response=response)
+            # For Cloud, we can't easily calculate page numbers from cursor, so just log occasionally
+            if len(response["results"]) > 0:
+                logger.debug(
+                    f"Fetching Confluence Cloud documents: {len(response['results'])} found",
+                    count=len(response["results"]),
+                    total_size=response.get("totalSize", response.get("size", 0)),
+                )
         return response
 
     async def _get_space_content_datacenter(self, start: int = 0) -> dict:
@@ -271,13 +272,15 @@ class ConfluenceConnector(BaseConnector):
         )
         response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
-            logger.info(
-                f"Found {len(response['results'])} documents in Confluence Data Center space (page {start//25 + 1})",
-                count=len(response["results"]),
-                total_size=response.get("totalSize", response.get("size", 0)),
-                start=start,
-            )
-        logger.debug("Confluence Data Center API response", response=response)
+            # Only log every 10th page to reduce verbosity
+            page_num = start // 25 + 1
+            if page_num == 1 or page_num % 10 == 0:
+                logger.debug(
+                    f"Fetching Confluence Data Center documents (page {page_num}): {len(response['results'])} found",
+                    count=len(response["results"]),
+                    total_size=response.get("totalSize", response.get("size", 0)),
+                    start=start,
+                )
         return response
 
     async def _get_space_content(self, start: int = 0) -> dict:
@@ -572,13 +575,14 @@ class ConfluenceConnector(BaseConnector):
             # Check for missing or malformed body
             if not body:
                 logger.warning(
-                    "Content body is missing or malformed",
+                    "Content body is missing or malformed, using title as content",
                     content_id=content_id,
                     title=title,
                     content_type=content.get("type"),
                     space=space,
                 )
-                raise ValueError("Content body is missing or malformed")
+                # Use title as fallback content instead of failing
+                body = title or f"[Empty page: {content_id}]"
 
             # Check for other missing required fields
             missing_fields = []
@@ -1019,6 +1023,6 @@ class ConfluenceConnector(BaseConnector):
                     raise
 
         logger.info(
-            f"Processed {len(documents)} documents from {total_documents} total results in {page_count} pages from space {self.config.space_key}"
+            f"📄 Confluence: {len(documents)} documents from space {self.config.space_key}"
         )
         return documents

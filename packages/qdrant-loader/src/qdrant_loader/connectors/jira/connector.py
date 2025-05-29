@@ -82,7 +82,9 @@ class JiraConnector(BaseConnector):
                 raise ValueError("Email is required for Jira Cloud")
 
             self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-            logger.info("Configured Jira Cloud authentication with email and API token")
+            logger.debug(
+                "Configured Jira Cloud authentication with email and API token"
+            )
 
         else:
             # Data Center/Server uses Personal Access Token with Bearer authentication
@@ -97,7 +99,7 @@ class JiraConnector(BaseConnector):
                     "Content-Type": "application/json",
                 }
             )
-            logger.info(
+            logger.debug(
                 "Configured Jira Data Center authentication with Personal Access Token"
             )
 
@@ -190,24 +192,67 @@ class JiraConnector(BaseConnector):
             self._last_request_time = time.time()
 
             url = self._get_api_url(endpoint)
+
+            # Add timeout to kwargs if not already specified
+            if "timeout" not in kwargs:
+                kwargs["timeout"] = 60  # 60 second timeout for HTTP requests
+
             try:
+                logger.debug(
+                    "Making JIRA API request",
+                    method=method,
+                    endpoint=endpoint,
+                    url=url,
+                    timeout=kwargs.get("timeout"),
+                )
+
                 # For Data Center with PAT, headers are already set
                 # For Cloud, use session auth
                 if not self.session.headers.get("Authorization"):
                     kwargs["auth"] = self.session.auth
 
-                response = await asyncio.to_thread(
-                    self.session.request, method, url, **kwargs
+                # Use asyncio.wait_for to add an additional timeout layer
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(self.session.request, method, url, **kwargs),
+                    timeout=90.0,  # 90 second timeout for the entire operation
                 )
+
                 response.raise_for_status()
+
+                logger.debug(
+                    "JIRA API request completed successfully",
+                    method=method,
+                    endpoint=endpoint,
+                    status_code=response.status_code,
+                    response_size=(
+                        len(response.content) if hasattr(response, "content") else 0
+                    ),
+                )
+
                 return response.json()
+
+            except asyncio.TimeoutError:
+                logger.error(
+                    "JIRA API request timed out",
+                    method=method,
+                    url=url,
+                    timeout=kwargs.get("timeout"),
+                )
+                raise requests.exceptions.Timeout(
+                    f"Request to {url} timed out after {kwargs.get('timeout')} seconds"
+                )
+
             except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to make request to {url}: {e}")
+                logger.error(
+                    "Failed to make request to JIRA API",
+                    method=method,
+                    url=url,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
                 # Log additional context for debugging
                 logger.error(
                     "Request details",
-                    method=method,
-                    url=url,
                     deployment_type=self.config.deployment_type,
                     has_auth_header=bool(self.session.headers.get("Authorization")),
                     has_session_auth=bool(self.session.auth),
@@ -252,6 +297,13 @@ class JiraConnector(BaseConnector):
         page_size = self.config.page_size
         total_issues = 0
 
+        logger.info(
+            "🎫 Starting JIRA issue retrieval",
+            project_key=self.config.project_key,
+            page_size=page_size,
+            updated_after=updated_after.isoformat() if updated_after else None,
+        )
+
         while True:
             jql = f'project = "{self.config.project_key}"'
             if updated_after:
@@ -265,24 +317,75 @@ class JiraConnector(BaseConnector):
                 "fields": "*all",
             }
 
-            response = await self._make_request("GET", "search", params=params)
+            logger.debug(
+                "Fetching JIRA issues page",
+                start_at=start_at,
+                page_size=page_size,
+                jql=jql,
+            )
+
+            try:
+                response = await self._make_request("GET", "search", params=params)
+            except Exception as e:
+                logger.error(
+                    "Failed to fetch JIRA issues page",
+                    start_at=start_at,
+                    page_size=page_size,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                )
+                raise
 
             if not response or not response.get("issues"):
+                logger.debug(
+                    "No more JIRA issues found, stopping pagination",
+                    start_at=start_at,
+                    total_processed=start_at,
+                )
                 break
-            logger.debug(
-                f"Make request to Jira API >> Start: {start_at}, Page size: {page_size}, Total issues: {total_issues}"
-            )
+
             issues = response["issues"]
-            for issue in issues:
-                yield self._parse_issue(issue)
 
             # Update total count if not set
             if total_issues == 0:
                 total_issues = response.get("total", 0)
+                logger.info(f"🎫 Found {total_issues} JIRA issues to process")
+
+            # Log progress every 100 issues instead of every 50
+            progress_log_interval = 100
+
+            for i, issue in enumerate(issues):
+                try:
+                    parsed_issue = self._parse_issue(issue)
+                    yield parsed_issue
+
+                    if (start_at + i + 1) % progress_log_interval == 0:
+                        progress_percent = (
+                            round((start_at + i + 1) / total_issues * 100, 1)
+                            if total_issues > 0
+                            else 0
+                        )
+                        logger.info(
+                            f"🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        "Failed to parse JIRA issue",
+                        issue_id=issue.get("id"),
+                        issue_key=issue.get("key"),
+                        error=str(e),
+                        error_type=type(e).__name__,
+                    )
+                    # Continue processing other issues instead of failing completely
+                    continue
 
             # Check if we've processed all issues
             start_at += len(issues)
             if start_at >= total_issues:
+                logger.info(
+                    f"✅ Completed JIRA issue retrieval: {start_at} issues processed"
+                )
                 break
 
     def _parse_issue(self, raw_issue: dict) -> JiraIssue:
@@ -309,7 +412,11 @@ class JiraConnector(BaseConnector):
             description=fields.get("description"),
             issue_type=fields["issuetype"]["name"],
             status=fields["status"]["name"],
-            priority=fields.get("priority", {}).get("name"),
+            priority=(
+                fields.get("priority", {}).get("name")
+                if fields.get("priority")
+                else None
+            ),
             project_key=fields["project"]["key"],
             created=datetime.fromisoformat(fields["created"].replace("Z", "+00:00")),
             updated=datetime.fromisoformat(fields["updated"].replace("Z", "+00:00")),
