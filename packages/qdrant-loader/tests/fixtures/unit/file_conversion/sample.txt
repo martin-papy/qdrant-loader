@@ -1,0 +1,10 @@
+This is a sample text file for testing file conversion functionality.
+
+It contains multiple lines and some basic formatting.
+
+Key points:
+- File conversion should handle various formats
+- Error handling is important
+- Fallback mechanisms should work properly
+
+End of test content. 
