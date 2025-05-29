@@ -36,7 +36,7 @@ def load_config(config_path: str, env_path: str | None = None):
 def create_qdrant_client(settings):
     """Create a QDrant client from settings."""
     client = QdrantClient(
-        url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=30
+        url=settings.qdrant_url, api_key=settings.qdrant_api_key, timeout=30
     )
     return client
 
@@ -164,8 +164,8 @@ def main():
         print("Loading configuration...")
         settings = load_config(args.config, args.env)
 
-        print(f"QDrant URL: {settings.QDRANT_URL}")
-        print(f"Collection: {settings.QDRANT_COLLECTION_NAME}")
+        print(f"QDrant URL: {settings.qdrant_url}")
+        print(f"Collection: {settings.qdrant_collection_name}")
         print()
 
         # Create QDrant client
@@ -174,7 +174,7 @@ def main():
 
         # Get collection info
         print("Getting collection information...")
-        collection_info = get_collection_info(client, settings.QDRANT_COLLECTION_NAME)
+        collection_info = get_collection_info(client, settings.qdrant_collection_name)
 
         if collection_info:
             print(f"Collection Status: {collection_info.status}")
@@ -194,7 +194,7 @@ def main():
         # Count documents by source
         print("Analyzing document sources...")
         source_counts, source_type_counts, total_docs = count_documents_by_source(
-            client, settings.QDRANT_COLLECTION_NAME
+            client, settings.qdrant_collection_name
         )
 
         print(f"Total Documents: {total_docs}")
@@ -210,7 +210,7 @@ def main():
         # Get sample documents
         print(f"Sample Documents (showing {args.limit}):")
         sample_docs = get_sample_documents(
-            client, settings.QDRANT_COLLECTION_NAME, args.limit
+            client, settings.qdrant_collection_name, args.limit
         )
 
         for i, point in enumerate(sample_docs, 1):
@@ -221,7 +221,7 @@ def main():
         if args.search:
             print(f"\nSearch Results for '{args.search}':")
             search_results = search_documents(
-                client, settings.QDRANT_COLLECTION_NAME, args.search, args.limit
+                client, settings.qdrant_collection_name, args.search, args.limit
             )
 
             if search_results:

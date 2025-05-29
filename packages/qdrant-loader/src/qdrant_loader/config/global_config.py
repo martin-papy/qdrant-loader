@@ -4,11 +4,14 @@ This module defines the global configuration settings that apply across the appl
 including chunking, embedding, and logging configurations.
 """
 
+from typing import Any
+
 from pydantic import Field
 
 from qdrant_loader.config.base import BaseConfig
 from qdrant_loader.config.chunking import ChunkingConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
+from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.config.types import GlobalConfigDict
@@ -43,6 +46,9 @@ class GlobalConfig(BaseConfig):
         default_factory=FileConversionConfig,
         description="File conversion configuration",
     )
+    qdrant: QdrantConfig | None = Field(
+        default=None, description="Qdrant configuration"
+    )
 
     def __init__(self, **data):
         """Initialize global configuration."""
@@ -56,7 +62,7 @@ class GlobalConfig(BaseConfig):
             }
         super().__init__(**data)
 
-    def to_dict(self) -> GlobalConfigDict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary."""
         return {
             "chunking": {
@@ -79,4 +85,5 @@ class GlobalConfig(BaseConfig):
                     "llm_endpoint": self.file_conversion.markitdown.llm_endpoint,
                 },
             },
+            "qdrant": self.qdrant.to_dict() if self.qdrant else None,
         }

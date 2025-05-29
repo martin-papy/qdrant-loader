@@ -3,6 +3,8 @@
 import pytest
 from qdrant_loader.config.global_config import GlobalConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig, MarkItDownConfig
+from pydantic import ValidationError
+from qdrant_loader.config.qdrant import QdrantConfig
 
 
 class TestGlobalConfigFileConversion:
@@ -91,3 +93,86 @@ class TestGlobalConfigFileConversion:
         # Test invalid conversion_timeout
         with pytest.raises(ValueError):
             GlobalConfig(file_conversion={"conversion_timeout": -1})
+
+
+class TestGlobalConfig:
+    """Test cases for GlobalConfig class."""
+
+    def test_default_configuration(self):
+        """Test GlobalConfig with default settings."""
+        config = GlobalConfig()
+
+        # Check that all sections are present with defaults
+        assert config.chunking is not None
+        assert config.embedding is not None
+        assert config.semantic_analysis is not None
+        assert config.sources is not None
+        assert config.state_management is not None
+        assert config.file_conversion is not None
+        assert config.qdrant is None  # Should be None by default
+
+    def test_custom_configuration(self):
+        """Test GlobalConfig with custom settings."""
+        qdrant_config = QdrantConfig(
+            url="https://cloud.qdrant.io",
+            api_key="test-key",
+            collection_name="test_collection",
+        )
+
+        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+
+        assert config.qdrant is not None
+        assert config.qdrant.url == "https://cloud.qdrant.io"
+        assert config.qdrant.api_key == "test-key"
+        assert config.qdrant.collection_name == "test_collection"
+
+    def test_from_dict_with_qdrant(self):
+        """Test creating GlobalConfig from dictionary with qdrant configuration."""
+        config_dict = {
+            "qdrant": {
+                "url": "http://localhost:6333",
+                "api_key": None,
+                "collection_name": "documents",
+            }
+        }
+
+        config = GlobalConfig(**config_dict, skip_validation=True)
+
+        assert config.qdrant is not None
+        assert config.qdrant.url == "http://localhost:6333"
+        assert config.qdrant.api_key is None
+        assert config.qdrant.collection_name == "documents"
+
+    def test_to_dict_with_qdrant(self):
+        """Test converting GlobalConfig to dictionary with qdrant configuration."""
+        qdrant_config = QdrantConfig(
+            url="http://localhost:6333", collection_name="test_collection"
+        )
+
+        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+        result = config.to_dict()
+
+        assert "qdrant" in result
+        assert result["qdrant"]["url"] == "http://localhost:6333"
+        assert result["qdrant"]["api_key"] is None
+        assert result["qdrant"]["collection_name"] == "test_collection"
+
+    def test_to_dict_without_qdrant(self):
+        """Test converting GlobalConfig to dictionary without qdrant configuration."""
+        config = GlobalConfig(skip_validation=True)
+        result = config.to_dict()
+
+        assert "qdrant" in result
+        assert result["qdrant"] is None
+
+    def test_validation_with_qdrant(self):
+        """Test that GlobalConfig validates qdrant configuration properly."""
+        # Valid qdrant configuration should work
+        qdrant_config = QdrantConfig(
+            url="http://localhost:6333", collection_name="test_collection"
+        )
+
+        config = GlobalConfig(qdrant=qdrant_config, skip_validation=True)
+        assert config.qdrant is not None
+
+        # Note: Additional validation tests would require custom field validators
