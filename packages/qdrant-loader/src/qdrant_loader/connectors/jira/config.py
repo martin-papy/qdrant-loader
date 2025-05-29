@@ -57,8 +57,12 @@ class JiraProjectConfig(SourceConfig):
     )
 
     # Attachment handling
+    download_attachments: bool = Field(
+        default=False, description="Whether to download and process issue attachments"
+    )
     process_attachments: bool = Field(
-        default=True, description="Whether to process issue attachments"
+        default=True,
+        description="Whether to process issue attachments (deprecated, use download_attachments)",
     )
 
     # Additional configuration

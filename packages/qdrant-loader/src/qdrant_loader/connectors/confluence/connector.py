@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 import requests
+import structlog
 from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
@@ -11,7 +12,17 @@ from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,
     ConfluenceSpaceConfig,
 )
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentDownloader,
+    AttachmentMetadata,
+)
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import (
+    FileConverter,
+    FileDetector,
+    FileConversionConfig,
+    FileConversionError,
+)
 from qdrant_loader.utils.logging import LoggingConfig
 from urllib.parse import urlparse
 
@@ -37,6 +48,41 @@ class ConfluenceConnector(BaseConnector):
         # Set up authentication based on deployment type
         self._setup_authentication()
         self._initialized = False
+
+        # Initialize file conversion and attachment handling components
+        self.file_converter = None
+        self.file_detector = None
+        self.attachment_downloader = None
+
+        if self.config.enable_file_conversion:
+            logger.info("File conversion enabled for Confluence connector")
+            # File conversion config will be set from global config during ingestion
+            self.file_detector = FileDetector()
+        else:
+            logger.debug("File conversion disabled for Confluence connector")
+
+    def set_file_conversion_config(self, file_conversion_config: FileConversionConfig):
+        """Set file conversion configuration from global config.
+
+        Args:
+            file_conversion_config: Global file conversion configuration
+        """
+        if self.config.enable_file_conversion:
+            self.file_converter = FileConverter(file_conversion_config)
+
+            # Initialize attachment downloader if download_attachments is enabled
+            if self.config.download_attachments:
+                self.attachment_downloader = AttachmentDownloader(
+                    session=self.session,
+                    file_conversion_config=file_conversion_config,
+                    enable_file_conversion=True,
+                    max_attachment_size=file_conversion_config.max_file_size,
+                )
+                logger.info("Attachment downloader initialized with file conversion")
+            else:
+                logger.debug("Attachment downloading disabled")
+
+            logger.debug("File converter initialized with global config")
 
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
@@ -249,6 +295,182 @@ class ConfluenceConnector(BaseConnector):
         else:
             # For Data Center, use start parameter
             return await self._get_space_content_datacenter(start)
+
+    async def _get_content_attachments(
+        self, content_id: str
+    ) -> list[AttachmentMetadata]:
+        """Fetch attachments for a specific content item.
+
+        Args:
+            content_id: ID of the content item
+
+        Returns:
+            List of attachment metadata
+        """
+        if not self.config.download_attachments:
+            return []
+
+        try:
+            # Fetch attachments using Confluence API
+            endpoint = f"content/{content_id}/child/attachment"
+            params = {
+                "expand": "metadata,version,history",  # Include history for better metadata
+                "limit": 50,  # Reasonable limit for attachments per page
+            }
+
+            response = await self._make_request("GET", endpoint, params=params)
+            attachments = []
+
+            for attachment_data in response.get("results", []):
+                try:
+                    # Extract attachment metadata
+                    attachment_id = attachment_data.get("id")
+                    filename = attachment_data.get("title", "unknown")
+
+                    # Get file size and MIME type from metadata
+                    # The structure can differ between Cloud and Data Center
+                    metadata = attachment_data.get("metadata", {})
+
+                    # Try different paths for file size (Cloud vs Data Center differences)
+                    file_size = 0
+                    if "mediaType" in metadata:
+                        # Data Center format
+                        file_size = metadata.get("mediaType", {}).get("size", 0)
+                    elif "properties" in metadata:
+                        # Alternative format in some versions
+                        file_size = metadata.get("properties", {}).get("size", 0)
+
+                    # If still no size, try from extensions
+                    if file_size == 0:
+                        extensions = attachment_data.get("extensions", {})
+                        file_size = extensions.get("fileSize", 0)
+
+                    # Try different paths for MIME type
+                    mime_type = "application/octet-stream"  # Default fallback
+                    if "mediaType" in metadata:
+                        # Data Center format
+                        mime_type = metadata.get("mediaType", {}).get("name", mime_type)
+                    elif "properties" in metadata:
+                        # Alternative format
+                        mime_type = metadata.get("properties", {}).get(
+                            "mediaType", mime_type
+                        )
+
+                    # If still no MIME type, try from extensions
+                    if mime_type == "application/octet-stream":
+                        extensions = attachment_data.get("extensions", {})
+                        mime_type = extensions.get("mediaType", mime_type)
+
+                    # Get download URL - this differs significantly between Cloud and Data Center
+                    download_link = attachment_data.get("_links", {}).get("download")
+                    if not download_link:
+                        logger.warning(
+                            "No download link found for attachment",
+                            attachment_id=attachment_id,
+                            filename=filename,
+                            deployment_type=self.config.deployment_type,
+                        )
+                        continue
+
+                    # Construct full download URL based on deployment type
+                    if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+                        # Cloud URLs are typically absolute or need different handling
+                        if download_link.startswith("http"):
+                            download_url = download_link
+                        elif download_link.startswith("/"):
+                            download_url = f"{self.base_url}{download_link}"
+                        else:
+                            # Relative path - construct full URL
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
+                    else:
+                        # Data Center URLs
+                        if download_link.startswith("http"):
+                            download_url = download_link
+                        elif download_link.startswith("/"):
+                            download_url = f"{self.base_url}{download_link}"
+                        else:
+                            # Relative path - construct full URL
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
+
+                    # Get author and timestamps - structure can vary between versions
+                    version = attachment_data.get("version", {})
+                    history = attachment_data.get("history", {})
+
+                    # Try different paths for author information
+                    author = None
+                    if "by" in version:
+                        # Standard version author
+                        author = version.get("by", {}).get("displayName")
+                    elif "createdBy" in history:
+                        # History-based author (more common in Cloud)
+                        author = history.get("createdBy", {}).get("displayName")
+
+                    # Try different paths for timestamps
+                    created_at = None
+                    updated_at = None
+
+                    # Creation timestamp
+                    if "createdDate" in history:
+                        created_at = history.get("createdDate")
+                    elif "created" in attachment_data:
+                        created_at = attachment_data.get("created")
+
+                    # Update timestamp
+                    if "when" in version:
+                        updated_at = version.get("when")
+                    elif "lastModified" in history:
+                        updated_at = history.get("lastModified")
+
+                    attachment = AttachmentMetadata(
+                        id=attachment_id,
+                        filename=filename,
+                        size=file_size,
+                        mime_type=mime_type,
+                        download_url=download_url,
+                        parent_document_id=content_id,
+                        created_at=created_at,
+                        updated_at=updated_at,
+                        author=author,
+                    )
+
+                    attachments.append(attachment)
+
+                    logger.debug(
+                        "Found attachment",
+                        attachment_id=attachment_id,
+                        filename=filename,
+                        size=file_size,
+                        mime_type=mime_type,
+                        deployment_type=self.config.deployment_type,
+                    )
+
+                except Exception as e:
+                    logger.warning(
+                        "Failed to process attachment metadata",
+                        attachment_id=attachment_data.get("id"),
+                        filename=attachment_data.get("title"),
+                        deployment_type=self.config.deployment_type,
+                        error=str(e),
+                    )
+                    continue
+
+            logger.debug(
+                "Found attachments for content",
+                content_id=content_id,
+                attachment_count=len(attachments),
+                deployment_type=self.config.deployment_type,
+            )
+
+            return attachments
+
+        except Exception as e:
+            logger.error(
+                "Failed to fetch attachments",
+                content_id=content_id,
+                deployment_type=self.config.deployment_type,
+                error=str(e),
+            )
+            return []
 
     def _should_process_content(self, content: dict) -> bool:
         """Check if content should be processed based on labels.
@@ -640,6 +862,35 @@ class ConfluenceConnector(BaseConnector):
                                 )
                                 if document:
                                     documents.append(document)
+
+                                    # Process attachments if enabled
+                                    if (
+                                        self.config.download_attachments
+                                        and self.attachment_downloader
+                                    ):
+                                        try:
+                                            content_id = content.get("id")
+                                            attachments = (
+                                                await self._get_content_attachments(
+                                                    content_id
+                                                )
+                                            )
+
+                                            if attachments:
+                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                    attachments, document
+                                                )
+                                                documents.extend(attachment_docs)
+
+                                                logger.debug(
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                )
+                                        except Exception as e:
+                                            logger.error(
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
+                                            )
+
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "
                                         f"(ID: {content['id']}) from space {self.config.space_key}"
@@ -710,6 +961,35 @@ class ConfluenceConnector(BaseConnector):
                                 )
                                 if document:
                                     documents.append(document)
+
+                                    # Process attachments if enabled
+                                    if (
+                                        self.config.download_attachments
+                                        and self.attachment_downloader
+                                    ):
+                                        try:
+                                            content_id = content.get("id")
+                                            attachments = (
+                                                await self._get_content_attachments(
+                                                    content_id
+                                                )
+                                            )
+
+                                            if attachments:
+                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                    attachments, document
+                                                )
+                                                documents.extend(attachment_docs)
+
+                                                logger.debug(
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                )
+                                        except Exception as e:
+                                            logger.error(
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
+                                            )
+
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "
                                         f"(ID: {content['id']}) from space {self.config.space_key}"
