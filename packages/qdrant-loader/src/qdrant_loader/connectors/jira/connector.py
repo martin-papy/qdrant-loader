@@ -18,7 +18,16 @@ from qdrant_loader.connectors.jira.models import (
     JiraIssue,
     JiraUser,
 )
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentDownloader,
+    AttachmentMetadata,
+)
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import (
+    FileConversionConfig,
+    FileConverter,
+    FileDetector,
+)
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -50,6 +59,18 @@ class JiraConnector(BaseConnector):
         self._rate_limit_lock = asyncio.Lock()
         self._last_request_time = 0.0
         self._initialized = False
+
+        # Initialize file conversion components if enabled
+        self.file_converter: FileConverter | None = None
+        self.file_detector: FileDetector | None = None
+        self.attachment_downloader: AttachmentDownloader | None = None
+
+        if config.enable_file_conversion:
+            self.file_detector = FileDetector()
+            # FileConverter will be initialized when file_conversion_config is set
+
+        if config.download_attachments:
+            self.attachment_downloader = AttachmentDownloader(session=self.session)
 
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
@@ -104,6 +125,23 @@ class JiraConnector(BaseConnector):
         except Exception:
             # If URL parsing fails, default to DATACENTER
             return JiraDeploymentType.DATACENTER
+
+    def set_file_conversion_config(self, config: FileConversionConfig) -> None:
+        """Set the file conversion configuration.
+
+        Args:
+            config: File conversion configuration
+        """
+        if self.config.enable_file_conversion and self.file_detector:
+            self.file_converter = FileConverter(config)
+            if self.config.download_attachments:
+                # Reinitialize attachment downloader with file conversion config
+                self.attachment_downloader = AttachmentDownloader(
+                    session=self.session,
+                    file_conversion_config=config,
+                    enable_file_conversion=True,
+                    max_attachment_size=config.max_file_size,
+                )
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -388,6 +426,37 @@ class JiraConnector(BaseConnector):
             author=author,
         )
 
+    def _get_issue_attachments(self, issue: JiraIssue) -> list[AttachmentMetadata]:
+        """Convert JIRA issue attachments to AttachmentMetadata objects.
+
+        Args:
+            issue: JIRA issue with attachments
+
+        Returns:
+            List of attachment metadata objects
+        """
+        if not self.config.download_attachments or not issue.attachments:
+            return []
+
+        attachment_metadata = []
+        for attachment in issue.attachments:
+            metadata = AttachmentMetadata(
+                id=attachment.id,
+                filename=attachment.filename,
+                size=attachment.size,
+                mime_type=attachment.mime_type,
+                download_url=str(attachment.content_url),
+                parent_document_id=issue.id,
+                created_at=(
+                    attachment.created.isoformat() if attachment.created else None
+                ),
+                updated_at=None,  # JIRA attachments don't have update timestamps
+                author=attachment.author.display_name if attachment.author else None,
+            )
+            attachment_metadata.append(metadata)
+
+        return attachment_metadata
+
     async def get_documents(self) -> list[Document]:
         """Fetch and process documents from Jira.
 
@@ -484,5 +553,26 @@ class JiraConnector(BaseConnector):
                 source=document.source,
                 title=document.title,
             )
+
+            # Process attachments if enabled
+            if self.config.download_attachments and self.attachment_downloader:
+                attachment_metadata = self._get_issue_attachments(issue)
+                if attachment_metadata:
+                    logger.info(
+                        "Processing attachments for JIRA issue",
+                        issue_key=issue.key,
+                        attachment_count=len(attachment_metadata),
+                    )
+
+                    attachment_documents = await self.attachment_downloader.download_and_process_attachments(
+                        attachment_metadata, document
+                    )
+                    documents.extend(attachment_documents)
+
+                    logger.info(
+                        "Processed attachments for JIRA issue",
+                        issue_key=issue.key,
+                        processed_count=len(attachment_documents),
+                    )
 
         return documents
