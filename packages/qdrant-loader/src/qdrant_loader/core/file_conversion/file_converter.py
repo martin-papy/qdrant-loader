@@ -1,5 +1,6 @@
 """Main file conversion service using MarkItDown."""
 
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -7,16 +8,17 @@ from typing import Optional
 
 import structlog
 
-from .conversion_config import FileConversionConfig
-from .exceptions import (
+from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
+from qdrant_loader.core.file_conversion.exceptions import (
     ConversionTimeoutError,
     FileAccessError,
     FileSizeExceededError,
     MarkItDownError,
     UnsupportedFileTypeError,
 )
-from .file_detector import FileDetector
-
+from qdrant_loader.core.file_conversion.file_detector import FileDetector
+from qdrant_loader.utils.logging import LoggingConfig
 
 logger = structlog.get_logger(__name__)
 
@@ -28,14 +30,14 @@ class FileConverter:
         """Initialize the file converter."""
         self.config = config
         self.file_detector = FileDetector()
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
         self._markitdown = None
 
     def _get_markitdown(self):
         """Get MarkItDown instance with lazy loading."""
         if self._markitdown is None:
             try:
-                from markitdown import MarkItDown
+                from markitdown import MarkItDown  # type: ignore
 
                 self._markitdown = MarkItDown()
                 self.logger.debug("MarkItDown initialized successfully")

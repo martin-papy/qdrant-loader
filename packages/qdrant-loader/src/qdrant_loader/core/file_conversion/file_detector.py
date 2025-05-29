@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 from typing import Optional, Tuple
 
+from qdrant_loader.utils.logging import LoggingConfig
 import structlog
 
 from .exceptions import FileAccessError
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class FileDetector:
