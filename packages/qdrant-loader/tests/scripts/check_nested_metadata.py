@@ -36,7 +36,7 @@ def load_config(config_path: str, env_path: str | None = None):
 def create_qdrant_client(settings):
     """Create a QDrant client from settings."""
     client = QdrantClient(
-        url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=30
+        url=settings.qdrant_url, api_key=settings.qdrant_api_key, timeout=30
     )
     return client
 
@@ -181,15 +181,15 @@ def main():
         print("Loading configuration...")
         settings = load_config(args.config, args.env)
 
-        print(f"QDrant URL: {settings.QDRANT_URL}")
-        print(f"Collection: {settings.QDRANT_COLLECTION_NAME}")
+        print(f"QDrant URL: {settings.qdrant_url}")
+        print(f"Collection: {settings.qdrant_collection_name}")
         print()
 
         # Create QDrant client
         client = create_qdrant_client(settings)
 
         # Analyze nested metadata
-        analyze_nested_metadata(client, settings.QDRANT_COLLECTION_NAME, args.limit)
+        analyze_nested_metadata(client, settings.qdrant_collection_name, args.limit)
 
     except Exception as e:
         print(f"Error: {e}")

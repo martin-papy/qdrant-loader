@@ -99,6 +99,14 @@ class FileConversionConfigDict(TypedDict):
     markitdown: MarkItDownConfigDict
 
 
+class QdrantConfigDict(TypedDict):
+    """Configuration for Qdrant vector database."""
+
+    url: str
+    api_key: str | None
+    collection_name: str
+
+
 class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
 
@@ -108,3 +116,4 @@ class GlobalConfigDict(TypedDict):
     sources: dict[str, Any]
     state_management: dict[str, Any]
     file_conversion: FileConversionConfigDict
+    qdrant: QdrantConfigDict | None
