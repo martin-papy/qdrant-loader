@@ -75,7 +75,7 @@ class QdrantManager:
                     api_key=api_key,
                     timeout=60,  # 60 seconds timeout
                 )
-                self.logger.info("Successfully connected to qDrant")
+                self.logger.debug("Successfully connected to qDrant")
             except Exception as e:
                 raise QdrantConnectionError(
                     "Failed to connect to qDrant: Connection error",

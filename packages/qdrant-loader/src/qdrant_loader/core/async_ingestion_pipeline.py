@@ -140,7 +140,7 @@ class AsyncIngestionPipeline:
         )
 
         try:
-            logger.info("Starting document processing with new pipeline architecture")
+            logger.debug("Starting document processing with new pipeline architecture")
 
             # Use the orchestrator to process documents
             documents = await self.orchestrator.process_documents(
@@ -161,7 +161,7 @@ class AsyncIngestionPipeline:
 
             self.monitor.end_operation("ingestion_process")
 
-            logger.info(
+            logger.debug(
                 f"Document processing completed. Processed {len(documents)} documents"
             )
             return documents
