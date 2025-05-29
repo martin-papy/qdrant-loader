@@ -1,4 +1,16 @@
-"""File conversion module for qdrant-loader."""
+"""
+File conversion module for qdrant-loader.
+
+This module provides file conversion capabilities using MarkItDown,
+supporting various file formats including PDF, Office documents, images, and more.
+"""
+
+import warnings
+
+# Suppress pydub ffmpeg warning since audio processing is optional for file conversion
+warnings.filterwarnings(
+    "ignore", message="Couldn't find ffmpeg or avconv", category=RuntimeWarning
+)
 
 from .conversion_config import (
     ConnectorFileConversionConfig,

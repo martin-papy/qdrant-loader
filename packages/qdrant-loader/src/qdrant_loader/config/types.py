@@ -83,6 +83,22 @@ class SemanticAnalysisConfigDict(TypedDict):
     lda_passes: int
 
 
+class MarkItDownConfigDict(TypedDict):
+    """Configuration for MarkItDown settings."""
+
+    enable_llm_descriptions: bool
+    llm_model: str
+    llm_endpoint: str
+
+
+class FileConversionConfigDict(TypedDict):
+    """Configuration for file conversion."""
+
+    max_file_size: int
+    conversion_timeout: int
+    markitdown: MarkItDownConfigDict
+
+
 class GlobalConfigDict(TypedDict):
     """Global configuration settings."""
 
@@ -91,3 +107,4 @@ class GlobalConfigDict(TypedDict):
     semantic_analysis: SemanticAnalysisConfigDict
     sources: dict[str, Any]
     state_management: dict[str, Any]
+    file_conversion: FileConversionConfigDict

@@ -272,7 +272,7 @@ fallback_document = Document(
 
 #### 6.1 MarkItDown Integration ✅
 
-**Status**: Implemented with graceful fallback
+**Status**: Implemented with full capabilities included
 
 **Implementation Details**:
 
@@ -280,6 +280,7 @@ fallback_document = Document(
 - ✅ Graceful error handling when MarkItDown is not available
 - ✅ Fallback document creation when conversion fails
 - ✅ Support for all MarkItDown features when available
+- ✅ Full MarkItDown capabilities included by default (`markitdown[all]`)
 
 **Dependency Management**:
 
@@ -287,15 +288,28 @@ fallback_document = Document(
 [project]
 dependencies = [
     # ... existing dependencies ...
-    "markitdown>=0.1.2",
-]
-
-# Optional dependencies for MarkItDown features
-[project.optional-dependencies]
-markitdown-full = [
-    "markitdown[all]>=0.1.2",
+    "markitdown[all]>=0.1.2",  # Full capabilities included
 ]
 ```
+
+**Supported File Types** (all included by default):
+
+- ✅ PDF files (with full PDF support)
+- ✅ Microsoft Office documents (Word, Excel, PowerPoint)
+- ✅ Images (with OCR and metadata extraction)
+- ✅ Audio files (with transcription - requires ffmpeg system dependency)
+- ✅ EPUB files
+- ✅ ZIP archives
+- ✅ JSON, CSV, XML files
+- ✅ And all other formats supported by MarkItDown
+
+**System Dependencies**:
+
+- **Optional**: `ffmpeg` or `avconv` for audio file transcription
+  - Install with: `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Ubuntu)
+  - Audio processing gracefully degrades without these tools
+  - Warning messages are suppressed in tests and normal operation
+  - **CI/CD**: ffmpeg is automatically installed in GitHub Actions for comprehensive testing
 
 #### 6.2 Supported File Types ✅
 
