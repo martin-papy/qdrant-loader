@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from qdrant_loader.utils.logging import LoggingConfig
-import structlog
 
 from .exceptions import FileAccessError
 
@@ -68,7 +67,7 @@ class FileDetector:
 
     def __init__(self):
         """Initialize the file detector."""
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize mimetypes with additional types
         mimetypes.init()

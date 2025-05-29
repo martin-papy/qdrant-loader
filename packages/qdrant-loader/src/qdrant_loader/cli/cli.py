@@ -300,9 +300,7 @@ async def ingest(
     stop_event = asyncio.Event()
 
     def _handle_sigint():
-        import structlog
-
-        logger = structlog.get_logger(__name__)
+        logger = LoggingConfig.get_logger(__name__)
         logger.debug(" SIGINT received, cancelling all tasks...")
         stop_event.set()
 
@@ -322,9 +320,7 @@ async def ingest(
                 print("Profile saved to profile.out")
         else:
             await run_ingest()
-        import structlog
-
-        logger = structlog.get_logger(__name__)
+        logger = LoggingConfig.get_logger(__name__)
         logger.info("Pipeline finished, awaiting cleanup.")
         # Wait for all pending tasks
         pending = [
@@ -337,17 +333,13 @@ async def ingest(
             await asyncio.gather(*pending, return_exceptions=True)
         await asyncio.sleep(0.1)
     except Exception as e:
-        import structlog
-
-        logger = structlog.get_logger(__name__)
+        logger = LoggingConfig.get_logger(__name__)
         logger.error(f" Exception in ingest: {e}")
         raise
     finally:
         if stop_event.is_set():
             await _cancel_all_tasks()
-            import structlog
-
-            logger = structlog.get_logger(__name__)
+            logger = LoggingConfig.get_logger(__name__)
             logger.debug(" All tasks cancelled, exiting after SIGINT.")
 
 
