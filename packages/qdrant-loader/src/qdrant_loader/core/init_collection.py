@@ -31,7 +31,7 @@ async def init_collection(settings=None, force=False):
                 manager.delete_collection()
                 logger.info(
                     "Deleted existing collection",
-                    collection=settings.QDRANT_COLLECTION_NAME,
+                    collection=settings.qdrant_collection_name,
                 )
             except Exception:
                 # Ignore errors if collection doesn't exist

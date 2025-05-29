@@ -40,27 +40,27 @@ class TestQdrantManager:
     def mock_settings(self):
         """Mock settings for testing."""
         settings = Mock(spec=Settings)
-        settings.QDRANT_URL = "http://localhost:6333"
-        settings.QDRANT_API_KEY = None
-        settings.QDRANT_COLLECTION_NAME = "test_collection"
+        settings.qdrant_url = "http://localhost:6333"
+        settings.qdrant_api_key = None
+        settings.qdrant_collection_name = "test_collection"
         return settings
 
     @pytest.fixture
     def mock_settings_with_api_key(self):
         """Mock settings with API key for testing."""
         settings = Mock(spec=Settings)
-        settings.QDRANT_URL = "http://localhost:6333"
-        settings.QDRANT_API_KEY = "test_api_key"
-        settings.QDRANT_COLLECTION_NAME = "test_collection"
+        settings.qdrant_url = "http://localhost:6333"
+        settings.qdrant_api_key = "test-api-key"
+        settings.qdrant_collection_name = "test_collection"
         return settings
 
     @pytest.fixture
     def mock_settings_cloud(self):
-        """Mock settings for cloud deployment."""
+        """Mock settings for cloud testing."""
         settings = Mock(spec=Settings)
-        settings.QDRANT_URL = "http://cloud.qdrant.io"
-        settings.QDRANT_API_KEY = "test_api_key"
-        settings.QDRANT_COLLECTION_NAME = "test_collection"
+        settings.qdrant_url = "http://cloud.qdrant.io"
+        settings.qdrant_api_key = "test-api-key"
+        settings.qdrant_collection_name = "test_collection"
         return settings
 
     @pytest.fixture
@@ -121,7 +121,7 @@ class TestQdrantManager:
 
     def test_is_api_key_present_none(self, mock_settings):
         """Test API key detection with None value."""
-        mock_settings.QDRANT_API_KEY = None
+        mock_settings.qdrant_api_key = None
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
@@ -131,7 +131,7 @@ class TestQdrantManager:
 
     def test_is_api_key_present_empty(self, mock_settings):
         """Test API key detection with empty string."""
-        mock_settings.QDRANT_API_KEY = ""
+        mock_settings.qdrant_api_key = ""
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
@@ -141,7 +141,7 @@ class TestQdrantManager:
 
     def test_is_api_key_present_none_string(self, mock_settings):
         """Test API key detection with 'None' string."""
-        mock_settings.QDRANT_API_KEY = "None"
+        mock_settings.qdrant_api_key = "None"
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
@@ -151,7 +151,7 @@ class TestQdrantManager:
 
     def test_is_api_key_present_null_string(self, mock_settings):
         """Test API key detection with 'null' string."""
-        mock_settings.QDRANT_API_KEY = "null"
+        mock_settings.qdrant_api_key = "null"
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
@@ -161,7 +161,7 @@ class TestQdrantManager:
 
     def test_is_api_key_present_valid(self, mock_settings):
         """Test API key detection with valid key."""
-        mock_settings.QDRANT_API_KEY = "valid_key"
+        mock_settings.qdrant_api_key = "valid_key"
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
@@ -196,7 +196,7 @@ class TestQdrantManager:
             QdrantManager(mock_settings_with_api_key)
 
             mock_client_class.assert_called_once_with(
-                url="http://localhost:6333", api_key="test_api_key", timeout=60
+                url="http://localhost:6333", api_key="test-api-key", timeout=60
             )
 
     def test_connect_with_api_key_cloud_http(
@@ -213,14 +213,14 @@ class TestQdrantManager:
             QdrantManager(mock_settings_cloud)
 
             mock_client_class.assert_called_once_with(
-                url="https://cloud.qdrant.io", api_key="test_api_key", timeout=60
+                url="https://cloud.qdrant.io", api_key="test-api-key", timeout=60
             )
 
     def test_connect_with_api_key_127_0_0_1(
         self, mock_settings_with_api_key, mock_qdrant_client
     ):
         """Test connection with API key on 127.0.0.1 (should not force HTTPS)."""
-        mock_settings_with_api_key.QDRANT_URL = "http://127.0.0.1:6333"
+        mock_settings_with_api_key.qdrant_url = "http://127.0.0.1:6333"
         with (
             patch("qdrant_loader.core.qdrant_manager.get_global_config"),
             patch(
@@ -231,7 +231,7 @@ class TestQdrantManager:
             QdrantManager(mock_settings_with_api_key)
 
             mock_client_class.assert_called_once_with(
-                url="http://127.0.0.1:6333", api_key="test_api_key", timeout=60
+                url="http://127.0.0.1:6333", api_key="test-api-key", timeout=60
             )
 
     def test_connect_client_error(self, mock_settings):

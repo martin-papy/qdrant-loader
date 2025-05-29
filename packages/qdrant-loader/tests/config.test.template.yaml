@@ -1,4 +1,10 @@
 global:
+  # Qdrant configuration for tests
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  # Chunking configuration for tests
   chunking:
     chunk_size: 500
     chunk_overlap: 50
@@ -11,6 +17,24 @@ global:
     connection_pool:
       size: 1  # Single connection for tests
       timeout: 5  # Shorter timeout for tests
+  
+  # File conversion configuration for tests
+  # Using smaller limits for faster test execution
+  file_conversion:
+    # Maximum file size for conversion (in bytes) - 10MB for tests
+    max_file_size: 10485760  # 10MB (smaller than production default)
+    
+    # Timeout for conversion operations (in seconds) - shorter for tests
+    conversion_timeout: 60  # 1 minute (shorter than production default)
+    
+    # MarkItDown specific settings
+    markitdown:
+      # Disable LLM integration for tests to avoid API calls
+      enable_llm_descriptions: false
+      # LLM model for image descriptions (not used in tests)
+      llm_model: "gpt-4o"
+      # LLM endpoint (not used in tests)
+      llm_endpoint: "https://api.openai.com/v1"
 
 sources:
   publicdocs:
@@ -28,8 +52,14 @@ sources:
           - footer
         code_blocks: pre code
 
+      # File conversion settings for this source
+      # Enable file conversion for testing
+      enable_file_conversion: true
+      # Download and process attachments (for testing)
+      download_attachments: true
+
   git:
-    auth-test-repo:
+    theorcs:
       base_url: "${REPO_URL}"
       branch: "main"
       token: "${REPO_TOKEN}"
@@ -38,6 +68,10 @@ sources:
       file_types: ["*.md","*.java"]
       max_file_size: 1048576
       depth: 1
+
+      # File conversion settings for this source
+      # Enable file conversion for testing
+      enable_file_conversion: true
 
   confluence:
     test-space:
@@ -51,6 +85,12 @@ sources:
       token: "${CONFLUENCE_TOKEN}"
       email: "${CONFLUENCE_EMAIL}"
 
+      # File conversion settings for this source
+      # Enable file conversion for testing
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
+
   jira:
     test-project:
       base_url: "${JIRA_URL}"
@@ -62,3 +102,34 @@ sources:
       track_last_sync: true
       token: "${JIRA_TOKEN}"
       email: "${JIRA_EMAIL}"
+
+      # File conversion settings for this source
+      # Enable file conversion for testing
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
+
+  # Local file sources for testing file conversion
+  localfile:
+    test-files:
+      base_url: "file:///tmp/test-files"  # Test directory
+      include_paths:
+        - "docs/**"
+        - "*.md"
+        - "*.pdf"
+        - "*.docx"
+      exclude_paths:
+        - "tmp/**"
+        - "cache/**"
+      file_types:
+        - "*.md"
+        - "*.txt"
+        - "*.pdf"
+        - "*.docx"
+        - "*.xlsx"
+        - "*.pptx"
+      max_file_size: 5242880  # 5MB for tests
+
+      # File conversion settings for this source
+      # Enable file conversion for testing
+      enable_file_conversion: true

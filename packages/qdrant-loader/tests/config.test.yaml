@@ -4,6 +4,12 @@
 
 # Global configuration for all sources
 global:
+  # Qdrant configuration for tests
+  qdrant:
+    url: "https://4f2a12b9-a595-491c-ba55-9ae23e21e02a.europe-west3-0.gcp.cloud.qdrant.io"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "qdrant_loader_test"
+
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
@@ -22,7 +28,7 @@ global:
   # State management configuration
   # Controls how document ingestion state is tracked
   state_management:
-    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file
+    database_path: ":memory:"  # Path to SQLite database file
     table_prefix: "qdrant_loader_"     # Prefix for database tables
     connection_pool:                   # Connection pool settings
       size: 5                         # Maximum number of connections

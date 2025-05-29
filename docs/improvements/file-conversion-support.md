@@ -78,13 +78,15 @@ This document outlines the implementation plan for adding support for PDF, Excel
 - Add methods for querying parent-child document relationships
 - Add attachment change detection capabilities
 
-### 🔄 Phase 2: Configuration System (NEXT)
+### ✅ Phase 2: Configuration System (COMPLETED)
 
-#### 2.1 Global Configuration
+#### 2.1 Global Configuration ✅
+
+**Status**: Implemented and tested
 
 **Location**: Configuration files (`config.yaml`, `config.template.yaml`, `tests/config.test.yaml`)
 
-**New Global Section**:
+**Implemented Global Section**:
 
 ```yaml
 global:
@@ -108,9 +110,19 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
 ```
 
-#### 2.2 Per-Connector Configuration
+**Implementation Details**:
 
-**Changes to each source type**:
+- ✅ `GlobalConfig` class updated with `FileConversionConfig` field
+- ✅ `GlobalConfigDict` TypedDict updated with file conversion types
+- ✅ `to_dict()` method includes file conversion serialization
+- ✅ Configuration validation and error handling
+- ✅ Backward compatibility maintained
+
+#### 2.2 Per-Connector Configuration ✅
+
+**Status**: Implemented and tested
+
+**Implemented Changes to each source type**:
 
 ```yaml
 sources:
@@ -151,7 +163,35 @@ sources:
       enable_file_conversion: true
 ```
 
-### Phase 3: Connector Extensions
+**Implementation Details**:
+
+- ✅ `SourceConfig` base class updated with file conversion fields
+- ✅ `enable_file_conversion: bool = False` (disabled by default)
+- ✅ `download_attachments: bool | None = None` (for attachment-capable sources)
+- ✅ All connector configurations inherit these settings
+- ✅ Configuration template updated with examples
+- ✅ Validation and error handling implemented
+
+#### 2.3 Testing and Validation ✅
+
+**Test Coverage**:
+
+- ✅ 11 configuration tests passing (5 global + 6 source-specific)
+- ✅ Default and custom configuration testing
+- ✅ Dictionary loading and serialization testing
+- ✅ Validation and error handling testing
+- ✅ Inheritance and optional behavior testing
+
+**Demo Implementation**:
+
+- ✅ `tests/demo_phase2_configuration.py` - Comprehensive demonstration
+- ✅ Global configuration with default and custom settings
+- ✅ Source-specific configuration for different connector types
+- ✅ YAML configuration loading and parsing
+- ✅ Configuration serialization to dictionary
+- ✅ Validation and error handling examples
+
+### 🔄 Phase 3: Connector Extensions
 
 #### 3.1 File Download Capability
 
@@ -432,24 +472,29 @@ dependencies = [
 
 ## Current Status Summary
 
-### ✅ Completed (Phase 1)
+### ✅ Completed (Phases 1-2)
 
-1. **Core Infrastructure**: Complete file conversion service with MarkItDown integration
+1. **Core Infrastructure (Phase 1)**: Complete file conversion service with MarkItDown integration
 2. **File Detection**: Comprehensive MIME type and extension-based detection
 3. **Configuration Models**: Pydantic-based configuration with validation
 4. **Exception Handling**: Complete exception hierarchy with specific error types
-5. **Testing**: 41 passing unit tests + integration tests
-6. **Demo**: Working demonstration script
+5. **Testing**: 50+ passing unit tests + integration tests (33 file conversion + 17 configuration)
+6. **Demo**: Working demonstration scripts for both phases
+7. **Configuration System (Phase 2)**: Complete integration of file conversion settings
+8. **Global Configuration**: File conversion settings in global config with validation
+9. **Source Configuration**: Per-connector file conversion and attachment settings
+10. **Template Updates**: Configuration templates updated with file conversion examples
 
-### 🔄 Next Steps (Phase 2)
+### 🔄 Next Steps (Phase 3)
 
-1. **Configuration Integration**: Add file conversion settings to global and connector configs
-2. **Settings Loading**: Integrate FileConversionConfig with existing settings system
-3. **Connector Config**: Add enable_file_conversion and download_attachments options
+1. **Connector Extensions**: Add file conversion capabilities to existing connectors
+2. **Attachment Handling**: Implement download and processing for Confluence/JIRA/PublicDocs
+3. **Git Integration**: Add file conversion support to Git connector
+4. **LocalFile Integration**: Add file conversion support to LocalFile connector
 
 ### 📋 Remaining Work
 
-1. **Phase 3**: Connector extensions for attachment handling
+1. **Phase 3**: Connector extensions for attachment handling and file conversion integration
 2. **Phase 4**: Integration with ingestion pipeline and document model extensions
 3. **Phase 5**: Complete error handling integration
 4. **Phase 6**: Documentation and migration guides
