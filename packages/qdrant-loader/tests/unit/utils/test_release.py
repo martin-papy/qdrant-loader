@@ -487,9 +487,9 @@ def test_check_github_workflows_commit_mismatch():
         with pytest.raises(SystemExit):
             check_github_workflows()
 
-        # Verify error messages
+        # Verify error messages (updated to match new format)
         mock_log.error.assert_any_call(
-            "Workflow 'Test and Coverage' was run on a different commit. Please ensure all workflows are run on the current commit."
+            "Critical workflow 'Test and Coverage' was run on a different commit. Please ensure it runs on the current commit."
         )
         mock_log.error.assert_any_call("Current commit: abc123")
         mock_log.error.assert_any_call("Workflow commit: def456")
@@ -687,7 +687,7 @@ def test_dry_run_mode():
             check_main_up_to_date(dry_run=True)
             assert mock_run.call_count == 2
 
-        # Test check_github_workflows (dry run mode returns early)
+        # Test check_github_workflows (now performs actual checks even in dry run mode)
         with (
             patch("release.run_command") as mock_run,
             patch("release.get_github_token") as mock_token,
@@ -695,11 +695,35 @@ def test_dry_run_mode():
         ):
             mock_run.side_effect = [
                 ("git@github.com:owner/repo.git", ""),  # For git remote
+                ("abc123", ""),  # For git rev-parse HEAD
             ]
             mock_token.return_value = "test-token"
 
-            # In dry run mode, the function returns early without making HTTP requests
+            # Mock successful API responses for dry run mode
+            # First call: check running workflows
+            mock_response_running = MagicMock()
+            mock_response_running.status_code = 200
+            mock_response_running.json.return_value = {"workflow_runs": []}
+
+            # Second call: check completed workflows
+            mock_response_completed = MagicMock()
+            mock_response_completed.status_code = 200
+            mock_response_completed.json.return_value = {
+                "workflow_runs": [
+                    {
+                        "name": "Test and Coverage",
+                        "conclusion": "success",
+                        "html_url": "http://example.com",
+                        "head_sha": "abc123",
+                    }
+                ]
+            }
+
+            # Setup side effect to return different responses for different calls
+            mock_get.side_effect = [mock_response_running, mock_response_completed]
+
+            # In the new implementation, dry run mode performs actual checks
             result = check_github_workflows(dry_run=True)
             assert result is True
-            # Should not make any HTTP requests in dry run mode
-            assert mock_get.call_count == 0
+            # Should make HTTP requests even in dry run mode
+            assert mock_get.call_count == 2
