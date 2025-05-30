@@ -26,3 +26,11 @@ class EmbeddingConfig(BaseConfig):
         default=1536,
         description="Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)",
     )
+    max_tokens_per_request: int = Field(
+        default=8000,
+        description="Maximum total tokens allowed per embedding API request (leave buffer below model limit)",
+    )
+    max_tokens_per_chunk: int = Field(
+        default=8000,
+        description="Maximum tokens allowed for a single chunk (should match or be below model's context limit)",
+    )

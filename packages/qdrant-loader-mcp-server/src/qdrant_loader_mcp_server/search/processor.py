@@ -3,10 +3,10 @@
 import re
 from typing import Any
 
-import structlog
 from openai import AsyncOpenAI
 
 from ..config import OpenAIConfig
+from ..utils.logging import LoggingConfig
 
 
 class QueryProcessor:
@@ -17,7 +17,7 @@ class QueryProcessor:
         self.openai_client: AsyncOpenAI | None = AsyncOpenAI(
             api_key=openai_config.api_key
         )
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     async def process_query(self, query: str) -> dict[str, Any]:
         """Process a search query.

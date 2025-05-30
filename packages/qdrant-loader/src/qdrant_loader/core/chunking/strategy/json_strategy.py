@@ -1,15 +1,18 @@
 """JSON-specific chunking strategy for structured data."""
 
 import json
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Dict, List, Union
 
 import structlog
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.document import Document
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     pass
@@ -72,10 +75,14 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         """Initialize the JSON chunking strategy.
 
         Args:
-            settings: The application settings
+            settings: Configuration settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.logger = logger
+        self.progress_tracker = ChunkingProgressTracker(logger)
+
+        # Cache for processed chunks
+        self._processed_chunks = {}
 
         # Minimum size for standalone chunks
         self.min_chunk_size = 200
@@ -564,7 +571,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         return metadata
 
     def chunk_document(self, document: Document) -> list[Document]:
-        """Chunk a JSON document using structure-based parsing.
+        """Chunk a JSON document using structural boundaries.
 
         Args:
             document: Document to chunk
@@ -572,21 +579,27 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents
         """
-        self.logger.info(
-            "Starting JSON chunking",
-            extra={
-                "source": document.source,
-                "source_type": document.source_type,
-                "content_length": len(document.content),
-                "file_name": document.metadata.get("file_name", "unknown"),
-            },
+        file_name = (
+            document.metadata.get("file_name")
+            or document.metadata.get("original_filename")
+            or document.title
+            or f"{document.source_type}:{document.source}"
+        )
+
+        # Start progress tracking
+        self.progress_tracker.start_chunking(
+            document.id,
+            document.source,
+            document.source_type,
+            len(document.content),
+            file_name,
         )
 
         try:
             # Performance check: for very large files, use simple chunking
             if len(document.content) > SIMPLE_CHUNKING_THRESHOLD:
-                self.logger.info(
-                    f"Large JSON file ({len(document.content)} bytes), using simple chunking"
+                self.progress_tracker.log_fallback(
+                    document.id, f"Large JSON file ({len(document.content)} bytes)"
                 )
                 return self._fallback_chunking(document)
 
@@ -594,7 +607,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             root_element = self._parse_json_structure(document.content)
 
             if not root_element:
-                # Fallback for invalid JSON or parsing failures
+                self.progress_tracker.log_fallback(document.id, "JSON parsing failed")
                 return self._fallback_chunking(document)
 
             # Get all elements to chunk
@@ -622,7 +635,9 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             # Limit total elements
             final_elements = final_elements[:MAX_OBJECTS_TO_PROCESS]
 
-            self.logger.info(f"Split JSON into {len(final_elements)} elements")
+            if not final_elements:
+                self.progress_tracker.finish_chunking(document.id, 0, "json")
+                return []
 
             # Create chunked documents
             chunked_docs = []
@@ -657,48 +672,27 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         total_chunks=len(final_elements),
                     )
 
-                # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(document.id, i)
-
                 # Add JSON-specific metadata
                 json_metadata = self._extract_json_metadata(element)
+                json_metadata["chunking_strategy"] = "json"
+                json_metadata["chunking_method"] = "structured_json"
+                json_metadata["parent_document_id"] = document.id
                 chunk_doc.metadata.update(json_metadata)
-                chunk_doc.metadata.update(
-                    {
-                        "chunk_index": i,
-                        "total_chunks": len(final_elements),
-                        "parent_document_id": document.id,
-                        "nlp_skipped": skip_nlp,
-                        "chunking_method": "json_structure",
-                    }
-                )
 
                 chunked_docs.append(chunk_doc)
 
-            self.logger.info(
-                f"Successfully chunked JSON document into {len(chunked_docs)} chunks",
-                extra={
-                    "avg_chunk_size": (
-                        sum(len(doc.content) for doc in chunked_docs)
-                        / len(chunked_docs)
-                        if chunked_docs
-                        else 0
-                    ),
-                    "total_elements": len(final_elements),
-                },
+            # Finish progress tracking
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunked_docs), "json"
             )
-
             return chunked_docs
 
         except Exception as e:
-            self.logger.error(
-                f"Error during JSON chunking: {e}",
-                extra={
-                    "source": document.source,
-                    "error_type": type(e).__name__,
-                },
+            self.progress_tracker.log_error(document.id, str(e))
+            # Fallback to default chunking
+            self.progress_tracker.log_fallback(
+                document.id, f"JSON processing failed: {str(e)}"
             )
-            # Fallback to simple chunking
             return self._fallback_chunking(document)
 
     def _create_optimized_chunk_document(

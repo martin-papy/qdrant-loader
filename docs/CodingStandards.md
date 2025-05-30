@@ -184,9 +184,9 @@ class IncrementalIngestionError(Exception):
 Example:
 
 ```python
-import structlog
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger()
+logger = logger = LoggingConfig.get_logger(__name__)
 
 def process_incremental_changes(source_type: str, source: str):
     logger.info("processing_incremental_changes", 

@@ -33,7 +33,7 @@ class SourceProcessor:
         Returns:
             List of documents from all sources of this type
         """
-        logger.info(f"Processing {source_type} sources: {list(source_configs.keys())}")
+        logger.debug(f"Processing {source_type} sources: {list(source_configs.keys())}")
 
         all_documents = []
 
@@ -45,7 +45,7 @@ class SourceProcessor:
                 break
 
             try:
-                logger.info(f"Processing {source_type} source: {source_name}")
+                logger.debug(f"Processing {source_type} source: {source_name}")
 
                 # Create connector instance and use as async context manager
                 connector = connector_class(source_config)
@@ -55,7 +55,7 @@ class SourceProcessor:
                     # Get documents from this source
                     documents = await connector.get_documents()
 
-                    logger.info(
+                    logger.debug(
                         f"Retrieved {len(documents)} documents from {source_type} source: {source_name}"
                     )
                     all_documents.extend(documents)
@@ -68,7 +68,8 @@ class SourceProcessor:
                 # Continue processing other sources even if one fails
                 continue
 
-        logger.info(
-            f"Completed processing {source_type} sources. Total documents: {len(all_documents)}"
-        )
+        if all_documents:
+            logger.info(
+                f"📥 {source_type}: {len(all_documents)} documents from {len(source_configs)} sources"
+            )
         return all_documents

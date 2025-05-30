@@ -1,6 +1,5 @@
 """Main orchestrator for the ingestion pipeline."""
 
-
 from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.connectors.confluence import ConfluenceConnector
 from qdrant_loader.connectors.git import GitConnector
@@ -58,7 +57,7 @@ class PipelineOrchestrator:
         Returns:
             List of processed documents
         """
-        logger.info("Starting document processing orchestration")
+        logger.info("🚀 Starting document ingestion")
 
         try:
             # Use default sources config if none provided
@@ -86,14 +85,14 @@ class PipelineOrchestrator:
             documents = await self._collect_documents_from_sources(filtered_config)
 
             if not documents:
-                logger.info("No documents found from sources")
+                logger.info("✅ No documents found from sources")
                 return []
 
             # Detect changes in documents
             documents = await self._detect_document_changes(documents, filtered_config)
 
             if not documents:
-                logger.info("No new or updated documents to process")
+                logger.info("✅ No new or updated documents to process")
                 return []
 
             # Process documents through the pipeline
@@ -107,12 +106,12 @@ class PipelineOrchestrator:
             )
 
             logger.info(
-                f"Orchestration completed. Processed {result.success_count} chunks successfully"
+                f"✅ Ingestion completed: {result.success_count} chunks processed successfully"
             )
             return documents
 
         except Exception as e:
-            logger.error(f"Pipeline orchestration failed: {e}", exc_info=True)
+            logger.error(f"❌ Pipeline orchestration failed: {e}", exc_info=True)
             raise
 
     async def _collect_documents_from_sources(
@@ -156,7 +155,7 @@ class PipelineOrchestrator:
             )
             documents.extend(localfile_docs)
 
-        logger.info(f"Collected {len(documents)} documents from all sources")
+        logger.info(f"📄 Collected {len(documents)} documents from all sources")
         return documents
 
     async def _detect_document_changes(
@@ -182,8 +181,8 @@ class PipelineOrchestrator:
                 )
 
                 logger.info(
-                    f"Change detection completed. New: {len(changes['new'])}, "
-                    f"Updated: {len(changes['updated'])}, Deleted: {len(changes['deleted'])}"
+                    f"🔍 Change detection: {len(changes['new'])} new, "
+                    f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
                 )
 
                 # Return new and updated documents
@@ -201,7 +200,7 @@ class PipelineOrchestrator:
             doc for doc in documents if doc.id in successfully_processed_doc_ids
         ]
 
-        logger.info(
+        logger.debug(
             f"Updating document states for {len(successfully_processed_docs)} documents"
         )
 

@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 
 import git
-import structlog
 from git.exc import GitCommandError
 
 from qdrant_loader.utils.logging import LoggingConfig
@@ -17,12 +16,8 @@ logger = LoggingConfig.get_logger(__name__)
 class GitOperations:
     """Git operations wrapper."""
 
-    def __init__(self, logger: structlog.BoundLogger | None = None):
-        """Initialize Git operations.
-
-        Args:
-            logger: Logger instance. Defaults to None.
-        """
+    def __init__(self):
+        """Initialize Git operations."""
         self.repo = None
         self.logger = LoggingConfig.get_logger(__name__)
         self.logger.info("Initializing GitOperations")

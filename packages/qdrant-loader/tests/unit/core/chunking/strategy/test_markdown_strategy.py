@@ -10,16 +10,25 @@ from qdrant_loader.core.chunking.strategy.markdown_strategy import (
     SectionType,
 )
 from qdrant_loader.core.document import Document
+from qdrant_loader.config.qdrant import QdrantConfig
 
 
 @pytest.fixture
 def settings():
     """Create test settings."""
+    # Create a minimal qdrant config for testing
+    qdrant_config = QdrantConfig(
+        url="http://localhost:6333",
+        api_key="test-key",
+        collection_name="test-collection",
+    )
+
+    global_config = GlobalConfig(
+        qdrant=qdrant_config,
+        semantic_analysis=SemanticAnalysisConfig(num_topics=3, lda_passes=10),
+    )
+
     return Settings(
-        # Qdrant configuration
-        QDRANT_URL="http://localhost:6333",
-        QDRANT_API_KEY="test-key",
-        QDRANT_COLLECTION_NAME="test-collection",
         # OpenAI configuration
         OPENAI_API_KEY="test-key",
         # State management
@@ -39,9 +48,7 @@ def settings():
         JIRA_TOKEN="test-token",
         JIRA_EMAIL="test@example.com",
         # Global configuration
-        global_config=GlobalConfig(
-            semantic_analysis=SemanticAnalysisConfig(num_topics=3, lda_passes=10)
-        ),
+        global_config=global_config,
     )
 
 

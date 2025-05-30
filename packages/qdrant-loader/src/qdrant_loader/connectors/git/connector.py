@@ -4,8 +4,6 @@ import os
 import shutil
 import tempfile
 
-import structlog
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.git.config import GitRepoConfig
@@ -13,6 +11,12 @@ from qdrant_loader.connectors.git.file_processor import FileProcessor
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
 from qdrant_loader.connectors.git.operations import GitOperations
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import (
+    FileConverter,
+    FileDetector,
+    FileConversionConfig,
+    FileConversionError,
+)
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -33,10 +37,30 @@ class GitConnector(BaseConnector):
         self.metadata_extractor = GitMetadataExtractor(config=self.config)
         self.git_ops = GitOperations()
         self.file_processor = None  # Will be initialized in __enter__
-        self.logger = structlog.get_logger(__name__)
-        self.logger.info("Initializing GitConnector")
+        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger.debug("Initializing GitConnector")
         self.logger.debug("GitConnector Configuration", config=config.model_dump())
         self._initialized = False
+
+        # Initialize file conversion components if enabled
+        self.file_converter = None
+        self.file_detector = None
+        if self.config.enable_file_conversion:
+            self.logger.debug("File conversion enabled for Git connector")
+            # File conversion config will be set from global config during ingestion
+            self.file_detector = FileDetector()
+        else:
+            self.logger.debug("File conversion disabled for Git connector")
+
+    def set_file_conversion_config(self, file_conversion_config: FileConversionConfig):
+        """Set file conversion configuration from global config.
+
+        Args:
+            file_conversion_config: Global file conversion configuration
+        """
+        if self.config.enable_file_conversion:
+            self.file_converter = FileConverter(file_conversion_config)
+            self.logger.debug("File converter initialized with global config")
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -50,7 +74,9 @@ class GitConnector(BaseConnector):
 
             # Initialize file processor
             self.file_processor = FileProcessor(
-                config=self.config, temp_dir=self.temp_dir
+                config=self.config,
+                temp_dir=self.temp_dir,
+                file_detector=self.file_detector,
             )
 
             # Get auth token from config
@@ -142,7 +168,9 @@ class GitConnector(BaseConnector):
 
             # Initialize file processor
             self.file_processor = FileProcessor(
-                config=self.config, temp_dir=self.temp_dir
+                config=self.config,
+                temp_dir=self.temp_dir,
+                file_detector=self.file_detector,
             )
 
             # Get auth token from config
@@ -218,7 +246,7 @@ class GitConnector(BaseConnector):
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
                 shutil.rmtree(self.temp_dir)
-                self.logger.info("Cleaned up temporary directory")
+                self.logger.debug("Cleaned up temporary directory")
             except Exception as e:
                 self.logger.error(f"Failed to clean up temporary directory: {e}")
 
@@ -238,8 +266,43 @@ class GitConnector(BaseConnector):
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
 
-            # Read file content
-            content = self.git_ops.get_file_content(file_path)
+            # Check if file needs conversion
+            needs_conversion = (
+                self.config.enable_file_conversion
+                and self.file_detector
+                and self.file_converter
+                and self.file_detector.is_supported_for_conversion(file_path)
+            )
+
+            if needs_conversion:
+                self.logger.debug("File needs conversion", file_path=rel_path)
+                try:
+                    # Convert file to markdown
+                    assert self.file_converter is not None  # Type checker hint
+                    content = self.file_converter.convert_file(file_path)
+                    content_type = "md"  # Converted files are markdown
+                    conversion_method = "markitdown"
+                    conversion_failed = False
+                    self.logger.info("File conversion successful", file_path=rel_path)
+                except FileConversionError as e:
+                    self.logger.warning(
+                        "File conversion failed, creating fallback document",
+                        file_path=rel_path,
+                        error=str(e),
+                    )
+                    # Create fallback document
+                    assert self.file_converter is not None  # Type checker hint
+                    content = self.file_converter.create_fallback_document(file_path, e)
+                    content_type = "md"  # Fallback is also markdown
+                    conversion_method = "markitdown_fallback"
+                    conversion_failed = True
+            else:
+                # Read file content normally
+                content = self.git_ops.get_file_content(file_path)
+                # Get file extension without the dot
+                content_type = os.path.splitext(file_path)[1].lower().lstrip(".")
+                conversion_method = None
+                conversion_failed = False
 
             first_commit_date = self.git_ops.get_first_commit_date(file_path)
 
@@ -261,18 +324,26 @@ class GitConnector(BaseConnector):
                     ),
                 }
             )
-            # Get relative path from repository root
-            rel_path = os.path.relpath(file_path, self.temp_dir)
-            self.logger.debug(f"Processed Git file: /{rel_path!s}")
 
-            # Get file extension without the dot
-            file_ext = os.path.splitext(file_path)[1].lower().lstrip(".")
+            # Add file conversion metadata if applicable
+            if needs_conversion:
+                metadata.update(
+                    {
+                        "conversion_method": conversion_method,
+                        "conversion_failed": conversion_failed,
+                        "original_file_type": os.path.splitext(file_path)[1]
+                        .lower()
+                        .lstrip("."),
+                    }
+                )
+
+            self.logger.debug(f"Processed Git file: /{rel_path!s}")
 
             # Create document
             git_document = Document(
                 title=os.path.basename(file_path),
                 content=content,
-                content_type=file_ext,  # Extension without the dot
+                content_type=content_type,
                 metadata=metadata,
                 source_type=SourceType.GIT,
                 source=self.config.source,

@@ -38,6 +38,24 @@ class PublicDocsSourceConfig(SourceConfig):
         description="CSS selectors for content extraction",
     )
 
+    # Attachment handling
+    download_attachments: bool = Field(
+        default=False,
+        description="Whether to download and process linked files (PDFs, docs, etc.)",
+    )
+    attachment_selectors: list[str] = Field(
+        default=[
+            "a[href$='.pdf']",
+            "a[href$='.doc']",
+            "a[href$='.docx']",
+            "a[href$='.xls']",
+            "a[href$='.xlsx']",
+            "a[href$='.ppt']",
+            "a[href$='.pptx']",
+        ],
+        description="CSS selectors for finding downloadable attachments",
+    )
+
     @field_validator("content_type")
     @classmethod
     def validate_content_type(cls, v: str) -> str:
