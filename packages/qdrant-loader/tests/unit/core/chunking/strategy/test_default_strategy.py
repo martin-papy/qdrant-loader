@@ -440,8 +440,8 @@ class TestDefaultChunkingStrategy:
                         assert mock_logger.info.call_count >= 2  # Start and end logging
 
                         # Check that logging includes relevant information
-                        start_call = mock_logger.info.call_args_list[0]
+                        start_call = mock_logger.debug.call_args_list[0]
                         assert "Starting default chunking" in start_call[0][0]
 
-                        end_call = mock_logger.info.call_args_list[-1]
+                        end_call = mock_logger.debug.call_args_list[-1]
                         assert "Successfully chunked document" in end_call[0][0]

@@ -141,8 +141,8 @@ class ChunkingService:
         strategy_class = self.strategies.get(file_type)
 
         if strategy_class:
-            self.logger.info(
-                "Using specific strategy for file type",
+            self.logger.debug(
+                "Using specific strategy for this file type",
                 file_type=file_type,
                 strategy=strategy_class.__name__,
                 document_id=document.id,
@@ -150,8 +150,8 @@ class ChunkingService:
             )
             return strategy_class(self.settings)
 
-        self.logger.warning(
-            "No specific strategy found for file type, using default strategy",
+        self.logger.debug(
+            "No specific strategy found for this file type, using default text chunking strategy",
             file_type=file_type,
             document_id=document.id,
             document_title=document.title,
