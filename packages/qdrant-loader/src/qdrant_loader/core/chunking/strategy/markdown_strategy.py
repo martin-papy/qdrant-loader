@@ -538,6 +538,23 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 chunk_doc.metadata["chunking_strategy"] = "markdown"
                 chunk_doc.metadata["parent_document_id"] = document.id
 
+                # Add additional metadata fields expected by tests
+                section_title = chunk_meta.get("title")
+                if not section_title:
+                    section_title = self._extract_section_title(chunk_content)
+                chunk_doc.metadata["section_title"] = section_title
+                chunk_doc.metadata["cross_references"] = self._extract_cross_references(
+                    chunk_content
+                )
+                chunk_doc.metadata["hierarchy"] = self._map_hierarchical_relationships(
+                    chunk_content
+                )
+                chunk_doc.metadata["entities"] = self._extract_entities(chunk_content)
+
+                # Add topic analysis
+                topic_analysis = self._analyze_topic(chunk_content)
+                chunk_doc.metadata["topic_analysis"] = topic_analysis
+
                 logger.debug(
                     "Created chunk document",
                     extra={

@@ -85,6 +85,9 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         # Cache for processed chunks
         self._processed_chunks = {}
 
+        # Thread pool executor for parallel processing
+        self._executor = None
+
         # Define semantic HTML elements that should be treated as section boundaries
         self.section_elements = {
             "article",
@@ -653,6 +656,16 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         )
 
         try:
+            # Check for very large files that should use fallback chunking
+            if len(document.content) > MAX_HTML_SIZE_FOR_PARSING:
+                self.logger.info(
+                    f"HTML file too large ({len(document.content)} bytes), using fallback chunking"
+                )
+                self.progress_tracker.log_fallback(
+                    document.id, f"Large HTML file ({len(document.content)} bytes)"
+                )
+                return self._fallback_chunking(document)
+
             # Parse HTML and extract semantic sections
             self.logger.debug("Parsing HTML structure")
             sections = self._split_text(document.content)
@@ -812,5 +825,19 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
     def __del__(self):
         """Cleanup method."""
+        # Call shutdown to clean up resources
+        self.shutdown()
+
+    def shutdown(self):
+        """Shutdown the strategy and clean up resources."""
+        # Shutdown thread pool executor if it exists
+        if hasattr(self, "_executor") and self._executor:
+            self._executor.shutdown(wait=True)
+            self._executor = None
+
+        # Clean up any cached data
+        if hasattr(self, "_processed_chunks"):
+            self._processed_chunks.clear()
+
         # Note: semantic_analyzer is now handled in base class
-        pass
+        # No additional cleanup needed for HTML strategy
