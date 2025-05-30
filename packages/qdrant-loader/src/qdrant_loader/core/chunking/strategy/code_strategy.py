@@ -1,11 +1,12 @@
 """Code-specific chunking strategy for programming languages."""
 
 import ast
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
-from qdrant_loader.utils.logging import LoggingConfig
+import structlog
 
 # Tree-sitter imports with error handling
 try:
@@ -19,12 +20,10 @@ except ImportError:
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.document import Document
 
-if TYPE_CHECKING:
-    from qdrant_loader.config import Settings
-
-logger = LoggingConfig.get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Performance constants - Universal limits for all code files
 MAX_FILE_SIZE_FOR_AST = (
@@ -97,16 +96,14 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         """Initialize the code chunking strategy.
 
         Args:
-            settings: The application settings
+            settings: Configuration settings
         """
         super().__init__(settings)
-        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger = logger
+        self.progress_tracker = ChunkingProgressTracker(logger)
 
-        # Note: Semantic analyzer is now handled intelligently in base class
-        # No need to initialize it here since we'll only process comments/docstrings
-
-        # Supported languages with tree-sitter
-        self.supported_languages = {
+        # Language detection patterns
+        self.language_patterns = {
             ".py": "python",
             ".pyx": "python",
             ".pyi": "python",
@@ -152,7 +149,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         # Get file extension
         ext = f".{file_path.lower().split('.')[-1]}" if "." in file_path else ""
 
-        return self.supported_languages.get(ext, "unknown")
+        return self.language_patterns.get(ext, "unknown")
 
     def _get_tree_sitter_parser(self, language: str):
         """Get or create a Tree-sitter parser for the given language.
@@ -749,14 +746,20 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents
         """
-        self.logger.info(
-            "Starting code chunking",
-            extra={
-                "source": document.source,
-                "source_type": document.source_type,
-                "content_length": len(document.content),
-                "file_name": document.metadata.get("file_name", "unknown"),
-            },
+        file_name = (
+            document.metadata.get("file_name")
+            or document.metadata.get("original_filename")
+            or document.title
+            or f"{document.source_type}:{document.source}"
+        )
+
+        # Start progress tracking
+        self.progress_tracker.start_chunking(
+            document.id,
+            document.source,
+            document.source_type,
+            len(document.content),
+            file_name,
         )
 
         try:
@@ -766,8 +769,9 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
             # Performance check: universal threshold for all code files
             if len(document.content) > CHUNK_SIZE_THRESHOLD:
-                self.logger.info(
-                    f"Large {language} file ({len(document.content)} bytes), using simple chunking"
+                self.progress_tracker.log_fallback(
+                    document.id,
+                    f"Large {language} file ({len(document.content)} bytes)",
                 )
                 return self._fallback_chunking(document)
 
@@ -795,61 +799,19 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 parsing_method = "tree_sitter"
 
             if not elements:
-                # Fallback for unsupported languages or parsing failures
-                return self._fallback_chunking(document)
-
-            # Merge small elements and split large ones if needed
-            merged_elements = self._merge_small_elements(elements)
-            final_elements = []
-
-            # Early bailout for extremely complex files
-            if len(merged_elements) > MAX_ELEMENTS_TO_PROCESS:
-                self.logger.warning(
-                    f"File has too many elements ({len(merged_elements)}), using fallback chunking"
+                self.progress_tracker.log_fallback(
+                    document.id, f"No {language} elements found"
                 )
                 return self._fallback_chunking(document)
 
-            for element in merged_elements:
-                if len(element.content) > self.chunk_size:
-                    # For very large elements, split by lines (optimized)
-                    lines = element.content.split("\n")
-                    chunks = []
-                    current_chunk = []
-                    current_size = 0
+            # Merge small elements to optimize chunk size
+            final_elements = self._merge_small_elements(elements)
+            if len(final_elements) > 100:  # Limit total chunks
+                final_elements = final_elements[:100]
 
-                    for line in lines:
-                        line_size = len(line) + 1  # +1 for newline
-                        if current_size + line_size > self.chunk_size and current_chunk:
-                            chunks.append("\n".join(current_chunk))
-                            current_chunk = [line]
-                            current_size = line_size
-                        else:
-                            current_chunk.append(line)
-                            current_size += line_size
-
-                    if current_chunk:
-                        chunks.append("\n".join(current_chunk))
-
-                    # Create sub-elements for each chunk (limited)
-                    for i, chunk_content in enumerate(chunks[:20]):  # Limit chunks
-                        sub_element = CodeElement(
-                            name=f"{element.name}_part_{i+1}",
-                            element_type=element.element_type,
-                            content=chunk_content,
-                            start_line=element.start_line,
-                            end_line=element.end_line,
-                            level=element.level,
-                            parent=element.parent,
-                        )
-                        final_elements.append(sub_element)
-                else:
-                    final_elements.append(element)
-
-            self.logger.info(f"Split code into {len(final_elements)} elements")
-
-            # Create chunked documents (limited)
+            # Create chunked documents
             chunked_docs = []
-            for i, element in enumerate(final_elements[:100]):  # Limit total chunks
+            for i, element in enumerate(final_elements):
                 self.logger.debug(
                     f"Processing element {i+1}/{len(final_elements)}",
                     extra={
@@ -860,54 +822,35 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 )
 
                 # Create chunk document with optimized metadata processing
-                # For code files, we'll let the base class handle smart NLP decisions
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=element.content,
                     chunk_index=i,
                     total_chunks=len(final_elements),
-                    skip_nlp=False,  # Let base class decide based on content type
+                    skip_nlp=False,
                 )
 
-                # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(document.id, i)
-
-                # Add code-specific metadata (including element_type for smart NLP)
+                # Add code-specific metadata
                 code_metadata = self._extract_code_metadata(element, language)
                 code_metadata["parsing_method"] = parsing_method
+                code_metadata["chunking_strategy"] = "code"
+                code_metadata["parent_document_id"] = document.id
                 chunk_doc.metadata.update(code_metadata)
-
-                # Add parent document reference
-                chunk_doc.metadata["parent_document_id"] = document.id
 
                 chunked_docs.append(chunk_doc)
 
-            self.logger.info(
-                f"Successfully chunked code document into {len(chunked_docs)} chunks",
-                extra={
-                    "language": language,
-                    "avg_chunk_size": (
-                        sum(len(doc.content) for doc in chunked_docs)
-                        / len(chunked_docs)
-                        if chunked_docs
-                        else 0
-                    ),
-                    "total_elements": len(final_elements),
-                    "parsing_method": parsing_method,
-                },
+            # Finish progress tracking
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunked_docs), f"code ({language})"
             )
-
             return chunked_docs
 
         except Exception as e:
-            self.logger.error(
-                f"Error during code chunking: {e}",
-                extra={
-                    "source": document.source,
-                    "error_type": type(e).__name__,
-                },
-            )
+            self.progress_tracker.log_error(document.id, str(e))
             # Fallback to default chunking
+            self.progress_tracker.log_fallback(
+                document.id, f"Code parsing failed: {str(e)}"
+            )
             return self._fallback_chunking(document)
 
     def _fallback_chunking(self, document: Document) -> list[Document]:

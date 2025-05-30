@@ -451,11 +451,11 @@ class AttachmentDownloader:
             for temp_file in temp_files:
                 self.cleanup_temp_file(temp_file)
 
-        self.logger.info(
+        self.logger.debug(
             "Processed attachments",
             total_attachments=len(attachments),
             processed_attachments=len(attachment_documents),
-            parent_document_id=parent_document.metadata.get("id"),
+            parent_document_id=parent_document.id,
         )
 
         return attachment_documents

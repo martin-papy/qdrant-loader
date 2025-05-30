@@ -1,26 +1,19 @@
 """HTML-specific chunking strategy."""
 
-import concurrent.futures
 import re
-import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
-from bs4 import BeautifulSoup, Tag, XMLParsedAsHTMLWarning
+import structlog
+from bs4 import BeautifulSoup, Tag
 
-from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.document import Document
-from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.config import Settings
 
-if TYPE_CHECKING:
-    from qdrant_loader.config import Settings
-
-# Suppress XML parsing warning
-warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
-
-logger = LoggingConfig.get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Performance constants to prevent timeouts
 MAX_HTML_SIZE_FOR_PARSING = 500_000  # 500KB limit for complex HTML parsing
@@ -80,19 +73,17 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         """Initialize the HTML chunking strategy.
 
         Args:
-            settings: The application settings
+            settings: Configuration settings
         """
         super().__init__(settings)
-        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger = logger
+        self.progress_tracker = ChunkingProgressTracker(logger)
 
         # Note: Semantic analyzer is now handled intelligently in base class
-        # HTML content will get appropriate NLP processing based on content type
+        # on a per-chunk basis based on content type and size
 
         # Cache for processed chunks
         self._processed_chunks = {}
-
-        # Initialize thread pool for parallel processing (reduced workers for performance)
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
         # Define semantic HTML elements that should be treated as section boundaries
         self.section_elements = {
@@ -636,164 +627,81 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         except Exception:
             return "Untitled Section"
 
-    def shutdown(self):
-        """Shutdown the thread pool executor."""
-        if hasattr(self, "_executor") and self._executor:
-            self._executor.shutdown(wait=True)
-            self._executor = None
-
     def chunk_document(self, document: Document) -> list[Document]:
         """Chunk an HTML document using semantic boundaries.
 
         Args:
-            document: Document to chunk
+            document: The document to chunk
 
         Returns:
             List of chunked documents
         """
-        self.logger.info(
-            "Starting HTML chunking",
-            extra={
-                "source": document.source,
-                "source_type": document.source_type,
-                "content_length": len(document.content),
-                "file_name": document.metadata.get("file_name", "unknown"),
-            },
+        file_name = (
+            document.metadata.get("file_name")
+            or document.metadata.get("original_filename")
+            or document.title
+            or f"{document.source_type}:{document.source}"
+        )
+
+        # Start progress tracking
+        self.progress_tracker.start_chunking(
+            document.id,
+            document.source,
+            document.source_type,
+            len(document.content),
+            file_name,
         )
 
         try:
-            # Performance check: use fallback for very large files
-            if len(document.content) > MAX_HTML_SIZE_FOR_PARSING:
-                self.logger.info(
-                    f"HTML file too large ({len(document.content)} bytes), using fallback chunking"
-                )
-                return self._fallback_chunking(document)
-
-            # Split HTML into semantic chunks
+            # Parse HTML and extract semantic sections
             self.logger.debug("Parsing HTML structure")
-            chunks_metadata = self._split_text(document.content)
-            self.logger.info(
-                f"Split document into {len(chunks_metadata)} initial sections"
-            )
+            sections = self._split_text(document.content)
 
-            if not chunks_metadata:
-                # Fallback for empty or problematic HTML
-                return self._fallback_chunking(document)
+            if not sections:
+                self.progress_tracker.finish_chunking(document.id, 0, "html")
+                return []
 
-            # Limit chunks to process
-            chunks_to_process = chunks_metadata[:MAX_SECTIONS_TO_PROCESS]
-            if len(chunks_metadata) > MAX_SECTIONS_TO_PROCESS:
-                self.logger.warning(
-                    f"Truncating chunks from {len(chunks_metadata)} to {MAX_SECTIONS_TO_PROCESS}"
-                )
-
-            # Create chunked documents
+            # Create chunk documents
             chunked_docs = []
-            valid_chunk_index = 0
-            for i, chunk_meta in enumerate(chunks_to_process):
-                chunk_content = chunk_meta["content"]
-
-                # Validate chunk content before processing
-                if not chunk_content or not chunk_content.strip():
-                    self.logger.warning(f"Skipping empty chunk {i+1}")
-                    continue
-
-                # Extract text content for validation
-                try:
-                    soup = BeautifulSoup(chunk_content, "html.parser")
-                    text_content = soup.get_text(strip=True)
-                    if not text_content or len(text_content) < 5:
-                        self.logger.warning(
-                            f"Skipping chunk {i+1} with minimal text content: {repr(text_content)}"
-                        )
-                        continue
-                except Exception as e:
-                    self.logger.warning(f"Error validating chunk {i+1}: {e}")
-                    continue
-
+            for i, section in enumerate(sections):
+                chunk_content = section["content"]
                 self.logger.debug(
-                    f"Processing chunk {i+1}/{len(chunks_to_process)}",
+                    f"Processing HTML section {i+1}/{len(sections)}",
                     extra={
                         "chunk_size": len(chunk_content),
-                        "text_size": len(text_content),
-                        "chunk_title": chunk_meta.get("title", "unknown"),
-                        "chunk_tag": chunk_meta.get("tag_name", "unknown"),
+                        "section_type": section.get("section_type", "unknown"),
+                        "tag_name": section.get("tag_name", "unknown"),
                     },
                 )
 
-                # Create chunk document - base class will handle smart NLP decisions
+                # Create chunk document with enhanced metadata
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,
-                    chunk_index=valid_chunk_index,
-                    total_chunks=len(
-                        chunks_to_process
-                    ),  # This will be updated at the end
-                    skip_nlp=False,  # Let base class decide based on content type
-                )
-
-                # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(
-                    document.id, valid_chunk_index
+                    chunk_index=i,
+                    total_chunks=len(sections),
+                    skip_nlp=False,
                 )
 
                 # Add HTML-specific metadata
-                section_title = chunk_meta.get(
-                    "title", self._extract_section_title(chunk_content)
-                )
-                chunk_doc.metadata.update(
-                    {
-                        "section_title": section_title,
-                        "section_tag": chunk_meta.get("tag_name", "div"),
-                        "section_type": chunk_meta.get(
-                            "section_type", SectionType.DIV
-                        ).value,
-                        "section_level": chunk_meta.get("level", 0),
-                        "section_attributes": chunk_meta.get("attributes", {}),
-                        "is_semantic": chunk_meta.get("tag_name", "")
-                        in self.section_elements,
-                        "is_heading": chunk_meta.get("tag_name", "")
-                        in self.heading_elements,
-                        "text_content": chunk_meta.get("text_content", ""),
-                        "chunk_index": valid_chunk_index,
-                        "total_chunks": len(
-                            chunks_to_process
-                        ),  # This will be updated at the end
-                        "parent_document_id": document.id,
-                    }
-                )
+                chunk_doc.metadata.update(section)
+                chunk_doc.metadata["chunking_strategy"] = "html"
+                chunk_doc.metadata["parent_document_id"] = document.id
 
                 chunked_docs.append(chunk_doc)
-                valid_chunk_index += 1
 
-            # Update total_chunks in all chunk metadata to reflect actual count
-            for chunk_doc in chunked_docs:
-                chunk_doc.metadata["total_chunks"] = len(chunked_docs)
-
-            self.logger.info(
-                "Completed HTML chunking",
-                extra={
-                    "source": document.source,
-                    "chunk_count": len(chunked_docs),
-                    "avg_chunk_size": (
-                        sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
-                        if chunked_docs
-                        else 0
-                    ),
-                },
+            # Finish progress tracking
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunked_docs), "html"
             )
-
             return chunked_docs
 
         except Exception as e:
-            self.logger.error(
-                f"Error chunking HTML document: {e}",
-                extra={
-                    "source": document.source,
-                    "source_type": document.source_type,
-                },
+            self.progress_tracker.log_error(document.id, str(e))
+            # Fallback to default chunking
+            self.progress_tracker.log_fallback(
+                document.id, f"HTML parsing failed: {str(e)}"
             )
-            # Fallback to simple chunking on error
             return self._fallback_chunking(document)
 
     def _fallback_chunking(self, document: Document) -> list[Document]:
@@ -903,5 +811,6 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             return [chunk_doc]
 
     def __del__(self):
-        self.shutdown()
+        """Cleanup method."""
         # Note: semantic_analyzer is now handled in base class
+        pass

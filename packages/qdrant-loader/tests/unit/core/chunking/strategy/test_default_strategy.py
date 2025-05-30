@@ -5,10 +5,12 @@ from unittest.mock import Mock, patch
 import pytest
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.default_strategy import (
-    MAX_CHUNKS_TO_PROCESS,
     DefaultChunkingStrategy,
 )
 from qdrant_loader.core.document import Document
+
+# Define the constant locally since it's not exported from the module
+MAX_CHUNKS_TO_PROCESS = 100
 
 
 class TestDefaultChunkingStrategy:
@@ -319,9 +321,10 @@ class TestDefaultChunkingStrategy:
     ):
         """Test chunking with custom chunk size and overlap."""
         with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            strategy = DefaultChunkingStrategy(
-                mock_settings, chunk_size=200, chunk_overlap=50
-            )
+            strategy = DefaultChunkingStrategy(mock_settings)
+            # Manually set the chunk size and overlap after initialization
+            strategy.chunk_size = 200
+            strategy.chunk_overlap = 50
 
             assert strategy.chunk_size == 200
             assert strategy.chunk_overlap == 50

@@ -125,10 +125,10 @@ class TestCodeChunkingStrategy:
         strategy = CodeChunkingStrategy(mock_settings)
 
         assert strategy is not None
-        assert hasattr(strategy, "supported_languages")
-        assert ".py" in strategy.supported_languages
-        assert ".java" in strategy.supported_languages
-        assert ".js" in strategy.supported_languages
+        assert hasattr(strategy, "language_patterns")
+        assert ".py" in strategy.language_patterns
+        assert ".java" in strategy.language_patterns
+        assert ".js" in strategy.language_patterns
 
     @patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer")
     @patch("qdrant_loader.core.text_processing.text_processor.TextProcessor")
