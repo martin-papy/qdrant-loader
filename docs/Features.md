@@ -108,6 +108,138 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 - **Symbolic link handling**: Follow or ignore symbolic links
 - **Size and depth limits**: Configurable limits for performance
 
+### 🆕 File Conversion Support (v0.3.1)
+
+QDrant Loader now includes comprehensive file conversion capabilities, enabling automatic processing of diverse file formats:
+
+#### Supported File Types (20+)
+
+**Documents:**
+
+- **PDF**: Text extraction with layout preservation
+- **Microsoft Office**: Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
+- **OpenDocument**: ODT, ODS, ODP formats
+
+**Images:**
+
+- **Formats**: PNG, JPEG, GIF, BMP, TIFF, WebP
+- **OCR Support**: Optional text extraction from images using AI
+- **Metadata**: EXIF data preservation and analysis
+
+**Data Formats:**
+
+- **Structured**: JSON, CSV, XML, YAML
+- **Tabular**: Excel spreadsheets with multiple sheets
+- **Configuration**: INI, TOML files
+
+**Archives:**
+
+- **ZIP Files**: Automatic extraction and processing of contents
+- **Nested Archives**: Support for archives within archives
+
+**Audio:**
+
+- **Formats**: MP3, WAV, M4A
+- **Transcription**: Automatic speech-to-text conversion
+- **Metadata**: Duration, format, and quality information
+
+**E-books:**
+
+- **EPUB**: Chapter extraction and metadata
+- **Text Preservation**: Formatting and structure maintained
+
+#### Universal Connector Support
+
+File conversion works across **all data source connectors**:
+
+- **Git Repositories**: Convert files found in repositories
+- **Confluence**: Download and convert page attachments
+- **JIRA**: Process issue attachments automatically
+- **Public Documentation**: Extract and convert linked files
+- **Local Files**: Convert files in local directories
+
+#### Conversion Features
+
+**Intelligent Detection:**
+
+- Automatic MIME type detection
+- File extension-based fallback
+- Content-based format identification
+
+**Performance Optimization:**
+
+- Configurable file size limits (default 50MB)
+- Conversion timeouts (default 5 minutes)
+- Lazy loading of conversion dependencies
+- Memory-efficient processing
+
+**Error Handling:**
+
+- Graceful fallback for unsupported files
+- Minimal document creation for failed conversions
+- Comprehensive error logging and reporting
+- Continuation of processing despite individual failures
+
+**Metadata Preservation:**
+
+- Original file type and name tracking
+- Conversion method and timestamp
+- File size and format information
+- Parent-child relationships for attachments
+
+#### Configuration
+
+**Global Settings:**
+
+```yaml
+global:
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300  # 5 minutes
+    markitdown:
+      enable_llm_descriptions: false  # AI image descriptions
+      llm_model: "gpt-4o"
+      llm_endpoint: "https://api.openai.com/v1"
+```
+
+**Per-Connector Settings:**
+
+```yaml
+sources:
+  git:
+    my-repo:
+      enable_file_conversion: true  # Enable conversion
+  
+  confluence:
+    my-space:
+      enable_file_conversion: true
+      download_attachments: true    # Required for attachments
+```
+
+#### Advanced Features
+
+**Attachment Processing:**
+
+- Automatic download from Confluence, JIRA, and documentation sites
+- Parent-child document relationships
+- Attachment metadata preservation
+- Secure authentication handling
+
+**AI-Powered Image Processing:**
+
+- Optional LLM integration for image descriptions
+- Support for GPT-4 Vision and compatible models
+- Configurable AI endpoints and models
+
+**State Management Integration:**
+
+- Conversion metadata tracking in database
+- Incremental processing of converted files
+- Change detection for file modifications
+- Comprehensive metrics and monitoring
+
+See the [File Conversion Guide](./FileConversionGuide.md) for detailed setup and usage instructions.
+
 ### Document Processing Pipeline
 
 #### Intelligent Chunking
