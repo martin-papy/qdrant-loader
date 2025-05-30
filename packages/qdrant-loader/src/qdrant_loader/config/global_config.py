@@ -4,14 +4,18 @@ This module defines the global configuration settings that apply across the appl
 including chunking, embedding, and logging configurations.
 """
 
+from typing import Any
+
 from pydantic import Field
 
 from qdrant_loader.config.base import BaseConfig
 from qdrant_loader.config.chunking import ChunkingConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
+from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.config.types import GlobalConfigDict
+from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
 class SemanticAnalysisConfig(BaseConfig):
@@ -38,6 +42,13 @@ class GlobalConfig(BaseConfig):
         description="State management configuration",
     )
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
+    file_conversion: FileConversionConfig = Field(
+        default_factory=FileConversionConfig,
+        description="File conversion configuration",
+    )
+    qdrant: QdrantConfig | None = Field(
+        default=None, description="Qdrant configuration"
+    )
 
     def __init__(self, **data):
         """Initialize global configuration."""
@@ -51,7 +62,7 @@ class GlobalConfig(BaseConfig):
             }
         super().__init__(**data)
 
-    def to_dict(self) -> GlobalConfigDict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary."""
         return {
             "chunking": {
@@ -65,4 +76,14 @@ class GlobalConfig(BaseConfig):
             },
             "sources": self.sources.to_dict(),
             "state_management": self.state_management.to_dict(),
+            "file_conversion": {
+                "max_file_size": self.file_conversion.max_file_size,
+                "conversion_timeout": self.file_conversion.conversion_timeout,
+                "markitdown": {
+                    "enable_llm_descriptions": self.file_conversion.markitdown.enable_llm_descriptions,
+                    "llm_model": self.file_conversion.markitdown.llm_model,
+                    "llm_endpoint": self.file_conversion.markitdown.llm_endpoint,
+                },
+            },
+            "qdrant": self.qdrant.to_dict() if self.qdrant else None,
         }

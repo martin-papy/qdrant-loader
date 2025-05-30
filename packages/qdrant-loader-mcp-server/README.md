@@ -1,23 +1,42 @@
 # QDrant Loader MCP Server
 
-A Model Context Protocol (MCP) server that provides Retrieval-Augmented Generation (RAG) capabilities to AI development tools like Cursor, Windsurf, and other LLM applications. Part of the QDrant Loader monorepo ecosystem.
+A Model Context Protocol (MCP) server that provides advanced Retrieval-Augmented Generation (RAG) capabilities to AI development tools like Cursor, Windsurf, and other LLM applications. Part of the QDrant Loader monorepo ecosystem.
 
 ## 🚀 Features
 
 ### Core Capabilities
 
 - **MCP Protocol Implementation**: Full compliance with MCP 2024-11-05 specification
-- **Semantic Search**: Advanced vector search across multiple data sources
+- **Advanced Semantic Search**: Multi-layered search across multiple data sources with intelligent context understanding
+- **Hierarchy-Aware Search**: Deep understanding of Confluence page relationships and document structure
+- **Attachment-Aware Search**: Comprehensive file attachment support with parent document relationships
 - **Real-time Processing**: Streaming responses for large result sets
 - **Multi-source Integration**: Search across Git, Confluence, Jira, documentation, and local file sources
 - **Local File Support**: Index and search local files with configurable filtering and file type support
 - **Natural Language Queries**: Intelligent query processing and expansion
 
-### Advanced Features
+### Advanced Search Features
+
+- **Three Specialized Search Tools**:
+  - `search`: Standard semantic search with hierarchy and attachment context
+  - `hierarchy_search`: Confluence-specific search with hierarchy filtering and organization
+  - `attachment_search`: File-focused search with attachment filtering and parent document context
+
+- **Hierarchy Understanding**:
+  - Parent/child page relationships in Confluence
+  - Breadcrumb navigation paths and depth levels
+  - Hierarchical organization of search results
+  - Visual indicators for document structure (📍 paths, 🏗️ hierarchy, ⬆️ parents, ⬇️ children)
+
+- **File Attachment Intelligence**:
+  - Parent document relationships for all file attachments
+  - File metadata (size, type, author, upload date)
+  - Attachment filtering by type, size, author, and parent document
+  - Rich attachment context display (📎 files, 📋 details, 📄 parent docs)
 
 - **Hybrid Search**: Combines semantic and keyword search for optimal results
 - **Source Filtering**: Filter results by source type, project, or metadata
-- **Result Ranking**: Intelligent ranking based on relevance and recency
+- **Result Ranking**: Intelligent ranking based on relevance, recency, and relationships
 - **Caching**: Optimized caching for frequently accessed content
 - **Error Recovery**: Robust error handling and graceful degradation
 
@@ -156,6 +175,13 @@ Add to your Cursor MCP configuration (`.cursor/mcp.json`):
 }
 ```
 
+**Cursor AI Benefits with Enhanced Search:**
+
+- **Hierarchy-Aware Context**: Cursor's AI can understand document structure and navigate Confluence hierarchies intelligently
+- **File Attachment Discovery**: Find supporting materials, templates, and examples related to your code
+- **Contextual Documentation**: Get relevant documentation with parent/child relationships for better understanding
+- **Smart File Management**: Locate configuration files, specifications, and resources by type, size, or author
+
 **Important Configuration Notes:**
 
 - **`command`**: Use the full path to your virtual environment's `mcp-qdrant-loader` executable
@@ -199,6 +225,12 @@ echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search","a
 
 # Search local files
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search","arguments":{"query":"configuration files","source_types":["localfile"],"limit":5}}}' | mcp-qdrant-loader
+
+# Hierarchy search - find root pages with children
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"documentation","hierarchy_filter":{"root_only":true,"has_children":true},"organize_by_hierarchy":true,"limit":5}}}' | mcp-qdrant-loader
+
+# Attachment search - find PDF files larger than 1MB
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"requirements","attachment_filter":{"attachments_only":true,"file_type":"pdf","file_size_min":1048576},"limit":5}}}' | mcp-qdrant-loader
 
 # Note: The server communicates via JSON-RPC over stdio, not HTTP
 # For normal usage, integrate with Cursor or other MCP-compatible tools
@@ -259,13 +291,136 @@ async def main():
 asyncio.run(main())
 ```
 
+## 🎯 Advanced Search Examples
+
+### Hierarchy-Aware Search
+
+The MCP server provides sophisticated hierarchy understanding for Confluence documents, enabling navigation and discovery based on document structure.
+
+#### Find Documentation Structure
+
+```bash
+# Find all root documentation pages
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"documentation","hierarchy_filter":{"root_only":true},"organize_by_hierarchy":true}}}' | mcp-qdrant-loader
+
+# Find pages at specific depth levels
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"API","hierarchy_filter":{"depth":2},"limit":10}}}' | mcp-qdrant-loader
+
+# Find child pages of a specific parent
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"implementation","hierarchy_filter":{"parent_title":"Developer Guide"},"limit":10}}}' | mcp-qdrant-loader
+```
+
+#### Navigate Document Hierarchies
+
+```bash
+# Find pages that have children (section headers)
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"guide","hierarchy_filter":{"has_children":true},"organize_by_hierarchy":true}}}' | mcp-qdrant-loader
+
+# Find leaf pages (no children) for detailed content
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"tutorial","hierarchy_filter":{"has_children":false},"limit":15}}}' | mcp-qdrant-loader
+```
+
+### Attachment-Aware Search
+
+The MCP server understands file attachments and their relationships to parent documents, enabling comprehensive file discovery and management.
+
+#### Find Specific File Types
+
+```bash
+# Find all PDF documents
+echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"specification","attachment_filter":{"attachments_only":true,"file_type":"pdf"},"limit":10}}}' | mcp-qdrant-loader
+
+# Find Excel spreadsheets with data
+echo '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"data analysis","attachment_filter":{"attachments_only":true,"file_type":"xlsx"},"limit":5}}}' | mcp-qdrant-loader
+
+# Find image files (screenshots, diagrams)
+echo '{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"architecture","attachment_filter":{"attachments_only":true,"file_type":"png"},"limit":8}}}' | mcp-qdrant-loader
+```
+
+#### File Size and Author Filtering
+
+```bash
+# Find large files (>5MB) for cleanup
+echo '{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"","attachment_filter":{"attachments_only":true,"file_size_min":5242880},"limit":20}}}' | mcp-qdrant-loader
+
+# Find files by specific author
+echo '{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"project","attachment_filter":{"attachments_only":true,"author":"john.doe@company.com"},"limit":10}}}' | mcp-qdrant-loader
+
+# Find small files for quick reference
+echo '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"template","attachment_filter":{"attachments_only":true,"file_size_max":1048576},"limit":15}}}' | mcp-qdrant-loader
+```
+
+#### Parent Document Context
+
+```bash
+# Find attachments related to specific documentation
+echo '{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"requirements","attachment_filter":{"parent_document_title":"Project Planning"},"include_parent_context":true,"limit":10}}}' | mcp-qdrant-loader
+
+# Find all files attached to API documentation
+echo '{"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"","attachment_filter":{"attachments_only":true,"parent_document_title":"API Reference"},"limit":20}}}' | mcp-qdrant-loader
+```
+
+### Combined Search Strategies
+
+#### Content Discovery Workflow
+
+```bash
+# 1. Find main documentation sections
+echo '{"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"getting started","hierarchy_filter":{"depth":1,"has_children":true},"organize_by_hierarchy":true}}}' | mcp-qdrant-loader
+
+# 2. Find supporting materials (attachments)
+echo '{"jsonrpc":"2.0","id":15,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"getting started","attachment_filter":{"attachments_only":true},"include_parent_context":true}}}' | mcp-qdrant-loader
+
+# 3. Standard search for comprehensive results
+echo '{"jsonrpc":"2.0","id":16,"method":"tools/call","params":{"name":"search","arguments":{"query":"getting started guide","source_types":["confluence"],"limit":10}}}' | mcp-qdrant-loader
+```
+
+#### File Management and Audit
+
+```bash
+# Find all large PDF files for storage optimization
+echo '{"jsonrpc":"2.0","id":17,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"","attachment_filter":{"attachments_only":true,"file_type":"pdf","file_size_min":10485760},"limit":50}}}' | mcp-qdrant-loader
+
+# Find orphaned or poorly organized content
+echo '{"jsonrpc":"2.0","id":18,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"","hierarchy_filter":{"depth":0,"has_children":false},"limit":20}}}' | mcp-qdrant-loader
+
+# Find recent uploads by specific users
+echo '{"jsonrpc":"2.0","id":19,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"","attachment_filter":{"attachments_only":true,"author":"new.employee@company.com"},"limit":25}}}' | mcp-qdrant-loader
+```
+
+### Use Cases
+
+#### For Developers
+
+- **Code Documentation**: Find API references and their supporting files
+- **Architecture Diagrams**: Locate system architecture images and specifications
+- **Configuration Examples**: Find template files and configuration documentation
+
+#### For Project Managers
+
+- **Project Documentation**: Navigate project hierarchies and find all related materials
+- **Requirements Tracking**: Locate requirement documents and their attachments
+- **Status Reports**: Find project status files and supporting documentation
+
+#### For Content Managers
+
+- **Content Audit**: Identify large files, orphaned pages, and content gaps
+- **Documentation Structure**: Understand and optimize documentation hierarchies
+- **File Management**: Track file uploads, authors, and parent document relationships
+
+#### For End Users
+
+- **Quick Navigation**: Find specific sections within large documentation sets
+- **Resource Discovery**: Locate supporting materials like templates and examples
+- **Contextual Search**: Understand document relationships and navigation paths
+
 ## 🛠️ API Reference
 
 ### MCP Tools
 
 #### search
 
-Perform semantic search across data sources.
+Perform semantic search across data sources with hierarchy and attachment context.
 
 **Parameters:**
 
@@ -291,11 +446,116 @@ Perform semantic search across data sources.
         "author": "john.doe",
         "created_at": "2024-01-15T10:30:00Z",
         "updated_at": "2024-01-20T14:45:00Z"
-      }
+      },
+      "breadcrumb_text": "Developer Guide > API Documentation",
+      "depth": 2,
+      "children_count": 3,
+      "hierarchy_context": "Path: Developer Guide > API Documentation | Depth: 2 | Children: 3"
     }
   ],
   "total": 1,
   "query_time": 0.123
+}
+```
+
+#### hierarchy_search
+
+Search Confluence documents with hierarchy-aware filtering and organization.
+
+**Parameters:**
+
+- `query` (string): Natural language search query
+- `hierarchy_filter` (object, optional): Hierarchy-based filtering options
+  - `depth` (integer): Filter by specific hierarchy depth (0 = root pages)
+  - `parent_title` (string): Filter by parent page title
+  - `root_only` (boolean): Show only root pages (no parent)
+  - `has_children` (boolean): Filter by whether pages have children
+- `organize_by_hierarchy` (boolean, optional): Group results by hierarchy structure (default: false)
+- `limit` (integer, optional): Maximum number of results (default: 10)
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "hierarchy_search",
+    "arguments": {
+      "query": "API documentation",
+      "hierarchy_filter": {
+        "depth": 1,
+        "has_children": true
+      },
+      "organize_by_hierarchy": true,
+      "limit": 10
+    }
+  }
+}
+```
+
+#### attachment_search
+
+Search for file attachments and their parent documents across multiple sources.
+
+**Parameters:**
+
+- `query` (string): Natural language search query
+- `attachment_filter` (object, optional): Attachment-based filtering options
+  - `attachments_only` (boolean): Show only file attachments
+  - `parent_document_title` (string): Filter by parent document title
+  - `file_type` (string): Filter by file type (e.g., 'pdf', 'xlsx', 'png')
+  - `file_size_min` (integer): Minimum file size in bytes
+  - `file_size_max` (integer): Maximum file size in bytes
+  - `author` (string): Filter by attachment author
+- `include_parent_context` (boolean, optional): Include parent document information (default: true)
+- `limit` (integer, optional): Maximum number of results (default: 10)
+
+**Example Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "attachment_search",
+    "arguments": {
+      "query": "project requirements",
+      "attachment_filter": {
+        "attachments_only": true,
+        "file_type": "pdf",
+        "file_size_min": 1048576
+      },
+      "limit": 5
+    }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "id": "att_456",
+      "title": "Attachment: requirements.pdf",
+      "content": "# Project Requirements\n\nDetailed specifications...",
+      "source_type": "confluence",
+      "score": 0.92,
+      "is_attachment": true,
+      "parent_document_id": "doc_123",
+      "parent_document_title": "Project Planning",
+      "attachment_id": "att_456",
+      "original_filename": "requirements.pdf",
+      "file_size": 2048000,
+      "mime_type": "application/pdf",
+      "attachment_author": "project.manager@company.com",
+      "attachment_context": "File: requirements.pdf | Size: 2.0 MB | Type: application/pdf | Author: project.manager@company.com"
+    }
+  ]
 }
 ```
 
@@ -368,6 +628,11 @@ pytest --cov=qdrant_loader_mcp_server packages/qdrant-loader-mcp-server/tests/
 # Run specific test categories
 pytest packages/qdrant-loader-mcp-server/tests/unit/
 pytest packages/qdrant-loader-mcp-server/tests/integration/
+
+# Test specific search functionality
+pytest packages/qdrant-loader-mcp-server/tests/ -k "test_search"
+pytest packages/qdrant-loader-mcp-server/tests/ -k "test_hierarchy"
+pytest packages/qdrant-loader-mcp-server/tests/ -k "test_attachment"
 ```
 
 ### Development Server
@@ -454,6 +719,22 @@ context = client.get_context("How to implement caching?")
 print(context)
 ```
 
+## 📚 Documentation
+
+### Advanced Search Guides (v0.3.1)
+
+- [**Advanced Search Examples**](../../docs/mcp-server/SearchExamples.md) - Comprehensive examples of hierarchy and attachment search capabilities
+- [**Hierarchy Search Guide**](../../docs/mcp-server/SearchHierarchyExemple.md) - Confluence hierarchy navigation, filtering, and organization
+- [**Attachment Search Guide**](../../docs/mcp-server/AttachementSearchExemple.md) - File attachment discovery, filtering, and parent document relationships
+
+### Related Documentation
+
+- [QDrant Loader Documentation](../qdrant-loader/README.md) - Data ingestion and processing
+- [File Conversion Guide](../../docs/FileConversionGuide.md) - File conversion support for diverse formats
+- [Migration Guide](../../docs/MigrationGuide.md) - Upgrading to v0.3.1
+- [Features Overview](../../docs/Features.md) - Complete feature documentation
+- [Contributing Guide](../../docs/CONTRIBUTING.md) - Development guidelines
+
 ## 📋 Requirements
 
 - **Python**: 3.12 or higher
@@ -505,11 +786,22 @@ If the MCP search tool returns errors or no results:
    ```
 
 5. **Verify Collection**: Ensure your QDrant collection exists and contains data
-6. **Test Manually**: Test the server directly:
+6. **Test All Tools**: Test each search tool individually:
 
    ```bash
+   # Test standard search
    echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | /path/to/venv/bin/mcp-qdrant-loader
+   
+   # Test hierarchy search (requires Confluence data)
+   echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"hierarchy_search","arguments":{"query":"documentation","limit":1}}}' | /path/to/venv/bin/mcp-qdrant-loader
+   
+   # Test attachment search (requires attachment data)
+   echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"attachment_search","arguments":{"query":"file","limit":1}}}' | /path/to/venv/bin/mcp-qdrant-loader
    ```
+
+7. **Check Data Sources**: Verify your collection contains the expected data types:
+   - For hierarchy search: Confluence pages with parent/child relationships
+   - For attachment search: Documents with file attachments and metadata
 
 #### Authentication Errors
 

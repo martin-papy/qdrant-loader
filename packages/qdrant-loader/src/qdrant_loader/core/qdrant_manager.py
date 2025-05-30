@@ -36,7 +36,7 @@ class QdrantManager:
         """
         self.settings = settings or get_settings()
         self.client = None
-        self.collection_name = self.settings.QDRANT_COLLECTION_NAME
+        self.collection_name = self.settings.qdrant_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
         self.batch_size = get_global_config().embedding.batch_size
         self.connect()
@@ -46,7 +46,7 @@ class QdrantManager:
         Check if a valid API key is present.
         Returns True if the API key is a non-empty string that is not 'None' or 'null'.
         """
-        api_key = self.settings.QDRANT_API_KEY
+        api_key = self.settings.qdrant_api_key
         if not api_key:  # Catches None, empty string, etc.
             return False
         return api_key.lower() not in ["none", "null"]
@@ -55,9 +55,9 @@ class QdrantManager:
         """Establish connection to qDrant server."""
         try:
             # Ensure HTTPS is used when API key is present, but only for non-local URLs
-            url = self.settings.QDRANT_URL
+            url = self.settings.qdrant_url
             api_key = (
-                self.settings.QDRANT_API_KEY if self._is_api_key_present() else None
+                self.settings.qdrant_api_key if self._is_api_key_present() else None
             )
 
             if api_key:
@@ -75,7 +75,7 @@ class QdrantManager:
                     api_key=api_key,
                     timeout=60,  # 60 seconds timeout
                 )
-                self.logger.info("Successfully connected to qDrant")
+                self.logger.debug("Successfully connected to qDrant")
             except Exception as e:
                 raise QdrantConnectionError(
                     "Failed to connect to qDrant: Connection error",

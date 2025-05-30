@@ -4,11 +4,17 @@
 
 # Global configuration for all sources
 global:
+  # Qdrant vector database configuration
+  qdrant:
+    url: "http://localhost:6333"
+    api_key: null  # Optional API key for Qdrant Cloud
+    collection_name: "documents"
+
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
-    chunk_size: 500        # Maximum number of characters per chunk
-    chunk_overlap: 50      # Number of characters to overlap between chunks
+    chunk_size: 1500       # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
+    chunk_overlap: 200      # Number of characters to overlap between chunks
   
   # Default embedding configuration
   # Controls how text is converted to vectors
@@ -18,6 +24,13 @@ global:
     batch_size: 100                  # Number of chunks to process in one batch
     vector_size: 384                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
     tokenizer: "none"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    # Token limits (adjust based on your embedding model):
+    # - OpenAI text-embedding-3-small/large: 8192 tokens max
+    # - OpenAI text-embedding-ada-002: 8192 tokens max  
+    # - BAAI/bge-small-en-v1.5: 512 tokens max
+    # - sentence-transformers models: varies (typically 256-512)
+    max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
+    max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
 
   # State management configuration
   # Controls how document ingestion state is tracked
@@ -27,6 +40,24 @@ global:
     connection_pool:                   # Connection pool settings
       size: 5                         # Maximum number of connections
       timeout: 30                  # Connection timeout in seconds
+
+  # File conversion configuration
+  # Controls how non-text files (PDF, Office docs, etc.) are converted to text
+  file_conversion:
+    # Maximum file size for conversion (in bytes)
+    max_file_size: 52428800  # 50MB
+    
+    # Timeout for conversion operations (in seconds)
+    conversion_timeout: 300  # 5 minutes
+    
+    # MarkItDown specific settings
+    markitdown:
+      # Enable LLM integration for image descriptions
+      enable_llm_descriptions: false
+      # LLM model for image descriptions (when enabled)
+      llm_model: "gpt-4o"
+      # LLM endpoint (when enabled)
+      llm_endpoint: "https://api.openai.com/v1"
 
 # Source-specific configurations
 # Each source type has its own configuration section
@@ -74,6 +105,12 @@ sources:
         # Code blocks to preserve (will be kept in the content)
         code_blocks: "pre code"
 
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
+
   # Git repository sources
   git:
     # Example configuration for a public repository
@@ -102,6 +139,10 @@ sources:
       depth: 1                                  # Maximum directory depth to process
       token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
 
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+
     # Example configuration for a private GitHub repository
     private_github_repo:
       base_url: "${REPO_URL}"                        # Use environment variable
@@ -111,6 +152,10 @@ sources:
         - "docs/**"
       file_types:
         - "*.md"
+
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
 
   # Confluence documentation sources
   confluence:
@@ -127,6 +172,12 @@ sources:
       token: "${CONFLUENCE_TOKEN}"              # Confluence API token (from id.atlassian.com)
       email: "${CONFLUENCE_EMAIL}"              # Confluence user email
 
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
+
     # Example configuration for Confluence Data Center with Personal Access Token
     my-datacenter-space-pat:
       base_url: "https://confluence.mycompany.com"  # Confluence Data Center URL
@@ -138,6 +189,12 @@ sources:
       include_labels: []                        # Only process content with these labels
       exclude_labels: []                        # Skip content with these labels
       token: "${CONFLUENCE_PAT}"                # Personal Access Token (generated in Confluence)
+
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
 
 
 
@@ -155,6 +212,12 @@ sources:
       token: "${JIRA_TOKEN}"                    # Jira API token (from id.atlassian.com)
       email: "${JIRA_EMAIL}"                    # Jira user email
 
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
+
     # Example configuration for Jira Data Center with Personal Access Token
     my-datacenter-project:
       base_url: "https://jira.mycompany.com"    # Jira Data Center URL
@@ -165,6 +228,12 @@ sources:
       process_attachments: true                 # Whether to process issue attachments
       track_last_sync: true                    # Track last sync time for incremental updates
       token: "${JIRA_PAT}"                      # Personal Access Token (generated in Jira)
+
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true
+      # Download and process attachments
+      download_attachments: true
 
   # Local file sources
   localfile:
@@ -184,3 +253,7 @@ sources:
         - "*.json"
         - "*.yaml"
       max_file_size: 1048576  # Maximum file size in bytes (1MB)
+
+      # File conversion settings for this source
+      # Enable file conversion for this connector
+      enable_file_conversion: true

@@ -50,14 +50,24 @@ async def test_shutdown():
     mock_task2 = MagicMock()
     mock_task2.cancel = MagicMock()
 
+    # Create an async function that returns None
+    async def mock_gather(*args, **kwargs):
+        return None
+
     with patch("asyncio.all_tasks", return_value=[mock_task1, mock_task2]):
         with patch("asyncio.current_task", return_value=None):
-            with patch("asyncio.gather", return_value=None):
+            # Mock asyncio.gather with a proper async function
+            with patch("asyncio.gather", side_effect=mock_gather) as mock_gather_patch:
                 await shutdown(mock_loop)
 
                 # Verify tasks were cancelled
                 mock_task1.cancel.assert_called_once()
                 mock_task2.cancel.assert_called_once()
+
+                # Verify gather was called with the tasks
+                mock_gather_patch.assert_called_once_with(
+                    mock_task1, mock_task2, return_exceptions=True
+                )
 
                 # Verify loop was stopped
                 mock_loop.stop.assert_called_once()
@@ -100,10 +110,14 @@ async def test_handle_stdio_initialization_error():
 
     config = Config()
 
+    # Create an async function that raises an exception
+    async def mock_initialize_error():
+        raise Exception("Test error")
+
     # Mock SearchEngine to raise an error during initialization
     with patch("qdrant_loader_mcp_server.cli.SearchEngine") as mock_search_engine_class:
         mock_search_engine = MagicMock()
-        mock_search_engine.initialize.side_effect = Exception("Test error")
+        mock_search_engine.initialize = AsyncMock(side_effect=mock_initialize_error)
         mock_search_engine_class.return_value = mock_search_engine
 
         with pytest.raises(RuntimeError, match="Failed to initialize search engine"):

@@ -13,6 +13,11 @@ def test_config_path(tmp_path: Path) -> Path:
     """Create a temporary test configuration file."""
     config_data = {
         "global": {
+            "qdrant": {
+                "url": "http://localhost:6333",
+                "api_key": None,
+                "collection_name": "test_collection",
+            },
             "chunking": {
                 "chunk_size": 1000,
                 "chunk_overlap": 200,
@@ -48,8 +53,6 @@ def test_config_path(tmp_path: Path) -> Path:
 def test_env_path(tmp_path: Path) -> Path:
     """Create a temporary test environment file."""
     env_data = """
-    QDRANT_URL=http://localhost:6333
-    QDRANT_COLLECTION_NAME=test_collection
     OPENAI_API_KEY=test_key
     STATE_DB_PATH=./data/state.db
     """
@@ -73,8 +76,8 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
     settings = get_settings()
 
     # Verify basic settings
-    assert settings.QDRANT_URL == "http://localhost:6333"
-    assert settings.QDRANT_COLLECTION_NAME == "test_collection"
+    assert settings.qdrant_url == "http://localhost:6333"
+    assert settings.qdrant_collection_name == "test_collection"
     assert settings.OPENAI_API_KEY == "test_key"
     assert settings.STATE_DB_PATH == "./data/state.db"
 
@@ -99,6 +102,11 @@ def test_missing_required_fields(test_config_path: Path):
     # Create config with missing required fields
     config_data = {
         "global": {
+            "qdrant": {
+                "url": "http://localhost:6333",
+                "api_key": None,
+                "collection_name": "test_collection",
+            },
             "chunking": {
                 "chunk_size": 1000,
                 "chunk_overlap": 200,
@@ -127,8 +135,6 @@ def test_missing_required_fields(test_config_path: Path):
         yaml.dump(config_data, f)
 
     # Clear environment variables
-    os.environ.pop("QDRANT_URL", None)
-    os.environ.pop("QDRANT_COLLECTION_NAME", None)
     os.environ.pop("OPENAI_API_KEY", None)
     os.environ.pop("STATE_DB_PATH", None)
 

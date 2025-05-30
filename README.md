@@ -12,7 +12,8 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
 **Features:**
 
-- Multiple data source connectors (Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, Public Docs)
+- Multiple data source connectors (Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, Public Docs, Local Files)
+- **🆕 File conversion support** - Process PDF, Office docs, images, and more with automatic conversion to markdown
 - Intelligent document processing and chunking
 - Vector embeddings with OpenAI
 - Incremental updates and change detection
@@ -25,9 +26,20 @@ A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor a
 **Features:**
 
 - MCP protocol implementation for LLM integration
+- **🆕 Hierarchy-Aware Search** - Enhanced Confluence search with page hierarchy understanding
+- **🆕 Attachment-Aware Search** - Comprehensive file attachment support and parent document relationships
+- **🆕 Advanced Search Tools** - Three specialized search tools for different use cases
 - Semantic search capabilities
 - Real-time query processing
 - Integration with Cursor IDE
+
+**🆕 Recent Enhancements (v0.3.1):**
+
+- **Hierarchy-Aware Search**: Enhanced Confluence search with page hierarchy understanding, breadcrumb paths, and depth levels
+- **Attachment-Aware Search**: Comprehensive file attachment support with parent document relationships and filtering capabilities
+- **Three Specialized Search Tools**: `search`, `hierarchy_search`, and `attachment_search` for different use cases
+- **Enhanced Search Results**: Rich visual indicators for navigation context and file metadata
+- **Advanced Filtering**: Support for filtering by hierarchy depth, parent pages, file types, sizes, and authors
 
 ## 🚀 Quick Start
 
@@ -151,15 +163,27 @@ mypy packages/
 
 ## 📚 Documentation
 
+### Core Documentation
+
 - [QDrant Loader Documentation](./packages/qdrant-loader/README.md)
 - [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
+- [**🆕 File Conversion Guide**](./docs/FileConversionGuide.md)
+- [**🆕 Migration Guide (v0.3.1)**](./docs/MigrationGuide.md)
+
+### MCP Server Advanced Features (v0.3.1)
+
+- [**🆕 Advanced Search Examples**](./docs/mcp-server/SearchExamples.md) - Comprehensive examples of hierarchy and attachment search capabilities
+- [**🆕 Hierarchy Search Guide**](./docs/mcp-server/SearchHierarchyExemple.md) - Confluence hierarchy navigation, filtering, and organization
+- [**🆕 Attachment Search Guide**](./docs/mcp-server/AttachementSearchExemple.md) - File attachment discovery, filtering, and parent document relationships
+
+### General Documentation
+
 - [Release Management Guide](./docs/RELEASE.md)
 - [Features Overview](./docs/Features.md)
 - [Confluence Data Center Support](./docs/ConfluenceDataCenterSupport.md)
 - [JIRA Data Center Support](./docs/JiraDataCenterSupport.md)
 - [Client Usage Guide](./docs/ClientUsage.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
-- [Product Requirements](./docs/PRD.md)
 
 ## 🔧 Configuration
 
@@ -222,6 +246,7 @@ The script performs comprehensive safety checks and ensures both packages are re
 ### QDrant Loader
 
 - ✅ Multiple data source connectors
+- ✅ **🆕 File conversion support (PDF, Office docs, images, etc.)**
 - ✅ Intelligent document processing
 - ✅ Vector embeddings with OpenAI
 - ✅ Incremental updates
@@ -230,6 +255,9 @@ The script performs comprehensive safety checks and ensures both packages are re
 ### MCP Server
 
 - ✅ MCP protocol implementation
+- ✅ **🆕 Hierarchy-aware search** - Confluence page relationships and structure understanding
+- ✅ **🆕 Attachment-aware search** - File attachment support with parent document relationships
+- ✅ **🆕 Advanced search tools** - Three specialized search tools (`search`, `hierarchy_search`, `attachment_search`)
 - ✅ Semantic search capabilities
 - ✅ Real-time query processing
 - ✅ Cursor IDE integration

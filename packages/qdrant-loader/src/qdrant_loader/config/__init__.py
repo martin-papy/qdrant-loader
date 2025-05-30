@@ -111,11 +111,6 @@ def initialize_config(
 class Settings(BaseSettings):
     """Main configuration class combining global and source-specific settings."""
 
-    # qDrant Configuration
-    QDRANT_URL: str = Field(..., description="qDrant server URL")
-    QDRANT_API_KEY: str | None = Field(None, description="qDrant API key")
-    QDRANT_COLLECTION_NAME: str = Field(..., description="qDrant collection name")
-
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
 
@@ -152,9 +147,7 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="allow"
     )
 
-    @field_validator(
-        "QDRANT_URL", "QDRANT_COLLECTION_NAME", "OPENAI_API_KEY", "STATE_DB_PATH"
-    )
+    @field_validator("OPENAI_API_KEY", "STATE_DB_PATH")
     @classmethod
     def validate_required_strings(cls, v: str) -> str:
         """Validate that required string fields are not empty."""
@@ -166,6 +159,10 @@ class Settings(BaseSettings):
     def validate_source_configs(self) -> "Settings":
         """Validate that required environment variables are set for configured sources."""
         logger.debug("Validating source configurations")
+
+        # Validate that qdrant configuration is present in global config
+        if not self.global_config.qdrant:
+            raise ValueError("Qdrant configuration is required in global config")
 
         # Validate Confluence settings if Confluence sources are configured
         if self.sources_config.confluence:
@@ -245,6 +242,27 @@ class Settings(BaseSettings):
         logger.debug("Source configuration validation successful")
         return self
 
+    @property
+    def qdrant_url(self) -> str:
+        """Get the Qdrant URL from global configuration."""
+        if not self.global_config.qdrant:
+            raise ValueError("Qdrant configuration is not available")
+        return self.global_config.qdrant.url
+
+    @property
+    def qdrant_api_key(self) -> str | None:
+        """Get the Qdrant API key from global configuration."""
+        if not self.global_config.qdrant:
+            return None
+        return self.global_config.qdrant.api_key
+
+    @property
+    def qdrant_collection_name(self) -> str:
+        """Get the Qdrant collection name from global configuration."""
+        if not self.global_config.qdrant:
+            raise ValueError("Qdrant configuration is not available")
+        return self.global_config.qdrant.collection_name
+
     @staticmethod
     def _substitute_env_vars(data: Any) -> Any:
         """Recursively substitute environment variables in configuration data.
@@ -322,8 +340,10 @@ class Settings(BaseSettings):
             config_data = cls._substitute_env_vars(config_data)
 
             # Step 4: Create configuration instances with processed data
+            global_config_data = config_data.get("global", {})
+
             global_config = GlobalConfig(
-                **config_data.get("global", {}), skip_validation=skip_validation
+                **global_config_data, skip_validation=skip_validation
             )
 
             # Process each source type
@@ -352,9 +372,6 @@ class Settings(BaseSettings):
                 settings_data = {
                     "global_config": global_config,
                     "sources_config": sources_config,
-                    "QDRANT_URL": env_vars.get("QDRANT_URL"),
-                    "QDRANT_API_KEY": env_vars.get("QDRANT_API_KEY"),
-                    "QDRANT_COLLECTION_NAME": env_vars.get("QDRANT_COLLECTION_NAME"),
                     "OPENAI_API_KEY": env_vars.get("OPENAI_API_KEY"),
                     "STATE_DB_PATH": env_vars.get("STATE_DB_PATH"),
                     "REPO_TOKEN": env_vars.get("REPO_TOKEN"),
@@ -374,9 +391,6 @@ class Settings(BaseSettings):
                 settings_data = {
                     "global_config": global_config,
                     "sources_config": sources_config,
-                    "QDRANT_URL": os.getenv("QDRANT_URL"),
-                    "QDRANT_API_KEY": os.getenv("QDRANT_API_KEY"),
-                    "QDRANT_COLLECTION_NAME": os.getenv("QDRANT_COLLECTION_NAME"),
                     "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
                     "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
                     "REPO_TOKEN": os.getenv("REPO_TOKEN"),

@@ -102,7 +102,7 @@ class StateManager:
                 await conn.run_sync(Base.metadata.create_all)
 
             self._initialized = True
-            self.logger.info("StateManager initialized successfully")
+            self.logger.debug("StateManager initialized successfully")
         except sqlite3.OperationalError as e:
             # Handle specific SQLite errors
             if "readonly database" in str(e).lower():
@@ -401,6 +401,17 @@ class StateManager:
 
                 now = datetime.now(UTC)
 
+                # Extract file conversion metadata from document
+                metadata = document.metadata
+                conversion_method = metadata.get("conversion_method")
+                is_converted = conversion_method is not None
+                conversion_failed = metadata.get("conversion_failed", False)
+
+                # Extract attachment metadata
+                is_attachment = metadata.get("is_attachment", False)
+                parent_document_id = metadata.get("parent_document_id")
+                attachment_id = metadata.get("attachment_id")
+
                 if document_state_record:
                     # Update existing record
                     self.logger.debug(
@@ -410,11 +421,61 @@ class StateManager:
                     document_state_record.content_hash = document.content_hash  # type: ignore
                     document_state_record.is_deleted = False  # type: ignore
                     document_state_record.updated_at = now  # type: ignore
+
+                    # Update file conversion metadata
+                    document_state_record.is_converted = is_converted  # type: ignore
+                    document_state_record.conversion_method = conversion_method  # type: ignore
+                    document_state_record.original_file_type = metadata.get("original_file_type")  # type: ignore
+                    document_state_record.original_filename = metadata.get("original_filename")  # type: ignore
+                    document_state_record.file_size = metadata.get("file_size")  # type: ignore
+                    document_state_record.conversion_failed = conversion_failed  # type: ignore
+                    document_state_record.conversion_error = metadata.get("conversion_error")  # type: ignore
+                    document_state_record.conversion_time = metadata.get("conversion_time")  # type: ignore
+
+                    # Update attachment metadata
+                    document_state_record.is_attachment = is_attachment  # type: ignore
+                    document_state_record.parent_document_id = parent_document_id  # type: ignore
+                    document_state_record.attachment_id = attachment_id  # type: ignore
+                    document_state_record.attachment_filename = metadata.get("attachment_filename")  # type: ignore
+                    document_state_record.attachment_mime_type = metadata.get("attachment_mime_type")  # type: ignore
+                    document_state_record.attachment_download_url = metadata.get("attachment_download_url")  # type: ignore
+                    document_state_record.attachment_author = metadata.get("attachment_author")  # type: ignore
+
+                    # Handle attachment creation date
+                    attachment_created_str = metadata.get("attachment_created_at")
+                    if attachment_created_str:
+                        try:
+                            if isinstance(attachment_created_str, str):
+                                document_state_record.attachment_created_at = datetime.fromisoformat(attachment_created_str.replace("Z", "+00:00"))  # type: ignore
+                            elif isinstance(attachment_created_str, datetime):
+                                document_state_record.attachment_created_at = attachment_created_str  # type: ignore
+                        except (ValueError, TypeError) as e:
+                            self.logger.warning(
+                                f"Failed to parse attachment_created_at: {e}"
+                            )
+                            document_state_record.attachment_created_at = None  # type: ignore
                 else:
                     # Create new record
                     self.logger.debug(
                         f"Creating new document state for {document.source_type}:{document.source}:{document.id}"
                     )
+
+                    # Handle attachment creation date for new records
+                    attachment_created_at = None
+                    attachment_created_str = metadata.get("attachment_created_at")
+                    if attachment_created_str:
+                        try:
+                            if isinstance(attachment_created_str, str):
+                                attachment_created_at = datetime.fromisoformat(
+                                    attachment_created_str.replace("Z", "+00:00")
+                                )
+                            elif isinstance(attachment_created_str, datetime):
+                                attachment_created_at = attachment_created_str
+                        except (ValueError, TypeError) as e:
+                            self.logger.warning(
+                                f"Failed to parse attachment_created_at: {e}"
+                            )
+
                     document_state_record = DocumentStateRecord(
                         document_id=document.id,
                         source_type=document.source_type,
@@ -425,6 +486,24 @@ class StateManager:
                         is_deleted=False,
                         created_at=now,
                         updated_at=now,
+                        # File conversion metadata
+                        is_converted=is_converted,
+                        conversion_method=conversion_method,
+                        original_file_type=metadata.get("original_file_type"),
+                        original_filename=metadata.get("original_filename"),
+                        file_size=metadata.get("file_size"),
+                        conversion_failed=conversion_failed,
+                        conversion_error=metadata.get("conversion_error"),
+                        conversion_time=metadata.get("conversion_time"),
+                        # Attachment metadata
+                        is_attachment=is_attachment,
+                        parent_document_id=parent_document_id,
+                        attachment_id=attachment_id,
+                        attachment_filename=metadata.get("attachment_filename"),
+                        attachment_mime_type=metadata.get("attachment_mime_type"),
+                        attachment_download_url=metadata.get("attachment_download_url"),
+                        attachment_author=metadata.get("attachment_author"),
+                        attachment_created_at=attachment_created_at,
                     )
                     session.add(document_state_record)
 
@@ -442,6 +521,9 @@ class StateManager:
                         "document_id": document_state_record.document_id,
                         "content_hash": document_state_record.content_hash,
                         "updated_at": document_state_record.updated_at,
+                        "is_converted": document_state_record.is_converted,
+                        "is_attachment": document_state_record.is_attachment,
+                        "conversion_method": document_state_record.conversion_method,
                     },
                 )
                 return document_state_record
@@ -453,6 +535,182 @@ class StateManager:
                     "error": str(e),
                     "error_type": type(e).__name__,
                 },
+            )
+            raise
+
+    async def update_conversion_metrics(
+        self,
+        source_type: str,
+        source: str,
+        converted_files_count: int = 0,
+        conversion_failures_count: int = 0,
+        attachments_processed_count: int = 0,
+        total_conversion_time: float = 0.0,
+    ) -> None:
+        """Update file conversion metrics for a source."""
+        self.logger.debug(f"Updating conversion metrics for {source_type}:{source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                result = await session.execute(
+                    select(IngestionHistory).filter_by(
+                        source_type=source_type, source=source
+                    )
+                )
+                ingestion = result.scalar_one_or_none()
+
+                if ingestion:
+                    # Update existing metrics
+                    ingestion.converted_files_count = (ingestion.converted_files_count or 0) + converted_files_count  # type: ignore
+                    ingestion.conversion_failures_count = (ingestion.conversion_failures_count or 0) + conversion_failures_count  # type: ignore
+                    ingestion.attachments_processed_count = (ingestion.attachments_processed_count or 0) + attachments_processed_count  # type: ignore
+                    ingestion.total_conversion_time = (ingestion.total_conversion_time or 0.0) + total_conversion_time  # type: ignore
+                    ingestion.updated_at = datetime.now(UTC)  # type: ignore
+                else:
+                    # Create new record with conversion metrics
+                    now = datetime.now(UTC)
+                    ingestion = IngestionHistory(
+                        source_type=source_type,
+                        source=source,
+                        last_successful_ingestion=now,
+                        status="SUCCESS",
+                        document_count=0,
+                        converted_files_count=converted_files_count,
+                        conversion_failures_count=conversion_failures_count,
+                        attachments_processed_count=attachments_processed_count,
+                        total_conversion_time=total_conversion_time,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    session.add(ingestion)
+
+                await session.commit()
+                self.logger.debug(
+                    "Conversion metrics updated",
+                    extra={
+                        "source_type": source_type,
+                        "source": source,
+                        "converted_files": ingestion.converted_files_count,
+                        "conversion_failures": ingestion.conversion_failures_count,
+                        "attachments_processed": ingestion.attachments_processed_count,
+                        "total_conversion_time": ingestion.total_conversion_time,
+                    },
+                )
+        except Exception as e:
+            self.logger.error(
+                f"Error updating conversion metrics for {source_type}:{source}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
+    async def get_conversion_metrics(
+        self, source_type: str, source: str
+    ) -> dict[str, int | float]:
+        """Get file conversion metrics for a source."""
+        self.logger.debug(f"Getting conversion metrics for {source_type}:{source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                result = await session.execute(
+                    select(IngestionHistory).filter_by(
+                        source_type=source_type, source=source
+                    )
+                )
+                ingestion = result.scalar_one_or_none()
+
+                if ingestion:
+                    # Access the actual values from the SQLAlchemy model instance
+                    converted_files: int | None = ingestion.converted_files_count  # type: ignore
+                    conversion_failures: int | None = ingestion.conversion_failures_count  # type: ignore
+                    attachments_processed: int | None = ingestion.attachments_processed_count  # type: ignore
+                    total_time: float | None = ingestion.total_conversion_time  # type: ignore
+
+                    return {
+                        "converted_files_count": (
+                            converted_files if converted_files is not None else 0
+                        ),
+                        "conversion_failures_count": (
+                            conversion_failures
+                            if conversion_failures is not None
+                            else 0
+                        ),
+                        "attachments_processed_count": (
+                            attachments_processed
+                            if attachments_processed is not None
+                            else 0
+                        ),
+                        "total_conversion_time": (
+                            total_time if total_time is not None else 0.0
+                        ),
+                    }
+                else:
+                    return {
+                        "converted_files_count": 0,
+                        "conversion_failures_count": 0,
+                        "attachments_processed_count": 0,
+                        "total_conversion_time": 0.0,
+                    }
+        except Exception as e:
+            self.logger.error(
+                f"Error getting conversion metrics for {source_type}:{source}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
+    async def get_attachment_documents(
+        self, parent_document_id: str
+    ) -> list[DocumentStateRecord]:
+        """Get all attachment documents for a parent document."""
+        self.logger.debug(
+            f"Getting attachment documents for parent {parent_document_id}"
+        )
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                result = await session.execute(
+                    select(DocumentStateRecord).filter(
+                        DocumentStateRecord.parent_document_id == parent_document_id,
+                        DocumentStateRecord.is_attachment == True,
+                        DocumentStateRecord.is_deleted == False,
+                    )
+                )
+                attachments = list(result.scalars().all())
+                self.logger.debug(
+                    f"Found {len(attachments)} attachments for parent {parent_document_id}"
+                )
+                return attachments
+        except Exception as e:
+            self.logger.error(
+                f"Error getting attachment documents for {parent_document_id}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
+    async def get_converted_documents(
+        self, source_type: str, source: str, conversion_method: str | None = None
+    ) -> list[DocumentStateRecord]:
+        """Get all converted documents for a source, optionally filtered by conversion method."""
+        self.logger.debug(f"Getting converted documents for {source_type}:{source}")
+        try:
+            async with self._session_factory() as session:  # type: ignore
+                query = select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == source_type,
+                    DocumentStateRecord.source == source,
+                    DocumentStateRecord.is_converted == True,
+                    DocumentStateRecord.is_deleted == False,
+                )
+                if conversion_method:
+                    query = query.filter(
+                        DocumentStateRecord.conversion_method == conversion_method
+                    )
+
+                result = await session.execute(query)
+                documents = list(result.scalars().all())
+                self.logger.debug(
+                    f"Found {len(documents)} converted documents for {source_type}:{source}"
+                )
+                return documents
+        except Exception as e:
+            self.logger.error(
+                f"Error getting converted documents for {source_type}:{source}: {str(e)}",
+                exc_info=True,
             )
             raise
 

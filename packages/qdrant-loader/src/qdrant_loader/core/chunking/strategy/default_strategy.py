@@ -1,129 +1,212 @@
-"""Default token-based chunking strategy."""
+"""Default chunking strategy for text documents."""
 
-from typing import TYPE_CHECKING
+import re
+from typing import Any
 
 import structlog
 
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.document import Document
-
-if TYPE_CHECKING:
-    pass
+from qdrant_loader.config import Settings
 
 logger = structlog.get_logger(__name__)
 
-# Performance constants to prevent timeouts
-MAX_DOCUMENT_SIZE_FOR_NLP = 50_000  # 50KB limit for NLP processing
-MAX_CHUNK_SIZE_FOR_NLP = 10_000  # 10KB limit for chunk NLP processing
-MAX_CHUNKS_TO_PROCESS = 100  # Limit total chunks to prevent timeouts
+# Maximum number of chunks to process to prevent performance issues
+MAX_CHUNKS_TO_PROCESS = 100
 
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
-    """Default token-based chunking strategy.
+    """Default text chunking strategy using simple text splitting."""
 
-    This strategy splits text into chunks based on token count, with configurable
-    chunk size and overlap. It uses tiktoken for tokenization when available,
-    falling back to character-based splitting when no tokenizer is configured.
-    """
+    def __init__(self, settings: Settings):
+        super().__init__(settings)
+        self.progress_tracker = ChunkingProgressTracker(logger)
 
     def _split_text(self, text: str) -> list[str]:
-        """Split text into chunks with overlap."""
-        # Handle empty text case
-        if not text:
+        """Split text into chunks using sentence boundaries and size limits.
+
+        Args:
+            text: The text to split
+
+        Returns:
+            List of text chunks
+        """
+        if not text.strip():
             return [""]
 
+        # Use tokenizer-based chunking if available
+        if self.encoding is not None:
+            return self._split_text_with_tokenizer(text)
+        else:
+            return self._split_text_without_tokenizer(text)
+
+    def _split_text_with_tokenizer(self, text: str) -> list[str]:
+        """Split text using tokenizer for accurate token counting.
+
+        Args:
+            text: The text to split
+
+        Returns:
+            List of text chunks
+        """
         if self.encoding is None:
-            # If no tokenizer is available, split by characters
-            if len(text) <= self.chunk_size:
-                return [text]
+            # Fallback to character-based chunking
+            return self._split_text_without_tokenizer(text)
 
-            chunks = []
-            start_idx = 0
-
-            while start_idx < len(text):
-                end_idx = min(start_idx + self.chunk_size, len(text))
-                chunk = text[start_idx:end_idx]
-                chunks.append(chunk)
-
-                # Move start index forward, accounting for overlap
-                new_start_idx = end_idx - self.chunk_overlap
-                if new_start_idx <= start_idx:
-                    new_start_idx = start_idx + 1
-                start_idx = new_start_idx
-
-                if start_idx >= len(text):
-                    break
-
-                # Safety check to prevent too many chunks
-                if len(chunks) >= MAX_CHUNKS_TO_PROCESS:
-                    logger.warning(
-                        f"Reached maximum chunk limit ({MAX_CHUNKS_TO_PROCESS}), truncating"
-                    )
-                    break
-
-            return chunks
-
-        # Use tokenizer if available
         tokens = self.encoding.encode(text)
 
-        # If text is smaller than chunk size, return it as a single chunk
         if len(tokens) <= self.chunk_size:
             return [text]
 
         chunks = []
-        start_idx = 0
+        start = 0
 
-        logger.debug(
-            "Starting text chunking",
-            total_tokens=len(tokens),
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-        )
+        while start < len(tokens) and len(chunks) < MAX_CHUNKS_TO_PROCESS:
+            # Calculate end position considering overlap
+            end = start + self.chunk_size
 
-        while start_idx < len(tokens):
-            end_idx = min(start_idx + self.chunk_size, len(tokens))
-            chunk_tokens = tokens[start_idx:end_idx]
+            # If this is not the first chunk, include overlap
+            if start > 0:
+                overlap_start = max(0, start - self.chunk_overlap)
+                chunk_tokens = tokens[overlap_start:end]
+            else:
+                chunk_tokens = tokens[start:end]
+
+            # Decode tokens back to text
             chunk_text = self.encoding.decode(chunk_tokens)
             chunks.append(chunk_text)
 
-            logger.debug(
-                "Created chunk",
-                chunk_index=len(chunks) - 1,
-                start_idx=start_idx,
-                end_idx=end_idx,
-                chunk_length=len(chunk_tokens),
-                chunk_text_length=len(chunk_text),
+            # Move start position forward, accounting for overlap
+            start = end - self.chunk_overlap
+
+            # Prevent infinite loop if overlap is too large
+            if start <= 0 or self.chunk_overlap >= self.chunk_size:
+                start = end
+
+        # Log warning if we hit the chunk limit
+        if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start < len(tokens):
+            logger.warning(
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Document may be truncated."
             )
-
-            # Move start index forward, accounting for overlap
-            # Ensure we make progress by moving at least one token forward
-            new_start_idx = end_idx - self.chunk_overlap
-            if new_start_idx <= start_idx:
-                new_start_idx = start_idx + 1
-            start_idx = new_start_idx
-
-            logger.debug(
-                "Updated start index",
-                new_start_idx=start_idx,
-                remaining_tokens=len(tokens) - start_idx,
-            )
-
-            # Safety check to prevent infinite loop
-            if start_idx >= len(tokens):
-                break
-
-            # Safety check to prevent too many chunks
-            if len(chunks) >= MAX_CHUNKS_TO_PROCESS:
-                logger.warning(
-                    f"Reached maximum chunk limit ({MAX_CHUNKS_TO_PROCESS}), truncating"
-                )
-                break
-
-        logger.debug(
-            "Finished chunking", total_chunks=len(chunks), total_tokens=len(tokens)
-        )
 
         return chunks
+
+    def _split_text_without_tokenizer(self, text: str) -> list[str]:
+        """Split text without tokenizer using character-based chunking.
+
+        Args:
+            text: The text to split
+
+        Returns:
+            List of text chunks
+        """
+        if len(text) <= self.chunk_size:
+            return [text]
+
+        # First, try to split by paragraphs (double newlines)
+        paragraphs = re.split(r"\n\s*\n", text.strip())
+        chunks = []
+        current_chunk = ""
+
+        for paragraph in paragraphs:
+            paragraph = paragraph.strip()
+            if not paragraph:
+                continue
+
+            # If adding this paragraph would exceed chunk size, finalize current chunk
+            if (
+                current_chunk
+                and len(current_chunk) + len(paragraph) + 2 > self.chunk_size
+            ):
+                chunks.append(current_chunk.strip())
+                current_chunk = paragraph
+            else:
+                if current_chunk:
+                    current_chunk += "\n\n" + paragraph
+                else:
+                    current_chunk = paragraph
+
+        # Add the last chunk if it exists
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+
+        # If we still have chunks that are too large, split them further
+        final_chunks = []
+        for chunk in chunks:
+            if len(chunk) <= self.chunk_size:
+                final_chunks.append(chunk)
+            else:
+                # Split large chunks by sentences
+                sentences = re.split(r"(?<=[.!?])\s+", chunk)
+                current_subchunk = ""
+
+                for sentence in sentences:
+                    if (
+                        current_subchunk
+                        and len(current_subchunk) + len(sentence) + 1 > self.chunk_size
+                    ):
+                        if current_subchunk.strip():
+                            final_chunks.append(current_subchunk.strip())
+                        current_subchunk = sentence
+                    else:
+                        if current_subchunk:
+                            current_subchunk += " " + sentence
+                        else:
+                            current_subchunk = sentence
+
+                if current_subchunk.strip():
+                    final_chunks.append(current_subchunk.strip())
+
+        # Final fallback: if chunks are still too large, split by character count
+        result_chunks = []
+        for chunk in final_chunks:
+            if len(chunk) <= self.chunk_size:
+                result_chunks.append(chunk)
+            else:
+                # Split by character count with word boundaries
+                words = chunk.split()
+                current_word_chunk = ""
+
+                for word in words:
+                    if (
+                        current_word_chunk
+                        and len(current_word_chunk) + len(word) + 1 > self.chunk_size
+                    ):
+                        if current_word_chunk.strip():
+                            result_chunks.append(current_word_chunk.strip())
+                        current_word_chunk = word
+                    else:
+                        if current_word_chunk:
+                            current_word_chunk += " " + word
+                        else:
+                            current_word_chunk = word
+
+                if current_word_chunk.strip():
+                    result_chunks.append(current_word_chunk.strip())
+
+        # Ultimate fallback: if chunks are still too large (no word boundaries), split by character count
+        final_result_chunks = []
+        for chunk in result_chunks:
+            if len(chunk) <= self.chunk_size:
+                final_result_chunks.append(chunk)
+            else:
+                # Split by pure character count as last resort
+                for i in range(0, len(chunk), self.chunk_size):
+                    char_chunk = chunk[i : i + self.chunk_size]
+                    if char_chunk.strip():
+                        final_result_chunks.append(char_chunk)
+
+        # Apply chunk limit
+        if len(final_result_chunks) > MAX_CHUNKS_TO_PROCESS:
+            logger.warning(
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Document may be truncated."
+            )
+            final_result_chunks = final_result_chunks[:MAX_CHUNKS_TO_PROCESS]
+
+        return [chunk for chunk in final_result_chunks if chunk.strip()]
 
     def chunk_document(self, document: Document) -> list[Document]:
         """Split a document into chunks while preserving metadata.
@@ -134,60 +217,84 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents with preserved metadata
         """
-        logger.info(
+        file_name = (
+            document.metadata.get("file_name")
+            or document.metadata.get("original_filename")
+            or document.title
+            or f"{document.source_type}:{document.source}"
+        )
+
+        # Start progress tracking
+        self.progress_tracker.start_chunking(
+            document.id,
+            document.source,
+            document.source_type,
+            len(document.content),
+            file_name,
+        )
+
+        logger.debug(
             "Starting default chunking",
-            extra={
-                "source": document.source,
-                "source_type": document.source_type,
-                "content_length": len(document.content),
-                "file_name": document.metadata.get("file_name", "unknown"),
-            },
+            document_id=document.id,
+            content_length=len(document.content),
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
         )
 
-        # Note: Document-level NLP processing is now handled intelligently
-        # by the base class on a per-chunk basis based on content type
+        try:
+            # Split the text into chunks
+            text_chunks = self._split_text(document.content)
 
-        # Split into chunks
-        chunks = self._split_text(document.content)
-        chunked_documents = []
+            if not text_chunks:
+                self.progress_tracker.finish_chunking(document.id, 0, "default")
+                return []
 
-        # Limit the number of chunks to process
-        chunks_to_process = chunks[:MAX_CHUNKS_TO_PROCESS]
-        if len(chunks) > MAX_CHUNKS_TO_PROCESS:
-            logger.warning(
-                f"Truncating chunks from {len(chunks)} to {MAX_CHUNKS_TO_PROCESS}"
+            # Apply chunk limit at document level too
+            if len(text_chunks) > MAX_CHUNKS_TO_PROCESS:
+                logger.warning(
+                    f"Document {document.id} generated {len(text_chunks)} chunks, "
+                    f"limiting to {MAX_CHUNKS_TO_PROCESS}"
+                )
+                text_chunks = text_chunks[:MAX_CHUNKS_TO_PROCESS]
+
+            # Create Document objects for each chunk using base class method
+            chunk_documents = []
+            for i, chunk_text in enumerate(text_chunks):
+                chunk_doc = self._create_chunk_document(
+                    original_doc=document,
+                    chunk_content=chunk_text,
+                    chunk_index=i,
+                    total_chunks=len(text_chunks),
+                    skip_nlp=False,
+                )
+
+                # Generate unique chunk ID
+                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+
+                # Add strategy-specific metadata
+                chunk_doc.metadata.update(
+                    {
+                        "chunking_strategy": "default",
+                        "parent_document_id": document.id,
+                    }
+                )
+
+                chunk_documents.append(chunk_doc)
+
+            # Finish progress tracking
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunk_documents), "default"
             )
 
-        for i, chunk in enumerate(chunks_to_process):
-            # Create chunk document - base class will handle smart NLP decisions
-            chunk_doc = self._create_chunk_document(
-                original_doc=document,
-                chunk_content=chunk,
-                chunk_index=i,
-                total_chunks=len(chunks_to_process),
-                skip_nlp=False,  # Let base class decide based on content type
+            logger.debug(
+                "Successfully chunked document",
+                document_id=document.id,
+                num_chunks=len(chunk_documents),
+                strategy="default",
             )
 
-            # Generate unique chunk ID
-            chunk_doc.id = Document.generate_chunk_id(document.id, i)
+            return chunk_documents
 
-            # Add parent document reference
-            chunk_doc.metadata["parent_document_id"] = document.id
-
-            chunked_documents.append(chunk_doc)
-
-        logger.info(
-            f"Successfully chunked document into {len(chunked_documents)} chunks",
-            extra={
-                "avg_chunk_size": (
-                    sum(len(doc.content) for doc in chunked_documents)
-                    / len(chunked_documents)
-                    if chunked_documents
-                    else 0
-                ),
-                "total_original_chunks": len(chunks),
-                "processed_chunks": len(chunks_to_process),
-            },
-        )
-
-        return chunked_documents
+        except Exception as e:
+            self.progress_tracker.log_error(document.id, str(e))
+            raise

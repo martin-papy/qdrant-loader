@@ -3,7 +3,8 @@ import re
 from typing import Any
 
 import chardet
-import structlog
+
+from qdrant_loader.utils.logging import LoggingConfig
 
 
 class LocalFileMetadataExtractor:
@@ -11,7 +12,7 @@ class LocalFileMetadataExtractor:
 
     def __init__(self, base_path: str):
         self.base_path = base_path
-        self.logger = structlog.get_logger(__name__)
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def extract_all_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         self.logger.debug(f"Starting metadata extraction for file: {file_path!s}")

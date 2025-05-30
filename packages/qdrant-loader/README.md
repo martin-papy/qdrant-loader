@@ -7,11 +7,47 @@ A powerful tool for collecting and vectorizing technical content from multiple s
 ### Core Capabilities
 
 - **Multi-source ingestion**: Collect content from Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, public documentation, and local files
+- **🆕 File conversion support**: Automatically convert PDF, Office documents, images, and 20+ file types to markdown for processing
 - **Intelligent processing**: Smart chunking, preprocessing, and metadata extraction
 - **Flexible embeddings**: Support for OpenAI, local models (BAAI/bge-small-en-v1.5), and custom endpoints
 - **Vector storage**: Optimized storage in QDrant vector database
 - **State management**: Incremental updates with SQLite-based state tracking
 - **Performance monitoring**: Comprehensive logging and debugging capabilities
+
+### 🆕 File Conversion Support (v0.3.1)
+
+QDrant Loader now supports automatic conversion of diverse file formats using Microsoft's MarkItDown:
+
+#### Supported File Types
+
+- **Documents**: PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
+- **Images**: PNG, JPEG, GIF, BMP, TIFF (with optional OCR)
+- **Archives**: ZIP files with automatic extraction
+- **Data**: JSON, CSV, XML, YAML
+- **Audio**: MP3, WAV (transcription support)
+- **E-books**: EPUB format
+- **And more**: 20+ file types supported
+
+#### Key Features
+
+- **Automatic detection**: Files are automatically detected and converted when `enable_file_conversion: true`
+- **Attachment processing**: Download and convert attachments from Confluence, JIRA, and documentation sites
+- **Fallback handling**: Graceful handling when conversion fails with minimal document creation
+- **Metadata preservation**: Original file information preserved through the processing pipeline
+- **Performance optimized**: Configurable size limits, timeouts, and lazy loading
+
+See the [File Conversion Guide](../../docs/FileConversionGuide.md) for detailed setup and configuration.
+
+### 🔄 Upgrading to v0.3.1
+
+If you're upgrading from a previous version:
+
+1. **Backup your data**: State database and configuration files
+2. **Update package**: `pip install --upgrade qdrant-loader`
+3. **Optional**: Enable file conversion in your configuration
+4. **Test**: Verify existing functionality and new file conversion features
+
+See the [Migration Guide](../../docs/MigrationGuide.md) for detailed upgrade instructions.
 
 ### 🆕 New: Data Center Support
 
