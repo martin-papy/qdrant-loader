@@ -133,7 +133,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents with preserved metadata
         """
-        logger.info(
+        logger.debug(
             "Starting default chunking",
             extra={
                 "source": document.source,
@@ -175,7 +175,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
 
             chunked_documents.append(chunk_doc)
 
-        logger.info(
+        logger.debug(
             f"Successfully chunked document into {len(chunked_documents)} chunks",
             extra={
                 "avg_chunk_size": (
