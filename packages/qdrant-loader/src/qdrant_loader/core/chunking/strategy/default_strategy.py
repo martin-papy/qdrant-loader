@@ -12,6 +12,9 @@ from qdrant_loader.config import Settings
 
 logger = structlog.get_logger(__name__)
 
+# Maximum number of chunks to process to prevent performance issues
+MAX_CHUNKS_TO_PROCESS = 100
+
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
     """Default text chunking strategy using simple text splitting."""
@@ -30,7 +33,77 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             List of text chunks
         """
         if not text.strip():
-            return []
+            return [""]
+
+        # Use tokenizer-based chunking if available
+        if self.encoding is not None:
+            return self._split_text_with_tokenizer(text)
+        else:
+            return self._split_text_without_tokenizer(text)
+
+    def _split_text_with_tokenizer(self, text: str) -> list[str]:
+        """Split text using tokenizer for accurate token counting.
+
+        Args:
+            text: The text to split
+
+        Returns:
+            List of text chunks
+        """
+        if self.encoding is None:
+            # Fallback to character-based chunking
+            return self._split_text_without_tokenizer(text)
+
+        tokens = self.encoding.encode(text)
+
+        if len(tokens) <= self.chunk_size:
+            return [text]
+
+        chunks = []
+        start = 0
+
+        while start < len(tokens) and len(chunks) < MAX_CHUNKS_TO_PROCESS:
+            # Calculate end position considering overlap
+            end = start + self.chunk_size
+
+            # If this is not the first chunk, include overlap
+            if start > 0:
+                overlap_start = max(0, start - self.chunk_overlap)
+                chunk_tokens = tokens[overlap_start:end]
+            else:
+                chunk_tokens = tokens[start:end]
+
+            # Decode tokens back to text
+            chunk_text = self.encoding.decode(chunk_tokens)
+            chunks.append(chunk_text)
+
+            # Move start position forward, accounting for overlap
+            start = end - self.chunk_overlap
+
+            # Prevent infinite loop if overlap is too large
+            if start <= 0 or self.chunk_overlap >= self.chunk_size:
+                start = end
+
+        # Log warning if we hit the chunk limit
+        if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start < len(tokens):
+            logger.warning(
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Document may be truncated."
+            )
+
+        return chunks
+
+    def _split_text_without_tokenizer(self, text: str) -> list[str]:
+        """Split text without tokenizer using character-based chunking.
+
+        Args:
+            text: The text to split
+
+        Returns:
+            List of text chunks
+        """
+        if len(text) <= self.chunk_size:
+            return [text]
 
         # First, try to split by paragraphs (double newlines)
         paragraphs = re.split(r"\n\s*\n", text.strip())
@@ -113,7 +186,27 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 if current_word_chunk.strip():
                     result_chunks.append(current_word_chunk.strip())
 
-        return [chunk for chunk in result_chunks if chunk.strip()]
+        # Ultimate fallback: if chunks are still too large (no word boundaries), split by character count
+        final_result_chunks = []
+        for chunk in result_chunks:
+            if len(chunk) <= self.chunk_size:
+                final_result_chunks.append(chunk)
+            else:
+                # Split by pure character count as last resort
+                for i in range(0, len(chunk), self.chunk_size):
+                    char_chunk = chunk[i : i + self.chunk_size]
+                    if char_chunk.strip():
+                        final_result_chunks.append(char_chunk)
+
+        # Apply chunk limit
+        if len(final_result_chunks) > MAX_CHUNKS_TO_PROCESS:
+            logger.warning(
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Document may be truncated."
+            )
+            final_result_chunks = final_result_chunks[:MAX_CHUNKS_TO_PROCESS]
+
+        return [chunk for chunk in final_result_chunks if chunk.strip()]
 
     def chunk_document(self, document: Document) -> list[Document]:
         """Split a document into chunks while preserving metadata.
@@ -140,6 +233,14 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             file_name,
         )
 
+        logger.debug(
+            "Starting default chunking",
+            document_id=document.id,
+            content_length=len(document.content),
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+        )
+
         try:
             # Split the text into chunks
             text_chunks = self._split_text(document.content)
@@ -148,37 +249,50 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 self.progress_tracker.finish_chunking(document.id, 0, "default")
                 return []
 
-            # Create Document objects for each chunk
+            # Apply chunk limit at document level too
+            if len(text_chunks) > MAX_CHUNKS_TO_PROCESS:
+                logger.warning(
+                    f"Document {document.id} generated {len(text_chunks)} chunks, "
+                    f"limiting to {MAX_CHUNKS_TO_PROCESS}"
+                )
+                text_chunks = text_chunks[:MAX_CHUNKS_TO_PROCESS]
+
+            # Create Document objects for each chunk using base class method
             chunk_documents = []
             for i, chunk_text in enumerate(text_chunks):
-                chunk_metadata = document.metadata.copy()
-                chunk_metadata.update(
+                chunk_doc = self._create_chunk_document(
+                    original_doc=document,
+                    chunk_content=chunk_text,
+                    chunk_index=i,
+                    total_chunks=len(text_chunks),
+                    skip_nlp=False,
+                )
+
+                # Generate unique chunk ID
+                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+
+                # Add strategy-specific metadata
+                chunk_doc.metadata.update(
                     {
-                        "chunk_index": i,
-                        "total_chunks": len(text_chunks),
-                        "chunk_size": len(chunk_text),
                         "chunking_strategy": "default",
                         "parent_document_id": document.id,
                     }
                 )
 
-                chunk_doc = Document(
-                    title=f"{document.title} (chunk {i+1}/{len(text_chunks)})",
-                    content=chunk_text,
-                    content_type=document.content_type,
-                    source=document.source,
-                    source_type=document.source_type,
-                    url=document.url,
-                    metadata=chunk_metadata,
-                    created_at=document.created_at,
-                    updated_at=document.updated_at,
-                )
                 chunk_documents.append(chunk_doc)
 
             # Finish progress tracking
             self.progress_tracker.finish_chunking(
                 document.id, len(chunk_documents), "default"
             )
+
+            logger.debug(
+                "Successfully chunked document",
+                document_id=document.id,
+                num_chunks=len(chunk_documents),
+                strategy="default",
+            )
+
             return chunk_documents
 
         except Exception as e:
