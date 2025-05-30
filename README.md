@@ -14,6 +14,8 @@ A tool for collecting and vectorizing technical content from multiple sources an
 
 - Multiple data source connectors (Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, Public Docs, Local Files)
 - **🆕 File conversion support** - Process PDF, Office docs, images, and more with automatic conversion to markdown
+  - **⏱️ Configurable timeouts** - Prevent hanging conversions with customizable timeout controls
+  - **🤖 AI-powered image descriptions** - LLM integration for intelligent image content extraction
 - Intelligent document processing and chunking
 - Vector embeddings with OpenAI
 - Incremental updates and change detection
@@ -35,6 +37,10 @@ A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor a
 
 **🆕 Recent Enhancements (v0.3.1):**
 
+- **File Conversion Improvements**:
+  - **Timeout Control**: Configurable conversion timeouts prevent hanging operations
+  - **LLM Integration**: AI-powered image descriptions for enhanced searchability
+  - **Enhanced Error Handling**: Better timeout and LLM error management
 - **Hierarchy-Aware Search**: Enhanced Confluence search with page hierarchy understanding, breadcrumb paths, and depth levels
 - **Attachment-Aware Search**: Comprehensive file attachment support with parent document relationships and filtering capabilities
 - **Three Specialized Search Tools**: `search`, `hierarchy_search`, and `attachment_search` for different use cases
