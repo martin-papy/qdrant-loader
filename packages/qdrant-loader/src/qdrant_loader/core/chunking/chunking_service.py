@@ -72,11 +72,7 @@ class ChunkingService:
         }
 
         # Default strategy for unknown file types
-        self.default_strategy = DefaultChunkingStrategy(
-            settings=self.settings,
-            chunk_size=config.chunking.chunk_size,
-            chunk_overlap=config.chunking.chunk_overlap,
-        )
+        self.default_strategy = DefaultChunkingStrategy(settings=self.settings)
 
     def validate_config(self) -> None:
         """Validate the configuration.

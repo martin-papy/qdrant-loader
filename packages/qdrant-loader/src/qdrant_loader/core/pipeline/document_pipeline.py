@@ -1,5 +1,7 @@
 """Document processing pipeline that coordinates chunking, embedding, and upserting."""
 
+import asyncio
+import time
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -32,22 +34,45 @@ class DocumentPipeline:
             PipelineResult with processing statistics
         """
         logger.info(f"⚙️ Processing {len(documents)} documents through pipeline")
+        start_time = time.time()
 
         try:
             # Step 1: Chunk documents
-            logger.debug("Starting chunking phase")
+            logger.info("🔄 Starting chunking phase...")
+            chunking_start = time.time()
             chunks_iter = self.chunking_worker.process_documents(documents)
 
             # Step 2: Generate embeddings
-            logger.debug("Starting embedding phase")
+            logger.info("🔄 Chunking completed, transitioning to embedding phase...")
+            chunking_duration = time.time() - chunking_start
+            logger.info(f"⏱️ Chunking phase took {chunking_duration:.2f} seconds")
+
+            embedding_start = time.time()
             embedded_chunks_iter = self.embedding_worker.process_chunks(chunks_iter)
 
             # Step 3: Upsert to Qdrant
-            logger.debug("Starting upsert phase")
-            result = await self.upsert_worker.process_embedded_chunks(
-                embedded_chunks_iter
-            )
+            logger.info("🔄 Embedding phase ready, starting upsert phase...")
 
+            # Add timeout for the entire pipeline to prevent indefinite hanging
+            try:
+                result = await asyncio.wait_for(
+                    self.upsert_worker.process_embedded_chunks(embedded_chunks_iter),
+                    timeout=3600.0,  # 1 hour timeout for the entire pipeline
+                )
+            except asyncio.TimeoutError:
+                logger.error("❌ Pipeline timed out after 1 hour")
+                result = PipelineResult()
+                result.error_count = len(documents)
+                result.errors = ["Pipeline timed out after 1 hour"]
+                return result
+
+            total_duration = time.time() - start_time
+            embedding_duration = time.time() - embedding_start
+
+            logger.info(
+                f"⏱️ Embedding + Upsert phase took {embedding_duration:.2f} seconds"
+            )
+            logger.info(f"⏱️ Total pipeline duration: {total_duration:.2f} seconds")
             logger.info(
                 f"✅ Pipeline completed: {result.success_count} chunks processed, "
                 f"{result.error_count} errors"
@@ -56,7 +81,11 @@ class DocumentPipeline:
             return result
 
         except Exception as e:
-            logger.error(f"❌ Document pipeline failed: {e}", exc_info=True)
+            total_duration = time.time() - start_time
+            logger.error(
+                f"❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
+                exc_info=True,
+            )
             # Return a result with error information
             result = PipelineResult()
             result.error_count = len(documents)

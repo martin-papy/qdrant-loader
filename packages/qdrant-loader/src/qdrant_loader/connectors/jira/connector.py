@@ -676,7 +676,7 @@ class JiraConnector(BaseConnector):
                     )
                     documents.extend(attachment_documents)
 
-                    logger.info(
+                    logger.debug(
                         "Processed attachments for JIRA issue",
                         issue_key=issue.key,
                         processed_count=len(attachment_documents),

@@ -62,12 +62,24 @@ class CleanFormatter(logging.Formatter):
     """Custom formatter that shows only the message for INFO level logs."""
 
     def format(self, record):
+        message = record.getMessage()
+
         # For INFO level, just show the message
         if record.levelno == logging.INFO:
-            return record.getMessage()
+            return message
         else:
-            # For other levels, include level name
-            return f"[{record.levelname}] {record.getMessage()}"
+            # For other levels, we need to reorder timestamp and level
+            # Check if message starts with a timestamp (HH:MM:SS format)
+            time_pattern = r"^(\d{2}:\d{2}:\d{2})\s+(.*)"
+            match = re.match(time_pattern, message)
+
+            if match:
+                timestamp = match.group(1)
+                rest_of_message = match.group(2)
+                return f"{timestamp} [{record.levelname}] {rest_of_message}"
+            else:
+                # No timestamp found, just add level name
+                return f"[{record.levelname}] {message}"
 
 
 class FileRenderer:

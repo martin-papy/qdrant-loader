@@ -13,8 +13,8 @@ global:
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
-    chunk_size: 500        # Maximum number of characters per chunk
-    chunk_overlap: 50      # Number of characters to overlap between chunks
+    chunk_size: 1500       # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
+    chunk_overlap: 200      # Number of characters to overlap between chunks
   
   # Default embedding configuration
   # Controls how text is converted to vectors
