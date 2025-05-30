@@ -4,12 +4,21 @@ Unit tests for the file converter.
 
 import pytest
 import tempfile
+import signal
+import time
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from qdrant_loader.core.file_conversion.file_converter import FileConverter
-from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
+from qdrant_loader.core.file_conversion.file_converter import (
+    FileConverter,
+    TimeoutHandler,
+)
+from qdrant_loader.core.file_conversion.conversion_config import (
+    FileConversionConfig,
+    MarkItDownConfig,
+)
 from qdrant_loader.core.file_conversion.exceptions import (
+    ConversionTimeoutError,
     FileAccessError,
     FileSizeExceededError,
     MarkItDownError,
@@ -27,9 +36,65 @@ def file_conversion_config():
 
 
 @pytest.fixture
+def file_conversion_config_with_llm():
+    """Create file conversion configuration with LLM enabled."""
+    markitdown_config = MarkItDownConfig(
+        enable_llm_descriptions=True,
+        llm_model="gpt-4o",
+        llm_endpoint="https://api.openai.com/v1",
+    )
+    return FileConversionConfig(
+        max_file_size=50 * 1024 * 1024,  # 50MB
+        conversion_timeout=300,
+        markitdown=markitdown_config,
+    )
+
+
+@pytest.fixture
 def file_converter(file_conversion_config):
     """Create file converter instance."""
     return FileConverter(file_conversion_config)
+
+
+@pytest.fixture
+def file_converter_with_llm(file_conversion_config_with_llm):
+    """Create file converter instance with LLM configuration."""
+    return FileConverter(file_conversion_config_with_llm)
+
+
+class TestTimeoutHandler:
+    """Test timeout handler functionality."""
+
+    def test_timeout_handler_initialization(self):
+        """Test timeout handler initialization."""
+        handler = TimeoutHandler(30, "/path/to/file.pdf")
+        assert handler.timeout_seconds == 30
+        assert handler.file_path == "/path/to/file.pdf"
+        assert handler.old_handler is None
+
+    def test_timeout_handler_context_manager(self):
+        """Test timeout handler as context manager."""
+        with patch("signal.signal") as mock_signal, patch("signal.alarm") as mock_alarm:
+            handler = TimeoutHandler(30, "/path/to/file.pdf")
+
+            with handler:
+                # Verify signal handler was set up
+                mock_signal.assert_called_once()
+                mock_alarm.assert_called_with(30)
+
+            # Verify cleanup was called
+            assert mock_alarm.call_count == 2  # Once to set, once to clear (0)
+
+    def test_timeout_handler_raises_timeout_error(self):
+        """Test that timeout handler raises ConversionTimeoutError."""
+        handler = TimeoutHandler(1, "/path/to/file.pdf")
+
+        # Test the timeout handler function directly
+        with pytest.raises(ConversionTimeoutError) as exc_info:
+            handler._timeout_handler(signal.SIGALRM, None)
+
+        assert exc_info.value.timeout == 1
+        assert exc_info.value.file_path == "/path/to/file.pdf"
 
 
 class TestFileConverterBasics:
@@ -42,7 +107,7 @@ class TestFileConverterBasics:
         assert converter._markitdown is None
 
     def test_get_markitdown_lazy_loading(self, file_converter):
-        """Test MarkItDown lazy loading."""
+        """Test MarkItDown lazy loading without LLM."""
         # Mock the import to avoid dependency issues
         with patch("markitdown.MarkItDown") as mock_markitdown_class:
             mock_instance = MagicMock()
@@ -56,7 +121,77 @@ class TestFileConverterBasics:
             # Second call should reuse instance
             result2 = file_converter._get_markitdown()
             assert result2 == mock_instance
-            mock_markitdown_class.assert_called_once()
+            mock_markitdown_class.assert_called_once_with()  # Called without LLM params
+
+    def test_get_markitdown_with_llm_configuration(self, file_converter_with_llm):
+        """Test MarkItDown initialization with LLM configuration."""
+        with (
+            patch("markitdown.MarkItDown") as mock_markitdown_class,
+            patch.object(
+                file_converter_with_llm, "_create_llm_client"
+            ) as mock_create_client,
+        ):
+            mock_instance = MagicMock()
+            mock_markitdown_class.return_value = mock_instance
+            mock_llm_client = MagicMock()
+            mock_create_client.return_value = mock_llm_client
+
+            result = file_converter_with_llm._get_markitdown()
+
+            assert result == mock_instance
+            mock_create_client.assert_called_once()
+            mock_markitdown_class.assert_called_once_with(
+                llm_client=mock_llm_client, llm_model="gpt-4o"
+            )
+
+    def test_create_llm_client_openai_endpoint(self, file_converter_with_llm):
+        """Test LLM client creation for OpenAI endpoint."""
+        with (
+            patch("openai.OpenAI") as mock_openai_class,
+            patch("os.getenv") as mock_getenv,
+        ):
+            mock_client = MagicMock()
+            mock_openai_class.return_value = mock_client
+            mock_getenv.return_value = "test-api-key"
+
+            result = file_converter_with_llm._create_llm_client()
+
+            assert result == mock_client
+            mock_openai_class.assert_called_once_with(
+                base_url="https://api.openai.com/v1", api_key="test-api-key"
+            )
+
+    def test_create_llm_client_custom_endpoint(self, file_converter_with_llm):
+        """Test LLM client creation for custom endpoint."""
+        # Update config to use custom endpoint
+        file_converter_with_llm.config.markitdown.llm_endpoint = (
+            "https://custom.api.com/v1"
+        )
+
+        with (
+            patch("openai.OpenAI") as mock_openai_class,
+            patch("os.getenv") as mock_getenv,
+        ):
+            mock_client = MagicMock()
+            mock_openai_class.return_value = mock_client
+            mock_getenv.return_value = "custom-api-key"
+
+            result = file_converter_with_llm._create_llm_client()
+
+            assert result == mock_client
+            mock_openai_class.assert_called_once_with(
+                base_url="https://custom.api.com/v1", api_key="custom-api-key"
+            )
+
+    def test_create_llm_client_import_error(self, file_converter_with_llm):
+        """Test LLM client creation with import error."""
+        with patch("openai.OpenAI") as mock_openai_class:
+            mock_openai_class.side_effect = ImportError("OpenAI not available")
+
+            with pytest.raises(MarkItDownError) as exc_info:
+                file_converter_with_llm._create_llm_client()
+
+            assert "OpenAI library required for LLM integration" in str(exc_info.value)
 
     def test_get_markitdown_import_error(self, file_converter):
         """Test MarkItDown import error handling."""
@@ -145,6 +280,9 @@ class TestFileConversion:
             with (
                 patch.object(file_converter, "_validate_file") as mock_validate,
                 patch.object(file_converter, "_get_markitdown") as mock_get_markitdown,
+                patch(
+                    "qdrant_loader.core.file_conversion.file_converter.TimeoutHandler"
+                ) as mock_timeout_handler,
             ):
                 mock_validate.return_value = None
 
@@ -156,11 +294,46 @@ class TestFileConversion:
                 mock_markitdown.convert.return_value = mock_result
                 mock_get_markitdown.return_value = mock_markitdown
 
+                # Mock timeout handler context manager
+                mock_timeout_handler.return_value.__enter__.return_value = None
+                mock_timeout_handler.return_value.__exit__.return_value = None
+
                 result = file_converter.convert_file(str(temp_path))
 
                 assert result == "# Converted Content\n\nThis is the converted text."
                 mock_validate.assert_called_once_with(str(temp_path))
                 mock_markitdown.convert.assert_called_once_with(str(temp_path))
+                mock_timeout_handler.assert_called_once_with(300, str(temp_path))
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+    def test_convert_file_with_timeout(self, file_converter):
+        """Test file conversion with timeout."""
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(b"PDF content")
+
+        try:
+            with (
+                patch.object(file_converter, "_validate_file") as mock_validate,
+                patch.object(file_converter, "_get_markitdown") as mock_get_markitdown,
+                patch(
+                    "qdrant_loader.core.file_conversion.file_converter.TimeoutHandler"
+                ) as mock_timeout_handler,
+            ):
+                mock_validate.return_value = None
+                mock_get_markitdown.return_value = MagicMock()
+
+                # Mock timeout handler to raise ConversionTimeoutError
+                mock_timeout_handler.return_value.__enter__.side_effect = (
+                    ConversionTimeoutError(300, str(temp_path))
+                )
+
+                with pytest.raises(ConversionTimeoutError) as exc_info:
+                    file_converter.convert_file(str(temp_path))
+
+                assert exc_info.value.timeout == 300
+                assert exc_info.value.file_path == str(temp_path)
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -182,12 +355,19 @@ class TestFileConversion:
             with (
                 patch.object(file_converter, "_validate_file") as mock_validate,
                 patch.object(file_converter, "_get_markitdown") as mock_get_markitdown,
+                patch(
+                    "qdrant_loader.core.file_conversion.file_converter.TimeoutHandler"
+                ) as mock_timeout_handler,
             ):
                 mock_validate.return_value = None
 
                 mock_markitdown = MagicMock()
                 mock_markitdown.convert.side_effect = Exception("Conversion failed")
                 mock_get_markitdown.return_value = mock_markitdown
+
+                # Mock timeout handler context manager
+                mock_timeout_handler.return_value.__enter__.return_value = None
+                mock_timeout_handler.return_value.__exit__.return_value = None
 
                 with pytest.raises(MarkItDownError) as exc_info:
                     file_converter.convert_file(str(temp_path))
@@ -206,18 +386,24 @@ class TestFileConversion:
             with (
                 patch.object(file_converter, "_validate_file") as mock_validate,
                 patch.object(file_converter, "_get_markitdown") as mock_get_markitdown,
+                patch(
+                    "qdrant_loader.core.file_conversion.file_converter.TimeoutHandler"
+                ) as mock_timeout_handler,
             ):
                 mock_validate.return_value = None
 
                 mock_markitdown = MagicMock()
-                # Return a result without text_content attribute
-                mock_result = "Direct string result"
+                mock_result = "Simple string result"  # No text_content attribute
                 mock_markitdown.convert.return_value = mock_result
                 mock_get_markitdown.return_value = mock_markitdown
 
+                # Mock timeout handler context manager
+                mock_timeout_handler.return_value.__enter__.return_value = None
+                mock_timeout_handler.return_value.__exit__.return_value = None
+
                 result = file_converter.convert_file(str(temp_path))
 
-                assert result == "Direct string result"
+                assert result == "Simple string result"
         finally:
             temp_path.unlink(missing_ok=True)
 
