@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 
 import requests
-import structlog
 from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType

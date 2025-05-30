@@ -57,7 +57,7 @@ dependencies = [
     "psutil>=5.9.0",
     "tree-sitter-languages>=1.10.0",
     "tree-sitter<0.21",
-    "markitdown>=0.1.2",
+    "markitdown[all]>=0.1.2",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
