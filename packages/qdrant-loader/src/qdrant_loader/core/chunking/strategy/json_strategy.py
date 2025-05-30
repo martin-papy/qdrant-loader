@@ -675,6 +675,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                 # Add JSON-specific metadata
                 json_metadata = self._extract_json_metadata(element)
                 json_metadata["chunking_strategy"] = "json"
+                json_metadata["chunking_method"] = "structured_json"
                 json_metadata["parent_document_id"] = document.id
                 chunk_doc.metadata.update(json_metadata)
 
