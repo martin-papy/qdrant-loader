@@ -31,6 +31,8 @@ def mock_settings():
     embedding_config.tokenizer = "cl100k_base"
     embedding_config.batch_size = 10
     embedding_config.vector_size = 1536
+    embedding_config.max_tokens_per_request = 8000
+    embedding_config.max_tokens_per_chunk = 8000
 
     # Attach embedding config to global config
     global_config.embedding = embedding_config
@@ -56,6 +58,8 @@ def mock_local_settings():
     embedding_config.tokenizer = "none"
     embedding_config.batch_size = 10
     embedding_config.vector_size = 768
+    embedding_config.max_tokens_per_request = 8000
+    embedding_config.max_tokens_per_chunk = 8000
 
     # Attach embedding config to global config
     global_config.embedding = embedding_config
