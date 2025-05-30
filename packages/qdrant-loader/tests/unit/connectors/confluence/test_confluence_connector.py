@@ -658,3 +658,200 @@ class TestConfluenceConnector:
                 assert (
                     len(documents) == 0
                 )  # Content with processing errors should be skipped
+
+
+class TestConfluenceHierarchy:
+    """Test hierarchy extraction functionality."""
+
+    def test_extract_hierarchy_info_with_ancestors_and_children(self, connector):
+        """Test hierarchy extraction with both ancestors and children."""
+        content = {
+            "id": "123456",
+            "title": "Current Page",
+            "type": "page",
+            "ancestors": [
+                {
+                    "id": "111111",
+                    "title": "Root Page",
+                    "type": "page",
+                },
+                {
+                    "id": "222222",
+                    "title": "Parent Page",
+                    "type": "page",
+                },
+            ],
+            "children": {
+                "page": {
+                    "results": [
+                        {
+                            "id": "333333",
+                            "title": "Child Page 1",
+                            "type": "page",
+                        },
+                        {
+                            "id": "444444",
+                            "title": "Child Page 2",
+                            "type": "page",
+                        },
+                    ]
+                }
+            },
+        }
+
+        hierarchy_info = connector._extract_hierarchy_info(content)
+
+        # Check ancestors
+        assert len(hierarchy_info["ancestors"]) == 2
+        assert hierarchy_info["ancestors"][0]["id"] == "111111"
+        assert hierarchy_info["ancestors"][0]["title"] == "Root Page"
+        assert hierarchy_info["ancestors"][1]["id"] == "222222"
+        assert hierarchy_info["ancestors"][1]["title"] == "Parent Page"
+
+        # Check parent (immediate parent is the last ancestor)
+        assert hierarchy_info["parent_id"] == "222222"
+        assert hierarchy_info["parent_title"] == "Parent Page"
+
+        # Check children
+        assert len(hierarchy_info["children"]) == 2
+        assert hierarchy_info["children"][0]["id"] == "333333"
+        assert hierarchy_info["children"][0]["title"] == "Child Page 1"
+        assert hierarchy_info["children"][1]["id"] == "444444"
+        assert hierarchy_info["children"][1]["title"] == "Child Page 2"
+
+        # Check depth and breadcrumb
+        assert hierarchy_info["depth"] == 2
+        assert hierarchy_info["breadcrumb"] == ["Root Page", "Parent Page"]
+
+    def test_extract_hierarchy_info_root_page(self, connector):
+        """Test hierarchy extraction for a root page (no ancestors)."""
+        content = {
+            "id": "123456",
+            "title": "Root Page",
+            "type": "page",
+            "ancestors": [],
+            "children": {
+                "page": {
+                    "results": [
+                        {
+                            "id": "333333",
+                            "title": "Child Page",
+                            "type": "page",
+                        },
+                    ]
+                }
+            },
+        }
+
+        hierarchy_info = connector._extract_hierarchy_info(content)
+
+        # Check no ancestors
+        assert len(hierarchy_info["ancestors"]) == 0
+        assert hierarchy_info["parent_id"] is None
+        assert hierarchy_info["parent_title"] is None
+
+        # Check children
+        assert len(hierarchy_info["children"]) == 1
+        assert hierarchy_info["children"][0]["id"] == "333333"
+
+        # Check depth and breadcrumb
+        assert hierarchy_info["depth"] == 0
+        assert hierarchy_info["breadcrumb"] == []
+
+    def test_extract_hierarchy_info_leaf_page(self, connector):
+        """Test hierarchy extraction for a leaf page (no children)."""
+        content = {
+            "id": "123456",
+            "title": "Leaf Page",
+            "type": "page",
+            "ancestors": [
+                {
+                    "id": "111111",
+                    "title": "Root Page",
+                    "type": "page",
+                },
+            ],
+            "children": {"page": {"results": []}},
+        }
+
+        hierarchy_info = connector._extract_hierarchy_info(content)
+
+        # Check ancestors
+        assert len(hierarchy_info["ancestors"]) == 1
+        assert hierarchy_info["parent_id"] == "111111"
+        assert hierarchy_info["parent_title"] == "Root Page"
+
+        # Check no children
+        assert len(hierarchy_info["children"]) == 0
+
+        # Check depth and breadcrumb
+        assert hierarchy_info["depth"] == 1
+        assert hierarchy_info["breadcrumb"] == ["Root Page"]
+
+    def test_process_content_includes_hierarchy(self, connector):
+        """Test that _process_content includes hierarchy information in metadata."""
+        content = {
+            "id": "123456",
+            "title": "Test Page",
+            "type": "page",
+            "space": {"key": "TEST"},
+            "body": {"storage": {"value": "<p>Test content</p>"}},
+            "version": {"number": 1, "when": "2024-01-01T00:00:00Z"},
+            "history": {
+                "createdBy": {"displayName": "Test User"},
+                "createdDate": "2024-01-01T00:00:00Z",
+            },
+            "metadata": {"labels": {"results": []}},
+            "ancestors": [
+                {
+                    "id": "111111",
+                    "title": "Parent Page",
+                    "type": "page",
+                },
+            ],
+            "children": {
+                "page": {
+                    "results": [
+                        {
+                            "id": "333333",
+                            "title": "Child Page",
+                            "type": "page",
+                        },
+                    ]
+                },
+                "comment": {"results": []},
+            },
+        }
+
+        document = connector._process_content(content)
+
+        # Check that hierarchy information is included in metadata
+        assert "hierarchy" in document.metadata
+        assert "parent_id" in document.metadata
+        assert "parent_title" in document.metadata
+        assert "ancestors" in document.metadata
+        assert "children" in document.metadata
+        assert "depth" in document.metadata
+        assert "breadcrumb" in document.metadata
+        assert "breadcrumb_text" in document.metadata
+
+        # Check specific values
+        assert document.metadata["parent_id"] == "111111"
+        assert document.metadata["parent_title"] == "Parent Page"
+        assert document.metadata["depth"] == 1
+        assert document.metadata["breadcrumb"] == ["Parent Page"]
+        assert document.metadata["breadcrumb_text"] == "Parent Page"
+        assert len(document.metadata["children"]) == 1
+        assert document.metadata["children"][0]["id"] == "333333"
+
+        # Test Document convenience methods
+        assert document.get_parent_id() == "111111"
+        assert document.get_parent_title() == "Parent Page"
+        assert document.get_depth() == 1
+        assert document.get_breadcrumb() == ["Parent Page"]
+        assert document.get_breadcrumb_text() == "Parent Page"
+        assert not document.is_root_document()
+        assert document.has_children()
+        assert "Path: Parent Page" in document.get_hierarchy_context()
+        assert "Depth: 1" in document.get_hierarchy_context()
+        assert "Children: 1" in document.get_hierarchy_context()
