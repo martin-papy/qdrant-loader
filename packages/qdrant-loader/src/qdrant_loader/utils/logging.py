@@ -61,8 +61,17 @@ class CleanFileHandler(logging.FileHandler):
 class CleanFormatter(logging.Formatter):
     """Custom formatter that shows only the message for INFO level logs."""
 
+    def __init__(self, use_custom_renderer=False):
+        super().__init__()
+        self.use_custom_renderer = use_custom_renderer
+
     def format(self, record):
         message = record.getMessage()
+
+        # If we're using the custom renderer, just return the message as-is
+        # since the CustomConsoleRenderer already handled the formatting
+        if self.use_custom_renderer:
+            return message
 
         # For INFO level, just show the message
         if record.levelno == logging.INFO:
@@ -70,7 +79,10 @@ class CleanFormatter(logging.Formatter):
         else:
             # For other levels, we need to reorder timestamp and level
             # Check if message starts with a timestamp (HH:MM:SS format)
-            time_pattern = r"^(\d{2}:\d{2}:\d{2})\s+(.*)"
+            # The message might contain ANSI color codes, so we need to account for that
+            time_pattern = (
+                r"^(?:\x1b\[[0-9;]*m)?(\d{2}:\d{2}:\d{2})(?:\x1b\[[0-9;]*m)?\s+(.*)"
+            )
             match = re.match(time_pattern, message)
 
             if match:
@@ -132,6 +144,70 @@ class FileFormatter(logging.Formatter):
             return f"{timestamp} | [{level}] {clean_message}"
 
 
+class CustomConsoleRenderer:
+    """Custom console renderer that formats timestamp and level correctly."""
+
+    def __init__(self, colors=True):
+        self.colors = colors
+        self._console_renderer = structlog.dev.ConsoleRenderer(colors=colors)
+        # ANSI color codes
+        self.gray = "\033[90m" if colors else ""
+        self.green = "\033[92m" if colors else ""  # Bright green for INFO
+        self.yellow = "\033[93m" if colors else ""  # Bright yellow for WARNING
+        self.red = "\033[91m" if colors else ""  # Bright red for ERROR
+        self.magenta = "\033[95m" if colors else ""  # Bright magenta for CRITICAL
+        self.cyan = "\033[96m" if colors else ""  # Bright cyan for DEBUG
+        self.reset = "\033[0m" if colors else ""
+
+    def _get_level_color(self, level):
+        """Get the appropriate color for a log level."""
+        level_colors = {
+            "DEBUG": self.cyan,
+            "INFO": self.green,  # Green for INFO
+            "WARNING": self.yellow,
+            "ERROR": self.red,
+            "CRITICAL": self.magenta,
+        }
+        return level_colors.get(level, "")
+
+    def __call__(self, logger, method_name, event_dict):
+        # Extract timestamp if present
+        timestamp = event_dict.pop("timestamp", None)
+
+        # Get the level from method_name
+        level = method_name.upper()
+
+        # Use the default console renderer to format the rest
+        formatted = self._console_renderer(logger, method_name, event_dict)
+
+        # If we have a timestamp
+        if timestamp and isinstance(timestamp, str) and len(timestamp) >= 8:
+            time_part = timestamp[:8]  # Get HH:MM:SS part
+
+            # Remove the timestamp from the formatted message if it's there
+            if formatted.startswith(time_part):
+                formatted = formatted[len(time_part) :].lstrip()
+
+            # Add gray color to timestamp
+            colored_timestamp = f"{self.gray}{time_part}{self.reset}"
+
+            # Get colored level for all levels including INFO
+            level_color = self._get_level_color(level)
+            colored_level = (
+                f"{level_color}[{level}]{self.reset}" if level_color else f"[{level}]"
+            )
+
+            # Show timestamp, colored level, and message for all levels
+            return f"{colored_timestamp} {colored_level} {formatted}"
+
+        # Fallback if no timestamp
+        level_color = self._get_level_color(level)
+        colored_level = (
+            f"{level_color}[{level}]{self.reset}" if level_color else f"[{level}]"
+        )
+        return f"{colored_level} {formatted}"
+
+
 class LoggingConfig:
     """Centralized logging configuration."""
 
@@ -174,7 +250,7 @@ class LoggingConfig:
 
         if clean_output and format == "console":
             # Use clean formatter for console output
-            console_handler.setFormatter(CleanFormatter())
+            console_handler.setFormatter(CleanFormatter(use_custom_renderer=True))
         else:
             console_handler.setFormatter(logging.Formatter("%(message)s"))
 
@@ -210,7 +286,7 @@ class LoggingConfig:
             processors = [
                 structlog.stdlib.filter_by_level,
                 structlog.processors.TimeStamper(fmt="%H:%M:%S"),
-                structlog.dev.ConsoleRenderer(colors=True),
+                CustomConsoleRenderer(colors=True),
             ]
         else:
             # Full processors for detailed output

@@ -229,7 +229,7 @@ class EmbeddingService:
 
         if truncated_count > 0:
             logger.info(
-                f"⚠️ Truncated {truncated_count} content items due to token limits"
+                f"⚠️ Truncated {truncated_count} content items due to token limits. You might want to adjust chunk size and/or max tokens settings in config.yaml"
             )
 
         # Create smart batches that respect token limits
