@@ -254,7 +254,7 @@ class PublicDocsConnector(BaseConnector):
                                     )
                                     documents.extend(attachment_documents)
 
-                                    self.logger.info(
+                                    self.logger.debug(
                                         "Processed attachments for PublicDocs page",
                                         page_url=page,
                                         processed_count=len(attachment_documents),
