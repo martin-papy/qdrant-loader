@@ -1,15 +1,17 @@
 """Centralized logging configuration for the application."""
 
 import logging
-
 import structlog
+import sys
+import re
+from typing import Any, Dict
 
 
 class QdrantVersionFilter(logging.Filter):
     """Filter to suppress Qdrant version check warnings."""
 
     def filter(self, record):
-        return "Failed to obtain server version" not in str(record.msg)
+        return "version check" not in record.getMessage().lower()
 
 
 class ApplicationFilter(logging.Filter):
@@ -17,101 +19,105 @@ class ApplicationFilter(logging.Filter):
 
     def filter(self, record):
         # Only show logs from our application
-        return record.name.startswith("qdrant_loader")
+        return not record.name.startswith(("httpx", "httpcore", "urllib3"))
 
 
 class VerbosityFilter(logging.Filter):
-    """Filter to reduce verbosity by suppressing certain debug messages."""
+    """Filter to reduce verbosity of debug messages."""
 
     def filter(self, record):
         # Suppress overly verbose debug messages
-        message = str(record.msg)
-
-        # Skip these verbose debug messages
-        verbose_debug_patterns = [
-            "Making JIRA API request",
-            "JIRA API request completed successfully",
-            "Getting batch embeddings from",
-            "Getting embedding from",
-            "Completed batch processing",
-            "Processing embedding batch",
-            "Embedding request failed",
-            "Single embedding request failed",
-            "Fetching JIRA issues page",
-            "Processing JIRA issues page",
-            "Processed JIRA issues",
-            "Starting document chunking",
-            "Selected chunking strategy",
-            "Document chunking completed",
-            "Jira document created",
-            "Processing documents from source",
-            "Document processed successfully",
-            "Chunk created",
-            "Embedding generated",
-            "Document stored in Qdrant",
+        message = record.getMessage()
+        verbose_patterns = [
+            "HTTP Request:",
+            "Response status:",
+            "Request headers:",
+            "Response headers:",
         ]
+        return not any(pattern in message for pattern in verbose_patterns)
 
-        # Skip these verbose info messages too
-        verbose_info_patterns = [
-            "Configured Confluence",
-            "Configured Jira",
-            "File conversion enabled",
-            "Attachment downloader initialized",
-            "Successfully connected to qDrant",
-            "Creating pipeline components",
-            "Pipeline components created successfully",
-            "Initializing metrics directory",
-            "AsyncIngestionPipeline initialized",
-            "Starting document processing with new pipeline",
-            "Starting document processing orchestration",
-            "Processing Confluence sources:",
-            "Processing Jira sources:",
-            "Processing Confluence source:",
-            "Processing Jira source:",
-            "Retrieved",
-            "Completed processing",
-            "Starting JIRA issue retrieval",
-            "Found",
-            "Fetching Confluence",
-            "Processed",
-            "documents from",
-            "total results in",
-            "pages from space",
-        ]
 
-        # If it's a debug message and matches verbose patterns, suppress it
-        if record.levelno == logging.DEBUG:
-            for pattern in verbose_debug_patterns:
-                if pattern in message:
-                    return False
+class CleanFileHandler(logging.FileHandler):
+    """Custom file handler that strips ANSI color codes from log messages."""
 
-        # If it's an info message and matches verbose patterns, suppress it
-        if record.levelno == logging.INFO:
-            for pattern in verbose_info_patterns:
-                if pattern in message:
-                    return False
+    # ANSI escape sequence pattern
+    ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-        return True
+    def emit(self, record):
+        """Emit a record, stripping ANSI codes from the message."""
+        try:
+            # Get the formatted message
+            msg = self.format(record)
+            # Strip ANSI escape sequences
+            clean_msg = self.ANSI_ESCAPE.sub("", msg)
+            # Write the clean message
+            stream = self.stream
+            stream.write(clean_msg + self.terminator)
+            self.flush()
+        except Exception:
+            self.handleError(record)
 
 
 class CleanFormatter(logging.Formatter):
-    """Clean formatter that removes excessive metadata."""
+    """Custom formatter that shows only the message for INFO level logs."""
 
     def format(self, record):
         # For INFO level, just show the message
         if record.levelno == logging.INFO:
             return record.getMessage()
+        else:
+            # For other levels, include level name
+            return f"[{record.levelname}] {record.getMessage()}"
 
-        # For WARNING/ERROR, add level indicator
-        level_indicators = {
-            logging.WARNING: "⚠️ ",
-            logging.ERROR: "❌ ",
-            logging.CRITICAL: "🚨 ",
-            logging.DEBUG: "🔍 ",
-        }
 
-        indicator = level_indicators.get(record.levelno, "")
-        return f"{indicator}{record.getMessage()}"
+class FileRenderer:
+    """Custom renderer for file output without timestamps (FileFormatter will add them)."""
+
+    def __call__(self, logger, method_name, event_dict):
+        # Extract the main message
+        event = event_dict.pop("event", "")
+
+        # Format additional key-value pairs
+        if event_dict:
+            extras = " ".join(f"{k}={v}" for k, v in event_dict.items())
+            return f"{event} {extras}".strip()
+        else:
+            return event
+
+
+class FileFormatter(logging.Formatter):
+    """Custom formatter for file output that provides clean, readable logs without ANSI codes."""
+
+    # ANSI escape sequence pattern
+    ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+    def format(self, record):
+        # Get the timestamp
+        timestamp = self.formatTime(record, "%Y-%m-%d %H:%M:%S")
+
+        # Get the level name
+        level = record.levelname
+
+        # Get the message (this will be the already formatted structlog message)
+        message = record.getMessage()
+
+        # First, strip ANSI escape sequences
+        clean_message = self.ANSI_ESCAPE.sub("", message)
+
+        # Now check if the clean message starts with a timestamp and remove it
+        # Pattern for structlog output: "HH:MM:SS message content"
+        time_pattern = r"^\d{2}:\d{2}:\d{2}\s+"
+        if re.match(time_pattern, clean_message):
+            # Remove the structlog timestamp since we're adding our own
+            clean_message = re.sub(time_pattern, "", clean_message)
+
+        # Format based on log level
+        if record.levelno == logging.INFO:
+            # For INFO level, use a clean format: timestamp | message
+            return f"{timestamp} | {clean_message}"
+        else:
+            # For other levels, include the level: timestamp | [LEVEL] message
+            return f"{timestamp} | [{level}] {clean_message}"
 
 
 class LoggingConfig:
@@ -169,8 +175,8 @@ class LoggingConfig:
 
         # Add file handler if file is configured
         if file:
-            file_handler = logging.FileHandler(file)
-            file_handler.setFormatter(logging.Formatter("%(message)s"))
+            file_handler = CleanFileHandler(file)
+            file_handler.setFormatter(FileFormatter())
             # Don't apply verbosity filter to file logs - keep everything for debugging
             handlers.append(file_handler)
 
@@ -192,9 +198,7 @@ class LoggingConfig:
             processors = [
                 structlog.stdlib.filter_by_level,
                 structlog.processors.TimeStamper(fmt="%H:%M:%S"),
-                structlog.dev.ConsoleRenderer(
-                    colors=True,
-                ),
+                structlog.dev.ConsoleRenderer(colors=True),
             ]
         else:
             # Full processors for detailed output
