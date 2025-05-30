@@ -537,6 +537,102 @@ def calculate_new_version(
     return current_version
 
 
+def get_development_status_classifier(version: str) -> str:
+    """
+    Determine the appropriate Development Status classifier based on version.
+
+    Rules:
+    - Any version with 'a' (alpha): "3 - Alpha"
+    - Any version with 'b' (beta): "4 - Beta"
+    - Any version with 'rc' (release candidate): "4 - Beta"
+    - Everything else: "5 - Production/Stable"
+    """
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Determining development status for version: {version}")
+
+    version_lower = version.lower()
+
+    if "a" in version_lower:
+        status = "Development Status :: 3 - Alpha"
+        logger.debug(f"Alpha version detected: {status}")
+        return status
+    elif "b" in version_lower or "rc" in version_lower:
+        status = "Development Status :: 4 - Beta"
+        logger.debug(f"Beta/RC version detected: {status}")
+        return status
+    else:
+        status = "Development Status :: 5 - Production/Stable"
+        logger.debug(f"Stable version detected: {status}")
+        return status
+
+
+def update_development_status_classifier(
+    package_name: str, version: str, dry_run: bool = False
+) -> None:
+    """Update the Development Status classifier in a package's pyproject.toml."""
+    logger = logging.getLogger(__name__)
+    pyproject_path = PACKAGES[package_name]["pyproject"]
+
+    # Determine the correct classifier
+    new_classifier = get_development_status_classifier(version)
+
+    if dry_run:
+        logger.info(
+            f"[DRY RUN] Would update Development Status classifier in {pyproject_path} to '{new_classifier}'"
+        )
+        return
+
+    logger.info(f"Updating Development Status classifier in {pyproject_path}")
+
+    # Read current pyproject.toml
+    with open(pyproject_path, "rb") as f:
+        pyproject = tomli.load(f)
+
+    # Update the classifier
+    if "project" in pyproject and "classifiers" in pyproject["project"]:
+        classifiers = pyproject["project"]["classifiers"]
+
+        # Find and replace existing Development Status classifier
+        updated = False
+        for i, classifier in enumerate(classifiers):
+            if classifier.startswith("Development Status ::"):
+                old_classifier = classifier
+                classifiers[i] = new_classifier
+                updated = True
+                logger.debug(f"Replaced '{old_classifier}' with '{new_classifier}'")
+                break
+
+        # If no Development Status classifier exists, add it
+        if not updated:
+            classifiers.insert(0, new_classifier)  # Add at the beginning
+            logger.debug(f"Added new classifier: '{new_classifier}'")
+    else:
+        # Create classifiers section if it doesn't exist
+        if "project" not in pyproject:
+            pyproject["project"] = {}
+        pyproject["project"]["classifiers"] = [new_classifier]
+        logger.debug(f"Created new classifiers section with: '{new_classifier}'")
+
+    # Write back to file
+    with open(pyproject_path, "wb") as f:
+        tomli_w.dump(pyproject, f)
+
+    logger.debug(
+        f"Development Status classifier updated successfully for {package_name}"
+    )
+
+
+def update_all_development_status_classifiers(
+    new_versions: dict[str, str], dry_run: bool = False
+) -> None:
+    """Update Development Status classifiers for all packages."""
+    logger = logging.getLogger(__name__)
+    logger.info("Updating Development Status classifiers for all packages")
+
+    for package_name, new_version in new_versions.items():
+        update_development_status_classifier(package_name, new_version, dry_run)
+
+
 @command()
 @option(
     "--dry-run",
@@ -575,12 +671,25 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
                     print(f"   • {package_name}: {current_ver} → {source_version}")
                 else:
                     print(f"   • {package_name}: {current_ver} (already synced)")
+
+            print("\n[DRY RUN] Would also update Development Status classifiers:")
+            target_classifier = get_development_status_classifier(source_version)
+            for package_name in PACKAGES.keys():
+                print(f"   • {package_name}: {target_classifier}")
         else:
             print("\nSyncing packages...")
             sync_all_package_versions(source_version, dry_run)
+
+            print("Updating Development Status classifiers...")
+            # Create versions dict for classifier update
+            sync_versions_dict = {
+                package_name: source_version for package_name in PACKAGES.keys()
+            }
+            update_all_development_status_classifiers(sync_versions_dict, dry_run)
+
             run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
             run_command(
-                f'git commit -m "chore: sync all packages to version {source_version}"',
+                f'git commit -m "chore: sync all packages to version {source_version} and update classifiers"',
                 dry_run,
             )
             print("✅ All packages synced successfully!")
@@ -714,12 +823,23 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             if package_info.get("create_release", True):
                 print(f"   • {package_name} v{current_version}")
 
-        print("\n3️⃣  Update package versions:")
+        print("\n3️⃣  Update package versions and classifiers:")
         print(f"   • All packages: {current_version} → {new_version}")
+
+        # Show classifier updates
+        for package_name in PACKAGES.keys():
+            current_classifier = get_development_status_classifier(current_version)
+            new_classifier = get_development_status_classifier(new_version)
+            if current_classifier != new_classifier:
+                print(f"   • {package_name}: {current_classifier} → {new_classifier}")
+            else:
+                print(f"   • {package_name}: {new_classifier} (no change)")
 
         print("\n4️⃣  Commit changes:")
         print("   • Stage updated pyproject.toml files")
-        print("   • Create commit: 'chore(release): bump versions'")
+        print(
+            "   • Create commit: 'chore(release): bump versions and update classifiers'"
+        )
         print("   • Push new version to remote repository")
 
         print("\n" + "─" * 50)
@@ -756,9 +876,14 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Update versions for all packages
     update_all_package_versions(new_versions, dry_run)
 
-    # Create commit with all version updates
+    # Update Development Status classifiers for all packages
+    update_all_development_status_classifiers(new_versions, dry_run)
+
+    # Create commit with all version and classifier updates
     run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
-    run_command('git commit -m "chore(release): bump versions"', dry_run)
+    run_command(
+        'git commit -m "chore(release): bump versions and update classifiers"', dry_run
+    )
 
     # Push the new version commit to remote
     run_command("git push origin main", dry_run)
@@ -769,6 +894,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     print("   All packages released with the same version")
     print(f"\n🔄 Updated to: v{new_version}")
     print("   All packages now have the same new version")
+    print("   Development Status classifiers updated automatically")
     print("   New version committed and pushed to remote repository")
 
 
