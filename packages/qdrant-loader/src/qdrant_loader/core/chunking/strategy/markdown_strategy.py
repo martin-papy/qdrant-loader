@@ -10,6 +10,7 @@ import structlog
 
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
 
@@ -58,13 +59,13 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
     """
 
     def __init__(self, settings: Settings):
-        """Initialize the markdown chunking strategy.
+        """Initialize the Markdown chunking strategy.
 
         Args:
-            settings: The application settings
+            settings: Configuration settings
         """
         super().__init__(settings)
-        self.logger = structlog.get_logger(__name__)
+        self.progress_tracker = ChunkingProgressTracker(logger)
 
         # Initialize semantic analyzer
         self.semantic_analyzer = SemanticAnalyzer(
@@ -73,8 +74,8 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             passes=settings.global_config.semantic_analysis.lda_passes,
         )
 
-        # Cache for processed chunks
-        self._processed_chunks = {}
+        # Cache for processed chunks to avoid recomputation
+        self._processed_chunks: dict[str, dict[str, Any]] = {}
 
         # Initialize thread pool for parallel processing
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
@@ -414,7 +415,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         Returns:
             Dictionary containing processing results
         """
-        self.logger.debug(
+        logger.debug(
             "Processing chunk",
             chunk_index=chunk_index,
             total_chunks=total_chunks,
@@ -426,9 +427,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             return self._processed_chunks[chunk]
 
         # Perform semantic analysis
-        self.logger.debug(
-            "Starting semantic analysis for chunk", chunk_index=chunk_index
-        )
+        logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
         analysis_result = self.semantic_analyzer.analyze_text(
             chunk, doc_id=f"chunk_{chunk_index}"
         )
@@ -444,9 +443,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         }
         self._processed_chunks[chunk] = results
 
-        self.logger.debug(
-            "Completed semantic analysis for chunk", chunk_index=chunk_index
-        )
+        logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
         return results
 
     def _extract_section_title(self, chunk: str) -> str:
@@ -481,121 +478,107 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             self._executor = None
 
     def chunk_document(self, document: Document) -> list[Document]:
-        """Chunk a Markdown document using semantic boundaries.
+        """Chunk a markdown document into semantic sections.
 
         Args:
-            document: Document to chunk
+            document: The document to chunk
 
         Returns:
             List of chunked documents
         """
-        self.logger.info(
-            "Starting Markdown chunking",
-            extra={
-                "source": document.source,
-                "source_type": document.source_type,
-                "content_length": len(document.content),
-                "file_name": document.metadata.get("file_name", "unknown"),
-            },
+        file_name = (
+            document.metadata.get("file_name")
+            or document.metadata.get("original_filename")
+            or document.title
+            or f"{document.source_type}:{document.source}"
+        )
+
+        # Start progress tracking
+        self.progress_tracker.start_chunking(
+            document.id,
+            document.source,
+            document.source_type,
+            len(document.content),
+            file_name,
         )
 
         try:
             # Split text into semantic chunks
-            self.logger.debug("Parsing document structure")
+            logger.debug("Parsing document structure")
             chunks_metadata = self._split_text(document.content)
-            self.logger.info(
-                f"Split document into {len(chunks_metadata)} initial sections"
-            )
 
-            # Create chunked documents
+            if not chunks_metadata:
+                self.progress_tracker.finish_chunking(document.id, 0, "markdown")
+                return []
+
+            # Create chunk documents
             chunked_docs = []
             for i, chunk_meta in enumerate(chunks_metadata):
                 chunk_content = chunk_meta["content"]
-                self.logger.debug(
+                logger.debug(
                     f"Processing chunk {i+1}/{len(chunks_metadata)}",
                     extra={
                         "chunk_size": len(chunk_content),
-                        "chunk_title": chunk_meta.get("title", "unknown"),
-                        "chunk_level": chunk_meta.get("level", 0),
+                        "section_type": chunk_meta.get("section_type", "unknown"),
+                        "level": chunk_meta.get("level", 0),
                     },
                 )
 
-                # Create chunk document with metadata
+                # Create chunk document with enhanced metadata
                 chunk_doc = self._create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,
                     chunk_index=i,
                     total_chunks=len(chunks_metadata),
+                    skip_nlp=False,
                 )
 
-                # Generate unique chunk ID
-                chunk_doc.id = Document.generate_chunk_id(document.id, i)
+                # Add markdown-specific metadata
+                chunk_doc.metadata.update(chunk_meta)
+                chunk_doc.metadata["chunking_strategy"] = "markdown"
+                chunk_doc.metadata["parent_document_id"] = document.id
 
-                # Add Markdown-specific metadata
-                section_title = chunk_meta.get(
-                    "title", self._extract_section_title(chunk_content)
+                # Add additional metadata fields expected by tests
+                section_title = chunk_meta.get("title")
+                if not section_title:
+                    section_title = self._extract_section_title(chunk_content)
+                chunk_doc.metadata["section_title"] = section_title
+                chunk_doc.metadata["cross_references"] = self._extract_cross_references(
+                    chunk_content
                 )
-                chunk_doc.metadata.update(
-                    {
-                        "section_title": section_title,
-                        "section_level": chunk_meta.get("level", 0),
-                        "section_path": " > ".join(chunk_meta.get("path", [])),
-                        "is_top_level": chunk_meta.get("level", 0) <= 2,
-                        "cross_references": self._extract_cross_references(
-                            chunk_content
-                        ),
-                        "entities": self._extract_entities(chunk_content),
-                        "hierarchy": self._map_hierarchical_relationships(
-                            chunk_content
-                        ),
-                        "topic_analysis": self._analyze_topic(chunk_content),
-                        "chunk_index": i,
-                        "total_chunks": len(chunks_metadata),
-                        "parent_document_id": document.id,  # Add reference to parent document
-                    }
+                chunk_doc.metadata["hierarchy"] = self._map_hierarchical_relationships(
+                    chunk_content
                 )
+                chunk_doc.metadata["entities"] = self._extract_entities(chunk_content)
 
-                self.logger.debug(
+                # Add topic analysis
+                topic_analysis = self._analyze_topic(chunk_content)
+                chunk_doc.metadata["topic_analysis"] = topic_analysis
+
+                logger.debug(
                     "Created chunk document",
                     extra={
                         "chunk_id": chunk_doc.id,
-                        "section_title": section_title,
-                        "section_path": chunk_doc.metadata.get("section_path"),
-                        "content_length": len(chunk_content),
+                        "chunk_size": len(chunk_content),
+                        "metadata_keys": list(chunk_doc.metadata.keys()),
                     },
                 )
 
                 chunked_docs.append(chunk_doc)
 
-            self.logger.info(
-                "Completed Markdown chunking",
-                extra={
-                    "source": document.source,
-                    "chunk_count": len(chunked_docs),
-                    "avg_chunk_size": (
-                        sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
-                        if chunked_docs
-                        else 0
-                    ),
-                },
+            # Finish progress tracking
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunked_docs), "markdown"
             )
-
             return chunked_docs
 
         except Exception as e:
-            self.logger.error(
-                "Error chunking markdown document",
-                exc_info=True,
-                extra={
-                    "error": str(e),
-                    "source": document.source,
-                    "source_type": document.source_type,
-                },
+            self.progress_tracker.log_error(document.id, str(e))
+            # Fallback to default chunking
+            self.progress_tracker.log_fallback(
+                document.id, f"Markdown parsing failed: {str(e)}"
             )
-            # Fallback to simple chunking on error
             return self._fallback_chunking(document)
-        finally:
-            self.shutdown()
 
     def _fallback_chunking(self, document: Document) -> list[Document]:
         """Simple fallback chunking when the main strategy fails.
@@ -606,7 +589,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents
         """
-        self.logger.info("Using fallback chunking strategy for document")
+        logger.info("Using fallback chunking strategy for document")
 
         # Simple chunking implementation based on fixed size
         chunk_size = self.settings.global_config.chunking.chunk_size

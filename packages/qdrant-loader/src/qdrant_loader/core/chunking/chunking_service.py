@@ -72,11 +72,7 @@ class ChunkingService:
         }
 
         # Default strategy for unknown file types
-        self.default_strategy = DefaultChunkingStrategy(
-            settings=self.settings,
-            chunk_size=config.chunking.chunk_size,
-            chunk_overlap=config.chunking.chunk_overlap,
-        )
+        self.default_strategy = DefaultChunkingStrategy(settings=self.settings)
 
     def validate_config(self) -> None:
         """Validate the configuration.
@@ -100,6 +96,30 @@ class ChunkingService:
         Returns:
             The appropriate chunking strategy for the document type
         """
+        # Check if this is a converted file
+        conversion_method = document.metadata.get("conversion_method")
+        if conversion_method == "markitdown":
+            # Files converted with MarkItDown are now in markdown format
+            self.logger.info(
+                "Using markdown strategy for converted file",
+                original_file_type=document.metadata.get("original_file_type"),
+                conversion_method=conversion_method,
+                document_id=document.id,
+                document_title=document.title,
+            )
+            return MarkdownChunkingStrategy(self.settings)
+        elif conversion_method == "markitdown_fallback":
+            # Fallback documents are also in markdown format
+            self.logger.info(
+                "Using markdown strategy for fallback converted file",
+                original_file_type=document.metadata.get("original_file_type"),
+                conversion_method=conversion_method,
+                conversion_failed=document.metadata.get("conversion_failed", False),
+                document_id=document.id,
+                document_title=document.title,
+            )
+            return MarkdownChunkingStrategy(self.settings)
+
         # Get file extension from the document content type
         file_type = document.content_type.lower()
 
@@ -110,14 +130,15 @@ class ChunkingService:
             document_id=document.id,
             document_source=document.source,
             document_title=document.title,
+            conversion_method=conversion_method,
         )
 
         # Get strategy class for file type
         strategy_class = self.strategies.get(file_type)
 
         if strategy_class:
-            self.logger.info(
-                "Using specific strategy for file type",
+            self.logger.debug(
+                "Using specific strategy for this file type",
                 file_type=file_type,
                 strategy=strategy_class.__name__,
                 document_id=document.id,
@@ -125,8 +146,8 @@ class ChunkingService:
             )
             return strategy_class(self.settings)
 
-        self.logger.warning(
-            "No specific strategy found for file type, using default strategy",
+        self.logger.debug(
+            "No specific strategy found for this file type, using default text chunking strategy",
             file_type=file_type,
             document_id=document.id,
             document_title=document.title,

@@ -11,7 +11,17 @@ from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,
     ConfluenceSpaceConfig,
 )
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentDownloader,
+    AttachmentMetadata,
+)
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import (
+    FileConverter,
+    FileDetector,
+    FileConversionConfig,
+    FileConversionError,
+)
 from qdrant_loader.utils.logging import LoggingConfig
 from urllib.parse import urlparse
 
@@ -38,6 +48,41 @@ class ConfluenceConnector(BaseConnector):
         self._setup_authentication()
         self._initialized = False
 
+        # Initialize file conversion and attachment handling components
+        self.file_converter = None
+        self.file_detector = None
+        self.attachment_downloader = None
+
+        if self.config.enable_file_conversion:
+            logger.info("File conversion enabled for Confluence connector")
+            # File conversion config will be set from global config during ingestion
+            self.file_detector = FileDetector()
+        else:
+            logger.debug("File conversion disabled for Confluence connector")
+
+    def set_file_conversion_config(self, file_conversion_config: FileConversionConfig):
+        """Set file conversion configuration from global config.
+
+        Args:
+            file_conversion_config: Global file conversion configuration
+        """
+        if self.config.enable_file_conversion:
+            self.file_converter = FileConverter(file_conversion_config)
+
+            # Initialize attachment downloader if download_attachments is enabled
+            if self.config.download_attachments:
+                self.attachment_downloader = AttachmentDownloader(
+                    session=self.session,
+                    file_conversion_config=file_conversion_config,
+                    enable_file_conversion=True,
+                    max_attachment_size=file_conversion_config.max_file_size,
+                )
+                logger.info("Attachment downloader initialized with file conversion")
+            else:
+                logger.debug("Attachment downloading disabled")
+
+            logger.debug("File converter initialized with global config")
+
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
         if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
@@ -48,7 +93,7 @@ class ConfluenceConnector(BaseConnector):
                 raise ValueError("Email is required for Confluence Cloud")
 
             self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-            logger.info(
+            logger.debug(
                 "Configured Confluence Cloud authentication with email and API token"
             )
 
@@ -65,7 +110,7 @@ class ConfluenceConnector(BaseConnector):
                     "Content-Type": "application/json",
                 }
             )
-            logger.info(
+            logger.debug(
                 "Configured Confluence Data Center authentication with Personal Access Token"
             )
 
@@ -166,13 +211,13 @@ class ConfluenceConnector(BaseConnector):
         if not self.config.content_types:
             params = {
                 "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
             }
         else:
             params = {
                 "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
             }
 
@@ -186,12 +231,13 @@ class ConfluenceConnector(BaseConnector):
         )
         response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
-            logger.info(
-                f"Found {len(response['results'])} documents in Confluence Cloud space",
-                count=len(response["results"]),
-                cursor=cursor,
-            )
-        logger.debug("Confluence Cloud API response", response=response)
+            # For Cloud, we can't easily calculate page numbers from cursor, so just log occasionally
+            if len(response["results"]) > 0:
+                logger.debug(
+                    f"Fetching Confluence Cloud documents: {len(response['results'])} found",
+                    count=len(response["results"]),
+                    total_size=response.get("totalSize", response.get("size", 0)),
+                )
         return response
 
     async def _get_space_content_datacenter(self, start: int = 0) -> dict:
@@ -206,14 +252,14 @@ class ConfluenceConnector(BaseConnector):
         if not self.config.content_types:
             params = {
                 "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
                 "start": start,
             }
         else:
             params = {
                 "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
                 "start": start,
             }
@@ -225,13 +271,15 @@ class ConfluenceConnector(BaseConnector):
         )
         response = await self._make_request("GET", "content/search", params=params)
         if response and "results" in response:
-            logger.info(
-                f"Found {len(response['results'])} documents in Confluence Data Center space (page {start//25 + 1})",
-                count=len(response["results"]),
-                total_size=response.get("totalSize", response.get("size", 0)),
-                start=start,
-            )
-        logger.debug("Confluence Data Center API response", response=response)
+            # Only log every 10th page to reduce verbosity
+            page_num = start // 25 + 1
+            if page_num == 1 or page_num % 10 == 0:
+                logger.debug(
+                    f"Fetching Confluence Data Center documents (page {page_num}): {len(response['results'])} found",
+                    count=len(response["results"]),
+                    total_size=response.get("totalSize", response.get("size", 0)),
+                    start=start,
+                )
         return response
 
     async def _get_space_content(self, start: int = 0) -> dict:
@@ -249,6 +297,182 @@ class ConfluenceConnector(BaseConnector):
         else:
             # For Data Center, use start parameter
             return await self._get_space_content_datacenter(start)
+
+    async def _get_content_attachments(
+        self, content_id: str
+    ) -> list[AttachmentMetadata]:
+        """Fetch attachments for a specific content item.
+
+        Args:
+            content_id: ID of the content item
+
+        Returns:
+            List of attachment metadata
+        """
+        if not self.config.download_attachments:
+            return []
+
+        try:
+            # Fetch attachments using Confluence API
+            endpoint = f"content/{content_id}/child/attachment"
+            params = {
+                "expand": "metadata,version,history",  # Include history for better metadata
+                "limit": 50,  # Reasonable limit for attachments per page
+            }
+
+            response = await self._make_request("GET", endpoint, params=params)
+            attachments = []
+
+            for attachment_data in response.get("results", []):
+                try:
+                    # Extract attachment metadata
+                    attachment_id = attachment_data.get("id")
+                    filename = attachment_data.get("title", "unknown")
+
+                    # Get file size and MIME type from metadata
+                    # The structure can differ between Cloud and Data Center
+                    metadata = attachment_data.get("metadata", {})
+
+                    # Try different paths for file size (Cloud vs Data Center differences)
+                    file_size = 0
+                    if "mediaType" in metadata:
+                        # Data Center format
+                        file_size = metadata.get("mediaType", {}).get("size", 0)
+                    elif "properties" in metadata:
+                        # Alternative format in some versions
+                        file_size = metadata.get("properties", {}).get("size", 0)
+
+                    # If still no size, try from extensions
+                    if file_size == 0:
+                        extensions = attachment_data.get("extensions", {})
+                        file_size = extensions.get("fileSize", 0)
+
+                    # Try different paths for MIME type
+                    mime_type = "application/octet-stream"  # Default fallback
+                    if "mediaType" in metadata:
+                        # Data Center format
+                        mime_type = metadata.get("mediaType", {}).get("name", mime_type)
+                    elif "properties" in metadata:
+                        # Alternative format
+                        mime_type = metadata.get("properties", {}).get(
+                            "mediaType", mime_type
+                        )
+
+                    # If still no MIME type, try from extensions
+                    if mime_type == "application/octet-stream":
+                        extensions = attachment_data.get("extensions", {})
+                        mime_type = extensions.get("mediaType", mime_type)
+
+                    # Get download URL - this differs significantly between Cloud and Data Center
+                    download_link = attachment_data.get("_links", {}).get("download")
+                    if not download_link:
+                        logger.warning(
+                            "No download link found for attachment",
+                            attachment_id=attachment_id,
+                            filename=filename,
+                            deployment_type=self.config.deployment_type,
+                        )
+                        continue
+
+                    # Construct full download URL based on deployment type
+                    if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
+                        # Cloud URLs are typically absolute or need different handling
+                        if download_link.startswith("http"):
+                            download_url = download_link
+                        elif download_link.startswith("/"):
+                            download_url = f"{self.base_url}{download_link}"
+                        else:
+                            # Relative path - construct full URL
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
+                    else:
+                        # Data Center URLs
+                        if download_link.startswith("http"):
+                            download_url = download_link
+                        elif download_link.startswith("/"):
+                            download_url = f"{self.base_url}{download_link}"
+                        else:
+                            # Relative path - construct full URL
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
+
+                    # Get author and timestamps - structure can vary between versions
+                    version = attachment_data.get("version", {})
+                    history = attachment_data.get("history", {})
+
+                    # Try different paths for author information
+                    author = None
+                    if "by" in version:
+                        # Standard version author
+                        author = version.get("by", {}).get("displayName")
+                    elif "createdBy" in history:
+                        # History-based author (more common in Cloud)
+                        author = history.get("createdBy", {}).get("displayName")
+
+                    # Try different paths for timestamps
+                    created_at = None
+                    updated_at = None
+
+                    # Creation timestamp
+                    if "createdDate" in history:
+                        created_at = history.get("createdDate")
+                    elif "created" in attachment_data:
+                        created_at = attachment_data.get("created")
+
+                    # Update timestamp
+                    if "when" in version:
+                        updated_at = version.get("when")
+                    elif "lastModified" in history:
+                        updated_at = history.get("lastModified")
+
+                    attachment = AttachmentMetadata(
+                        id=attachment_id,
+                        filename=filename,
+                        size=file_size,
+                        mime_type=mime_type,
+                        download_url=download_url,
+                        parent_document_id=content_id,
+                        created_at=created_at,
+                        updated_at=updated_at,
+                        author=author,
+                    )
+
+                    attachments.append(attachment)
+
+                    logger.debug(
+                        "Found attachment",
+                        attachment_id=attachment_id,
+                        filename=filename,
+                        size=file_size,
+                        mime_type=mime_type,
+                        deployment_type=self.config.deployment_type,
+                    )
+
+                except Exception as e:
+                    logger.warning(
+                        "Failed to process attachment metadata",
+                        attachment_id=attachment_data.get("id"),
+                        filename=attachment_data.get("title"),
+                        deployment_type=self.config.deployment_type,
+                        error=str(e),
+                    )
+                    continue
+
+            logger.debug(
+                "Found attachments for content",
+                content_id=content_id,
+                attachment_count=len(attachments),
+                deployment_type=self.config.deployment_type,
+            )
+
+            return attachments
+
+        except Exception as e:
+            logger.error(
+                "Failed to fetch attachments",
+                content_id=content_id,
+                deployment_type=self.config.deployment_type,
+                error=str(e),
+            )
+            return []
 
     def _should_process_content(self, content: dict) -> bool:
         """Check if content should be processed based on labels.
@@ -308,6 +532,87 @@ class ConfluenceConnector(BaseConnector):
 
         return True
 
+    def _extract_hierarchy_info(self, content: dict) -> dict:
+        """Extract page hierarchy information from Confluence content.
+
+        Args:
+            content: Content item from Confluence API
+
+        Returns:
+            dict: Hierarchy information including ancestors, parent, and children
+        """
+        hierarchy_info = {
+            "ancestors": [],
+            "parent_id": None,
+            "parent_title": None,
+            "children": [],
+            "depth": 0,
+            "breadcrumb": [],
+        }
+
+        try:
+            # Extract ancestors information
+            ancestors = content.get("ancestors", [])
+            if ancestors:
+                # Build ancestor chain (from root to immediate parent)
+                ancestor_chain = []
+                breadcrumb = []
+
+                for ancestor in ancestors:
+                    ancestor_info = {
+                        "id": ancestor.get("id"),
+                        "title": ancestor.get("title"),
+                        "type": ancestor.get("type", "page"),
+                    }
+                    ancestor_chain.append(ancestor_info)
+                    breadcrumb.append(ancestor.get("title", "Unknown"))
+
+                hierarchy_info["ancestors"] = ancestor_chain
+                hierarchy_info["breadcrumb"] = breadcrumb
+                hierarchy_info["depth"] = len(ancestor_chain)
+
+                # The last ancestor is the immediate parent
+                if ancestor_chain:
+                    immediate_parent = ancestor_chain[-1]
+                    hierarchy_info["parent_id"] = immediate_parent["id"]
+                    hierarchy_info["parent_title"] = immediate_parent["title"]
+
+            # Extract children information (only pages, not comments)
+            children_data = content.get("children", {})
+            if "page" in children_data:
+                child_pages = children_data["page"].get("results", [])
+                children_info = []
+
+                for child in child_pages:
+                    child_info = {
+                        "id": child.get("id"),
+                        "title": child.get("title"),
+                        "type": child.get("type", "page"),
+                    }
+                    children_info.append(child_info)
+
+                hierarchy_info["children"] = children_info
+
+            logger.debug(
+                "Extracted hierarchy info",
+                content_id=content.get("id"),
+                content_title=content.get("title"),
+                depth=hierarchy_info["depth"],
+                parent_id=hierarchy_info["parent_id"],
+                children_count=len(hierarchy_info["children"]),
+                breadcrumb=hierarchy_info["breadcrumb"],
+            )
+
+        except Exception as e:
+            logger.warning(
+                "Failed to extract hierarchy information",
+                content_id=content.get("id"),
+                content_title=content.get("title"),
+                error=str(e),
+            )
+
+        return hierarchy_info
+
     def _process_content(
         self, content: dict, clean_html: bool = True
     ) -> Document | None:
@@ -350,13 +655,14 @@ class ConfluenceConnector(BaseConnector):
             # Check for missing or malformed body
             if not body:
                 logger.warning(
-                    "Content body is missing or malformed",
+                    "Content body is missing or malformed, using title as content",
                     content_id=content_id,
                     title=title,
                     content_type=content.get("type"),
                     space=space,
                 )
-                raise ValueError("Content body is missing or malformed")
+                # Use title as fallback content instead of failing
+                body = title or f"[Empty page: {content_id}]"
 
             # Check for other missing required fields
             missing_fields = []
@@ -449,7 +755,10 @@ class ConfluenceConnector(BaseConnector):
                         }
                     )
 
-            # Create metadata with all available information
+            # Extract hierarchy information
+            hierarchy_info = self._extract_hierarchy_info(content)
+
+            # Create metadata with all available information including hierarchy
             metadata = {
                 "id": content_id,
                 "title": title,
@@ -466,6 +775,19 @@ class ConfluenceConnector(BaseConnector):
                 "comments": comments,
                 "updated_at": updated_at,
                 "created_at": created_at,
+                # Page hierarchy information
+                "hierarchy": hierarchy_info,
+                "parent_id": hierarchy_info["parent_id"],
+                "parent_title": hierarchy_info["parent_title"],
+                "ancestors": hierarchy_info["ancestors"],
+                "children": hierarchy_info["children"],
+                "depth": hierarchy_info["depth"],
+                "breadcrumb": hierarchy_info["breadcrumb"],
+                "breadcrumb_text": (
+                    " > ".join(hierarchy_info["breadcrumb"])
+                    if hierarchy_info["breadcrumb"]
+                    else ""
+                ),
             }
 
             # Clean content if requested
@@ -640,6 +962,35 @@ class ConfluenceConnector(BaseConnector):
                                 )
                                 if document:
                                     documents.append(document)
+
+                                    # Process attachments if enabled
+                                    if (
+                                        self.config.download_attachments
+                                        and self.attachment_downloader
+                                    ):
+                                        try:
+                                            content_id = content.get("id")
+                                            attachments = (
+                                                await self._get_content_attachments(
+                                                    content_id
+                                                )
+                                            )
+
+                                            if attachments:
+                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                    attachments, document
+                                                )
+                                                documents.extend(attachment_docs)
+
+                                                logger.debug(
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                )
+                                        except Exception as e:
+                                            logger.error(
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
+                                            )
+
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "
                                         f"(ID: {content['id']}) from space {self.config.space_key}"
@@ -710,6 +1061,35 @@ class ConfluenceConnector(BaseConnector):
                                 )
                                 if document:
                                     documents.append(document)
+
+                                    # Process attachments if enabled
+                                    if (
+                                        self.config.download_attachments
+                                        and self.attachment_downloader
+                                    ):
+                                        try:
+                                            content_id = content.get("id")
+                                            attachments = (
+                                                await self._get_content_attachments(
+                                                    content_id
+                                                )
+                                            )
+
+                                            if attachments:
+                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                    attachments, document
+                                                )
+                                                documents.extend(attachment_docs)
+
+                                                logger.debug(
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                )
+                                        except Exception as e:
+                                            logger.error(
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
+                                            )
+
                                     logger.debug(
                                         f"Processed {content['type']} '{content['title']}' "
                                         f"(ID: {content['id']}) from space {self.config.space_key}"
@@ -739,6 +1119,6 @@ class ConfluenceConnector(BaseConnector):
                     raise
 
         logger.info(
-            f"Processed {len(documents)} documents from {total_documents} total results in {page_count} pages from space {self.config.space_key}"
+            f"📄 Confluence: {len(documents)} documents from space {self.config.space_key}"
         )
         return documents

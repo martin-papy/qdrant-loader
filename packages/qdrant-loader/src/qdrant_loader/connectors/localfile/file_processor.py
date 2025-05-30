@@ -2,8 +2,12 @@
 
 import fnmatch
 import os
+from typing import TYPE_CHECKING, Optional
 
-import structlog
+from qdrant_loader.utils.logging import LoggingConfig
+
+if TYPE_CHECKING:
+    from qdrant_loader.core.file_conversion import FileDetector
 
 from .config import LocalFileConfig
 
@@ -11,10 +15,23 @@ from .config import LocalFileConfig
 class LocalFileFileProcessor:
     """Handles file processing and filtering logic for local files."""
 
-    def __init__(self, config: LocalFileConfig, base_path: str):
+    def __init__(
+        self,
+        config: LocalFileConfig,
+        base_path: str,
+        file_detector: Optional["FileDetector"] = None,
+    ):
+        """Initialize the file processor.
+
+        Args:
+            config: Local file configuration
+            base_path: Base directory path
+            file_detector: Optional file detector for conversion support
+        """
         self.config = config
         self.base_path = base_path
-        self.logger = structlog.get_logger(__name__)
+        self.file_detector = file_detector
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def should_process_file(self, file_path: str) -> bool:
         try:
@@ -72,14 +89,33 @@ class LocalFileFileProcessor:
 
             file_type_match = False
             file_ext = os.path.splitext(file_basename)[1].lower()
+            self.logger.debug(f"Checking file extension: {file_ext}")
+
+            # First check configured file types
             for pattern in self.config.file_types:
+                self.logger.debug(f"Checking file type pattern: {pattern}")
                 pattern_ext = os.path.splitext(pattern)[1].lower()
                 if pattern_ext and file_ext == pattern_ext:
                     file_type_match = True
+                    self.logger.debug(
+                        f"File {rel_path} matches file type pattern {pattern}"
+                    )
                     break
+
+            # If file conversion is enabled and file doesn't match configured types,
+            # check if it can be converted
+            if (
+                not file_type_match
+                and self.config.enable_file_conversion
+                and self.file_detector
+            ):
+                if self.file_detector.is_supported_for_conversion(file_path):
+                    file_type_match = True
+                    self.logger.debug(f"File {rel_path} supported for conversion")
+
             if not file_type_match:
                 self.logger.debug(
-                    f"Skipping {rel_path}: does not match any file type patterns"
+                    f"Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
                 )
                 return False
 

@@ -1,5 +1,105 @@
 # 🚀 Release Notes
 
+## 🆕 Version 0.3.1 - File Conversion Support (May 30, 2025)
+
+### 🎉 Major New Feature: File Conversion Support
+
+QDrant Loader now supports automatic conversion of diverse file formats to markdown for processing:
+
+#### 📁 Supported File Types (20+)
+
+- **Documents**: PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
+- **Images**: PNG, JPEG, GIF, BMP, TIFF (with optional OCR)
+- **Archives**: ZIP files with automatic extraction
+- **Data**: JSON, CSV, XML, YAML
+- **Audio**: MP3, WAV (transcription support)
+- **E-books**: EPUB format
+- **And more**: All MarkItDown-supported formats
+
+#### 🔧 Key Features
+
+- **Universal Support**: Works across all connectors (Git, Confluence, JIRA, PublicDocs, LocalFile)
+- **Attachment Processing**: Download and convert attachments from Confluence, JIRA, and documentation sites
+- **Intelligent Detection**: Automatic file type detection and conversion routing
+- **Fallback Handling**: Graceful handling when conversion fails
+- **Performance Optimized**: Configurable size limits, timeouts, and lazy loading
+- **Metadata Preservation**: Complete tracking of conversion information
+
+#### ⚙️ Configuration
+
+```yaml
+# Global settings
+global:
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300  # 5 minutes
+
+# Enable per connector
+sources:
+  git:
+    my-repo:
+      enable_file_conversion: true
+  confluence:
+    my-space:
+      enable_file_conversion: true
+      download_attachments: true
+```
+
+#### 🚀 Getting Started
+
+1. **Update to v0.3.1**: `pip install --upgrade qdrant-loader`
+2. **Enable conversion**: Add `enable_file_conversion: true` to your connectors
+3. **Run ingestion**: Files are automatically detected and converted
+
+See the [File Conversion Guide](./docs/FileConversionGuide.md) for detailed documentation.
+
+### 🔧 Technical Improvements
+
+- **Enhanced State Management**: Complete tracking of conversion metadata and attachment relationships
+- **Monitoring Integration**: Comprehensive metrics for conversion operations
+- **Error Handling**: Robust fallback mechanisms for conversion failures
+- **Performance**: Optimized memory usage and processing speed
+
+### 🔌 MCP Server Enhancements
+
+- **Hierarchy-Aware Search**: Enhanced Confluence search with page hierarchy understanding
+  - Added hierarchy information to search results (parent/child relationships, breadcrumb paths, depth levels)
+  - New `hierarchy_search` tool with advanced filtering capabilities
+  - Support for filtering by hierarchy depth, parent pages, root pages, and pages with children
+  - Hierarchical organization of search results with tree-like structure display
+
+- **Attachment-Aware Search**: Comprehensive file attachment support and parent document relationships
+  - Added attachment information to all search results (file metadata, parent document context)
+  - New `attachment_search` tool for specialized file discovery and filtering
+  - Support for filtering by file type, size, author, and parent document
+  - Rich attachment context display with visual indicators
+
+- **Enhanced Search Result Model**: Extended SearchResult with comprehensive metadata for both hierarchy and attachment information
+- **Advanced Search Tools**: Three specialized search tools for different use cases (`search`, `hierarchy_search`, `attachment_search`)
+
+### 🧪 Testing
+
+- **100+ Unit Tests**: Comprehensive test coverage for all file conversion components
+- **Integration Tests**: End-to-end testing of conversion workflows
+- **Demo Scripts**: Working examples for all connector types
+
+### 📚 Documentation
+
+- **[File Conversion Guide](./docs/FileConversionGuide.md)**: Comprehensive setup and usage guide
+- **[Migration Guide](./docs/MigrationGuide.md)**: Step-by-step upgrade instructions
+- **Updated READMEs**: Enhanced documentation with file conversion examples
+- **[Advanced Search Examples](./docs/mcp-server/SearchExamples.md)**: Comprehensive MCP server search capabilities
+- **[Hierarchy Search Guide](./docs/mcp-server/SearchHierarchyExemple.md)**: Confluence hierarchy navigation and filtering
+- **[Attachment Search Guide](./docs/mcp-server/AttachementSearchExemple.md)**: File attachment discovery and management
+
+### 🔄 Backward Compatibility
+
+- **No Breaking Changes**: File conversion is disabled by default
+- **Existing Configurations**: Continue to work unchanged
+- **Performance**: Minimal impact when conversion is disabled
+
+---
+
 ## 🆕 Latest Features
 
 ### Confluence Data Center Support

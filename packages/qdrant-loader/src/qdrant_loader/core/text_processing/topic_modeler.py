@@ -3,11 +3,12 @@
 from typing import Any
 
 import spacy
-import structlog
 from gensim import corpora, models
 from spacy.cli.download import download
 
-logger = structlog.get_logger(__name__)
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class TopicModeler:

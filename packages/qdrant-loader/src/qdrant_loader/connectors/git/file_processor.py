@@ -2,29 +2,37 @@
 
 import fnmatch
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-import structlog
+from qdrant_loader.utils.logging import LoggingConfig
 
 if TYPE_CHECKING:
     from qdrant_loader.connectors.git.config import GitRepoConfig
+    from qdrant_loader.core.file_conversion import FileDetector
 
-logger = structlog.get_logger(__name__)
+logger = LoggingConfig.get_logger(__name__)
 
 
 class FileProcessor:
     """Handles file processing and filtering logic."""
 
-    def __init__(self, config: "GitRepoConfig", temp_dir: str):
+    def __init__(
+        self,
+        config: "GitRepoConfig",
+        temp_dir: str,
+        file_detector: Optional["FileDetector"] = None,
+    ):
         """Initialize the file processor.
 
         Args:
             config: Git repository configuration
             temp_dir: Temporary directory path
+            file_detector: Optional file detector for conversion support
         """
         self.config = config
         self.temp_dir = temp_dir
-        self.logger = structlog.get_logger(__name__)
+        self.file_detector = file_detector
+        self.logger = LoggingConfig.get_logger(__name__)
 
     def should_process_file(self, file_path: str) -> bool:
         """Check if a file should be processed based on configuration.
@@ -101,6 +109,8 @@ class FileProcessor:
                 1
             ].lower()  # Get extension with dot
             self.logger.debug(f"Checking file extension: {file_ext}")
+
+            # First check configured file types
             for pattern in self.config.file_types:
                 self.logger.debug(f"Checking file type pattern: {pattern}")
                 # Extract extension from pattern (e.g., "*.md" -> ".md")
@@ -112,9 +122,20 @@ class FileProcessor:
                     )
                     break
 
+            # If file conversion is enabled and file doesn't match configured types,
+            # check if it can be converted
+            if (
+                not file_type_match
+                and self.config.enable_file_conversion
+                and self.file_detector
+            ):
+                if self.file_detector.is_supported_for_conversion(file_path):
+                    file_type_match = True
+                    self.logger.debug(f"File {rel_path} supported for conversion")
+
             if not file_type_match:
                 self.logger.debug(
-                    f"Skipping {rel_path}: does not match any file type patterns"
+                    f"Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
                 )
                 return False
 

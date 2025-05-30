@@ -115,7 +115,7 @@ async def test_handle_list_tools(mcp_handler):
     assert response["id"] == 2
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 1
+    assert len(response["result"]["tools"]) == 3
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
     assert "description" in tool

@@ -1,11 +1,10 @@
 import asyncio
 
-import structlog
-
 from qdrant_loader.config import get_settings
 from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.utils.logging import LoggingConfig
 
-logger = structlog.get_logger()
+logger = LoggingConfig.get_logger()
 
 
 async def init_collection(settings=None, force=False):
@@ -31,7 +30,7 @@ async def init_collection(settings=None, force=False):
                 manager.delete_collection()
                 logger.info(
                     "Deleted existing collection",
-                    collection=settings.QDRANT_COLLECTION_NAME,
+                    collection=settings.qdrant_collection_name,
                 )
             except Exception:
                 # Ignore errors if collection doesn't exist
