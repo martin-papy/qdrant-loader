@@ -2,13 +2,13 @@
 
 **Version**: 0.3.1  
 **Release Date**: May 30, 2025  
-**Updated**: January 2025 - Added timeout and LLM features
+**Updated**: May 31, 2025 - Added timeout and LLM features
 
 ## Overview
 
 QDrant Loader v0.3.1 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
 
-### ✨ New Features (January 2025)
+### ✨ New Features (May 2025)
 
 - **⏱️ Conversion Timeout Control**: Configurable timeouts prevent long-running conversions from hanging
 - **🤖 AI-Powered Image Descriptions**: LLM integration for intelligent image content extraction
@@ -63,7 +63,7 @@ qdrant-loader status
 
 - **PDF**: Text extraction with layout preservation
 - **Microsoft Office**: Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
-- **OpenDocument**: ODT, ODS, ODP formats
+- **Legacy Office**: Word (.doc), Excel (.xls), PowerPoint (.ppt)
 
 ### Images
 
@@ -74,9 +74,8 @@ qdrant-loader status
 
 ### Data Formats
 
-- **Structured**: JSON, CSV, XML, YAML
+- **Structured**: CSV, XML
 - **Tabular**: Excel spreadsheets with multiple sheets
-- **Configuration**: INI, TOML files
 
 ### Archives
 
@@ -85,7 +84,7 @@ qdrant-loader status
 
 ### Audio
 
-- **Formats**: MP3, WAV, M4A
+- **Formats**: MP3, WAV
 - **Transcription**: Automatic speech-to-text conversion
 - **Metadata**: Duration, format information
 
@@ -96,9 +95,21 @@ qdrant-loader status
 
 ### Other Formats
 
-- **Markdown**: Enhanced processing (existing files)
-- **HTML**: Improved extraction (existing files)
-- **Plain Text**: Enhanced metadata extraction
+- **CSV**: Tabular data processing with proper formatting
+- **XML**: Structured markup processing
+
+**Note**: The following file types are **NOT** processed through MarkItDown file conversion as they are already handled by existing chunking strategies:
+
+- **Markdown** (`.md`, `.markdown`): Processed directly by `MarkdownChunkingStrategy`
+- **HTML** (`.html`, `.htm`): Processed directly by `HTMLChunkingStrategy`  
+- **Plain Text** (`.txt`): Processed directly by `BaseChunkingStrategy`
+- **JSON** (`.json`): Processed directly by `JSONChunkingStrategy`
+
+**Unsupported Formats**: The following formats are **NOT** supported by MarkItDown:
+
+- **OpenDocument formats** (ODT, ODS, ODP): Not supported by MarkItDown
+- **Configuration files** (YAML, TOML, INI): Not supported by MarkItDown  
+- **M4A audio files**: Not supported by MarkItDown
 
 ## ⚙️ Configuration
 
