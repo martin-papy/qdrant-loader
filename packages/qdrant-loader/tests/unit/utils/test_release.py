@@ -20,9 +20,11 @@ from release import (
     check_main_up_to_date,
     check_unpushed_commits,
     create_github_release,
+    get_development_status_classifier,
     get_github_token,
     get_package_version,
     run_command,
+    update_development_status_classifier,
     update_package_version,
 )
 
@@ -727,3 +729,222 @@ def test_dry_run_mode():
             assert result is True
             # Should make HTTP requests even in dry run mode
             assert mock_get.call_count == 2
+
+
+def test_get_development_status_classifier():
+    """Test determining Development Status classifier from version."""
+    # Test alpha versions
+    assert (
+        get_development_status_classifier("1.0.0a1")
+        == "Development Status :: 3 - Alpha"
+    )
+    assert (
+        get_development_status_classifier("2.3.1a5")
+        == "Development Status :: 3 - Alpha"
+    )
+    assert (
+        get_development_status_classifier("0.1.0A2")
+        == "Development Status :: 3 - Alpha"
+    )  # Case insensitive
+
+    # Test beta versions
+    assert (
+        get_development_status_classifier("1.0.0b1") == "Development Status :: 4 - Beta"
+    )
+    assert (
+        get_development_status_classifier("2.3.1b2") == "Development Status :: 4 - Beta"
+    )
+    assert (
+        get_development_status_classifier("0.1.0B3") == "Development Status :: 4 - Beta"
+    )  # Case insensitive
+
+    # Test release candidate versions
+    assert (
+        get_development_status_classifier("1.0.0rc1")
+        == "Development Status :: 4 - Beta"
+    )
+    assert (
+        get_development_status_classifier("2.3.1rc2")
+        == "Development Status :: 4 - Beta"
+    )
+    assert (
+        get_development_status_classifier("0.1.0RC3")
+        == "Development Status :: 4 - Beta"
+    )  # Case insensitive
+
+    # Test stable versions
+    assert (
+        get_development_status_classifier("1.0.0")
+        == "Development Status :: 5 - Production/Stable"
+    )
+    assert (
+        get_development_status_classifier("2.3.1")
+        == "Development Status :: 5 - Production/Stable"
+    )
+    assert (
+        get_development_status_classifier("0.1.0")
+        == "Development Status :: 5 - Production/Stable"
+    )
+    assert (
+        get_development_status_classifier("10.25.99")
+        == "Development Status :: 5 - Production/Stable"
+    )
+
+
+def test_update_development_status_classifier():
+    """Test updating Development Status classifier in pyproject.toml."""
+    initial_pyproject = {
+        "project": {
+            "name": "test-project",
+            "version": "0.1.0",
+            "classifiers": [
+                "Development Status :: 3 - Alpha",
+                "Intended Audience :: Developers",
+                "Programming Language :: Python :: 3",
+            ],
+        }
+    }
+
+    # Create a mock file handler class
+    class MockFileHandler:
+        def __init__(self, initial_content):
+            self.content = initial_content
+            self.read_mode = None
+            self.accumulated_content = ""
+
+        def __call__(self, filename, mode):
+            self.read_mode = mode
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            if self.read_mode == "rb":
+                result = tomli_w.dumps(self.content).encode("utf-8")
+            else:
+                result = tomli_w.dumps(self.content)
+            return result
+
+        def write(self, content):
+            if isinstance(content, bytes):
+                content_str = content.decode("utf-8")
+            else:
+                content_str = content
+            self.accumulated_content += content_str
+            self.content = tomli.loads(self.accumulated_content)
+
+    # Test updating existing classifier
+    mock_handler = MockFileHandler(initial_pyproject)
+
+    with (
+        patch("release.open", mock_handler),
+        patch("release.logging.getLogger") as mock_logger,
+    ):
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+
+        # Test updating to beta
+        update_development_status_classifier("qdrant-loader", "1.0.0b1")
+
+        # Check that classifier was updated
+        classifiers = mock_handler.content["project"]["classifiers"]
+        assert "Development Status :: 4 - Beta" in classifiers
+        assert "Development Status :: 3 - Alpha" not in classifiers
+
+        mock_log.info.assert_called_with(
+            "Updating Development Status classifier in packages/qdrant-loader/pyproject.toml"
+        )
+        mock_log.debug.assert_any_call(
+            "Replaced 'Development Status :: 3 - Alpha' with 'Development Status :: 4 - Beta'"
+        )
+
+    # Test dry run
+    mock_handler = MockFileHandler(initial_pyproject)
+
+    with (
+        patch("release.open", mock_handler),
+        patch("release.logging.getLogger") as mock_logger,
+    ):
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+
+        update_development_status_classifier("qdrant-loader", "1.0.0", dry_run=True)
+
+        # Should not have modified the file
+        classifiers = mock_handler.content["project"]["classifiers"]
+        assert "Development Status :: 3 - Alpha" in classifiers  # Original unchanged
+
+        mock_log.info.assert_called_with(
+            "[DRY RUN] Would update Development Status classifier in packages/qdrant-loader/pyproject.toml to 'Development Status :: 5 - Production/Stable'"
+        )
+
+
+def test_update_development_status_classifier_no_existing():
+    """Test updating Development Status classifier when none exists."""
+    initial_pyproject = {
+        "project": {
+            "name": "test-project",
+            "version": "0.1.0",
+            "classifiers": [
+                "Intended Audience :: Developers",
+                "Programming Language :: Python :: 3",
+            ],
+        }
+    }
+
+    # Create a mock file handler
+    class MockFileHandler:
+        def __init__(self, initial_content):
+            self.content = initial_content
+            self.read_mode = None
+            self.accumulated_content = ""
+
+        def __call__(self, filename, mode):
+            self.read_mode = mode
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self):
+            if self.read_mode == "rb":
+                result = tomli_w.dumps(self.content).encode("utf-8")
+            else:
+                result = tomli_w.dumps(self.content)
+            return result
+
+        def write(self, content):
+            if isinstance(content, bytes):
+                content_str = content.decode("utf-8")
+            else:
+                content_str = content
+            self.accumulated_content += content_str
+            self.content = tomli.loads(self.accumulated_content)
+
+    mock_handler = MockFileHandler(initial_pyproject)
+
+    with (
+        patch("release.open", mock_handler),
+        patch("release.logging.getLogger") as mock_logger,
+    ):
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+
+        update_development_status_classifier("qdrant-loader", "1.0.0")
+
+        # Check that classifier was added at the beginning
+        classifiers = mock_handler.content["project"]["classifiers"]
+        assert classifiers[0] == "Development Status :: 5 - Production/Stable"
+        assert "Intended Audience :: Developers" in classifiers
+        assert "Programming Language :: Python :: 3" in classifiers
+
+        mock_log.debug.assert_any_call(
+            "Added new classifier: 'Development Status :: 5 - Production/Stable'"
+        )
