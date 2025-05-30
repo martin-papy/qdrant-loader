@@ -185,6 +185,17 @@ class TestSupportedForConversion:
         finally:
             temp_path.unlink(missing_ok=True)
 
+    def test_is_supported_for_conversion_excluded_json(self, file_detector):
+        """Test that JSON files are excluded from conversion (handled by JSONChunkingStrategy)."""
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(b'{"test": "data"}')
+
+        try:
+            assert file_detector.is_supported_for_conversion(str(temp_path)) is False
+        finally:
+            temp_path.unlink(missing_ok=True)
+
     def test_is_supported_for_conversion_unsupported_extension(self, file_detector):
         """Test that unsupported file types are not supported for conversion."""
         with tempfile.NamedTemporaryFile(suffix=".unknown", delete=False) as temp_file:
@@ -242,7 +253,7 @@ class TestSupportedFormats:
 
     def test_excluded_extensions_include_common_formats(self, file_detector):
         """Test that excluded extensions include common formats."""
-        common_excluded = [".html", ".htm", ".md", ".markdown", ".txt"]
+        common_excluded = [".html", ".htm", ".md", ".markdown", ".txt", ".json"]
 
         for extension in common_excluded:
             assert extension in file_detector.EXCLUDED_EXTENSIONS
