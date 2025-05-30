@@ -391,14 +391,6 @@ def check_github_workflows(dry_run: bool = False) -> bool:
     # First check for running workflows
     logger.debug("Checking for running workflows")
 
-    if dry_run:
-        logger.debug("[DRY RUN] Would check for running workflows via GitHub API")
-        logger.debug("[DRY RUN] Would check completed workflows via GitHub API")
-        logger.debug(
-            "[DRY RUN] Would verify all workflows are passing and match current commit"
-        )
-        return True
-
     response = requests.get(
         f"https://api.github.com/repos/{repo_url}/actions/runs",
         headers=headers,
@@ -407,7 +399,9 @@ def check_github_workflows(dry_run: bool = False) -> bool:
 
     if response.status_code != 200:
         logger.error(f"Error checking GitHub Actions status: {response.text}")
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
 
     runs = response.json()["workflow_runs"]
     if runs:
@@ -416,7 +410,9 @@ def check_github_workflows(dry_run: bool = False) -> bool:
         )
         for run in runs:
             logger.error(f"- {run['name']} is running: {run['html_url']}")
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
 
     # Get current commit hash
     current_commit, _ = run_command("git rev-parse HEAD", dry_run)
@@ -432,14 +428,18 @@ def check_github_workflows(dry_run: bool = False) -> bool:
 
     if response.status_code != 200:
         logger.error(f"Error checking GitHub Actions status: {response.text}")
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
 
     runs = response.json()["workflow_runs"]
     if not runs:
         logger.error(
             "No recent workflow runs found. Please ensure workflows are running."
         )
-        sys.exit(1)
+        if not dry_run:
+            sys.exit(1)
+        return False
 
     # Check the most recent run for each workflow
     workflows = {}
@@ -461,7 +461,9 @@ def check_github_workflows(dry_run: bool = False) -> bool:
                 f"Workflow '{workflow_name}' is not passing. Latest run status: {run['conclusion']}"
             )
             logger.error(f"Please check the workflow run at: {run['html_url']}")
-            sys.exit(1)
+            if not dry_run:
+                sys.exit(1)
+            return False
 
         # Check if the workflow run matches our current commit
         # Skip this check for excluded workflows (like scheduled ones)
@@ -480,7 +482,9 @@ def check_github_workflows(dry_run: bool = False) -> bool:
                 logger.error(f"Current commit: {current_commit}")
                 logger.error(f"Workflow commit: {run['head_sha']}")
                 logger.error(f"Workflow run: {run['html_url']}")
-                sys.exit(1)
+                if not dry_run:
+                    sys.exit(1)
+                return False
             else:
                 # For non-critical workflows, just log a warning
                 logger.debug(
