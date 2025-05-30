@@ -19,10 +19,6 @@ def pytest_configure(config):
     # Set asyncio mode to strict
     config.option.asyncio_mode = "strict"
 
-    # Suppress warnings
-    config.addinivalue_line("filterwarnings", "ignore::DeprecationWarning")
-    config.addinivalue_line("filterwarnings", "ignore::UserWarning")
-
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():

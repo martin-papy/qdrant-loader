@@ -254,3 +254,98 @@ class Document(BaseModel):
         chunk_uuid = uuid.UUID(chunk_hash[:32])
 
         return str(chunk_uuid)
+
+    # Hierarchy convenience methods
+    def get_parent_id(self) -> str | None:
+        """Get the parent document ID if available.
+
+        Returns:
+            Parent document ID or None if this is a root document
+        """
+        return self.metadata.get("parent_id")
+
+    def get_parent_title(self) -> str | None:
+        """Get the parent document title if available.
+
+        Returns:
+            Parent document title or None if this is a root document
+        """
+        return self.metadata.get("parent_title")
+
+    def get_breadcrumb(self) -> list[str]:
+        """Get the breadcrumb trail for this document.
+
+        Returns:
+            List of ancestor titles leading to this document
+        """
+        return self.metadata.get("breadcrumb", [])
+
+    def get_breadcrumb_text(self) -> str:
+        """Get the breadcrumb trail as a formatted string.
+
+        Returns:
+            Breadcrumb trail formatted as "Parent > Child > Current"
+        """
+        return self.metadata.get("breadcrumb_text", "")
+
+    def get_depth(self) -> int:
+        """Get the depth of this document in the hierarchy.
+
+        Returns:
+            Depth level (0 for root documents, 1 for first level children, etc.)
+        """
+        return self.metadata.get("depth", 0)
+
+    def get_ancestors(self) -> list[dict]:
+        """Get the list of ancestor documents.
+
+        Returns:
+            List of ancestor document information (id, title, type)
+        """
+        return self.metadata.get("ancestors", [])
+
+    def get_children(self) -> list[dict]:
+        """Get the list of child documents.
+
+        Returns:
+            List of child document information (id, title, type)
+        """
+        return self.metadata.get("children", [])
+
+    def is_root_document(self) -> bool:
+        """Check if this is a root document (no parent).
+
+        Returns:
+            True if this is a root document, False otherwise
+        """
+        return self.get_parent_id() is None
+
+    def has_children(self) -> bool:
+        """Check if this document has child documents.
+
+        Returns:
+            True if this document has children, False otherwise
+        """
+        return len(self.get_children()) > 0
+
+    def get_hierarchy_context(self) -> str:
+        """Get a formatted string describing the document's position in the hierarchy.
+
+        Returns:
+            Formatted hierarchy context string
+        """
+        breadcrumb = self.get_breadcrumb_text()
+        depth = self.get_depth()
+        children_count = len(self.get_children())
+
+        context_parts = []
+
+        if breadcrumb:
+            context_parts.append(f"Path: {breadcrumb}")
+
+        context_parts.append(f"Depth: {depth}")
+
+        if children_count > 0:
+            context_parts.append(f"Children: {children_count}")
+
+        return " | ".join(context_parts)

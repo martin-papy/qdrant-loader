@@ -31,6 +31,25 @@ class HybridSearchResult:
     vector_score: float = 0.0
     keyword_score: float = 0.0
 
+    # Hierarchy information (primarily for Confluence)
+    parent_id: str | None = None
+    parent_title: str | None = None
+    breadcrumb_text: str | None = None
+    depth: int | None = None
+    children_count: int | None = None
+    hierarchy_context: str | None = None
+
+    # Attachment information (for files attached to documents)
+    is_attachment: bool = False
+    parent_document_id: str | None = None
+    parent_document_title: str | None = None
+    attachment_id: str | None = None
+    original_filename: str | None = None
+    file_size: int | None = None
+    mime_type: str | None = None
+    attachment_author: str | None = None
+    attachment_context: str | None = None
+
 
 class HybridSearchEngine:
     """Service for hybrid search combining vector and keyword search."""
@@ -158,6 +177,21 @@ class HybridSearchEngine:
                     source_url=result.source_url,
                     file_path=result.file_path,
                     repo_name=result.repo_name,
+                    parent_id=result.parent_id,
+                    parent_title=result.parent_title,
+                    breadcrumb_text=result.breadcrumb_text,
+                    depth=result.depth,
+                    children_count=result.children_count,
+                    hierarchy_context=result.hierarchy_context,
+                    is_attachment=result.is_attachment,
+                    parent_document_id=result.parent_document_id,
+                    parent_document_title=result.parent_document_title,
+                    attachment_id=result.attachment_id,
+                    original_filename=result.original_filename,
+                    file_size=result.file_size,
+                    mime_type=result.mime_type,
+                    attachment_author=result.attachment_author,
+                    attachment_context=result.attachment_context,
                 )
                 for result in combined_results
             ]
@@ -316,6 +350,9 @@ class HybridSearchEngine:
             )
 
             if combined_score >= self.min_score:
+                # Extract hierarchy information
+                hierarchy_info = self._extract_metadata_info(metadata)
+
                 combined_results.append(
                     HybridSearchResult(
                         score=combined_score,
@@ -327,9 +364,113 @@ class HybridSearchEngine:
                         repo_name=metadata.get("repository_name"),
                         vector_score=info["vector_score"],
                         keyword_score=info["keyword_score"],
+                        parent_id=hierarchy_info["parent_id"],
+                        parent_title=hierarchy_info["parent_title"],
+                        breadcrumb_text=hierarchy_info["breadcrumb_text"],
+                        depth=hierarchy_info["depth"],
+                        children_count=hierarchy_info["children_count"],
+                        hierarchy_context=hierarchy_info["hierarchy_context"],
+                        is_attachment=hierarchy_info["is_attachment"],
+                        parent_document_id=hierarchy_info["parent_document_id"],
+                        parent_document_title=hierarchy_info["parent_document_title"],
+                        attachment_id=hierarchy_info["attachment_id"],
+                        original_filename=hierarchy_info["original_filename"],
+                        file_size=hierarchy_info["file_size"],
+                        mime_type=hierarchy_info["mime_type"],
+                        attachment_author=hierarchy_info["attachment_author"],
+                        attachment_context=hierarchy_info["attachment_context"],
                     )
                 )
 
         # Sort by combined score
         combined_results.sort(key=lambda x: x.score, reverse=True)
         return combined_results[:limit]
+
+    def _extract_metadata_info(self, metadata: dict) -> dict:
+        """Extract hierarchy and attachment information from document metadata.
+
+        Args:
+            metadata: Document metadata
+
+        Returns:
+            Dictionary with hierarchy and attachment information
+        """
+        # Extract hierarchy information
+        hierarchy_info = {
+            "parent_id": metadata.get("parent_id"),
+            "parent_title": metadata.get("parent_title"),
+            "breadcrumb_text": metadata.get("breadcrumb_text"),
+            "depth": metadata.get("depth"),
+            "children_count": None,
+            "hierarchy_context": None,
+        }
+
+        # Calculate children count
+        children = metadata.get("children", [])
+        if children:
+            hierarchy_info["children_count"] = len(children)
+
+        # Generate hierarchy context for display
+        if metadata.get("breadcrumb_text") or metadata.get("depth") is not None:
+            context_parts = []
+
+            if metadata.get("breadcrumb_text"):
+                context_parts.append(f"Path: {metadata.get('breadcrumb_text')}")
+
+            if metadata.get("depth") is not None:
+                context_parts.append(f"Depth: {metadata.get('depth')}")
+
+            if (
+                hierarchy_info["children_count"] is not None
+                and hierarchy_info["children_count"] > 0
+            ):
+                context_parts.append(f"Children: {hierarchy_info['children_count']}")
+
+            if context_parts:
+                hierarchy_info["hierarchy_context"] = " | ".join(context_parts)
+
+        # Extract attachment information
+        attachment_info = {
+            "is_attachment": metadata.get("is_attachment", False),
+            "parent_document_id": metadata.get("parent_document_id"),
+            "parent_document_title": metadata.get("parent_document_title"),
+            "attachment_id": metadata.get("attachment_id"),
+            "original_filename": metadata.get("original_filename"),
+            "file_size": metadata.get("file_size"),
+            "mime_type": metadata.get("mime_type"),
+            "attachment_author": metadata.get("attachment_author")
+            or metadata.get("author"),
+            "attachment_context": None,
+        }
+
+        # Generate attachment context for display
+        if attachment_info["is_attachment"]:
+            context_parts = []
+
+            if attachment_info["original_filename"]:
+                context_parts.append(f"File: {attachment_info['original_filename']}")
+
+            if attachment_info["file_size"]:
+                # Convert bytes to human readable format
+                size = attachment_info["file_size"]
+                if size < 1024:
+                    size_str = f"{size} B"
+                elif size < 1024 * 1024:
+                    size_str = f"{size / 1024:.1f} KB"
+                elif size < 1024 * 1024 * 1024:
+                    size_str = f"{size / (1024 * 1024):.1f} MB"
+                else:
+                    size_str = f"{size / (1024 * 1024 * 1024):.1f} GB"
+                context_parts.append(f"Size: {size_str}")
+
+            if attachment_info["mime_type"]:
+                context_parts.append(f"Type: {attachment_info['mime_type']}")
+
+            if attachment_info["attachment_author"]:
+                context_parts.append(f"Author: {attachment_info['attachment_author']}")
+
+            if context_parts:
+                attachment_info["attachment_context"] = " | ".join(context_parts)
+
+        # Combine both hierarchy and attachment info
+        return {**hierarchy_info, **attachment_info}

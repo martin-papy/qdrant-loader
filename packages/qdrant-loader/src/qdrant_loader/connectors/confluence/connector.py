@@ -211,13 +211,13 @@ class ConfluenceConnector(BaseConnector):
         if not self.config.content_types:
             params = {
                 "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
             }
         else:
             params = {
                 "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
             }
 
@@ -252,14 +252,14 @@ class ConfluenceConnector(BaseConnector):
         if not self.config.content_types:
             params = {
                 "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
                 "start": start,
             }
         else:
             params = {
                 "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage",
+                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
                 "limit": 25,  # Using a reasonable default limit
                 "start": start,
             }
@@ -532,6 +532,87 @@ class ConfluenceConnector(BaseConnector):
 
         return True
 
+    def _extract_hierarchy_info(self, content: dict) -> dict:
+        """Extract page hierarchy information from Confluence content.
+
+        Args:
+            content: Content item from Confluence API
+
+        Returns:
+            dict: Hierarchy information including ancestors, parent, and children
+        """
+        hierarchy_info = {
+            "ancestors": [],
+            "parent_id": None,
+            "parent_title": None,
+            "children": [],
+            "depth": 0,
+            "breadcrumb": [],
+        }
+
+        try:
+            # Extract ancestors information
+            ancestors = content.get("ancestors", [])
+            if ancestors:
+                # Build ancestor chain (from root to immediate parent)
+                ancestor_chain = []
+                breadcrumb = []
+
+                for ancestor in ancestors:
+                    ancestor_info = {
+                        "id": ancestor.get("id"),
+                        "title": ancestor.get("title"),
+                        "type": ancestor.get("type", "page"),
+                    }
+                    ancestor_chain.append(ancestor_info)
+                    breadcrumb.append(ancestor.get("title", "Unknown"))
+
+                hierarchy_info["ancestors"] = ancestor_chain
+                hierarchy_info["breadcrumb"] = breadcrumb
+                hierarchy_info["depth"] = len(ancestor_chain)
+
+                # The last ancestor is the immediate parent
+                if ancestor_chain:
+                    immediate_parent = ancestor_chain[-1]
+                    hierarchy_info["parent_id"] = immediate_parent["id"]
+                    hierarchy_info["parent_title"] = immediate_parent["title"]
+
+            # Extract children information (only pages, not comments)
+            children_data = content.get("children", {})
+            if "page" in children_data:
+                child_pages = children_data["page"].get("results", [])
+                children_info = []
+
+                for child in child_pages:
+                    child_info = {
+                        "id": child.get("id"),
+                        "title": child.get("title"),
+                        "type": child.get("type", "page"),
+                    }
+                    children_info.append(child_info)
+
+                hierarchy_info["children"] = children_info
+
+            logger.debug(
+                "Extracted hierarchy info",
+                content_id=content.get("id"),
+                content_title=content.get("title"),
+                depth=hierarchy_info["depth"],
+                parent_id=hierarchy_info["parent_id"],
+                children_count=len(hierarchy_info["children"]),
+                breadcrumb=hierarchy_info["breadcrumb"],
+            )
+
+        except Exception as e:
+            logger.warning(
+                "Failed to extract hierarchy information",
+                content_id=content.get("id"),
+                content_title=content.get("title"),
+                error=str(e),
+            )
+
+        return hierarchy_info
+
     def _process_content(
         self, content: dict, clean_html: bool = True
     ) -> Document | None:
@@ -674,7 +755,10 @@ class ConfluenceConnector(BaseConnector):
                         }
                     )
 
-            # Create metadata with all available information
+            # Extract hierarchy information
+            hierarchy_info = self._extract_hierarchy_info(content)
+
+            # Create metadata with all available information including hierarchy
             metadata = {
                 "id": content_id,
                 "title": title,
@@ -691,6 +775,19 @@ class ConfluenceConnector(BaseConnector):
                 "comments": comments,
                 "updated_at": updated_at,
                 "created_at": created_at,
+                # Page hierarchy information
+                "hierarchy": hierarchy_info,
+                "parent_id": hierarchy_info["parent_id"],
+                "parent_title": hierarchy_info["parent_title"],
+                "ancestors": hierarchy_info["ancestors"],
+                "children": hierarchy_info["children"],
+                "depth": hierarchy_info["depth"],
+                "breadcrumb": hierarchy_info["breadcrumb"],
+                "breadcrumb_text": (
+                    " > ".join(hierarchy_info["breadcrumb"])
+                    if hierarchy_info["breadcrumb"]
+                    else ""
+                ),
             }
 
             # Clean content if requested
