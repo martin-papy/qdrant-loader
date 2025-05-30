@@ -239,15 +239,17 @@ global:
 # For OpenAI endpoints
 OPENAI_API_KEY=your_openai_api_key
 
-# For custom endpoints
-LLM_API_KEY=your_custom_api_key
+# For OpenAI-compatible endpoints (experimental)
+LLM_API_KEY=your_api_key
 ```
 
 **Supported LLM Endpoints:**
 
-- **OpenAI**: `https://api.openai.com/v1`
-- **Azure OpenAI**: `https://your-resource.openai.azure.com/`
-- **Custom OpenAI-compatible APIs**: Any endpoint following OpenAI API format
+- **OpenAI**: `https://api.openai.com/v1` ✅ Fully supported
+- **Azure OpenAI**: `https://your-resource.openai.azure.com/` ✅ Fully supported  
+- **OpenAI-compatible APIs**: Limited support for endpoints that follow OpenAI API format
+
+**Important Note**: MarkItDown uses the OpenAI Python client library internally, so LLM endpoints must be compatible with OpenAI's API format. Most custom LLM providers do not support this format directly.
 
 **Image Processing Benefits:**
 
@@ -445,7 +447,7 @@ pip install openai>=1.0.0
 ```bash
 # Set appropriate environment variable
 export OPENAI_API_KEY=your_api_key
-# or for custom endpoints
+# or for OpenAI-compatible endpoints
 export LLM_API_KEY=your_api_key
 ```
 
