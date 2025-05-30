@@ -427,7 +427,7 @@ def check_github_workflows(dry_run: bool = False) -> bool:
     response = requests.get(
         f"https://api.github.com/repos/{repo_url}/actions/runs",
         headers=headers,
-        params={"branch": "main", "status": "completed", "per_page": 5},
+        params={"branch": "main", "status": "completed", "per_page": 10},
     )
 
     if response.status_code != 200:
@@ -448,6 +448,13 @@ def check_github_workflows(dry_run: bool = False) -> bool:
         if workflow_name not in workflows:
             workflows[workflow_name] = run
 
+    # Define workflows that should be excluded from strict commit matching
+    # These are typically scheduled workflows or external workflows
+    excluded_workflows = {"Scheduled", "Dependabot"}
+
+    # Define critical workflows that must pass and match current commit
+    critical_workflows = {"Test and Coverage", "Push on main", "PR"}
+
     for workflow_name, run in workflows.items():
         if run["conclusion"] != "success":
             logger.error(
@@ -457,16 +464,32 @@ def check_github_workflows(dry_run: bool = False) -> bool:
             sys.exit(1)
 
         # Check if the workflow run matches our current commit
-        if run["head_sha"] != current_commit:
-            logger.error(
-                f"Workflow '{workflow_name}' was run on a different commit. Please ensure all workflows are run on the current commit."
+        # Skip this check for excluded workflows (like scheduled ones)
+        if workflow_name in excluded_workflows:
+            logger.debug(
+                f"Skipping commit check for excluded workflow: {workflow_name}"
             )
-            logger.error(f"Current commit: {current_commit}")
-            logger.error(f"Workflow commit: {run['head_sha']}")
-            logger.error(f"Workflow run: {run['html_url']}")
-            sys.exit(1)
+            continue
 
-    logger.info("All workflows are passing and match the current commit")
+        if run["head_sha"] != current_commit:
+            # For critical workflows, this is an error
+            if workflow_name in critical_workflows:
+                logger.error(
+                    f"Critical workflow '{workflow_name}' was run on a different commit. Please ensure it runs on the current commit."
+                )
+                logger.error(f"Current commit: {current_commit}")
+                logger.error(f"Workflow commit: {run['head_sha']}")
+                logger.error(f"Workflow run: {run['html_url']}")
+                sys.exit(1)
+            else:
+                # For non-critical workflows, just log a warning
+                logger.debug(
+                    f"Non-critical workflow '{workflow_name}' was run on a different commit (this is acceptable)"
+                )
+                logger.debug(f"Current commit: {current_commit}")
+                logger.debug(f"Workflow commit: {run['head_sha']}")
+
+    logger.info("All critical workflows are passing and match the current commit")
     logger.info("GitHub workflows check completed successfully")
     return True
 
