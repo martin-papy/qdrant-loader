@@ -436,8 +436,10 @@ class TestDefaultChunkingStrategy:
                     ) as mock_logger:
                         strategy.chunk_document(sample_document)
 
-                        # Verify logging calls
-                        assert mock_logger.info.call_count >= 2  # Start and end logging
+                        # Verify logging calls - the implementation uses debug calls, not info
+                        assert (
+                            mock_logger.debug.call_count >= 2
+                        )  # Start and end logging
 
                         # Check that logging includes relevant information
                         start_call = mock_logger.debug.call_args_list[0]
