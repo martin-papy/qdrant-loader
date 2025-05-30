@@ -108,6 +108,9 @@ class AsyncIngestionPipeline:
 
         logger.info("AsyncIngestionPipeline initialized with new modular architecture")
 
+        # Track cleanup state to prevent duplicate cleanup
+        self._cleanup_performed = False
+
     async def initialize(self):
         """Initialize the pipeline (maintained for compatibility)."""
         logger.debug("Pipeline initialization called (no-op in new architecture)")
@@ -173,7 +176,11 @@ class AsyncIngestionPipeline:
 
     async def cleanup(self):
         """Clean up resources."""
+        if self._cleanup_performed:
+            return
+
         logger.info("Cleaning up pipeline resources")
+        self._cleanup_performed = True
 
         try:
             # Save metrics
@@ -204,7 +211,11 @@ class AsyncIngestionPipeline:
 
     def _sync_cleanup(self):
         """Synchronous cleanup for destructor and signal handlers."""
+        if self._cleanup_performed:
+            return
+
         logger.info("Cleaning up pipeline resources (sync)")
+        self._cleanup_performed = True
 
         # Save metrics
         try:
