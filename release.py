@@ -476,6 +476,14 @@ def calculate_new_version(
 ) -> str:
     """Calculate new version based on bump type."""
     if bump_type == 5 and custom_version is not None:
+        # Validate custom version format
+        import re
+
+        version_pattern = r"^\d+\.\d+\.\d+(?:b\d+)?$"
+        if not re.match(version_pattern, custom_version):
+            raise ValueError(
+                f"Invalid version format: {custom_version}. Expected format: X.Y.Z or X.Y.Zb<num>"
+            )
         return custom_version
 
     # Handle beta versions by extracting base version
@@ -606,7 +614,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("2. Minor (e.g., 0.2.0)")
         print("3. Patch (e.g., 0.1.4)")
         print("4. Beta (e.g., 0.1.3b2)")
-        print("5. Custom")
+        print("5. Custom (specify exact version)")
 
     if dry_run:
         # In dry run mode, use patch version bump as default example
@@ -619,16 +627,41 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
         custom_version = None
         if choice == 5:
-            custom_version = prompt("Enter new version")
-            if not custom_version:
-                logger.error("Version cannot be empty")
-                sys.exit(1)
+            print(f"\nCurrent version: {current_version}")
+            print("Enter the new version (format: X.Y.Z or X.Y.Zb<num>)")
+            print("Examples: 1.2.3, 0.5.0, 2.1.0b1")
+
+            while True:
+                custom_version = prompt("New version").strip()
+                if not custom_version:
+                    logger.error("Version cannot be empty")
+                    continue
+
+                try:
+                    # Validate the version format using the same logic as calculate_new_version
+                    import re
+
+                    version_pattern = r"^\d+\.\d+\.\d+(?:b\d+)?$"
+                    if not re.match(version_pattern, custom_version):
+                        logger.error(
+                            "Invalid version format. Expected format: X.Y.Z or X.Y.Zb<num>"
+                        )
+                        continue
+                    break
+                except Exception as e:
+                    logger.error(f"Invalid version: {e}")
+                    continue
+
         elif choice not in [1, 2, 3, 4]:
             logger.error("Invalid choice")
             sys.exit(1)
 
     # Calculate new version (same for all packages)
-    new_version = calculate_new_version(current_version, choice, custom_version)
+    try:
+        new_version = calculate_new_version(current_version, choice, custom_version)
+    except ValueError as e:
+        logger.error(f"Version calculation failed: {e}")
+        sys.exit(1)
 
     # Apply the same version to all packages
     new_versions = {}
@@ -660,6 +693,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("\n4️⃣  Commit changes:")
         print("   • Stage updated pyproject.toml files")
         print("   • Create commit: 'chore(release): bump versions'")
+        print("   • Push new version to remote repository")
 
         print("\n" + "─" * 50)
 
@@ -699,12 +733,16 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)
     run_command('git commit -m "chore(release): bump versions"', dry_run)
 
+    # Push the new version commit to remote
+    run_command("git push origin main", dry_run)
+
     print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
     print("─" * 40)
     print(f"\n📦 Released version: v{current_version}")
     print("   All packages released with the same version")
     print(f"\n🔄 Updated to: v{new_version}")
     print("   All packages now have the same new version")
+    print("   New version committed and pushed to remote repository")
 
 
 if __name__ == "__main__":
