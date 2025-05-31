@@ -2,7 +2,7 @@
 
 **Issue**: [#20](https://github.com/martin-papy/qdrant-loader/issues/20)  
 **Status**: In Development  
-**Target Release**: v0.4.0b1
+**Target Release**: v0.4.0
 
 ## 📋 Overview
 
