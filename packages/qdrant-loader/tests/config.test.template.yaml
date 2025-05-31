@@ -10,6 +10,7 @@ global:
     chunk_overlap: 50
   embedding:
     model: text-embedding-3-small
+    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
     batch_size: 10  # Smaller batch size for tests
   state_management:
     database_path: ":memory:"  # Use in-memory SQLite for tests
@@ -35,6 +36,8 @@ global:
       llm_model: "gpt-4o"
       # LLM endpoint (not used in tests)
       llm_endpoint: "https://api.openai.com/v1"
+      # API key for LLM service (not used in tests since LLM descriptions are disabled)
+      llm_api_key: "${OPENAI_API_KEY}"
 
 sources:
   publicdocs:

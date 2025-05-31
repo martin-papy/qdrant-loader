@@ -60,17 +60,38 @@ pip install -e packages/qdrant-loader-mcp-server[dev]
 
 ### Configuration
 
-1. Copy the configuration template:
+#### Option 1: Workspace Mode (Recommended)
+
+The `--workspace` flag simplifies configuration by automatically discovering config files in a directory:
 
 ```bash
-cp packages/qdrant-loader/config.template.yaml config.yaml
+# Create a workspace directory
+mkdir my-qdrant-workspace
+cd my-qdrant-workspace
+
+# Copy configuration templates
+cp packages/qdrant-loader/conf/config.template.yaml config.yaml
+cp packages/qdrant-loader/conf/.env.template .env
+
+# Edit configuration files
+# .env: Add your API keys and configuration
+# config.yaml: Configure your data sources
+
+# Use workspace mode - automatically finds config.yaml and .env
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
 ```
 
-2. Set up your environment variables:
+#### Option 2: Individual Files
 
 ```bash
-cp .env.template .env
-# Edit .env with your API keys and configuration
+# Specify configuration files individually
+cp packages/qdrant-loader/conf/config.template.yaml config.yaml
+cp packages/qdrant-loader/conf/.env.template .env
+
+# Edit configuration files
+qdrant-loader --config config.yaml --env .env init
+qdrant-loader --config config.yaml --env .env ingest
 ```
 
 ### Usage

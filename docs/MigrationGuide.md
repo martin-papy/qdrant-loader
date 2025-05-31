@@ -6,7 +6,7 @@
 
 ## Overview
 
-This guide helps you migrate from previous versions of QDrant Loader to v0.3.2, which introduces comprehensive file conversion support. The upgrade is **backward compatible** with no breaking changes.
+This guide helps you migrate from previous versions of QDrant Loader to v0.3.2, which introduces comprehensive file conversion support and improved configuration structure. The upgrade is **backward compatible** with no breaking changes.
 
 ## 🚀 Quick Migration
 
@@ -386,9 +386,111 @@ If you encounter issues during migration:
 ## 📚 Related Documentation
 
 - [File Conversion Guide](./FileConversionGuide.md) - Detailed file conversion documentation
-- [Configuration Reference](../packages/qdrant-loader/config.template.yaml) - Complete configuration options
+- [Configuration Reference](../packages/qdrant-loader/conf/config.template.yaml) - Complete configuration options
 - [Release Notes](../RELEASE_NOTES.md) - Full v0.3.2 release notes
 - [Troubleshooting Guide](./FileConversionGuide.md#troubleshooting) - Common issues and solutions
+
+## 🔧 Important Configuration Changes
+
+### API Key Configuration Structure
+
+**For Developers and Advanced Users**: The internal configuration structure has been improved in v0.3.2. While this doesn't affect end-user configuration files, it's important for developers extending the codebase:
+
+#### Previous Structure (Internal)
+
+```python
+# Old internal access pattern (deprecated)
+settings.OPENAI_API_KEY  # No longer available
+```
+
+#### New Structure (Internal)
+
+```python
+# New internal access pattern
+settings.global_config.embedding.api_key  # Correct way
+```
+
+**User Impact**: **None** - Your existing `.env` files and `config.yaml` files continue to work exactly as before:
+
+```bash
+# .env file - NO CHANGES NEEDED
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+```yaml
+# config.yaml - NO CHANGES NEEDED
+global:
+  embedding:
+    api_key: "${OPENAI_API_KEY}"
+```
+
+### Configuration Template Location
+
+Configuration templates have been moved to a new `conf/` directory for better organization:
+
+#### New Template Locations
+
+```bash
+# Download updated templates
+curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
+```
+
+#### Previous Locations (deprecated)
+
+```bash
+# Old paths (still work but deprecated)
+packages/qdrant-loader/config.template.yaml
+packages/qdrant-loader/.env.template
+```
+
+### 🆕 New Workspace Mode
+
+**New Feature**: The `--workspace` flag provides a streamlined configuration experience for project organization.
+
+#### Benefits
+
+- **Auto-discovery**: Automatically finds `config.yaml` and `.env` files
+- **Centralized storage**: All output files stored in workspace directory
+- **Environment isolation**: Workspace `.env` overrides global environment
+- **Simplified commands**: No need to specify individual file paths
+
+#### Migration to Workspace Mode
+
+**Optional**: You can migrate to workspace mode for better project organization:
+
+```bash
+# Create a workspace directory
+mkdir my-qdrant-project
+cd my-qdrant-project
+
+# Copy your existing configuration
+cp /path/to/your/config.yaml .
+cp /path/to/your/.env .
+
+# Use workspace mode
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
+```
+
+#### Workspace Structure
+
+```
+my-workspace/
+├── config.yaml              # Configuration file (required)
+├── .env                     # Environment variables (optional)
+├── qdrant-loader.db         # State database (auto-created)
+├── qdrant-loader.log        # Application logs
+└── metrics/                 # Performance metrics
+    ├── ingestion_metrics.json
+    └── performance_stats.json
+```
+
+#### Backward Compatibility
+
+- **Individual file mode still works**: `--config` and `--env` flags continue to work
+- **No breaking changes**: Existing scripts and workflows remain functional
+- **Optional adoption**: Workspace mode is completely optional
 
 ---
 
