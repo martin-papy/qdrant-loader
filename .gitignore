@@ -55,6 +55,7 @@ dist/
 build/ 
 config.yaml
 tests/config.test.yaml
+test-site/
 
 # Package-specific build artifacts
 packages/*/dist/
