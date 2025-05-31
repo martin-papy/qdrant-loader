@@ -1,8 +1,11 @@
-# Documentation Updates for v0.3.1 Release
+# Documentation Updates for v0.3.2 Release
 
-**Version**: 0.3.1  
-**Release Date**: May 30, 2025  
-**Feature**: File Conversion Support
+**Version**: 0.3.2
+**Date**: May 31, 2025
+
+## Overview
+
+This document tracks all documentation updates made for the v0.3.2 release, which introduces comprehensive file conversion support to QDrant Loader.
 
 ## 📚 Updated Documentation Files
 
@@ -17,7 +20,7 @@
 
 #### [RELEASE_NOTES.md](../RELEASE_NOTES.md)
 
-- ✅ Added comprehensive v0.3.1 release notes
+- ✅ Added comprehensive v0.3.2 release notes
 - ✅ Documented all file conversion features and capabilities
 - ✅ Included configuration examples and getting started guide
 - ✅ Listed technical improvements and testing coverage
@@ -29,7 +32,7 @@
 - ✅ Added prominent file conversion support section
 - ✅ Listed all 20+ supported file types
 - ✅ Documented key features and capabilities
-- ✅ Added upgrade instructions for v0.3.1
+- ✅ Added upgrade instructions for v0.3.2
 - ✅ Included reference to detailed guides
 
 #### [packages/qdrant-loader/config.template.yaml](../packages/qdrant-loader/config.template.yaml)
@@ -38,6 +41,10 @@
 - ✅ Global file conversion settings documented
 - ✅ Per-connector file conversion settings included
 - ✅ Examples for all connector types
+
+#### [packages/qdrant-loader-mcp-server/README.md](../packages/qdrant-loader-mcp-server/README.md)
+
+- ✅ Updated with v0.3.2 features
 
 ### 3. New Documentation Files
 
@@ -76,12 +83,12 @@
 ```
 qdrant-loader/
 ├── README.md                           # ✅ Updated with file conversion
-├── RELEASE_NOTES.md                    # ✅ Added v0.3.1 release
+├── RELEASE_NOTES.md                    # ✅ Added v0.3.2 release
 ├── docs/
 │   ├── FileConversionGuide.md          # ✨ NEW - Comprehensive guide
 │   ├── MigrationGuide.md               # ✨ NEW - Upgrade instructions
 │   ├── Features.md                     # ✅ Updated with file conversion
-│   └── DocumentationUpdates-v0.3.1.md # ✨ NEW - This file
+│   └── DocumentationUpdates-v0.3.2.md # ✨ NEW - This file
 └── packages/
     └── qdrant-loader/
         ├── README.md                   # ✅ Updated with file conversion
@@ -160,7 +167,7 @@ qdrant-loader/
 
 - ✅ **Main README updated**: File conversion features highlighted
 - ✅ **Package README updated**: Comprehensive feature documentation
-- ✅ **Release notes created**: Complete v0.3.1 changelog
+- ✅ **Release notes created**: Complete v0.3.2 changelog
 - ✅ **Migration guide created**: Safe upgrade procedures
 - ✅ **Feature guide created**: Detailed file conversion documentation
 - ✅ **Configuration updated**: Template includes all new settings
@@ -180,4 +187,4 @@ qdrant-loader/
 
 **Documentation Status**: ✅ **COMPLETE AND READY FOR RELEASE**
 
-All documentation has been updated to support the v0.3.1 release with comprehensive file conversion support. Users have clear paths for discovery, implementation, migration, and troubleshooting.
+All documentation has been updated to support the v0.3.2 release with comprehensive file conversion support. Users have clear paths for discovery, implementation, migration, and troubleshooting.
