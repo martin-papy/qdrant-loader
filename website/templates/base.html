@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - QDrant Loader</title>
+    <meta name="description" content="{{ page_description }}">
+
+    <!-- SEO Meta Tags -->
+    <meta name="keywords"
+        content="qdrant, vector database, AI, machine learning, embeddings, search, RAG, retrieval augmented generation, python, data loading, confluence, jira, mcp server, model context protocol">
+    <meta name="author" content="Martin Papy">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="en">
+    <meta name="revisit-after" content="7 days">
+    <meta name="distribution" content="global">
+    <meta name="rating" content="general">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:title" content="{{ page_title }} - QDrant Loader">
+    <meta property="og:description" content="{{ page_description }}">
+    <meta property="og:image" content="{{ base_url }}assets/logos/qdrant-loader-social-card.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="QDrant Loader - Enterprise Vector Database Toolkit">
+    <meta property="og:site_name" content="QDrant Loader">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ canonical_url }}">
+    <meta property="twitter:title" content="{{ page_title }} - QDrant Loader">
+    <meta property="twitter:description" content="{{ page_description }}">
+    <meta property="twitter:image" content="{{ base_url }}assets/logos/qdrant-loader-social-card.png">
+    <meta property="twitter:image:alt" content="QDrant Loader - Enterprise Vector Database Toolkit">
+    <meta property="twitter:creator" content="@martin_papy">
+    <meta property="twitter:site" content="@qdrant_loader">
+
+    <!-- Additional SEO -->
+    <meta name="application-name" content="QDrant Loader">
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="msapplication-config" content="{{ base_url }}assets/browserconfig.xml">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "QDrant Loader",
+        "description": "Enterprise-ready vector database toolkit for building searchable knowledge bases from multiple data sources including Confluence, Jira, and local files.",
+        "url": "{{ canonical_url }}",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "programmingLanguage": "Python",
+        "author": {
+            "@type": "Person",
+            "name": "Martin Papy",
+            "url": "https://github.com/martin-papy",
+            "sameAs": [
+                "https://www.linkedin.com/in/martin-papy/",
+                "https://github.com/martin-papy"
+            ]
+        },
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "downloadUrl": "https://pypi.org/project/qdrant-loader/",
+        "codeRepository": "https://github.com/martin-papy/qdrant-loader",
+        "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+        "version": "{{ version }}",
+        "keywords": ["vector database", "AI", "machine learning", "embeddings", "search", "RAG", "python", "qdrant"],
+        "screenshot": "{{ base_url }}assets/logos/qdrant-loader-social-card.png"
+    }
+    </script>
+
+    <!-- Professional Profile -->
+    <meta name="author-linkedin" content="https://www.linkedin.com/in/martin-papy/">
+    <link rel="author" href="https://www.linkedin.com/in/martin-papy/">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{{ base_url }}assets/favicons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ base_url }}assets/favicons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ base_url }}assets/favicons/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ base_url }}assets/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ base_url }}assets/favicons/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ base_url }}assets/favicons/android-chrome-512x512.png">
+    <link rel="manifest" href="{{ base_url }}assets/site.webmanifest">
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <!-- Prism.js for code highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #48bb78;
+            --danger-color: #f56565;
+            --warning-color: #ed8936;
+            --info-color: #4299e1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .badge-custom {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-success {
+            background-color: var(--success-color);
+        }
+
+        .status-failure {
+            background-color: var(--danger-color);
+        }
+
+        .status-unknown {
+            background-color: #6c757d;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .footer {
+            background-color: #2d3748;
+            color: white;
+            margin-top: 4rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+
+    {{ additional_head }}
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand text-primary d-flex align-items-center" href="{{ base_url }}">
+                <img src="{{ base_url }}assets/logos/qdrant-loader-logo-horizontal.svg" alt="QDrant Loader" height="60"
+                    class="me-2">
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ base_url }}#overview">
+                            <i class="bi bi-house me-1"></i>Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ base_url }}docs/">
+                            <i class="bi bi-book me-1"></i>Documentation
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ base_url }}coverage/">
+                            <i class="bi bi-graph-up me-1"></i>Coverage
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/martin-papy/qdrant-loader" target="_blank">
+                            <i class="bi bi-github me-1"></i>GitHub
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="pypiDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-box me-1"></i>PyPI
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="pypiDropdown">
+                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader/" target="_blank">
+                                    <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader
+                                </a></li>
+                            <li><a class="dropdown-item" href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                    target="_blank">
+                                    <i class="bi bi-plug me-2"></i>MCP Server
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {{ content }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-white mb-3">QDrant Loader</h5>
+                    <p class="text-light">Enterprise-ready vector database toolkit for building searchable knowledge
+                        bases from multiple data sources.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-white mb-3">Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ base_url }}docs/" class="text-light text-decoration-none">Documentation</a></li>
+                        <li><a href="https://github.com/martin-papy/qdrant-loader"
+                                class="text-light text-decoration-none">GitHub Repository</a></li>
+                        <li><a href="https://pypi.org/project/qdrant-loader/"
+                                class="text-light text-decoration-none">QDrant Loader PyPI</a></li>
+                        <li><a href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                class="text-light text-decoration-none">MCP Server PyPI</a></li>
+                        <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test Coverage</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 border-light">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0 text-light">&copy; 2025 QDrant Loader. Built with ❤️ for the AI development
+                        community.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="d-flex justify-content-md-end align-items-center">
+                        <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="text-light me-3"
+                            title="Connect with Martin Papy on LinkedIn">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                        <a href="https://github.com/martin-papy" target="_blank" class="text-light me-3"
+                            title="Follow Martin Papy on GitHub">
+                            <i class="bi bi-github"></i>
+                        </a>
+                        <p class="mb-0 text-light" id="build-info">Loading build information...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Prism.js for code highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script>
+        // Load project information
+        fetch('{{ base_url }}project-info.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('build-info').innerHTML =
+                    `Version ${data.version} • Built ${new Date(data.build.timestamp).toLocaleDateString()} • Commit ${data.commit.short}`;
+            })
+            .catch(() => {
+                document.getElementById('build-info').innerHTML = 'Build information unavailable';
+            });
+    </script>
+
+    {{ additional_scripts }}
+</body>
+
+</html>
