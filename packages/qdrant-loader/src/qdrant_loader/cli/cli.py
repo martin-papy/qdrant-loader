@@ -63,6 +63,29 @@ def _get_version() -> str:
     return "Unknown"  # Fallback version
 
 
+@group(name="qdrant-loader")
+@option(
+    "--log-level",
+    type=Choice(
+        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
+    ),
+    default="INFO",
+    help="Set the logging level.",
+)
+@click.version_option(
+    version=_get_version(),
+    message="qDrant Loader v.%(version)s",
+)
+def cli(log_level: str = "INFO") -> None:
+    """QDrant Loader CLI."""
+    # Initialize basic logging first
+    _setup_logging(log_level)
+
+    # Update the global logger variable
+    global logger
+    logger = LoggingConfig.get_logger(__name__)
+
+
 def _setup_logging(
     log_level: str, workspace_config: WorkspaceConfig | None = None
 ) -> None:
@@ -116,9 +139,17 @@ def _setup_workspace(workspace_path: Path) -> WorkspaceConfig:
         # Setup and validate workspace
         workspace_config = setup_workspace(workspace_path)
 
-        echo(f"Using workspace: {workspace_config.workspace_path}")
+        # Use the global logger (now properly initialized)
+        logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
         if workspace_config.env_path:
-            echo(f"Found .env file: {workspace_config.env_path}")
+            logger.info(
+                "Environment file found", env_path=str(workspace_config.env_path)
+            )
+
+        if workspace_config.config_path:
+            logger.info(
+                "Config file found", config_path=str(workspace_config.config_path)
+            )
 
         return workspace_config
 
@@ -169,10 +200,10 @@ def _create_database_directory(path: Path) -> bool:
         bool: True if directory was created, False if user declined
     """
     try:
-        echo(f"The database directory does not exist: {path.absolute()}")
+        logger.info("The database directory does not exist", path=str(path.absolute()))
         if click.confirm("Would you like to create this directory?", default=True):
             path.mkdir(parents=True, mode=0o755)
-            echo(f"Created directory: {path.absolute()}")
+            logger.info(f"Created directory: {path.absolute()}")
             return True
         return False
     except Exception as e:
@@ -248,31 +279,25 @@ def _check_settings():
     return settings
 
 
-@group(name="qdrant-loader")
-@option(
-    "--log-level",
-    type=Choice(
-        ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], case_sensitive=False
-    ),
-    default="INFO",
-    help="Set the logging level.",
-)
-@click.version_option(
-    version=_get_version(),
-    message="qDrant Loader v.%(version)s",
-)
-def cli(log_level: str = "INFO") -> None:
-    """QDrant Loader CLI."""
-    _setup_logging(log_level)
-
-
 async def _run_init(settings: Settings, force: bool) -> None:
     """Run initialization process."""
     try:
         result = await init_collection(settings, force)
         if not result:
             raise ClickException("Failed to initialize collection")
-        logger.info("collection_initialized")
+
+        # Provide user-friendly feedback
+        if force:
+            logger.info(
+                "Collection recreated successfully",
+                collection=settings.qdrant_collection_name,
+            )
+        else:
+            logger.info(
+                "Collection initialized successfully",
+                collection=settings.qdrant_collection_name,
+            )
+
     except Exception as e:
         logger.error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
@@ -335,8 +360,14 @@ async def init(
 
             # Delete the database file if it exists and force is True
             if os.path.exists(db_path) and force:
-                logger.info(f"Deleting existing database file: {db_path}")
+                logger.info("Resetting state database", database_path=db_path)
                 os.remove(db_path)
+                logger.info("State database reset completed", database_path=db_path)
+            elif force:
+                logger.info(
+                    "State database reset skipped (no existing database)",
+                    database_path=db_path,
+                )
 
         await _run_init(settings, force)
 
@@ -449,7 +480,9 @@ async def ingest(
                 finally:
                     profiler.disable()
                     profiler.dump_stats("profile.out")
-                    print("Profile saved to profile.out")
+                    LoggingConfig.get_logger(__name__).info(
+                        "Profile saved to profile.out"
+                    )
             else:
                 await run_ingest()
             logger = LoggingConfig.get_logger(__name__)
