@@ -154,7 +154,7 @@ class TestFileConversionIntegration:
             ("archive.zip", True),
             ("text.txt", False),
             ("webpage.html", False),
-            ("data.json", True),  # JSON is actually supported by MarkItDown
+            ("data.json", False),  # JSON is excluded - handled by JSONChunkingStrategy
         ]
 
         for filename, should_be_convertible in test_cases:

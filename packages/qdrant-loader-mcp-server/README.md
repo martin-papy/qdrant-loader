@@ -721,7 +721,7 @@ print(context)
 
 ## 📚 Documentation
 
-### Advanced Search Guides (v0.3.1)
+### Advanced Search Guides (v0.3.2)
 
 - [**Advanced Search Examples**](../../docs/mcp-server/SearchExamples.md) - Comprehensive examples of hierarchy and attachment search capabilities
 - [**Hierarchy Search Guide**](../../docs/mcp-server/SearchHierarchyExemple.md) - Confluence hierarchy navigation, filtering, and organization
@@ -731,7 +731,7 @@ print(context)
 
 - [QDrant Loader Documentation](../qdrant-loader/README.md) - Data ingestion and processing
 - [File Conversion Guide](../../docs/FileConversionGuide.md) - File conversion support for diverse formats
-- [Migration Guide](../../docs/MigrationGuide.md) - Upgrading to v0.3.1
+- [Migration Guide](../../docs/MigrationGuide.md) - Upgrading to v0.3.2
 - [Features Overview](../../docs/Features.md) - Complete feature documentation
 - [Contributing Guide](../../docs/CONTRIBUTING.md) - Development guidelines
 
