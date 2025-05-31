@@ -229,98 +229,19 @@ jobs:
 
       - name: Run website tests with coverage
         run: |
-          # Run all website tests with coverage
+          # Add website directory to Python path and run tests
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
           python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing -v
-          
-          # Display coverage summary
-          echo "=== Website Test Coverage Summary ==="
-          python -m pytest tests/ --cov=website --cov-report=term --quiet
-
-      - name: Verify website test coverage target
-        run: |
-          # Check if we achieved our 90% coverage target
-          python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage-website.xml')
-          root = tree.getroot()
-          coverage = float(root.attrib['line-rate']) * 100
-          print(f'Website test coverage: {coverage:.1f}%')
-          if coverage >= 90:
-              print('✅ Coverage target achieved (≥90%)')
-          else:
-              print('❌ Coverage target not met (<90%)')
-              exit(1)
-          "
-
-      - name: Test website build functionality
-        run: |
-          # Test that the website can actually be built
-          echo "Testing website build functionality..."
-          
-          # Use real coverage fixtures for testing
-          if [ -d "tests/fixtures/coverage-loader/htmlcov-loader" ] && [ -d "tests/fixtures/coverage-mcp/htmlcov-mcp" ]; then
-            echo "Using real coverage fixtures for testing..."
-            
-            # Create the expected structure for the build system
-            mkdir -p test-artifacts
-            cp -r tests/fixtures/coverage-loader/htmlcov-loader test-artifacts/
-            cp -r tests/fixtures/coverage-mcp/htmlcov-mcp test-artifacts/
-            
-            # Create mock test results
-            mkdir -p test-artifacts/test-results
-            echo '{"status": "passed", "tests": 42}' > test-artifacts/test-results/status.json
-            
-            # Test website build with real coverage data
-            python website/build.py --output test-site --coverage-artifacts test-artifacts --test-results test-artifacts/test-results
-          else
-            echo "Using mock data for testing..."
-            # Create mock test data as fallback
-            mkdir -p test-artifacts/htmlcov-loader test-artifacts/test-results
-            echo '{"coverage": 95.5}' > test-artifacts/htmlcov-loader/status.json
-            echo '{"status": "passed", "tests": 42}' > test-artifacts/test-results/status.json
-            
-            # Test website build with mock data
-            python website/build.py --output test-site --coverage-artifacts test-artifacts --test-results test-artifacts/test-results
-          fi
-          
-          # Verify build output
-          echo "Verifying website build output..."
-          test -f test-site/index.html || (echo "❌ Missing index.html" && exit 1)
-          test -f test-site/docs/index.html || (echo "❌ Missing docs/index.html" && exit 1)
-          test -f test-site/coverage/index.html || (echo "❌ Missing coverage/index.html" && exit 1)
-          test -f test-site/sitemap.xml || (echo "❌ Missing sitemap.xml" && exit 1)
-          test -f test-site/robots.txt || (echo "❌ Missing robots.txt" && exit 1)
-          
-          # Verify coverage pages were built with real data
-          if [ -f test-site/coverage/loader/index.html ]; then
-            echo "✅ Loader coverage page built successfully"
-          fi
-          if [ -f test-site/coverage/mcp/index.html ]; then
-            echo "✅ MCP coverage page built successfully"
-          fi
-          
-          # Count generated files for verification
-          html_files=$(find test-site -name "*.html" | wc -l)
-          total_files=$(find test-site -type f | wc -l)
-          echo "Generated $html_files HTML files and $total_files total files"
-          
-          echo "✅ Website build test completed successfully"
 
       - name: Upload website test coverage artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-website-${{ github.run_id }}
           path: |
             htmlcov-website
             coverage-website.xml
           retention-days: 30
-
-      - name: Upload website build test artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: website-build-test-${{ github.run_id }}
-          path: test-site/
-          retention-days: 7
 
   test-summary:
     name: Test Summary

@@ -826,62 +826,87 @@ if __name__ == "__main__":
             content = coverage_index.read_text()
             assert "coverage" in content.lower()
 
-    def test_workflow_dependency_installation(self, clean_workspace):
-        """Test dependency installation step in GitHub Actions workflow."""
-        # Test that required packages can be imported
-        try:
-            import markdown
-
-            assert hasattr(markdown, "markdown")
-        except ImportError:
-            pytest.skip("Markdown not available")
-
-        try:
-            import pygments
-
-            assert hasattr(pygments, "highlight")
-        except ImportError:
-            pytest.skip("Pygments not available")
-
-        # Test optional dependencies
-        optional_deps = ["cairosvg", "PIL"]
-        available_deps = []
-
-        for dep in optional_deps:
-            try:
-                __import__(dep)
-                available_deps.append(dep)
-            except ImportError:
-                pass
-
-        # Should work even if optional dependencies are missing
-        assert True  # Test passes if we get here
-
-    def test_workflow_permissions_and_paths(
-        self, mock_project_structure, clean_workspace
+    def test_three_package_coverage_display(
+        self,
+        mock_project_structure,
+        sample_coverage_data,
+        sample_test_results,
+        clean_workspace,
     ):
-        """Test GitHub Actions workflow permissions and path handling."""
+        """Test that the coverage index properly displays all three packages: loader, mcp, and website."""
         os.chdir(mock_project_structure)
 
-        # Test that build works with typical GitHub Actions permissions
+        # Build website with all three coverage packages
         builder = WebsiteBuilder("website/templates", "site")
+        builder.build_site(
+            coverage_artifacts_dir=str(sample_coverage_data),
+            test_results_dir=str(sample_test_results),
+        )
 
-        # Should be able to create output directory
-        builder.output_dir.mkdir(parents=True, exist_ok=True)
-        assert builder.output_dir.exists()
+        site_dir = mock_project_structure / "site"
 
-        # Should be able to write files
-        test_file = builder.output_dir / "test.html"
-        test_file.write_text("<html><body>Test</body></html>")
-        assert test_file.exists()
+        # Verify all three coverage directories exist
+        coverage_dir = site_dir / "coverage"
+        assert (coverage_dir / "loader").exists(), "Loader coverage should exist"
+        assert (coverage_dir / "mcp").exists(), "MCP coverage should exist"
+        assert (coverage_dir / "website").exists(), "Website coverage should exist"
 
-        # Should be able to copy assets
-        assets_dir = mock_project_structure / "website" / "assets"
-        if assets_dir.exists():
-            builder.copy_assets()
+        # Verify coverage index contains all three packages
+        coverage_index = coverage_dir / "index.html"
+        assert coverage_index.exists(), "Coverage index should exist"
 
-        # Verify no permission errors occurred
-        assert True  # Test passes if no exceptions were raised
+        content = coverage_index.read_text()
+
+        # Check for loader coverage elements
+        assert "loader-coverage" in content, "Should contain loader coverage elements"
+        assert "QDrant Loader Core" in content, "Should mention QDrant Loader Core"
+        assert 'href="loader/"' in content, "Should link to loader coverage"
+
+        # Check for MCP coverage elements
+        assert "mcp-coverage" in content, "Should contain MCP coverage elements"
+        assert "MCP Server" in content, "Should mention MCP Server"
+        assert 'href="mcp/"' in content, "Should link to MCP coverage"
+
+        # Check for website coverage elements
+        assert "website-coverage" in content, "Should contain website coverage elements"
+        assert "Website" in content, "Should mention Website"
+        assert 'href="website/"' in content, "Should link to website coverage"
+
+        # Check for test status indicators for all three packages
+        assert "loader-test-indicator" in content, "Should have loader test indicator"
+        assert "mcp-test-indicator" in content, "Should have MCP test indicator"
+        assert "website-test-indicator" in content, "Should have website test indicator"
+
+        # Verify JavaScript loads coverage data for all three packages
+        assert "fetch('loader/status.json')" in content, "Should fetch loader status"
+        assert "fetch('mcp/status.json')" in content, "Should fetch MCP status"
+        assert "fetch('website/status.json')" in content, "Should fetch website status"
+
+        # Verify status.json files exist for all packages
+        assert (
+            coverage_dir / "loader" / "status.json"
+        ).exists(), "Loader status.json should exist"
+        assert (
+            coverage_dir / "mcp" / "status.json"
+        ).exists(), "MCP status.json should exist"
+        assert (
+            coverage_dir / "website" / "status.json"
+        ).exists(), "Website status.json should exist"
+
+        # Verify status.json files have proper structure
+        import json
+
+        with open(coverage_dir / "loader" / "status.json") as f:
+            loader_data = json.load(f)
+        assert "files" in loader_data, "Loader status should have files section"
+
+        with open(coverage_dir / "mcp" / "status.json") as f:
+            mcp_data = json.load(f)
+        assert "files" in mcp_data, "MCP status should have files section"
+
+        with open(coverage_dir / "website" / "status.json") as f:
+            website_data = json.load(f)
+        assert "files" in website_data, "Website status should have files section"
 
 
 if __name__ == "__main__":

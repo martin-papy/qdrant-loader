@@ -170,13 +170,153 @@ docs = [
     <p>Comprehensive documentation for QDrant Loader</p>
 </div>"""
 
-    coverage_template = """<div class="coverage">
-    <h1>Coverage Reports</h1>
-    <div id="coverage-summary">
-        <div id="loader-coverage">Loading...</div>
-        <div id="mcp-coverage">Loading...</div>
+    coverage_template = """<!-- Coverage Header -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-graph-up me-3"></i>Coverage Reports
+                </h1>
+                <p class="lead text-muted">
+                    Test coverage analysis for QDrant Loader packages
+                </p>
+            </div>
+        </div>
     </div>
-</div>"""
+</section>
+
+<!-- Coverage Overview -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- QDrant Loader Core Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader Core
+                            </h4>
+                            <span id="loader-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="loader-coverage">Loading...</div>
+                        <div class="d-grid">
+                            <a href="loader/" class="btn btn-primary">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Server Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-plug me-2"></i>MCP Server
+                            </h4>
+                            <span id="mcp-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="mcp-coverage">Loading...</div>
+                        <div class="d-grid">
+                            <a href="mcp/" class="btn btn-success">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Website Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-info text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-globe me-2"></i>Website
+                            </h4>
+                            <span id="website-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="website-coverage">Loading...</div>
+                        <div class="d-grid">
+                            <a href="website/" class="btn btn-info">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Test Results Summary -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <span id="loader-test-indicator" class="status-indicator status-unknown me-2"></span>
+                        <strong>QDrant Loader Tests</strong>
+                    </div>
+                    <span id="loader-test-status" class="text-muted">Checking...</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <span id="mcp-test-indicator" class="status-indicator status-unknown me-2"></span>
+                        <strong>MCP Server Tests</strong>
+                    </div>
+                    <span id="mcp-test-status" class="text-muted">Checking...</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <span id="website-test-indicator" class="status-indicator status-unknown me-2"></span>
+                        <strong>Website Tests</strong>
+                    </div>
+                    <span id="website-test-status" class="text-muted">Checking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+// Load coverage data for all three packages
+fetch('loader/status.json').then(response => response.json()).then(data => {
+    document.getElementById('loader-coverage').textContent = 'Loaded';
+});
+
+fetch('mcp/status.json').then(response => response.json()).then(data => {
+    document.getElementById('mcp-coverage').textContent = 'Loaded';
+});
+
+fetch('website/status.json').then(response => response.json()).then(data => {
+    document.getElementById('website-coverage').textContent = 'Loaded';
+});
+</script>"""
 
     sitemap_template = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -244,98 +384,112 @@ pip install qdrant-loader
 
 @pytest.fixture
 def sample_coverage_data(tmp_path):
-    """Create sample coverage data directory with real fixtures."""
+    """Create sample coverage data directory with mock fixtures."""
     coverage_dir = tmp_path / "coverage-artifacts"
     coverage_dir.mkdir()
 
-    # Use real coverage fixtures if available
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    real_fixtures_used = False
+    # Always use mock data for predictable testing
+    import json
 
-    if fixtures_dir.exists():
-        # Copy real coverage data - extract htmlcov directories to the root level
-        loader_fixture = fixtures_dir / "coverage-loader" / "htmlcov-loader"
-        mcp_fixture = fixtures_dir / "coverage-mcp" / "htmlcov-mcp"
-
-        if loader_fixture.exists() and (loader_fixture / "status.json").exists():
-            shutil.copytree(loader_fixture, coverage_dir / "htmlcov-loader")
-            real_fixtures_used = True
-
-        if mcp_fixture.exists() and (mcp_fixture / "status.json").exists():
-            shutil.copytree(mcp_fixture, coverage_dir / "htmlcov-mcp")
-            real_fixtures_used = True
-
-    if not real_fixtures_used:
-        # Fallback to mock data with proper structure (including files section)
-        loader_dir = coverage_dir / "htmlcov-loader"
-        loader_dir.mkdir()
-        (loader_dir / "index.html").write_text(
-            "<html><body>Coverage Report</body></html>"
-        )
-        # Mock data with files section to match real coverage.py output format
-        mock_status = {
-            "note": "Mock coverage data for testing",
-            "format": 5,
-            "version": "7.8.2",
-            "globals": "mock_hash",
-            "files": {
-                "mock_file_py": {
-                    "hash": "mock_hash",
-                    "index": {
-                        "url": "mock_file_py.html",
-                        "file": "src/qdrant_loader/mock_file.py",
-                        "description": "",
-                        "nums": {
-                            "precision": 0,
-                            "n_files": 1,
-                            "n_statements": 100,
-                            "n_excluded": 0,
-                            "n_missing": 15,
-                            "n_branches": 0,
-                            "n_partial_branches": 0,
-                            "n_missing_branches": 0,
-                        },
+    # Create loader coverage data
+    loader_dir = coverage_dir / "htmlcov-loader"
+    loader_dir.mkdir()
+    (loader_dir / "index.html").write_text(
+        "<html><body>Loader Coverage Report</body></html>"
+    )
+    mock_loader_status = {
+        "note": "Mock loader coverage data for testing",
+        "format": 5,
+        "version": "7.8.2",
+        "globals": "mock_hash",
+        "files": {
+            "mock_loader_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "url": "mock_loader_file_py.html",
+                    "file": "src/qdrant_loader/mock_file.py",
+                    "description": "",
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 100,
+                        "n_excluded": 0,
+                        "n_missing": 15,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
                     },
-                }
-            },
-        }
-        import json
+                },
+            }
+        },
+    }
+    (loader_dir / "status.json").write_text(json.dumps(mock_loader_status, indent=2))
 
-        (loader_dir / "status.json").write_text(json.dumps(mock_status, indent=2))
-
-        mcp_dir = coverage_dir / "htmlcov-mcp"
-        mcp_dir.mkdir()
-        (mcp_dir / "index.html").write_text(
-            "<html><body>MCP Coverage Report</body></html>"
-        )
-        # Mock MCP data with files section
-        mock_mcp_status = {
-            "note": "Mock MCP coverage data for testing",
-            "format": 5,
-            "version": "7.8.2",
-            "globals": "mock_hash",
-            "files": {
-                "mock_mcp_file_py": {
-                    "hash": "mock_hash",
-                    "index": {
-                        "url": "mock_mcp_file_py.html",
-                        "file": "src/mcp_server/mock_file.py",
-                        "description": "",
-                        "nums": {
-                            "precision": 0,
-                            "n_files": 1,
-                            "n_statements": 50,
-                            "n_excluded": 0,
-                            "n_missing": 4,
-                            "n_branches": 0,
-                            "n_partial_branches": 0,
-                            "n_missing_branches": 0,
-                        },
+    # Create MCP coverage data
+    mcp_dir = coverage_dir / "htmlcov-mcp"
+    mcp_dir.mkdir()
+    (mcp_dir / "index.html").write_text("<html><body>MCP Coverage Report</body></html>")
+    mock_mcp_status = {
+        "note": "Mock MCP coverage data for testing",
+        "format": 5,
+        "version": "7.8.2",
+        "globals": "mock_hash",
+        "files": {
+            "mock_mcp_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "url": "mock_mcp_file_py.html",
+                    "file": "src/mcp_server/mock_file.py",
+                    "description": "",
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 50,
+                        "n_excluded": 0,
+                        "n_missing": 4,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
                     },
-                }
-            },
-        }
-        (mcp_dir / "status.json").write_text(json.dumps(mock_mcp_status, indent=2))
+                },
+            }
+        },
+    }
+    (mcp_dir / "status.json").write_text(json.dumps(mock_mcp_status, indent=2))
+
+    # Create website coverage data
+    website_dir = coverage_dir / "htmlcov-website"
+    website_dir.mkdir()
+    (website_dir / "index.html").write_text(
+        "<html><body>Website Coverage Report</body></html>"
+    )
+    mock_website_status = {
+        "note": "Mock website coverage data for testing",
+        "format": 5,
+        "version": "7.8.2",
+        "globals": "mock_hash",
+        "files": {
+            "mock_website_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "url": "mock_website_file_py.html",
+                    "file": "website/build.py",
+                    "description": "",
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 75,
+                        "n_excluded": 0,
+                        "n_missing": 8,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
+                    },
+                },
+            }
+        },
+    }
+    (website_dir / "status.json").write_text(json.dumps(mock_website_status, indent=2))
 
     return coverage_dir
 
@@ -349,7 +503,11 @@ def sample_test_results(temp_workspace):
     status_data = {
         "overall_status": "success",
         "timestamp": "2025-01-31T12:00:00Z",
-        "packages": {"qdrant-loader": "success", "mcp-server": "success"},
+        "packages": {
+            "qdrant-loader": "success",
+            "mcp-server": "success",
+            "website": "success",
+        },
     }
 
     import json

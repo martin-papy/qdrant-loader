@@ -97,6 +97,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Website Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-info text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-globe me-2"></i>Website
+                            </h4>
+                            <span id="website-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Website build system, templates, and documentation generation tools.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3">
+                                    <h5 class="text-primary mb-1" id="website-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="website/" class="btn btn-info">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -134,7 +171,7 @@
                             <div class="col-12">
                                 <h6 class="text-muted">Test Results Summary</h6>
                                 <div class="row text-center">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="border rounded p-3">
                                             <div class="d-flex align-items-center justify-content-center mb-2">
                                                 <span id="loader-test-indicator"
@@ -144,7 +181,7 @@
                                             <span id="loader-test-status" class="text-muted">Checking...</span>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="border rounded p-3">
                                             <div class="d-flex align-items-center justify-content-center mb-2">
                                                 <span id="mcp-test-indicator"
@@ -152,6 +189,16 @@
                                                 <strong>MCP Server Tests</strong>
                                             </div>
                                             <span id="mcp-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="website-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>Website Tests</strong>
+                                            </div>
+                                            <span id="website-test-status" class="text-muted">Checking...</span>
                                         </div>
                                     </div>
                                 </div>
@@ -252,8 +299,15 @@
         }).catch(error => {
             console.warn('MCP coverage data not available:', error);
             return null;
+        }),
+        fetch('website/status.json').then(response => {
+            if (!response.ok) throw new Error('Failed to load website coverage');
+            return response.json();
+        }).catch(error => {
+            console.warn('Website coverage data not available:', error);
+            return null;
         })
-    ]).then(([loaderData, mcpData]) => {
+    ]).then(([loaderData, mcpData, websiteData]) => {
         // Update loader coverage
         if (loaderData) {
             const loaderCoverage = calculateCoverage(loaderData);
@@ -279,11 +333,25 @@
                 statusElement.className = 'badge bg-secondary';
             }
         }
+
+        // Update website coverage
+        if (websiteData) {
+            const websiteCoverage = calculateCoverage(websiteData);
+            updateCoverageDisplay('website', websiteCoverage);
+        } else {
+            // Handle missing website data
+            const statusElement = document.getElementById('website-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+                statusElement.className = 'badge bg-secondary';
+            }
+        }
     }).catch(error => {
         console.error('Error loading coverage data:', error);
-        // Set both to unavailable
+        // Set all to unavailable
         const loaderStatus = document.getElementById('loader-status');
         const mcpStatus = document.getElementById('mcp-status');
+        const websiteStatus = document.getElementById('website-status');
         if (loaderStatus) {
             loaderStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
             loaderStatus.className = 'badge bg-secondary';
@@ -291,6 +359,10 @@
         if (mcpStatus) {
             mcpStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
             mcpStatus.className = 'badge bg-secondary';
+        }
+        if (websiteStatus) {
+            websiteStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+            websiteStatus.className = 'badge bg-secondary';
         }
     });
 
@@ -311,6 +383,7 @@
         // Update test status indicators
         document.getElementById('loader-test-status').textContent = 'Status unknown';
         document.getElementById('mcp-test-status').textContent = 'Status unknown';
+        document.getElementById('website-test-status').textContent = 'Status unknown';
     }
 
     // Try to load test status and handle gracefully if not available
@@ -382,6 +455,7 @@
             if (data.packages) {
                 updateTestStatus('loader', data.packages['qdrant-loader'] || 'unknown');
                 updateTestStatus('mcp', data.packages['mcp-server'] || 'unknown');
+                updateTestStatus('website', data.packages['website'] || 'unknown');
             }
         })
         .catch(() => {
