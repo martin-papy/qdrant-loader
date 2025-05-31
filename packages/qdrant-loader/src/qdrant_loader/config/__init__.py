@@ -149,7 +149,7 @@ def initialize_config_with_workspace(
             database_path=str(workspace_config.database_path),
         )
 
-        logger.info(
+        logger.debug(
             "Successfully initialized configuration with workspace",
             workspace=str(workspace_config.workspace_path),
         )
@@ -324,7 +324,12 @@ class Settings(BaseSettings):
                 var_name = match.group(1)
                 env_value = os.getenv(var_name)
                 if env_value is None:
-                    logger.warning("Environment variable not found", variable=var_name)
+                    # Only warn about missing variables that are commonly required
+                    # Skip STATE_DB_PATH as it's often overridden in workspace mode
+                    if var_name not in ["STATE_DB_PATH"]:
+                        logger.warning(
+                            "Environment variable not found", variable=var_name
+                        )
                     continue
                 # If the environment variable contains $HOME, expand it
                 if "$HOME" in env_value:

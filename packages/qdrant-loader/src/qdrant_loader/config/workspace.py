@@ -73,7 +73,8 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
     env_path = workspace_path / ".env"
     logs_path = workspace_path / "qdrant-loader.log"
     metrics_path = workspace_path / "metrics"
-    database_path = workspace_path / "qdrant-loader.db"
+    data_path = workspace_path / "data"
+    database_path = data_path / "qdrant-loader.db"
 
     # Check if .env file exists (optional)
     env_path_final = env_path if env_path.exists() else None
@@ -88,7 +89,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
         database_path=database_path,
     )
 
-    logger.info("Workspace setup completed", workspace=str(workspace_path))
+    logger.debug("Workspace setup completed", workspace=str(workspace_path))
     return workspace_config
 
 
@@ -125,11 +126,14 @@ def create_workspace_structure(workspace_path: Path) -> None:
     # Create workspace directory if it doesn't exist
     workspace_path.mkdir(parents=True, exist_ok=True)
 
-    # Create metrics subdirectory
+    # Create subdirectories
     metrics_dir = workspace_path / "metrics"
     metrics_dir.mkdir(exist_ok=True)
 
-    logger.info("Workspace structure created", workspace=str(workspace_path))
+    data_dir = workspace_path / "data"
+    data_dir.mkdir(exist_ok=True)
+
+    logger.debug("Workspace structure created", workspace=str(workspace_path))
 
 
 def get_workspace_env_override(workspace_config: WorkspaceConfig) -> dict[str, str]:
