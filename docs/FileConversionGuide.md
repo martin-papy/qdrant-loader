@@ -1,11 +1,18 @@
-# File Conversion Support Guide
+# File Conversion Guide
 
-**Version**: 0.3.1  
-**Release Date**: May 30, 2025
+**Version**: 0.3.2
+**Date**: May 31, 2025
+**Feature**: Comprehensive File Conversion Support
 
 ## Overview
 
-QDrant Loader v0.3.1 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
+QDrant Loader v0.3.2 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
+
+### ✨ New Features (May 2025)
+
+- **⏱️ Conversion Timeout Control**: Configurable timeouts prevent long-running conversions from hanging
+- **🤖 AI-Powered Image Descriptions**: LLM integration for intelligent image content extraction
+- **🔧 Enhanced Error Handling**: Better timeout and LLM error management
 
 ## 🚀 Quick Start
 
@@ -18,7 +25,13 @@ Add to your `config.yaml`:
 global:
   file_conversion:
     max_file_size: 52428800  # 50MB
-    conversion_timeout: 300  # 5 minutes
+    conversion_timeout: 300  # 5 minutes - NEW: Prevents hanging conversions
+    
+    # NEW: AI-powered image descriptions
+    markitdown:
+      enable_llm_descriptions: false  # Enable for AI image descriptions
+      llm_model: "gpt-4o"             # Model for image analysis
+      llm_endpoint: "https://api.openai.com/v1"  # LLM API endpoint
 
 # Enable per connector
 sources:
@@ -50,19 +63,19 @@ qdrant-loader status
 
 - **PDF**: Text extraction with layout preservation
 - **Microsoft Office**: Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
-- **OpenDocument**: ODT, ODS, ODP formats
+- **Legacy Office**: Word (.doc), Excel (.xls), PowerPoint (.ppt)
 
 ### Images
 
 - **Formats**: PNG, JPEG, GIF, BMP, TIFF, WebP
+- **🆕 AI Descriptions**: LLM-powered content analysis when enabled
 - **OCR Support**: Optional text extraction from images
 - **Metadata**: EXIF data preservation
 
 ### Data Formats
 
-- **Structured**: JSON, CSV, XML, YAML
+- **Structured**: CSV, XML
 - **Tabular**: Excel spreadsheets with multiple sheets
-- **Configuration**: INI, TOML files
 
 ### Archives
 
@@ -71,7 +84,7 @@ qdrant-loader status
 
 ### Audio
 
-- **Formats**: MP3, WAV, M4A
+- **Formats**: MP3, WAV
 - **Transcription**: Automatic speech-to-text conversion
 - **Metadata**: Duration, format information
 
@@ -82,9 +95,21 @@ qdrant-loader status
 
 ### Other Formats
 
-- **Markdown**: Enhanced processing (existing files)
-- **HTML**: Improved extraction (existing files)
-- **Plain Text**: Enhanced metadata extraction
+- **CSV**: Tabular data processing with proper formatting
+- **XML**: Structured markup processing
+
+**Note**: The following file types are **NOT** processed through MarkItDown file conversion as they are already handled by existing chunking strategies:
+
+- **Markdown** (`.md`, `.markdown`): Processed directly by `MarkdownChunkingStrategy`
+- **HTML** (`.html`, `.htm`): Processed directly by `HTMLChunkingStrategy`  
+- **Plain Text** (`.txt`): Processed directly by `BaseChunkingStrategy`
+- **JSON** (`.json`): Processed directly by `JSONChunkingStrategy`
+
+**Unsupported Formats**: The following formats are **NOT** supported by MarkItDown:
+
+- **OpenDocument formats** (ODT, ODS, ODP): Not supported by MarkItDown
+- **Configuration files** (YAML, TOML, INI): Not supported by MarkItDown  
+- **M4A audio files**: Not supported by MarkItDown
 
 ## ⚙️ Configuration
 
@@ -96,19 +121,19 @@ global:
     # Maximum file size for conversion (bytes)
     max_file_size: 52428800  # 50MB default
     
-    # Timeout for conversion operations (seconds)
-    conversion_timeout: 300  # 5 minutes default
+    # 🆕 Timeout for conversion operations (seconds)
+    conversion_timeout: 300  # 5 minutes default - prevents hanging conversions
     
-    # MarkItDown specific settings
+    # 🆕 MarkItDown specific settings
     markitdown:
-      # Enable LLM integration for image descriptions
-      enable_llm_descriptions: false
+      # Enable LLM integration for AI-powered image descriptions
+      enable_llm_descriptions: false  # Set to true to enable
       
       # LLM model for image descriptions (when enabled)
-      llm_model: "gpt-4o"
+      llm_model: "gpt-4o"  # Supports GPT-4o, GPT-4, etc.
       
       # LLM endpoint (when enabled)
-      llm_endpoint: "https://api.openai.com/v1"
+      llm_endpoint: "https://api.openai.com/v1"  # OpenAI or compatible API
 ```
 
 ### Per-Connector Configuration
@@ -176,23 +201,70 @@ sources:
 
 ## 🔧 Advanced Configuration
 
-### Image Processing with LLM
+### 🆕 Conversion Timeout Management
 
-Enable AI-powered image descriptions:
+Control how long conversions can run before timing out:
+
+```yaml
+global:
+  file_conversion:
+    # Timeout settings for different scenarios
+    conversion_timeout: 300   # 5 minutes for most files
+    # conversion_timeout: 600   # 10 minutes for large/complex files
+    # conversion_timeout: 60    # 1 minute for fast processing
+```
+
+**When to adjust timeout:**
+
+- **Increase** for large PDFs, complex Office documents, or slow systems
+- **Decrease** for faster processing and early failure detection
+- **Monitor logs** to see actual conversion times
+
+### 🆕 AI-Powered Image Processing
+
+Enable intelligent image content extraction using LLMs:
 
 ```yaml
 global:
   file_conversion:
     markitdown:
       enable_llm_descriptions: true
-      llm_model: "gpt-4o"
+      llm_model: "gpt-4o"  # Recommended for best image understanding
       llm_endpoint: "https://api.openai.com/v1"
 ```
 
 **Environment Variables Required**:
 
 ```bash
+# For OpenAI endpoints
 OPENAI_API_KEY=your_openai_api_key
+
+# For OpenAI-compatible endpoints (experimental)
+LLM_API_KEY=your_api_key
+```
+
+**Supported LLM Endpoints:**
+
+- **OpenAI**: `https://api.openai.com/v1` ✅ Fully supported
+- **Azure OpenAI**: `https://your-resource.openai.azure.com/` ✅ Fully supported  
+- **OpenAI-compatible APIs**: Limited support for endpoints that follow OpenAI API format
+
+**Important Note**: MarkItDown uses the OpenAI Python client library internally, so LLM endpoints must be compatible with OpenAI's API format. Most custom LLM providers do not support this format directly.
+
+**Image Processing Benefits:**
+
+- **Searchable visual content**: Charts, diagrams, screenshots become searchable
+- **Enhanced context**: Better understanding of document visual elements
+- **Multimodal extraction**: Combines text and visual information
+
+**Example Output:**
+
+```markdown
+# Document with Chart
+
+![Chart Description: A bar chart showing quarterly sales performance from Q1 to Q4 2024. Q1 shows $2.3M, Q2 shows $2.8M, Q3 shows $3.1M, and Q4 shows $3.5M. The chart uses blue bars with a white background and includes a trend line showing steady growth throughout the year.]
+
+The quarterly results demonstrate consistent growth...
 ```
 
 ### Performance Tuning
@@ -203,10 +275,10 @@ global:
     # Increase for larger files (max 100MB recommended)
     max_file_size: 104857600  # 100MB
     
-    # Increase for complex documents
-    conversion_timeout: 600  # 10 minutes
+    # 🆕 Adjust timeout based on your needs
+    conversion_timeout: 600  # 10 minutes for complex documents
     
-    # Batch processing (future enhancement)
+    # Future enhancement
     batch_size: 10
 ```
 
@@ -252,9 +324,9 @@ export LOG_FILTER=file_conversion
 qdrant-loader ingest
 ```
 
-### Metadata Tracking
+### 🆕 Enhanced Metadata Tracking
 
-Converted files include additional metadata:
+Converted files now include additional metadata:
 
 ```json
 {
@@ -263,6 +335,9 @@ Converted files include additional metadata:
   "original_filename": "document.pdf",
   "file_size": 1048576,
   "conversion_time": 2.5,
+  "timeout_used": 300,
+  "llm_enabled": true,
+  "llm_model": "gpt-4o",
   "is_attachment": false,
   "parent_document_id": null
 }
@@ -290,6 +365,43 @@ pip install "markitdown[all]>=0.1.2"
 python -c "from markitdown import MarkItDown; print('MarkItDown available')"
 ```
 
+#### 🆕 Timeout Issues
+
+**Problem**: Large files timeout during conversion
+**Solutions**:
+
+1. **Increase timeout**: `conversion_timeout: 600` (10 minutes)
+2. **Check file complexity**: Some PDFs/Office docs take longer
+3. **Monitor system resources**: CPU/memory constraints
+4. **Process files individually**: Test with single files first
+
+```yaml
+# For large/complex files
+global:
+  file_conversion:
+    conversion_timeout: 900  # 15 minutes
+    max_file_size: 104857600  # 100MB
+```
+
+#### 🆕 LLM Integration Issues
+
+**Problem**: LLM features not working
+**Solutions**:
+
+1. **Check API key**: Verify `OPENAI_API_KEY` or `LLM_API_KEY`
+2. **Test endpoint**: Ensure LLM endpoint is accessible
+3. **Verify model**: Check if specified model is available
+4. **Check dependencies**: Ensure `openai` library is installed
+
+```bash
+# Test LLM connectivity
+python -c "
+from openai import OpenAI
+client = OpenAI()
+print('LLM client created successfully')
+"
+```
+
 #### Memory Issues
 
 **Problem**: High memory usage during conversion
@@ -299,16 +411,6 @@ python -c "from markitdown import MarkItDown; print('MarkItDown available')"
 2. Process files in smaller batches
 3. Increase system memory
 4. Use file type filtering
-
-#### Timeout Issues
-
-**Problem**: Large files timeout during conversion
-**Solutions**:
-
-1. Increase `conversion_timeout`
-2. Reduce file size limits
-3. Check system performance
-4. Process files individually
 
 ### Error Messages
 
@@ -326,12 +428,27 @@ global:
     max_file_size: 104857600  # Increase limit
 ```
 
-#### "Conversion timeout exceeded"
+#### 🆕 "Conversion timeout exceeded"
 
 ```yaml
 global:
   file_conversion:
     conversion_timeout: 600  # Increase timeout
+```
+
+#### 🆕 "OpenAI library required for LLM integration"
+
+```bash
+pip install openai>=1.0.0
+```
+
+#### 🆕 "LLM API key not found"
+
+```bash
+# Set appropriate environment variable
+export OPENAI_API_KEY=your_api_key
+# or for OpenAI-compatible endpoints
+export LLM_API_KEY=your_api_key
 ```
 
 ### Debug Mode
@@ -363,7 +480,13 @@ qdrant-loader ingest --log-level DEBUG > conversion.log 2>&1
    global:
      file_conversion:
        max_file_size: 52428800
-       conversion_timeout: 300
+       conversion_timeout: 300  # 🆕 New timeout setting
+       
+       # 🆕 Optional: Enable LLM features
+       markitdown:
+         enable_llm_descriptions: false  # Set to true to enable
+         llm_model: "gpt-4o"
+         llm_endpoint: "https://api.openai.com/v1"
    
    # Enable per connector
    sources:
@@ -371,7 +494,13 @@ qdrant-loader ingest --log-level DEBUG > conversion.log 2>&1
        enable_file_conversion: true
    ```
 
-3. **Test conversion**:
+3. **🆕 Install LLM dependencies** (if using LLM features):
+
+   ```bash
+   pip install openai>=1.0.0
+   ```
+
+4. **Test conversion**:
 
    ```bash
    # Dry run to test configuration
@@ -384,6 +513,8 @@ qdrant-loader ingest --log-level DEBUG > conversion.log 2>&1
 ### Backward Compatibility
 
 - **File conversion is disabled by default** - no breaking changes
+- **🆕 Timeout defaults to 5 minutes** - existing behavior preserved
+- **🆕 LLM features are disabled by default** - no impact on existing setups
 - **Existing configurations work unchanged**
 - **New metadata fields are optional**
 - **Performance impact is minimal when disabled**
@@ -394,21 +525,17 @@ qdrant-loader ingest --log-level DEBUG > conversion.log 2>&1
 
 - **Memory**: ~100-500MB per file during conversion
 - **CPU**: Moderate usage during conversion
+- **🆕 Timeout overhead**: Minimal signal handling overhead
+- **🆕 LLM API calls**: Additional latency when enabled (~1-5 seconds per image)
 - **Disk**: Temporary files created and cleaned up
-- **Network**: Additional bandwidth for attachment downloads
+- **Network**: Additional bandwidth for attachment downloads and LLM API calls
 
-### Optimization Tips
+### 🆕 Performance Tips
 
-1. **File Size Limits**: Set appropriate limits for your use case
-2. **Selective Conversion**: Use file type filters
-3. **Batch Processing**: Process large datasets in smaller batches
-4. **Monitoring**: Watch system resources during large conversions
-
-### Scaling Recommendations
-
-- **Small datasets** (<1000 files): Default settings work well
-- **Medium datasets** (1000-10000 files): Increase timeouts, monitor memory
-- **Large datasets** (>10000 files): Consider batch processing, dedicated resources
+1. **Timeout tuning**: Start with 300s, adjust based on your file types
+2. **LLM usage**: Enable only when image descriptions are needed
+3. **Batch processing**: Process large document sets during off-peak hours
+4. **Resource monitoring**: Monitor CPU/memory usage during conversion
 
 ## 🔮 Future Enhancements
 
