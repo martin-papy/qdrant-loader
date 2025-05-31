@@ -14,7 +14,7 @@ A powerful tool for collecting and vectorizing technical content from multiple s
 - **State management**: Incremental updates with SQLite-based state tracking
 - **Performance monitoring**: Comprehensive logging and debugging capabilities
 
-### 🆕 File Conversion Support (v0.3.1)
+### 🆕 File Conversion Support (v0.3.2)
 
 QDrant Loader now supports automatic conversion of diverse file formats using Microsoft's MarkItDown:
 
@@ -38,7 +38,7 @@ QDrant Loader now supports automatic conversion of diverse file formats using Mi
 
 See the [File Conversion Guide](../../docs/FileConversionGuide.md) for detailed setup and configuration.
 
-### 🔄 Upgrading to v0.3.1
+### 🔄 Upgrading to v0.3.2
 
 If you're upgrading from a previous version:
 
