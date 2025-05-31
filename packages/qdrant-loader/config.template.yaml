@@ -72,13 +72,6 @@ sources:
       # Specific version of the documentation to fetch
       version: "1.0"
       
-      # Enable automatic version detection from URLs or content
-      auto_detect_version: false
-      
-      # Optional: Regex pattern to extract version from URLs or content
-      # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
-      version_pattern: null
-      
       # Content type of the documentation
       content_type: "html"  # Options: html, markdown, etc.
       
