@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader"
-version = "0.3.3b1"
+version = "0.4.0b1"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -17,6 +17,9 @@ keywords = [
     "vector-database",
     "embeddings",
     "document-processing",
+    "multi-project",
+    "rag",
+    "semantic-search",
 ]
 authors = [
     { name = "Martin Papy", email = "martin.papy@gmail.com" },
@@ -62,10 +65,22 @@ dependencies = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
+    "Typing :: Typed",
 ]
 
 [project.urls]

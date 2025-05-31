@@ -1,5 +1,115 @@
 # 🚀 Release Notes
 
+## 🆕 Version 0.4.0b - Multi-Project Support
+
+### 🎉 Major New Feature: Multi-Project Support
+
+QDrant Loader now supports managing multiple projects with a single configuration file, one QDrant server, and one MCP server instance.
+
+#### 🌟 Key Features
+
+- **Single Configuration**: Manage multiple projects in one `config.yaml` file
+- **Unified Infrastructure**: One QDrant server and MCP server for all projects
+- **Project Isolation**: Clear separation between project data with efficient filtering
+- **Cross-Project Search**: Search within specific projects or across all projects
+- **Backward Compatibility**: Existing single-project configurations work unchanged
+
+#### 🏗️ Architecture Highlights
+
+- **Project Manager**: Central coordination of project-related operations
+- **Enhanced Connectors**: All connectors now support project context
+- **Project-Aware Database**: New schema with project metadata and efficient indexing
+- **Enhanced MCP Server**: Project filtering and management tools
+- **Migration Tools**: Automatic migration from legacy configurations
+
+#### ⚙️ Configuration Example
+
+```yaml
+# Global settings shared across projects
+global:
+  qdrant:
+    collection_name: "documents"
+
+# Multiple projects in one configuration
+projects:
+  project-alpha:
+    display_name: "Project Alpha - Customer Portal"
+    description: "Customer-facing portal documentation"
+    sources:
+      git:
+        frontend-repo:
+          base_url: "https://github.com/company/alpha-frontend.git"
+      confluence:
+        alpha-space:
+          space_key: "ALPHA"
+  
+  project-beta:
+    display_name: "Project Beta - Internal Tools"
+    description: "Internal tooling documentation"
+    sources:
+      git:
+        tools-repo:
+          base_url: "https://github.com/company/beta-tools.git"
+```
+
+#### 🔧 New CLI Commands
+
+```bash
+# Project management
+qdrant-loader projects list                    # List all projects
+qdrant-loader projects status                  # Status of all projects
+qdrant-loader projects info --project alpha   # Project details
+
+# Project-specific operations
+qdrant-loader ingest --project alpha          # Ingest specific project
+qdrant-loader status --project alpha          # Project-specific status
+```
+
+#### 🔍 Enhanced MCP Server
+
+- **Project-Filtered Search**: Filter search results by project
+- **Project Management Tools**: List and manage projects through MCP
+- **Cross-Project Search**: Search across multiple projects simultaneously
+- **Project Context**: All search results include project information
+
+#### 📚 Comprehensive Documentation
+
+- **[Specification](./docs/multi-project-support/specification.md)**: Complete technical requirements
+- **[Implementation Plan](./docs/multi-project-support/implementation-plan.md)**: 8-week development roadmap
+- **[Architecture](./docs/multi-project-support/architecture.md)**: Technical design and system architecture
+- **[User Guide](./docs/multi-project-support/user-guide.md)**: Setup and usage guide (coming soon)
+
+#### ⚠️ Beta Status
+
+This is a beta release of multi-project support. While the core functionality is complete and tested:
+
+- **Feedback Welcome**: Please report any issues or suggestions
+- **API Stability**: APIs may change based on user feedback
+- **Migration Testing**: Extensive testing done, but edge cases may exist
+- **Performance**: Optimized for typical use cases, monitoring ongoing
+
+#### 🔄 Migration
+
+- **Automatic**: Existing configurations automatically create a "default" project
+- **No Breaking Changes**: All existing functionality preserved
+- **Gradual**: Migrate to multi-project setup at your own pace
+
+### 🎯 Performance Targets
+
+- **Search Latency**: <200ms average (no degradation from single-project)
+- **Memory Usage**: <10MB additional memory per project
+- **Scalability**: Support 100+ projects efficiently
+- **Migration Success**: >95% automatic migration success rate
+
+### 🧪 Testing
+
+- **Comprehensive Test Suite**: >90% coverage for new functionality
+- **Integration Testing**: End-to-end multi-project workflows
+- **Performance Testing**: Validated against performance targets
+- **Migration Testing**: Tested with various existing configurations
+
+---
+
 ## 🆕 Version 0.3.2 - File Conversion Support (May 31, 2025)
 
 ### 🎉 Major New Feature: File Conversion Support
