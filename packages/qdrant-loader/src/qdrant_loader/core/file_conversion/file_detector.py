@@ -48,9 +48,6 @@ class FileDetector:
         # CSV files
         "text/csv": "csv",
         "application/csv": "csv",
-        # JSON files
-        "application/json": "json",
-        "text/json": "json",
         # XML files
         "application/xml": "xml",
         "text/xml": "xml",
@@ -63,6 +60,7 @@ class FileDetector:
         ".md",
         ".markdown",  # Markdown strategy
         ".txt",  # Base strategy for plain text
+        ".json",  # JSON strategy
     }
 
     def __init__(self):
