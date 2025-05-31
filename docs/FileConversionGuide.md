@@ -1,12 +1,12 @@
-# File Conversion Support Guide
+# File Conversion Guide
 
-**Version**: 0.3.1  
-**Release Date**: May 30, 2025  
-**Updated**: May 31, 2025 - Added timeout and LLM features
+**Version**: 0.3.2
+**Date**: May 31, 2025
+**Feature**: Comprehensive File Conversion Support
 
 ## Overview
 
-QDrant Loader v0.3.1 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
+QDrant Loader v0.3.2 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
 
 ### ✨ New Features (May 2025)
 

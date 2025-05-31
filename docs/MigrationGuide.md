@@ -1,11 +1,12 @@
-# Migration Guide: Upgrading to v0.3.1
+# Migration Guide: Upgrading to v0.3.2
 
-**Version**: 0.3.1  
-**Release Date**: May 30, 2025
+**Version**: 0.3.2  
+**Date**: May 31, 2025
+**Compatibility**: Backward compatible upgrade
 
 ## Overview
 
-This guide helps you migrate from previous versions of QDrant Loader to v0.3.1, which introduces comprehensive file conversion support. The upgrade is **backward compatible** with no breaking changes.
+This guide helps you migrate from previous versions of QDrant Loader to v0.3.2, which introduces comprehensive file conversion support. The upgrade is **backward compatible** with no breaking changes.
 
 ## 🚀 Quick Migration
 
@@ -17,7 +18,7 @@ pip install --upgrade qdrant-loader
 
 # Verify installation
 qdrant-loader --version
-# Should show: qdrant-loader 0.3.1
+# Should show: qdrant-loader 0.3.2
 ```
 
 ### 2. Optional: Enable File Conversion
@@ -197,7 +198,7 @@ mcp-qdrant-loader
 
 ## 🔧 Configuration Migration Examples
 
-### Before v0.3.1
+### Before v0.3.2
 
 ```yaml
 global:
@@ -216,7 +217,7 @@ sources:
       file_types: ["*.md", "*.py"]
 ```
 
-### After v0.3.1 (with file conversion)
+### After v0.3.2 (with file conversion)
 
 ```yaml
 global:
@@ -259,7 +260,7 @@ pip install "markitdown[all]>=0.1.2"
 
 **Error**: `Unknown configuration key: enable_file_conversion`
 
-**Solution**: Update to v0.3.1:
+**Solution**: Update to v0.3.2:
 
 ```bash
 pip install --upgrade qdrant-loader
@@ -348,7 +349,7 @@ sources:
 
 ```bash
 # Downgrade to previous version
-pip install qdrant-loader==0.3.0
+pip install qdrant-loader==0.3.1
 
 # Restore backup configuration
 cp config.yaml.backup config.yaml
@@ -360,7 +361,7 @@ cp /path/to/your/state.db.backup /path/to/your/state.db
 ## ✅ Migration Checklist
 
 - [ ] **Backup**: State database and configuration files
-- [ ] **Update**: Package to v0.3.1
+- [ ] **Update**: Package to v0.3.2
 - [ ] **Verify**: Installation and version
 - [ ] **Test**: Existing functionality without file conversion
 - [ ] **Configure**: Add file conversion settings (optional)
@@ -386,9 +387,9 @@ If you encounter issues during migration:
 
 - [File Conversion Guide](./FileConversionGuide.md) - Detailed file conversion documentation
 - [Configuration Reference](../packages/qdrant-loader/config.template.yaml) - Complete configuration options
-- [Release Notes](../RELEASE_NOTES.md) - Full v0.3.1 release notes
+- [Release Notes](../RELEASE_NOTES.md) - Full v0.3.2 release notes
 - [Troubleshooting Guide](./FileConversionGuide.md#troubleshooting) - Common issues and solutions
 
 ---
 
-**Welcome to QDrant Loader v0.3.1! 🎉**
+**Welcome to QDrant Loader v0.3.2! 🎉**
