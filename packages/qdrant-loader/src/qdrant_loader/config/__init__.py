@@ -30,6 +30,7 @@ from .chunking import ChunkingConfig
 from .global_config import GlobalConfig, SemanticAnalysisConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
+from .workspace import WorkspaceConfig, get_workspace_env_override
 
 # Load environment variables from .env file
 load_dotenv(override=False)
@@ -53,6 +54,7 @@ __all__ = [
     "get_global_config",
     "get_settings",
     "initialize_config",
+    "initialize_config_with_workspace",
 ]
 
 _global_settings: Optional["Settings"] = None
@@ -65,7 +67,9 @@ def get_settings() -> "Settings":
         Settings: The global settings instance.
     """
     if _global_settings is None:
-        raise RuntimeError("Settings not initialized. Call initialize_config() first.")
+        raise RuntimeError(
+            "Settings not initialized. Call initialize_config() or initialize_config_with_workspace() first."
+        )
     return _global_settings
 
 
@@ -108,34 +112,61 @@ def initialize_config(
         raise
 
 
+def initialize_config_with_workspace(
+    workspace_config: WorkspaceConfig, skip_validation: bool = False
+) -> None:
+    """Initialize configuration using workspace settings.
+
+    Args:
+        workspace_config: Workspace configuration with paths and settings
+        skip_validation: If True, skip directory validation and creation
+    """
+    global _global_settings
+    try:
+        logger.debug(
+            "Initializing configuration with workspace",
+            workspace=str(workspace_config.workspace_path),
+            config_path=str(workspace_config.config_path),
+            env_path=(
+                str(workspace_config.env_path) if workspace_config.env_path else None
+            ),
+        )
+
+        # Load configuration using workspace paths
+        _global_settings = Settings.from_yaml(
+            workspace_config.config_path,
+            env_path=workspace_config.env_path,
+            skip_validation=skip_validation,
+        )
+
+        # Override the database path with workspace-specific path
+        _global_settings.global_config.state_management.database_path = str(
+            workspace_config.database_path
+        )
+
+        logger.debug(
+            "Set workspace database path",
+            database_path=str(workspace_config.database_path),
+        )
+
+        logger.info(
+            "Successfully initialized configuration with workspace",
+            workspace=str(workspace_config.workspace_path),
+        )
+
+    except Exception as e:
+        logger.error(
+            "Failed to initialize configuration with workspace",
+            error=str(e),
+            workspace=str(workspace_config.workspace_path),
+        )
+        raise
+
+
 class Settings(BaseSettings):
     """Main configuration class combining global and source-specific settings."""
 
-    # OpenAI Configuration
-    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-
-    # State Management Configuration
-    STATE_DB_PATH: str = Field(..., description="Path to state management database")
-
-    # Source-specific environment variables
-    REPO_TOKEN: str | None = Field(None, description="Repository token")
-    REPO_URL: str | None = Field(None, description="Repository URL")
-
-    CONFLUENCE_URL: str | None = Field(None, description="Confluence URL")
-    CONFLUENCE_SPACE_KEY: str | None = Field(None, description="Confluence space key")
-    CONFLUENCE_TOKEN: str | None = Field(None, description="Confluence API token")
-    CONFLUENCE_EMAIL: str | None = Field(None, description="Confluence user email")
-
-    CONFLUENCE_PAT: str | None = Field(
-        None, description="Confluence Personal Access Token (Data Center)"
-    )
-
-    JIRA_URL: str | None = Field(None, description="Jira URL")
-    JIRA_PROJECT_KEY: str | None = Field(None, description="Jira project key")
-    JIRA_TOKEN: str | None = Field(None, description="Jira API token")
-    JIRA_EMAIL: str | None = Field(None, description="Jira user email")
-
-    # Configuration objects
+    # Configuration objects - these are the only fields we need
     global_config: GlobalConfig = Field(
         default_factory=GlobalConfig, description="Global configuration settings"
     )
@@ -144,29 +175,33 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="allow"
+        env_file=None,  # Disable automatic .env loading - we handle this manually
+        env_file_encoding="utf-8",
+        extra="allow",
     )
-
-    @field_validator("OPENAI_API_KEY", "STATE_DB_PATH")
-    @classmethod
-    def validate_required_strings(cls, v: str) -> str:
-        """Validate that required string fields are not empty."""
-        if not v:
-            raise ValueError("Field cannot be empty")
-        return v
 
     @model_validator(mode="after")  # type: ignore
     def validate_source_configs(self) -> "Settings":
-        """Validate that required environment variables are set for configured sources."""
+        """Validate that required configuration is present for configured sources."""
         logger.debug("Validating source configurations")
 
         # Validate that qdrant configuration is present in global config
         if not self.global_config.qdrant:
             raise ValueError("Qdrant configuration is required in global config")
 
+        # Validate that required fields are not empty after variable substitution
+        if not self.global_config.qdrant.url:
+            raise ValueError(
+                "Qdrant URL is required but was not provided or substituted"
+            )
+
+        if not self.global_config.qdrant.collection_name:
+            raise ValueError(
+                "Qdrant collection name is required but was not provided or substituted"
+            )
+
         # Validate Confluence settings if Confluence sources are configured
         if self.sources_config.confluence:
-            # Check each Confluence source individually based on its deployment type
             for source_name, source_config in self.sources_config.confluence.items():
                 from qdrant_loader.connectors.confluence.config import (
                     ConfluenceDeploymentType,
@@ -180,37 +215,25 @@ class Settings(BaseSettings):
                     # Cloud requires token and email
                     if not source_config.token or not source_config.email:
                         logger.error(
-                            "Missing required Confluence Cloud environment variables",
+                            "Missing required Confluence Cloud configuration",
                             source=source_name,
                         )
                         raise ValueError(
-                            f"Confluence Cloud source '{source_name}' requires both token and email"
+                            f"Confluence Cloud source '{source_name}' requires both token and email to be configured"
                         )
                 else:
                     # Data Center requires Personal Access Token
                     if not source_config.token:
                         logger.error(
-                            "Missing required Confluence Data Center environment variables",
+                            "Missing required Confluence Data Center configuration",
                             source=source_name,
                         )
                         raise ValueError(
-                            f"Confluence Data Center source '{source_name}' requires a Personal Access Token"
+                            f"Confluence Data Center source '{source_name}' requires a Personal Access Token to be configured"
                         )
-
-        # Validate Git settings if Git sources are configured
-        if self.sources_config.git:
-            if not self.REPO_TOKEN and any(
-                repo.token for repo in self.sources_config.git.values()
-            ):
-                logger.error("Missing required Git repository token")
-                raise ValueError(
-                    "Git repositories requiring authentication are configured but "
-                    "REPO_TOKEN environment variable is not set"
-                )
 
         # Validate Jira settings if Jira sources are configured
         if self.sources_config.jira:
-            # Check each Jira source individually based on its deployment type
             for source_name, source_config in self.sources_config.jira.items():
                 from qdrant_loader.connectors.jira.config import JiraDeploymentType
 
@@ -222,21 +245,21 @@ class Settings(BaseSettings):
                     # Cloud requires token and email
                     if not source_config.token or not source_config.email:
                         logger.error(
-                            "Missing required Jira Cloud environment variables",
+                            "Missing required Jira Cloud configuration",
                             source=source_name,
                         )
                         raise ValueError(
-                            f"Jira Cloud source '{source_name}' requires both token and email"
+                            f"Jira Cloud source '{source_name}' requires both token and email to be configured"
                         )
                 else:
                     # Data Center/Server requires Personal Access Token
                     if not source_config.token:
                         logger.error(
-                            "Missing required Jira Data Center environment variables",
+                            "Missing required Jira Data Center configuration",
                             source=source_name,
                         )
                         raise ValueError(
-                            f"Jira Data Center source '{source_name}' requires a Personal Access Token"
+                            f"Jira Data Center source '{source_name}' requires a Personal Access Token to be configured"
                         )
 
         logger.debug("Source configuration validation successful")
@@ -262,6 +285,21 @@ class Settings(BaseSettings):
         if not self.global_config.qdrant:
             raise ValueError("Qdrant configuration is not available")
         return self.global_config.qdrant.collection_name
+
+    @property
+    def openai_api_key(self) -> str:
+        """Get the OpenAI API key from embedding configuration."""
+        api_key = self.global_config.embedding.api_key
+        if not api_key:
+            raise ValueError(
+                "OpenAI API key is required but was not provided or substituted in embedding configuration"
+            )
+        return api_key
+
+    @property
+    def state_db_path(self) -> str:
+        """Get the state database path from global configuration."""
+        return self.global_config.state_management.database_path
 
     @staticmethod
     def _substitute_env_vars(data: Any) -> Any:
@@ -319,11 +357,7 @@ class Settings(BaseSettings):
         """
         logger.debug("Loading configuration from YAML", path=str(config_path))
         try:
-            # Step 1: Load YAML config
-            with open(config_path) as f:
-                config_data = yaml.safe_load(f)
-
-            # Step 2: Load environment variables
+            # Step 1: Load environment variables first
             if env_path is not None:
                 # Custom env file specified - load only this file
                 logger.debug("Loading custom environment file", path=str(env_path))
@@ -335,21 +369,22 @@ class Settings(BaseSettings):
                 logger.debug("Loading default environment variables")
                 load_dotenv(override=False)
 
-            # Step 3: Process all environment variables in config
+            # Step 2: Load YAML config
+            with open(config_path) as f:
+                config_data = yaml.safe_load(f)
+
+            # Step 3: Process all environment variables in config using substitution
             logger.debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
 
             # Step 4: Create configuration instances with processed data
             global_config_data = config_data.get("global", {})
-
             global_config = GlobalConfig(
                 **global_config_data, skip_validation=skip_validation
             )
 
-            # Process each source type
-            # Get the sources section
+            # Process sources configuration
             sources_data = config_data.get("sources", {})
-
             for source_type, sources in sources_data.items():
                 for source, source_config in sources.items():
                     # Add source_type and source to the config
@@ -358,59 +393,13 @@ class Settings(BaseSettings):
 
             sources_config = SourcesConfig(**sources_data)
 
-            # Step 5: Create settings instance with environment variables and config objects
-            if env_path is not None:
-                # Custom env file specified - load only variables from that file
-                env_vars = {}
-                with open(env_path) as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#") and "=" in line:
-                            key, value = line.split("=", 1)
-                            env_vars[key.strip()] = value.strip()
-
-                settings_data = {
-                    "global_config": global_config,
-                    "sources_config": sources_config,
-                    "OPENAI_API_KEY": env_vars.get("OPENAI_API_KEY"),
-                    "STATE_DB_PATH": env_vars.get("STATE_DB_PATH"),
-                    "REPO_TOKEN": env_vars.get("REPO_TOKEN"),
-                    "REPO_URL": env_vars.get("REPO_URL"),
-                    "CONFLUENCE_URL": env_vars.get("CONFLUENCE_URL"),
-                    "CONFLUENCE_SPACE_KEY": env_vars.get("CONFLUENCE_SPACE_KEY"),
-                    "CONFLUENCE_TOKEN": env_vars.get("CONFLUENCE_TOKEN"),
-                    "CONFLUENCE_EMAIL": env_vars.get("CONFLUENCE_EMAIL"),
-                    "CONFLUENCE_PAT": env_vars.get("CONFLUENCE_PAT"),
-                    "JIRA_URL": env_vars.get("JIRA_URL"),
-                    "JIRA_PROJECT_KEY": env_vars.get("JIRA_PROJECT_KEY"),
-                    "JIRA_TOKEN": env_vars.get("JIRA_TOKEN"),
-                    "JIRA_EMAIL": env_vars.get("JIRA_EMAIL"),
-                }
-            else:
-                # Default behavior - use os.getenv()
-                settings_data = {
-                    "global_config": global_config,
-                    "sources_config": sources_config,
-                    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-                    "STATE_DB_PATH": os.getenv("STATE_DB_PATH"),
-                    "REPO_TOKEN": os.getenv("REPO_TOKEN"),
-                    "REPO_URL": os.getenv("REPO_URL"),
-                    "CONFLUENCE_URL": os.getenv("CONFLUENCE_URL"),
-                    "CONFLUENCE_SPACE_KEY": os.getenv("CONFLUENCE_SPACE_KEY"),
-                    "CONFLUENCE_TOKEN": os.getenv("CONFLUENCE_TOKEN"),
-                    "CONFLUENCE_EMAIL": os.getenv("CONFLUENCE_EMAIL"),
-                    "CONFLUENCE_PAT": os.getenv("CONFLUENCE_PAT"),
-                    "JIRA_URL": os.getenv("JIRA_URL"),
-                    "JIRA_PROJECT_KEY": os.getenv("JIRA_PROJECT_KEY"),
-                    "JIRA_TOKEN": os.getenv("JIRA_TOKEN"),
-                    "JIRA_EMAIL": os.getenv("JIRA_EMAIL"),
-                }
-
-            logger.debug(
-                "Creating Settings instance with data", settings_data=settings_data
+            # Step 5: Create settings instance with configuration objects
+            settings = cls(
+                global_config=global_config,
+                sources_config=sources_config,
             )
-            settings = cls(**settings_data)
 
+            logger.debug("Successfully created Settings instance")
             return settings
 
         except yaml.YAMLError as e:

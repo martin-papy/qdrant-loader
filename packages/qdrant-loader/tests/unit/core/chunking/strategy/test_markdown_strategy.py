@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
+from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.core.chunking.strategy.markdown_strategy import (
     MarkdownChunkingStrategy,
     Section,
@@ -26,29 +27,15 @@ def settings():
     global_config = GlobalConfig(
         qdrant=qdrant_config,
         semantic_analysis=SemanticAnalysisConfig(num_topics=3, lda_passes=10),
+        skip_validation=True,
     )
 
+    # Create empty sources config
+    sources_config = SourcesConfig()
+
     return Settings(
-        # OpenAI configuration
-        OPENAI_API_KEY="test-key",
-        # State management
-        STATE_DB_PATH=":memory:",
-        # Git repository configuration
-        REPO_TOKEN="test-token",
-        REPO_URL="https://github.com/test/repo",
-        # Confluence configuration
-        CONFLUENCE_URL="https://test.atlassian.net",
-        CONFLUENCE_SPACE_KEY="TEST",
-        CONFLUENCE_TOKEN="test-token",
-        CONFLUENCE_EMAIL="test@example.com",
-        CONFLUENCE_PAT=None,
-        # Jira configuration
-        JIRA_URL="https://test.atlassian.net",
-        JIRA_PROJECT_KEY="TEST",
-        JIRA_TOKEN="test-token",
-        JIRA_EMAIL="test@example.com",
-        # Global configuration
         global_config=global_config,
+        sources_config=sources_config,
     )
 
 

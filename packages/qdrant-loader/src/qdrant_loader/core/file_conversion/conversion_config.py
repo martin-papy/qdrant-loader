@@ -20,6 +20,11 @@ class MarkItDownConfig(BaseModel):
         default="https://api.openai.com/v1", description="LLM endpoint (when enabled)"
     )
 
+    llm_api_key: Optional[str] = Field(
+        default=None,
+        description="API key for LLM service (required when enable_llm_descriptions is True)",
+    )
+
 
 class FileConversionConfig(BaseModel):
     """Configuration for file conversion operations."""

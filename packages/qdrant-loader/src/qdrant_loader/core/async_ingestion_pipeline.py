@@ -39,6 +39,7 @@ class AsyncIngestionPipeline:
         queue_size: int = 1000,
         upsert_batch_size: int | None = None,
         enable_metrics: bool = False,
+        metrics_dir: Path | None = None,  # New parameter for workspace support
     ):
         """Initialize the async ingestion pipeline.
 
@@ -53,6 +54,7 @@ class AsyncIngestionPipeline:
             queue_size: Queue size for workers
             upsert_batch_size: Batch size for upserts
             enable_metrics: Whether to enable metrics server
+            metrics_dir: Custom metrics directory (for workspace support)
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
@@ -96,11 +98,17 @@ class AsyncIngestionPipeline:
         # Create orchestrator
         self.orchestrator = PipelineOrchestrator(settings, self.components)
 
-        # Initialize performance monitor (maintained for compatibility)
-        metrics_dir = Path.cwd() / "metrics"
-        metrics_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Initializing metrics directory at {metrics_dir}")
-        self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
+        # Initialize performance monitor with custom or default metrics directory
+        if metrics_dir:
+            # Use provided metrics directory (workspace mode)
+            final_metrics_dir = metrics_dir
+        else:
+            # Use default metrics directory
+            final_metrics_dir = Path.cwd() / "metrics"
+
+        final_metrics_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initializing metrics directory at {final_metrics_dir}")
+        self.monitor = IngestionMonitor(str(final_metrics_dir.absolute()))
 
         # Start metrics server if enabled
         if enable_metrics:

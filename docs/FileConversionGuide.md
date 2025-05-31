@@ -1,12 +1,8 @@
 # File Conversion Guide
 
-**Version**: 0.3.2
-**Date**: May 31, 2025
-**Feature**: Comprehensive File Conversion Support
-
 ## Overview
 
-QDrant Loader v0.3.2 introduces comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
+QDrant Loader v0.3.2 introduced comprehensive file conversion support, enabling automatic processing of PDF, Office documents, images, and 20+ file types. Files are converted to markdown format using Microsoft's MarkItDown library, then processed through the existing chunking and embedding pipeline.
 
 ### ✨ New Features (May 2025)
 
@@ -134,6 +130,9 @@ global:
       
       # LLM endpoint (when enabled)
       llm_endpoint: "https://api.openai.com/v1"  # OpenAI or compatible API
+
+      # API key for LLM service (required when enable_llm_descriptions is True)
+      llm_api_key: "${OPENAI_API_KEY}"
 ```
 
 ### Per-Connector Configuration
@@ -558,7 +557,7 @@ We welcome feedback and feature requests:
 
 - [Main README](../README.md) - Project overview
 - [QDrant Loader README](../packages/qdrant-loader/README.md) - Package documentation
-- [Configuration Guide](../packages/qdrant-loader/config.template.yaml) - Full configuration reference
+- [Configuration Guide](../packages/qdrant-loader/conf/config.template.yaml) - Full configuration reference
 - [Contributing Guide](./CONTRIBUTING.md) - Development guidelines
 - [Release Notes](../RELEASE_NOTES.md) - Version history
 

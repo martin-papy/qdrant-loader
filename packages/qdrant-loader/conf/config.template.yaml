@@ -21,6 +21,7 @@ global:
   embedding:
     endpoint: "http://localhost:8080/v1" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
     model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
+    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
     batch_size: 100                  # Number of chunks to process in one batch
     vector_size: 384                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
     tokenizer: "none"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
@@ -58,6 +59,8 @@ global:
       llm_model: "gpt-4o"
       # LLM endpoint (when enabled)
       llm_endpoint: "https://api.openai.com/v1"
+      # API key for LLM service (required when enable_llm_descriptions is True)
+      llm_api_key: "${OPENAI_API_KEY}"
 
 # Source-specific configurations
 # Each source type has its own configuration section

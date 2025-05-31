@@ -113,14 +113,49 @@ pip install -e packages/qdrant-loader[dev]
 
 ### 1. Configuration Setup
 
+#### Option 1: Workspace Mode (Recommended) 🆕
+
+The `--workspace` flag provides a streamlined configuration experience:
+
 ```bash
+# Create a workspace directory
+mkdir my-qdrant-workspace
+cd my-qdrant-workspace
+
 # Download configuration templates
-curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/config.template.yaml
-curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/env.template
+curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
 
 # Edit configuration files
 # .env: Add your API keys and database paths
 # config.yaml: Configure your data sources
+
+# Use workspace mode - all output stored in workspace
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
+```
+
+**Workspace Benefits:**
+
+- **Auto-discovery**: Automatically finds `config.yaml` and `.env` files
+- **Centralized storage**: All logs, metrics, and database files stored in workspace
+- **Environment isolation**: Workspace `.env` takes precedence over global environment
+- **Simplified commands**: No need to specify individual file paths
+
+#### Option 2: Individual Files
+
+```bash
+# Download configuration templates
+curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
+
+# Edit configuration files
+# .env: Add your API keys and database paths
+# config.yaml: Configure your data sources
+
+# Specify files individually
+qdrant-loader --config config.yaml --env .env init
+qdrant-loader --config config.yaml --env .env ingest
 ```
 
 ### 2. Environment Variables
@@ -168,19 +203,84 @@ JIRA_PAT=your_personal_access_token
 
 ### 3. Basic Usage
 
+#### Workspace Mode (Recommended)
+
 ```bash
 # Initialize QDrant collection
-qdrant-loader init
+qdrant-loader --workspace . init
 
 # Run full ingestion
-qdrant-loader ingest
+qdrant-loader --workspace . ingest
 
 # Source-specific ingestion
-qdrant-loader ingest --source-type git
-qdrant-loader ingest --source-type confluence --source my-space
+qdrant-loader --workspace . ingest --source-type git
+qdrant-loader --workspace . ingest --source-type confluence --source my-space
+
+# Check status and configuration
+qdrant-loader --workspace . status
+qdrant-loader --workspace . config
+```
+
+#### Individual File Mode
+
+```bash
+# Initialize QDrant collection
+qdrant-loader --config config.yaml --env .env init
+
+# Run full ingestion
+qdrant-loader --config config.yaml --env .env ingest
+
+# Source-specific ingestion
+qdrant-loader --config config.yaml --env .env ingest --source-type git --source my-repo
+qdrant-loader --config config.yaml --env .env ingest --source-type localfile --source my-docs
 ```
 
 ## 🛠️ Advanced Usage
+
+### Workspace Features
+
+#### Workspace Structure
+
+When using `--workspace`, QDrant Loader creates and manages this structure:
+
+```
+my-workspace/
+├── config.yaml              # Configuration file (required)
+├── .env                     # Environment variables (optional)
+├── qdrant-loader.db         # State database (auto-created)
+├── qdrant-loader.log        # Application logs
+└── metrics/                 # Performance metrics
+    ├── ingestion_metrics.json
+    └── performance_stats.json
+```
+
+#### Workspace Environment Isolation
+
+```bash
+# Global environment variables
+export OPENAI_API_KEY=global_key
+
+# Workspace .env file overrides global environment
+echo "OPENAI_API_KEY=workspace_specific_key" > my-workspace/.env
+
+# Workspace .env takes precedence
+qdrant-loader --workspace my-workspace ingest
+```
+
+#### Multiple Workspaces
+
+```bash
+# Development workspace
+qdrant-loader --workspace ./dev-workspace init
+qdrant-loader --workspace ./dev-workspace ingest
+
+# Production workspace  
+qdrant-loader --workspace ./prod-workspace init
+qdrant-loader --workspace ./prod-workspace ingest
+
+# Testing workspace
+qdrant-loader --workspace ./test-workspace init
+```
 
 ### Command Line Interface
 
@@ -188,17 +288,25 @@ qdrant-loader ingest --source-type confluence --source my-space
 # Show all available commands
 qdrant-loader --help
 
-# Configuration management
-qdrant-loader config                    # Show current config
-qdrant-loader config --validate         # Validate configuration
+# Configuration management (workspace mode)
+qdrant-loader --workspace . config                    # Show current config
+qdrant-loader --workspace . config --validate         # Validate configuration
 
-# Selective ingestion
-qdrant-loader ingest --source-type git --source my-repo
-qdrant-loader ingest --source-type localfile --source my-docs
+# Configuration management (individual files)
+qdrant-loader --config config.yaml config             # Show current config
+qdrant-loader --config config.yaml config --validate  # Validate configuration
+
+# Selective ingestion (workspace mode)
+qdrant-loader --workspace . ingest --source-type git --source my-repo
+qdrant-loader --workspace . ingest --source-type localfile --source my-docs
+
+# Selective ingestion (individual files)
+qdrant-loader --config config.yaml --env .env ingest --source-type git --source my-repo
+qdrant-loader --config config.yaml --env .env ingest --source-type localfile --source my-docs
 
 # Debugging and monitoring
-qdrant-loader ingest --log-level DEBUG
-qdrant-loader status                    # Show ingestion status
+qdrant-loader --workspace . ingest --log-level DEBUG
+qdrant-loader --workspace . status                    # Show ingestion status
 ```
 
 ### Configuration Examples
