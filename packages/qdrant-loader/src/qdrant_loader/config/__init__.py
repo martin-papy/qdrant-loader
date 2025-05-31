@@ -139,14 +139,30 @@ def initialize_config_with_workspace(
             skip_validation=skip_validation,
         )
 
+        # Check if database_path was specified in config.yaml and warn user
+        original_db_path = _global_settings.global_config.state_management.database_path
+        workspace_db_path = str(workspace_config.database_path)
+
+        # Only warn if the original path is different from the workspace path and not empty/default
+        if (
+            original_db_path
+            and original_db_path != ":memory:"
+            and original_db_path != workspace_db_path
+        ):
+            logger.warning(
+                "Database path in config.yaml is ignored in workspace mode",
+                config_database_path=original_db_path,
+                workspace_database_path=workspace_db_path,
+            )
+
         # Override the database path with workspace-specific path
-        _global_settings.global_config.state_management.database_path = str(
-            workspace_config.database_path
+        _global_settings.global_config.state_management.database_path = (
+            workspace_db_path
         )
 
         logger.debug(
             "Set workspace database path",
-            database_path=str(workspace_config.database_path),
+            database_path=workspace_db_path,
         )
 
         logger.debug(

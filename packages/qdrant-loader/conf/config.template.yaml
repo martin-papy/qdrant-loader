@@ -36,7 +36,7 @@ global:
   # State management configuration
   # Controls how document ingestion state is tracked
   state_management:
-    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file
+    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file, ignored in workspace mode
     table_prefix: "qdrant_loader_"     # Prefix for database tables
     connection_pool:                   # Connection pool settings
       size: 5                         # Maximum number of connections
