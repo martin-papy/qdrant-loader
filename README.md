@@ -13,7 +13,9 @@ A tool for collecting and vectorizing technical content from multiple sources an
 **Features:**
 
 - Multiple data source connectors (Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, Public Docs, Local Files)
-- **🆕 File conversion support** - Process PDF, Office docs, images, and more with automatic conversion to markdown
+- **File conversion support** - Process PDF, Office docs, images, and more with automatic conversion to markdown
+  - **Powered by [Microsoft MarkItDown](https://github.com/microsoft/markitdown)** - Leverages Microsoft's robust file conversion library
+  - **AI-powered image descriptions** - LLM integration for intelligent image content extraction
 - Intelligent document processing and chunking
 - Vector embeddings with OpenAI
 - Incremental updates and change detection
@@ -26,20 +28,15 @@ A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor a
 **Features:**
 
 - MCP protocol implementation for LLM integration
-- **🆕 Hierarchy-Aware Search** - Enhanced Confluence search with page hierarchy understanding
-- **🆕 Attachment-Aware Search** - Comprehensive file attachment support and parent document relationships
-- **🆕 Advanced Search Tools** - Three specialized search tools for different use cases
-- Semantic search capabilities
-- Real-time query processing
-- Integration with Cursor IDE
-
-**🆕 Recent Enhancements (v0.3.1):**
-
-- **Hierarchy-Aware Search**: Enhanced Confluence search with page hierarchy understanding, breadcrumb paths, and depth levels
-- **Attachment-Aware Search**: Comprehensive file attachment support with parent document relationships and filtering capabilities
+- **Hierarchy-Aware Search** - Enhanced Confluence search with page hierarchy understanding
+- **Attachment-Aware Search** - Comprehensive file attachment support and parent document relationships
+- **Advanced Search Tools** - Three specialized search tools for different use cases
 - **Three Specialized Search Tools**: `search`, `hierarchy_search`, and `attachment_search` for different use cases
 - **Enhanced Search Results**: Rich visual indicators for navigation context and file metadata
 - **Advanced Filtering**: Support for filtering by hierarchy depth, parent pages, file types, sizes, and authors
+- Semantic search capabilities
+- Real-time query processing
+- Integration with Cursor IDE
 
 ## 🚀 Quick Start
 
@@ -105,9 +102,6 @@ mcp-qdrant-loader --help
 
 # Show version information
 mcp-qdrant-loader --version
-
-# Run with debug logging
-mcp-qdrant-loader --log-level DEBUG
 ```
 
 ## 🏗️ Development
@@ -168,9 +162,9 @@ mypy packages/
 - [QDrant Loader Documentation](./packages/qdrant-loader/README.md)
 - [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
 - [**🆕 File Conversion Guide**](./docs/FileConversionGuide.md)
-- [**🆕 Migration Guide (v0.3.1)**](./docs/MigrationGuide.md)
+- [**🆕 Migration Guide (v0.3.2)**](./docs/MigrationGuide.md)
 
-### MCP Server Advanced Features (v0.3.1)
+### MCP Server Advanced Features (v0.3.2)
 
 - [**🆕 Advanced Search Examples**](./docs/mcp-server/SearchExamples.md) - Comprehensive examples of hierarchy and attachment search capabilities
 - [**🆕 Hierarchy Search Guide**](./docs/mcp-server/SearchHierarchyExemple.md) - Confluence hierarchy navigation, filtering, and organization
@@ -224,6 +218,8 @@ Both packages use **unified versioning** - they always have the same version num
 - **qdrant-loader**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 - **qdrant-loader-mcp-server**: [![PyPI](https://img.shields.io/pypi/v/qdrant-loader-mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
 
+**📊 Test Coverage**: [View detailed coverage reports](https://martin-papy.github.io/qdrant-loader/)
+
 ### Release Management
 
 Use the `release.py` script to manage releases:
@@ -240,24 +236,3 @@ python release.py
 ```
 
 The script performs comprehensive safety checks and ensures both packages are released with the same version number.
-
-## 🌟 Features
-
-### QDrant Loader
-
-- ✅ Multiple data source connectors
-- ✅ **🆕 File conversion support (PDF, Office docs, images, etc.)**
-- ✅ Intelligent document processing
-- ✅ Vector embeddings with OpenAI
-- ✅ Incremental updates
-- ✅ Performance monitoring
-
-### MCP Server
-
-- ✅ MCP protocol implementation
-- ✅ **🆕 Hierarchy-aware search** - Confluence page relationships and structure understanding
-- ✅ **🆕 Attachment-aware search** - File attachment support with parent document relationships
-- ✅ **🆕 Advanced search tools** - Three specialized search tools (`search`, `hierarchy_search`, `attachment_search`)
-- ✅ Semantic search capabilities
-- ✅ Real-time query processing
-- ✅ Cursor IDE integration
