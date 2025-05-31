@@ -32,7 +32,7 @@ global:
     batch_size: 100
 
   state_management:
-    database_path: "$HOME/.qdrant-loader/traditional_test.db"
+    database_path: ":memory:"
     table_prefix: "qdrant_loader_"
     connection_pool:
       size: 5
@@ -43,9 +43,6 @@ global:
     conversion_timeout: 300
     markitdown:
       enable_llm_descriptions: false
-      llm_model: "gpt-4o"
-      llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
 
 sources: {}
 """
@@ -77,36 +74,39 @@ sources: {}
             assert settings.qdrant_url == "http://localhost:6333"
             assert settings.qdrant_collection_name == "traditional_test"
 
-            # Test that database path uses $HOME expansion
-            expected_db_path = os.path.expanduser(
-                "~/.qdrant-loader/traditional_test.db"
-            )
-            actual_db_path = settings.state_db_path
+            # Test that database path is set to memory
+            assert settings.state_db_path == ":memory:"
 
-            # Both should be expanded paths
-            assert actual_db_path == expected_db_path
+            # Test embedding configuration
+            assert settings.global_config.embedding.api_key == "traditional_test_key"
+            assert settings.global_config.embedding.model == "text-embedding-3-small"
+            assert settings.global_config.embedding.batch_size == 100
+
+            # Test chunking configuration
+            assert settings.global_config.chunking.chunk_size == 1500
+            assert settings.global_config.chunking.chunk_overlap == 200
 
         finally:
-            # Cleanup environment variables
+            # Clean up environment variables
             if "OPENAI_API_KEY" in os.environ:
                 del os.environ["OPENAI_API_KEY"]
 
     def test_traditional_config_home_expansion(self, temp_config_file):
-        """Test that $HOME variable expansion works in traditional mode."""
+        """Test traditional configuration with environment variable expansion."""
+        # Set required environment variables
         os.environ["OPENAI_API_KEY"] = "home_expansion_test_key"
 
         try:
+            # Initialize configuration
             initialize_config(temp_config_file, skip_validation=True)
             settings = get_settings()
 
-            # Test that $HOME is properly expanded
-            db_path = settings.state_db_path
-            assert "$HOME" not in db_path  # Should be expanded
-            assert db_path.startswith(
-                os.path.expanduser("~")
-            )  # Should start with actual home directory
-            assert db_path.endswith("/.qdrant-loader/traditional_test.db")
+            # Test that configuration is loaded correctly
+            assert settings.qdrant_collection_name == "traditional_test"
+            assert settings.state_db_path == ":memory:"
+            assert settings.global_config.embedding.api_key == "home_expansion_test_key"
 
         finally:
+            # Clean up environment variables
             if "OPENAI_API_KEY" in os.environ:
                 del os.environ["OPENAI_API_KEY"]

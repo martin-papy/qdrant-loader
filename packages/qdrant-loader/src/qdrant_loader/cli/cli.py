@@ -341,10 +341,10 @@ async def init(
         await _run_init(settings, force)
 
     except ClickException as e:
-        logger.error("init_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
         raise e from None
     except Exception as e:
-        logger.error("init_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
 
 
@@ -475,10 +475,10 @@ async def ingest(
                 logger.debug(" All tasks cancelled, exiting after SIGINT.")
 
     except ClickException as e:
-        logger.error("ingest_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
         raise e from None
     except Exception as e:
-        logger.error("ingest_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
         raise ClickException(f"Failed to run ingestion: {str(e)!s}") from e
 
 
@@ -525,7 +525,7 @@ def config(
         echo(json.dumps(settings.model_dump(mode="json"), indent=2))
 
     except Exception as e:
-        logger.error("config_failed", error=str(e))
+        LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
 
 
