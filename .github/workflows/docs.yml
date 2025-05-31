@@ -1,0 +1,129 @@
+name: Documentation Website
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'RELEASE_NOTES.md'
+      - 'packages/*/README.md'
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  workflow_run:
+    workflows: ["Test and Coverage"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: "docs-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build Documentation Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+
+      - name: Generate favicons
+        run: |
+          python website/assets/generate_favicons.py
+
+      - name: Get latest test results
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status-${{ github.event.workflow_run.id }}
+          path: test-results/
+        continue-on-error: true
+
+      - name: Get latest coverage reports
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ github.event.workflow_run.id }}
+          path: coverage-artifacts/
+          merge-multiple: false
+        continue-on-error: true
+
+      - name: Build website using templates
+        run: |
+          echo "🚀 Building website using template system"
+          python website/build.py \
+            --output site \
+            --templates website/templates \
+            --coverage-artifacts coverage-artifacts/ \
+            --test-results test-results/ \
+            --base-url ""
+
+      - name: Verify website build
+        run: |
+          echo "=== Website Build Verification ==="
+          echo "📁 Site directory contents:"
+          find site -type f -name "*.html" | head -10
+          echo ""
+          echo "📊 Total files built: $(find site -type f | wc -l)"
+          echo "📄 HTML pages: $(find site -name "*.html" | wc -l)"
+          echo "📁 Directories: $(find site -type d | wc -l)"
+          
+          # Check if main pages exist
+          if [ -f "site/index.html" ]; then
+            echo "✅ Homepage built successfully"
+          else
+            echo "❌ Homepage missing"
+            exit 1
+          fi
+          
+          if [ -f "site/docs/index.html" ]; then
+            echo "✅ Documentation index built successfully"
+          else
+            echo "❌ Documentation index missing"
+            exit 1
+          fi
+          
+          if [ -f "site/coverage/index.html" ]; then
+            echo "✅ Coverage index built successfully"
+          else
+            echo "❌ Coverage index missing"
+            exit 1
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 

@@ -45,6 +45,13 @@ dev = [
     "ruff>=0.1.0",
     "pre-commit>=3.0.0",
 ]
+docs = [
+    "tomli>=2.0.0",
+    "markdown>=3.5.0",
+    "pygments>=2.15.0",
+    "cairosvg>=2.7.0",
+    "pillow>=10.0.0",
+]
 
 [tool.setuptools.packages.find]
 where = [
@@ -87,6 +94,7 @@ mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src"
 [tool.pytest.ini_options]
 testpaths = [
     "packages/*/tests",
+    "tests",
 ]
 python_files = [
     "test_*.py",
@@ -101,20 +109,26 @@ python_functions = [
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
+    "-v",
+    "--tb=short",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "requires_deps: marks tests as requiring optional dependencies",
+    "workflow: marks tests that validate GitHub Actions workflow",
 ]
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 
 [tool.coverage.run]
 source = [
     "packages",
+    "website",
 ]
 omit = [
     "*/tests/*",
@@ -122,6 +136,8 @@ omit = [
     "*/__pycache__/*",
     "*/venv/*",
     "*/env/*",
+    "*/site/*",
+    "*/htmlcov*/*",
 ]
 
 [tool.coverage.report]

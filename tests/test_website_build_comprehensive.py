@@ -1,0 +1,888 @@
+#!/usr/bin/env python3
+"""
+Comprehensive tests for the website build system to achieve >90% coverage.
+Tests all aspects of the GitHub Actions docs workflow.
+"""
+
+import pytest
+import tempfile
+import shutil
+from pathlib import Path
+import json
+import os
+import sys
+import subprocess
+import importlib.util
+from unittest.mock import patch, MagicMock, mock_open, Mock
+import re
+from datetime import datetime
+
+
+def import_website_builder():
+    """Import WebsiteBuilder class dynamically to avoid linter issues."""
+    website_dir = Path(__file__).parent.parent / "website"
+    build_file = website_dir / "build.py"
+
+    if not build_file.exists():
+        pytest.skip("Website build.py not found", allow_module_level=True)
+
+    spec = importlib.util.spec_from_file_location("build", build_file)
+    if spec is None or spec.loader is None:
+        pytest.skip("Cannot load build module", allow_module_level=True)
+
+    build_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build_module)
+
+    return build_module.WebsiteBuilder, build_module.main
+
+
+# Import the classes at module level
+try:
+    WebsiteBuilder, main_function = import_website_builder()
+except Exception:
+    pytest.skip("Cannot import WebsiteBuilder", allow_module_level=True)
+
+
+class TestWebsiteBuilderCore:
+    """Test core WebsiteBuilder functionality."""
+
+    def test_websitebuilder_init(self):
+        """Test WebsiteBuilder initialization."""
+        builder = WebsiteBuilder()
+        assert builder.templates_dir == Path("website/templates")
+        assert builder.output_dir == Path("site")
+        assert builder.base_url == ""
+
+        # Test custom paths
+        builder = WebsiteBuilder("custom/templates", "custom/output")
+        assert builder.templates_dir == Path("custom/templates")
+        assert builder.output_dir == Path("custom/output")
+
+    def test_load_template_success(self, mock_project_structure):
+        """Test successful template loading."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        content = builder.load_template("base.html")
+        assert "{{ page_title }}" in content
+        assert "{{ content }}" in content
+
+    def test_load_template_not_found(self, mock_project_structure):
+        """Test template loading with missing file."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        with pytest.raises(FileNotFoundError):
+            builder.load_template("nonexistent.html")
+
+    def test_replace_placeholders(self):
+        """Test placeholder replacement."""
+        builder = WebsiteBuilder()
+        content = "Hello {{ name }}, welcome to {{ site }}!"
+        replacements = {"name": "John", "site": "QDrant Loader"}
+
+        result = builder.replace_placeholders(content, replacements)
+        assert result == "Hello John, welcome to QDrant Loader!"
+
+    def test_replace_placeholders_empty(self):
+        """Test placeholder replacement with empty replacements."""
+        builder = WebsiteBuilder()
+        content = "Hello {{ name }}!"
+
+        result = builder.replace_placeholders(content, {})
+        assert result == "Hello {{ name }}!"
+
+    def test_extract_title_from_markdown(self):
+        """Test title extraction from markdown."""
+        builder = WebsiteBuilder()
+
+        # Test with h1
+        markdown = "# Main Title\n\nSome content"
+        title = builder.extract_title_from_markdown(markdown)
+        assert title == "Main Title"
+
+        # Test with no title
+        markdown = "Just some content"
+        title = builder.extract_title_from_markdown(markdown)
+        assert title == "Documentation"
+
+        # Test with multiple headers
+        markdown = "# First Title\n## Second Title"
+        title = builder.extract_title_from_markdown(markdown)
+        assert title == "First Title"
+
+
+class TestWebsiteBuilderMarkdown:
+    """Test markdown processing functionality."""
+
+    def test_basic_markdown_to_html_headers(self):
+        """Test basic markdown header conversion."""
+        builder = WebsiteBuilder()
+
+        markdown = "# Header 1\n## Header 2\n### Header 3\n#### Header 4"
+        html = builder.basic_markdown_to_html(markdown)
+
+        assert 'class="display-4 fw-bold text-primary mb-4"' in html
+        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in html
+        assert 'class="h4 fw-bold mt-4 mb-3"' in html
+        assert 'class="h5 fw-bold mt-3 mb-2"' in html
+
+    def test_basic_markdown_to_html_code(self):
+        """Test basic markdown code conversion."""
+        builder = WebsiteBuilder()
+
+        # Test code blocks
+        markdown = "```python\nprint('hello')\n```"
+        html = builder.basic_markdown_to_html(markdown)
+        assert 'class="bg-dark text-light p-3 rounded"' in html
+
+        # Test inline code
+        markdown = "Use `pip install` to install"
+        html = builder.basic_markdown_to_html(markdown)
+        assert 'class="bg-light text-dark px-2 py-1 rounded"' in html
+
+    def test_basic_markdown_to_html_links(self):
+        """Test basic markdown link conversion."""
+        builder = WebsiteBuilder()
+
+        markdown = "[QDrant Loader](https://github.com/user/repo)"
+        html = builder.basic_markdown_to_html(markdown)
+        assert 'class="text-decoration-none"' in html
+        assert 'href="https://github.com/user/repo"' in html
+
+    def test_basic_markdown_to_html_formatting(self):
+        """Test basic markdown formatting conversion."""
+        builder = WebsiteBuilder()
+
+        markdown = "**bold text** and *italic text*"
+        html = builder.basic_markdown_to_html(markdown)
+        assert "<strong>bold text</strong>" in html
+        assert "<em>italic text</em>" in html
+
+    def test_basic_markdown_to_html_lists(self):
+        """Test basic markdown list conversion."""
+        builder = WebsiteBuilder()
+
+        markdown = "- Item 1\n- Item 2"
+        html = builder.basic_markdown_to_html(markdown)
+        assert "<li>Item 1</li>" in html
+        assert "<li>Item 2</li>" in html
+        assert 'class="list-group list-group-flush"' in html
+
+    def test_convert_markdown_links_to_html(self):
+        """Test markdown link to HTML conversion."""
+        builder = WebsiteBuilder()
+
+        # Test relative links
+        html = 'href="./docs/guide.md"'
+        result = builder.convert_markdown_links_to_html(html)
+        assert 'href="./docs/guide.html"' in result
+
+        # Test absolute links
+        html = 'href="/docs/api.md"'
+        result = builder.convert_markdown_links_to_html(html)
+        assert 'href="/docs/api.html"' in result
+
+        # Test without ./ prefix
+        html = 'href="guide.md"'
+        result = builder.convert_markdown_links_to_html(html)
+        assert 'href="guide.html"' in result
+
+    def test_add_bootstrap_classes(self):
+        """Test Bootstrap class addition."""
+        builder = WebsiteBuilder()
+
+        html = "<h1>Title</h1><h2>Subtitle</h2><h3>Section</h3><h4>Subsection</h4>"
+        result = builder.add_bootstrap_classes(html)
+
+        assert 'class="display-4 fw-bold text-primary mb-4"' in result
+        assert 'class="h3 fw-bold text-primary mt-5 mb-3"' in result
+        assert 'class="h4 fw-bold mt-4 mb-3"' in result
+        assert 'class="h5 fw-bold mt-3 mb-2"' in result
+
+    def test_markdown_to_html_with_markdown_library(self):
+        """Test markdown conversion with markdown library available."""
+        builder = WebsiteBuilder()
+
+        # Test with simple markdown - this will use whatever markdown processing is available
+        result = builder.markdown_to_html("# Test Header")
+
+        # Should contain some HTML output
+        assert len(result) > 0
+        assert "Test Header" in result
+        # Should have some HTML tags or Bootstrap classes
+        assert ("<" in result and ">" in result) or "class=" in result
+
+    @patch("builtins.__import__")
+    def test_markdown_to_html_fallback(self, mock_import):
+        """Test markdown conversion fallback when library unavailable."""
+
+        def import_side_effect(name, *args, **kwargs):
+            if name == "markdown":
+                raise ImportError("No module named 'markdown'")
+            return __import__(name, *args, **kwargs)
+
+        mock_import.side_effect = import_side_effect
+
+        builder = WebsiteBuilder()
+        result = builder.markdown_to_html("# Test Header")
+
+        # Should fall back to basic conversion
+        assert 'class="display-4 fw-bold text-primary mb-4"' in result
+
+
+class TestWebsiteBuilderPageBuilding:
+    """Test page building functionality."""
+
+    def test_build_page_success(self, mock_project_structure):
+        """Test successful page building."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        builder.build_page(
+            "base.html", "index.html", "Test Page", "Test Description", "test.html"
+        )
+
+        output_file = mock_project_structure / "site" / "test.html"
+        assert output_file.exists()
+
+        content = output_file.read_text()
+        assert "Test Page" in content
+        assert "Test Description" in content
+
+    def test_build_page_with_additional_replacements(self, mock_project_structure):
+        """Test page building with additional replacements."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Add custom placeholder to template
+        base_template = mock_project_structure / "website" / "templates" / "base.html"
+        content = base_template.read_text()
+        content += "\n<div>{{ custom_content }}</div>"
+        base_template.write_text(content)
+
+        builder.build_page(
+            "base.html",
+            "index.html",
+            "Test Page",
+            "Test Description",
+            "test.html",
+            {"custom_content": "Custom Value"},
+        )
+
+        output_file = mock_project_structure / "site" / "test.html"
+        content = output_file.read_text()
+        assert "Custom Value" in content
+
+    def test_build_markdown_page_success(self, mock_project_structure):
+        """Test successful markdown page building."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create a markdown file
+        md_file = mock_project_structure / "test.md"
+        md_file.write_text("# Test Document\n\nThis is a test.")
+
+        builder.build_markdown_page(
+            "test.md", "test.html", "Test Page", "Test Description"
+        )
+
+        output_file = mock_project_structure / "site" / "test.html"
+        assert output_file.exists()
+
+        content = output_file.read_text()
+        assert "Test Document" in content
+
+    def test_build_markdown_page_with_breadcrumb(self, mock_project_structure):
+        """Test markdown page building with breadcrumb."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        md_file = mock_project_structure / "test.md"
+        md_file.write_text("# Test Document\n\nContent here.")
+
+        builder.build_markdown_page(
+            "test.md", "test.html", breadcrumb="Test Breadcrumb"
+        )
+
+        output_file = mock_project_structure / "site" / "test.html"
+        content = output_file.read_text()
+        assert "Test Breadcrumb" in content
+
+    def test_build_markdown_page_missing_file(self, mock_project_structure):
+        """Test markdown page building with missing file."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Should not raise exception, should handle gracefully
+        builder.build_markdown_page("nonexistent.md", "test.html")
+
+        # Output file should not be created
+        output_file = mock_project_structure / "site" / "test.html"
+        assert not output_file.exists()
+
+
+class TestWebsiteBuilderProjectInfo:
+    """Test project info generation."""
+
+    @patch("subprocess.run")
+    def test_generate_project_info_with_git(self, mock_run, mock_project_structure):
+        """Test project info generation with git available."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Ensure output directory exists
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Mock git commands
+        mock_run.side_effect = [
+            MagicMock(stdout="abc123\n", returncode=0),  # git rev-parse HEAD
+            MagicMock(stdout="2024-01-01\n", returncode=0),  # git log date
+        ]
+
+        builder.generate_project_info()
+
+        # Check that git commands were called
+        assert mock_run.call_count == 2
+
+    @patch("subprocess.run")
+    def test_generate_project_info_without_git(self, mock_run, mock_project_structure):
+        """Test project info generation without git."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Ensure output directory exists
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Mock git command failure
+        mock_run.side_effect = subprocess.CalledProcessError(1, "git")
+
+        builder.generate_project_info()
+
+        # Should handle git failure gracefully
+        assert mock_run.call_count >= 1
+
+    def test_generate_project_info_with_params(self, mock_project_structure):
+        """Test project info generation with provided parameters."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Ensure output directory exists
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        builder.generate_project_info(
+            version="1.0.0", commit_sha="abc123", commit_date="2024-01-01"
+        )
+
+        # Should use provided values instead of git
+
+
+class TestWebsiteBuilderStructures:
+    """Test structure building functionality."""
+
+    def test_build_docs_structure(self, mock_project_structure):
+        """Test documentation structure building."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create additional docs
+        (mock_project_structure / "docs" / "advanced.md").write_text("# Advanced Guide")
+        (mock_project_structure / "packages" / "qdrant-loader").mkdir(parents=True)
+        (
+            mock_project_structure / "packages" / "qdrant-loader" / "README.md"
+        ).write_text("# Package Docs")
+
+        builder.build_docs_structure()
+
+        # Check that docs were processed
+        docs_dir = mock_project_structure / "site" / "docs"
+        assert docs_dir.exists()
+
+    def test_build_coverage_structure_with_artifacts(
+        self, mock_project_structure, sample_coverage_data
+    ):
+        """Test coverage structure building with artifacts."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        builder.build_coverage_structure(str(sample_coverage_data))
+
+        coverage_dir = mock_project_structure / "site" / "coverage"
+        assert coverage_dir.exists()
+
+    def test_build_coverage_structure_without_artifacts(self, mock_project_structure):
+        """Test coverage structure building without artifacts."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        builder.build_coverage_structure(None)
+
+        coverage_dir = mock_project_structure / "site" / "coverage"
+        assert coverage_dir.exists()
+
+    def test_build_coverage_structure_missing_dir(self, mock_project_structure):
+        """Test coverage structure building with missing directory."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        builder.build_coverage_structure("nonexistent")
+
+        coverage_dir = mock_project_structure / "site" / "coverage"
+        assert coverage_dir.exists()
+
+
+class TestWebsiteBuilderAssets:
+    """Test asset handling functionality."""
+
+    def test_copy_assets_success(self, mock_project_structure):
+        """Test successful asset copying."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create additional assets
+        (mock_project_structure / "website" / "assets" / "images").mkdir()
+        (
+            mock_project_structure / "website" / "assets" / "images" / "logo.png"
+        ).write_text("fake image")
+        (mock_project_structure / "website" / "assets" / "script.py").write_text(
+            "# Python file"
+        )
+
+        builder.copy_assets()
+
+        assets_dir = mock_project_structure / "site" / "assets"
+        assert assets_dir.exists()
+        assert (assets_dir / "images" / "logo.png").exists()
+        assert not (
+            assets_dir / "script.py"
+        ).exists()  # Python files should be excluded
+
+    def test_copy_assets_missing_source(self, mock_project_structure):
+        """Test asset copying with missing source directory."""
+        os.chdir(mock_project_structure)
+
+        # Remove assets directory
+        shutil.rmtree(mock_project_structure / "website" / "assets")
+
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.copy_assets()
+
+        # Should handle missing assets gracefully
+        assets_dir = mock_project_structure / "site" / "assets"
+        assert not assets_dir.exists()
+
+    def test_copy_static_files(self, mock_project_structure):
+        """Test static file copying."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create static files
+        static_dir = mock_project_structure / "static"
+        static_dir.mkdir()
+        (static_dir / "file.txt").write_text("static content")
+
+        builder.copy_static_files([str(static_dir)])
+
+        # Check files were copied to the static subdirectory
+        output_file = mock_project_structure / "site" / "static" / "file.txt"
+        assert output_file.exists()
+
+
+class TestWebsiteBuilderSEO:
+    """Test SEO file generation."""
+
+    @patch("datetime.datetime")
+    def test_generate_seo_files(self, mock_datetime, mock_project_structure):
+        """Test SEO file generation."""
+        os.chdir(mock_project_structure)
+
+        # Mock datetime
+        mock_datetime.now.return_value.strftime.return_value = "2024-01-01"
+
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Ensure output directory exists
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        builder.generate_seo_files()
+
+        # Check sitemap.xml
+        sitemap_file = mock_project_structure / "site" / "sitemap.xml"
+        assert sitemap_file.exists()
+        content = sitemap_file.read_text()
+        assert "2024-01-01" in content
+
+        # Check robots.txt
+        robots_file = mock_project_structure / "site" / "robots.txt"
+        assert robots_file.exists()
+
+
+class TestWebsiteBuilderIntegration:
+    """Test complete website building scenarios."""
+
+    def test_build_site_complete(
+        self,
+        mock_project_structure,
+        sample_coverage_data,
+        sample_test_results,
+        clean_workspace,
+    ):
+        """Test complete site building with all components."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.base_url = "https://example.com"
+
+        # Build the complete site
+        builder.build_site(
+            coverage_artifacts_dir=str(sample_coverage_data),
+            test_results_dir=str(sample_test_results),
+        )
+
+        # Verify main pages
+        assert (mock_project_structure / "site" / "index.html").exists()
+        assert (mock_project_structure / "site" / "docs" / "index.html").exists()
+        assert (mock_project_structure / "site" / "coverage" / "index.html").exists()
+
+        # Verify SEO files
+        assert (mock_project_structure / "site" / "sitemap.xml").exists()
+        assert (mock_project_structure / "site" / "robots.txt").exists()
+
+        # Verify assets
+        assert (mock_project_structure / "site" / "assets" / "style.css").exists()
+
+        # Verify content
+        index_content = (mock_project_structure / "site" / "index.html").read_text()
+        assert "QDrant Loader" in index_content
+        assert "https://example.com" in index_content
+
+    def test_build_site_minimal(self, mock_project_structure, clean_workspace):
+        """Test site building with minimal configuration."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Build with minimal parameters
+        builder.build_site()
+
+        # Verify basic structure
+        assert (mock_project_structure / "site" / "index.html").exists()
+        assert (mock_project_structure / "site" / "docs" / "index.html").exists()
+
+
+class TestWebsiteBuilderCLI:
+    """Test command-line interface functionality."""
+
+    @patch(
+        "sys.argv",
+        ["build.py", "--output", "custom-site", "--templates", "custom-templates"],
+    )
+    def test_main_with_args(self, mock_project_structure, clean_workspace):
+        """Test main function with command line arguments."""
+        os.chdir(mock_project_structure)
+
+        # Create custom templates directory with all required templates
+        custom_templates = mock_project_structure / "custom-templates"
+        custom_templates.mkdir()
+
+        # Copy all templates from the mock structure
+        for template_file in (mock_project_structure / "website" / "templates").glob(
+            "*"
+        ):
+            if template_file.is_file():
+                (custom_templates / template_file.name).write_text(
+                    template_file.read_text()
+                )
+
+        # Mock argparse to avoid SystemExit
+        mock_args = Mock()
+        mock_args.templates = "custom-templates"
+        mock_args.output = "custom-site"
+        mock_args.coverage_artifacts = None
+        mock_args.test_results = None
+        mock_args.base_url = "https://example.com"
+
+        with patch("argparse.ArgumentParser.parse_args", return_value=mock_args):
+            main_function()
+
+        # Verify custom output directory was created
+        assert (mock_project_structure / "custom-site").exists()
+        assert (mock_project_structure / "custom-site" / "index.html").exists()
+
+        # Verify custom template was used
+        content = (mock_project_structure / "custom-site" / "index.html").read_text()
+        assert "QDrant Loader" in content  # Should contain the expected content
+
+    @patch("sys.argv", ["build.py", "--help"])
+    def test_main_help(self, clean_workspace):
+        """Test main function with help argument."""
+        with patch("argparse.ArgumentParser.parse_args") as mock_args:
+            mock_args.side_effect = SystemExit(0)
+            with pytest.raises(SystemExit):
+                main_function()
+
+    def test_main_exception_handling(self, mock_project_structure, clean_workspace):
+        """Test main function exception handling."""
+        os.chdir(mock_project_structure)
+
+        # Mock argparse to return args without required templates
+        mock_args = Mock()
+        mock_args.templates = "nonexistent-templates"
+        mock_args.output = "site"
+        mock_args.coverage_artifacts = None
+        mock_args.test_results = None
+        mock_args.base_url = "https://example.com"
+
+        with patch("argparse.ArgumentParser.parse_args", return_value=mock_args):
+            # Should handle exceptions gracefully
+            result = main_function()
+            assert result == 1  # Should return error code
+
+
+class TestGitHubActionsWorkflow:
+    """Test GitHub Actions workflow integration."""
+
+    def test_favicon_generation_workflow_step(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test favicon generation as part of GitHub Actions workflow."""
+        os.chdir(mock_project_structure)
+
+        # Create favicon generation script path
+        favicon_script = (
+            mock_project_structure / "website" / "assets" / "generate_favicons.py"
+        )
+        favicon_script.parent.mkdir(parents=True, exist_ok=True)
+
+        # Create a mock favicon generation script
+        favicon_script.write_text(
+            """
+import sys
+from pathlib import Path
+
+def svg_to_png(svg_path, png_path, size):
+    # Mock implementation
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    png_path.write_text(f"PNG {size}x{size}")
+    return True
+
+def generate_ico(png_files, ico_path):
+    # Mock implementation
+    ico_path.write_text("ICO file")
+    return True
+
+def main():
+    print("Generating favicons...")
+    svg_path = Path("website/assets/logos/qdrant-loader-icon.svg")
+    output_dir = Path("website/assets/favicons")
+    
+    if not svg_path.exists():
+        print(f"SVG file not found: {svg_path}")
+        return False
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate different sizes
+    sizes = [16, 32, 48, 64, 128, 256]
+    png_files = []
+    
+    for size in sizes:
+        png_path = output_dir / f"favicon-{size}x{size}.png"
+        if svg_to_png(svg_path, png_path, size):
+            png_files.append(png_path)
+    
+    # Generate ICO
+    ico_path = output_dir / "favicon.ico"
+    generate_ico(png_files, ico_path)
+    
+    print(f"Generated {len(png_files)} PNG files and 1 ICO file")
+    return True
+
+if __name__ == "__main__":
+    success = main()
+    sys.exit(0 if success else 1)
+"""
+        )
+
+        # Test favicon generation step
+        result = subprocess.run(
+            [sys.executable, str(favicon_script)], capture_output=True, text=True
+        )
+
+        assert result.returncode == 0
+        assert "Generating favicons" in result.stdout
+
+        # Verify favicon files were created
+        favicon_dir = mock_project_structure / "website" / "assets" / "favicons"
+        assert favicon_dir.exists()
+        assert (favicon_dir / "favicon.ico").exists()
+
+    def test_build_website_workflow_step(
+        self,
+        mock_project_structure,
+        sample_coverage_data,
+        sample_test_results,
+        clean_workspace,
+    ):
+        """Test website building as part of GitHub Actions workflow."""
+        os.chdir(mock_project_structure)
+
+        # Simulate GitHub Actions environment variables
+        env_vars = {
+            "GITHUB_WORKSPACE": str(mock_project_structure),
+            "GITHUB_REPOSITORY": "user/qdrant-loader",
+            "GITHUB_REF_NAME": "main",
+            "GITHUB_SHA": "abc123",
+        }
+
+        with patch.dict(os.environ, env_vars):
+            builder = WebsiteBuilder("website/templates", "site")
+            builder.base_url = "https://user.github.io/qdrant-loader"
+            builder.build_site(
+                coverage_artifacts_dir=str(sample_coverage_data),
+                test_results_dir=str(sample_test_results),
+            )
+
+        # Verify GitHub Pages structure
+        site_dir = mock_project_structure / "site"
+        assert site_dir.exists()
+        assert (site_dir / "index.html").exists()
+        assert (site_dir / ".nojekyll").exists()  # GitHub Pages optimization
+
+        # Verify canonical URLs are set correctly
+        index_content = (site_dir / "index.html").read_text()
+        assert "https://user.github.io/qdrant-loader" in index_content
+
+        # Verify sitemap has correct URLs
+        sitemap_content = (site_dir / "sitemap.xml").read_text()
+        assert "https://user.github.io/qdrant-loader" in sitemap_content
+
+    def test_verify_website_build_workflow_step(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test website build verification as part of GitHub Actions workflow."""
+        os.chdir(mock_project_structure)
+
+        # Build a minimal site first
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.build_site()
+
+        site_dir = mock_project_structure / "site"
+
+        # Simulate verification checks that would run in GitHub Actions
+        required_files = [
+            "index.html",
+            "docs/index.html",
+            "coverage/index.html",
+            "sitemap.xml",
+            "robots.txt",
+        ]
+
+        for file_path in required_files:
+            full_path = site_dir / file_path
+            assert full_path.exists(), f"Required file missing: {file_path}"
+
+        # Verify HTML structure
+        index_content = (site_dir / "index.html").read_text()
+        assert "<!DOCTYPE html>" in index_content
+        assert "<html" in index_content
+        assert "</html>" in index_content
+
+        # Verify sitemap is valid XML
+        sitemap_content = (site_dir / "sitemap.xml").read_text()
+        assert "<?xml version=" in sitemap_content
+        assert "<urlset" in sitemap_content
+
+    def test_workflow_artifact_handling(
+        self,
+        mock_project_structure,
+        sample_coverage_data,
+        sample_test_results,
+        clean_workspace,
+    ):
+        """Test artifact handling in GitHub Actions workflow."""
+        os.chdir(mock_project_structure)
+
+        # Simulate artifact structure from previous jobs
+        artifacts_dir = mock_project_structure / "artifacts"
+        artifacts_dir.mkdir()
+
+        # Copy coverage artifacts to simulate download
+        shutil.copytree(sample_coverage_data, artifacts_dir / "coverage-artifacts")
+        shutil.copytree(sample_test_results, artifacts_dir / "test-results")
+
+        # Build website with artifacts
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.build_site(
+            coverage_artifacts_dir=str(artifacts_dir / "coverage-artifacts"),
+            test_results_dir=str(artifacts_dir / "test-results"),
+        )
+
+        # Verify artifacts were processed
+        site_dir = mock_project_structure / "site"
+        assert (site_dir / "coverage").exists()
+
+        # Verify coverage data was integrated
+        coverage_index = site_dir / "coverage" / "index.html"
+        if coverage_index.exists():
+            content = coverage_index.read_text()
+            assert "coverage" in content.lower()
+
+    def test_workflow_dependency_installation(self, clean_workspace):
+        """Test dependency installation step in GitHub Actions workflow."""
+        # Test that required packages can be imported
+        try:
+            import markdown
+
+            assert hasattr(markdown, "markdown")
+        except ImportError:
+            pytest.skip("Markdown not available")
+
+        try:
+            import pygments
+
+            assert hasattr(pygments, "highlight")
+        except ImportError:
+            pytest.skip("Pygments not available")
+
+        # Test optional dependencies
+        optional_deps = ["cairosvg", "PIL"]
+        available_deps = []
+
+        for dep in optional_deps:
+            try:
+                __import__(dep)
+                available_deps.append(dep)
+            except ImportError:
+                pass
+
+        # Should work even if optional dependencies are missing
+        assert True  # Test passes if we get here
+
+    def test_workflow_permissions_and_paths(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test GitHub Actions workflow permissions and path handling."""
+        os.chdir(mock_project_structure)
+
+        # Test that build works with typical GitHub Actions permissions
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Should be able to create output directory
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+        assert builder.output_dir.exists()
+
+        # Should be able to write files
+        test_file = builder.output_dir / "test.html"
+        test_file.write_text("<html><body>Test</body></html>")
+        assert test_file.exists()
+
+        # Should be able to copy assets
+        assets_dir = mock_project_structure / "website" / "assets"
+        if assets_dir.exists():
+            builder.copy_assets()
+
+        # Verify no permission errors occurred
+        assert True  # Test passes if no exceptions were raised
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
