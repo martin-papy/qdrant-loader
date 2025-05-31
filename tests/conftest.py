@@ -250,35 +250,92 @@ def sample_coverage_data(tmp_path):
 
     # Use real coverage fixtures if available
     fixtures_dir = Path(__file__).parent / "fixtures"
+    real_fixtures_used = False
+
     if fixtures_dir.exists():
         # Copy real coverage data - extract htmlcov directories to the root level
         loader_fixture = fixtures_dir / "coverage-loader" / "htmlcov-loader"
         mcp_fixture = fixtures_dir / "coverage-mcp" / "htmlcov-mcp"
 
-        if loader_fixture.exists():
+        if loader_fixture.exists() and (loader_fixture / "status.json").exists():
             shutil.copytree(loader_fixture, coverage_dir / "htmlcov-loader")
+            real_fixtures_used = True
 
-        if mcp_fixture.exists():
+        if mcp_fixture.exists() and (mcp_fixture / "status.json").exists():
             shutil.copytree(mcp_fixture, coverage_dir / "htmlcov-mcp")
-    else:
-        # Fallback to mock data if fixtures not available
+            real_fixtures_used = True
+
+    if not real_fixtures_used:
+        # Fallback to mock data with proper structure (including files section)
         loader_dir = coverage_dir / "htmlcov-loader"
         loader_dir.mkdir()
         (loader_dir / "index.html").write_text(
             "<html><body>Coverage Report</body></html>"
         )
-        (loader_dir / "status.json").write_text(
-            '{"coverage": 85.5, "total_statements": 1000, "covered_statements": 855}'
-        )
+        # Mock data with files section to match real coverage.py output format
+        mock_status = {
+            "note": "Mock coverage data for testing",
+            "format": 5,
+            "version": "7.8.2",
+            "globals": "mock_hash",
+            "files": {
+                "mock_file_py": {
+                    "hash": "mock_hash",
+                    "index": {
+                        "url": "mock_file_py.html",
+                        "file": "src/qdrant_loader/mock_file.py",
+                        "description": "",
+                        "nums": {
+                            "precision": 0,
+                            "n_files": 1,
+                            "n_statements": 100,
+                            "n_excluded": 0,
+                            "n_missing": 15,
+                            "n_branches": 0,
+                            "n_partial_branches": 0,
+                            "n_missing_branches": 0,
+                        },
+                    },
+                }
+            },
+        }
+        import json
+
+        (loader_dir / "status.json").write_text(json.dumps(mock_status, indent=2))
 
         mcp_dir = coverage_dir / "htmlcov-mcp"
         mcp_dir.mkdir()
         (mcp_dir / "index.html").write_text(
             "<html><body>MCP Coverage Report</body></html>"
         )
-        (mcp_dir / "status.json").write_text(
-            '{"coverage": 92.3, "total_statements": 500, "covered_statements": 461}'
-        )
+        # Mock MCP data with files section
+        mock_mcp_status = {
+            "note": "Mock MCP coverage data for testing",
+            "format": 5,
+            "version": "7.8.2",
+            "globals": "mock_hash",
+            "files": {
+                "mock_mcp_file_py": {
+                    "hash": "mock_hash",
+                    "index": {
+                        "url": "mock_mcp_file_py.html",
+                        "file": "src/mcp_server/mock_file.py",
+                        "description": "",
+                        "nums": {
+                            "precision": 0,
+                            "n_files": 1,
+                            "n_statements": 50,
+                            "n_excluded": 0,
+                            "n_missing": 4,
+                            "n_branches": 0,
+                            "n_partial_branches": 0,
+                            "n_missing_branches": 0,
+                        },
+                    },
+                }
+            },
+        }
+        (mcp_dir / "status.json").write_text(json.dumps(mock_mcp_status, indent=2))
 
     return coverage_dir
 
