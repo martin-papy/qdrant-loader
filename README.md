@@ -162,9 +162,9 @@ mypy packages/
 - [QDrant Loader Documentation](./packages/qdrant-loader/README.md)
 - [MCP Server Documentation](./packages/qdrant-loader-mcp-server/README.md)
 - [**🆕 File Conversion Guide**](./docs/FileConversionGuide.md)
-- [**🆕 Migration Guide (v0.3.1)**](./docs/MigrationGuide.md)
+- [**🆕 Migration Guide (v0.3.2)**](./docs/MigrationGuide.md)
 
-### MCP Server Advanced Features (v0.3.1)
+### MCP Server Advanced Features (v0.3.2)
 
 - [**🆕 Advanced Search Examples**](./docs/mcp-server/SearchExamples.md) - Comprehensive examples of hierarchy and attachment search capabilities
 - [**🆕 Hierarchy Search Guide**](./docs/mcp-server/SearchHierarchyExemple.md) - Confluence hierarchy navigation, filtering, and organization

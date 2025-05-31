@@ -108,7 +108,7 @@ The QDrant Loader monorepo consists of two main packages that work together to p
 - **Symbolic link handling**: Follow or ignore symbolic links
 - **Size and depth limits**: Configurable limits for performance
 
-### 🆕 File Conversion Support (v0.3.1)
+### 🆕 File Conversion Support (v0.3.2)
 
 QDrant Loader now includes comprehensive file conversion capabilities, enabling automatic processing of diverse file formats:
 

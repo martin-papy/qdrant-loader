@@ -1,6 +1,6 @@
 # 🚀 Release Notes
 
-## 🆕 Version 0.3.1 - File Conversion Support (May 30, 2025)
+## 🆕 Version 0.3.2 - File Conversion Support (May 31, 2025)
 
 ### 🎉 Major New Feature: File Conversion Support
 
@@ -47,7 +47,7 @@ sources:
 
 #### 🚀 Getting Started
 
-1. **Update to v0.3.1**: `pip install --upgrade qdrant-loader`
+1. **Update to v0.3.2**: `pip install --upgrade qdrant-loader`
 2. **Enable conversion**: Add `enable_file_conversion: true` to your connectors
 3. **Run ingestion**: Files are automatically detected and converted
 
