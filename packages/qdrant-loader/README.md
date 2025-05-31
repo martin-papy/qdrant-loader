@@ -312,19 +312,6 @@ export LOG_FORMAT=json  # or 'text'
 export LOG_FILE=qdrant-loader.log
 ```
 
-### Performance Monitoring
-
-```bash
-# Monitor ingestion progress
-qdrant-loader status
-
-# Check collection statistics
-qdrant-loader stats
-
-# Validate data integrity
-qdrant-loader validate
-```
-
 ## 🧪 Development
 
 ### Setup Development Environment
@@ -381,7 +368,6 @@ mcp-qdrant-loader
 - **Cursor**: Use with MCP server for contextual code assistance
 - **Windsurf**: Compatible through MCP protocol
 - **GitHub Copilot**: Enhanced context through vector search
-- **Custom tools**: RESTful API for integration
 
 ## 📋 Requirements
 
