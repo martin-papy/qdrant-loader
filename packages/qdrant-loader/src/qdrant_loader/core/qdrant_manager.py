@@ -129,7 +129,7 @@ class QdrantManager:
                 field_schema={"type": "keyword"},  # type: ignore
             )
 
-            self.logger.info(f"Successfully created collection {self.collection_name}")
+            self.logger.debug(f"Collection {self.collection_name} created successfully")
         except Exception as e:
             self.logger.error("Failed to create collection", error=str(e))
             raise
@@ -186,7 +186,7 @@ class QdrantManager:
         try:
             client = self._ensure_client_connected()
             client.delete_collection(collection_name=self.collection_name)
-            logger.info("Deleted collection", collection=self.collection_name)
+            logger.debug("Collection deleted", collection=self.collection_name)
         except Exception as e:
             logger.error("Failed to delete collection", error=str(e))
             raise
