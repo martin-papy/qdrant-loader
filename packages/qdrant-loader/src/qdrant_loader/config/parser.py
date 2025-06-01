@@ -224,7 +224,6 @@ For more information, see the documentation on multi-project configuration.
             project_id=project_id,
             display_name=display_name,
             description=description,
-            collection_name=collection_name,
             sources=sources_config,
             overrides=merged_overrides,
         )
