@@ -40,7 +40,11 @@ global:
     database_path: "${STATE_DB_PATH}"
     table_prefix: "qdrant_loader_"
 
-sources: {}
+projects:
+  default:
+    display_name: "Test Workspace Project"
+    description: "Default project for workspace testing"
+    sources: {}
 """
             config_file = workspace_path / "config.yaml"
             config_file.write_text(config_content)
@@ -141,7 +145,11 @@ global:
   state_management:
     database_path: ":memory:"
 
-sources: {}
+projects:
+  default:
+    display_name: "Test No Env Project"
+    description: "Default project for testing without env file"
+    sources: {}
 """
             config_file = workspace_path / "config.yaml"
             config_file.write_text(config_content)

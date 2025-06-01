@@ -47,42 +47,52 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources:
-  git:
-    test-repo:
-      base_url: "${REPO_URL}"
-      branch: "main"
-      token: "${REPO_TOKEN}"
-      include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
-      exclude_paths: ["src/test/**/*"]
-      file_types: ["*.md","*.java"]
-      max_file_size: 1048576
-      depth: 1
-      enable_file_conversion: true
+projects:
+  default:
+    display_name: "Test Template Project"
+    description: "Default project for test template configuration testing"
+    sources:
+      git:
+        test-repo:
+          source_type: "git"
+          source: "test-repo"
+          base_url: "${REPO_URL}"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
+          exclude_paths: ["src/test/**/*"]
+          file_types: ["*.md","*.java"]
+          max_file_size: 1048576
+          depth: 1
+          enable_file_conversion: true
 
-  confluence:
-    test-space:
-      base_url: "${CONFLUENCE_URL}"
-      space_key: "${CONFLUENCE_SPACE_KEY}"
-      content_types: ["page", "blogpost"]
-      token: "${CONFLUENCE_TOKEN}"
-      email: "${CONFLUENCE_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+      confluence:
+        test-space:
+          source_type: "confluence"
+          source: "test-space"
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "${CONFLUENCE_SPACE_KEY}"
+          content_types: ["page", "blogpost"]
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 
-  jira:
-    test-project:
-      base_url: "${JIRA_URL}"
-      deployment_type: "cloud"
-      project_key: "${JIRA_PROJECT_KEY}"
-      requests_per_minute: 60
-      page_size: 50
-      process_attachments: true
-      track_last_sync: true
-      token: "${JIRA_TOKEN}"
-      email: "${JIRA_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+      jira:
+        test-project:
+          source_type: "jira"
+          source: "test-project"
+          base_url: "${JIRA_URL}"
+          deployment_type: "cloud"
+          project_key: "${JIRA_PROJECT_KEY}"
+          requests_per_minute: 60
+          page_size: 50
+          process_attachments: true
+          track_last_sync: true
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 """
 
     @pytest.fixture
@@ -394,5 +404,9 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources: {}
+projects:
+  default:
+    display_name: "Simple Test Template Project"
+    description: "Default project for simple test template configuration testing"
+    sources: {}
 """
