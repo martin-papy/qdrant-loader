@@ -90,7 +90,7 @@ class TestSetupWorkspace:
         assert workspace_config.env_path == env_file
         assert workspace_config.logs_path == tmp_path / "qdrant-loader.log"
         assert workspace_config.metrics_path == tmp_path / "metrics"
-        assert workspace_config.database_path == tmp_path / "qdrant-loader.db"
+        assert workspace_config.database_path == tmp_path / "data" / "qdrant-loader.db"
 
     def test_setup_workspace_no_env_file(self, tmp_path):
         """Test workspace setup without .env file."""

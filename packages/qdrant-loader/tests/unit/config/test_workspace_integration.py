@@ -72,7 +72,7 @@ test_key_for_workspace=workspace_value
         assert workspace_config.metrics_path == (temp_workspace / "metrics").resolve()
         assert (
             workspace_config.database_path
-            == (temp_workspace / "qdrant-loader.db").resolve()
+            == (temp_workspace / "data" / "qdrant-loader.db").resolve()
         )
 
     def test_workspace_configuration_initialization(self, temp_workspace):
