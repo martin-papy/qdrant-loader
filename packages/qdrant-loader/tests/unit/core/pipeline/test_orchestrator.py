@@ -55,8 +55,9 @@ class TestPipelineOrchestrator:
     def setup_method(self):
         """Set up test fixtures."""
         self.settings = Mock(spec=Settings)
-        self.sources_config = Mock(spec=SourcesConfig)
-        self.settings.sources_config = self.sources_config
+        # Create a mock sources config for testing purposes
+        # In the new multi-project system, this would come from a project's sources
+        self.mock_sources_config = Mock(spec=SourcesConfig)
 
         # Create mock components
         self.document_pipeline = AsyncMock(spec=DocumentPipeline)
@@ -121,7 +122,7 @@ class TestPipelineOrchestrator:
         # Verify
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
-            self.sources_config, None, None
+            self.mock_sources_config, None, None
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
             filtered_config
@@ -202,7 +203,7 @@ class TestPipelineOrchestrator:
         # Verify
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
-            self.sources_config, "git", "my-repo"
+            self.mock_sources_config, "git", "my-repo"
         )
 
     @pytest.mark.asyncio
@@ -466,9 +467,7 @@ class TestPipelineOrchestrator:
             )
 
             # Patch the logger to prevent Rich formatting issues during exception logging
-            with patch(
-                "qdrant_loader.core.pipeline.orchestrator.logger"
-            ):
+            with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
                 # Execute and verify exception
                 with pytest.raises(Exception, match="Change detection failed"):
                     await self.orchestrator._detect_document_changes(mock_documents, filtered_config)  # type: ignore

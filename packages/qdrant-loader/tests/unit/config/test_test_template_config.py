@@ -312,7 +312,9 @@ projects:
             settings = get_settings()
 
             # Test sources configuration
-            sources = settings.sources_config
+            default_project = settings.projects_config.projects.get("default")
+            assert default_project is not None
+            sources = default_project.sources
 
             # Test Git source
             assert "git" in sources.to_dict()

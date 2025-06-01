@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-from qdrant_loader.config import Settings, SourcesConfig
+from qdrant_loader.config import Settings
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.qdrant_manager import QdrantManager
@@ -19,7 +19,6 @@ class TestAsyncIngestionPipeline:
         settings = Mock(spec=Settings)
         settings.global_config = Mock()
         settings.global_config.state_management = Mock()
-        settings.sources_config = SourcesConfig()
         return settings
 
     @pytest.fixture
@@ -70,9 +69,7 @@ class TestAsyncIngestionPipeline:
             patch(
                 "qdrant_loader.core.async_ingestion_pipeline.ResourceManager"
             ) as mock_resource_manager,
-            patch(
-                "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
-            ),
+            patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
             patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
@@ -268,14 +265,13 @@ class TestAsyncIngestionPipeline:
             )
 
             # Call process_documents
-            sources_config = SourcesConfig()
             result = await pipeline.process_documents(
-                sources_config=sources_config, source_type="git", source="test_repo"
+                source_type="git", source="test_repo"
             )
 
             # Verify orchestrator was called
             mock_orchestrator.process_documents.assert_called_once_with(
-                sources_config=sources_config, source_type="git", source="test_repo"
+                source_type="git", source="test_repo"
             )
 
             # Verify metrics were handled
