@@ -251,11 +251,9 @@ For more information, see the documentation on multi-project configuration.
                     # Create a copy to avoid modifying the original
                     enhanced_config = source_config.copy()
 
-                    # Inject source_type and source if not already present
-                    if "source_type" not in enhanced_config:
-                        enhanced_config["source_type"] = source_type
-                    if "source" not in enhanced_config:
-                        enhanced_config["source"] = source_name
+                    # Always inject source_type and source fields
+                    enhanced_config["source_type"] = source_type
+                    enhanced_config["source"] = source_name
 
                     enhanced_source_configs[source_name] = enhanced_config
                 else:
