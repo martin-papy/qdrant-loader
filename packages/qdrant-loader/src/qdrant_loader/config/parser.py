@@ -210,9 +210,10 @@ For more information, see the documentation on multi-project configuration.
         description = project_data.get("description")
         collection_name = project_data.get("collection_name")
 
-        # Parse project-specific sources
+        # Parse project-specific sources with automatic field injection
         sources_data = project_data.get("sources", {})
-        sources_config = SourcesConfig(**sources_data)
+        enhanced_sources_data = self._inject_source_metadata(sources_data)
+        sources_config = SourcesConfig(**enhanced_sources_data)
 
         # Extract configuration overrides
         overrides = project_data.get("overrides", {})
@@ -227,6 +228,42 @@ For more information, see the documentation on multi-project configuration.
             sources=sources_config,
             overrides=merged_overrides,
         )
+
+    def _inject_source_metadata(self, sources_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Inject source_type and source fields into source configurations.
+
+        Args:
+            sources_data: Raw sources configuration data
+
+        Returns:
+            Dict[str, Any]: Enhanced sources data with injected metadata
+        """
+        enhanced_data = {}
+
+        for source_type, source_configs in sources_data.items():
+            if not isinstance(source_configs, dict):
+                enhanced_data[source_type] = source_configs
+                continue
+
+            enhanced_source_configs = {}
+            for source_name, source_config in source_configs.items():
+                if isinstance(source_config, dict):
+                    # Create a copy to avoid modifying the original
+                    enhanced_config = source_config.copy()
+
+                    # Inject source_type and source if not already present
+                    if "source_type" not in enhanced_config:
+                        enhanced_config["source_type"] = source_type
+                    if "source" not in enhanced_config:
+                        enhanced_config["source"] = source_name
+
+                    enhanced_source_configs[source_name] = enhanced_config
+                else:
+                    enhanced_source_configs[source_name] = source_config
+
+            enhanced_data[source_type] = enhanced_source_configs
+
+        return enhanced_data
 
     def _is_valid_project_id(self, project_id: str) -> bool:
         """Validate project ID format.

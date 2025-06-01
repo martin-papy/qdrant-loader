@@ -184,13 +184,8 @@ class ConfigValidator:
                         f"Source '{source_name}' in '{source_type}' must be a dictionary"
                     )
 
-                # Check for required fields
-                required_fields = ["source_type", "source"]
-                for field in required_fields:
-                    if field not in source_config:
-                        raise ValueError(
-                            f"Source '{source_name}' in '{source_type}' is missing required field '{field}'"
-                        )
+                # Note: source_type and source fields are automatically injected by the parser
+                # so we don't need to validate their presence here
 
     def _validate_global_section(self, global_data: Any) -> None:
         """Validate global configuration section.

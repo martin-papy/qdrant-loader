@@ -15,8 +15,7 @@ class TestTestTemplateConfiguration:
     @pytest.fixture
     def test_template_config_content(self):
         """Test template configuration content."""
-        return """
-global:
+        return """global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -51,48 +50,48 @@ projects:
   default:
     display_name: "Test Template Project"
     description: "Default project for test template configuration testing"
-sources:
-  git:
-    test-repo:
+    sources:
+      git:
+        test-repo:
           source_type: "git"
           source: "test-repo"
-      base_url: "${REPO_URL}"
-      branch: "main"
-      token: "${REPO_TOKEN}"
-      include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
-      exclude_paths: ["src/test/**/*"]
-      file_types: ["*.md","*.java"]
-      max_file_size: 1048576
-      depth: 1
-      enable_file_conversion: true
+          base_url: "${REPO_URL}"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
+          exclude_paths: ["src/test/**/*"]
+          file_types: ["*.md","*.java"]
+          max_file_size: 1048576
+          depth: 1
+          enable_file_conversion: true
 
-  confluence:
-    test-space:
+      confluence:
+        test-space:
           source_type: "confluence"
           source: "test-space"
-      base_url: "${CONFLUENCE_URL}"
-      space_key: "${CONFLUENCE_SPACE_KEY}"
-      content_types: ["page", "blogpost"]
-      token: "${CONFLUENCE_TOKEN}"
-      email: "${CONFLUENCE_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "${CONFLUENCE_SPACE_KEY}"
+          content_types: ["page", "blogpost"]
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 
-  jira:
-    test-project:
+      jira:
+        test-project:
           source_type: "jira"
           source: "test-project"
-      base_url: "${JIRA_URL}"
-      deployment_type: "cloud"
-      project_key: "${JIRA_PROJECT_KEY}"
-      requests_per_minute: 60
-      page_size: 50
-      process_attachments: true
-      track_last_sync: true
-      token: "${JIRA_TOKEN}"
-      email: "${JIRA_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+          base_url: "${JIRA_URL}"
+          deployment_type: "cloud"
+          project_key: "${JIRA_PROJECT_KEY}"
+          requests_per_minute: 60
+          page_size: 50
+          process_attachments: true
+          track_last_sync: true
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 """
 
     @pytest.fixture
