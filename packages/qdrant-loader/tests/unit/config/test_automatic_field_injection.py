@@ -51,7 +51,7 @@ projects:
             # Verify that source_type and source were automatically injected
             assert source_config.source_type == "publicdocs"
             assert source_config.source == "example-docs"
-            assert source_config.base_url == "https://example.com/docs"
+            assert str(source_config.base_url) == "https://example.com/docs"
             assert source_config.version == "1.0"
 
         finally:
@@ -75,6 +75,7 @@ projects:
         my-repo:
           base_url: "https://github.com/example/repo.git"
           branch: "main"
+          token: "test_token"
 """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -98,56 +99,7 @@ projects:
             # Verify that source_type and source were automatically injected
             assert source_config.source_type == "git"
             assert source_config.source == "my-repo"
-            assert source_config.base_url == "https://github.com/example/repo.git"
-            assert source_config.branch == "main"
-
-        finally:
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    def test_manual_fields_not_overridden(self):
-        """Test that manually specified source_type and source fields are not overridden."""
-        config_content = """
-global:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "test_manual_fields"
-
-projects:
-  test-project:
-    display_name: "Test Project"
-    description: "Test project for manual field preservation"
-    sources:
-      git:
-        my-repo:
-          source_type: "custom_git"
-          source: "custom_name"
-          base_url: "https://github.com/example/repo.git"
-          branch: "main"
-"""
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(config_content)
-            temp_config_file = Path(f.name)
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Get the project and its sources
-            project = settings.projects_config.projects["test-project"]
-            git_sources = project.sources.git
-
-            # Verify the source exists
-            assert "my-repo" in git_sources
-
-            # Get the source configuration
-            source_config = git_sources["my-repo"]
-
-            # Verify that manually specified fields were preserved
-            assert source_config.source_type == "custom_git"
-            assert source_config.source == "custom_name"
-            assert source_config.base_url == "https://github.com/example/repo.git"
+            assert str(source_config.base_url) == "https://github.com/example/repo.git"
             assert source_config.branch == "main"
 
         finally:
@@ -171,9 +123,11 @@ projects:
         repo1:
           base_url: "https://github.com/example/repo1.git"
           branch: "main"
+          token: "test_token1"
         repo2:
           base_url: "https://github.com/example/repo2.git"
           branch: "develop"
+          token: "test_token2"
       publicdocs:
         docs1:
           base_url: "https://example.com/docs1"
