@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
-from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.core.chunking.strategy.markdown_strategy import (
     MarkdownChunkingStrategy,
     Section,
@@ -30,12 +29,15 @@ def settings():
         skip_validation=True,
     )
 
-    # Create empty sources config
-    sources_config = SourcesConfig()
+    # Import ProjectsConfig for the new multi-project format
+    from qdrant_loader.config.models import ProjectsConfig
+
+    # Create empty projects config
+    projects_config = ProjectsConfig()
 
     return Settings(
         global_config=global_config,
-        sources_config=sources_config,
+        projects_config=projects_config,
     )
 
 
