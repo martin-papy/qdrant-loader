@@ -119,14 +119,16 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
     assert settings.global_config.embedding.model == "text-embedding-3-small"
     assert settings.global_config.embedding.vector_size == 1536
 
-    # Verify sources config
-    assert "example" in settings.sources_config.publicdocs
+    # Verify sources config - access through projects
+    default_project = settings.projects_config.projects.get("default")
+    assert default_project is not None
+    assert "example" in default_project.sources.publicdocs
     assert (
-        str(settings.sources_config.publicdocs["example"].base_url)
+        str(default_project.sources.publicdocs["example"].base_url)
         == "https://example.com/"
     )
-    assert settings.sources_config.publicdocs["example"].version == "1.0"
-    assert settings.sources_config.publicdocs["example"].content_type == "html"
+    assert default_project.sources.publicdocs["example"].version == "1.0"
+    assert default_project.sources.publicdocs["example"].content_type == "html"
 
 
 def test_missing_required_fields(test_config_path: Path):
@@ -248,8 +250,11 @@ def test_source_config_validation(test_config_path: Path, test_env_path: Path):
 
         config_data = yaml.safe_load(f)
 
-    config_data["sources"]["confluence"] = {
+    # Add invalid confluence source to the default project
+    config_data["projects"]["default"]["sources"]["confluence"] = {
         "test_space": {
+            "source_type": "confluence",
+            "source": "test_space",
             "base_url": "https://example.com",
             "space_key": "TEST",
             # Missing required token and email
@@ -280,6 +285,9 @@ def test_config_to_dict(test_config_path: Path, test_env_path: Path):
 
     # Verify structure
     assert "global" in config_dict
-    assert "sources" in config_dict
-    assert "publicdocs" in config_dict["sources"]
-    assert "example" in config_dict["sources"]["publicdocs"]
+    assert "projects" in config_dict
+    assert "default" in config_dict["projects"]
+    default_project = config_dict["projects"]["default"]
+    assert "sources" in default_project
+    assert "publicdocs" in default_project["sources"]
+    assert "example" in default_project["sources"]["publicdocs"]

@@ -210,9 +210,6 @@ class Settings(BaseSettings):
     global_config: GlobalConfig = Field(
         default_factory=GlobalConfig, description="Global configuration settings"
     )
-    sources_config: SourcesConfig = Field(
-        default_factory=SourcesConfig, description="Source-specific configurations"
-    )
     projects_config: ProjectsConfig = Field(
         default_factory=ProjectsConfig, description="Multi-project configurations"
     )
@@ -243,67 +240,8 @@ class Settings(BaseSettings):
                 "Qdrant collection name is required but was not provided or substituted"
             )
 
-        # Validate Confluence settings if Confluence sources are configured
-        if self.sources_config.confluence:
-            for source_name, source_config in self.sources_config.confluence.items():
-                from qdrant_loader.connectors.confluence.config import (
-                    ConfluenceDeploymentType,
-                )
-
-                deployment_type = getattr(
-                    source_config, "deployment_type", ConfluenceDeploymentType.CLOUD
-                )
-
-                if deployment_type == ConfluenceDeploymentType.CLOUD:
-                    # Cloud requires token and email
-                    if not source_config.token or not source_config.email:
-                        logger.error(
-                            "Missing required Confluence Cloud configuration",
-                            source=source_name,
-                        )
-                        raise ValueError(
-                            f"Confluence Cloud source '{source_name}' requires both token and email to be configured"
-                        )
-                else:
-                    # Data Center requires Personal Access Token
-                    if not source_config.token:
-                        logger.error(
-                            "Missing required Confluence Data Center configuration",
-                            source=source_name,
-                        )
-                        raise ValueError(
-                            f"Confluence Data Center source '{source_name}' requires a Personal Access Token to be configured"
-                        )
-
-        # Validate Jira settings if Jira sources are configured
-        if self.sources_config.jira:
-            for source_name, source_config in self.sources_config.jira.items():
-                from qdrant_loader.connectors.jira.config import JiraDeploymentType
-
-                deployment_type = getattr(
-                    source_config, "deployment_type", JiraDeploymentType.CLOUD
-                )
-
-                if deployment_type == JiraDeploymentType.CLOUD:
-                    # Cloud requires token and email
-                    if not source_config.token or not source_config.email:
-                        logger.error(
-                            "Missing required Jira Cloud configuration",
-                            source=source_name,
-                        )
-                        raise ValueError(
-                            f"Jira Cloud source '{source_name}' requires both token and email to be configured"
-                        )
-                else:
-                    # Data Center/Server requires Personal Access Token
-                    if not source_config.token:
-                        logger.error(
-                            "Missing required Jira Data Center configuration",
-                            source=source_name,
-                        )
-                        raise ValueError(
-                            f"Jira Data Center source '{source_name}' requires a Personal Access Token to be configured"
-                        )
+        # Note: Source validation is now handled at the project level
+        # Each project's sources are validated when the project is processed
 
         logger.debug("Source configuration validation successful")
         return self
@@ -433,7 +371,6 @@ class Settings(BaseSettings):
             # Step 5: Create settings instance with parsed configuration
             settings = cls(
                 global_config=parsed_config.global_config,
-                sources_config=parsed_config.global_config.sources,  # Legacy compatibility
                 projects_config=parsed_config.projects_config,
             )
 
@@ -458,6 +395,5 @@ class Settings(BaseSettings):
         """
         return {
             "global": self.global_config.to_dict(),
-            "sources": self.sources_config.to_dict(),
             "projects": self.projects_config.to_dict(),
         }
