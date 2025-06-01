@@ -1,341 +1,282 @@
-# QDrant Loader Website Templates
+# QDrant Loader Documentation Website
 
-This directory contains the template system for building the QDrant Loader documentation website. The templates use Bootstrap 5 for a modern, professional appearance and support dynamic content replacement with **automatic markdown to HTML conversion**.
+This directory contains the documentation website generator for QDrant Loader. It automatically converts markdown documentation into a professional, responsive website using Bootstrap templates.
 
 ## 🏗️ Architecture
 
-### Template Structure
+The website generator is a Python-based static site generator that:
 
-```
+- **Converts markdown to HTML** using Python-Markdown with extensions
+- **Applies Bootstrap templates** for professional styling and responsive design
+- **Generates navigation** automatically from directory structure
+- **Processes assets** including favicons, logos, and icons
+- **Creates sitemaps and robots.txt** for SEO optimization
+- **Supports code coverage reports** integration
+
+## 📁 Directory Structure
+
+```text
 website/
-├── templates/
-│   ├── base.html           # Base template with navigation, footer, and layout
-│   ├── index.html          # Homepage content template
-│   ├── docs-index.html     # Documentation index template
-│   └── coverage-index.html # Coverage reports index template
-├── build.py               # Python builder script with markdown conversion
-└── README.md             # This file
+├── build.py                    # Main build script
+├── templates/                  # Jinja2 HTML templates
+│   ├── base.html              # Base template with Bootstrap
+│   ├── index.html             # Homepage template
+│   ├── docs-index.html        # Documentation index
+│   ├── coverage-index.html    # Coverage reports index
+│   ├── robots.txt             # SEO robots file
+│   └── sitemap.xml            # SEO sitemap template
+├── assets/                     # Website assets
+│   ├── favicons/              # Favicon files (all sizes)
+│   ├── icons/                 # SVG icons
+│   ├── logos/                 # Project logos and social cards
+│   ├── site.webmanifest       # PWA manifest
+│   └── generate_favicons.py   # Favicon generation script
+└── README.md                  # This file
 ```
 
-### Template System
+## 🚀 Building the Website
 
-The website uses a **template inheritance** system with **automatic markdown conversion**:
-
-1. **Base Template** (`base.html`): Contains the common layout, navigation, footer, and Bootstrap framework
-2. **Content Templates**: Contain page-specific content that gets injected into the base template
-3. **Markdown Conversion**: Automatically converts all `.md` files to beautiful HTML pages with Bootstrap styling
-4. **Builder Script**: Processes templates, converts markdown, and replaces placeholders with dynamic content
-
-## 🎨 Design Features
-
-### Modern UI Framework
-
-- **Bootstrap 5.3.2**: Latest stable version with modern components
-- **Bootstrap Icons**: Comprehensive icon library
-- **Responsive Design**: Mobile-first approach with breakpoints
-- **Professional Color Scheme**: Custom CSS variables for consistent branding
-
-### Markdown to HTML Conversion
-
-- **Full Markdown Support**: Headers, lists, tables, code blocks, links, images
-- **Syntax Highlighting**: Code blocks with highlight.js and GitHub theme
-- **Bootstrap Styling**: Automatic application of Bootstrap classes to all elements
-- **Table of Contents**: Automatic generation with anchor links
-- **Breadcrumb Navigation**: Contextual navigation for all documentation pages
-- **Professional Typography**: Consistent heading hierarchy and spacing
-
-### Key Design Elements
-
-- **Gradient Hero Sections**: Eye-catching headers with gradient backgrounds
-- **Card-based Layout**: Clean, organized content presentation with shadows
-- **Hover Effects**: Interactive elements with smooth transitions
-- **Status Indicators**: Real-time test status and coverage information
-- **Professional Typography**: System fonts with proper hierarchy
-- **Code Highlighting**: Syntax-highlighted code blocks with dark theme
-
-## 🔧 Usage
-
-### Building the Website
-
-#### Basic Usage
+### Prerequisites
 
 ```bash
-python website/build.py
+# Install dependencies (from project root)
+pip install -e packages/qdrant-loader[dev]
+pip install -e packages/qdrant-loader-mcp-server[dev]
+
+# Required Python packages for website generation
+pip install markdown jinja2 python-frontmatter
 ```
 
-#### Advanced Usage
+### Build Commands
 
 ```bash
-python website/build.py \
-  --output site \
-  --templates website/templates \
-  --coverage-artifacts coverage-artifacts/ \
-  --test-results test-results/ \
-  --base-url "https://martin-papy.github.io/qdrant-loader/"
+# Build the complete website
+cd website
+python build.py
+
+# Build with specific source directory
+python build.py --source ../docs_new --output ../dist
+
+# Build with verbose logging
+python build.py --verbose
+
+# Clean build (remove output directory first)
+python build.py --clean
 ```
 
-### Command Line Options
+### Build Process
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--output`, `-o` | Output directory for built website | `site` |
-| `--templates`, `-t` | Templates directory | `website/templates` |
-| `--coverage-artifacts` | Coverage artifacts directory | None |
-| `--test-results` | Test results directory | None |
-| `--base-url` | Base URL for the website | `""` |
+1. **Source Processing**: Reads markdown files from the documentation directory
+2. **Frontmatter Parsing**: Extracts metadata from markdown frontmatter
+3. **Markdown Conversion**: Converts markdown to HTML with syntax highlighting
+4. **Template Application**: Applies appropriate Jinja2 templates
+5. **Asset Copying**: Copies all assets (images, favicons, etc.)
+6. **Navigation Generation**: Creates automatic navigation from directory structure
+7. **SEO Generation**: Creates sitemap.xml and robots.txt
+8. **Output Writing**: Writes final HTML files to output directory
 
-## 📝 Template Placeholders
+## 🎨 Templates
 
-### Base Template Placeholders
+### Base Template (`base.html`)
 
-| Placeholder | Description | Example |
-|-------------|-------------|---------|
-| `{{ page_title }}` | Page title for `<title>` tag | "Home" |
-| `{{ page_description }}` | Meta description | "Enterprise-ready toolkit" |
-| `{{ content }}` | Main page content | Content from content templates |
-| `{{ base_url }}` | Base URL for links | `""` or `"https://..."` |
-| `{{ additional_head }}` | Extra head content | Custom CSS/JS |
-| `{{ additional_scripts }}` | Extra scripts | Page-specific JavaScript |
+The base template provides:
 
-### Dynamic Content
+- **Bootstrap 5** for responsive design and components
+- **Syntax highlighting** with Prism.js for code blocks
+- **Responsive navigation** with automatic menu generation
+- **SEO meta tags** including Open Graph and Twitter Cards
+- **Favicon integration** with all required sizes
+- **Google Analytics** support (configurable)
 
-The builder automatically generates:
+### Specialized Templates
 
-- **Project Information**: Version, commit info, build timestamp
-- **Test Status**: Real-time test results and coverage data
-- **Documentation Structure**: Organized docs with proper linking
-- **Coverage Reports**: Interactive coverage analysis
-- **Markdown Conversion**: All `.md` files converted to styled HTML pages
+- **`index.html`**: Homepage with project overview and quick links
+- **`docs-index.html`**: Documentation index with section navigation
+- **`coverage-index.html`**: Test coverage reports integration
 
-## 📄 Markdown Conversion Features
+### Template Variables
 
-### Automatic Conversion
+Templates have access to:
 
-The builder automatically converts all markdown files to HTML with:
+- `content`: Rendered markdown content
+- `title`: Page title from frontmatter or filename
+- `description`: Page description from frontmatter
+- `navigation`: Auto-generated navigation structure
+- `breadcrumbs`: Current page breadcrumb path
+- `assets_url`: Base URL for assets
 
-- **Bootstrap Classes**: Automatically applied to all HTML elements
-- **Syntax Highlighting**: Code blocks with highlight.js
-- **Responsive Tables**: Bootstrap table styling with horizontal scrolling
-- **Professional Typography**: Consistent heading hierarchy and spacing
-- **Navigation Elements**: Breadcrumbs and back-to-docs links
+## 🎯 Assets Management
 
-### Supported Markdown Features
+### Favicons
 
-| Feature | Bootstrap Styling | Example |
-|---------|------------------|---------|
-| Headers | `display-4`, `h3`, `h4` classes with primary color | `# Title` → Large primary header |
-| Paragraphs | `mb-3` spacing | Consistent paragraph spacing |
-| Lists | `list-group` styling | Clean, modern list appearance |
-| Tables | `table-responsive`, `table-striped` | Professional data tables |
-| Code Blocks | `bg-dark`, syntax highlighting | Dark theme with language detection |
-| Inline Code | `bg-light` badges | Subtle inline code styling |
-| Links | `text-decoration-none`, external link detection | Clean links with target handling |
-| Blockquotes | `blockquote` with primary border | Styled quote blocks |
+The website includes comprehensive favicon support:
 
-### Enhanced Features
+```text
+assets/favicons/
+├── favicon.ico              # Classic ICO format
+├── favicon-16x16.png        # Small browser tab
+├── favicon-32x32.png        # Standard browser tab
+├── favicon-48x48.png        # Windows taskbar
+├── favicon-64x64.png        # High-DPI browser tab
+├── favicon-96x96.png        # Android Chrome
+├── favicon-128x128.png      # Chrome Web Store
+├── apple-touch-icon.png     # iOS home screen (180x180)
+├── android-chrome-192x192.png # Android home screen
+└── android-chrome-512x512.png # Android splash screen
+```
 
-- **Table of Contents**: Automatic generation with anchor links
-- **Breadcrumb Navigation**: Contextual navigation for all pages
-- **External Link Detection**: Automatic `target="_blank"` for external URLs
-- **Image Handling**: Responsive image styling
-- **Code Language Detection**: Automatic syntax highlighting based on language
+### Logos and Icons
 
-## 🎯 Customization
+- **`qdrant-loader-logo.svg`**: Main project logo
+- **`qdrant-loader-logo-horizontal.svg`**: Horizontal layout logo
+- **`qdrant-loader-icon.svg`**: Animated icon
+- **`qdrant-loader-icon-static.svg`**: Static icon
+- **`qdrant-loader-social-card.png`**: Social media sharing image
+
+### Generating New Favicons
+
+```bash
+cd website/assets
+python generate_favicons.py
+
+# This script generates all favicon sizes from the main logo
+# Requires Pillow (PIL) for image processing
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# Optional: Google Analytics tracking ID
+export GA_TRACKING_ID="G-XXXXXXXXXX"
+
+# Optional: Base URL for absolute links
+export SITE_BASE_URL="https://martin-papy.github.io/qdrant-loader"
+```
+
+### Frontmatter Options
+
+Markdown files can include frontmatter for metadata:
+
+```yaml
+---
+title: "Custom Page Title"
+description: "Page description for SEO"
+template: "custom-template.html"  # Optional custom template
+nav_order: 10                    # Optional navigation ordering
+hide_nav: true                   # Optional: hide from navigation
+---
+
+# Your markdown content here
+```
+
+## 🚀 Development Workflow
+
+### Local Development
+
+```bash
+# Build and serve locally (requires a simple HTTP server)
+cd website
+python build.py --output ../dist
+cd ../dist
+python -m http.server 8000
+
+# Open http://localhost:8000 in your browser
+```
 
 ### Adding New Pages
 
-1. **Create Content Template**:
+1. **Create markdown file** in the appropriate documentation directory
+2. **Add frontmatter** if needed for custom title or description
+3. **Rebuild website** with `python build.py`
+4. **Test locally** to ensure proper rendering and navigation
 
-   ```html
-   <!-- website/templates/my-page.html -->
-   <section class="py-5">
-       <div class="container">
-           <h1>My Custom Page</h1>
-           <p>Custom content here...</p>
-       </div>
-   </section>
-   ```
+### Modifying Templates
 
-2. **Update Builder Script**:
+1. **Edit template files** in `website/templates/`
+2. **Test changes** by rebuilding the website
+3. **Ensure responsive design** works across devices
+4. **Validate HTML** and check for accessibility
 
-   ```python
-   # In build_all method
-   self.build_page(
-       "base.html", "my-page.html",
-       "My Page", "Description of my page",
-       "my-page/index.html"
-   )
-   ```
+### Adding New Assets
 
-### Adding Markdown Documentation
+1. **Add files** to appropriate `website/assets/` subdirectory
+2. **Update templates** if needed to reference new assets
+3. **Rebuild website** to copy assets to output
+4. **Test asset loading** in the generated website
 
-Simply add `.md` files to the `docs/` directory or package directories. The builder will automatically:
+## 📊 Integration Features
 
-1. Convert them to HTML with Bootstrap styling
-2. Add breadcrumb navigation
-3. Include syntax highlighting
-4. Generate proper page titles and descriptions
-5. Create appropriate directory structure
+### Test Coverage Reports
 
-### Customizing Styles
-
-The base template includes CSS variables for easy customization:
-
-```css
-:root {
-    --primary-color: #667eea;
-    --secondary-color: #764ba2;
-    --success-color: #48bb78;
-    --danger-color: #f56565;
-    --warning-color: #ed8936;
-    --info-color: #4299e1;
-}
-```
-
-### Adding Custom JavaScript
-
-Use the `additional_scripts` placeholder:
-
-```python
-additional_replacements = {
-    "additional_scripts": """
-    <script>
-        // Custom JavaScript here
-        console.log('Custom script loaded');
-    </script>
-    """
-}
-
-self.build_page(
-    "base.html", "content.html",
-    "Title", "Description", "output.html",
-    additional_replacements
-)
-```
-
-## 🚀 Integration with GitHub Actions
-
-The template system integrates seamlessly with the GitHub Actions workflow:
-
-### Workflow Integration
-
-```yaml
-- name: Install dependencies
-  run: |
-    python -m pip install --upgrade pip
-    pip install -e ".[docs]"
-
-- name: Build website using templates
-  run: |
-    python website/build.py \
-      --output site \
-      --coverage-artifacts coverage-artifacts/ \
-      --test-results test-results/
-```
-
-### Dynamic Data Sources
-
-The website automatically integrates:
-
-- **Test Results**: From `test-results/status.json`
-- **Coverage Reports**: From `coverage-artifacts/htmlcov-*/`
-- **Project Info**: From `pyproject.toml` and Git
-- **Documentation**: From `docs/` and package READMEs (converted to HTML)
-- **Markdown Files**: All `.md` files automatically converted to styled HTML
-
-## 📊 Features
-
-### Homepage
-
-- Hero section with project overview
-- Feature cards with hover effects
-- Installation instructions
-- Quick start guide
-
-### Documentation Index
-
-- Organized by categories
-- Color-coded sections
-- Badge indicators for content type
-- Quick action buttons
-- **Links to HTML versions** of all documentation
-
-### Coverage Reports
-
-- Real-time test status
-- Coverage metrics display
-- Interactive coverage reports
-- Test run information
-
-### Documentation Pages
-
-- **Professional HTML conversion** from markdown
-- **Syntax-highlighted code blocks**
-- **Responsive Bootstrap styling**
-- **Breadcrumb navigation**
-- **Table of contents with anchor links**
-- **Back-to-documentation navigation**
-
-## 🔄 Benefits Over Embedded HTML
-
-### Maintainability
-
-- **Separation of Concerns**: Templates separate from workflow logic
-- **Reusable Components**: Base template shared across pages
-- **Easy Updates**: Change design without touching workflow files
-- **Markdown Workflow**: Write docs in markdown, get professional HTML
-
-### Professional Design
-
-- **Bootstrap Framework**: Industry-standard UI components
-- **Responsive Layout**: Works on all devices
-- **Modern Aesthetics**: Professional appearance for enterprise use
-- **Consistent Styling**: All documentation pages use the same design
-
-### Flexibility
-
-- **Dynamic Content**: Easy to add new data sources
-- **Customizable**: Simple to modify design and layout
-- **Extensible**: Easy to add new pages and features
-- **Markdown Support**: Write documentation in markdown, get styled HTML
-
-## 🛠️ Development
-
-### Local Testing
+The website can integrate test coverage reports:
 
 ```bash
-# Build website locally
-python website/build.py --output local-site
+# Generate coverage reports (from project root)
+pytest --cov=packages --cov-report=html --cov-report-dir=website/coverage
 
-# Serve locally (requires Python 3)
-cd local-site
-python -m http.server 8000
-
-# Open http://localhost:8000
+# Build website with coverage integration
+cd website
+python build.py --include-coverage
 ```
 
-### Template Development
+### Documentation Versioning
 
-1. Edit templates in `website/templates/`
-2. Add markdown files to `docs/` or package directories
-3. Test with local build
-4. Commit changes
-5. GitHub Actions will automatically deploy
-
-### Dependencies
-
-The builder requires these Python packages, which are defined in the `docs` optional dependencies in `pyproject.toml`:
-
-- `tomli`: For reading pyproject.toml files
-- `markdown`: For markdown to HTML conversion with extensions
-- `pygments`: For syntax highlighting
-- `cairosvg`: For favicon generation from SVG
-- `pillow`: For image processing in favicon generation
-
-Install with:
+The build system supports multiple documentation versions:
 
 ```bash
-pip install -e ".[docs]"
+# Build specific documentation version
+python build.py --source ../docs_v1 --output ../dist/v1
+python build.py --source ../docs_v2 --output ../dist/v2
 ```
 
-This template system provides a professional, maintainable foundation for the QDrant Loader documentation website while keeping the GitHub Actions workflow clean and focused. The automatic markdown conversion ensures that all documentation maintains a consistent, professional appearance while allowing developers to write in familiar markdown format.
+## 🔍 SEO and Performance
+
+### SEO Features
+
+- **Semantic HTML** with proper heading hierarchy
+- **Meta descriptions** from frontmatter or auto-generated
+- **Open Graph tags** for social media sharing
+- **Twitter Card tags** for Twitter sharing
+- **Structured data** for search engines
+- **Sitemap.xml** generation
+- **Robots.txt** configuration
+
+### Performance Optimizations
+
+- **Minified CSS and JS** in production builds
+- **Optimized images** with appropriate formats and sizes
+- **Lazy loading** for images and non-critical resources
+- **CDN-ready assets** with proper caching headers
+- **Progressive Web App** features with manifest
+
+## 🤝 Contributing
+
+### Adding New Features
+
+1. **Modify `build.py`** for new build functionality
+2. **Update templates** for new UI features
+3. **Add assets** as needed
+4. **Test thoroughly** across different browsers and devices
+5. **Update this README** with new features
+
+### Template Guidelines
+
+- **Use Bootstrap classes** for consistent styling
+- **Ensure responsive design** with mobile-first approach
+- **Include proper accessibility** attributes
+- **Follow semantic HTML** structure
+- **Test with various content** lengths and types
+
+### Asset Guidelines
+
+- **Optimize images** for web delivery
+- **Use SVG** for icons and logos when possible
+- **Provide multiple sizes** for raster images
+- **Include alt text** and descriptions
+- **Test loading performance** on slow connections
+
+---
+
+**Need help?** Check the [main documentation](../docs/) or open an [issue](https://github.com/martin-papy/qdrant-loader/issues) for website-specific questions.
