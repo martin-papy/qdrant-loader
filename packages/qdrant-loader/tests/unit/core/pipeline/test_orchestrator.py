@@ -116,8 +116,10 @@ class TestPipelineOrchestrator:
         self.document_pipeline.process_documents.return_value = mock_result
         self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute
-        result = await self.orchestrator.process_documents()
+        # Execute - pass sources_config parameter
+        result = await self.orchestrator.process_documents(
+            sources_config=self.mock_sources_config
+        )
 
         # Verify
         assert result == mock_documents
@@ -125,14 +127,14 @@ class TestPipelineOrchestrator:
             self.mock_sources_config, None, None
         )
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config
+            filtered_config, None
         )
         self.orchestrator._detect_document_changes.assert_called_once_with(
-            mock_documents, filtered_config
+            mock_documents, filtered_config, None
         )
         self.document_pipeline.process_documents.assert_called_once_with(mock_documents)
         self.orchestrator._update_document_states.assert_called_once_with(
-            mock_documents, {"doc1", "doc2"}
+            mock_documents, {"doc1", "doc2"}, None
         )
 
     @pytest.mark.asyncio
@@ -195,15 +197,25 @@ class TestPipelineOrchestrator:
         self.document_pipeline.process_documents.return_value = mock_result
         self.orchestrator._update_document_states = AsyncMock()
 
-        # Execute
+        # Execute - pass sources_config parameter
         result = await self.orchestrator.process_documents(
-            source_type="git", source="my-repo"
+            sources_config=self.mock_sources_config, source_type="git", source="my-repo"
         )
 
         # Verify
         assert result == mock_documents
         self.source_filter.filter_sources.assert_called_once_with(
             self.mock_sources_config, "git", "my-repo"
+        )
+        self.orchestrator._collect_documents_from_sources.assert_called_once_with(
+            filtered_config, None
+        )
+        self.orchestrator._detect_document_changes.assert_called_once_with(
+            mock_documents, filtered_config, None
+        )
+        self.document_pipeline.process_documents.assert_called_once_with(mock_documents)
+        self.orchestrator._update_document_states.assert_called_once_with(
+            mock_documents, {"doc1"}, None
         )
 
     @pytest.mark.asyncio
@@ -223,7 +235,9 @@ class TestPipelineOrchestrator:
         with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
             # Execute and verify exception
             with pytest.raises(ValueError, match="No sources found for type 'git'"):
-                await self.orchestrator.process_documents(source_type="git")
+                await self.orchestrator.process_documents(
+                    sources_config=self.mock_sources_config, source_type="git"
+                )
 
     @pytest.mark.asyncio
     async def test_process_documents_no_documents_collected(self):
@@ -240,12 +254,14 @@ class TestPipelineOrchestrator:
         self.orchestrator._collect_documents_from_sources = AsyncMock(return_value=[])
 
         # Execute
-        result = await self.orchestrator.process_documents()
+        result = await self.orchestrator.process_documents(
+            sources_config=self.mock_sources_config
+        )
 
         # Verify
         assert result == []
         self.orchestrator._collect_documents_from_sources.assert_called_once_with(
-            filtered_config
+            filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -262,12 +278,14 @@ class TestPipelineOrchestrator:
         self.orchestrator._detect_document_changes = AsyncMock(return_value=[])
 
         # Execute
-        result = await self.orchestrator.process_documents()
+        result = await self.orchestrator.process_documents(
+            sources_config=self.mock_sources_config
+        )
 
         # Verify
         assert result == []
         self.orchestrator._detect_document_changes.assert_called_once_with(
-            mock_documents, filtered_config
+            mock_documents, filtered_config, None
         )
 
     @pytest.mark.asyncio
@@ -283,7 +301,9 @@ class TestPipelineOrchestrator:
         with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
             # Execute and verify exception
             with pytest.raises(Exception, match="Collection failed"):
-                await self.orchestrator.process_documents()
+                await self.orchestrator.process_documents(
+                    sources_config=self.mock_sources_config
+                )
 
     @pytest.mark.asyncio
     async def test_collect_documents_from_sources_all_types(self):
@@ -314,7 +334,7 @@ class TestPipelineOrchestrator:
 
         # Execute
         result = await self.orchestrator._collect_documents_from_sources(
-            filtered_config
+            filtered_config, None
         )
 
         # Verify
@@ -346,7 +366,7 @@ class TestPipelineOrchestrator:
 
         # Execute
         result = await self.orchestrator._collect_documents_from_sources(
-            filtered_config
+            filtered_config, None
         )
 
         # Verify
@@ -367,7 +387,7 @@ class TestPipelineOrchestrator:
 
         # Execute
         result = await self.orchestrator._collect_documents_from_sources(
-            filtered_config
+            filtered_config, None
         )
 
         # Verify
@@ -407,7 +427,7 @@ class TestPipelineOrchestrator:
 
             # Execute
             result = await self.orchestrator._detect_document_changes(
-                mock_documents, filtered_config
+                mock_documents, filtered_config, None
             )
 
             # Verify
@@ -420,7 +440,7 @@ class TestPipelineOrchestrator:
     @pytest.mark.asyncio
     async def test_detect_document_changes_empty_documents(self):
         """Test document change detection with empty document list."""
-        result = await self.orchestrator._detect_document_changes([], Mock())
+        result = await self.orchestrator._detect_document_changes([], Mock(), None)
         assert result == []
 
     @pytest.mark.asyncio
@@ -445,7 +465,7 @@ class TestPipelineOrchestrator:
             )
 
             # Execute
-            result = await self.orchestrator._detect_document_changes(mock_documents, filtered_config)  # type: ignore
+            result = await self.orchestrator._detect_document_changes(mock_documents, filtered_config, None)  # type: ignore
 
             # Verify
             assert result == mock_documents
@@ -470,7 +490,7 @@ class TestPipelineOrchestrator:
             with patch("qdrant_loader.core.pipeline.orchestrator.logger"):
                 # Execute and verify exception
                 with pytest.raises(Exception, match="Change detection failed"):
-                    await self.orchestrator._detect_document_changes(mock_documents, filtered_config)  # type: ignore
+                    await self.orchestrator._detect_document_changes(mock_documents, filtered_config, None)  # type: ignore
 
     @pytest.mark.asyncio
     async def test_update_document_states_success(self):
@@ -490,7 +510,7 @@ class TestPipelineOrchestrator:
 
         # Execute
         await self.orchestrator._update_document_states(
-            mock_documents, successfully_processed_doc_ids
+            mock_documents, successfully_processed_doc_ids, None
         )
 
         # Verify
@@ -514,12 +534,12 @@ class TestPipelineOrchestrator:
         self.state_manager._initialized = True
 
         # Execute
-        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids)  # type: ignore
+        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids, None)  # type: ignore
 
         # Verify
         self.state_manager.initialize.assert_not_called()
         self.state_manager.update_document_state.assert_called_once_with(
-            mock_documents[0]
+            mock_documents[0], None
         )
 
     @pytest.mark.asyncio
@@ -541,7 +561,7 @@ class TestPipelineOrchestrator:
         ]
 
         # Execute (should not raise exception)
-        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids)  # type: ignore
+        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids, None)  # type: ignore
 
         # Verify both updates were attempted
         assert self.state_manager.update_document_state.call_count == 2
@@ -556,7 +576,7 @@ class TestPipelineOrchestrator:
         self.state_manager._initialized = False
 
         # Execute
-        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids)  # type: ignore
+        await self.orchestrator._update_document_states(mock_documents, successfully_processed_doc_ids, None)  # type: ignore
 
         # Verify no updates were attempted (but initialization was called)
         self.state_manager.update_document_state.assert_not_called()

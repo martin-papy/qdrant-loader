@@ -294,7 +294,7 @@ async def test_pipeline_project_metadata_injection(
     assert enhanced_metadata["project_id"] == "project-1"
     assert enhanced_metadata["project_name"] == "Project One"
     assert enhanced_metadata["project_description"] == "First test project"
-    assert enhanced_metadata["collection_name"] == "project_one_collection"
+    assert enhanced_metadata["collection_name"] == "global_collection"
 
 
 @pytest.mark.asyncio
