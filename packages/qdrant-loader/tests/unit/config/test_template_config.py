@@ -52,7 +52,11 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources: {}
+projects:
+  default:
+    display_name: "Template Test Project"
+    description: "Default project for template configuration testing"
+    sources: {}
 """
 
     @pytest.fixture

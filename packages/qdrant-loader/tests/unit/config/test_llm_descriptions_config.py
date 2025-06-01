@@ -52,7 +52,11 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources: {}
+projects:
+  default:
+    display_name: "LLM Test Project"
+    description: "Default project for LLM descriptions testing"
+    sources: {}
 """
 
     @pytest.fixture
@@ -86,7 +90,11 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources: {}
+projects:
+  default:
+    display_name: "LLM Disabled Test Project"
+    description: "Default project for LLM descriptions disabled testing"
+    sources: {}
 """
 
     @pytest.fixture

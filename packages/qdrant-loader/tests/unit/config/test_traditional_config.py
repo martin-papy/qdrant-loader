@@ -44,7 +44,11 @@ global:
     markitdown:
       enable_llm_descriptions: false
 
-sources: {}
+projects:
+  default:
+    display_name: "Traditional Test Project"
+    description: "Default project for traditional configuration testing"
+    sources: {}
 """
 
     @pytest.fixture
