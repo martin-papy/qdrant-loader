@@ -14,6 +14,12 @@ class SearchResult(BaseModel):
     file_path: str | None = None
     repo_name: str | None = None
 
+    # Project information (for multi-project support)
+    project_id: str | None = None
+    project_name: str | None = None
+    project_description: str | None = None
+    collection_name: str | None = None
+
     # Hierarchy information (primarily for Confluence)
     parent_id: str | None = None
     parent_title: str | None = None
@@ -38,6 +44,18 @@ class SearchResult(BaseModel):
         if self.breadcrumb_text and self.source_type == "confluence":
             return f"{self.source_title} ({self.breadcrumb_text})"
         return self.source_title
+
+    def get_project_info(self) -> str | None:
+        """Get formatted project information for display."""
+        if not self.project_id:
+            return None
+
+        project_info = f"Project: {self.project_name or self.project_id}"
+        if self.project_description:
+            project_info += f" - {self.project_description}"
+        if self.collection_name:
+            project_info += f" (Collection: {self.collection_name})"
+        return project_info
 
     def get_hierarchy_info(self) -> str | None:
         """Get formatted hierarchy information for display."""
@@ -74,3 +92,11 @@ class SearchResult(BaseModel):
             _, ext = os.path.splitext(self.original_filename)
             return ext.lower().lstrip(".") if ext else None
         return None
+
+    def belongs_to_project(self, project_id: str) -> bool:
+        """Check if this result belongs to a specific project."""
+        return self.project_id == project_id
+
+    def belongs_to_any_project(self, project_ids: list[str]) -> bool:
+        """Check if this result belongs to any of the specified projects."""
+        return self.project_id is not None and self.project_id in project_ids

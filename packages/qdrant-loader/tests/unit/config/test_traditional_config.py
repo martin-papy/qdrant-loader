@@ -48,7 +48,7 @@ projects:
   default:
     display_name: "Traditional Test Project"
     description: "Default project for traditional configuration testing"
-    sources: {}
+sources: {}
 """
 
     @pytest.fixture
