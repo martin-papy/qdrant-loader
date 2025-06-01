@@ -50,9 +50,9 @@ global:
 # Multi-project configuration
 projects:
   default:
+    project_id: "default"
     display_name: "Test Project"
     description: "Default test project for unit tests"
-    collection_name: "${QDRANT_COLLECTION_NAME}"  # Use environment variable for collection name
     
     # Source-specific configurations
     sources:
@@ -162,6 +162,3 @@ projects:
           # File conversion settings for this source
           # Enable file conversion for testing
           enable_file_conversion: true
-    
-    # Optional project-specific configuration overrides
-    overrides: {}

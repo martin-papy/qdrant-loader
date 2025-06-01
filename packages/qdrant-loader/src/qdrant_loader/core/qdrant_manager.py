@@ -181,6 +181,76 @@ class QdrantManager:
             logger.error("Failed to search collection", error=str(e))
             raise
 
+    def search_with_project_filter(
+        self, query_vector: list[float], project_ids: list[str], limit: int = 5
+    ) -> list[models.ScoredPoint]:
+        """Search for similar vectors in the collection with project filtering.
+
+        Args:
+            query_vector: Query vector for similarity search
+            project_ids: List of project IDs to filter by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of scored points matching the query and project filter
+        """
+        try:
+            client = self._ensure_client_connected()
+
+            # Build project filter
+            project_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="project_id", match=models.MatchAny(any=project_ids)
+                    )
+                ]
+            )
+
+            search_result = client.search(
+                collection_name=self.collection_name,
+                query_vector=query_vector,
+                query_filter=project_filter,
+                limit=limit,
+            )
+            return search_result
+        except Exception as e:
+            logger.error(
+                "Failed to search collection with project filter",
+                error=str(e),
+                project_ids=project_ids,
+            )
+            raise
+
+    def get_project_collections(self) -> dict[str, str]:
+        """Get mapping of project IDs to their collection names.
+
+        Returns:
+            Dictionary mapping project_id to collection_name
+        """
+        try:
+            client = self._ensure_client_connected()
+
+            # Scroll through all points to get unique project-collection mappings
+            scroll_result = client.scroll(
+                collection_name=self.collection_name,
+                limit=10000,  # Large limit to get all unique projects
+                with_payload=True,
+                with_vectors=False,
+            )
+
+            project_collections = {}
+            for point in scroll_result[0]:
+                if point.payload:
+                    project_id = point.payload.get("project_id")
+                    collection_name = point.payload.get("collection_name")
+                    if project_id and collection_name:
+                        project_collections[project_id] = collection_name
+
+            return project_collections
+        except Exception as e:
+            logger.error("Failed to get project collections", error=str(e))
+            raise
+
     def delete_collection(self) -> None:
         """Delete the collection."""
         try:

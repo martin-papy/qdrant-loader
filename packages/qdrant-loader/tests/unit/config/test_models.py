@@ -76,48 +76,40 @@ class TestProjectConfig:
             project_id="test-project",
             display_name="Test Project",
             description="A test project",
-            collection_name="test_collection",
-            sources=SourcesConfig(),
             overrides={"chunking": {"chunk_size": 1000}},
         )
 
         assert config.project_id == "test-project"
         assert config.display_name == "Test Project"
         assert config.description == "A test project"
-        assert config.collection_name == "test_collection"
         assert isinstance(config.sources, SourcesConfig)
         assert config.overrides["chunking"]["chunk_size"] == 1000
 
     def test_get_effective_collection_name(self):
         """Test collection name resolution logic."""
-        # Test with explicit collection name
+        # Test that all projects use the global collection name
         config = ProjectConfig(
             project_id="test-project",
             display_name="Test Project",
             description="A test project",
-            collection_name="custom_collection",
         )
-        assert config.get_effective_collection_name("documents") == "custom_collection"
+        assert config.get_effective_collection_name("documents") == "documents"
 
         # Test default project (backward compatibility)
         config = ProjectConfig(
             project_id="default",
             display_name="Default Project",
             description="Default project description",
-            collection_name=None,
         )
         assert config.get_effective_collection_name("documents") == "documents"
 
-        # Test regular project without explicit collection name
+        # Test regular project - now also uses global collection name
         config = ProjectConfig(
             project_id="my-project",
             display_name="My Project",
             description="My project description",
-            collection_name=None,
         )
-        assert (
-            config.get_effective_collection_name("documents") == "documents_my-project"
-        )
+        assert config.get_effective_collection_name("documents") == "documents"
 
 
 class TestProjectsConfig:
@@ -138,7 +130,6 @@ class TestProjectsConfig:
             project_id="test-project",
             display_name="Test Project",
             description="A test project",
-            collection_name="test_collection",
         )
 
         config.add_project(project)
@@ -154,14 +145,12 @@ class TestProjectsConfig:
             project_id="test-project",
             display_name="Test Project 1",
             description="First test project",
-            collection_name="test_collection_1",
         )
 
         project2 = ProjectConfig(
             project_id="test-project",
             display_name="Test Project 2",
             description="Second test project",
-            collection_name="test_collection_2",
         )
 
         config.add_project(project1)
@@ -177,7 +166,6 @@ class TestProjectsConfig:
             project_id="test-project",
             display_name="Test Project",
             description="A test project",
-            collection_name="test_collection",
         )
 
         config.add_project(project)

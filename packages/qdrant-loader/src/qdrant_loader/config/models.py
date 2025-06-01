@@ -39,9 +39,6 @@ class ProjectConfig(BaseModel):
     project_id: str = Field(..., description="Unique project identifier")
     display_name: str = Field(..., description="Human-readable project name")
     description: Optional[str] = Field(None, description="Project description")
-    collection_name: Optional[str] = Field(
-        None, description="Custom QDrant collection name"
-    )
     sources: SourcesConfig = Field(
         default_factory=SourcesConfig, description="Project-specific sources"
     )
@@ -56,17 +53,10 @@ class ProjectConfig(BaseModel):
             global_collection_name: The global collection name from configuration
 
         Returns:
-            The collection name to use for this project
+            The collection name to use for this project (always the global collection name)
         """
-        if self.collection_name:
-            return self.collection_name
-
-        # For default project, use global collection name unchanged (backward compatibility)
-        if self.project_id == "default":
-            return global_collection_name
-
-        # For other projects, append project ID to global collection name
-        return f"{global_collection_name}_{self.project_id}"
+        # Always use the global collection name for all projects
+        return global_collection_name
 
 
 class ProjectsConfig(BaseModel):
