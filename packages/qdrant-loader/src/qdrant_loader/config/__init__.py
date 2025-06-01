@@ -32,6 +32,19 @@ from .sources import SourcesConfig
 from .state import StateManagementConfig
 from .workspace import WorkspaceConfig, get_workspace_env_override
 
+# Import multi-project support
+from .models import (
+    ProjectContext,
+    ProjectConfig,
+    ProjectsConfig,
+    ParsedConfig,
+    ProjectStats,
+    ProjectInfo,
+    ProjectDetail,
+)
+from .parser import MultiProjectConfigParser
+from .validator import ConfigValidator
+
 # Load environment variables from .env file
 load_dotenv(override=False)
 
@@ -51,6 +64,17 @@ __all__ = [
     "Settings",
     "SourcesConfig",
     "StateManagementConfig",
+    # Multi-project support
+    "ProjectContext",
+    "ProjectConfig",
+    "ProjectsConfig",
+    "ParsedConfig",
+    "ProjectStats",
+    "ProjectInfo",
+    "ProjectDetail",
+    "MultiProjectConfigParser",
+    "ConfigValidator",
+    # Functions
     "get_global_config",
     "get_settings",
     "initialize_config",
@@ -188,6 +212,9 @@ class Settings(BaseSettings):
     )
     sources_config: SourcesConfig = Field(
         default_factory=SourcesConfig, description="Source-specific configurations"
+    )
+    projects_config: ProjectsConfig = Field(
+        default_factory=ProjectsConfig, description="Multi-project configurations"
     )
 
     model_config = SettingsConfigDict(
@@ -398,26 +425,16 @@ class Settings(BaseSettings):
             logger.debug("Processing environment variables in configuration")
             config_data = cls._substitute_env_vars(config_data)
 
-            # Step 4: Create configuration instances with processed data
-            global_config_data = config_data.get("global", {})
-            global_config = GlobalConfig(
-                **global_config_data, skip_validation=skip_validation
-            )
+            # Step 4: Use multi-project parser to parse configuration
+            validator = ConfigValidator()
+            parser = MultiProjectConfigParser(validator)
+            parsed_config = parser.parse(config_data, skip_validation=skip_validation)
 
-            # Process sources configuration
-            sources_data = config_data.get("sources", {})
-            for source_type, sources in sources_data.items():
-                for source, source_config in sources.items():
-                    # Add source_type and source to the config
-                    source_config["source_type"] = source_type
-                    source_config["source"] = source
-
-            sources_config = SourcesConfig(**sources_data)
-
-            # Step 5: Create settings instance with configuration objects
+            # Step 5: Create settings instance with parsed configuration
             settings = cls(
-                global_config=global_config,
-                sources_config=sources_config,
+                global_config=parsed_config.global_config,
+                sources_config=parsed_config.global_config.sources,  # Legacy compatibility
+                projects_config=parsed_config.projects_config,
             )
 
             logger.debug("Successfully created Settings instance")
@@ -442,4 +459,5 @@ class Settings(BaseSettings):
         return {
             "global": self.global_config.to_dict(),
             "sources": self.sources_config.to_dict(),
+            "projects": self.projects_config.to_dict(),
         }

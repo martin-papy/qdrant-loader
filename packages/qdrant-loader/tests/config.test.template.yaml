@@ -1,17 +1,25 @@
+# Template for multi-project configuration
+# Copy this file to config.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+# Global configuration for all projects
 global:
   # Qdrant configuration for tests
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
+  
   # Chunking configuration for tests
   chunking:
     chunk_size: 500
     chunk_overlap: 50
+  
   embedding:
     model: text-embedding-3-small
     api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
     batch_size: 10  # Smaller batch size for tests
+  
   state_management:
     database_path: ":memory:"  # Use in-memory SQLite for tests
     table_prefix: "test_qdrant_loader_"
@@ -39,100 +47,121 @@ global:
       # API key for LLM service (not used in tests since LLM descriptions are disabled)
       llm_api_key: "${OPENAI_API_KEY}"
 
-sources:
-  publicdocs:
-    test-docs:
-      base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
-      version: "3.12"
-      content_type: html
-      exclude_paths:
-        - /downloads
-      selectors:
-        content: .body
-        remove:
-          - nav
-          - header
-          - footer
-        code_blocks: pre code
+# Multi-project configuration
+projects:
+  default:
+    display_name: "Test Project"
+    description: "Default test project for unit tests"
+    collection_name: "${QDRANT_COLLECTION_NAME}"  # Use environment variable for collection name
+    
+    # Source-specific configurations
+    sources:
+      publicdocs:
+        test-docs:
+          source_type: "publicdocs"
+          source: "test-docs"
+          base_url: https://docs.python.org/3/tutorial/  # Using Python docs as test site
+          version: "3.12"
+          content_type: html
+          exclude_paths:
+            - /downloads
+          selectors:
+            content: .body
+            remove:
+              - nav
+              - header
+              - footer
+            code_blocks: pre code
 
-      # File conversion settings for this source
-      # Enable file conversion for testing
-      enable_file_conversion: true
-      # Download and process attachments (for testing)
-      download_attachments: true
+          # File conversion settings for this source
+          # Enable file conversion for testing
+          enable_file_conversion: true
+          # Download and process attachments (for testing)
+          download_attachments: true
 
-  git:
-    theorcs:
-      base_url: "${REPO_URL}"
-      branch: "main"
-      token: "${REPO_TOKEN}"
-      include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
-      exclude_paths: ["src/test/**/*"]
-      file_types: ["*.md","*.java"]
-      max_file_size: 1048576
-      depth: 1
+      git:
+        theorcs:
+          source_type: "git"
+          source: "theorcs"
+          base_url: "${REPO_URL}"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          include_paths: ["/", "docs/**/*", "src/main/**/*", "README.md"]
+          exclude_paths: ["src/test/**/*"]
+          file_types: ["*.md","*.java"]
+          max_file_size: 1048576
+          depth: 1
 
-      # File conversion settings for this source
-      # Enable file conversion for testing
-      enable_file_conversion: true
+          # File conversion settings for this source
+          # Enable file conversion for testing
+          enable_file_conversion: true
 
-  confluence:
-    test-space:
-      base_url: "${CONFLUENCE_URL}"
-      space_key: "${CONFLUENCE_SPACE_KEY}"
-      content_types:
-        - "page"
-        - "blogpost"
-      include_labels: []
-      exclude_labels: []
-      token: "${CONFLUENCE_TOKEN}"
-      email: "${CONFLUENCE_EMAIL}"
+      confluence:
+        test-space:
+          source_type: "confluence"
+          source: "test-space"
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "${CONFLUENCE_SPACE_KEY}"
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels: []
+          exclude_labels: []
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
 
-      # File conversion settings for this source
-      # Enable file conversion for testing
-      enable_file_conversion: true
-      # Download and process attachments
-      download_attachments: true
+          # File conversion settings for this source
+          # Enable file conversion for testing
+          enable_file_conversion: true
+          # Download and process attachments
+          download_attachments: true
 
-  jira:
-    test-project:
-      base_url: "${JIRA_URL}"
-      deployment_type: "cloud"
-      project_key: "${JIRA_PROJECT_KEY}"
-      requests_per_minute: 60
-      page_size: 50
-      process_attachments: true
-      track_last_sync: true
-      token: "${JIRA_TOKEN}"
-      email: "${JIRA_EMAIL}"
+      jira:
+        test-project:
+          source_type: "jira"
+          source: "test-project"
+          base_url: "${JIRA_URL}"
+          deployment_type: "cloud"
+          project_key: "${JIRA_PROJECT_KEY}"
+          requests_per_minute: 60
+          page_size: 50
+          process_attachments: true
+          track_last_sync: true
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
 
-      # File conversion settings for this source
-      # Enable file conversion for testing
-      enable_file_conversion: true
-      # Download and process attachments
-      download_attachments: true
+          # File conversion settings for this source
+          # Enable file conversion for testing
+          enable_file_conversion: true
+          # Download and process attachments
+          download_attachments: true
 
-  # Local file sources for testing file conversion
-  localfile:
-    test-files:
-      base_url: "file:///tmp/test-files"  # Test directory
-      include_paths:
-        - "docs/**"
-        - "*.md"
-        - "*.pdf"
-        - "*.docx"
-      exclude_paths:
-        - "tmp/**"
-        - "cache/**"
-      file_types:
-        - "*.md"
-        - "*.txt"
-        - "*.pdf"
-        - "*.docx"
-        - "*.xlsx"
-        - "*.pptx"
-      max_file_size: 5242880  # 5MB for tests
+      # Local file sources for testing file conversion
+      localfile:
+        test-files:
+          source_type: "localfile"
+          source: "test-files"
+          base_url: "file:///tmp/test-files"  # Test directory
+          include_paths:
+            - "docs/**"
+            - "*.md"
+            - "*.pdf"
+            - "*.docx"
+          exclude_paths:
+            - "tmp/**"
+            - "cache/**"
+          file_types:
+            - "*.md"
+            - "*.txt"
+            - "*.pdf"
+            - "*.docx"
+            - "*.xlsx"
+            - "*.pptx"
+          max_file_size: 5242880  # 5MB for tests
 
-      # File conversion settings for this source
-      # Enable file conversion for testing
-      enable_file_conversion: true
+          # File conversion settings for this source
+          # Enable file conversion for testing
+          enable_file_conversion: true
+    
+    # Optional project-specific configuration overrides
+    overrides: {}

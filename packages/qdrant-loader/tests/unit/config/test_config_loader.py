@@ -51,17 +51,25 @@ def test_config_path(tmp_path: Path) -> Path:
                 },
             },
         },
-        "sources": {
-            "publicdocs": {
-                "example": {
-                    "base_url": "https://example.com",
-                    "version": "1.0",
-                    "content_type": "html",
-                    "selectors": {
-                        "content": ".content",
-                        "title": "h1",
-                    },
-                }
+        "projects": {
+            "default": {
+                "display_name": "Config Loader Test Project",
+                "description": "Default project for config loader testing",
+                "sources": {
+                    "publicdocs": {
+                        "example": {
+                            "source_type": "publicdocs",
+                            "source": "example",
+                            "base_url": "https://example.com",
+                            "version": "1.0",
+                            "content_type": "html",
+                            "selectors": {
+                                "content": ".content",
+                                "title": "h1",
+                            },
+                        }
+                    }
+                },
             }
         },
     }
@@ -144,16 +152,24 @@ def test_missing_required_fields(test_config_path: Path):
                 "database_path": ":memory:",
             },
         },
-        "sources": {
-            "publicdocs": {
-                "example": {
-                    # Missing required base_url and version fields
-                    "content_type": "html",
-                    "selectors": {
-                        "content": ".content",
-                        "title": "h1",
-                    },
-                }
+        "projects": {
+            "default": {
+                "display_name": "Missing Fields Test Project",
+                "description": "Default project for missing fields testing",
+                "sources": {
+                    "publicdocs": {
+                        "example": {
+                            "source_type": "publicdocs",
+                            "source": "example",
+                            # Missing required base_url and version fields
+                            "content_type": "html",
+                            "selectors": {
+                                "content": ".content",
+                                "title": "h1",
+                            },
+                        }
+                    }
+                },
             }
         },
     }

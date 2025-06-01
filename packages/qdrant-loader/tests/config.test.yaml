@@ -36,140 +36,153 @@ global:
       size: 5                         # Maximum number of connections
       timeout: 30                  # Connection timeout in seconds
 
-# Source-specific configurations
-# Each source type has its own configuration section
-sources:
-  # Public documentation sources (websites, documentation)
-  publicdocs:
-    # Example configuration for a documentation source
-    thymeleaf:
-      # Base URL of the documentation website
-      base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html"
-      
-      # Specific version of the documentation to fetch
-      version: "3.1"
-      
-      # Enable automatic version detection from URLs or content
-      auto_detect_version: false
-      
-      # Optional: Regex pattern to extract version from URLs or content
-      # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
-      version_pattern: null
-      
-      # Content type of the documentation
-      content_type: "html"  # Options: html, markdown, etc.
-      
-      # Optional: Specific path pattern to match documentation pages
-      # Uses glob syntax: ** matches any directory, * matches any file
-      path_pattern: "*"
-      
-      # Optional: List of paths to exclude from processing
-      exclude_paths:
-        - "/downloads/**"
+# Multi-project configuration
+projects:
+  default:
+    display_name: "Test Project"
+    description: "Default test project for unit tests"
+    collection_name: "qdrant_loader_test"  # Use the same collection name as global for backward compatibility
+    
+    # Source-specific configurations
+    # Each source type has its own configuration section
+    sources:
+      # Public documentation sources (websites, documentation)
+      publicdocs:
+        # Example configuration for a documentation source
+        thymeleaf:
+          source_type: "publicdocs"
+          source: "thymeleaf"
+          # Base URL of the documentation website
+          base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html"
+          
+          # Specific version of the documentation to fetch
+          version: "3.1"
+          
+          # Content type of the documentation
+          content_type: "html"  # Options: html, markdown, etc.
+          
+          # Optional: Specific path pattern to match documentation pages
+          # Uses glob syntax: ** matches any directory, * matches any file
+          path_pattern: "*"
+          
+          # Optional: List of paths to exclude from processing
+          exclude_paths:
+            - "/downloads/**"
 
-      # Optional: CSS selectors for content extraction
-      # Helps identify and extract relevant content from HTML
-      selectors:
-        # Main content container selector - this is correct
-        content: ".content-wrapper"
-        
-        # Elements to remove - these need to be updated
-        remove: 
-          - ".toc-wrapper"  # This is the table of contents
-          - ".toolbar-container"  # This is the top navigation
-          - "header"  # The header section
-          - "footer"  # The footer section
-          - "nav"  # Any navigation elements
-        
-        # Code blocks to preserve - this needs to be updated
-        code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
-    thymeleaf-spring:
-      # Base URL of the documentation website
-      base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/thymeleafspring.html"
-      
-      # Specific version of the documentation to fetch
-      version: "3.1"
-      
-      # Enable automatic version detection from URLs or content
-      auto_detect_version: false
-      
-      # Optional: Regex pattern to extract version from URLs or content
-      # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
-      version_pattern: null
-      
-      # Content type of the documentation
-      content_type: "html"  # Options: html, markdown, etc.
-      
-      # Optional: Specific path pattern to match documentation pages
-      # Uses glob syntax: ** matches any directory, * matches any file
-      path_pattern: "*"
-      
-      # Optional: List of paths to exclude from processing
-      exclude_paths:
-        - "/downloads/**"
+          # Optional: CSS selectors for content extraction
+          # Helps identify and extract relevant content from HTML
+          selectors:
+            # Main content container selector - this is correct
+            content: ".content-wrapper"
+            
+            # Elements to remove - these need to be updated
+            remove: 
+              - ".toc-wrapper"  # This is the table of contents
+              - ".toolbar-container"  # This is the top navigation
+              - "header"  # The header section
+              - "footer"  # The footer section
+              - "nav"  # Any navigation elements
+            
+            # Code blocks to preserve - this needs to be updated
+            code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
+        thymeleaf-spring:
+          source_type: "publicdocs"
+          source: "thymeleaf-spring"
+          # Base URL of the documentation website
+          base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/thymeleafspring.html"
+          
+          # Specific version of the documentation to fetch
+          version: "3.1"
+          
+          # Enable automatic version detection from URLs or content
+          auto_detect_version: false
+          
+          # Optional: Regex pattern to extract version from URLs or content
+          # Example: "version: ([0-9]+\.[0-9]+\.[0-9]+)"
+          version_pattern: null
+          
+          # Content type of the documentation
+          content_type: "html"  # Options: html, markdown, etc.
+          
+          # Optional: Specific path pattern to match documentation pages
+          # Uses glob syntax: ** matches any directory, * matches any file
+          path_pattern: "*"
+          
+          # Optional: List of paths to exclude from processing
+          exclude_paths:
+            - "/downloads/**"
 
-      # Optional: CSS selectors for content extraction
-      # Helps identify and extract relevant content from HTML
-      selectors:
-        # Main content container selector - this is correct
-        content: ".content-wrapper"
-        
-        # Elements to remove - these need to be updated
-        remove: 
-          - ".toc-wrapper"  # This is the table of contents
-          - ".toolbar-container"  # This is the top navigation
-          - "header"  # The header section
-          - "footer"  # The footer section
-          - "nav"  # Any navigation elements
-        
-        # Code blocks to preserve - this needs to be updated
-        code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
-  # Git repository sources
-  git:
-    # Example configuration for a public repository
-    theorcs:
-      base_url: "https://github.com/martin-papy/theorcs-v5.git"  # Repository URL
-      branch: "main"                             # Branch to process
-      include_paths:                             # Paths to include (glob patterns)
-        - "docs/**"
-        - "src/**"
-        - "README.md"
-      exclude_paths:                            # Paths to exclude (glob patterns)
-        - "docs/archive/**"
-      file_types:                                # File extensions to process
-        - "*.md"
-        - "*.java"
-        - "*.css"
-        - "*.json"
-        - "*.js"
-        - "*.html"
-        - "*.yaml"
-        - "*.properties"
-      max_file_size: 1048576                    # Maximum file size in bytes (1MB)
-      token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
+          # Optional: CSS selectors for content extraction
+          # Helps identify and extract relevant content from HTML
+          selectors:
+            # Main content container selector - this is correct
+            content: ".content-wrapper"
+            
+            # Elements to remove - these need to be updated
+            remove: 
+              - ".toc-wrapper"  # This is the table of contents
+              - ".toolbar-container"  # This is the top navigation
+              - "header"  # The header section
+              - "footer"  # The footer section
+              - "nav"  # Any navigation elements
+            
+            # Code blocks to preserve - this needs to be updated
+            code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
+      # Git repository sources
+      git:
+        # Example configuration for a public repository
+        theorcs:
+          source_type: "git"
+          source: "theorcs"
+          base_url: "https://github.com/martin-papy/theorcs-v5.git"  # Repository URL
+          branch: "main"                             # Branch to process
+          include_paths:                             # Paths to include (glob patterns)
+            - "docs/**"
+            - "src/**"
+            - "README.md"
+          exclude_paths:                            # Paths to exclude (glob patterns)
+            - "docs/archive/**"
+          file_types:                                # File extensions to process
+            - "*.md"
+            - "*.java"
+            - "*.css"
+            - "*.json"
+            - "*.js"
+            - "*.html"
+            - "*.yaml"
+            - "*.properties"
+          max_file_size: 1048576                    # Maximum file size in bytes (1MB)
+          token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
 
-  # Confluence documentation sources
-  confluence:
-    theorcs:
-      base_url: "https://theorcs.atlassian.net/wiki"                  # Confluence instance URL
-      deployment_type: "cloud"                 # Deployment type: cloud, datacenter, or server
-      space_key: "THEORCS"      # Space to process
-      content_types:                            # Types of content to process
-        - "page"
-        - "blogpost"
-      include_labels: []                        # Only process content with these labels
-      exclude_labels: []                        # Skip content with these labels
-      token: "${CONFLUENCE_TOKEN}"              # Confluence API token
-      email: "${CONFLUENCE_EMAIL}"              # Confluence user email
+      # Confluence documentation sources
+      confluence:
+        theorcs:
+          source_type: "confluence"
+          source: "theorcs"
+          base_url: "https://theorcs.atlassian.net/wiki"                  # Confluence instance URL
+          deployment_type: "cloud"                 # Deployment type: cloud, datacenter, or server
+          space_key: "THEORCS"      # Space to process
+          content_types:                            # Types of content to process
+            - "page"
+            - "blogpost"
+          include_labels: []                        # Only process content with these labels
+          exclude_labels: []                        # Skip content with these labels
+          token: "${CONFLUENCE_TOKEN}"              # Confluence API token
+          email: "${CONFLUENCE_EMAIL}"              # Confluence user email
 
-  # JIRA issue tracking sources
-  jira:
-    theorcs:
-      base_url: "https://theorcs.atlassian.net"                   # JIRA instance URL
-      deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
-      project_key: "THEORCS"        # Project to process
-      requests_per_minute: 60                   # Rate limit for API calls
-      page_size: 50                             # Number of issues per API request
-      process_attachments: true                 # Whether to process issue attachments
-      token: "${JIRA_TOKEN}"                    # JIRA API token
-      email: "${JIRA_EMAIL}"                    # JIRA user email
+      # JIRA issue tracking sources
+      jira:
+        theorcs:
+          source_type: "jira"
+          source: "theorcs"
+          base_url: "https://theorcs.atlassian.net"                   # JIRA instance URL
+          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
+          project_key: "THEORCS"        # Project to process
+          requests_per_minute: 60                   # Rate limit for API calls
+          page_size: 50                             # Number of issues per API request
+          process_attachments: true                 # Whether to process issue attachments
+          token: "${JIRA_TOKEN}"                    # JIRA API token
+          email: "${JIRA_EMAIL}"                    # JIRA user email
+    
+    # Optional project-specific configuration overrides
+    overrides: {}

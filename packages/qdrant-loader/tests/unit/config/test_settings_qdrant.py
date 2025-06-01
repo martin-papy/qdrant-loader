@@ -21,7 +21,13 @@ class TestSettingsQdrantIntegration:
                 "chunking": {"chunk_size": 500},
                 "embedding": {"model": "test-model"},
             },
-            "sources": {},
+            "projects": {
+                "default": {
+                    "display_name": "Test Project",
+                    "description": "Test project for qdrant config testing",
+                    "sources": {},
+                }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -53,7 +59,13 @@ class TestSettingsQdrantIntegration:
                 "chunking": {"chunk_size": 500},
                 "embedding": {"model": "test-model"},
             },
-            "sources": {},
+            "projects": {
+                "default": {
+                    "display_name": "Valid Qdrant Test Project",
+                    "description": "Test project for valid qdrant config testing",
+                    "sources": {},
+                }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -91,7 +103,13 @@ class TestSettingsQdrantIntegration:
                 "chunking": {"chunk_size": 500},
                 "embedding": {"model": "test-model"},
             },
-            "sources": {},
+            "projects": {
+                "default": {
+                    "display_name": "Convenience Properties Test Project",
+                    "description": "Test project for qdrant convenience properties testing",
+                    "sources": {},
+                }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -132,7 +150,13 @@ class TestSettingsQdrantIntegration:
                 "chunking": {"chunk_size": 500},
                 "embedding": {"model": "test-model"},
             },
-            "sources": {},
+            "projects": {
+                "default": {
+                    "display_name": "Environment Substitution Test Project",
+                    "description": "Test project for environment variable substitution testing",
+                    "sources": {},
+                }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
