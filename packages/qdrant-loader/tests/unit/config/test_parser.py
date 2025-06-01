@@ -87,7 +87,6 @@ class TestMultiProjectConfigParser:
                 "test-project": {
                     "display_name": "Test Project",
                     "description": "A test project",
-                    "collection_name": "test_collection",
                     "sources": {
                         "git": {
                             "test-repo": {
@@ -115,7 +114,7 @@ class TestMultiProjectConfigParser:
         assert project.project_id == "test-project"
         assert project.display_name == "Test Project"
         assert project.description == "A test project"
-        assert project.collection_name == "test_collection"
+        assert project.get_effective_collection_name("test") == "test"
 
     def test_empty_projects_section_error(self):
         """Test that empty projects section raises validation error."""

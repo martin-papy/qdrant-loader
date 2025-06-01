@@ -15,6 +15,7 @@ from click.types import Path as ClickPath
 from click.utils import echo
 
 from qdrant_loader.cli.asyncio import async_command
+from qdrant_loader.cli.project_commands import project_cli
 from qdrant_loader.config import (
     Settings,
     get_settings,
@@ -560,6 +561,10 @@ def config(
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
+
+
+# Add project management commands
+cli.add_command(project_cli)
 
 
 if __name__ == "__main__":
