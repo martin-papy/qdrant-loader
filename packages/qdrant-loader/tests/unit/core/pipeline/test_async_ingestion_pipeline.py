@@ -19,6 +19,9 @@ class TestAsyncIngestionPipeline:
         settings = Mock(spec=Settings)
         settings.global_config = Mock()
         settings.global_config.state_management = Mock()
+        settings.global_config.qdrant = Mock()
+        settings.global_config.qdrant.collection_name = "test_collection"
+        settings.projects_config = Mock()
         return settings
 
     @pytest.fixture
@@ -110,7 +113,13 @@ class TestAsyncIngestionPipeline:
             mock_factory_instance.create_components.assert_called_once()
 
             # Verify orchestrator was created
-            mock_orchestrator.assert_called_once_with(mock_settings, mock_components)
+            mock_orchestrator.assert_called_once()
+            # Check that the orchestrator was called with settings, components, and project_manager
+            call_args = mock_orchestrator.call_args
+            assert len(call_args[0]) == 3  # settings, components, project_manager
+            assert call_args[0][0] == mock_settings
+            assert call_args[0][1] == mock_components
+            # The third argument should be a ProjectManager instance
 
             # Verify resource manager setup
             mock_resource_manager_instance.register_signal_handlers.assert_called_once()
@@ -271,7 +280,10 @@ class TestAsyncIngestionPipeline:
 
             # Verify orchestrator was called
             mock_orchestrator.process_documents.assert_called_once_with(
-                source_type="git", source="test_repo"
+                sources_config=None,
+                source_type="git",
+                source="test_repo",
+                project_id=None,
             )
 
             # Verify metrics were handled
@@ -328,7 +340,7 @@ class TestAsyncIngestionPipeline:
             mock_monitor.start_batch.assert_called_once_with(
                 "document_batch",
                 batch_size=2,
-                metadata={"source_type": "git", "source": None},
+                metadata={"source_type": "git", "source": None, "project_id": None},
             )
             mock_monitor.end_batch.assert_called_once_with("document_batch", 2, 0, [])
 
