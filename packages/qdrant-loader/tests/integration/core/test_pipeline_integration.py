@@ -55,7 +55,6 @@ def sample_multi_project_settings():
         project_id="project-1",
         display_name="Project One",
         description="First test project",
-        collection_name="project_one_collection",
         sources=sources_config_1,
     )
 
@@ -63,7 +62,6 @@ def sample_multi_project_settings():
         project_id="project-2",
         display_name="Project Two",
         description="Second test project",
-        collection_name="project_two_collection",
         sources=sources_config_2,
     )
 

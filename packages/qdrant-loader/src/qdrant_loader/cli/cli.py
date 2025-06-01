@@ -398,9 +398,20 @@ async def _cancel_all_tasks():
 )
 @option("--env", type=ClickPath(exists=True, path_type=Path), help="Path to .env file.")
 @option(
-    "--source-type", type=str, help="Source type to process (e.g., confluence, jira)."
+    "--project",
+    type=str,
+    help="Project ID to process. If specified, --source-type and --source will filter within this project.",
 )
-@option("--source", type=str, help="Source name to process.")
+@option(
+    "--source-type",
+    type=str,
+    help="Source type to process (e.g., confluence, jira, git). If --project is specified, filters within that project; otherwise applies to all projects.",
+)
+@option(
+    "--source",
+    type=str,
+    help="Source name to process. If --project is specified, filters within that project; otherwise applies to all projects.",
+)
 @option(
     "--log-level",
     type=Choice(
@@ -419,12 +430,30 @@ async def ingest(
     workspace: Path | None,
     config: Path | None,
     env: Path | None,
+    project: str | None,
     source_type: str | None,
     source: str | None,
     log_level: str,
     profile: bool,
 ):
-    """Ingest documents from configured sources."""
+    """Ingest documents from configured sources.
+
+    Examples:
+      # Ingest all projects
+      qdrant-loader ingest
+
+      # Ingest specific project
+      qdrant-loader ingest --project my-project
+
+      # Ingest specific source type from all projects
+      qdrant-loader ingest --source-type git
+
+      # Ingest specific source type from specific project
+      qdrant-loader ingest --project my-project --source-type git
+
+      # Ingest specific source from specific project
+      qdrant-loader ingest --project my-project --source-type git --source my-repo
+    """
     try:
         # Validate flag combinations
         validate_workspace_flags(workspace, config, env)
@@ -453,6 +482,7 @@ async def ingest(
 
             try:
                 await pipeline.process_documents(
+                    project_id=project,
                     source_type=source_type,
                     source=source,
                 )

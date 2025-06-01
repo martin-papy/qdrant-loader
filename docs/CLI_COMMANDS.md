@@ -65,25 +65,64 @@ qdrant-loader ingest [OPTIONS]
 - `--workspace PATH`: Workspace directory containing config.yaml and .env files
 - `--config PATH`: Path to config file
 - `--env PATH`: Path to .env file
-- `--source-type TEXT`: Source type to process (e.g., confluence, jira, git)
-- `--source TEXT`: Source name to process
+- `--project TEXT`: Project ID to process. If specified, --source-type and --source will filter within this project
+- `--source-type TEXT`: Source type to process (e.g., confluence, jira, git). If --project is specified, filters within that project; otherwise applies to all projects
+- `--source TEXT`: Source name to process. If --project is specified, filters within that project; otherwise applies to all projects
 - `--log-level [debug|info|warning|error|critical]`: Set the logging level
 - `--profile/--no-profile`: Run under cProfile for performance analysis
 
 **Examples:**
 
 ```bash
-# Ingest all configured sources
+# Ingest all projects and all sources
 qdrant-loader ingest
 
-# Ingest specific source type
+# Ingest specific project only
+qdrant-loader ingest --project my-project
+
+# Ingest specific source type from all projects
 qdrant-loader ingest --source-type git
 
-# Ingest specific source
-qdrant-loader ingest --source-type git --source my-repo
+# Ingest specific source type from specific project
+qdrant-loader ingest --project my-project --source-type git
 
-# Ingest with profiling
-qdrant-loader ingest --profile
+# Ingest specific source from specific project
+qdrant-loader ingest --project my-project --source-type git --source my-repo
+
+# Ingest with custom config and profiling
+qdrant-loader ingest --config /path/to/config.yaml --profile
+
+# Ingest specific project with debug logging
+qdrant-loader ingest --project my-project --log-level debug
+```
+
+**Project-Specific Ingestion:**
+
+The `--project` parameter enables targeted ingestion for specific projects:
+
+- **Without `--project`**: Processes all configured projects
+- **With `--project`**: Processes only the specified project
+- **Source filtering**: When `--project` is specified, `--source-type` and `--source` filter within that project's sources
+- **Global filtering**: When `--project` is not specified, `--source-type` and `--source` apply across all projects
+
+**Workflow Examples:**
+
+```bash
+# Development workflow - work on specific project
+qdrant-loader project validate --project-id my-project
+qdrant-loader ingest --project my-project --source-type git
+qdrant-loader project status --project-id my-project
+
+# Production workflow - ingest everything
+qdrant-loader project validate
+qdrant-loader ingest
+qdrant-loader project status
+
+# Selective ingestion - only Git sources across all projects
+qdrant-loader ingest --source-type git
+
+# Targeted ingestion - specific source in specific project
+qdrant-loader ingest --project docs-project --source-type confluence --source DOCS
 ```
 
 ### `config`
