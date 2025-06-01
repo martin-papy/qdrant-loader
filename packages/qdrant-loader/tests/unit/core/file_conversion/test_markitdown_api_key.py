@@ -16,7 +16,7 @@ class TestMarkItDownAPIKeyUsage:
 
     @pytest.fixture
     def markitdown_config_content(self):
-        """Configuration content with MarkItDown LLM integration."""
+        """Configuration content for testing MarkItDown API key usage."""
         return """
 global:
   qdrant:
@@ -24,29 +24,18 @@ global:
     api_key: null
     collection_name: "test_markitdown"
 
-  chunking:
-    chunk_size: 1000
-    chunk_overlap: 200
-  
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-
-  state_management:
-    database_path: ":memory:"
-    table_prefix: "qdrant_loader_"
-
   file_conversion:
-    max_file_size: 52428800
-    conversion_timeout: 300
     markitdown:
       enable_llm_descriptions: true
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "test_configured_api_key_12345"
 
-sources: {}
+projects:
+  default:
+    display_name: "Test Project"
+    description: "Test project for MarkItDown API key testing"
+    sources: {}
 """
 
     @pytest.fixture
@@ -124,7 +113,11 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: null
 
-sources: {}
+projects:
+  default:
+    display_name: "Test Project"
+    description: "Test project for fallback testing"
+    sources: {}
 """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -258,7 +251,11 @@ global:
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "should_not_be_used"
 
-sources: {}
+projects:
+  default:
+    display_name: "Test Project"
+    description: "Test project for no LLM testing"
+    sources: {}
 """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:

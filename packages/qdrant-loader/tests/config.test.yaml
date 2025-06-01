@@ -4,7 +4,7 @@
 
 # Global configuration for all sources
 global:
-  # Qdrant configuration for tests
+  # Qdrant configuration
   qdrant:
     url: "https://4f2a12b9-a595-491c-ba55-9ae23e21e02a.europe-west3-0.gcp.cloud.qdrant.io"
     api_key: "${QDRANT_API_KEY}"
@@ -13,8 +13,8 @@ global:
   # Default chunking configuration
   # Controls how documents are split into chunks for processing
   chunking:
-    chunk_size: 500        # Maximum number of characters per chunk
-    chunk_overlap: 50      # Number of characters to overlap between chunks
+    chunk_size: 2000       # Increased to better handle markdown sections
+    chunk_overlap: 200     # Increased overlap to maintain context between chunks
   
   # Default embedding configuration
   # Controls how text is converted to vectors
@@ -26,8 +26,24 @@ global:
     tokenizer: "cl100k_base"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
     max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
     max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
-    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
-
+  # File conversion configuration
+  # Controls how non-text files (PDF, Office docs, etc.) are converted to text
+  file_conversion:
+    # Maximum file size for conversion (in bytes)
+    max_file_size: 52428800  # 50MB
+    
+    # Timeout for conversion operations (in seconds)
+    conversion_timeout: 300  # 5 minutes
+    
+    # MarkItDown specific settings
+    markitdown:
+      # Enable LLM integration for image descriptions
+      enable_llm_descriptions: true
+      # LLM model for image descriptions (when enabled)
+      llm_model: "gpt-4o"
+      # LLM endpoint (when enabled)
+      llm_endpoint: "https://api.openai.com/v1"
+      
   # State management configuration
   # Controls how document ingestion state is tracked
   state_management:
@@ -37,21 +53,128 @@ global:
       size: 5                         # Maximum number of connections
       timeout: 30                  # Connection timeout in seconds
 
-# Multi-project configuration
 projects:
-  test-project:
-    project_id: "test-project"
-    display_name: "Test Project"
-    description: "Test project for unit tests"
+  theorcs:
+    project_id: "theorcs"
+    display_name: "TheORCS"
+    description: "TheORCS Online Roleplay System"
     sources:
+      # Public documentation sources (websites, documentation)
+      publicdocs:
+        # Example configuration for a documentation source
+        thymeleaf:
+          # Base URL of the documentation website
+          base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/usingthymeleaf.html"
+          
+          # Specific version of the documentation to fetch
+          version: "3.1"
+
+          # Content type of the documentation
+          content_type: "html"  # Options: html, markdown, etc.
+          
+          # Optional: Specific path pattern to match documentation pages
+          # Uses glob syntax: ** matches any directory, * matches any file
+          path_pattern: "*"
+          
+          # Optional: List of paths to exclude from processing
+          exclude_paths:
+            - "/downloads/**"
+
+          # Optional: CSS selectors for content extraction
+          # Helps identify and extract relevant content from HTML
+          selectors:
+            # Main content container selector - this is correct
+            content: ".content-wrapper"
+            
+            # Elements to remove - these need to be updated
+            remove: 
+              - ".toc-wrapper"  # This is the table of contents
+              - ".toolbar-container"  # This is the top navigation
+              - "header"  # The header section
+              - "footer"  # The footer section
+              - "nav"  # Any navigation elements
+            
+            # Code blocks to preserve - this needs to be updated
+            code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
+        thymeleaf-spring:
+          # Base URL of the documentation website
+          base_url: "https://www.thymeleaf.org/doc/tutorials/3.1/thymeleafspring.html"
+          
+          # Specific version of the documentation to fetch
+          version: "3.1"
+          
+          # Content type of the documentation
+          content_type: "html"  # Options: html, markdown, etc.
+          
+          # Optional: Specific path pattern to match documentation pages
+          # Uses glob syntax: ** matches any directory, * matches any file
+          path_pattern: "*"
+          
+          # Optional: List of paths to exclude from processing
+          exclude_paths:
+            - "/downloads/**"
+
+          # Optional: CSS selectors for content extraction
+          # Helps identify and extract relevant content from HTML
+          selectors:
+            # Main content container selector - this is correct
+            content: ".content-wrapper"
+            
+            # Elements to remove - these need to be updated
+            remove: 
+              - ".toc-wrapper"  # This is the table of contents
+              - ".toolbar-container"  # This is the top navigation
+              - "header"  # The header section
+              - "footer"  # The footer section
+              - "nav"  # Any navigation elements
+            
+            # Code blocks to preserve - this needs to be updated
+            code_blocks: "pre code, .code"  # The documentation uses both pre code and .code classes
+      # Git repository sources
       git:
-        test-repo:
-          source_type: "git"
-          source: "test-repo"
-          base_url: "https://github.com/test/repo.git"
-          branch: "main"
-          token: "test-token"
-          include_paths:
+        # Example configuration for a public repository
+        theorcs:
+          base_url: "https://github.com/martin-papy/theorcs-v5.git"  # Repository URL
+          branch: "main"                             # Branch to process
+          include_paths:                             # Paths to include (glob patterns)
             - "docs/**"
-          file_types:
+            - "README.md"
+          exclude_paths:                            # Paths to exclude (glob patterns)
+            - "docs/archive/**"
+            - "src/**"
+          file_types:                                # File extensions to process
             - "*.md"
+            - "*.java"
+            - "*.css"
+            - "*.json"
+            - "*.js"
+            - "*.html"
+            - "*.yaml"
+            - "*.properties"
+          max_file_size: 1048576                    # Maximum file size in bytes (1MB)
+          token: "${REPO_TOKEN}"                    #  GitHub Personal Access Token or none
+
+      # Confluence documentation sources
+      confluence:
+        theorcs:
+          base_url: "https://theorcs.atlassian.net/wiki"                  # Confluence instance URL
+          space_key: "THEORCS"      # Space to process
+          content_types:                            # Types of content to process
+            - "page"
+            - "blogpost"
+          include_labels: []                        # Only process content with these labels
+          exclude_labels: []                        # Skip content with these labels
+          token: "${CONFLUENCE_TOKEN}"              # Confluence API token
+          email: "${CONFLUENCE_EMAIL}"              # Confluence user email
+
+      # JIRA issue tracking sources
+      jira:
+        theorcs:
+          base_url: "https://theorcs.atlassian.net"                   # JIRA instance URL
+          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
+          project_key: "THEORCS"        # Project to process
+          requests_per_minute: 60                   # Rate limit for API calls
+          page_size: 50                             # Number of issues per API request
+          process_attachments: true                 # Whether to process issue attachments
+          token: "${JIRA_TOKEN}"                    # JIRA API token
+          email: "${JIRA_EMAIL}"                    # JIRA user email
