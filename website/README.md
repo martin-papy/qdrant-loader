@@ -23,6 +23,7 @@ website/
 │   ├── index.html             # Homepage template
 │   ├── docs-index.html        # Documentation index
 │   ├── coverage-index.html    # Coverage reports index
+│   ├── privacy-policy.html    # Privacy policy page
 │   ├── robots.txt             # SEO robots file
 │   └── sitemap.xml            # SEO sitemap template
 ├── assets/                     # Website assets
@@ -54,14 +55,20 @@ pip install markdown jinja2 python-frontmatter
 cd website
 python build.py
 
-# Build with specific source directory
-python build.py --source ../docs_new --output ../dist
+# Build with custom output directory
+python build.py --output ../dist
 
-# Build with verbose logging
-python build.py --verbose
+# Build with custom templates directory
+python build.py --templates ./custom-templates
 
-# Clean build (remove output directory first)
-python build.py --clean
+# Build with coverage artifacts integration
+python build.py --coverage-artifacts ../coverage-html
+
+# Build with test results integration
+python build.py --test-results ../test-results
+
+# Build with custom base URL
+python build.py --base-url https://qdrant-loader.net
 ```
 
 ### Build Process
@@ -93,6 +100,7 @@ The base template provides:
 - **`index.html`**: Homepage with project overview and quick links
 - **`docs-index.html`**: Documentation index with section navigation
 - **`coverage-index.html`**: Test coverage reports integration
+- **`privacy-policy.html`**: Privacy policy page
 
 ### Template Variables
 
@@ -218,7 +226,7 @@ pytest --cov=packages --cov-report=html --cov-report-dir=website/coverage
 
 # Build website with coverage integration
 cd website
-python build.py --include-coverage
+python build.py --coverage-artifacts ../coverage-html
 ```
 
 ### Documentation Versioning
@@ -227,8 +235,8 @@ The build system supports multiple documentation versions:
 
 ```bash
 # Build specific documentation version
-python build.py --source ../docs_v1 --output ../dist/v1
-python build.py --source ../docs_v2 --output ../dist/v2
+python build.py --output ../dist/v1
+python build.py --output ../dist/v2
 ```
 
 ## 🔍 SEO and Performance

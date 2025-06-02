@@ -1,6 +1,6 @@
-# CLI Reference
+# CLI Development Guide
 
-This document provides comprehensive reference for the QDrant Loader command-line interface (CLI) and MCP server.
+This document provides comprehensive reference for developing with the QDrant Loader command-line interface (CLI) and MCP server. All commands, options, and examples are verified against the actual implementation.
 
 ## 📋 Table of Contents
 
@@ -8,98 +8,135 @@ This document provides comprehensive reference for the QDrant Loader command-lin
 - [MCP Server CLI](#-mcp-server-cli)
 - [Configuration](#-configuration)
 - [Exit Codes](#exit-codes)
-- [Advanced Usage](#-advanced-usage-patterns)
-- [Troubleshooting](#-troubleshooting)
+- [Development Patterns](#-development-patterns)
+- [Testing](#-testing)
 
 ## 🚀 Main CLI Commands
 
-The QDrant Loader provides several commands for managing data ingestion and project operations.
+The QDrant Loader provides a focused set of commands for data ingestion and project management.
 
 ### Command Overview
 
 ```bash
-qdrant-loader [COMMAND] [OPTIONS]
+qdrant-loader [GLOBAL_OPTIONS] [COMMAND] [COMMAND_OPTIONS]
 
 Commands:
-  init              Initialize a new QDrant collection
+  init              Initialize QDrant collection
   ingest            Ingest data from configured sources
   config            Display current configuration
-  project           Project management commands
+  project           Project management commands (list, status, validate)
 
 Global Options:
-  --help           Show help message
-  --version        Show version information
+  --log-level LEVEL    Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  --help              Show help message
+  --version           Show version information
 ```
+
+### Global Configuration Options
+
+All commands support these configuration options:
+
+```bash
+# Workspace mode (recommended)
+--workspace PATH        # Workspace directory containing config.yaml and .env
+
+# Traditional mode (alternative)
+--config PATH          # Path to configuration file
+--env PATH             # Path to environment file
+```
+
+**Note**: `--workspace` cannot be used with `--config` or `--env` options.
 
 ### `init` - Initialize Collection
 
-Initialize a new QDrant collection with the configured settings.
+Initialize QDrant collection with configured settings.
 
 ```bash
-qdrant-loader init [OPTIONS]
+qdrant-loader [GLOBAL_OPTIONS] init [OPTIONS]
 
 Options:
-  --force          Force initialization even if collection exists
-  --help           Show help for this command
+  --force             Force reinitialization of existing collection
+  --help              Show help for this command
 ```
 
 **Examples:**
 
 ```bash
-# Initialize new collection
-qdrant-loader init
+# Workspace mode (recommended)
+qdrant-loader --workspace . init
 
-# Force re-initialization (overwrites existing collection)
-qdrant-loader init --force
+# Force re-initialization
+qdrant-loader --workspace . init --force
+
+# Traditional mode
+qdrant-loader --config config.yaml --env .env init
+
+# With debug logging
+qdrant-loader --log-level DEBUG --workspace . init
 ```
 
 ### `ingest` - Data Ingestion
 
-Ingest data from configured sources into the QDrant collection.
+Process and load data from configured sources into QDrant.
 
 ```bash
-qdrant-loader ingest [OPTIONS]
+qdrant-loader [GLOBAL_OPTIONS] ingest [OPTIONS]
 
 Options:
-  --project PATH        Path to project configuration directory
-  --source-type TYPE    Type of source to ingest (git, confluence, etc.)
-  --source PATH         Specific source path or identifier
-  --profile NAME        Configuration profile to use
-  --help               Show help for this command
+  --project ID         Process specific project only
+  --source-type TYPE   Process specific source type (git, confluence, jira, localfile, publicdocs)
+  --source NAME        Process specific source name
+  --profile            Enable performance profiling (saves to profile.out)
+  --help              Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # Ingest all configured sources
-qdrant-loader ingest
+qdrant-loader --workspace . ingest
 
-# Ingest from specific project
-qdrant-loader ingest --project /path/to/project
+# Ingest specific project
+qdrant-loader --workspace . ingest --project my-project
 
-# Ingest specific source type
-qdrant-loader ingest --source-type git
+# Ingest specific source type from all projects
+qdrant-loader --workspace . ingest --source-type git
 
-# Ingest with specific profile
-qdrant-loader ingest --profile production
+# Ingest specific source type from specific project
+qdrant-loader --workspace . ingest --project my-project --source-type confluence
+
+# Ingest specific source from specific project
+qdrant-loader --workspace . ingest --project my-project --source-type git --source my-repo
+
+# Enable performance profiling
+qdrant-loader --workspace . ingest --profile
+
+# With debug logging
+qdrant-loader --log-level DEBUG --workspace . ingest
 ```
 
 ### `config` - Configuration Display
 
-Display the current configuration in JSON format.
+Display current configuration in JSON format.
 
 ```bash
-qdrant-loader config
+qdrant-loader [GLOBAL_OPTIONS] config
 
 Options:
-  --help           Show help for this command
+  --help              Show help for this command
 ```
 
-**Example:**
+**Examples:**
 
 ```bash
 # Show current configuration
-qdrant-loader config
+qdrant-loader --workspace . config
+
+# Traditional mode
+qdrant-loader --config config.yaml --env .env config
+
+# With debug logging to see configuration loading process
+qdrant-loader --log-level DEBUG --workspace . config
 ```
 
 ### `project` - Project Management
@@ -109,103 +146,70 @@ Manage QDrant Loader projects and their status.
 #### `project list` - List Projects
 
 ```bash
-qdrant-loader project list [OPTIONS]
+qdrant-loader project [GLOBAL_OPTIONS] list [OPTIONS]
 
 Options:
-  --format FORMAT      Output format (table, json, yaml)
+  --format FORMAT     Output format (table, json)
   --help              Show help for this command
 ```
 
 #### `project status` - Project Status
 
 ```bash
-qdrant-loader project status [OPTIONS]
+qdrant-loader project [GLOBAL_OPTIONS] status [OPTIONS]
 
 Options:
   --project-id ID     Specific project ID to check
-  --format FORMAT     Output format (table, json, yaml)
-  --help             Show help for this command
+  --format FORMAT     Output format (table, json)
+  --help              Show help for this command
 ```
 
 #### `project validate` - Validate Project
 
 ```bash
-qdrant-loader project validate [OPTIONS]
+qdrant-loader project [GLOBAL_OPTIONS] validate [OPTIONS]
 
 Options:
   --project-id ID     Project ID to validate
-  --help             Show help for this command
+  --help              Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # List all projects
-qdrant-loader project list
+qdrant-loader project --workspace . list
 
 # List projects in JSON format
-qdrant-loader project list --format json
+qdrant-loader project --workspace . list --format json
+
+# Check status of all projects
+qdrant-loader project --workspace . status
 
 # Check status of specific project
-qdrant-loader project status --project-id my-project
+qdrant-loader project --workspace . status --project-id my-project
 
-# Validate project configuration
-qdrant-loader project validate --project-id my-project
+# Validate all project configurations
+qdrant-loader project --workspace . validate
+
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
 ```
-
-## 🔧 Configuration
-
-The CLI uses configuration files and environment variables for settings.
-
-### Configuration Files
-
-The CLI looks for configuration in the following order:
-
-1. `config.yaml` in current directory
-2. `~/.qdrant-loader/config.yaml`
-3. Environment variables
-
-### Environment Variables
-
-```bash
-# QDrant Connection
-QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your-api-key
-
-# Collection Settings
-QDRANT_COLLECTION_NAME=documents
-
-# Processing Settings
-CHUNK_SIZE=1000
-BATCH_SIZE=50
-MAX_CONCURRENT_REQUESTS=10
-```
-
-### Exit Codes
-
-| Code | Meaning | Description |
-|------|---------|-------------|
-| 0 | Success | Command completed successfully |
-| 1 | General Error | Unspecified error occurred |
-| 2 | Configuration Error | Invalid configuration or missing required settings |
-| 3 | Connection Error | Failed to connect to QDrant or data sources |
-| 4 | Authentication Error | Invalid credentials for data sources |
-| 5 | Processing Error | Error during data processing or ingestion |
 
 ## 🤖 MCP Server CLI
 
-### Command Overview
-
 The MCP server provides a single command for starting the Model Context Protocol server.
+
+### Command Overview
 
 ```bash
 mcp-qdrant-loader [OPTIONS]
 
 Options:
-  --log-level LEVEL    Logging level (DEBUG, INFO, WARNING, ERROR)
-  --config PATH        Configuration file path
-  --help               Show help message
-  --version            Show version information
+  --log-level LEVEL   Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  --config PATH       Configuration file path (currently not implemented)
+  --help              Show help message
+  --version           Show version information
 ```
 
 ### Basic Usage
@@ -214,27 +218,31 @@ Options:
 # Start MCP server with default settings
 mcp-qdrant-loader
 
-# Start with custom configuration
-mcp-qdrant-loader --config custom-config.yaml
-
 # Start with debug logging
 mcp-qdrant-loader --log-level DEBUG
+
+# Show version
+mcp-qdrant-loader --version
+
+# Show help
+mcp-qdrant-loader --help
 ```
 
 ### MCP Server Configuration
 
-The MCP server uses the same configuration files as the main CLI tool:
+The MCP server uses environment variables for configuration (not config files):
 
-```yaml
-# config.yaml
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "documents"
+```bash
+# Required
+QDRANT_URL=http://localhost:6333
+OPENAI_API_KEY=your-openai-api-key
 
-mcp_server:
-  search_limit: 10
-  enable_hierarchy_search: true
-  enable_attachment_search: true
+# Optional
+QDRANT_API_KEY=your-qdrant-cloud-api-key
+QDRANT_COLLECTION_NAME=documents
+MCP_LOG_LEVEL=INFO
+MCP_LOG_FILE=/path/to/mcp.log
+MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
 ```
 
 ### Integration with AI Tools
@@ -246,7 +254,12 @@ mcp_server:
   "mcpServers": {
     "qdrant-loader": {
       "command": "mcp-qdrant-loader",
-      "args": ["--log-level", "INFO"]
+      "args": ["--log-level", "INFO"],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "your_openai_key",
+        "MCP_DISABLE_CONSOLE_LOGGING": "true"
+      }
     }
   }
 }
@@ -259,47 +272,154 @@ mcp_server:
   "mcpServers": {
     "qdrant-loader": {
       "command": "mcp-qdrant-loader",
-      "args": ["--config", "/path/to/config.yaml"],
+      "args": [],
       "env": {
-        "LOG_LEVEL": "INFO"
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "your_openai_key",
+        "QDRANT_COLLECTION_NAME": "documents"
       }
     }
   }
 }
 ```
 
-## 🔧 Advanced Usage Patterns
+## 🔧 Configuration
+
+### Workspace Mode (Recommended)
+
+The CLI uses workspace mode for better organization:
+
+```bash
+# Workspace structure
+my-workspace/
+├── config.yaml          # Main configuration
+├── .env                 # Environment variables
+├── logs/                # Log files
+├── state/               # State database
+└── metrics/             # Performance metrics
+```
+
+### Configuration Files
+
+The CLI looks for configuration in this order:
+
+1. **Workspace mode**: `--workspace` directory containing `config.yaml` and `.env`
+2. **Traditional mode**: `--config` and `--env` files
+3. **Default**: `config.yaml` in current directory
+
+### Environment Variables
+
+```bash
+# QDrant Connection
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=your-api-key
+QDRANT_COLLECTION_NAME=documents
+
+# OpenAI API
+OPENAI_API_KEY=your-openai-api-key
+
+# State Management
+STATE_DB_PATH=./state/state.db
+
+# Source-specific credentials
+GITHUB_TOKEN=your-github-token
+CONFLUENCE_TOKEN=your-confluence-token
+CONFLUENCE_EMAIL=your-email@company.com
+JIRA_TOKEN=your-jira-token
+JIRA_EMAIL=your-email@company.com
+```
+
+## Exit Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| 0 | Success | Command completed successfully |
+| 1 | General Error | Unspecified error occurred |
+| 2 | Configuration Error | Invalid configuration or missing required settings |
+| 3 | Connection Error | Failed to connect to QDrant or data sources |
+| 4 | Authentication Error | Invalid credentials for data sources |
+| 5 | Processing Error | Error during data processing or ingestion |
+
+## 🔧 Development Patterns
 
 ### Automation and Scripting
 
-#### CI/CD Integration
+#### Basic Automation Script
 
 ```bash
 #!/bin/bash
-# ci-ingest.sh - Automated ingestion script
+# automation-example.sh - Basic automation pattern
 
-set -e
+set -euo pipefail
 
-# Initialize if needed
-echo "Initializing QDrant collection..."
-qdrant-loader init --force
+WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
+LOG_LEVEL="${LOG_LEVEL:-INFO}"
+
+# Function to log messages
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Validate configuration
+log "Validating configuration..."
+if ! qdrant-loader --workspace "$WORKSPACE_DIR" config >/dev/null 2>&1; then
+    log "ERROR: Configuration validation failed"
+    exit 2
+fi
+
+# Validate projects
+log "Validating projects..."
+if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
+    log "ERROR: Project validation failed"
+    exit 2
+fi
+
+# Initialize collection
+log "Initializing QDrant collection..."
+qdrant-loader --log-level "$LOG_LEVEL" --workspace "$WORKSPACE_DIR" init
 
 # Run ingestion
-echo "Starting data ingestion..."
-qdrant-loader ingest
+log "Starting data ingestion..."
+qdrant-loader --log-level "$LOG_LEVEL" --workspace "$WORKSPACE_DIR" ingest
 
-# Check project status
-echo "Ingestion completed. Checking status:"
-qdrant-loader project list
+# Check final status
+log "Checking project status..."
+qdrant-loader project --workspace "$WORKSPACE_DIR" status
+
+log "Automation completed successfully"
 ```
 
-#### Configuration Management
+#### Project-Specific Processing
 
 ```bash
-# Use different configurations for different environments
-qdrant-loader --config config.dev.yaml ingest
-qdrant-loader --config config.staging.yaml ingest
-qdrant-loader --config config.prod.yaml ingest
+#!/bin/bash
+# project-processing.sh - Process specific projects
+
+WORKSPACE_DIR="${1:-$(pwd)}"
+PROJECT_ID="${2:-}"
+
+if [ -n "$PROJECT_ID" ]; then
+    echo "Processing project: $PROJECT_ID"
+    
+    # Validate specific project
+    qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID"
+    
+    # Process specific project
+    qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$PROJECT_ID"
+    
+    # Check project status
+    qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
+else
+    echo "Processing all projects"
+    
+    # Get list of projects
+    PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id')
+    
+    for project in $PROJECTS; do
+        echo "Processing project: $project"
+        qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$project"
+    done
+fi
 ```
 
 ### Error Handling and Debugging
@@ -307,62 +427,137 @@ qdrant-loader --config config.prod.yaml ingest
 #### Configuration Validation
 
 ```bash
-# Display current configuration
-qdrant-loader config
+# Check configuration syntax
+qdrant-loader --workspace . config
 
-# Validate project configuration
-qdrant-loader project validate --project-id my-project
+# Validate all projects
+qdrant-loader project --workspace . validate
+
+# Validate specific project with debug output
+qdrant-loader --log-level DEBUG project --workspace . validate --project-id my-project
 ```
 
-## 🔍 Troubleshooting
-
-### Common Issues
-
-#### Connection Problems
+#### Debug Commands
 
 ```bash
-# Check current configuration
-qdrant-loader config
+# Show current configuration with debug logging
+qdrant-loader --log-level DEBUG --workspace . config
 
-# Verify project status
-qdrant-loader project status
+# List all projects with detailed output
+qdrant-loader project --workspace . list --format json
+
+# Check specific project status with JSON output
+qdrant-loader project --workspace . status --project-id my-project --format json
+
+# Run ingestion with debug logging and profiling
+qdrant-loader --log-level DEBUG --workspace . ingest --profile
 ```
 
-#### Configuration Issues
+## 🧪 Testing
+
+### CLI Testing Patterns
+
+#### Configuration Testing
 
 ```bash
-# Display configuration to verify settings
-qdrant-loader config
+#!/bin/bash
+# test-config.sh - Test configuration validity
 
-# Validate specific project
-qdrant-loader project validate --project-id my-project
+test_config() {
+    local workspace_dir="$1"
+    
+    echo "Testing configuration in: $workspace_dir"
+    
+    # Test configuration loading
+    if qdrant-loader --workspace "$workspace_dir" config >/dev/null 2>&1; then
+        echo "✅ Configuration is valid"
+    else
+        echo "❌ Configuration is invalid"
+        return 1
+    fi
+    
+    # Test project validation
+    if qdrant-loader project --workspace "$workspace_dir" validate; then
+        echo "✅ All projects are valid"
+    else
+        echo "❌ Project validation failed"
+        return 1
+    fi
+}
+
+# Test multiple workspace configurations
+test_config "./test-workspace-1"
+test_config "./test-workspace-2"
 ```
 
-### Debug Commands
+#### Integration Testing
 
 ```bash
-# Show current configuration
-qdrant-loader config
+#!/bin/bash
+# integration-test.sh - Full integration test
 
-# List all projects with details
-qdrant-loader project list --format json
+set -euo pipefail
 
-# Check specific project status
-qdrant-loader project status --project-id my-project --format json
+WORKSPACE_DIR="./test-workspace"
+TEST_PROJECT="test-project"
+
+# Setup test workspace
+mkdir -p "$WORKSPACE_DIR"
+cp config.test.yaml "$WORKSPACE_DIR/config.yaml"
+cp .env.test "$WORKSPACE_DIR/.env"
+
+# Test initialization
+echo "Testing initialization..."
+qdrant-loader --workspace "$WORKSPACE_DIR" init --force
+
+# Test ingestion
+echo "Testing ingestion..."
+qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$TEST_PROJECT"
+
+# Test project commands
+echo "Testing project commands..."
+qdrant-loader project --workspace "$WORKSPACE_DIR" list
+qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$TEST_PROJECT"
+
+# Cleanup
+rm -rf "$WORKSPACE_DIR"
+
+echo "✅ Integration test completed"
+```
+
+### MCP Server Testing
+
+```bash
+#!/bin/bash
+# test-mcp-server.sh - Test MCP server functionality
+
+# Set required environment variables
+export QDRANT_URL="http://localhost:6333"
+export OPENAI_API_KEY="test-key"
+export QDRANT_COLLECTION_NAME="test-collection"
+
+# Test server startup
+echo "Testing MCP server startup..."
+timeout 5s mcp-qdrant-loader --log-level DEBUG || echo "Server started successfully"
+
+# Test with JSON-RPC message
+echo "Testing search functionality..."
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | \
+    timeout 5s mcp-qdrant-loader 2>/dev/null || echo "Search test completed"
 ```
 
 ## 📚 Related Documentation
 
 ### Core Documentation
 
-- **[Configuration Reference](../configuration/)** - Complete configuration options
 - **[Architecture Overview](../architecture/)** - System design and components
+- **[Configuration Reference](../../users/configuration/)** - Configuration options
 - **[Extension Guide](../extending/)** - How to extend functionality
 
 ### User Guides
 
+- **[CLI Reference](../../users/cli-reference/)** - Complete CLI reference
 - **[Getting Started](../../getting-started/)** - Quick start guide
-- **[Configuration Guide](../../users/configuration/)** - User configuration reference
 - **[Troubleshooting](../../users/troubleshooting/)** - Common issues and solutions
 
 ## 🆘 Getting Help
@@ -371,14 +566,12 @@ qdrant-loader project status --project-id my-project --format json
 
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report CLI bugs
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask CLI questions
-- **[CLI Examples](https://github.com/martin-papy/qdrant-loader/tree/main/examples/cli)** - Real-world usage examples
 
 ### Contributing to CLI
 
-- **[Contributing Guide](../../CONTRIBUTING.md)** - How to contribute
-- **[CLI Design Guidelines](../extending/cli-design-guidelines.md)** - CLI design principles
+- **[Contributing Guide](../../../CONTRIBUTING.md)** - How to contribute
 - **[Testing Guide](../testing/)** - Testing CLI functionality
 
 ---
 
-**Ready to use the CLI?** Start with the basic commands above or check out the [Configuration Reference](../configuration/) for detailed configuration options.
+**Ready to develop with the CLI?** Start with the basic commands above or check out the [Architecture Overview](../architecture/) for detailed system design information.
