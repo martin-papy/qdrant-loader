@@ -9,7 +9,6 @@ The hierarchy search tool is designed for structured documentation where documen
 - **Confluence spaces** with parent-child page relationships
 - **Wiki systems** with hierarchical organization
 - **Documentation sites** with nested structures
-- **File systems** with directory hierarchies
 
 ### Key Benefits
 
@@ -22,7 +21,7 @@ The hierarchy search tool is designed for structured documentation where documen
 
 ### Document Relationships
 
-The hierarchy search tool understands several types of document relationships:
+The hierarchy search tool understands document relationships in Confluence:
 
 ```
 📁 Root Document
@@ -52,99 +51,63 @@ Query: "API documentation structure"
 
 ## 🔧 Hierarchy Search Parameters
 
-### Basic Parameters
+### Available Parameters
 
 ```json
 {
   "name": "hierarchy_search",
   "parameters": {
     "query": "string",              // Required: Search query
-    "limit": 10,                    // Optional: Number of results
-    "include_hierarchy": true,      // Optional: Include hierarchy info
-    "depth": 3,                     // Optional: Maximum hierarchy depth
-    "organize_by_hierarchy": false  // Optional: Group results by structure
+    "limit": 10,                    // Optional: Number of results (default: 10)
+    "organize_by_hierarchy": false, // Optional: Group results by structure (default: false)
+    "hierarchy_filter": {           // Optional: Hierarchy-specific filters
+      "depth": 3,                   // Filter by specific hierarchy depth
+      "has_children": true,         // Filter by whether pages have children
+      "parent_title": "API Documentation", // Filter by parent page title
+      "root_only": false            // Show only root pages (no parent)
+    }
   }
 }
 ```
 
-### Advanced Parameters
+### Parameter Details
 
-```json
-{
-  "name": "hierarchy_search",
-  "parameters": {
-    "query": "deployment procedures",
-    "limit": 15,
-    "include_hierarchy": true,
-    "depth": 5,
-    "organize_by_hierarchy": true,
-    
-    // Hierarchy-specific filters
-    "hierarchy_filter": {
-      "root_only": false,           // Show only root documents
-      "has_children": true,         // Show only documents with children
-      "depth": 2,                   // Filter by specific depth level
-      "parent_title": "API Docs"    // Filter by parent document title
-    },
-    
-    // Parent context
-    "parent_filter": "string",      // Filter by parent document
-    "include_siblings": true,       // Include sibling documents
-    "include_ancestors": true,      // Include ancestor documents
-    
-    // Result formatting
-    "show_breadcrumbs": true,       // Show document path
-    "show_children_count": true,    // Show number of children
-    "max_content_length": 300       // Limit content preview
-  }
-}
-```
+#### Required Parameters
+
+- **`query`** (string): The search query in natural language
+
+#### Optional Parameters
+
+- **`limit`** (integer): Maximum number of results to return (default: 10)
+- **`organize_by_hierarchy`** (boolean): Group results by hierarchy structure (default: false)
+
+#### Hierarchy Filter Options
+
+- **`depth`** (integer): Filter by specific hierarchy depth (0 = root pages)
+- **`has_children`** (boolean): Filter by whether pages have children
+- **`parent_title`** (string): Filter by parent page title
+- **`root_only`** (boolean): Show only root pages (no parent)
 
 ## 📊 Understanding Hierarchy Results
 
 ### Result Structure
 
-Hierarchy search results include rich structural information:
+Hierarchy search results include hierarchical information:
 
 ```json
 {
   "results": [
     {
-      "document": {
-        "title": "API Authentication",
-        "content": "This document covers authentication methods...",
-        "url": "https://wiki.company.com/api/auth",
-        "similarity": 0.89
-      },
-      "hierarchy": {
-        "depth": 2,
-        "path": ["API Documentation", "Security", "Authentication"],
-        "breadcrumbs": "API Documentation > Security > Authentication",
-        "parent": {
-          "title": "Security",
-          "url": "https://wiki.company.com/api/security"
-        },
-        "children": [
-          {
-            "title": "JWT Tokens",
-            "url": "https://wiki.company.com/api/auth/jwt"
-          },
-          {
-            "title": "OAuth 2.0",
-            "url": "https://wiki.company.com/api/auth/oauth"
-          }
-        ],
-        "siblings": [
-          {
-            "title": "Authorization",
-            "url": "https://wiki.company.com/api/authorization"
-          },
-          {
-            "title": "Rate Limiting",
-            "url": "https://wiki.company.com/api/rate-limiting"
-          }
-        ]
-      }
+      "score": 0.89,
+      "text": "This document covers authentication methods...",
+      "source_type": "confluence",
+      "source_title": "API Authentication",
+      "source_url": "https://wiki.company.com/api/auth",
+      "breadcrumb_text": "API Documentation > Security > Authentication",
+      "depth": 2,
+      "parent_title": "Security",
+      "children_count": 3,
+      "hierarchy_context": "Path: API Documentation > Security > Authentication | Depth: 2 | Children: 3"
     }
   ]
 }
@@ -155,12 +118,10 @@ Hierarchy search results include rich structural information:
 Each result includes hierarchy metadata:
 
 - **Depth**: How deep in the hierarchy (0 = root)
-- **Path**: Full path from root to document
-- **Breadcrumbs**: Human-readable navigation path
-- **Parent**: Direct parent document information
-- **Children**: Direct child documents
-- **Siblings**: Documents at the same level
-- **Ancestors**: All parent documents up to root
+- **Breadcrumb Text**: Full path from root to document
+- **Parent Title**: Direct parent document title
+- **Children Count**: Number of direct child documents
+- **Hierarchy Context**: Formatted hierarchy information
 
 ## 🎯 Use Cases and Examples
 
@@ -172,8 +133,7 @@ Each result includes hierarchy metadata:
 Query: "Show me the structure of our API documentation"
 Parameters: {
   "organize_by_hierarchy": true,
-  "include_hierarchy": true,
-  "depth": 4
+  "limit": 15
 }
 
 Results (organized by hierarchy):
@@ -187,21 +147,13 @@ Results (organized by hierarchy):
 │   │   ├── 📄 Create User
 │   │   ├── 📄 Update User
 │   │   └── 📄 Delete User
-│   ├── 📁 Data Operations
-│   │   ├── 📄 Create Records
-│   │   ├── 📄 Query Data
-│   │   └── 📄 Bulk Operations
-│   └── 📁 File Management
-│       ├── 📄 Upload Files
-│       └── 📄 Download Files
-├── 📁 Security
-│   ├── 📄 Authentication
-│   ├── 📄 Authorization
-│   └── 📄 Rate Limiting
-└── 📁 Examples
-    ├── 📄 Code Samples
-    ├── 📄 Postman Collection
-    └── 📄 SDK Usage
+│   └── 📁 Data Operations
+│       ├── 📄 Create Records
+│       └── 📄 Query Data
+└── 📁 Security
+    ├── 📄 Authentication
+    ├── 📄 Authorization
+    └── 📄 Rate Limiting
 ```
 
 #### Finding Related Documents
@@ -209,26 +161,17 @@ Results (organized by hierarchy):
 ```
 Query: "authentication"
 Parameters: {
-  "include_siblings": true,
-  "include_children": true
+  "limit": 10
 }
 
 Results:
 1. 📄 Authentication (api/security/authentication.md)
    Path: API Documentation > Security > Authentication
    
-   Related Documents:
-   Siblings:
-   - Authorization (same level in Security)
-   - Rate Limiting (same level in Security)
-   
-   Children:
-   - JWT Tokens (authentication methods)
-   - OAuth 2.0 (authentication methods)
-   - API Keys (authentication methods)
-   
-   Parent Context:
-   - Security (covers all security aspects)
+   Hierarchy Context:
+   - Parent: Security
+   - Children: 3 (JWT Tokens, OAuth 2.0, API Keys)
+   - Depth: 2
 ```
 
 ### 2. Content Organization
@@ -239,8 +182,7 @@ Results:
 Query: "Where should I add documentation about webhook security?"
 Parameters: {
   "query": "webhook security",
-  "include_hierarchy": true,
-  "show_breadcrumbs": true
+  "limit": 10
 }
 
 AI Response using hierarchy search:
@@ -256,11 +198,6 @@ Based on your documentation structure, here are the best places to add webhook s
    - If you have a dedicated Webhooks section
    - Would group all webhook-related content together
 
-3. **Cross-Reference**: API Documentation > Examples > Webhook Security
-   - Path: /api/examples/webhook-security/
-   - For practical implementation examples
-   - Links back to main security documentation
-
 Recommendation: Create the main documentation under Security and add examples under the Examples section.
 ```
 
@@ -271,7 +208,7 @@ Query: "What sections are missing from our deployment documentation?"
 Parameters: {
   "query": "deployment",
   "organize_by_hierarchy": true,
-  "depth": 3
+  "limit": 20
 }
 
 AI Response using hierarchy search:
@@ -287,17 +224,13 @@ Current deployment documentation structure:
 │   ├── 📄 AWS ✅
 │   ├── 📄 Docker ✅
 │   └── ❌ Kubernetes (MISSING)
-├── 📁 CI/CD
-│   ├── 📄 GitHub Actions ✅
-│   └── ❌ GitLab CI (MISSING)
 └── ❌ Troubleshooting (MISSING SECTION)
 
 Missing sections identified:
 1. Kubernetes deployment guide
-2. GitLab CI configuration
-3. Entire troubleshooting section with common issues
-4. Rollback procedures
-5. Monitoring and alerting setup
+2. Entire troubleshooting section with common issues
+3. Rollback procedures
+4. Monitoring and alerting setup
 ```
 
 ### 3. Knowledge Discovery
@@ -308,8 +241,8 @@ Missing sections identified:
 Query: "What do we have documented about microservices?"
 Parameters: {
   "query": "microservices",
-  "include_hierarchy": true,
-  "organize_by_hierarchy": true
+  "organize_by_hierarchy": true,
+  "limit": 15
 }
 
 Results:
@@ -332,12 +265,6 @@ Found microservices documentation across multiple areas:
 └── 📁 DevOps
     ├── 📄 CI/CD for Services
     └── 📄 Monitoring Services
-
-📁 Examples
-└── 📁 Microservices Examples
-    ├── 📄 User Service
-    ├── 📄 Payment Service
-    └── 📄 Notification Service
 ```
 
 #### Understanding Document Relationships
@@ -347,36 +274,29 @@ Query: "How is our API documentation organized?"
 Parameters: {
   "query": "API",
   "organize_by_hierarchy": true,
-  "show_breadcrumbs": true,
-  "include_children": true
+  "limit": 20
 }
 
 AI Response:
 Your API documentation follows a logical hierarchy:
 
 1. **Top Level**: API Documentation (Root)
-   - Breadcrumb: API Documentation
    - Children: 5 main sections
 
 2. **Getting Started Section**
-   - Breadcrumb: API Documentation > Getting Started
+   - Path: API Documentation > Getting Started
    - Purpose: Onboarding new developers
    - Children: Quick Start, Authentication Setup, First API Call
 
 3. **Reference Section**
-   - Breadcrumb: API Documentation > Reference
+   - Path: API Documentation > Reference
    - Purpose: Complete API specification
    - Children: Endpoints (by category), Data Models, Error Codes
 
 4. **Security Section**
-   - Breadcrumb: API Documentation > Security
+   - Path: API Documentation > Security
    - Purpose: Security implementation
    - Children: Authentication, Authorization, Rate Limiting
-
-5. **Examples Section**
-   - Breadcrumb: API Documentation > Examples
-   - Purpose: Practical implementation
-   - Children: Code Samples, SDKs, Tutorials
 
 This structure follows best practices with clear separation of concerns and logical progression from basic to advanced topics.
 ```
@@ -398,18 +318,18 @@ This structure follows best practices with clear separation of concerns and logi
 
 Results: Only top-level documents without parents
 
-#### Finding Leaf Documents
+#### Finding Documents with Children
 
 ```json
 {
   "query": "implementation",
   "hierarchy_filter": {
-    "has_children": false
+    "has_children": true
   }
 }
 ```
 
-Results: Only documents with no children (detailed implementation guides)
+Results: Only documents that have child documents (section overviews)
 
 #### Finding Specific Depth
 
@@ -424,47 +344,20 @@ Results: Only documents with no children (detailed implementation guides)
 
 Results: Only documents at exactly 2 levels deep
 
-### 2. Parent-Child Navigation
+### 2. Parent-Based Navigation
 
-#### Finding All Children
+#### Finding All Children of a Parent
 
 ```json
 {
-  "parent_filter": "API Documentation",
-  "include_children": true,
+  "hierarchy_filter": {
+    "parent_title": "API Documentation"
+  },
   "organize_by_hierarchy": true
 }
 ```
 
 Results: All documents under "API Documentation" organized by structure
-
-#### Finding Siblings
-
-```json
-{
-  "query": "authentication",
-  "include_siblings": true
-}
-```
-
-Results: Authentication document plus all documents at the same hierarchy level
-
-### 3. Path-Based Search
-
-#### Breadcrumb Navigation
-
-```json
-{
-  "query": "deployment AWS",
-  "show_breadcrumbs": true,
-  "include_ancestors": true
-}
-```
-
-Results include full navigation paths:
-
-- Deployment > Cloud Providers > AWS > EC2 Deployment
-- Deployment > Cloud Providers > AWS > Lambda Deployment
 
 ## 🎨 Hierarchy Visualization
 
@@ -474,22 +367,21 @@ When `organize_by_hierarchy: true`, results are displayed as a tree:
 
 ```
 📁 Root Document
-├── 📄 Child 1 (similarity: 0.89)
-│   ├── 📄 Grandchild 1.1 (similarity: 0.85)
-│   └── 📄 Grandchild 1.2 (similarity: 0.82)
-├── 📄 Child 2 (similarity: 0.87)
-│   └── 📄 Grandchild 2.1 (similarity: 0.79)
-└── 📄 Child 3 (similarity: 0.84)
+├── 📄 Child 1 (score: 0.89)
+│   ├── 📄 Grandchild 1.1 (score: 0.85)
+│   └── 📄 Grandchild 1.2 (score: 0.82)
+├── 📄 Child 2 (score: 0.87)
+│   └── 📄 Grandchild 2.1 (score: 0.79)
+└── 📄 Child 3 (score: 0.84)
 ```
 
 ### Breadcrumb Navigation
 
-When `show_breadcrumbs: true`, results include navigation paths:
+Results include navigation paths:
 
 ```
 Document: JWT Authentication
 Path: API Documentation > Security > Authentication > JWT Authentication
-Breadcrumb: API Docs > Security > Auth > JWT
 ```
 
 ### Relationship Indicators
@@ -535,9 +427,10 @@ Results show document relationships:
 ```json
 {
   "organize_by_hierarchy": true,
-  "depth": 4,
-  "include_children": true,
-  "show_breadcrumbs": true
+  "limit": 20,
+  "hierarchy_filter": {
+    "has_children": true
+  }
 }
 ```
 
@@ -546,9 +439,9 @@ Results show document relationships:
 ```json
 {
   "limit": 5,
-  "depth": 2,
-  "include_siblings": true,
-  "max_content_length": 200
+  "hierarchy_filter": {
+    "depth": 2
+  }
 }
 ```
 
@@ -557,9 +450,10 @@ Results show document relationships:
 ```json
 {
   "organize_by_hierarchy": true,
-  "include_children": true,
-  "show_children_count": true,
-  "depth": 10
+  "limit": 50,
+  "hierarchy_filter": {
+    "has_children": true
+  }
 }
 ```
 
@@ -569,7 +463,9 @@ Results show document relationships:
 
 ```json
 {
-  "depth": 3  // Prevent deep recursion
+  "hierarchy_filter": {
+    "depth": 3  // Focus on specific depth
+  }
 }
 ```
 
@@ -577,17 +473,7 @@ Results show document relationships:
 
 ```json
 {
-  "limit": 10,
-  "max_content_length": 300
-}
-```
-
-#### Cache Hierarchy Information
-
-```json
-{
-  "cache_hierarchy": true,
-  "cache_ttl": 3600
+  "limit": 10  // Reasonable limit for performance
 }
 ```
 
@@ -602,16 +488,16 @@ Results show document relationships:
 ### 2. Parameter Selection
 
 - **Use `organize_by_hierarchy: true`** for structure exploration
-- **Include breadcrumbs** for navigation context
 - **Limit depth** for performance with large hierarchies
-- **Include siblings** for related content discovery
+- **Filter by `has_children`** for section overviews
+- **Use `root_only`** for top-level organization
 
 ### 3. Result Interpretation
 
-- **Follow breadcrumbs** to understand document context
+- **Follow breadcrumb paths** to understand document context
 - **Check hierarchy depth** to understand document importance
-- **Review siblings** for related content
-- **Examine children** for detailed information
+- **Review children count** for section completeness
+- **Examine parent context** for related content
 
 ### 4. Common Patterns
 
@@ -621,8 +507,9 @@ Results show document relationships:
 {
   "query": "section overview",
   "organize_by_hierarchy": true,
-  "include_children": true,
-  "show_children_count": true
+  "hierarchy_filter": {
+    "has_children": true
+  }
 }
 ```
 
@@ -631,9 +518,9 @@ Results show document relationships:
 ```json
 {
   "query": "where to add new content",
-  "include_hierarchy": true,
-  "show_breadcrumbs": true,
-  "include_siblings": true
+  "hierarchy_filter": {
+    "parent_title": "API Documentation"
+  }
 }
 ```
 
@@ -642,9 +529,8 @@ Results show document relationships:
 ```json
 {
   "query": "find related documentation",
-  "include_siblings": true,
-  "include_children": true,
-  "show_breadcrumbs": true
+  "organize_by_hierarchy": true,
+  "limit": 15
 }
 ```
 
@@ -690,9 +576,9 @@ Results show document relationships:
 - [ ] **Understand hierarchy structure** in your knowledge base
 - [ ] **Use structure-focused queries** for navigation
 - [ ] **Enable hierarchy organization** for structure exploration
-- [ ] **Include breadcrumbs** for navigation context
-- [ ] **Check siblings and children** for related content
-- [ ] **Optimize depth settings** for performance
+- [ ] **Apply appropriate filters** for targeted results
+- [ ] **Check parent-child relationships** for related content
+- [ ] **Optimize parameters** for performance
 - [ ] **Combine with other search tools** for comprehensive results
 
 ---

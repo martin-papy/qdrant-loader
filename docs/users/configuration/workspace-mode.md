@@ -1,891 +1,413 @@
 # Workspace Mode Configuration
 
-This guide covers how to configure QDrant Loader for different workspace scenarios, from single projects to complex multi-project team environments. Workspace mode determines how QDrant Loader organizes and manages your data across different projects and contexts.
+This guide covers how to configure QDrant Loader using workspace mode, which provides organized directory structure and simplified configuration management for your projects.
 
 ## 🎯 Overview
 
-Workspace mode in QDrant Loader allows you to organize your knowledge base according to your project structure and team needs. Whether you're working on a single project, managing multiple projects, or collaborating with a team, the right workspace configuration ensures optimal organization and searchability.
+Workspace mode in QDrant Loader provides a structured approach to organizing your configuration files, logs, and metrics in a dedicated directory. It automatically discovers configuration files and creates necessary subdirectories for organized project management.
 
-### Workspace Types
+### What Workspace Mode Provides
 
+```text
+📁 Workspace Directory
+├── config.yaml          # Main configuration file
+├── .env                 # Environment variables (optional)
+├── logs/                # Application logs
+├── metrics/             # Performance metrics
+└── state.db             # Processing state database
 ```
-📁 Single Project    - One project, one collection
-📁 Multi-Project     - Multiple projects, organized collections
-📁 Team Workspace    - Shared team knowledge with access control
-📁 Hybrid Workspace  - Mix of personal and shared collections
+
+### Benefits of Workspace Mode
+
+- **Auto-discovery**: Automatically finds `config.yaml` and `.env` files
+- **Organized structure**: Creates dedicated directories for logs and metrics
+- **Simplified commands**: No need to specify config file paths
+- **Consistent layout**: Standardized project organization
+
+## 🏗️ Setting Up Workspace Mode
+
+### Create Workspace Directory
+
+```bash
+# Create workspace directory
+mkdir my-qdrant-workspace
+cd my-qdrant-workspace
+
+# Copy configuration template
+cp packages/qdrant-loader/conf/config.template.yaml config.yaml
+cp packages/qdrant-loader/conf/.env.template .env
 ```
 
-## 🏗️ Single Project Workspace
+### Basic Configuration Structure
 
-### Basic Single Project Setup
-
-Perfect for individual developers or small teams working on one main project.
+QDrant Loader uses a **multi-project configuration** structure where all projects share a single Qdrant collection but are isolated through project metadata:
 
 ```yaml
-# qdrant-loader.yaml - Single project configuration
-workspace:
-  mode: "single"
-  name: "my-awesome-project"
+# config.yaml - Multi-project configuration
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    api_key: null  # Optional for Qdrant Cloud
+    collection_name: "my_documents"  # Shared by all projects
   
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "my_awesome_project_docs"
-  
-data_sources:
-  git:
-    repositories:
-      - url: "https://github.com/company/my-awesome-project"
-        branch: "main"
-        include_patterns:
-          - "docs/**"
-          - "*.md"
-          - "README*"
-  
-  confluence:
-    base_url: "https://company.atlassian.net"
-    username: "user@company.com"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces: ["PROJ"]
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    vector_size: 1536
 
-processing:
-  chunk_size: 1000
-  chunk_overlap: 200
-  metadata:
-    project: "my-awesome-project"
-    workspace: "single"
+projects:
+  docs-project:
+    project_id: "docs-project"
+    display_name: "Documentation Project"
+    description: "Company documentation"
+    
+    sources:
+      git:
+        docs-repo:
+          base_url: "https://github.com/company/docs"
+          branch: "main"
+          include_paths: ["docs/**", "*.md"]
+          token: "${GITHUB_TOKEN}"
+  
+  wiki-project:
+    project_id: "wiki-project"
+    display_name: "Wiki Project"
+    description: "Internal wiki content"
+    
+    sources:
+      confluence:
+        company-wiki:
+          base_url: "https://company.atlassian.net/wiki"
+          space_key: "WIKI"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
 ```
 
-### Single Project with Multiple Sources
+### Environment Variables
+
+```bash
+# .env file
+# Required - QDrant Database
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=your-qdrant-cloud-key  # Optional
+
+# Required - OpenAI API
+OPENAI_API_KEY=your-openai-api-key
+
+# Optional - Source credentials
+GITHUB_TOKEN=your-github-token
+CONFLUENCE_TOKEN=your-confluence-token
+CONFLUENCE_EMAIL=your-email@company.com
+```
+
+## ⚙️ Workspace Commands
+
+### Initialize Workspace
+
+```bash
+# Initialize collection and prepare workspace
+qdrant-loader --workspace . init
+
+# Force recreation of existing collection
+qdrant-loader --workspace . init --force
+```
+
+### Ingest Data
+
+```bash
+# Process all projects and sources
+qdrant-loader --workspace . ingest
+
+# Process specific project
+qdrant-loader --workspace . ingest --project docs-project
+
+# Process specific source type across all projects
+qdrant-loader --workspace . ingest --source-type git
+
+# Process specific source within a project
+qdrant-loader --workspace . ingest --project docs-project --source docs-repo
+```
+
+### Configuration Management
+
+```bash
+# Show current configuration
+qdrant-loader --workspace . config
+
+# Validate configuration
+qdrant-loader project --workspace . validate
+
+# List all projects
+qdrant-loader project --workspace . list
+
+# Show project status
+qdrant-loader project --workspace . status
+```
+
+## 📁 Project Management
+
+### Project Structure
+
+Each project in the configuration has:
+
+- **project_id**: Unique identifier used for filtering and metadata
+- **display_name**: Human-readable name for the project
+- **description**: Brief description of the project's purpose
+- **sources**: Configuration for data sources (git, confluence, jira, etc.)
+
+### Project Commands
+
+```bash
+# List all configured projects
+qdrant-loader project --workspace . list
+
+# Show detailed project information
+qdrant-loader project --workspace . status
+
+# Show status for specific project
+qdrant-loader project --workspace . status --project-id docs-project
+
+# Validate project configurations
+qdrant-loader project --workspace . validate
+
+# Output in JSON format
+qdrant-loader project --workspace . list --format json
+```
+
+### Project Isolation
+
+Projects are isolated through metadata, not separate collections:
+
+- All projects use the same Qdrant collection
+- Each document includes `project_id` in metadata
+- Search can be filtered by project through the MCP server
+- Simplifies collection management and enables cross-project search
+
+## 🔍 Data Source Configuration
+
+### Supported Source Types
+
+#### Git Repositories
 
 ```yaml
-# qdrant-loader.yaml - Single project with multiple data sources
-workspace:
-  mode: "single"
-  name: "documentation-hub"
-  description: "Central documentation for our main product"
-  
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "documentation_hub"
-  
-data_sources:
-  # Main project repository
+sources:
   git:
-    repositories:
-      - url: "https://github.com/company/main-product"
-        branch: "main"
-        name: "main-repo"
-        include_patterns:
-          - "docs/**"
-          - "*.md"
-          - "api/**/*.yaml"
-      
-      # Documentation repository
-      - url: "https://github.com/company/product-docs"
-        branch: "main"
-        name: "docs-repo"
-        include_patterns:
-          - "**/*.md"
-          - "**/*.rst"
-  
-  # Confluence documentation
+    repo-name:
+      base_url: "https://github.com/user/repo"
+      branch: "main"
+      include_paths: ["docs/**", "*.md"]
+      exclude_paths: ["node_modules/**"]
+      file_types: ["*.md", "*.rst", "*.txt"]
+      token: "${GITHUB_TOKEN}"
+      enable_file_conversion: true
+```
+
+#### Confluence
+
+```yaml
+sources:
   confluence:
-    base_url: "https://company.atlassian.net"
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces: ["DOCS", "API", "GUIDES"]
-  
-  # JIRA for requirements and issues
+    wiki-name:
+      base_url: "https://company.atlassian.net/wiki"
+      deployment_type: "cloud"
+      space_key: "DOCS"
+      content_types: ["page", "blogpost"]
+      token: "${CONFLUENCE_TOKEN}"
+      email: "${CONFLUENCE_EMAIL}"
+      enable_file_conversion: true
+      download_attachments: true
+```
+
+#### JIRA
+
+```yaml
+sources:
   jira:
-    base_url: "https://company.atlassian.net"
-    username: "${JIRA_USERNAME}"
-    api_token: "${JIRA_API_TOKEN}"
-    projects: ["PROD"]
-    settings:
-      issue_types: ["Story", "Epic", "Bug"]
-      include_comments: true
-
-processing:
-  metadata:
-    project: "documentation-hub"
-    workspace: "single"
-    tags:
-      - "documentation"
-      - "main-product"
+    project-name:
+      base_url: "https://company.atlassian.net"
+      deployment_type: "cloud"
+      project_key: "PROJ"
+      token: "${JIRA_TOKEN}"
+      email: "${JIRA_EMAIL}"
+      enable_file_conversion: true
+      download_attachments: true
 ```
 
-## 🏢 Multi-Project Workspace
-
-### Basic Multi-Project Setup
-
-Ideal for teams managing multiple related projects with separate but connected knowledge bases.
+#### Local Files
 
 ```yaml
-# qdrant-loader.yaml - Multi-project configuration
-workspace:
-  mode: "multi"
-  name: "company-projects"
-  
-  # Project definitions
-  projects:
-    frontend:
-      name: "Frontend Application"
-      collection: "frontend_docs"
-      description: "React frontend application documentation"
-      
-    backend:
-      name: "Backend API"
-      collection: "backend_docs"
-      description: "Node.js backend API documentation"
-      
-    mobile:
-      name: "Mobile App"
-      collection: "mobile_docs"
-      description: "React Native mobile application"
-      
-    shared:
-      name: "Shared Resources"
-      collection: "shared_docs"
-      description: "Common documentation and resources"
-
-qdrant:
-  url: "http://localhost:6333"
-  # Collection names will be auto-generated from project definitions
-
-# Global data sources (applied to all projects)
-global_data_sources:
-  confluence:
-    base_url: "https://company.atlassian.net"
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces: ["COMPANY", "GENERAL"]
-
-# Project-specific data sources
-project_data_sources:
-  frontend:
-    git:
-      repositories:
-        - url: "https://github.com/company/frontend-app"
-          branch: "main"
-          include_patterns:
-            - "docs/**"
-            - "*.md"
-            - "src/**/*.md"
-    confluence:
-      spaces: ["FRONTEND", "UI"]
-  
-  backend:
-    git:
-      repositories:
-        - url: "https://github.com/company/backend-api"
-          branch: "main"
-          include_patterns:
-            - "docs/**"
-            - "*.md"
-            - "api/**/*.yaml"
-    confluence:
-      spaces: ["BACKEND", "API"]
-    jira:
-      projects: ["BACK"]
-  
-  mobile:
-    git:
-      repositories:
-        - url: "https://github.com/company/mobile-app"
-          branch: "main"
-          include_patterns:
-            - "docs/**"
-            - "*.md"
-    confluence:
-      spaces: ["MOBILE", "APP"]
-  
-  shared:
-    git:
-      repositories:
-        - url: "https://github.com/company/shared-docs"
-          branch: "main"
-        - url: "https://github.com/company/design-system"
-          branch: "main"
-          include_patterns:
-            - "docs/**"
-            - "*.md"
-    confluence:
-      spaces: ["DESIGN", "STANDARDS", "PROCESS"]
-
-processing:
-  # Global processing settings
-  chunk_size: 1000
-  chunk_overlap: 200
-  
-  # Project-specific processing
-  project_settings:
-    frontend:
-      metadata:
-        project: "frontend"
-        team: "ui-team"
-        technology: "react"
-    
-    backend:
-      metadata:
-        project: "backend"
-        team: "api-team"
-        technology: "nodejs"
-    
-    mobile:
-      metadata:
-        project: "mobile"
-        team: "mobile-team"
-        technology: "react-native"
-    
-    shared:
-      metadata:
-        project: "shared"
-        team: "all"
-        type: "shared-resource"
+sources:
+  localfile:
+    local-docs:
+      base_url: "file:///path/to/files"
+      include_paths: ["docs/**"]
+      exclude_paths: ["tmp/**"]
+      file_types: ["*.md", "*.txt"]
+      max_file_size: 1048576  # 1MB
+      enable_file_conversion: true
 ```
 
-### Advanced Multi-Project with Cross-References
+#### Public Documentation
 
 ```yaml
-# qdrant-loader.yaml - Advanced multi-project with cross-references
-workspace:
-  mode: "multi"
-  name: "enterprise-platform"
-  
-  # Project hierarchy
-  projects:
-    platform:
-      name: "Core Platform"
-      collection: "platform_docs"
-      parent: null
-      children: ["auth", "api-gateway", "monitoring"]
-      
-    auth:
-      name: "Authentication Service"
-      collection: "auth_docs"
-      parent: "platform"
-      dependencies: ["platform"]
-      
-    api-gateway:
-      name: "API Gateway"
-      collection: "gateway_docs"
-      parent: "platform"
-      dependencies: ["platform", "auth"]
-      
-    monitoring:
-      name: "Monitoring & Observability"
-      collection: "monitoring_docs"
-      parent: "platform"
-      dependencies: ["platform"]
-      
-    frontend:
-      name: "Web Frontend"
-      collection: "frontend_docs"
-      dependencies: ["auth", "api-gateway"]
-      
-    mobile:
-      name: "Mobile Apps"
-      collection: "mobile_docs"
-      dependencies: ["auth", "api-gateway"]
-
-  # Cross-project search configuration
-  cross_project:
-    enabled: true
-    # When searching in a project, also search dependencies
-    include_dependencies: true
-    # Weight for dependency results (0.0-1.0)
-    dependency_weight: 0.3
-
-qdrant:
-  url: "http://localhost:6333"
-
-# Project-specific configurations
-project_data_sources:
-  platform:
-    git:
-      repositories:
-        - url: "https://github.com/company/platform-core"
-          branch: "main"
-    confluence:
-      spaces: ["PLATFORM", "ARCH"]
-    jira:
-      projects: ["PLAT"]
-  
-  auth:
-    git:
-      repositories:
-        - url: "https://github.com/company/auth-service"
-          branch: "main"
-    confluence:
-      spaces: ["AUTH", "SECURITY"]
-    jira:
-      projects: ["AUTH"]
-  
-  # ... other projects
-
-mcp_server:
-  # Multi-project search configuration
-  search:
-    # Default project for searches (if not specified)
-    default_project: "platform"
-    
-    # Enable project-aware search
-    project_aware: true
-    
-    # Include project context in results
-    include_project_context: true
-    
-    # Cross-project search settings
-    cross_project:
-      enabled: true
-      max_projects: 3
-      similarity_threshold: 0.6
+sources:
+  publicdocs:
+    docs-site:
+      base_url: "https://docs.example.com"
+      version: "1.0"
+      content_type: "html"
+      path_pattern: "/docs/{version}/**"
+      selectors:
+        content: "article.main-content"
+        remove: ["nav", "header", "footer"]
+      enable_file_conversion: true
+      download_attachments: true
 ```
 
-## 👥 Team Workspace
+## 🔧 Advanced Configuration
 
-### Shared Team Environment
-
-Perfect for teams that need shared knowledge with individual workspaces.
+### Global Settings
 
 ```yaml
-# qdrant-loader.yaml - Team workspace configuration
-workspace:
-  mode: "team"
-  name: "engineering-team"
+global_config:
+  # Chunking configuration
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
   
-  # Team configuration
-  team:
-    name: "Engineering Team"
-    members:
-      - username: "alice"
-        role: "lead"
-        projects: ["platform", "auth", "frontend"]
-      - username: "bob"
-        role: "developer"
-        projects: ["frontend", "mobile"]
-      - username: "charlie"
-        role: "developer"
-        projects: ["platform", "auth"]
-    
-    # Shared collections
-    shared_collections:
-      - name: "team_knowledge"
-        description: "Shared team documentation"
-        access: "all"
-      - name: "architecture_docs"
-        description: "System architecture documentation"
-        access: "lead"
-      - name: "onboarding"
-        description: "Team onboarding materials"
-        access: "all"
-    
-    # Personal collections
-    personal_collections:
-      enabled: true
-      prefix: "personal_"
-      # Each team member gets: personal_alice, personal_bob, etc.
-
-qdrant:
-  url: "http://qdrant.team.local:6333"
-
-# Shared data sources (accessible to all team members)
-shared_data_sources:
-  git:
-    repositories:
-      - url: "https://github.com/company/team-docs"
-        branch: "main"
-        collection: "team_knowledge"
-      - url: "https://github.com/company/architecture"
-        branch: "main"
-        collection: "architecture_docs"
-        access_control:
-          roles: ["lead"]
+  # Embedding configuration
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 100
+    vector_size: 1536
+    max_tokens_per_request: 8000
+    max_tokens_per_chunk: 8000
   
-  confluence:
-    base_url: "https://company.atlassian.net"
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces: ["TEAM", "PROCESS", "STANDARDS"]
-    collection: "team_knowledge"
-
-# Personal data sources (user-specific)
-personal_data_sources:
-  git:
-    repositories:
-      # Users can add their own repositories
-      - url: "${USER_REPO_URL}"
-        branch: "main"
-        collection: "personal_${USER}"
-        include_patterns:
-          - "notes/**"
-          - "personal/**"
-          - "drafts/**"
-  
-  local_files:
-    paths:
-      - "~/Documents/work-notes"
-      - "~/Projects/personal-docs"
-    collection: "personal_${USER}"
-
-# Access control
-access_control:
-  enabled: true
-  
-  # Collection-level permissions
-  collections:
-    team_knowledge:
-      read: ["all"]
-      write: ["all"]
-    
-    architecture_docs:
-      read: ["lead", "senior"]
-      write: ["lead"]
-    
-    onboarding:
-      read: ["all"]
-      write: ["lead", "hr"]
-    
-    "personal_*":
-      read: ["owner"]
-      write: ["owner"]
-
-mcp_server:
-  # Team-aware search
-  search:
-    # Include user context in searches
-    user_aware: true
-    
-    # Default search scope
-    default_scope: "accessible"  # all, shared, personal, accessible
-    
-    # Search result personalization
-    personalization:
-      enabled: true
-      # Boost results from user's projects
-      project_boost: 1.2
-      # Boost results from user's recent activity
-      recency_boost: 1.1
+  # File conversion settings
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300  # 5 minutes
+    markitdown:
+      enable_llm_descriptions: false
+      llm_model: "gpt-4o"
+      llm_api_key: "${OPENAI_API_KEY}"
 ```
 
-### Team Workspace with Role-Based Access
+### State Management
+
+Workspace mode automatically manages the state database:
 
 ```yaml
-# qdrant-loader.yaml - Role-based team workspace
-workspace:
-  mode: "team"
-  name: "product-development"
-  
-  # Role definitions
-  roles:
-    admin:
-      permissions: ["read", "write", "manage", "configure"]
-      collections: ["*"]
-    
-    lead:
-      permissions: ["read", "write", "manage"]
-      collections: ["team_*", "project_*", "architecture_*"]
-    
-    senior:
-      permissions: ["read", "write"]
-      collections: ["team_*", "project_*"]
-    
-    developer:
-      permissions: ["read", "write"]
-      collections: ["team_knowledge", "project_docs", "personal_*"]
-    
-    intern:
-      permissions: ["read"]
-      collections: ["team_knowledge", "onboarding", "personal_*"]
-
-  # Team structure
-  team:
-    name: "Product Development Team"
-    departments:
-      engineering:
-        lead: "alice"
-        members: ["bob", "charlie", "diana"]
-        collections: ["eng_docs", "tech_specs"]
-      
-      design:
-        lead: "eve"
-        members: ["frank"]
-        collections: ["design_docs", "ui_specs"]
-      
-      product:
-        lead: "grace"
-        members: ["henry"]
-        collections: ["product_docs", "requirements"]
-
-# Department-specific data sources
-department_data_sources:
-  engineering:
-    git:
-      repositories:
-        - url: "https://github.com/company/backend"
-        - url: "https://github.com/company/frontend"
-    confluence:
-      spaces: ["ENG", "TECH"]
-    collection: "eng_docs"
-  
-  design:
-    git:
-      repositories:
-        - url: "https://github.com/company/design-system"
-    confluence:
-      spaces: ["DESIGN", "UX"]
-    local_files:
-      paths: ["/shared/design-assets"]
-    collection: "design_docs"
-  
-  product:
-    confluence:
-      spaces: ["PRODUCT", "REQUIREMENTS"]
-    jira:
-      projects: ["PROD"]
-      settings:
-        issue_types: ["Epic", "Story"]
-    collection: "product_docs"
-
-# Workflow-based collections
-workflow_collections:
-  sprint_planning:
-    sources:
-      - collection: "product_docs"
-        filter: "type:requirement"
-      - collection: "eng_docs"
-        filter: "type:technical-spec"
-    access: ["lead", "senior"]
-  
-  code_review:
-    sources:
-      - collection: "eng_docs"
-        filter: "type:code-review OR type:best-practice"
-    access: ["developer", "senior", "lead"]
-  
-  onboarding:
-    sources:
-      - collection: "team_knowledge"
-        filter: "type:onboarding"
-      - collection: "process_docs"
-    access: ["all"]
+global_config:
+  state_management:
+    database_path: "${STATE_DB_PATH}"  # Ignored in workspace mode
+    table_prefix: "qdrant_loader_"
+    connection_pool:
+      size: 5
+      timeout: 30
 ```
 
-## 🔄 Hybrid Workspace
+In workspace mode, the state database is automatically created as `state.db` in a data directory within workspace directory.
 
-### Mixed Personal and Shared Environment
+## 📊 Workspace Structure
 
-Combines personal productivity with team collaboration.
+### Directory Layout
 
-```yaml
-# qdrant-loader.yaml - Hybrid workspace configuration
-workspace:
-  mode: "hybrid"
-  name: "flexible-workspace"
-  
-  # Workspace layers
-  layers:
-    personal:
-      enabled: true
-      collection_prefix: "personal_"
-      isolation: "strict"  # strict, loose, none
-    
-    team:
-      enabled: true
-      collection_prefix: "team_"
-      sharing: "opt-in"  # opt-in, opt-out, automatic
-    
-    company:
-      enabled: true
-      collection_prefix: "company_"
-      access: "read-only"  # read-only, read-write
-
-# Layer-specific configurations
-layer_configurations:
-  personal:
-    data_sources:
-      local_files:
-        paths:
-          - "~/Documents/notes"
-          - "~/Projects/personal"
-      git:
-        repositories:
-          - url: "${PERSONAL_REPO}"
-            branch: "main"
-    
-    processing:
-      chunk_size: 500  # Smaller chunks for personal notes
-      metadata:
-        layer: "personal"
-        private: true
-  
-  team:
-    data_sources:
-      git:
-        repositories:
-          - url: "https://github.com/team/shared-docs"
-      confluence:
-        spaces: ["TEAM"]
-    
-    processing:
-      metadata:
-        layer: "team"
-        shareable: true
-  
-  company:
-    data_sources:
-      confluence:
-        spaces: ["COMPANY", "POLICIES", "STANDARDS"]
-        settings:
-          read_only: true
-    
-    processing:
-      metadata:
-        layer: "company"
-        official: true
-
-# Cross-layer search configuration
-cross_layer_search:
-  enabled: true
-  
-  # Search priority (higher number = higher priority)
-  layer_priority:
-    personal: 3
-    team: 2
-    company: 1
-  
-  # Context mixing
-  context_mixing:
-    enabled: true
-    # Include context from other layers
-    max_context_layers: 2
-
-mcp_server:
-  search:
-    # Layer-aware search
-    layer_aware: true
-    
-    # Default search layers
-    default_layers: ["personal", "team"]
-    
-    # Layer-specific result limits
-    layer_limits:
-      personal: 5
-      team: 8
-      company: 3
+```text
+my-qdrant-workspace/
+├── config.yaml              # Main configuration
+├── .env                     # Environment variables
+├── logs/                    # Application logs
+│   └── qdrant-loader.log
+├── metrics/                 # Performance metrics
+│   └── ingestion_metrics.json
+└── data
+    └── state.db             # Processing state database
 ```
 
-## ⚙️ Workspace Management
+### Log Files
 
-### Workspace Initialization
+Workspace mode automatically configures logging:
 
-```bash
-# Initialize single project workspace
-qdrant-loader workspace init --mode single --name "my-project"
+- **Location**: `logs/qdrant-loader.log`
+- **Format**: Structured logging with timestamps
+- **Rotation**: Automatic log rotation (if configured)
 
-# Initialize multi-project workspace
-qdrant-loader workspace init --mode multi --name "company-projects"
+### Metrics
 
-# Initialize team workspace
-qdrant-loader workspace init --mode team --name "engineering-team"
+Performance metrics are stored in the `metrics/` directory:
 
-# Initialize hybrid workspace
-qdrant-loader workspace init --mode hybrid --name "flexible-workspace"
+- **Ingestion metrics**: Processing statistics and performance data
+- **Error tracking**: Failed operations and retry attempts
+- **Resource usage**: Memory and processing time metrics
+
+## 🔗 MCP Server Integration
+
+The MCP server currently uses environment variables for configuration and does not support workspace mode directly. You need to configure it using environment variables:
+
+```json
+{
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_API_KEY": "your-api-key",
+        "QDRANT_COLLECTION_NAME": "my_documents",
+        "OPENAI_API_KEY": "your-openai-key"
+      }
+    }
+  }
+}
 ```
 
-### Workspace Operations
+### MCP Server Environment Variables
 
-```bash
-# Show workspace status
-qdrant-loader workspace status
+The MCP server requires these environment variables:
 
-# List all collections in workspace
-qdrant-loader workspace collections
+- **QDRANT_URL**: URL of your QDrant instance (required)
+- **QDRANT_API_KEY**: API key for QDrant authentication (optional)
+- **QDRANT_COLLECTION_NAME**: Name of the collection to use (default: "documents")
+- **OPENAI_API_KEY**: OpenAI API key for embeddings (required)
+- **MCP_DISABLE_CONSOLE_LOGGING**: Set to "true" to disable console logging (optional)
 
-# Switch between projects (multi-project mode)
-qdrant-loader workspace switch frontend
+### Current Limitations
 
-# Add new project to workspace
-qdrant-loader workspace add-project backend \
-  --collection backend_docs \
-  --description "Backend API documentation"
+- The MCP server does not support the `--workspace` flag
+- Configuration must be done through environment variables
+- The `--config` option exists but is not currently implemented
+- Project-aware search is not yet available in the MCP server
 
-# Remove project from workspace
-qdrant-loader workspace remove-project old-project
+### Future Workspace Integration
 
-# Backup workspace configuration
-qdrant-loader workspace backup --output workspace-backup.yaml
+Workspace mode support for the MCP server is planned for future releases, which would allow:
 
-# Restore workspace from backup
-qdrant-loader workspace restore --input workspace-backup.yaml
-```
+- Automatic discovery of workspace configuration
+- Project-aware search capabilities
+- Simplified configuration through workspace files
 
-### Collection Management
+## 🚀 Getting Started Checklist
 
-```bash
-# Create new collection
-qdrant-loader collection create shared_resources \
-  --description "Shared team resources"
-
-# List collections with access info
-qdrant-loader collection list --show-access
-
-# Set collection permissions
-qdrant-loader collection permissions shared_resources \
-  --read "all" \
-  --write "lead,senior"
-
-# Merge collections
-qdrant-loader collection merge source_collection target_collection
-
-# Archive old collection
-qdrant-loader collection archive old_project_docs
-```
-
-## 🔍 Workspace-Aware Search
-
-### Search Scoping
-
-```bash
-# Search in current project only
-qdrant-loader search "API documentation" --scope current
-
-# Search across all accessible collections
-qdrant-loader search "deployment guide" --scope all
-
-# Search in specific project
-qdrant-loader search "authentication" --project auth
-
-# Search in multiple projects
-qdrant-loader search "database schema" --projects backend,platform
-
-# Search with layer filtering (hybrid mode)
-qdrant-loader search "meeting notes" --layers personal,team
-```
-
-### MCP Server Search Configuration
-
-```yaml
-mcp_server:
-  search:
-    # Workspace-aware search settings
-    workspace_aware: true
-    
-    # Default search behavior
-    default_search:
-      scope: "accessible"  # current, accessible, all
-      include_metadata: true
-      max_results_per_collection: 5
-    
-    # Search result aggregation
-    aggregation:
-      # Group results by project/collection
-      group_by: "collection"
-      
-      # Sort groups by relevance
-      sort_groups: true
-      
-      # Include collection context in results
-      include_collection_context: true
-    
-    # Search personalization
-    personalization:
-      enabled: true
-      
-      # Boost results from user's active projects
-      active_project_boost: 1.3
-      
-      # Boost recent documents
-      recency_boost: 1.1
-      
-      # Boost frequently accessed documents
-      frequency_boost: 1.2
-```
-
-## 📊 Workspace Analytics
-
-### Usage Tracking
-
-```yaml
-workspace:
-  analytics:
-    enabled: true
-    
-    # Track search patterns
-    search_analytics:
-      enabled: true
-      retention_days: 90
-      
-      # Track popular queries
-      popular_queries: true
-      
-      # Track search success rates
-      success_tracking: true
-    
-    # Track collection usage
-    collection_analytics:
-      enabled: true
-      
-      # Track access patterns
-      access_patterns: true
-      
-      # Track content freshness
-      freshness_tracking: true
-    
-    # User activity tracking
-    user_analytics:
-      enabled: true
-      
-      # Track active users
-      active_users: true
-      
-      # Track collaboration patterns
-      collaboration_tracking: true
-
-# Analytics reporting
-analytics_reporting:
-  # Generate daily reports
-  daily_reports:
-    enabled: true
-    recipients: ["team-leads@company.com"]
-    
-  # Generate weekly summaries
-  weekly_summaries:
-    enabled: true
-    recipients: ["management@company.com"]
-    
-  # Custom dashboards
-  dashboards:
-    team_dashboard:
-      url: "http://grafana.company.com/team-workspace"
-      metrics:
-        - "search_volume"
-        - "collection_usage"
-        - "user_activity"
-```
+- [ ] **Create workspace directory** and navigate to it
+- [ ] **Copy configuration template** to `config.yaml`
+- [ ] **Create environment file** with required credentials
+- [ ] **Configure projects** with your data sources
+- [ ] **Initialize collection** with `qdrant-loader --workspace . init`
+- [ ] **Ingest data** with `qdrant-loader --workspace . ingest`
+- [ ] **Verify setup** with `qdrant-loader project --workspace . list`
+- [ ] **Test search** through MCP server integration
 
 ## 🔗 Related Documentation
 
+- **[Configuration File Reference](./config-file-reference.md)** - Complete YAML configuration options
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
-- **[Configuration File Reference](./config-file-reference.md)** - YAML configuration options
-- **[Security Considerations](./security-considerations.md)** - Security best practices
-- **[Multi-Project Setup](../workflow-examples/multi-project-setup.md)** - Practical multi-project examples
-
-## 📋 Workspace Configuration Checklist
-
-- [ ] **Workspace mode** selected based on your needs
-- [ ] **Project structure** defined (for multi-project mode)
-- [ ] **Team roles** configured (for team mode)
-- [ ] **Access control** set up appropriately
-- [ ] **Data sources** configured for each project/layer
-- [ ] **Collection naming** follows consistent patterns
-- [ ] **Search configuration** optimized for your workspace
-- [ ] **Analytics** enabled for usage tracking
-- [ ] **Backup strategy** implemented
-- [ ] **Team onboarding** process documented
+- **[CLI Reference](../cli-reference/README.md)** - Command-line interface documentation
+- **[MCP Server Setup](../detailed-guides/mcp-server/setup-and-integration.md)** - MCP server integration guide
 
 ---
 
-**Workspace configuration complete!** 🎉
+**Workspace mode provides organized, scalable configuration management for your QDrant Loader projects.** 🎉
 
-Your QDrant Loader workspace is now configured to match your project structure and team needs. This provides organized, scalable knowledge management that grows with your organization.
+This structured approach simplifies project management while maintaining flexibility for complex multi-source configurations.

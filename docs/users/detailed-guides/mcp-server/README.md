@@ -104,8 +104,8 @@ The QDrant Loader MCP Server provides three powerful search tools:
   "parameters": {
     "query": "search terms or question",
     "limit": 10,
-    "threshold": 0.7,
-    "source_filter": "optional source filter"
+    "source_types": ["git", "confluence", "jira", "documentation", "localfile"],
+    "project_ids": ["project1", "project2"]
   }
 }
 ```
@@ -128,9 +128,13 @@ The QDrant Loader MCP Server provides three powerful search tools:
   "description": "Search with document hierarchy context",
   "parameters": {
     "query": "search terms",
-    "include_hierarchy": true,
-    "depth": 3,
-    "organize_by_hierarchy": false
+    "limit": 10,
+    "organize_by_hierarchy": false,
+    "hierarchy_filter": {
+      "depth": 3,
+      "has_children": true,
+      "parent_title": "API Documentation"
+    }
   }
 }
 ```
@@ -153,9 +157,13 @@ The QDrant Loader MCP Server provides three powerful search tools:
   "description": "Search file attachments and parent documents",
   "parameters": {
     "query": "search terms",
-    "file_types": ["pdf", "docx", "xlsx"],
+    "limit": 10,
     "include_parent_context": true,
-    "attachment_filter": {}
+    "attachment_filter": {
+      "file_type": "pdf",
+      "file_size_min": 1024,
+      "file_size_max": 10485760
+    }
   }
 }
 ```
@@ -170,7 +178,7 @@ The QDrant Loader MCP Server provides three powerful search tools:
 
 ### Environment Variables
 
-The MCP server uses the same configuration as QDrant Loader:
+The MCP server uses environment variables for configuration:
 
 ```bash
 # Required
@@ -180,74 +188,28 @@ OPENAI_API_KEY=your-openai-api-key
 # Optional
 QDRANT_COLLECTION_NAME=documents
 QDRANT_API_KEY=your-qdrant-cloud-api-key
-MCP_SERVER_LOG_LEVEL=INFO
-MCP_SERVER_MAX_RESULTS=50
-```
-
-### Configuration File
-
-You can also configure the MCP server via the QDrant Loader config file:
-
-```yaml
-# ~/.qdrant-loader/config.yaml
-mcp_server:
-  # Server settings
-  log_level: "INFO"
-  max_connections: 10
-  timeout: 30
-  
-  # Search configuration
-  search:
-    default_limit: 10
-    max_limit: 100
-    similarity_threshold: 0.7
-    
-    # Result formatting
-    include_metadata: true
-    include_content: true
-    max_content_length: 500
-  
-  # Tool configuration
-  tools:
-    search:
-      enabled: true
-      description: "Semantic search across all documents"
-    
-    hierarchy_search:
-      enabled: true
-      description: "Search with document hierarchy context"
-      max_depth: 5
-    
-    attachment_search:
-      enabled: true
-      description: "Search file attachments"
-      supported_types:
-        - "pdf"
-        - "docx"
-        - "xlsx"
-        - "pptx"
-        - "png"
-        - "jpg"
+MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
 ```
 
 ### Command Line Options
 
+The MCP server supports these command line options:
+
 ```bash
-# Start with custom configuration
-mcp-qdrant-loader --config custom-config.yaml
-
-# Start with specific collection
-mcp-qdrant-loader --collection my-docs
-
 # Start with debug logging
 mcp-qdrant-loader --log-level DEBUG
 
-# List available tools
-mcp-qdrant-loader --list-tools
+# Start with custom configuration file
+mcp-qdrant-loader --config custom-config.yaml
 
-# Test server without starting
-mcp-qdrant-loader --test
+# Show version
+mcp-qdrant-loader --version
+
+# Show help
+mcp-qdrant-loader --help
 ```
+
+**Note**: The MCP server communicates via JSON-RPC over stdio and does not support options like `--collection`, `--list-tools`, `--test`, `--status`, or `--stats`.
 
 ## 🔗 AI Tool Integration Guides
 
@@ -316,10 +278,9 @@ mcp-qdrant-loader --test
 **Key Features**:
 
 - Semantic similarity search
-- Metadata filtering
-- Source-specific search
-- Date range filtering
-- Content type filtering
+- Source type filtering
+- Project-specific search
+- Limit and threshold controls
 
 ### Hierarchy Navigation
 
@@ -329,8 +290,8 @@ mcp-qdrant-loader --test
 
 - Document structure awareness
 - Parent-child relationships
-- Breadcrumb navigation
-- Hierarchical filtering
+- Depth filtering
+- Hierarchical organization
 
 ### Attachment Handling
 
@@ -340,8 +301,8 @@ mcp-qdrant-loader --test
 
 - File type filtering
 - Parent document context
+- File size filtering
 - Attachment metadata
-- Content extraction from files
 
 ## 🎯 Use Cases and Examples
 
@@ -411,9 +372,6 @@ This gives you a complete picture of existing versioning documentation.
 # Check if QDrant is running
 curl http://localhost:6333/health
 
-# Verify configuration
-qdrant-loader config show
-
 # Check environment variables
 env | grep QDRANT
 env | grep OPENAI
@@ -440,17 +398,14 @@ mcp-qdrant-loader --log-level DEBUG
 **Solutions**:
 
 ```bash
-# Verify documents are ingested
-qdrant-loader list
-
-# Test search directly
-qdrant-loader search "test query"
+# Verify documents are ingested using qdrant-loader CLI
+qdrant-loader --workspace . project status
 
 # Check collection status
-qdrant-loader status
+curl http://localhost:6333/collections/documents
 
 # Re-ingest if needed
-qdrant-loader ingest --source local --path docs/
+qdrant-loader --workspace . ingest
 ```
 
 #### Poor Search Quality
@@ -459,63 +414,47 @@ qdrant-loader ingest --source local --path docs/
 
 **Solutions**:
 
-1. Adjust similarity threshold in configuration
-2. Use more specific search terms
-3. Try different search tools (hierarchy, attachment)
-4. Check if documents are properly chunked
+1. Use more specific search terms
+2. Try different search tools (hierarchy, attachment)
+3. Check if documents are properly chunked
+4. Verify the correct collection is being used
 
 ### Performance Optimization
 
 #### For Large Knowledge Bases
 
-```yaml
-mcp_server:
-  search:
-    default_limit: 5      # Fewer results for faster response
-    similarity_threshold: 0.8  # Higher threshold for better quality
-    max_content_length: 300    # Shorter content for faster processing
-```
+- Use smaller `limit` values in search queries
+- Filter by `source_types` or `project_ids` to narrow scope
+- Use specific search tools for targeted queries
 
 #### For Real-time Usage
 
-```yaml
-mcp_server:
-  timeout: 10           # Shorter timeout for responsiveness
-  max_connections: 5    # Limit concurrent connections
-  
-  search:
-    default_limit: 3    # Very few results for speed
-    include_content: false  # Metadata only for speed
-```
+- Keep the MCP server running continuously
+- Use environment variables instead of config files for faster startup
+- Monitor memory usage for large document collections
 
 ## 📊 Monitoring and Analytics
 
-### Server Metrics
+### Server Logs
 
 ```bash
-# Check server status
-mcp-qdrant-loader --status
+# Enable debug logging
+mcp-qdrant-loader --log-level DEBUG
 
-# View connection statistics
-mcp-qdrant-loader --stats
-
-# Monitor search performance
-tail -f ~/.qdrant-loader/logs/mcp-server.log
+# Use log file for Cursor integration
+export MCP_LOG_FILE="/path/to/mcp.log"
+export MCP_DISABLE_CONSOLE_LOGGING="true"
+mcp-qdrant-loader
 ```
 
-### Usage Analytics
+### Usage Monitoring
 
-Track how the MCP server is being used:
+Monitor MCP server usage through:
 
-```yaml
-# Enable analytics in config
-mcp_server:
-  analytics:
-    enabled: true
-    track_queries: true
-    track_performance: true
-    log_file: "~/.qdrant-loader/logs/mcp-analytics.log"
-```
+- Log file analysis
+- QDrant collection metrics
+- AI tool usage patterns
+- Search query performance
 
 ## 🔗 Related Documentation
 

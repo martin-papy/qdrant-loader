@@ -16,6 +16,12 @@ on:
       - completed
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even without recent test artifacts'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -31,6 +37,7 @@ jobs:
   build-docs:
     name: Build Documentation Website
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name != 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +55,45 @@ jobs:
         run: |
           python website/assets/generate_favicons.py
 
-      - name: Get latest test results
+      - name: Get latest test workflow run ID
+        if: github.event_name == 'workflow_dispatch'
+        id: get-workflow-run
+        run: |
+          echo "🔍 Finding latest successful test workflow run on main branch..."
+          
+          # Get the latest successful workflow run for "Test and Coverage" on main branch
+          WORKFLOW_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r '.workflows[] | select(.name == "Test and Coverage") | .id')
+          
+          if [ "$WORKFLOW_RUN" = "null" ] || [ -z "$WORKFLOW_RUN" ]; then
+            echo "❌ Could not find 'Test and Coverage' workflow"
+            exit 1
+          fi
+          
+          LATEST_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_RUN/runs?branch=main&status=completed&conclusion=success&per_page=1" \
+            | jq -r '.workflow_runs[0].id')
+          
+          if [ "$LATEST_RUN" = "null" ] || [ -z "$LATEST_RUN" ]; then
+            echo "❌ No successful test runs found on main branch"
+            if [ "${{ inputs.force_deploy }}" = "true" ]; then
+              echo "⚠️  Force deploy enabled, continuing without test artifacts"
+              echo "workflow_run_id=" >> $GITHUB_OUTPUT
+            else
+              echo "💡 Use 'force_deploy' input to deploy without test artifacts"
+              exit 1
+            fi
+          else
+            echo "✅ Found latest successful test run: $LATEST_RUN"
+            echo "workflow_run_id=$LATEST_RUN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest test results (from workflow_run trigger)
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
@@ -56,13 +101,36 @@ jobs:
           path: test-results/
         continue-on-error: true
 
-      - name: Get latest coverage reports
+      - name: Get latest test results (from manual trigger)
+        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: test-results/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
+        continue-on-error: true
+
+      - name: Get latest coverage reports (from workflow_run trigger)
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
           pattern: coverage-*-${{ github.event.workflow_run.id }}
           path: coverage-artifacts/
           merge-multiple: false
+        continue-on-error: true
+
+      - name: Get latest coverage reports (from manual trigger)
+        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: coverage-artifacts/
+          merge-multiple: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
         continue-on-error: true
 
       - name: Build website using templates

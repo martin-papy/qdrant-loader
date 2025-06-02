@@ -57,58 +57,46 @@ Query: "architecture diagrams"
 
 ## 🔧 Attachment Search Parameters
 
-### Basic Parameters
+### Available Parameters
 
 ```json
 {
   "name": "attachment_search",
   "parameters": {
     "query": "string",              // Required: Search query
-    "limit": 10,                    // Optional: Number of results
-    "file_types": ["pdf", "docx"],  // Optional: Filter by file type
-    "include_parent_context": true  // Optional: Include parent document
+    "limit": 10,                    // Optional: Number of results (default: 10)
+    "include_parent_context": true, // Optional: Include parent document info (default: true)
+    "attachment_filter": {          // Optional: Attachment-specific filters
+      "attachments_only": true,     // Show only file attachments
+      "parent_document_title": "API Documentation", // Filter by parent document title
+      "file_type": "pdf",           // Filter by file type (e.g., 'pdf', 'xlsx', 'png')
+      "file_size_min": 1024,        // Minimum file size in bytes
+      "file_size_max": 10485760,    // Maximum file size in bytes
+      "author": "data-team"         // Filter by attachment author
+    }
   }
 }
 ```
 
-### Advanced Parameters
+### Parameter Details
 
-```json
-{
-  "name": "attachment_search",
-  "parameters": {
-    "query": "performance metrics dashboard",
-    "limit": 15,
-    "file_types": ["pdf", "xlsx", "png", "svg"],
-    "include_parent_context": true,
-    
-    // Attachment-specific filters
-    "attachment_filter": {
-      "file_size_min": 1024,        // Minimum file size (bytes)
-      "file_size_max": 10485760,    // Maximum file size (10MB)
-      "author": "data-team",        // Filter by file author
-      "created_after": "2024-01-01", // Files created after date
-      "created_before": "2024-12-31", // Files created before date
-      "modified_after": "2024-06-01", // Files modified after date
-      "attachments_only": true      // Show only attachments, not parent docs
-    },
-    
-    // Content filters
-    "content_filter": {
-      "has_text": true,             // Files with extractable text
-      "has_images": true,           // Files containing images
-      "has_tables": true,           // Files with table data
-      "language": "en"              // Content language
-    },
-    
-    // Result formatting
-    "include_metadata": true,       // Include file metadata
-    "include_preview": true,        // Include content preview
-    "max_preview_length": 500,      // Limit preview length
-    "show_file_path": true          // Show file location
-  }
-}
-```
+#### Required Parameters
+
+- **`query`** (string): The search query in natural language
+
+#### Optional Parameters
+
+- **`limit`** (integer): Maximum number of results to return (default: 10)
+- **`include_parent_context`** (boolean): Include parent document information (default: true)
+
+#### Attachment Filter Options
+
+- **`attachments_only`** (boolean): Show only file attachments
+- **`parent_document_title`** (string): Filter by parent document title
+- **`file_type`** (string): Filter by file type (e.g., 'pdf', 'xlsx', 'png')
+- **`file_size_min`** (integer): Minimum file size in bytes
+- **`file_size_max`** (integer): Maximum file size in bytes
+- **`author`** (string): Filter by attachment author
 
 ## 📁 Supported File Types
 
@@ -211,46 +199,44 @@ Query: "architecture diagrams"
 
 ```text
 Query: "system architecture diagrams"
-File Types: ["pdf", "png", "svg", "vsd"]
+Parameters: {
+  "attachment_filter": {
+    "file_type": "pdf"
+  }
+}
 
 Results:
 1. 📄 system-architecture-v2.pdf (2.3 MB)
    Parent: Architecture Documentation
    Content: "Microservices architecture with API gateway, service mesh..."
-   Pages: 15, Created: 2024-02-15
+   Author: Architecture Team
    
-2. 🖼️ database-schema.png (856 KB)
+2. 📄 database-schema.pdf (1.1 MB)
    Parent: Database Design
-   OCR Text: "User Table, Product Table, Order Table, Foreign Keys..."
-   Dimensions: 1920x1080, Created: 2024-01-20
-   
-3. 🖼️ api-flow-diagram.svg (234 KB)
-   Parent: API Documentation
-   Content: "Request → Authentication → Rate Limiting → Business Logic..."
-   Vector Graphics: Text elements extracted
+   Content: "User Table, Product Table, Order Table, Foreign Keys..."
+   Author: Database Team
 ```
 
 #### Performance Reports
 
 ```text
 Query: "performance benchmarks and metrics"
-File Types: ["xlsx", "pdf", "csv"]
+Parameters: {
+  "attachment_filter": {
+    "file_type": "xlsx"
+  }
+}
 
 Results:
 1. 📊 q4-performance-report.xlsx (1.2 MB)
    Parent: Quarterly Reports
-   Sheets: ["API Performance", "Database Metrics", "User Analytics"]
-   Data: Response times, throughput, error rates
+   Content: "API Performance, Database Metrics, User Analytics"
+   Author: Performance Team
    
-2. 📄 load-testing-results.pdf (3.1 MB)
-   Parent: Testing Documentation
-   Content: "Load test results show 95th percentile response time..."
-   Charts: Performance graphs and trend analysis
-   
-3. 📊 daily-metrics.csv (456 KB)
+2. 📊 daily-metrics.xlsx (456 KB)
    Parent: Monitoring Dashboard
-   Columns: timestamp, response_time, requests_per_second, error_rate
-   Rows: 8760 (hourly data for one year)
+   Content: "Response times, throughput, error rates"
+   Author: DevOps Team
 ```
 
 ### 2. Content-Based Search
@@ -259,46 +245,44 @@ Results:
 
 ```text
 Query: "API rate limits and throttling policies"
-File Types: ["pdf", "docx", "json", "yaml"]
+Parameters: {
+  "limit": 10
+}
 
 Results:
 1. 📄 api-rate-limiting-policy.pdf (1.8 MB)
    Parent: API Documentation
    Content: "Rate limiting is implemented using a token bucket algorithm..."
-   Sections: Policy Overview, Implementation, Monitoring
    
 2. 📄 rate-limit-config.yaml (12 KB)
    Parent: Configuration Files
    Content: "default_rate: 1000/hour, premium_rate: 5000/hour..."
-   Structure: Hierarchical rate limit definitions
    
 3. 📄 throttling-implementation.docx (890 KB)
    Parent: Development Guidelines
    Content: "Implementation guide for rate limiting middleware..."
-   Sections: Setup, Configuration, Testing
 ```
 
 #### Technical Specifications
 
 ```text
 Query: "database schema and table structures"
-File Types: ["sql", "png", "pdf", "xlsx"]
+Parameters: {
+  "limit": 15
+}
 
 Results:
 1. 📄 database-schema.sql (45 KB)
    Parent: Database Documentation
    Content: "CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR..."
-   Tables: 23 tables with relationships
    
 2. 🖼️ erd-diagram.png (1.1 MB)
    Parent: Database Design
-   OCR Text: "Users, Products, Orders, Payments, Relationships..."
-   Diagram: Entity Relationship Diagram
+   Content: "Users, Products, Orders, Payments, Relationships..."
    
 3. 📊 table-documentation.xlsx (567 KB)
    Parent: Database Documentation
-   Sheets: ["Tables", "Columns", "Indexes", "Constraints"]
-   Data: Complete schema documentation
+   Content: "Complete schema documentation with tables, columns, indexes"
 ```
 
 ### 3. Author and Date Filtering
@@ -307,54 +291,42 @@ Results:
 
 ```text
 Query: "deployment procedures"
-Filters: {
-  "author": "devops-team",
-  "created_after": "2024-01-01",
-  "file_types": ["pdf", "docx", "md"]
+Parameters: {
+  "attachment_filter": {
+    "author": "devops-team"
+  }
 }
 
 Results:
 1. 📄 deployment-runbook-v3.pdf (2.1 MB)
    Author: devops-team
-   Created: 2024-03-15
    Parent: Operations Documentation
    Content: "Updated deployment procedures for Kubernetes..."
    
 2. 📄 rollback-procedures.docx (678 KB)
    Author: devops-team
-   Created: 2024-02-20
    Parent: Emergency Procedures
    Content: "Step-by-step rollback process for production..."
-   
-3. 📄 monitoring-setup.md (23 KB)
-   Author: devops-team
-   Created: 2024-01-25
-   Parent: Monitoring Documentation
-   Content: "Setting up Prometheus and Grafana for..."
 ```
 
-#### Historical Documentation
+#### Large Documents
 
 ```text
-Query: "legacy system documentation"
-Filters: {
-  "created_before": "2022-01-01",
-  "file_types": ["pdf", "doc"],
-  "file_size_min": 1048576  // Files larger than 1MB
+Query: "comprehensive documentation"
+Parameters: {
+  "attachment_filter": {
+    "file_size_min": 1048576  // Files larger than 1MB
+  }
 }
 
 Results:
-1. 📄 legacy-api-specification.pdf (5.2 MB)
-   Created: 2021-06-15
-   Parent: Historical Documentation
-   Content: "Legacy REST API v1.0 specification..."
-   Status: Archived, superseded by v2.0
+1. 📄 complete-api-specification.pdf (5.2 MB)
+   Parent: API Documentation
+   Content: "Complete REST API specification with examples..."
    
-2. 📄 old-deployment-guide.doc (3.8 MB)
-   Created: 2020-11-30
-   Parent: Archived Procedures
-   Content: "Manual deployment process for legacy systems..."
-   Status: Replaced by automated CI/CD
+2. 📄 system-architecture-guide.pdf (3.8 MB)
+   Parent: Architecture Documentation
+   Content: "Comprehensive system architecture documentation..."
 ```
 
 ## 🔧 Advanced Attachment Features
@@ -394,16 +366,9 @@ Rich metadata is extracted and made searchable:
   "filename": "api-performance-analysis.xlsx",
   "file_type": "xlsx",
   "size": 2457600,
-  "created": "2024-01-15T10:30:00Z",
-  "modified": "2024-01-20T14:45:00Z",
   "author": "performance-team",
-  "sheets": ["Summary", "API Endpoints", "Database Queries", "Trends"],
-  "row_count": 15420,
-  "column_count": 12,
-  "has_charts": true,
-  "has_formulas": true,
   "parent_document": "Performance Testing Results",
-  "tags": ["performance", "api", "metrics", "analysis"]
+  "attachment_context": "File: api-performance-analysis.xlsx | Size: 2.3 MB | Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet | Author: performance-team"
 }
 ```
 
@@ -455,7 +420,7 @@ Relationship Types:
 ```text
 ✅ "Find Excel files with performance metrics"
 ✅ "Show me PDF documents about deployment"
-✅ "Search for architecture diagrams in PNG or SVG format"
+✅ "Search for architecture diagrams in PNG format"
 
 ❌ "performance"
 ❌ "deployment"
@@ -476,17 +441,10 @@ Relationship Types:
 
 ```json
 {
-  "file_size_min": 1024,        // Exclude tiny files
-  "file_size_max": 52428800     // Exclude files larger than 50MB
-}
-```
-
-#### Date Range Filtering
-
-```json
-{
-  "created_after": "2024-01-01",   // Recent files only
-  "modified_after": "2024-06-01"   // Recently updated files
+  "attachment_filter": {
+    "file_size_min": 1024,        // Exclude tiny files
+    "file_size_max": 52428800     // Exclude files larger than 50MB
+  }
 }
 ```
 
@@ -494,8 +452,9 @@ Relationship Types:
 
 ```json
 {
-  "author": "architecture-team",   // Specific team
-  "author": "john.doe"            // Specific person
+  "attachment_filter": {
+    "author": "architecture-team"   // Specific team
+  }
 }
 ```
 
@@ -505,26 +464,18 @@ Relationship Types:
 
 ```json
 {
-  "file_types": ["pdf", "docx"],  // Only search specific types
-  "attachments_only": true        // Skip parent document content
+  "attachment_filter": {
+    "file_type": "pdf",           // Only search specific types
+    "attachments_only": true      // Skip parent document content
+  }
 }
 ```
 
-#### Control Preview Length
+#### Control Result Size
 
 ```json
 {
-  "max_preview_length": 200,      // Shorter previews
-  "include_preview": false        // No content preview
-}
-```
-
-#### Cache Settings
-
-```json
-{
-  "cache_attachments": true,      // Cache attachment metadata
-  "cache_ttl": 3600              // Cache for 1 hour
+  "limit": 5                      // Fewer results for faster response
 }
 ```
 
@@ -537,10 +488,9 @@ Relationship Types:
 ```text
 📄 api-documentation.pdf (2.3 MB)
 ├── 📊 Metadata
-│   ├── Pages: 42
 │   ├── Author: technical-writing-team
-│   ├── Created: 2024-01-15T10:30:00Z
-│   └── Modified: 2024-01-20T14:45:00Z
+│   ├── File Type: application/pdf
+│   └── Size: 2.3 MB
 ├── 🔍 Content Preview
 │   └── "This document provides comprehensive API documentation..."
 ├── 📁 Parent Context
@@ -594,7 +544,11 @@ Query: "deployment procedures"
 
 ```text
 Query: "deployment scripts and configurations"
-File Types: ["sh", "yaml", "json", "sql"]
+Parameters: {
+  "attachment_filter": {
+    "file_type": "yaml"
+  }
+}
 → Find specific implementation files
 ```
 
@@ -632,7 +586,7 @@ Query: "deployment documentation structure"
 
 - [ ] **Understand file types** in your knowledge base
 - [ ] **Use file-type specific queries** for targeted search
-- [ ] **Apply appropriate filters** (size, date, author)
+- [ ] **Apply appropriate filters** (size, author, file type)
 - [ ] **Include parent context** for complete understanding
 - [ ] **Check file metadata** for quality and relevance
 - [ ] **Combine with other search tools** for comprehensive results

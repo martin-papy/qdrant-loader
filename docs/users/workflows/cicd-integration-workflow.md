@@ -1,1099 +1,942 @@
 # CI/CD Integration Workflow
 
-This comprehensive guide shows how to implement automated documentation pipelines and continuous knowledge base updates using QDrant Loader in CI/CD environments. Whether you're setting up automated documentation deployment, multi-environment knowledge bases, or continuous integration for documentation, this workflow provides practical solutions for modern DevOps practices.
+This comprehensive guide shows how to implement automated documentation pipelines and continuous knowledge base updates using QDrant Loader in CI/CD environments. This workflow is based on the actual CI/CD pipelines used in the QDrant Loader project itself, providing real-world examples and best practices.
 
 ## 🎯 Overview
 
-The CI/CD integration workflow focuses on automating documentation processes, ensuring knowledge bases stay current with code changes, and implementing robust deployment pipelines for documentation systems. This workflow is essential for teams that want to maintain up-to-date documentation without manual intervention.
+The QDrant Loader project uses a sophisticated CI/CD pipeline with three main workflows:
+
+1. **Test and Coverage** - Automated testing for all components
+2. **Documentation Website** - Automated documentation deployment  
+3. **Package Publishing** - Automated PyPI releases
+
+This workflow ensures code quality, documentation accuracy, and seamless deployments while maintaining up-to-date knowledge bases.
 
 ### Workflow Benefits
 
-```
-🔄 Automated Updates      - Documentation stays current with code
-🚀 Continuous Deployment  - Seamless multi-environment deployments
-🔍 Quality Assurance      - Automated testing and validation
-📊 Pipeline Monitoring    - Track deployment success and performance
-🛡️ Rollback Capabilities  - Safe deployment with quick recovery
+```text
+🔄 Automated Testing     - Comprehensive test coverage for all components
+🚀 Documentation Deploy  - Automatic GitHub Pages deployment with manual override
+📦 Package Publishing    - Automated PyPI releases with proper versioning
+🔍 Quality Assurance     - Multi-package testing with coverage reports
+📊 Artifact Management   - Test results and coverage artifacts with intelligent discovery
+🛡️ Security & Permissions - Minimal required permissions for each job
+⚡ Manual Deployment     - On-demand documentation deployment for hotfixes
+🔧 Force Deploy Option   - Emergency deployment without waiting for test artifacts
 ```
 
 ## 🏗️ Architecture Overview
 
 ```mermaid
 graph TD
-    A[Code Repository] --> B[CI/CD Pipeline]
-    B --> C[Build Stage]
-    C --> D[Test Stage]
-    D --> E[Documentation Update]
-    E --> F[QDrant Loader]
-    F --> G[Staging Environment]
-    G --> H[Production Environment]
+    A[Code Push/PR] --> B[Test and Coverage Workflow]
+    B --> C[Test QDrant Loader]
+    B --> D[Test MCP Server]
+    B --> E[Test Website Build]
     
-    I[Pull Request] --> J[Preview Environment]
-    J --> K[Review Process]
-    K --> L[Merge to Main]
+    F[Main Branch Push] --> G[Documentation Website Workflow]
+    G --> H[Build Documentation]
+    H --> I[Deploy to GitHub Pages]
     
-    M[Monitoring] --> N[Alerts]
-    O[Rollback] --> G
-    O --> H
+    J[Release Created] --> K[Publish Packages Workflow]
+    K --> L[Determine Package]
+    L --> M[Publish to PyPI]
+    
+    B --> N[Upload Coverage Artifacts]
+    N --> G
+    
+    O[Workflow Run Completion] --> G
 ```
 
 ## 📋 Prerequisites
 
-### Required Tools
+### Repository Setup
 
-- **CI/CD Platform** (GitHub Actions, GitLab CI, Jenkins)
-- **Container Registry** (Docker Hub, ECR, GCR)
-- **QDrant instances** (staging and production)
-- **Monitoring tools** (Prometheus, Grafana)
-- **Secret management** (Vault, CI/CD secrets)
+- **GitHub repository** with proper branch protection
+- **GitHub Pages** enabled for documentation
+- **PyPI accounts** for package publishing
+- **GitHub Secrets** configured for external services
 
-### Infrastructure Setup
+### Required Secrets
 
+```bash
+# QDrant Configuration
+QDRANT_URL=your_qdrant_instance_url
+QDRANT_API_KEY=your_qdrant_api_key
+QDRANT_COLLECTION_NAME=your_test_collection_name
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key
+
+# Optional: Data Source Credentials
+REPO_TOKEN=your_github_token
+CONFLUENCE_TOKEN=your_confluence_token
+CONFLUENCE_EMAIL=your_confluence_email
+JIRA_TOKEN=your_jira_token
+JIRA_EMAIL=your_jira_email
 ```
-🏗️ Infrastructure
-├── 🔧 Development Environment
-├── 🧪 Staging Environment
-├── 🚀 Production Environment
-└── 📊 Monitoring & Logging
-```
 
-## 🚀 Step-by-Step Implementation
+## 🚀 Actual CI/CD Implementation
 
-### Step 1: Pipeline Configuration
+### Workflow 1: Test and Coverage
 
-#### 1.1 GitHub Actions Pipeline
+The test workflow runs on every push and pull request, ensuring code quality across all components.
 
 ```yaml
-# .github/workflows/documentation-pipeline.yml
-name: Documentation CI/CD Pipeline
+# .github/workflows/test.yml
+name: Test and Coverage
 
 on:
   push:
-    branches: [main, develop]
-    paths: ['docs/**', 'src/**', '*.md']
+    branches: [ main, develop, feature/*, bugfix/*, release/* ]
   pull_request:
-    branches: [main]
-    paths: ['docs/**', 'src/**', '*.md']
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    branches: [ main, develop, feature/*, bugfix/*, release/* ]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/qdrant-loader
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: "test-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
-  detect-changes:
+  test-loader:
+    name: Test QDrant Loader
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          # Install ffmpeg for MarkItDown audio processing
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/qdrant-loader[dev]
+
+      - name: Create test configuration
+        run: |
+          cd packages/qdrant-loader
+          cp tests/.env.test.template tests/.env.test
+          cp tests/config.test.template.yaml tests/config.test.yaml
+          
+          # Configure with GitHub secrets
+          sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
+          sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
+          sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
+
+      - name: Run tests with coverage
+        run: |
+          cd packages/qdrant-loader
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-loader-${{ github.run_id }}
+          path: |
+            htmlcov-loader
+            coverage-loader.xml
+          retention-days: 30
+
+  test-mcp-server:
+    name: Test MCP Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/qdrant-loader[dev]
+          pip install -e packages/qdrant-loader-mcp-server[dev]
+
+      - name: Run MCP server tests
+        run: |
+          cd packages/qdrant-loader-mcp-server
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --cov-report=html:../../htmlcov-mcp -v
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Upload MCP coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-mcp-${{ github.run_id }}
+          path: |
+            htmlcov-mcp
+            coverage-mcp.xml
+          retention-days: 30
+
+  test-website:
+    name: Test Website Build System
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install website dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-mock
+          pip install markdown pygments tomli
+          pip install cairosvg pillow || echo "Optional favicon dependencies not available"
+
+      - name: Run website tests
+        run: |
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
+          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website -v
+
+      - name: Upload website coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-website-${{ github.run_id }}
+          path: |
+            htmlcov-website
+            coverage-website.xml
+          retention-days: 30
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-loader, test-mcp-server, test-website]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "=== Test Results Summary ==="
+          echo "QDrant Loader Tests: ${{ needs.test-loader.result }}"
+          echo "MCP Server Tests: ${{ needs.test-mcp-server.result }}"
+          echo "Website Build Tests: ${{ needs.test-website.result }}"
+          
+          if [ "${{ needs.test-loader.result }}" != "success" ] || [ "${{ needs.test-mcp-server.result }}" != "success" ] || [ "${{ needs.test-website.result }}" != "success" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi
+
+      - name: Create test status artifact
+        run: |
+          mkdir -p test-results
+          echo "{
+            \"loader_status\": \"${{ needs.test-loader.result }}\",
+            \"mcp_status\": \"${{ needs.test-mcp-server.result }}\",
+            \"website_status\": \"${{ needs.test-website.result }}\",
+            \"overall_status\": \"${{ (needs.test-loader.result == 'success' && needs.test-mcp-server.result == 'success' && needs.test-website.result == 'success') && 'success' || 'failure' }}\",
+            \"run_id\": \"${{ github.run_id }}\",
+            \"commit_sha\": \"${{ github.sha }}\",
+            \"branch\": \"${{ github.ref_name }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+          }" > test-results/status.json
+
+      - name: Upload test status artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-status-${{ github.run_id }}
+          path: test-results/
+          retention-days: 30
+```
+
+### Workflow 2: Documentation Website
+
+The documentation workflow builds and deploys the website to GitHub Pages, integrating test results and coverage reports.
+
+```yaml
+# .github/workflows/docs.yml
+name: Documentation Website
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'RELEASE_NOTES.md'
+      - 'packages/*/README.md'
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  workflow_run:
+    workflows: ["Test and Coverage"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even without recent test artifacts'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: "docs-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build Documentation Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+
+      - name: Generate favicons
+        run: |
+          python website/assets/generate_favicons.py
+
+      - name: Get latest test workflow run ID
+        if: github.event_name == 'workflow_dispatch'
+        id: get-workflow-run
+        run: |
+          echo "🔍 Finding latest successful test workflow run on main branch..."
+          
+          # Get the latest successful workflow run for "Test and Coverage" on main branch
+          WORKFLOW_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r '.workflows[] | select(.name == "Test and Coverage") | .id')
+          
+          if [ "$WORKFLOW_RUN" = "null" ] || [ -z "$WORKFLOW_RUN" ]; then
+            echo "❌ Could not find 'Test and Coverage' workflow"
+            exit 1
+          fi
+          
+          LATEST_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_RUN/runs?branch=main&status=completed&conclusion=success&per_page=1" \
+            | jq -r '.workflow_runs[0].id')
+          
+          if [ "$LATEST_RUN" = "null" ] || [ -z "$LATEST_RUN" ]; then
+            echo "❌ No successful test runs found on main branch"
+            if [ "${{ inputs.force_deploy }}" = "true" ]; then
+              echo "⚠️  Force deploy enabled, continuing without test artifacts"
+              echo "workflow_run_id=" >> $GITHUB_OUTPUT
+            else
+              echo "💡 Use 'force_deploy' input to deploy without test artifacts"
+              exit 1
+            fi
+          else
+            echo "✅ Found latest successful test run: $LATEST_RUN"
+            echo "workflow_run_id=$LATEST_RUN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest test results (from workflow_run trigger)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status-${{ github.event.workflow_run.id }}
+          path: test-results/
+        continue-on-error: true
+
+      - name: Get latest test results (from manual trigger)
+        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: test-results/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
+        continue-on-error: true
+
+      - name: Get latest coverage reports (from workflow_run trigger)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ github.event.workflow_run.id }}
+          path: coverage-artifacts/
+          merge-multiple: false
+        continue-on-error: true
+
+      - name: Get latest coverage reports (from manual trigger)
+        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: coverage-artifacts/
+          merge-multiple: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
+        continue-on-error: true
+
+      - name: Build website using templates
+        run: |
+          echo "🚀 Building website using template system"
+          python website/build.py \
+            --output site \
+            --templates website/templates \
+            --coverage-artifacts coverage-artifacts/ \
+            --test-results test-results/ \
+            --base-url ""
+
+      - name: Verify website build
+        run: |
+          echo "=== Website Build Verification ==="
+          echo "📁 Site directory contents:"
+          find site -type f -name "*.html" | head -10
+          echo ""
+          echo "📊 Total files built: $(find site -type f | wc -l)"
+          echo "📄 HTML pages: $(find site -name "*.html" | wc -l)"
+          
+          # Verify critical pages exist
+          if [ -f "site/index.html" ]; then
+            echo "✅ Homepage built successfully"
+          else
+            echo "❌ Homepage missing"
+            exit 1
+          fi
+          
+          if [ -f "site/docs/index.html" ]; then
+            echo "✅ Documentation index built successfully"
+          else
+            echo "❌ Documentation index missing"
+            exit 1
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+### Workflow 3: Package Publishing
+
+The publishing workflow automatically publishes packages to PyPI when releases are created.
+
+```yaml
+# .github/workflows/publish.yml
+name: Publish Packages to PyPI
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  determine-package:
+    name: Determine which package to publish
     runs-on: ubuntu-latest
     outputs:
-      docs-changed: ${{ steps.changes.outputs.docs }}
-      code-changed: ${{ steps.changes.outputs.code }}
-      config-changed: ${{ steps.changes.outputs.config }}
+      publish-loader: ${{ steps.check.outputs.publish-loader }}
+      publish-mcp-server: ${{ steps.check.outputs.publish-mcp-server }}
     steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v2
-      id: changes
-      with:
-        filters: |
-          docs:
-            - 'docs/**'
-            - '*.md'
-          code:
-            - 'src/**'
-            - 'api/**'
-          config:
-            - 'qdrant-loader.yaml'
-            - '.github/workflows/**'
+      - name: Check release tag
+        id: check
+        run: |
+          if [[ "${{ github.event.release.tag_name }}" == qdrant-loader-mcp-server-* ]]; then
+            echo "publish-loader=false" >> $GITHUB_OUTPUT
+            echo "publish-mcp-server=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.release.tag_name }}" == qdrant-loader-* ]]; then
+            echo "publish-loader=true" >> $GITHUB_OUTPUT
+            echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
+          else
+            echo "publish-loader=false" >> $GITHUB_OUTPUT
+            echo "publish-mcp-server=false" >> $GITHUB_OUTPUT
+          fi
 
-  validate-configuration:
+  publish-loader:
+    name: Publish QDrant Loader to PyPI
     runs-on: ubuntu-latest
-    needs: detect-changes
-    if: needs.detect-changes.outputs.config-changed == 'true'
+    needs: determine-package
+    if: needs.determine-package.outputs.publish-loader == 'true'
+    environment:
+      name: ${{ vars.PYPI_ENVIRONMENT || 'pypi-publish' }}
+      url: https://pypi.org/p/qdrant-loader
+    permissions:
+      id-token: write
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    - name: Install QDrant Loader
-      run: pip install qdrant-loader
-    - name: Validate configuration
-      run: qdrant-loader config validate
-    - name: Test connections
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_STAGING_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_STAGING_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: qdrant-loader config test --connections qdrant,openai
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          
+      - name: Build loader package
+        run: |
+          cd packages/qdrant-loader
+          python -m build
+          
+      - name: Publish loader package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/qdrant-loader/dist/
 
-  build-and-test:
+  publish-mcp-server:
+    name: Publish MCP Server to PyPI
     runs-on: ubuntu-latest
-    needs: [detect-changes, validate-configuration]
-    if: always() && (needs.detect-changes.outputs.docs-changed == 'true' || needs.detect-changes.outputs.code-changed == 'true')
+    needs: determine-package
+    if: needs.determine-package.outputs.publish-mcp-server == 'true'
+    environment:
+      name: ${{ vars.PYPI_ENVIRONMENT || 'pypi-publish' }}
+      url: https://pypi.org/p/qdrant-loader-mcp-server
+    permissions:
+      id-token: write
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        pip install qdrant-loader
-        pip install pytest pytest-cov
-    
-    - name: Run documentation tests
-      run: |
-        # Test documentation quality
-        python scripts/test-docs-quality.py
-        
-        # Test configuration validity
-        qdrant-loader config validate
-        
-        # Test sample data loading
-        qdrant-loader load --source local --path ./test-data --dry-run
-    
-    - name: Build documentation metrics
-      run: |
-        python scripts/generate-docs-metrics.py
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results
-        path: test-results/
-
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [detect-changes, build-and-test]
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    environment: staging
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install QDrant Loader
-      run: pip install qdrant-loader
-    
-    - name: Deploy to staging
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_STAGING_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_STAGING_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        # Update staging environment
-        qdrant-loader update --source git --collection docs_staging
-        
-        # Verify deployment
-        qdrant-loader status --collection docs_staging --detailed
-    
-    - name: Run staging tests
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_STAGING_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_STAGING_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        python scripts/test-staging-deployment.py
-    
-    - name: Generate staging report
-      run: |
-        qdrant-loader status --collection docs_staging --output json > staging-report.json
-    
-    - name: Upload staging report
-      uses: actions/upload-artifact@v3
-      with:
-        name: staging-report
-        path: staging-report.json
-
-  deploy-production:
-    runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install QDrant Loader
-      run: pip install qdrant-loader
-    
-    - name: Backup production
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_PROD_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_PROD_API_KEY }}
-      run: |
-        qdrant-loader backup --collection docs_production --output production-backup-${{ github.sha }}.tar.gz
-    
-    - name: Deploy to production
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_PROD_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_PROD_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        # Update production environment
-        qdrant-loader update --source git --collection docs_production
-        
-        # Optimize after deployment
-        qdrant-loader optimize --collection docs_production
-    
-    - name: Run production tests
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_PROD_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_PROD_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        python scripts/test-production-deployment.py
-    
-    - name: Notify deployment
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        text: "Documentation successfully deployed to production"
-
-  preview-environment:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install QDrant Loader
-      run: pip install qdrant-loader
-    
-    - name: Create preview environment
-      env:
-        QDRANT_URL: ${{ secrets.QDRANT_STAGING_URL }}
-        QDRANT_API_KEY: ${{ secrets.QDRANT_STAGING_API_KEY }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: |
-        # Create preview collection
-        PREVIEW_COLLECTION="docs_preview_pr_${{ github.event.number }}"
-        qdrant-loader load --source git --collection "$PREVIEW_COLLECTION"
-        
-        # Generate preview report
-        echo "Preview environment created: $PREVIEW_COLLECTION" > preview-info.txt
-        qdrant-loader status --collection "$PREVIEW_COLLECTION" >> preview-info.txt
-    
-    - name: Comment PR
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const fs = require('fs');
-          const previewInfo = fs.readFileSync('preview-info.txt', 'utf8');
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `## 📖 Documentation Preview\n\n\`\`\`\n${previewInfo}\n\`\`\``
-          });
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          
+      - name: Build MCP server package
+        run: |
+          cd packages/qdrant-loader-mcp-server
+          python -m build
+          
+      - name: Publish MCP server package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/qdrant-loader-mcp-server/dist/
 ```
 
-#### 1.2 GitLab CI Pipeline
+## 🔧 Implementing Similar Workflows
+
+### Manual Documentation Deployment
+
+The documentation workflow includes a **manual deployment capability** for cases where you need to deploy documentation fixes immediately without waiting for automatic triggers.
+
+#### When to Use Manual Deployment
+
+- **Documentation hotfixes** - Critical documentation errors that need immediate correction
+- **Content updates** - Important content changes that should be deployed quickly
+- **Testing changes** - Verifying documentation changes in the live environment
+- **Emergency updates** - Urgent documentation updates outside normal workflow triggers
+
+#### Manual Deployment Options
+
+**Option 1: Deploy with Latest Test Artifacts**
+
+```bash
+# Trigger manual deployment using GitHub CLI
+gh workflow run "Documentation Website"
+
+# Or via GitHub web interface:
+# 1. Go to Actions tab
+# 2. Select "Documentation Website" workflow
+# 3. Click "Run workflow"
+# 4. Leave "Force deployment" unchecked (default)
+```
+
+**Option 2: Force Deploy Without Test Artifacts**
+
+```bash
+# Force deployment even without recent test results
+gh workflow run "Documentation Website" \
+  --field force_deploy=true
+
+# Or via GitHub web interface:
+# 1. Go to Actions tab
+# 2. Select "Documentation Website" workflow  
+# 3. Click "Run workflow"
+# 4. Check "Force deployment even without recent test artifacts"
+```
+
+#### Manual Deployment Workflow Logic
+
+The manual deployment includes intelligent artifact handling:
+
+1. **Artifact Discovery**: Automatically finds the latest successful test run
+2. **Graceful Fallback**: Continues without artifacts if `force_deploy=true`
+3. **Safety Checks**: Validates critical pages exist before deployment
+4. **Status Reporting**: Provides clear feedback about artifact availability
 
 ```yaml
-# .gitlab-ci.yml
-stages:
-  - validate
-  - build
-  - test
-  - deploy-staging
-  - deploy-production
-  - cleanup
+# Key features of manual deployment
+- name: Get latest test workflow run ID
+  if: github.event_name == 'workflow_dispatch'
+  run: |
+    # Automatically finds latest successful test run
+    # Falls back gracefully if force_deploy=true
+    # Provides clear status messages
+```
 
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  DOCKER_DRIVER: overlay2
+#### Best Practices for Manual Deployment
 
-cache:
-  paths:
-    - .cache/pip/
+1. **Use Standard Deployment** when possible (waits for test artifacts)
+2. **Use Force Deployment** only for:
+   - Documentation-only changes
+   - Emergency fixes
+   - When test pipeline is temporarily broken
+3. **Verify deployment** by checking the live site after deployment
+4. **Monitor workflow logs** for any deployment issues
 
-.qdrant_loader_setup: &qdrant_loader_setup
-  - pip install qdrant-loader
-  - qdrant-loader config validate
+### Step 1: Repository Setup
 
-validate-config:
-  stage: validate
-  image: python:3.11
-  script:
-    - *qdrant_loader_setup
-  only:
-    changes:
-      - qdrant-loader.yaml
-      - .gitlab-ci.yml
+#### 1.1 Directory Structure
 
-build-and-test:
-  stage: build
-  image: python:3.11
-  script:
-    - *qdrant_loader_setup
-    - python scripts/test-docs-quality.py
-    - qdrant-loader load --source local --path ./test-data --dry-run
-  artifacts:
-    reports:
-      junit: test-results/junit.xml
+```
+your-qdrant-project/
+├── .github/
+│   └── workflows/
+│       ├── test.yml
+│       ├── docs.yml
+│       └── publish.yml
+├── packages/
+│   └── your-package/
+│       ├── src/
+│       ├── tests/
+│       └── pyproject.toml
+├── docs/
+├── website/
+└── config.yaml
+```
+
+#### 1.2 Required Files
+
+```bash
+# Test configuration templates
+packages/your-package/tests/.env.test.template
+packages/your-package/tests/config.test.template.yaml
+
+# Package configuration
+packages/your-package/pyproject.toml
+
+# Documentation configuration
+website/build.py
+website/templates/
+```
+
+### Step 2: Adapting the Workflows
+
+#### 2.1 Customize Test Workflow
+
+```yaml
+# Modify for your package structure
+- name: Install dependencies
+  run: |
+    python -m pip install --upgrade pip
+    pip install -e packages/your-package[dev]
+
+# Add your specific test requirements
+- name: Install system dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y your-system-deps
+
+# Configure your test environment
+- name: Create test configuration
+  run: |
+    cd packages/your-package
+    # Copy and configure your test templates
+    cp tests/.env.test.template tests/.env.test
+    # Set your specific environment variables
+```
+
+#### 2.2 Customize Documentation Workflow
+
+```yaml
+# Modify paths for your documentation
+on:
+  push:
+    branches: [ main ]
     paths:
-      - test-results/
-  only:
-    changes:
-      - docs/**/*
-      - src/**/*
-      - "*.md"
+      - 'docs/**'
+      - 'your-specific-paths/**'
 
-deploy-staging:
-  stage: deploy-staging
-  image: python:3.11
-  script:
-    - *qdrant_loader_setup
-    - qdrant-loader update --source git --collection docs_staging
-    - python scripts/test-staging-deployment.py
-  environment:
-    name: staging
-    url: https://docs-staging.company.com
-  only:
-    - develop
-    - main
-
-deploy-production:
-  stage: deploy-production
-  image: python:3.11
-  script:
-    - *qdrant_loader_setup
-    - qdrant-loader backup --collection docs_production --output backup-$CI_COMMIT_SHA.tar.gz
-    - qdrant-loader update --source git --collection docs_production
-    - qdrant-loader optimize --collection docs_production
-    - python scripts/test-production-deployment.py
-  environment:
-    name: production
-    url: https://docs.company.com
-  when: manual
-  only:
-    - main
-
-cleanup-preview:
-  stage: cleanup
-  image: python:3.11
-  script:
-    - *qdrant_loader_setup
-    - |
-      if [ "$CI_MERGE_REQUEST_ID" ]; then
-        PREVIEW_COLLECTION="docs_preview_mr_$CI_MERGE_REQUEST_ID"
-        qdrant-loader collection delete "$PREVIEW_COLLECTION" || true
-      fi
-  when: manual
-  only:
-    - merge_requests
+# Adapt build process
+- name: Build your documentation
+  run: |
+    # Your specific documentation build process
+    python your-build-script.py
 ```
 
-### Step 2: Testing and Quality Assurance
-
-#### 2.1 Documentation Quality Tests
-
-```python
-# scripts/test-docs-quality.py
-#!/usr/bin/env python3
-"""
-Documentation quality testing script for CI/CD pipeline.
-"""
-
-import os
-import sys
-import json
-import subprocess
-from pathlib import Path
-from typing import List, Dict, Any
-
-class DocumentationTester:
-    def __init__(self, docs_path: str = "docs"):
-        self.docs_path = Path(docs_path)
-        self.errors = []
-        self.warnings = []
-        
-    def run_all_tests(self) -> bool:
-        """Run all documentation quality tests."""
-        print("🧪 Running documentation quality tests...")
-        
-        # Test markdown files
-        self.test_markdown_quality()
-        
-        # Test links
-        self.test_links()
-        
-        # Test configuration
-        self.test_configuration()
-        
-        # Test content completeness
-        self.test_content_completeness()
-        
-        # Generate report
-        self.generate_report()
-        
-        return len(self.errors) == 0
-    
-    def test_markdown_quality(self):
-        """Test markdown file quality."""
-        print("📝 Testing markdown quality...")
-        
-        md_files = list(self.docs_path.rglob("*.md"))
-        
-        for md_file in md_files:
-            # Check file size
-            if md_file.stat().st_size == 0:
-                self.errors.append(f"Empty file: {md_file}")
-                continue
-            
-            # Check basic structure
-            content = md_file.read_text(encoding='utf-8')
-            
-            if not content.startswith('#'):
-                self.warnings.append(f"No main heading: {md_file}")
-            
-            # Check for common issues
-            if '](http' in content:
-                # Check for broken links (basic)
-                import re
-                links = re.findall(r'\[([^\]]+)\]\((http[^)]+)\)', content)
-                for text, url in links:
-                    if 'localhost' in url:
-                        self.warnings.append(f"Localhost link in {md_file}: {url}")
-    
-    def test_links(self):
-        """Test internal and external links."""
-        print("🔗 Testing links...")
-        
-        # This would typically use a more sophisticated link checker
-        # For now, we'll do basic validation
-        md_files = list(self.docs_path.rglob("*.md"))
-        
-        for md_file in md_files:
-            content = md_file.read_text(encoding='utf-8')
-            
-            # Check for relative links
-            import re
-            relative_links = re.findall(r'\[([^\]]+)\]\(([^http][^)]+)\)', content)
-            
-            for text, link in relative_links:
-                if link.startswith('./') or link.startswith('../'):
-                    target_path = (md_file.parent / link).resolve()
-                    if not target_path.exists():
-                        self.errors.append(f"Broken relative link in {md_file}: {link}")
-    
-    def test_configuration(self):
-        """Test QDrant Loader configuration."""
-        print("⚙️ Testing configuration...")
-        
-        try:
-            result = subprocess.run(
-                ['qdrant-loader', 'config', 'validate'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            print("✅ Configuration validation passed")
-        except subprocess.CalledProcessError as e:
-            self.errors.append(f"Configuration validation failed: {e.stderr}")
-    
-    def test_content_completeness(self):
-        """Test content completeness."""
-        print("📋 Testing content completeness...")
-        
-        required_files = [
-            "README.md",
-            "docs/getting-started/installation.md",
-            "docs/getting-started/quick-start.md",
-        ]
-        
-        for required_file in required_files:
-            file_path = Path(required_file)
-            if not file_path.exists():
-                self.errors.append(f"Missing required file: {required_file}")
-    
-    def generate_report(self):
-        """Generate test report."""
-        report = {
-            "timestamp": subprocess.check_output(['date', '-u', '+%Y-%m-%dT%H:%M:%SZ']).decode().strip(),
-            "errors": self.errors,
-            "warnings": self.warnings,
-            "summary": {
-                "total_errors": len(self.errors),
-                "total_warnings": len(self.warnings),
-                "status": "PASS" if len(self.errors) == 0 else "FAIL"
-            }
-        }
-        
-        # Create test results directory
-        os.makedirs("test-results", exist_ok=True)
-        
-        # Write JSON report
-        with open("test-results/docs-quality-report.json", "w") as f:
-            json.dump(report, f, indent=2)
-        
-        # Write JUnit XML for CI integration
-        self.write_junit_xml(report)
-        
-        # Print summary
-        print(f"\n📊 Test Summary:")
-        print(f"   Errors: {len(self.errors)}")
-        print(f"   Warnings: {len(self.warnings)}")
-        print(f"   Status: {report['summary']['status']}")
-        
-        if self.errors:
-            print("\n❌ Errors:")
-            for error in self.errors:
-                print(f"   - {error}")
-        
-        if self.warnings:
-            print("\n⚠️  Warnings:")
-            for warning in self.warnings:
-                print(f"   - {warning}")
-    
-    def write_junit_xml(self, report: Dict[str, Any]):
-        """Write JUnit XML format for CI integration."""
-        xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="documentation-quality" tests="{len(self.errors) + len(self.warnings)}" failures="{len(self.errors)}" errors="0" time="0">
-"""
-        
-        for error in self.errors:
-            xml_content += f"""  <testcase name="{error}" classname="docs.quality">
-    <failure message="{error}"/>
-  </testcase>
-"""
-        
-        for warning in self.warnings:
-            xml_content += f"""  <testcase name="{warning}" classname="docs.quality">
-  </testcase>
-"""
-        
-        xml_content += "</testsuite>"
-        
-        with open("test-results/junit.xml", "w") as f:
-            f.write(xml_content)
-
-def main():
-    """Main function."""
-    tester = DocumentationTester()
-    success = tester.run_all_tests()
-    
-    sys.exit(0 if success else 1)
-
-if __name__ == "__main__":
-    main()
-```
-
-#### 2.2 Staging Deployment Tests
-
-```python
-# scripts/test-staging-deployment.py
-#!/usr/bin/env python3
-"""
-Staging deployment testing script.
-"""
-
-import os
-import sys
-import json
-import subprocess
-import time
-from typing import List, Dict, Any
-
-class StagingTester:
-    def __init__(self):
-        self.collection = "docs_staging"
-        self.test_queries = [
-            "getting started",
-            "installation guide",
-            "configuration",
-            "troubleshooting",
-            "API documentation"
-        ]
-        
-    def run_tests(self) -> bool:
-        """Run staging deployment tests."""
-        print("🧪 Testing staging deployment...")
-        
-        success = True
-        
-        # Test collection status
-        if not self.test_collection_status():
-            success = False
-        
-        # Test search functionality
-        if not self.test_search_functionality():
-            success = False
-        
-        # Test MCP server
-        if not self.test_mcp_server():
-            success = False
-        
-        # Test performance
-        if not self.test_performance():
-            success = False
-        
-        return success
-    
-    def test_collection_status(self) -> bool:
-        """Test collection status and health."""
-        print("📊 Testing collection status...")
-        
-        try:
-            result = subprocess.run(
-                ['qdrant-loader', 'status', '--collection', self.collection, '--output', 'json'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            status = json.loads(result.stdout)
-            vector_count = status.get('vector_count', 0)
-            
-            if vector_count == 0:
-                print("❌ Collection is empty")
-                return False
-            
-            print(f"✅ Collection has {vector_count} vectors")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Collection status check failed: {e.stderr}")
-            return False
-    
-    def test_search_functionality(self) -> bool:
-        """Test search functionality."""
-        print("🔍 Testing search functionality...")
-        
-        success = True
-        
-        for query in self.test_queries:
-            try:
-                result = subprocess.run(
-                    ['qdrant-loader', 'search', query, '--collection', self.collection, '--limit', '3', '--output', 'json'],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                    timeout=10
-                )
-                
-                results = json.loads(result.stdout)
-                
-                if len(results) == 0:
-                    print(f"⚠️  No results for query: {query}")
-                else:
-                    print(f"✅ Query '{query}': {len(results)} results")
-                
-            except subprocess.CalledProcessError as e:
-                print(f"❌ Search failed for '{query}': {e.stderr}")
-                success = False
-            except subprocess.TimeoutExpired:
-                print(f"❌ Search timeout for '{query}'")
-                success = False
-        
-        return success
-    
-    def test_mcp_server(self) -> bool:
-        """Test MCP server functionality."""
-        print("🔌 Testing MCP server...")
-        
-        try:
-            # Start MCP server in background
-            server_process = subprocess.Popen(
-                ['qdrant-loader', 'mcp-server', 'start', '--port', '8080', '--daemon'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            
-            # Wait for server to start
-            time.sleep(5)
-            
-            # Test server status
-            result = subprocess.run(
-                ['qdrant-loader', 'mcp-server', 'status'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            print("✅ MCP server is running")
-            
-            # Stop server
-            subprocess.run(['qdrant-loader', 'mcp-server', 'stop'], check=True)
-            
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            print(f"❌ MCP server test failed: {e.stderr}")
-            return False
-    
-    def test_performance(self) -> bool:
-        """Test performance metrics."""
-        print("⚡ Testing performance...")
-        
-        try:
-            start_time = time.time()
-            
-            result = subprocess.run(
-                ['qdrant-loader', 'search', 'performance test', '--collection', self.collection, '--limit', '5'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            
-            end_time = time.time()
-            duration = end_time - start_time
-            
-            if duration > 5.0:  # 5 second threshold
-                print(f"⚠️  Search is slow: {duration:.2f}s")
-                return False
-            
-            print(f"✅ Search performance: {duration:.2f}s")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Performance test failed: {e.stderr}")
-            return False
-
-def main():
-    """Main function."""
-    tester = StagingTester()
-    success = tester.run_tests()
-    
-    if success:
-        print("\n🎉 All staging tests passed!")
-    else:
-        print("\n💥 Some staging tests failed!")
-    
-    sys.exit(0 if success else 1)
-
-if __name__ == "__main__":
-    main()
-```
-
-### Step 3: Multi-Environment Management
-
-#### 3.1 Environment Configuration
+#### 2.3 Customize Publishing Workflow
 
 ```yaml
-# environments/staging.yaml
-environment: staging
+# Modify package detection logic
+- name: Check release tag
+  run: |
+    if [[ "${{ github.event.release.tag_name }}" == your-package-* ]]; then
+      echo "publish-package=true" >> $GITHUB_OUTPUT
+    fi
 
-qdrant:
-  url: "${QDRANT_STAGING_URL}"
-  api_key: "${QDRANT_STAGING_API_KEY}"
-  collection_name: "docs_staging"
-
-openai:
-  api_key: "${OPENAI_API_KEY}"
-  model: "text-embedding-3-small"
-
-processing:
-  chunk_size: 1000
-  chunk_overlap: 200
-  parallel_workers: 4
-
-monitoring:
-  enabled: true
-  metrics_endpoint: "https://metrics-staging.company.com"
-  log_level: "DEBUG"
-
----
-# environments/production.yaml
-environment: production
-
-qdrant:
-  url: "${QDRANT_PROD_URL}"
-  api_key: "${QDRANT_PROD_API_KEY}"
-  collection_name: "docs_production"
-
-openai:
-  api_key: "${OPENAI_API_KEY}"
-  model: "text-embedding-3-small"
-
-processing:
-  chunk_size: 1200
-  chunk_overlap: 300
-  parallel_workers: 8
-  optimize_after_load: true
-
-monitoring:
-  enabled: true
-  metrics_endpoint: "https://metrics.company.com"
-  log_level: "INFO"
-
-backup:
-  enabled: true
-  schedule: "0 2 * * *"  # Daily at 2 AM
-  retention_days: 30
+# Adapt package paths
+- name: Build package
+  run: |
+    cd packages/your-package
+    python -m build
 ```
 
-#### 3.2 Deployment Scripts
+### Step 3: Configuration Management
+
+#### 3.1 Environment Variables
 
 ```bash
-#!/bin/bash
-# scripts/deploy-environment.sh - Environment deployment automation
+# Required secrets in GitHub repository settings
+QDRANT_URL=your_qdrant_instance
+QDRANT_API_KEY=your_api_key
+OPENAI_API_KEY=your_openai_key
 
-set -euo pipefail
-
-ENVIRONMENT="${1:-staging}"
-CONFIG_FILE="environments/${ENVIRONMENT}.yaml"
-BACKUP_DIR="backups/${ENVIRONMENT}"
-
-# Function to deploy to environment
-deploy_environment() {
-    local env="$1"
-    
-    echo "🚀 Deploying to $env environment..."
-    
-    # Validate environment configuration
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "❌ Configuration file not found: $CONFIG_FILE"
-        exit 1
-    fi
-    
-    # Validate configuration
-    qdrant-loader config validate --config "$CONFIG_FILE"
-    
-    # Create backup if production
-    if [ "$env" = "production" ]; then
-        create_backup "$env"
-    fi
-    
-    # Deploy documentation
-    deploy_documentation "$env"
-    
-    # Run post-deployment tests
-    run_deployment_tests "$env"
-    
-    # Update monitoring
-    update_monitoring "$env"
-    
-    echo "✅ Deployment to $env completed successfully"
-}
-
-# Function to create backup
-create_backup() {
-    local env="$1"
-    
-    echo "💾 Creating backup for $env..."
-    
-    mkdir -p "$BACKUP_DIR"
-    
-    local backup_file="$BACKUP_DIR/backup-$(date +%Y%m%d-%H%M%S).tar.gz"
-    
-    qdrant-loader backup \
-        --config "$CONFIG_FILE" \
-        --output "$backup_file"
-    
-    echo "✅ Backup created: $backup_file"
-}
-
-# Function to deploy documentation
-deploy_documentation() {
-    local env="$1"
-    
-    echo "📚 Deploying documentation to $env..."
-    
-    # Update documentation
-    qdrant-loader update \
-        --source git \
-        --config "$CONFIG_FILE" \
-        --progress
-    
-    # Optimize collection if production
-    if [ "$env" = "production" ]; then
-        qdrant-loader optimize \
-            --config "$CONFIG_FILE"
-    fi
-}
-
-# Function to run deployment tests
-run_deployment_tests() {
-    local env="$1"
-    
-    echo "🧪 Running deployment tests for $env..."
-    
-    if [ "$env" = "staging" ]; then
-        python scripts/test-staging-deployment.py
-    elif [ "$env" = "production" ]; then
-        python scripts/test-production-deployment.py
-    fi
-}
-
-# Function to update monitoring
-update_monitoring() {
-    local env="$1"
-    
-    echo "📊 Updating monitoring for $env..."
-    
-    # Update deployment metrics
-    local deployment_info=$(qdrant-loader status \
-        --config "$CONFIG_FILE" \
-        --output json)
-    
-    # Send metrics to monitoring system
-    curl -X POST \
-        -H "Content-Type: application/json" \
-        -d "$deployment_info" \
-        "$(yq eval '.monitoring.metrics_endpoint' "$CONFIG_FILE")/deployment" || true
-}
-
-# Function to rollback deployment
-rollback_deployment() {
-    local env="$1"
-    local backup_file="$2"
-    
-    echo "🔄 Rolling back $env deployment..."
-    
-    if [ ! -f "$backup_file" ]; then
-        echo "❌ Backup file not found: $backup_file"
-        exit 1
-    fi
-    
-    # Restore from backup
-    qdrant-loader collection restore \
-        --input "$backup_file" \
-        --config "$CONFIG_FILE" \
-        --force
-    
-    # Verify rollback
-    run_deployment_tests "$env"
-    
-    echo "✅ Rollback completed successfully"
-}
-
-# Main function
-main() {
-    local command="${1:-deploy}"
-    
-    case "$command" in
-        deploy)
-            local env="${2:-staging}"
-            deploy_environment "$env"
-            ;;
-        rollback)
-            if [ $# -lt 3 ]; then
-                echo "Usage: $0 rollback <environment> <backup_file>"
-                exit 1
-            fi
-            rollback_deployment "$2" "$3"
-            ;;
-        test)
-            local env="${2:-staging}"
-            run_deployment_tests "$env"
-            ;;
-        help|*)
-            echo "Environment Deployment"
-            echo ""
-            echo "Commands:"
-            echo "  deploy <environment>           - Deploy to environment"
-            echo "  rollback <env> <backup_file>   - Rollback deployment"
-            echo "  test <environment>             - Run deployment tests"
-            echo "  help                           - Show this help"
-            ;;
-    esac
-}
-
-main "$@"
+# Optional data source credentials
+CONFLUENCE_TOKEN=your_confluence_token
+JIRA_TOKEN=your_jira_token
+REPO_TOKEN=your_github_token
 ```
 
-## 📊 Usage Examples
+#### 3.2 Test Configuration Templates
 
-### Daily CI/CD Operations
+```yaml
+# tests/config.test.template.yaml
+global_config:
+  qdrant:
+    collection_name: ${QDRANT_COLLECTION_NAME}
+    vector_size: 1536
+    distance: Cosine
+    
+  openai:
+    model: text-embedding-3-small
 
-```bash
-# Manual deployment to staging
-./scripts/deploy-environment.sh deploy staging
-
-# Test staging deployment
-./scripts/deploy-environment.sh test staging
-
-# Deploy to production
-./scripts/deploy-environment.sh deploy production
+projects:
+  test-project:
+    display_name: "Test Project"
+    description: "Test configuration"
+    collection_name: ${QDRANT_COLLECTION_NAME}
+    
+    sources:
+      git:
+        test-repo:
+          base_url: "${REPO_URL}"
+          branch: main
+          include_paths:
+            - "docs/**"
+          file_types:
+            - ".md"
 ```
 
-### Pipeline Monitoring
+```bash
+# tests/.env.test.template
+QDRANT_URL=placeholder
+QDRANT_API_KEY=placeholder
+QDRANT_COLLECTION_NAME=placeholder
+OPENAI_API_KEY=placeholder
+STATE_DB_PATH=:memory:
+
+# Optional data sources
+REPO_TOKEN=placeholder
+CONFLUENCE_TOKEN=placeholder
+JIRA_TOKEN=placeholder
+```
+
+## 📊 Monitoring and Observability
+
+### Workflow Monitoring
 
 ```bash
-# Check pipeline status
+# Check workflow status
 gh workflow list
 
-# View pipeline logs
-gh run view --log
+# View specific workflow runs
+gh run list --workflow="Test and Coverage"
 
-# Monitor deployment metrics
-curl -s https://metrics.company.com/deployment | jq
+# Download artifacts
+gh run download <run-id>
+
+# View workflow logs
+gh run view <run-id> --log
 ```
 
-### Emergency Procedures
+### Coverage Integration
 
-```bash
-# Rollback production deployment
-./scripts/deploy-environment.sh rollback production backups/production/backup-20240115-143022.tar.gz
+The workflows automatically generate and integrate coverage reports:
 
-# Check system health
-qdrant-loader status --config environments/production.yaml --detailed
+1. **Test Coverage**: Generated during test runs
+2. **Artifact Upload**: Coverage reports uploaded as artifacts
+3. **Website Integration**: Coverage data integrated into documentation site
+4. **Historical Tracking**: Coverage trends tracked over time
 
-# Emergency maintenance mode
-qdrant-loader mcp-server stop
-```
+### Test Result Integration
+
+Test results are automatically processed and displayed:
+
+1. **Status Artifacts**: Test status saved as JSON artifacts
+2. **Website Display**: Test results shown on documentation site
+3. **Failure Notifications**: Failed tests trigger notifications
+4. **Branch Protection**: Tests must pass before merging
 
 ## 🔧 Troubleshooting
 
-### Common Pipeline Issues
+### Common Issues
 
-**Issue: Pipeline fails on configuration validation**
+1. **Test Failures**
+
+   ```bash
+   # Check test logs
+   gh run view <run-id> --log
+   
+   # Run tests locally
+   cd packages/qdrant-loader
+   python -m pytest tests/ -v
+   ```
+
+2. **Documentation Build Failures**
+
+   ```bash
+   # Check build logs
+   gh run view <run-id> --log
+   
+   # Test build locally
+   python website/build.py --output test-site
+   ```
+
+3. **Publishing Failures**
+
+   ```bash
+   # Check release tag format
+   git tag -l
+   
+   # Verify package build
+   cd packages/qdrant-loader
+   python -m build
+   ```
+
+4. **Secret Configuration Issues**
+
+   ```bash
+   # Verify secrets are set
+   gh secret list
+   
+   # Test with local environment
+   cp tests/.env.test.template tests/.env.test
+   # Edit with real values and test locally
+   ```
+
+5. **Manual Deployment Issues**
+
+   ```bash
+   # Check if workflow_dispatch is enabled
+   gh workflow list
+   
+   # View manual deployment run
+   gh run list --workflow="Documentation Website"
+   
+   # Check deployment logs
+   gh run view <run-id> --log
+   
+   # Force deploy without artifacts (emergency)
+   gh workflow run "Documentation Website" --field force_deploy=true
+   
+   # Verify GitHub Pages is enabled
+   gh api repos/:owner/:repo/pages
+   ```
+
+### Debugging Commands
 
 ```bash
-# Check configuration locally
-qdrant-loader config validate --config environments/staging.yaml
+# Local testing with actual CLI commands
+qdrant-loader project --workspace . validate
+qdrant-loader --workspace . config
+qdrant-loader project --workspace . status
 
-# Test connections
-qdrant-loader config test --connections qdrant,openai --config environments/staging.yaml
+# Check workflow artifacts
+gh run download <run-id> --name coverage-loader-<run-id>
+gh run download <run-id> --name test-status-<run-id>
+
+# Monitor workflow execution
+gh run watch <run-id>
 ```
 
-**Issue: Deployment timeout**
+## 📚 Best Practices
 
-```bash
-# Check QDrant instance health
-curl -s "$QDRANT_URL/health"
+### 1. Workflow Design
 
-# Monitor deployment progress
-qdrant-loader status --collection docs_staging --watch
-```
+- **Minimal Permissions**: Each job has only required permissions
+- **Concurrency Control**: Prevent conflicting workflow runs
+- **Artifact Management**: Proper retention and cleanup policies
+- **Error Handling**: Graceful failure handling with continue-on-error
 
-**Issue: Tests fail after deployment**
+### 2. Testing Strategy
 
-```bash
-# Run tests locally
-python scripts/test-staging-deployment.py
+- **Multi-Package Testing**: Separate jobs for each package
+- **System Dependencies**: Install required system packages
+- **Environment Isolation**: Use templates for test configuration
+- **Coverage Tracking**: Comprehensive coverage reporting
 
-# Check search functionality
-qdrant-loader search "test query" --collection docs_staging --limit 3
-```
+### 3. Documentation Automation
 
-## 🔗 Related Documentation
+- **Trigger Optimization**: Build only when documentation changes
+- **Artifact Integration**: Include test results and coverage
+- **Build Verification**: Validate critical pages exist
+- **Deployment Safety**: Use GitHub Pages environments
 
-- **[Common Workflows](./common-workflows.md)** - Overview of all workflow patterns
-- **[Development Workflow](./development-workflow.md)** - Code documentation workflow
-- **[Content Management Workflow](./content-management-workflow.md)** - Publishing and curation
-- **[Team Collaboration Workflow](./team-collaboration-workflow.md)** - Cross-team knowledge sharing
-- **[Configuration Reference](../configuration/config-file-reference.md)** - Configuration options
+### 4. Release Management
 
----
+- **Tag-Based Publishing**: Automatic package detection from tags
+- **Environment Protection**: Use PyPI environments for security
+- **Build Verification**: Test package builds before publishing
+- **Trusted Publishing**: Use OIDC for secure PyPI publishing
 
-**CI/CD integration mastery achieved!** 🎉
+## 📚 Additional Resources
 
-This comprehensive CI/CD integration workflow provides everything you need to implement automated documentation pipelines, multi-environment deployments, and continuous knowledge base updates.
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+- [GitHub Pages Deployment](https://docs.github.com/en/pages)
+- [QDrant Loader CLI Reference](../cli-reference/README.md)
+- [Configuration Guide](../configuration/README.md)

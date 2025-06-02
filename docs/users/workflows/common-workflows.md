@@ -387,9 +387,9 @@ graph TD
 
 ```bash
 # Begin with basic workflow:
-qdrant-loader init
-qdrant-loader load --source local --path ./docs
-qdrant-loader mcp-server start
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
+mcp-qdrant-loader
 ```
 
 ### 4. Iterate and Improve

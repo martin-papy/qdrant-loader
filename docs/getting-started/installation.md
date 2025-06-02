@@ -266,8 +266,8 @@ qdrant-loader --version
 # Check help
 qdrant-loader --help
 
-# Test configuration
-qdrant-loader config --check
+# Test configuration display
+qdrant-loader config
 ```
 
 ### Test MCP Server Installation
@@ -279,23 +279,20 @@ mcp-qdrant-loader --version
 # Test server startup (Ctrl+C to stop)
 mcp-qdrant-loader
 
-# Check available tools
-mcp-qdrant-loader --list-tools
+# Check help for available options
+mcp-qdrant-loader --help
 ```
 
 ### Test Integration
 
 ```bash
-# Create test configuration
-qdrant-loader config init
+# Test QDrant connection and basic functionality
+qdrant-loader project status
 
-# Test QDrant connection
-qdrant-loader status
-
-# Test basic ingestion (if QDrant is running)
-echo "Test document" > test.txt
-qdrant-loader ingest --source local --path test.txt
-rm test.txt
+# For basic testing, you would typically:
+# 1. Set up a workspace with config.yaml and .env
+# 2. Initialize the collection: qdrant-loader --workspace . init
+# 3. Run ingestion: qdrant-loader --workspace . ingest
 ```
 
 ## 🔧 Configuration Setup
@@ -305,10 +302,10 @@ After installation, you'll need to configure QDrant Loader:
 ### Quick Configuration
 
 ```bash
-# Initialize configuration
-qdrant-loader config init
-
-# This creates ~/.qdrant-loader/config.yaml with defaults
+# Create configuration directory and files manually
+mkdir -p ~/.qdrant-loader
+# Copy template configuration files from the repository or create them manually
+# See the configuration examples below
 ```
 
 ### Environment Variables
@@ -327,13 +324,13 @@ export QDRANT_COLLECTION_NAME="documents"
 
 ### Configuration File
 
-Edit `~/.qdrant-loader/config.yaml`:
+Create `config.yaml` in your workspace or `~/.qdrant-loader/config.yaml`:
 
 ```yaml
 # Basic configuration
 qdrant:
-  url: "http://localhost:6333"
-  collection_name: "documents"
+  url: "${QDRANT_URL}"
+  collection_name: "${QDRANT_COLLECTION_NAME}"
 
 openai:
   api_key: "${OPENAI_API_KEY}"
@@ -418,7 +415,7 @@ curl http://localhost:6333/health
 docker run -p 6333:6333 qdrant/qdrant
 
 # Check configuration
-qdrant-loader config show
+qdrant-loader config
 ```
 
 #### OpenAI API Issues
@@ -444,7 +441,7 @@ export OPENAI_API_KEY="your-actual-api-key"
 If you encounter issues not covered here:
 
 1. **Check the logs**: `qdrant-loader --verbose`
-2. **Verify configuration**: `qdrant-loader config --check`
+2. **Verify configuration**: `qdrant-loader config`
 3. **Search existing issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Create new issue**: Include error messages and system info
 
