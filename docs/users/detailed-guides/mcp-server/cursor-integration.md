@@ -126,13 +126,11 @@ OPENAI_API_KEY=sk-your-openai-api-key
 # Optional: QDrant Cloud
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 
-# Optional: MCP Server customization
-MCP_SERVER_LOG_LEVEL=INFO
-MCP_SERVER_MAX_RESULTS=10
-MCP_SERVER_TIMEOUT=30
+# Optional: MCP Server logging (for debugging)
+MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
 ```
 
-### Project-Specific Configuration
+### Multiple Knowledge Bases
 
 For different projects with different knowledge bases:
 
@@ -141,7 +139,7 @@ For different projects with different knowledge bases:
   "mcpServers": {
     "project-docs": {
       "command": "mcp-qdrant-loader",
-      "args": ["--collection", "project_docs"],
+      "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "OPENAI_API_KEY": "your-openai-api-key",
@@ -150,7 +148,7 @@ For different projects with different knowledge bases:
     },
     "team-knowledge": {
       "command": "mcp-qdrant-loader",
-      "args": ["--collection", "team_knowledge"],
+      "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "OPENAI_API_KEY": "your-openai-api-key",
@@ -170,17 +168,12 @@ For better performance in Cursor:
   "mcpServers": {
     "qdrant-loader": {
       "command": "mcp-qdrant-loader",
-      "args": [
-        "--max-results", "5",
-        "--timeout", "10",
-        "--log-level", "WARNING"
-      ],
+      "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "OPENAI_API_KEY": "your-openai-api-key",
         "QDRANT_COLLECTION_NAME": "documents",
-        "MCP_SERVER_CACHE_ENABLED": "true",
-        "MCP_SERVER_CACHE_TTL": "300"
+        "MCP_DISABLE_CONSOLE_LOGGING": "true"
       }
     }
   }
@@ -199,23 +192,14 @@ For better performance in Cursor:
 You: "How does the authentication system work in this codebase?"
 
 AI Response (using MCP search):
-Based on your codebase documentation, here's how authentication works:
+Based on your documentation, here's how the authentication system works:
 
-1. **JWT Token System** (from auth/README.md):
-   - Uses JWT tokens for stateless authentication
-   - Tokens expire after 24 hours
-   - Refresh tokens valid for 30 days
+1. [From auth/README.md] JWT tokens are used for stateless authentication
+2. [From api/auth.py] The login endpoint validates credentials and returns a token
+3. [From middleware/auth.py] The auth middleware validates tokens on protected routes
+4. [From config/security.md] Token expiration is set to 24 hours by default
 
-2. **Implementation** (from auth/jwt.py):
-   - `generate_token()` creates new JWT tokens
-   - `verify_token()` validates incoming tokens
-   - `refresh_token()` handles token renewal
-
-3. **Middleware** (from middleware/auth.py):
-   - Automatically validates tokens on protected routes
-   - Adds user context to request object
-
-Would you like me to show you specific code examples?
+The system uses a standard JWT-based approach with refresh tokens for long-lived sessions.
 ```
 
 #### 2. Feature Implementation
@@ -223,145 +207,111 @@ Would you like me to show you specific code examples?
 **Scenario**: Implementing a new feature
 
 ```text
-You: "I need to add rate limiting to our API. How should I implement this?"
+You: "How should I implement rate limiting for our API?"
 
 AI Response (using MCP search):
-Found several relevant approaches in your documentation:
+Based on your existing patterns and documentation:
 
-1. **Rate Limiting Strategy** (from architecture/rate-limiting.md):
-   - Use Redis for distributed rate limiting
-   - Implement sliding window algorithm
-   - Different limits for different user tiers
+1. [From api/middleware.md] Use the existing RateLimiter middleware
+2. [From config/rate-limits.md] Current limits: 100 requests/minute for authenticated users
+3. [From examples/rate-limiting.py] Here's how to apply it to new endpoints
+4. [From deployment/redis.md] Rate limiting uses Redis for distributed counting
 
-2. **Existing Implementation** (from middleware/rate_limit.py):
-   - `RateLimiter` class already exists
-   - Supports per-user and per-IP limiting
-   - Configurable time windows and limits
-
-3. **Configuration** (from config/rate_limits.yaml):
-   - Current limits: 1000 req/hour for authenticated users
-   - 100 req/hour for anonymous users
-   - Premium users: 5000 req/hour
-
-Here's how to add it to your new endpoint...
+Follow the existing pattern in api/v1/users.py for implementation.
 ```
 
-#### 3. Debugging and Troubleshooting
+#### 3. Bug Investigation
 
 **Scenario**: Debugging an issue
 
 ```text
-You: "Users are reporting slow response times. What could be causing this?"
+You: "Why might users be getting 'connection timeout' errors?"
 
 AI Response (using MCP search):
-Found several potential causes in your troubleshooting docs:
+Found several potential causes in your documentation:
 
-1. **Database Performance** (from troubleshooting/database.md):
-   - Check for missing indexes on frequently queried columns
-   - Monitor connection pool usage
-   - Look for long-running queries
+1. [From troubleshooting/timeouts.md] Database connection pool exhaustion
+2. [From monitoring/alerts.md] High CPU usage can cause timeouts
+3. [From config/database.md] Default timeout is 30 seconds
+4. [From logs/common-errors.md] Check for "pool_timeout" in application logs
 
-2. **Caching Issues** (from troubleshooting/cache.md):
-   - Redis cache might be full or slow
-   - Check cache hit rates in monitoring dashboard
-   - Verify cache invalidation is working correctly
-
-3. **Recent Changes** (from changelog.md):
-   - Version 2.1.0 added new database queries
-   - Some users reported performance regression
-   - Hotfix 2.1.1 available with optimizations
-
-Let me search for specific performance monitoring commands...
+Start by checking the database connection pool metrics and recent error logs.
 ```
 
 ### Documentation Workflow
 
 #### 1. Finding Related Documentation
 
+**Scenario**: Writing new documentation
+
 ```text
-You: "I'm updating the API documentation. What existing docs should I review?"
+You: "What existing documentation do we have about API versioning?"
 
 AI Response (using MCP search):
-Found existing API documentation that you should review:
+Found existing API versioning documentation:
 
-1. **Core API Docs** (from api/):
-   - api/authentication.md - Auth endpoints
-   - api/users.md - User management endpoints
-   - api/data.md - Data manipulation endpoints
+1. [From api/versioning.md] Current versioning strategy (v1, v2)
+2. [From changelog.md] Version history and breaking changes
+3. [From examples/migration-v1-to-v2.md] Migration guide for clients
+4. [From architecture/api-design.md] Versioning principles and guidelines
 
-2. **Examples** (from examples/api/):
-   - Complete request/response examples
-   - Error handling patterns
-   - Rate limiting examples
-
-3. **OpenAPI Spec** (from openapi.yaml):
-   - Current API specification
-   - Last updated 2 weeks ago
-   - Includes all current endpoints
-
-4. **Change History** (from api/CHANGELOG.md):
-   - Recent API changes and deprecations
-   - Breaking changes in v2.0
-   - Migration guide for v1 to v2
-
-This gives you a complete picture of the current API documentation state.
+This gives you the context for maintaining consistency with existing docs.
 ```
 
-#### 2. Consistency Checking
+#### 2. Code Examples
+
+**Scenario**: Finding code examples
 
 ```text
-You: "Are there any inconsistencies in how we document error responses?"
+You: "Show me examples of how we handle file uploads"
 
 AI Response (using MCP search):
-Found some inconsistencies in error response documentation:
+Found several file upload examples:
 
-1. **Inconsistent Error Formats**:
-   - api/users.md uses `{"error": "message"}` format
-   - api/data.md uses `{"message": "error", "code": 400}` format
-   - api/auth.md uses `{"errors": ["message1", "message2"]}` format
+1. [From api/uploads.py] Basic file upload endpoint with validation
+2. [From examples/file-processing.py] Processing uploaded files asynchronously
+3. [From tests/test_uploads.py] Unit tests for upload functionality
+4. [From docs/api/uploads.md] API documentation with curl examples
 
-2. **Missing Error Codes**:
-   - Some endpoints don't document all possible error codes
-   - 429 (rate limit) responses not documented consistently
-
-3. **Recommended Standard** (from style-guide.md):
-   - Use consistent `{"error": {"message": "...", "code": "..."}}` format
-   - Always document 400, 401, 403, 404, 429, 500 responses
-
-Would you like me to find all endpoints that need error documentation updates?
+The pattern uses multipart/form-data with size and type validation.
 ```
 
 ### Team Collaboration
 
-#### 1. Onboarding New Team Members
+#### 1. Onboarding New Developers
+
+**Scenario**: Helping new team members
 
 ```text
-You: "A new developer is joining. What documentation should they read first?"
+You: "What do new developers need to know about our deployment process?"
 
 AI Response (using MCP search):
-Here's the recommended onboarding path for new developers:
+Here's the essential deployment information for new developers:
 
-1. **Getting Started** (from onboarding/):
-   - onboarding/README.md - Overview and setup
-   - onboarding/development-environment.md - Local setup
-   - onboarding/first-contribution.md - Making your first PR
+1. [From onboarding/deployment.md] Step-by-step deployment guide
+2. [From ci-cd/pipeline.md] Automated deployment pipeline overview
+3. [From environments/staging.md] How to deploy to staging for testing
+4. [From troubleshooting/deployment.md] Common deployment issues and solutions
 
-2. **Architecture** (from architecture/):
-   - architecture/overview.md - System architecture
-   - architecture/data-flow.md - How data moves through the system
-   - architecture/security.md - Security considerations
+Start with the onboarding guide and then review the CI/CD pipeline documentation.
+```
 
-3. **Development Practices** (from development/):
-   - development/coding-standards.md - Code style and conventions
-   - development/testing.md - Testing practices
-   - development/deployment.md - How we deploy
+#### 2. Architecture Decisions
 
-4. **Team Processes** (from team/):
-   - team/workflow.md - Our development workflow
-   - team/code-review.md - Code review process
-   - team/communication.md - How we communicate
+**Scenario**: Understanding design decisions
 
-This should get them productive within their first week.
+```text
+You: "Why did we choose PostgreSQL over MongoDB for this project?"
+
+AI Response (using MCP search):
+Found the architectural decision documentation:
+
+1. [From architecture/database-choice.md] Comparison of PostgreSQL vs MongoDB
+2. [From decisions/adr-003-database.md] Architectural Decision Record for database selection
+3. [From performance/benchmarks.md] Performance testing results
+4. [From team/discussions.md] Team discussion notes from the decision process
+
+The main factors were ACID compliance requirements and existing team expertise.
 ```
 
 ## 🔧 Troubleshooting
@@ -381,13 +331,9 @@ which mcp-qdrant-loader
 # Install if missing
 pip install qdrant-loader-mcp-server
 
-# Check PATH
-echo $PATH
-
-# Use full path in configuration
+# Use full path in Cursor configuration
 {
-  "command": "/path/to/venv/bin/mcp-qdrant-loader",
-  ...
+  "command": "/path/to/venv/bin/mcp-qdrant-loader"
 }
 ```
 
@@ -404,69 +350,11 @@ curl http://localhost:6333/health
 # Start QDrant if needed
 docker run -p 6333:6333 qdrant/qdrant
 
-# Check configuration
-qdrant-loader config show
+# Verify configuration
+qdrant-loader --workspace . config
 ```
 
-#### 3. No Search Results
-
-**Error**: MCP searches return empty results
-
-**Solutions**:
-
-```bash
-# Verify documents are ingested
-qdrant-loader list
-
-# Check collection exists
-qdrant-loader status
-
-# Test search directly
-qdrant-loader search "test query"
-
-# Re-ingest if needed
-qdrant-loader ingest --source local --path docs/
-```
-
-#### 4. Slow Response Times
-
-**Problem**: MCP searches are slow in Cursor
-
-**Solutions**:
-
-1. **Reduce result limit**:
-
-```json
-{
-  "args": ["--max-results", "3"],
-  ...
-}
-```
-
-2. **Increase timeout**:
-
-```json
-{
-  "env": {
-    "MCP_SERVER_TIMEOUT": "5",
-    ...
-  }
-}
-```
-
-3. **Enable caching**:
-
-```json
-{
-  "env": {
-    "MCP_SERVER_CACHE_ENABLED": "true",
-    "MCP_SERVER_CACHE_TTL": "300",
-    ...
-  }
-}
-```
-
-#### 5. Authentication Errors
+#### 3. Authentication Errors
 
 **Error**: `OpenAI API key not found or invalid`
 
@@ -476,22 +364,50 @@ qdrant-loader ingest --source local --path docs/
 # Check environment variable
 echo $OPENAI_API_KEY
 
-# Set in configuration
-{
-  "env": {
-    "OPENAI_API_KEY": "sk-your-actual-api-key",
-    ...
-  }
-}
-
 # Test API key
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
      https://api.openai.com/v1/models
+
+# Update Cursor configuration
+{
+  "env": {
+    "OPENAI_API_KEY": "sk-your-actual-api-key"
+  }
+}
 ```
+
+#### 4. No Search Results
+
+**Error**: MCP searches return empty results
+
+**Solutions**:
+
+```bash
+# Verify documents are ingested
+qdrant-loader --workspace . project status
+
+# Check collection exists
+curl http://localhost:6333/collections/documents
+
+# Re-ingest if needed
+qdrant-loader --workspace . ingest
+```
+
+#### 5. Cursor Chat Not Working
+
+**Error**: Chat interface doesn't show MCP tools
+
+**Solutions**:
+
+1. **Restart Cursor** after configuration changes
+2. **Check MCP configuration** syntax (valid JSON)
+3. **Verify MCP server** is running
+4. **Check Cursor logs** for error messages
+5. **Update Cursor** to latest version
 
 ### Debug Mode
 
-Enable debug logging to troubleshoot issues:
+Enable debug logging for troubleshooting:
 
 ```json
 {
@@ -501,8 +417,7 @@ Enable debug logging to troubleshoot issues:
       "args": ["--log-level", "DEBUG"],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "MCP_SERVER_LOG_LEVEL": "DEBUG"
+        "OPENAI_API_KEY": "your-openai-api-key"
       }
     }
   }
@@ -512,128 +427,153 @@ Enable debug logging to troubleshoot issues:
 Check logs:
 
 ```bash
-# View MCP server logs
-tail -f ~/.qdrant-loader/logs/mcp-server.log
+# View MCP server logs (if log file is configured)
+tail -f /tmp/mcp-qdrant-loader.log
 
-# View Cursor logs (macOS)
-tail -f ~/Library/Logs/Cursor/main.log
-
-# View Cursor logs (Windows)
-tail -f %APPDATA%\Cursor\logs\main.log
+# View Cursor logs
+# macOS: ~/Library/Logs/Cursor/main.log
+# Windows: %APPDATA%\Cursor\logs\main.log
+# Linux: ~/.config/Cursor/logs/main.log
 ```
 
-## 🎨 Customization
+## 🚀 Best Practices
 
-### Custom Search Prompts
+### Effective Prompting
 
-You can customize how the AI uses search results by creating custom prompts:
+#### 1. Be Specific
 
-```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [
-        "--search-prompt", "Search our codebase and documentation for: {query}",
-        "--result-format", "detailed"
-      ],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key"
-      }
-    }
-  }
-}
-```
+**Good**: "How do I implement JWT authentication in our API?"
+**Better**: "Show me the JWT authentication implementation pattern used in our user API endpoints"
 
-### Multiple Knowledge Bases
+#### 2. Reference Context
 
-Configure multiple MCP servers for different knowledge bases:
+**Good**: "How does error handling work?"
+**Better**: "How does error handling work in our Express.js API, and what's the standard format for error responses?"
 
-```json
-{
-  "mcpServers": {
-    "project-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "project_docs"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "project_docs"
-      }
-    },
-    "company-wiki": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "company_wiki"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "company_wiki"
-      }
-    },
-    "api-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "api_documentation"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "api_documentation"
-      }
-    }
-  }
-}
-```
+#### 3. Ask for Examples
 
-## 📊 Monitoring Usage
+**Good**: "How do I write tests?"
+**Better**: "Show me examples of unit tests for API endpoints, following our existing test patterns"
 
-### Track MCP Usage
+### Configuration Management
 
-Enable analytics to see how the MCP server is being used:
+#### 1. Use Environment Variables
 
-```json
-{
-  "env": {
-    "MCP_SERVER_ANALYTICS": "true",
-    "MCP_SERVER_ANALYTICS_FILE": "~/.qdrant-loader/logs/mcp-analytics.log",
-    ...
-  }
-}
-```
-
-### View Usage Statistics
+Store sensitive information in environment variables:
 
 ```bash
-# View search queries
-grep "search_query" ~/.qdrant-loader/logs/mcp-analytics.log
-
-# View response times
-grep "response_time" ~/.qdrant-loader/logs/mcp-analytics.log
-
-# View most common queries
-grep "search_query" ~/.qdrant-loader/logs/mcp-analytics.log | \
-  cut -d'"' -f4 | sort | uniq -c | sort -nr | head -10
+# .env file
+QDRANT_URL=http://localhost:6333
+OPENAI_API_KEY=sk-your-api-key
+QDRANT_COLLECTION_NAME=project_docs
 ```
+
+#### 2. Project-Specific Setup
+
+Configure different MCP servers for different projects:
+
+```json
+{
+  "mcpServers": {
+    "current-project": {
+      "command": "mcp-qdrant-loader",
+      "env": {
+        "QDRANT_COLLECTION_NAME": "current_project_docs"
+      }
+    }
+  }
+}
+```
+
+#### 3. Performance Tuning
+
+Optimize for your specific use case:
+
+- **Small teams**: Use default settings
+- **Large knowledge bases**: Consider using search filters
+- **Real-time usage**: Keep MCP server running continuously
+
+### Security Considerations
+
+#### 1. API Key Management
+
+- Store API keys in environment variables
+- Don't commit API keys to version control
+- Use different API keys for different environments
+
+#### 2. Network Security
+
+- Use HTTPS for QDrant Cloud connections
+- Configure firewall rules for QDrant access
+- Monitor API usage and costs
+
+#### 3. Access Control
+
+- Limit MCP server access to authorized users
+- Use separate collections for different access levels
+- Monitor search queries for sensitive information
+
+## 📊 Monitoring and Analytics
+
+### Usage Tracking
+
+Monitor how the MCP integration is being used:
+
+- **Search query patterns** - What developers are searching for
+- **Response quality** - How helpful the AI responses are
+- **Performance metrics** - Search response times
+- **Error rates** - Connection and search failures
+
+### Performance Optimization
+
+Track these metrics for optimization:
+
+- **Search response time** - Average time for MCP searches
+- **Cache hit rate** - If caching is enabled
+- **Memory usage** - MCP server resource consumption
+- **QDrant performance** - Vector search performance
 
 ## 🔗 Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
+- **[Setup and Integration](./setup-and-integration.md)** - General setup for all AI tools
 - **[Search Capabilities](./search-capabilities.md)** - Available search features
-- **[Setup and Integration](./setup-and-integration.md)** - General setup guide
-- **[Basic Configuration](../../getting-started/basic-configuration.md)** - QDrant Loader configuration
+- **[Basic Configuration](../../getting-started/basic-configuration.md)** - QDrant Loader setup
+- **[Troubleshooting](../../troubleshooting/)** - General troubleshooting
 
 ## 📋 Cursor Integration Checklist
 
+### Pre-Setup
+
 - [ ] **Cursor IDE** installed and updated
-- [ ] **QDrant Loader** installed with MCP server
-- [ ] **Documents ingested** into QDrant database
-- [ ] **MCP server configuration** added to Cursor
+- [ ] **QDrant Loader** installed and configured
+- [ ] **Documents ingested** into QDrant collection
+- [ ] **OpenAI API key** available
+- [ ] **MCP server package** installed
+
+### Configuration
+
+- [ ] **MCP configuration** added to Cursor settings
 - [ ] **Environment variables** properly set
-- [ ] **Connection tested** successfully
-- [ ] **Search functionality** working in Cursor chat
-- [ ] **Performance optimized** for your use case
+- [ ] **Cursor restarted** after configuration
+- [ ] **MCP tools** visible in chat interface
+
+### Testing
+
+- [ ] **Basic search** working in Cursor chat
+- [ ] **Knowledge base access** confirmed
+- [ ] **Search results** relevant and helpful
+- [ ] **Performance** acceptable for daily use
+
+### Optimization
+
+- [ ] **Debug logging** configured if needed
+- [ ] **Performance settings** tuned for use case
+- [ ] **Security considerations** addressed
+- [ ] **Team onboarding** documentation updated
 
 ---
 
-**Ready to supercharge your development with AI-powered knowledge search!** 🚀
+**Your Cursor IDE is now supercharged with your knowledge base!** 🚀
 
-With QDrant Loader integrated into Cursor, you now have instant access to your entire knowledge base while coding. The AI can help you understand code, implement features, debug issues, and maintain documentation - all grounded in your actual project knowledge.
+With the MCP server properly configured, Cursor can now access and search your entire knowledge base, making development faster, more informed, and more efficient. The AI can help you understand code, implement features, debug issues, and maintain documentation - all grounded in your actual project knowledge.

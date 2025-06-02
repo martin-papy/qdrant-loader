@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/</loc>
+        <loc>https://qdrant-loader.net/</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/docs/</loc>
+        <loc>https://qdrant-loader.net/docs/</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/coverage/</loc>
+        <loc>https://qdrant-loader.net/coverage/</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/docs/README.html</loc>
+        <loc>https://qdrant-loader.net/docs/README.html</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/docs/RELEASE_NOTES.html</loc>
+        <loc>https://qdrant-loader.net/docs/RELEASE_NOTES.html</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/docs/packages/qdrant-loader/README.html</loc>
+        <loc>https://qdrant-loader.net/docs/packages/qdrant-loader/README.html</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/docs/packages/mcp-server/README.html</loc>
+        <loc>https://qdrant-loader.net/docs/packages/mcp-server/README.html</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>

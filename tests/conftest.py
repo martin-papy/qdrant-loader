@@ -321,7 +321,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
     sitemap_template = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://martin-papy.github.io/qdrant-loader/</loc>
+        <loc>https://qdrant-loader.net/</loc>
         <lastmod>{{ build_date }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
@@ -330,7 +330,7 @@ fetch('website/status.json').then(response => response.json()).then(data => {
 
     robots_template = """User-agent: *
 Allow: /
-Sitemap: https://martin-papy.github.io/qdrant-loader/sitemap.xml"""
+Sitemap: https://qdrant-loader.net/sitemap.xml"""
 
     # Write templates
     templates_dir = temp_workspace / "website" / "templates"

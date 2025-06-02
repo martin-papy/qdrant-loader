@@ -982,9 +982,8 @@ logging:
 ## 🔗 Related Documentation
 
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
-- **[Basic Configuration](../getting-started/basic-configuration.md)** - Getting started with configuration
-- **[Security Considerations](./security-considerations.md)** - Security best practices
-- **[Advanced Settings](./advanced-settings.md)** - Performance tuning options
+- **[Basic Configuration](../../getting-started/basic-configuration.md)** - Getting started with configuration
+- **[Data Sources](../detailed-guides/data-sources/)** - Source-specific configuration guides
 
 ## 📋 Configuration File Checklist
 

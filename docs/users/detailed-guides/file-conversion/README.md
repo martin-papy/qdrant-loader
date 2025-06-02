@@ -1,10 +1,10 @@
 # File Conversion
 
-QDrant Loader supports comprehensive file conversion to extract text content from 20+ file formats. This guide covers supported formats, conversion processes, and optimization strategies.
+QDrant Loader supports comprehensive file conversion to extract text content from various file formats using Microsoft's MarkItDown library. This guide covers supported formats, configuration, and best practices.
 
 ## 🎯 Supported File Formats
 
-QDrant Loader uses Microsoft's MarkItDown library and additional processors to handle a wide variety of file formats:
+QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of file formats:
 
 ### 📄 Document Formats
 
@@ -62,134 +62,109 @@ QDrant Loader uses Microsoft's MarkItDown library and additional processors to h
 | **ZIP** | `.zip` | ZIP archives | Extract and process contents |
 | **TAR** | `.tar`, `.tar.gz`, `.tgz` | TAR archives | Extract and process contents |
 | **7-Zip** | `.7z` | 7-Zip archives | Extract and process contents |
-| **RAR** | `.rar` | RAR archives | Extract and process contents |
 
 ## ⚙️ Configuration
 
-### Basic File Conversion Setup
+### Global File Conversion Configuration
+
+File conversion is configured globally and applies to all projects and sources that enable it:
 
 ```yaml
-# Global file conversion settings
-enable_file_conversion: true
-conversion_timeout: 300  # 5 minutes per file
-max_file_size: 52428800  # 50MB
-
-# OCR settings for images
-ocr:
-  enabled: true
-  languages: ["eng"]  # English
-  confidence_threshold: 60
-
-# Audio transcription settings
-audio_transcription:
-  enabled: true
-  language: "en"
-  model: "base"  # whisper model size
-```
-
-### Advanced Configuration
-
-```yaml
-file_conversion:
-  # General settings
-  enabled: true
-  timeout: 300
-  max_file_size: 104857600  # 100MB
-  preserve_formatting: true
-  extract_metadata: true
-  
-  # Format-specific settings
-  pdf:
-    extract_images: true
-    ocr_images: true
-    extract_tables: true
-    password_protected: true
-    passwords: ["password123", "default"]
-  
-  office:
-    extract_images: true
-    extract_tables: true
-    include_comments: true
-    include_track_changes: false
-  
-  images:
-    ocr_enabled: true
-    ocr_languages: ["eng", "fra", "deu"]
-    confidence_threshold: 70
-    preprocess_images: true
-    dpi: 300
-  
-  audio:
-    transcription_enabled: true
-    language: "auto"  # Auto-detect language
-    model_size: "base"  # tiny, base, small, medium, large
-    chunk_duration: 30  # seconds
+global_config:
+  # File conversion configuration
+  file_conversion:
+    # Maximum file size for conversion (in bytes)
+    max_file_size: 52428800  # 50MB
     
-  archives:
-    extract_nested: true
-    max_depth: 3
-    password_protected: true
-    passwords: ["archive123", "backup"]
+    # Timeout for conversion operations (in seconds)
+    conversion_timeout: 300  # 5 minutes
     
-  text:
-    encoding_detection: true
-    fallback_encoding: "utf-8"
-    normalize_whitespace: true
+    # MarkItDown specific settings
+    markitdown:
+      # Enable LLM integration for image descriptions
+      enable_llm_descriptions: false
+      # LLM model for image descriptions (when enabled)
+      llm_model: "gpt-4o"
+      # LLM endpoint (when enabled)
+      llm_endpoint: "https://api.openai.com/v1"
+      # API key for LLM service (required when enable_llm_descriptions is True)
+      llm_api_key: "${OPENAI_API_KEY}"
+
+projects:
+  my-project:
+    display_name: "My Project"
+    description: "Project with file conversion enabled"
+
+    sources:
+      localfile:
+        documents:
+          base_url: "file:///path/to/documents"
+          file_types:
+            - "*.pdf"
+            - "*.docx"
+            - "*.pptx"
+            - "*.xlsx"
+          max_file_size: 52428800
+          # Enable file conversion for this source
+          enable_file_conversion: true
 ```
 
-### Source-Specific Configuration
+### Configuration Options
 
-```yaml
-sources:
-  local_files:
-    - path: "/documents"
-      # Override global conversion settings
-      file_conversion:
-        pdf:
-          extract_images: false  # Skip image extraction for performance
-        images:
-          ocr_enabled: false     # Skip OCR for this source
-  
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      # Enable attachment conversion
-      include_attachments: true
-      file_conversion:
-        office:
-          include_comments: true
-          extract_tables: true
-```
+#### Global File Conversion Settings
 
-## 🔧 Conversion Process
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `max_file_size` | int | Maximum file size in bytes | `52428800` (50MB) |
+| `conversion_timeout` | int | Timeout for conversion operations in seconds | `300` (5 minutes) |
 
-### How File Conversion Works
+#### MarkItDown Settings
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `enable_llm_descriptions` | bool | Enable LLM integration for image descriptions | `false` |
+| `llm_model` | string | LLM model for image descriptions | `gpt-4o` |
+| `llm_endpoint` | string | LLM endpoint URL | `https://api.openai.com/v1` |
+| `llm_api_key` | string | API key for LLM service | `null` |
+
+#### Source-Level Settings
+
+Each data source can enable or disable file conversion:
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `enable_file_conversion` | bool | Enable file conversion for this source | `false` |
+
+## 🔧 How File Conversion Works
+
+### Conversion Process
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    File     │───▶│   Format    │───▶│ Conversion  │───▶│    Text     │
-│  Detection  │    │ Detection   │    │  Process    │    │  Content    │
+│    File     │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
+│  Detection  │    │ Detection   │    │ Conversion  │    │  Content    │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
        │                   │                   │                   │
        ▼                   ▼                   ▼                   ▼
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ MIME Type   │    │ Extension   │    │ MarkItDown  │    │ Structured  │
-│ Detection   │    │ Mapping     │    │ + Custom    │    │ Output      │
+│ MIME Type   │    │ Extension   │    │ Text + OCR  │    │ Structured  │
+│ Detection   │    │ Mapping     │    │ + Audio     │    │ Text Output │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
-### Conversion Pipeline
+### Processing Pipeline
 
 1. **File Detection**
    - MIME type detection
    - Extension analysis
-   - Content validation
+   - File size validation
 
 2. **Format-Specific Processing**
-   - PDF: Text extraction + OCR for images
-   - Office: Document structure + embedded content
-   - Images: OCR text extraction
-   - Audio: Speech-to-text transcription
-   - Archives: Extraction + recursive processing
+   - **PDF**: Text extraction + OCR for images
+   - **Office Documents**: Document structure + embedded content
+   - **Images**: OCR text extraction
+   - **Audio**: Speech-to-text transcription
+   - **Archives**: Extraction + recursive processing
 
 3. **Content Extraction**
    - Main text content
@@ -197,201 +172,123 @@ sources:
    - Structured data (tables, lists)
    - Embedded objects (images, charts)
 
-4. **Post-Processing**
-   - Text normalization
-   - Formatting preservation
-   - Chunking for vector storage
+4. **Output Generation**
+   - Markdown-formatted text
+   - Preserved formatting where possible
+   - Ready for chunking and vector storage
 
 ## 🚀 Usage Examples
 
-### Document Processing
+### Basic Document Processing
 
 ```yaml
-sources:
-  local_files:
-    - path: "/documents/reports"
-      include_patterns: ["**/*.pdf", "**/*.docx"]
-      file_conversion:
-        pdf:
-          extract_images: true
-          ocr_images: true
-          extract_tables: true
-        office:
-          extract_tables: true
-          include_comments: false
+global_config:
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300  # 5 minutes
+    markitdown:
+      enable_llm_descriptions: false
+
+projects:
+  documents:
+    display_name: "Document Processing"
+    description: "Process various document formats"
+    
+    sources:
+      localfile:
+        office-docs:
+          base_url: "file:///documents/office"
+          file_types:
+            - "*.pdf"
+            - "*.docx"
+            - "*.pptx"
+            - "*.xlsx"
+          enable_file_conversion: true
 ```
 
-### Research Papers and Academic Content
+### Research Papers with LLM Enhancement
 
 ```yaml
-sources:
-  local_files:
-    - path: "/research/papers"
-      include_patterns: ["**/*.pdf", "**/*.tex"]
-      file_conversion:
-        pdf:
-          extract_images: true
-          ocr_images: true
-          extract_tables: true
-          # Handle password-protected papers
-          passwords: ["research2024", "conference"]
-        text:
-          # Handle LaTeX files
-          preserve_formatting: true
+global_config:
+  file_conversion:
+    max_file_size: 104857600  # 100MB for large papers
+    conversion_timeout: 600   # 10 minutes
+    markitdown:
+      enable_llm_descriptions: true
+      llm_model: "gpt-4o"
+      llm_endpoint: "https://api.openai.com/v1"
+      llm_api_key: "${OPENAI_API_KEY}"
+
+projects:
+  research:
+    display_name: "Research Papers"
+    description: "Academic papers and research documents"
+    
+    sources:
+      localfile:
+        papers:
+          base_url: "file:///research/papers"
+          file_types:
+            - "*.pdf"
+            - "*.tex"
+          enable_file_conversion: true
 ```
 
-### Multimedia Content
+### Multimedia Content Processing
 
 ```yaml
-sources:
-  local_files:
-    - path: "/media/presentations"
-      include_patterns: ["**/*.pptx", "**/*.mp3", "**/*.png"]
-      file_conversion:
-        office:
-          extract_images: true
-          include_speaker_notes: true
-        audio:
-          transcription_enabled: true
-          language: "en"
-          model_size: "medium"
-        images:
-          ocr_enabled: true
-          ocr_languages: ["eng"]
+global_config:
+  file_conversion:
+    max_file_size: 52428800
+    conversion_timeout: 900  # 15 minutes for audio/video
+    markitdown:
+      enable_llm_descriptions: true
+      llm_model: "gpt-4o"
+      llm_api_key: "${OPENAI_API_KEY}"
+
+projects:
+  multimedia:
+    display_name: "Multimedia Content"
+    description: "Audio, images, and presentations"
+    
+    sources:
+      localfile:
+        media:
+          base_url: "file:///media/content"
+          file_types:
+            - "*.mp3"
+            - "*.wav"
+            - "*.png"
+            - "*.jpg"
+            - "*.pptx"
+          enable_file_conversion: true
 ```
 
-### Archive Processing
+### Confluence with Attachment Processing
 
 ```yaml
-sources:
-  local_files:
-    - path: "/archives/backups"
-      include_patterns: ["**/*.zip", "**/*.tar.gz"]
-      file_conversion:
-        archives:
-          extract_nested: true
-          max_depth: 5
-          password_protected: true
-          passwords: ["backup123", "archive2024"]
-          # Process extracted files
-          process_extracted: true
-```
+global_config:
+  file_conversion:
+    max_file_size: 52428800
+    conversion_timeout: 300
+    markitdown:
+      enable_llm_descriptions: false
 
-### Data Files
-
-```yaml
-sources:
-  local_files:
-    - path: "/data/exports"
-      include_patterns: ["**/*.json", "**/*.csv", "**/*.xml"]
-      file_conversion:
-        data:
-          preserve_structure: true
-          extract_schema: true
-          max_records: 10000  # Limit for large datasets
-```
-
-## 🔍 Advanced Features
-
-### OCR Configuration
-
-```yaml
-file_conversion:
-  images:
-    ocr_enabled: true
+projects:
+  confluence-docs:
+    display_name: "Confluence Documentation"
+    description: "Confluence pages and attachments"
     
-    # Language support
-    ocr_languages: ["eng", "fra", "deu", "spa"]
-    
-    # Quality settings
-    confidence_threshold: 70
-    dpi: 300
-    preprocess_images: true
-    
-    # Image preprocessing
-    preprocessing:
-      - "deskew"      # Correct skewed text
-      - "denoise"     # Remove noise
-      - "enhance"     # Enhance contrast
-      - "binarize"    # Convert to black/white
-    
-    # OCR engine settings
-    engine: "tesseract"  # or "easyocr"
-    psm: 6  # Page segmentation mode
-```
-
-### Audio Transcription
-
-```yaml
-file_conversion:
-  audio:
-    transcription_enabled: true
-    
-    # Whisper model configuration
-    model_size: "base"  # tiny, base, small, medium, large
-    language: "auto"    # Auto-detect or specify: "en", "fr", etc.
-    
-    # Processing settings
-    chunk_duration: 30  # seconds
-    overlap_duration: 5 # seconds
-    
-    # Quality settings
-    temperature: 0.0    # Deterministic output
-    beam_size: 5        # Beam search size
-    
-    # Output format
-    include_timestamps: true
-    include_confidence: true
-```
-
-### Password-Protected Files
-
-```yaml
-file_conversion:
-  # Global password list
-  passwords:
-    - "password123"
-    - "company2024"
-    - "default"
-  
-  # Format-specific passwords
-  pdf:
-    passwords:
-      - "pdf_password"
-      - "document123"
-  
-  archives:
-    passwords:
-      - "archive_password"
-      - "backup2024"
-  
-  # File-specific passwords
-  password_mapping:
-    "sensitive.pdf": "secret123"
-    "backup_*.zip": "backup_password"
-```
-
-### Custom Conversion Rules
-
-```yaml
-file_conversion:
-  custom_rules:
-    # Skip conversion for specific files
-    skip_patterns:
-      - "**/*.log"
-      - "**/temp/**"
-      - "**/*.cache"
-    
-    # Force specific converters
-    force_converters:
-      "**/*.data": "text"  # Treat .data files as text
-      "**/*.config": "yaml"  # Treat .config as YAML
-    
-    # Size limits per format
-    size_limits:
-      pdf: 104857600      # 100MB
-      audio: 524288000    # 500MB
-      images: 20971520    # 20MB
+    sources:
+      confluence:
+        company-wiki:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          download_attachments: true
+          enable_file_conversion: true
 ```
 
 ## 🧪 Testing and Validation
@@ -399,101 +296,98 @@ file_conversion:
 ### Test File Conversion
 
 ```bash
-# Test conversion for specific file types
-qdrant-loader --workspace . test-conversion --file-type pdf
+# Initialize the project
+qdrant-loader --workspace . init
 
-# Test single file conversion
-qdrant-loader --workspace . convert-file --file "/path/to/test.pdf"
+# Test ingestion with file conversion enabled
+qdrant-loader --workspace . ingest --project my-project
 
-# Validate conversion configuration
-qdrant-loader --workspace . validate-conversion
+# Check project status
+qdrant-loader --workspace . project status --project-id my-project
 
-# Check supported formats
-qdrant-loader --workspace . list-formats
+# Enable debug logging to see conversion details
+qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
 ```
 
-### Debug Conversion Issues
+### Validate Configuration
 
 ```bash
-# Enable verbose conversion logging
-qdrant-loader --workspace . --verbose ingest --debug-conversion
+# Validate project configuration
+qdrant-loader --workspace . project validate --project-id my-project
 
-# Test OCR on specific image
-qdrant-loader --workspace . test-ocr --file "/path/to/image.png"
+# Check all projects
+qdrant-loader --workspace . project list
 
-# Test audio transcription
-qdrant-loader --workspace . test-transcription --file "/path/to/audio.mp3"
+# View current configuration
+qdrant-loader --workspace . config
 ```
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-#### PDF Conversion Problems
+#### File Size Exceeded
 
-**Problem**: PDFs not converting or missing text
-
-**Solutions**:
-
-```yaml
-file_conversion:
-  pdf:
-    # Try different extraction methods
-    extraction_method: "auto"  # auto, pdfplumber, pymupdf, pdfminer
-    
-    # Enable OCR for scanned PDFs
-    ocr_images: true
-    fallback_to_ocr: true
-    
-    # Handle password protection
-    password_protected: true
-    passwords: ["", "password", "default"]
-```
-
-#### OCR Issues
-
-**Problem**: Poor OCR quality or missing text from images
+**Problem**: Files are too large to process
 
 **Solutions**:
 
 ```yaml
-file_conversion:
-  images:
-    # Improve OCR quality
-    dpi: 300
-    confidence_threshold: 60  # Lower threshold
-    preprocess_images: true
+global_config:
+  file_conversion:
+    # Increase size limit
+    max_file_size: 104857600  # 100MB
     
-    # Try different languages
-    ocr_languages: ["eng", "fra", "deu"]
-    
-    # Use different OCR engine
-    engine: "easyocr"  # Alternative to tesseract
+    # Or filter at source level
+projects:
+  my-project:
+    sources:
+      localfile:
+        documents:
+          max_file_size: 20971520  # 20MB limit for this source
 ```
 
-#### Audio Transcription Problems
+#### Conversion Timeout
 
-**Problem**: Audio files not transcribing or poor quality
+**Problem**: Large files timing out during conversion
 
 **Solutions**:
 
 ```yaml
-file_conversion:
-  audio:
-    # Use larger model for better accuracy
-    model_size: "medium"  # or "large"
-    
-    # Specify language if known
-    language: "en"  # Instead of "auto"
-    
-    # Adjust chunk settings
-    chunk_duration: 60
-    overlap_duration: 10
-    
-    # Preprocessing
-    normalize_audio: true
-    remove_silence: true
+global_config:
+  file_conversion:
+    # Increase timeout
+    conversion_timeout: 900  # 15 minutes
 ```
+
+#### LLM Integration Issues
+
+**Problem**: Image descriptions not working
+
+**Solutions**:
+
+1. **Check API key**:
+
+   ```bash
+   echo $OPENAI_API_KEY
+   ```
+
+2. **Verify configuration**:
+
+   ```yaml
+   global_config:
+     file_conversion:
+       markitdown:
+         enable_llm_descriptions: true
+         llm_api_key: "${OPENAI_API_KEY}"
+   ```
+
+3. **Test API access**:
+
+   ```bash
+   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+     https://api.openai.com/v1/models
+   ```
 
 #### Memory Issues
 
@@ -502,123 +396,125 @@ file_conversion:
 **Solutions**:
 
 ```yaml
-file_conversion:
-  # Reduce memory usage
-  max_file_size: 20971520  # 20MB limit
-  
-  # Process in chunks
-  chunk_processing: true
-  chunk_size: 1048576  # 1MB chunks
-  
-  # Streaming for large files
-  stream_large_files: true
-  
-  # Limit concurrent conversions
-  max_concurrent_conversions: 2
+global_config:
+  file_conversion:
+    # Reduce file size limits
+    max_file_size: 20971520  # 20MB
+    
+    # Reduce timeout to fail faster
+    conversion_timeout: 180  # 3 minutes
 ```
 
-#### Archive Extraction Issues
+#### Unsupported File Types
 
-**Problem**: Archives not extracting or processing
+**Problem**: Some files not being processed
 
 **Solutions**:
 
-```yaml
-file_conversion:
-  archives:
-    # Limit extraction depth
-    max_depth: 2
-    
-    # Skip large archives
-    max_archive_size: 104857600  # 100MB
-    
-    # Handle password protection
-    password_protected: true
-    passwords: ["", "password", "archive"]
-    
-    # Skip problematic formats
-    skip_formats: ["rar"]  # If RAR support unavailable
-```
+1. **Check file types in source configuration**:
+
+   ```yaml
+   sources:
+     localfile:
+       documents:
+         file_types:
+           - "*.pdf"
+           - "*.docx"
+           - "*.txt"
+   ```
+
+2. **Verify MarkItDown support** - Check if the file format is supported by MarkItDown
+
+3. **Enable file conversion**:
+
+   ```yaml
+   sources:
+     localfile:
+       documents:
+         enable_file_conversion: true
+   ```
 
 ### Debugging Commands
 
 ```bash
-# Check file format detection
+# Check file type detection
 file /path/to/unknown_file
 
-# Test PDF extraction manually
-python -c "import markitdown; print(markitdown.MarkItDown().convert('/path/to/file.pdf').text_content)"
+# Test MarkItDown manually
+python -c "
+from markitdown import MarkItDown
+md = MarkItDown()
+result = md.convert('/path/to/file.pdf')
+print(result.text_content[:500])
+"
 
-# Check OCR installation
-tesseract --version
-tesseract --list-langs
-
-# Test audio transcription
-whisper --help
+# Check available Python packages
+pip list | grep -E "(markitdown|tesseract|whisper)"
 ```
 
-## 📊 Monitoring and Metrics
+## 📊 Monitoring and Performance
 
-### Conversion Statistics
+### Check Processing Status
 
 ```bash
-# View conversion statistics
-qdrant-loader --workspace . stats --conversion
+# View project status
+qdrant-loader --workspace . project status
 
-# Check format-specific statistics
-qdrant-loader --workspace . stats --conversion --format pdf
+# Check specific project
+qdrant-loader --workspace . project status --project-id my-project
 
-# Monitor conversion performance
-qdrant-loader --workspace . status --conversion --watch
+# Monitor with debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
 ```
 
-### Performance Metrics
+### Performance Considerations
 
-Monitor these metrics for file conversion:
+Monitor these aspects for file conversion:
 
 - **Conversion success rate** - Percentage of files successfully converted
 - **Processing time per format** - Average time to convert each format
 - **Memory usage** - Peak memory during conversion
-- **OCR accuracy** - Quality of text extraction from images
 - **File size distribution** - Understanding of content characteristics
+- **Timeout frequency** - Files that exceed conversion timeout
 
 ## 🔄 Best Practices
 
 ### Performance Optimization
 
-1. **Set appropriate size limits** - Avoid processing very large files
-2. **Use format-specific settings** - Optimize for each file type
-3. **Enable caching** - Cache conversion results
-4. **Process in parallel** - Use concurrent conversion when possible
+1. **Set appropriate size limits** - Balance between coverage and performance
+2. **Use reasonable timeouts** - Prevent hanging conversions
+3. **Monitor memory usage** - Watch for memory leaks during processing
+4. **Test with sample files** - Validate configuration with representative files
 
 ### Quality Assurance
 
-1. **Validate extracted content** - Check conversion quality
-2. **Use appropriate OCR settings** - Optimize for your content
-3. **Handle encoding properly** - Ensure text files are readable
-4. **Test with sample files** - Validate configuration with known files
+1. **Validate extracted content** - Check conversion quality with sample files
+2. **Handle encoding properly** - Ensure text files are readable
+3. **Test different file types** - Verify support for your specific formats
+4. **Monitor conversion logs** - Watch for errors and warnings
 
 ### Security Considerations
 
 1. **Scan files for malware** - Verify files are safe before processing
-2. **Handle passwords securely** - Store passwords in environment variables
-3. **Limit file sizes** - Prevent resource exhaustion
-4. **Validate file types** - Ensure files match expected formats
+2. **Limit file sizes** - Prevent resource exhaustion attacks
+3. **Validate file types** - Ensure files match expected formats
+4. **Secure API keys** - Store LLM API keys in environment variables
 
 ### Resource Management
 
-1. **Monitor memory usage** - Watch for memory leaks
+1. **Monitor disk space** - Temporary files during conversion
 2. **Set processing timeouts** - Prevent hanging conversions
-3. **Limit concurrent operations** - Avoid overwhelming the system
-4. **Clean up temporary files** - Remove intermediate files
+3. **Clean up temporary files** - Remove intermediate files after processing
+4. **Limit concurrent operations** - Avoid overwhelming the system
 
 ## 📚 Related Documentation
 
 - **[Data Sources](../data-sources/)** - Configuring data sources that use file conversion
 - **[Configuration Reference](../../configuration/)** - Complete configuration options
 - **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
-- **[Performance Tuning](../../../developers/deployment/performance-tuning.md)** - Optimization strategies
+- **[Local Files](../data-sources/local-files.md)** - Processing local files with conversion
+- **[Confluence](../data-sources/confluence.md)** - Processing Confluence attachments
 
 ---
 
-**Ready to process your files?** Start with the basic configuration above and customize based on your specific file types and quality requirements.
+**Ready to process your files?** Start with the basic configuration above and customize based on your specific file types and requirements.

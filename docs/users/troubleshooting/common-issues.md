@@ -1,6 +1,6 @@
 # Common Issues Guide
 
-This guide covers the most frequently encountered issues when using QDrant Loader, along with step-by-step solutions and prevention strategies. Whether you're experiencing installation problems, data loading issues, or search difficulties, this guide provides practical solutions.
+This guide covers the most frequently encountered issues when using QDrant Loader, along with step-by-step solutions and prevention strategies. Whether you're experiencing installation problems, data loading issues, or configuration difficulties, this guide provides practical solutions.
 
 ## 🎯 Quick Issue Identification
 
@@ -10,10 +10,9 @@ This guide covers the most frequently encountered issues when using QDrant Loade
 ❌ Installation fails          → See [Installation Issues](#installation-issues)
 ❌ Can't connect to QDrant     → See [Connection Problems](./connection-problems.md)
 ❌ Data not loading            → See [Data Loading Issues](#data-loading-issues)
-❌ Search returns no results   → See [Search Issues](#search-issues)
-❌ Slow performance            → See [Performance Issues](./performance-issues.md)
-❌ MCP server not working      → See [MCP Server Issues](#mcp-server-issues)
 ❌ Configuration errors        → See [Configuration Issues](#configuration-issues)
+❌ MCP server not working      → See [MCP Server Issues](#mcp-server-issues)
+❌ Slow performance            → See [Performance Issues](./performance-issues.md)
 ```
 
 ## 🔧 Installation Issues
@@ -105,25 +104,24 @@ pip install qdrant-loader
 
 **Symptoms:**
 
-- Load command completes but no vectors in collection
+- Ingest command completes but no vectors in collection
 - "0 documents processed" message
-- Empty search results
+- Empty search results through MCP server
 
 **Diagnostic Steps:**
 
 ```bash
-# Check source accessibility
-qdrant-loader config test --source git
-qdrant-loader config test --source confluence
+# Check current configuration
+qdrant-loader --workspace . config
 
-# Verify configuration
-qdrant-loader config validate
+# Validate project configuration
+qdrant-loader project --workspace . validate
 
-# Check collection status
-qdrant-loader status --collection your_collection --detailed
+# Check project status
+qdrant-loader project --workspace . status
 
-# Test with verbose logging
-qdrant-loader load --source local --path ./test --verbose
+# Test with debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest
 ```
 
 **Common Causes & Solutions:**
@@ -131,28 +129,42 @@ qdrant-loader load --source local --path ./test --verbose
 1. **Incorrect file patterns:**
 
 ```yaml
-# Problem: Too restrictive patterns
-include_patterns:
-  - "*.md"  # Only markdown files
+# Problem: Too restrictive patterns in project configuration
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          include_paths:
+            - "*.md"  # Only markdown files
 
 # Solution: Broader patterns
-include_patterns:
-  - "*.md"
-  - "*.txt"
-  - "*.rst"
-  - "docs/**/*"
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          include_paths:
+            - "*.md"
+            - "*.txt"
+            - "*.rst"
+            - "docs/**/*"
 ```
 
 2. **Authentication issues:**
 
 ```bash
 # Check credentials
-echo $CONFLUENCE_API_TOKEN
-echo $GITHUB_TOKEN
+echo $QDRANT_API_KEY
+echo $OPENAI_API_KEY
+echo $CONFLUENCE_TOKEN
+echo $JIRA_TOKEN
 
-# Test authentication
-curl -u "$CONFLUENCE_USERNAME:$CONFLUENCE_API_TOKEN" \
-  "$CONFLUENCE_URL/rest/api/content"
+# Test QDrant connection
+curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/health"
+
+# Test OpenAI API
+curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 ```
 
 3. **Path issues:**
@@ -162,8 +174,13 @@ curl -u "$CONFLUENCE_USERNAME:$CONFLUENCE_API_TOKEN" \
 ls -la /path/to/documents
 find /path/to/documents -name "*.md" | head -5
 
-# Use absolute paths
-qdrant-loader load --source local --path "$(pwd)/docs"
+# Use absolute paths in configuration
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///absolute/path/to/docs"
 ```
 
 ### Issue: Partial data loading
@@ -183,11 +200,12 @@ find ./docs -name "*.md" ! -readable
 # Check file encoding
 file -i ./docs/*.md
 
-# Use force reload
-qdrant-loader load --source local --path ./docs --force
+# Force reinitialization and reload
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
 
-# Check exclude patterns
-qdrant-loader config show | grep -A 5 exclude_patterns
+# Check exclude patterns in configuration
+qdrant-loader --workspace . config | grep -A 5 exclude_paths
 ```
 
 ### Issue: Duplicate content
@@ -196,97 +214,20 @@ qdrant-loader config show | grep -A 5 exclude_patterns
 
 - Same content appears multiple times in search
 - Higher than expected vector count
-- Duplicate detection warnings
+- Multiple sources pointing to same content
 
 **Solutions:**
 
 ```bash
-# Enable duplicate detection
-qdrant-loader load --source local --path ./docs --deduplicate
+# Check for overlapping sources in configuration
+qdrant-loader --workspace . config
 
-# Clean existing duplicates
-qdrant-loader optimize --collection your_collection --remove-duplicates
+# Review project configuration for duplicate sources
+qdrant-loader project --workspace . list
 
-# Check for multiple sources pointing to same content
-qdrant-loader config show | grep -A 10 data_sources
-```
-
-## 🔍 Search Issues
-
-### Issue: No search results
-
-**Symptoms:**
-
-- Search returns empty results
-- "No matches found" for obvious queries
-- Search works for some terms but not others
-
-**Diagnostic Steps:**
-
-```bash
-# Check collection has data
-qdrant-loader status --collection your_collection
-
-# Test basic search
-qdrant-loader search "test" --collection your_collection --limit 10
-
-# Check with different similarity thresholds
-qdrant-loader search "your query" --threshold 0.5
-qdrant-loader search "your query" --threshold 0.3
-
-# Test exact text search
-qdrant-loader search "exact phrase from document" --collection your_collection
-```
-
-**Common Solutions:**
-
-1. **Lower similarity threshold:**
-
-```bash
-# Default threshold might be too high
-qdrant-loader search "query" --threshold 0.4
-```
-
-2. **Check embedding model:**
-
-```yaml
-# Ensure consistent embedding model
-openai:
-  model: "text-embedding-3-small"  # Use same model for indexing and search
-```
-
-3. **Verify collection name:**
-
-```bash
-# List available collections
-qdrant-loader collection list
-
-# Search in correct collection
-qdrant-loader search "query" --collection correct_collection_name
-```
-
-### Issue: Poor search quality
-
-**Symptoms:**
-
-- Irrelevant results returned
-- Good content not found
-- Inconsistent search quality
-
-**Solutions:**
-
-```bash
-# Optimize collection
-qdrant-loader optimize --collection your_collection
-
-# Rebuild with better chunking
-qdrant-loader load --source local --path ./docs --chunk-size 800 --chunk-overlap 200 --force
-
-# Use semantic search with filters
-qdrant-loader search "query" --filter "content_type:documentation"
-
-# Try different search strategies
-qdrant-loader search "query" --strategy hybrid
+# Reinitialize collection to clean duplicates
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
 ```
 
 ## ⚙️ Configuration Issues
@@ -295,7 +236,7 @@ qdrant-loader search "query" --strategy hybrid
 
 **Symptoms:**
 
-- `qdrant-loader config validate` fails
+- `qdrant-loader project validate` fails
 - YAML parsing errors
 - Missing required fields
 
@@ -303,16 +244,16 @@ qdrant-loader search "query" --strategy hybrid
 
 ```bash
 # Check YAML syntax
-python -c "import yaml; yaml.safe_load(open('qdrant-loader.yaml'))"
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
-# Validate against schema
-qdrant-loader config validate --verbose
+# Validate project configuration
+qdrant-loader project --workspace . validate
 
-# Use example configuration
-qdrant-loader config init --example
+# Check current configuration
+qdrant-loader --workspace . config
 
-# Check for common issues
-grep -n "api_key.*:" qdrant-loader.yaml  # Check for exposed secrets
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
 ```
 
 **Common Configuration Problems:**
@@ -321,30 +262,34 @@ grep -n "api_key.*:" qdrant-loader.yaml  # Check for exposed secrets
 
 ```yaml
 # Wrong indentation
-qdrant:
-url: "http://localhost:6333"
-
-# Correct indentation
+global_config:
 qdrant:
   url: "http://localhost:6333"
+
+# Correct indentation
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
 ```
 
 2. **Missing environment variables:**
 
 ```bash
 # Check required variables
-env | grep -E "(QDRANT|OPENAI|CONFLUENCE)"
+env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 
 # Set missing variables
 export QDRANT_API_KEY="your-key-here"
+export OPENAI_API_KEY="your-key-here"
 ```
 
 3. **Invalid URLs:**
 
 ```yaml
 # Ensure URLs are complete and accessible
-qdrant:
-  url: "https://your-qdrant-instance.com"  # Include protocol
+global_config:
+  qdrant:
+    url: "https://your-qdrant-instance.com"  # Include protocol
 ```
 
 ### Issue: Environment variables not loaded
@@ -365,11 +310,35 @@ echo $OPENAI_API_KEY
 # Load from .env file
 export $(cat .env | xargs)
 
-# Use explicit config
-qdrant-loader load --qdrant-url "https://your-instance.com" --qdrant-api-key "your-key"
+# Check if .env file exists in workspace
+ls -la .env
 
-# Debug variable expansion
-qdrant-loader config show --expand-vars
+# Verify configuration loads environment variables
+qdrant-loader --workspace . config
+```
+
+### Issue: Project configuration errors
+
+**Symptoms:**
+
+- Projects not found or recognized
+- Invalid project structure
+- Missing required project fields
+
+**Solutions:**
+
+```bash
+# List all configured projects
+qdrant-loader project --workspace . list
+
+# Check project status
+qdrant-loader project --workspace . status
+
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
+
+# Check project configuration structure
+qdrant-loader --workspace . config | grep -A 20 projects
 ```
 
 ## 🔌 MCP Server Issues
@@ -379,23 +348,23 @@ qdrant-loader config show --expand-vars
 **Symptoms:**
 
 - Server fails to start
-- Port already in use errors
+- Import errors when starting MCP server
 - Permission denied errors
 
 **Solutions:**
 
 ```bash
-# Check if port is available
-netstat -tlnp | grep :3000
+# Check if MCP server package is installed
+pip list | grep qdrant-loader-mcp-server
 
-# Use different port
-qdrant-loader mcp-server start --port 3001
+# Install MCP server package
+pip install qdrant-loader-mcp-server
 
-# Check permissions
-sudo qdrant-loader mcp-server start --port 80  # If needed
+# Start MCP server with debug logging
+MCP_LOG_LEVEL=DEBUG mcp-qdrant-loader
 
-# Start with verbose logging
-qdrant-loader mcp-server start --verbose
+# Check environment variables for MCP server
+env | grep MCP
 ```
 
 ### Issue: AI tools can't connect to MCP server
@@ -404,23 +373,22 @@ qdrant-loader mcp-server start --verbose
 
 - Connection refused errors in AI tools
 - MCP server running but not accessible
-- Authentication failures
+- Configuration issues in AI tools
 
 **Solutions:**
 
 ```bash
-# Check server status
-qdrant-loader mcp-server status
+# Check MCP server configuration in AI tool
+# For Cursor, check: ~/.cursor/mcp_settings.json
 
-# Test connection
-curl http://localhost:3000/health
+# Verify MCP server is running
+ps aux | grep mcp-qdrant-loader
 
-# Check firewall settings
-sudo ufw status
-sudo ufw allow 3000
+# Test MCP server manually
+echo '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}' | mcp-qdrant-loader
 
-# Verify MCP configuration in AI tool
-cat ~/.config/cursor/mcp-settings.json
+# Check MCP server logs
+tail -f ~/.qdrant-loader/logs/mcp-server.log
 ```
 
 ### Issue: Search not working through MCP
@@ -429,24 +397,23 @@ cat ~/.config/cursor/mcp-settings.json
 
 - MCP server connected but search fails
 - Empty results through AI tools
-- Direct CLI search works but MCP doesn't
+- MCP tools not available
 
 **Solutions:**
 
 ```bash
-# Check MCP server logs
-qdrant-loader mcp-server logs
+# Verify workspace configuration
+qdrant-loader --workspace . config
 
-# Test MCP search directly
-curl -X POST http://localhost:3000/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "test", "limit": 5}'
+# Check project status
+qdrant-loader project --workspace . status
 
-# Restart MCP server
-qdrant-loader mcp-server restart
+# Ensure data is loaded
+qdrant-loader --workspace . ingest
 
-# Check collection access
-qdrant-loader mcp-server status --collections
+# Restart MCP server with proper workspace
+cd /path/to/workspace
+mcp-qdrant-loader
 ```
 
 ## 🚨 Emergency Procedures
@@ -456,26 +423,24 @@ qdrant-loader mcp-server status --collections
 If you're experiencing multiple issues and need a fresh start:
 
 ```bash
-# 1. Stop all services
-qdrant-loader mcp-server stop
+# 1. Backup configuration files
+cp config.yaml config.yaml.backup
+cp .env .env.backup
 
-# 2. Backup important data
-qdrant-loader backup --collection your_collection --output backup.tar.gz
+# 2. Clean installation
+pip uninstall qdrant-loader qdrant-loader-mcp-server
+pip install qdrant-loader qdrant-loader-mcp-server
 
-# 3. Clean installation
-pip uninstall qdrant-loader
-pip install qdrant-loader
+# 3. Validate configuration
+qdrant-loader project --workspace . validate
 
-# 4. Reset configuration
-mv qdrant-loader.yaml qdrant-loader.yaml.backup
-qdrant-loader config init
+# 4. Test basic functionality
+qdrant-loader --workspace . config
+qdrant-loader project --workspace . list
 
-# 5. Test basic functionality
-qdrant-loader config test
-qdrant-loader load --source local --path ./test-docs --dry-run
-
-# 6. Restore data if needed
-qdrant-loader collection restore --input backup.tar.gz
+# 5. Reinitialize and reload data
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
 ```
 
 ### Data Recovery
@@ -483,28 +448,27 @@ qdrant-loader collection restore --input backup.tar.gz
 If you've lost data or corrupted your collection:
 
 ```bash
-# Check for automatic backups
-ls -la ~/.qdrant-loader/backups/
+# Check current project status
+qdrant-loader project --workspace . status
 
-# Restore from backup
-qdrant-loader collection restore --input latest-backup.tar.gz
+# Reinitialize collection
+qdrant-loader --workspace . init --force
 
-# Rebuild from source
-qdrant-loader load --source git --force --collection recovered_collection
+# Reload all data from sources
+qdrant-loader --workspace . ingest
 
-# Verify data integrity
-qdrant-loader status --collection recovered_collection --detailed
+# Verify data is loaded
+qdrant-loader project --workspace . status
 ```
 
 ## 📞 Getting Help
 
 ### Before Asking for Help
 
-1. **Check logs:**
+1. **Check logs with debug mode:**
 
 ```bash
-qdrant-loader --verbose load --source local --path ./docs
-tail -f ~/.qdrant-loader/logs/qdrant-loader.log
+qdrant-loader --workspace . --log-level DEBUG ingest
 ```
 
 2. **Gather system information:**
@@ -519,19 +483,43 @@ uname -a
 3. **Test minimal example:**
 
 ```bash
+# Create test workspace
+mkdir test-workspace && cd test-workspace
+
+# Create minimal configuration
+cat > config.yaml << EOF
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  test-project:
+    display_name: "Test Project"
+    collection_name: "test_collection"
+    sources:
+      localfile:
+        test-docs:
+          base_url: "file://./test-docs"
+          include_paths: ["*.md"]
+EOF
+
 # Create test data
 mkdir test-docs
 echo "# Test Document" > test-docs/test.md
 
 # Test loading
-qdrant-loader load --source local --path test-docs --dry-run
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
 ```
 
 ### Support Channels
 
-- **GitHub Issues**: [Report bugs and feature requests](https://github.com/company/qdrant-loader/issues)
-- **Documentation**: [Check latest documentation](https://docs.qdrant-loader.com)
-- **Community**: [Join discussions](https://discord.gg/qdrant-loader)
+- **GitHub Issues**: [Report bugs and feature requests](https://github.com/martin-papy/qdrant-loader/issues)
+- **Documentation**: [Check latest documentation](../../README.md)
+- **Discussions**: [Community Q&A](https://github.com/martin-papy/qdrant-loader/discussions)
 
 ### Issue Report Template
 
@@ -556,16 +544,23 @@ What you expected to happen
 ## Actual Behavior
 What actually happened
 
-## Logs
-```
-
-[Paste relevant logs here]
-
-```
-
 ## Configuration
 ```yaml
-[Paste relevant configuration]
+[Paste relevant configuration (sanitized)]
+```
+
+## Logs
+
+```
+[Paste relevant logs here]
+```
+
+## Commands Used
+
+```bash
+# List the exact commands you ran
+qdrant-loader --workspace . config
+qdrant-loader project --workspace . validate
 ```
 
 ```
@@ -576,7 +571,7 @@ What actually happened
 - **[Connection Problems](./connection-problems.md)** - Network and connectivity issues
 - **[Error Messages Reference](./error-messages-reference.md)** - Detailed error explanations
 - **[Configuration Reference](../configuration/config-file-reference.md)** - Configuration options
-- **[CLI Reference](../cli/commands-reference.md)** - Command-line interface
+- **[CLI Reference](../cli-reference/commands.md)** - Command-line interface
 
 ---
 

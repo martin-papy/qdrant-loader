@@ -83,15 +83,6 @@ Complete reference for all environment variables including:
 - **Processing options** - Embedding models, file conversion settings
 - **Performance tuning** - Memory limits, concurrency settings
 
-### ⚙️ [Advanced Settings](./advanced-settings.md)
-
-Deep dive into advanced configuration options:
-
-- **Performance optimization** - Batch sizes, parallel processing, caching
-- **Memory management** - Limits and optimization strategies
-- **Error handling** - Retry policies, timeout settings
-- **Logging configuration** - Levels, formats, and output destinations
-
 ### 🔒 [Security Considerations](./security-considerations.md)
 
 Security best practices and configuration:
@@ -251,14 +242,14 @@ STATE_DB_PATH=/data/qdrant-loader/state.db
 ### Validate Configuration
 
 ```bash
-# Validate configuration syntax and settings
-qdrant-loader --workspace . validate
+# Display and validate configuration
+qdrant-loader --workspace . config
 
-# Test data source connections
-qdrant-loader --workspace . test-connections
+# Validate project configurations
+qdrant-loader project --workspace . validate
 
-# Check configuration with verbose output
-qdrant-loader --workspace . config --verbose
+# Check project status
+qdrant-loader project --workspace . status
 ```
 
 ### Common Validation Errors
@@ -348,9 +339,8 @@ max_concurrent_requests: 5
 export LOG_LEVEL=INFO
 export LOG_FILE=/var/log/qdrant-loader/app.log
 
-# Monitor key metrics
-qdrant-loader --workspace . stats
-qdrant-loader --workspace . status --verbose
+# Monitor project status
+qdrant-loader project --workspace . status
 ```
 
 ## 🔍 Advanced Configuration Patterns
@@ -408,19 +398,19 @@ sources:
 ### Configuration Testing Workflow
 
 ```bash
-# 1. Validate syntax
-qdrant-loader --workspace . validate
+# 1. Validate configuration syntax
+qdrant-loader --workspace . config
 
-# 2. Test connections
-qdrant-loader --workspace . test-connections
+# 2. Validate project configurations
+qdrant-loader project --workspace . validate
 
-# 3. Dry run
-qdrant-loader --workspace . --dry-run ingest
+# 3. Check project status
+qdrant-loader project --workspace . status
 
-# 4. Process small subset
-qdrant-loader --workspace . ingest --limit 10
+# 4. Initialize workspace
+qdrant-loader --workspace . init
 
-# 5. Full processing
+# 5. Process data
 qdrant-loader --workspace . ingest
 ```
 
@@ -430,8 +420,8 @@ qdrant-loader --workspace . ingest
 # Monitor resource usage during processing
 top -p $(pgrep -f qdrant-loader)
 
-# Check processing statistics
-qdrant-loader --workspace . stats
+# Check project status
+qdrant-loader project --workspace . status
 
 # Measure processing time
 time qdrant-loader --workspace . ingest
@@ -440,7 +430,6 @@ time qdrant-loader --workspace . ingest
 ## 📚 Related Documentation
 
 - **[Environment Variables](./environment-variables.md)** - Complete environment variable reference
-- **[Advanced Settings](./advanced-settings.md)** - Performance and optimization settings
 - **[Security Considerations](./security-considerations.md)** - Security best practices
 - **[Data Sources](../detailed-guides/data-sources/)** - Source-specific configuration
 - **[Troubleshooting](../troubleshooting/)** - Common configuration issues
@@ -450,7 +439,7 @@ time qdrant-loader --workspace . ingest
 ### Configuration Issues
 
 - **[Common Issues](../troubleshooting/common-issues.md)** - Frequent configuration problems
-- **[Performance Issues](../troubleshooting/performance-optimization.md)** - Performance tuning help
+- **[Performance Issues](../troubleshooting/performance-issues.md)** - Performance tuning help
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report configuration bugs
 
 ### Community Support
@@ -460,4 +449,4 @@ time qdrant-loader --workspace . ingest
 
 ---
 
-**Ready to configure QDrant Loader?** Start with the [Environment Variables](./environment-variables.md) guide or jump to [Advanced Settings](./advanced-settings.md) for performance optimization.
+**Ready to configure QDrant Loader?** Start with the [Environment Variables](./environment-variables.md) guide for complete setup instructions.

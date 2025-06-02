@@ -15,7 +15,7 @@ Thank you for your interest in contributing to QDrant Loader! This guide will he
 
 ### Prerequisites
 
-- **Python 3.8+** (3.9+ recommended)
+- **Python 3.12+** (latest stable version recommended)
 - **Git** for version control
 - **Virtual environment** (venv, conda, or similar)
 - **QDrant instance** (local or cloud) for testing
@@ -324,7 +324,7 @@ qdrant-loader --workspace . init
 ```bash
 # Build the documentation website
 cd website
-python build.py --source ../docs --output ../dist
+python build.py --output ../dist
 
 # Serve locally for testing
 cd ../dist
@@ -339,7 +339,6 @@ python -m http.server 8000
 - [ ] **Code is formatted**: Black, isort, and ruff checks pass
 - [ ] **Type checking passes**: MyPy reports no errors
 - [ ] **Documentation updated**: Relevant docs are updated
-- [ ] **Changelog entry**: Add entry if user-facing change
 
 ### Pull Request Template
 
@@ -402,8 +401,8 @@ A clear and concise description of what you expected to happen.
 
 ## Environment
 - OS: [e.g. macOS 12.0, Ubuntu 20.04, Windows 10]
-- Python version: [e.g. 3.9.7]
-- QDrant Loader version: [e.g. 0.3.2]
+- Python version: [e.g. 3.12.2]
+- QDrant Loader version: [e.g. 0.4.0b1]
 - QDrant version: [e.g. 1.7.0]
 
 ## Additional Context
@@ -446,10 +445,9 @@ We use **unified versioning** - both packages always have the same version numbe
 ### Release Steps (for maintainers)
 
 1. **Update version numbers** in both packages
-2. **Update CHANGELOG.md** with new features and fixes
-3. **Create release branch** and test thoroughly
-4. **Create GitHub release** with release notes
-5. **Publish to PyPI** using the release script
+2. **Create release branch** and test thoroughly
+3. **Create GitHub release** with release notes
+4. **Publish to PyPI** using the release script
 
 ```bash
 # Check release readiness
