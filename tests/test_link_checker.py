@@ -12,9 +12,8 @@ import sys
 import os
 
 # Add website directory to Python path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "website"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from website import check_links
 from website.check_links import LinkChecker
 
 
@@ -459,11 +458,12 @@ class TestLinkCheckerCLI:
     @patch("sys.argv", ["check_links.py", "--url", "http://test.com", "--depth", "2"])
     def test_cli_argument_parsing(self):
         """Test CLI argument parsing."""
+        import website.check_links as check_links
 
         mock_checker = Mock()
         mock_checker.run_check.return_value = True
 
-        with patch("check_links.LinkChecker", return_value=mock_checker):
+        with patch("website.check_links.LinkChecker", return_value=mock_checker):
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
@@ -472,12 +472,13 @@ class TestLinkCheckerCLI:
     @patch("sys.argv", ["check_links.py"])
     def test_cli_default_arguments(self):
         """Test CLI with default arguments."""
+        import website.check_links as check_links
 
         mock_checker = Mock()
         mock_checker.run_check.return_value = True
 
         with patch(
-            "check_links.LinkChecker", return_value=mock_checker
+            "website.check_links.LinkChecker", return_value=mock_checker
         ) as mock_checker_class:
             with patch("sys.exit") as mock_exit:
                 check_links.main()
@@ -488,11 +489,12 @@ class TestLinkCheckerCLI:
     @patch("sys.argv", ["check_links.py"])
     def test_cli_with_broken_links(self):
         """Test CLI when broken links are found."""
+        import website.check_links as check_links
 
         mock_checker = Mock()
         mock_checker.run_check.return_value = False  # Broken links found
 
-        with patch("check_links.LinkChecker", return_value=mock_checker):
+        with patch("website.check_links.LinkChecker", return_value=mock_checker):
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
@@ -501,11 +503,12 @@ class TestLinkCheckerCLI:
     @patch("sys.argv", ["check_links.py"])
     def test_cli_keyboard_interrupt(self):
         """Test CLI handling of keyboard interrupt."""
+        import website.check_links as check_links
 
         mock_checker = Mock()
         mock_checker.run_check.side_effect = KeyboardInterrupt()
 
-        with patch("check_links.LinkChecker", return_value=mock_checker):
+        with patch("website.check_links.LinkChecker", return_value=mock_checker):
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
@@ -514,11 +517,12 @@ class TestLinkCheckerCLI:
     @patch("sys.argv", ["check_links.py"])
     def test_cli_exception_handling(self):
         """Test CLI handling of general exceptions."""
+        import website.check_links as check_links
 
         mock_checker = Mock()
         mock_checker.run_check.side_effect = Exception("Test error")
 
-        with patch("check_links.LinkChecker", return_value=mock_checker):
+        with patch("website.check_links.LinkChecker", return_value=mock_checker):
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
