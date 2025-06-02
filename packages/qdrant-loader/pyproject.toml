@@ -83,7 +83,8 @@ classifiers = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
+Homepage = "https://qdrant-loader.net"
+Documentation = "https://qdrant-loader.net/docs/packages/qdrant-loader/README.html"
 Repository = "https://github.com/martin-papy/qdrant-loader"
 Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 
