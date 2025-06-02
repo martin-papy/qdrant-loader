@@ -452,7 +452,12 @@
                 });
 
             // Update individual test statuses
-            if (data.packages) {
+            if (data.loader_status || data.mcp_status || data.website_status) {
+                updateTestStatus('loader', data.loader_status || 'unknown');
+                updateTestStatus('mcp', data.mcp_status || 'unknown');
+                updateTestStatus('website', data.website_status || 'unknown');
+            } else if (data.packages) {
+                // Fallback for old format
                 updateTestStatus('loader', data.packages['qdrant-loader'] || 'unknown');
                 updateTestStatus('mcp', data.packages['mcp-server'] || 'unknown');
                 updateTestStatus('website', data.packages['website'] || 'unknown');
