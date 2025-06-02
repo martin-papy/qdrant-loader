@@ -210,6 +210,13 @@ class MCPHandler:
                         },
                         "description": "Optional list of source types to filter results",
                     },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                        },
+                        "description": "Optional list of project IDs to filter results",
+                    },
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of results to return",
@@ -387,12 +394,14 @@ class MCPHandler:
         # Extract parameters with defaults
         query = params["query"]
         source_types = params.get("source_types", [])
+        project_ids = params.get("project_ids", [])
         limit = params.get("limit", 10)
 
         logger.info(
             "Processing search request",
             query=query,
             source_types=source_types,
+            project_ids=project_ids,
             limit=limit,
         )
 
@@ -409,6 +418,7 @@ class MCPHandler:
             results = await self.search_engine.search(
                 query=processed_query["query"],
                 source_types=source_types,
+                project_ids=project_ids,
                 limit=limit,
             )
             logger.info(
@@ -451,6 +461,11 @@ class MCPHandler:
 
         if result.source_title:
             formatted_result += f" - {result.source_title}"
+
+        # Add project information if available
+        project_info = result.get_project_info()
+        if project_info:
+            formatted_result += f"\n🏗️ {project_info}"
 
         # Add attachment information if this is a file attachment
         if result.is_attachment:

@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-mcp-server"
-version = "0.3.3b1"
+version = "0.4.1"
 description = "A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor using Qdrant."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,6 +19,8 @@ keywords = [
     "cursor",
     "rag",
     "embeddings",
+    "multi-project",
+    "semantic-search",
 ]
 authors = [
     { name = "Martin Papy", email = "martin.papy@gmail.com" },
@@ -41,16 +43,25 @@ dependencies = [
     "qdrant-loader",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Environment :: Console",
+    "Framework :: FastAPI",
+    "Typing :: Typed",
 ]
 
 [project.urls]
-Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
+Homepage = "https://qdrant-loader.net"
+Documentation = "https://qdrant-loader.net/docs/packages/mcp-server/README.html"
 Repository = "https://github.com/martin-papy/qdrant-loader"
 Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 

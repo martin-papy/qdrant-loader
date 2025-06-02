@@ -28,18 +28,23 @@ async def init_collection(settings=None, force=False):
         if force:
             try:
                 manager.delete_collection()
-                logger.info(
-                    "Deleted existing collection",
+                logger.debug(
+                    "Recreating collection",
                     collection=settings.qdrant_collection_name,
                 )
             except Exception:
                 # Ignore errors if collection doesn't exist
                 pass
+        else:
+            logger.debug(
+                "Initializing collection",
+                collection=settings.qdrant_collection_name,
+            )
 
         # Create collection (vector size is hardcoded to 1536 in QdrantManager)
         manager.create_collection()
 
-        logger.info("Successfully initialized qDrant collection")
+        logger.debug("Collection initialization completed")
         return True
     except Exception as e:
         logger.error("Failed to initialize collection", error=str(e))

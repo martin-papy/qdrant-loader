@@ -1,0 +1,393 @@
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title d-flex align-items-center justify-content-center">
+                    <img src="{{ base_url }}assets/icons/qdrant-loader-icon.svg" alt="QDrant Loader" height="160"
+                        class="me-4">
+                    QDrant Loader
+                </h1>
+                <p class="hero-subtitle">
+                    Enterprise-ready vector database toolkit for building searchable knowledge bases from multiple data
+                    sources
+                </p>
+                <div class="mb-4">
+                    <span class="badge-custom">
+                        <i class="bi bi-arrow-repeat me-1"></i>Multi-Project Support
+                    </span>
+                    <span class="badge-custom">
+                        <i class="bi bi-plug me-1"></i>MCP Server
+                    </span>
+                    <span class="badge-custom">
+                        <i class="bi bi-file-earmark-text me-1"></i>File Conversion
+                    </span>
+                    <span class="badge-custom">
+                        <i class="bi bi-search me-1"></i>Semantic Search
+                    </span>
+                    <span class="badge-custom">
+                        <i class="bi bi-building me-1"></i>Enterprise Ready
+                    </span>
+                </div>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="docs/" class="btn btn-light btn-lg">
+                        <i class="bi bi-book me-2"></i>Get Started
+                    </a>
+                    <a href="https://github.com/martin-papy/qdrant-loader" class="btn btn-outline-light btn-lg"
+                        target="_blank">
+                        <i class="bi bi-github me-2"></i>View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Overview Section -->
+<section id="overview" class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- QDrant Loader Core -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-arrow-repeat text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">QDrant Loader Core</h5>
+                        </div>
+                        <p class="card-text">
+                            Comprehensive data ingestion toolkit supporting Git, Confluence, JIRA, and local files with
+                            intelligent file conversion.
+                        </p>
+                        <a href="docs/packages/qdrant-loader/README.html" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Server -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-plug text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">MCP Server</h5>
+                        </div>
+                        <p class="card-text">
+                            Model Context Protocol server providing RAG capabilities for Cursor IDE and other AI
+                            development tools.
+                        </p>
+                        <a href="docs/packages/mcp-server/README.html" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View Documentation
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Project Support -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-diagram-3 text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">Multi-Project Support</h5>
+                        </div>
+                        <p class="card-text">
+                            Manage multiple projects with a single configuration, one QDrant server, and unified search
+                            capabilities.
+                        </p>
+                        <a href="docs/users/configuration/config-file-reference.html" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View Configuration
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Conversion -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-file-earmark-text text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">File Conversion</h5>
+                        </div>
+                        <p class="card-text">
+                            Automatic conversion of 20+ file formats including PDF, Office documents, images, and audio
+                            files.
+                        </p>
+                        <a href="docs/users/detailed-guides/file-conversion/README.html"
+                            class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View Guide
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Coverage -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-graph-up text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">Test Coverage</h5>
+                        </div>
+                        <p class="card-text" id="coverage-summary">
+                            Comprehensive test coverage reports for both packages with detailed analysis.
+                        </p>
+                        <a href="coverage/" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>View Coverage Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 card-hover border-0 shadow">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-play-circle text-primary me-2" style="font-size: 1.5rem;"></i>
+                            <h5 class="card-title mb-0">Quick Start</h5>
+                        </div>
+                        <p class="card-text">
+                            Get started with QDrant Loader in minutes with our comprehensive installation and setup
+                            guide.
+                        </p>
+                        <a href="docs/getting-started/quick-start.html" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right me-1"></i>Get Started
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="display-5 fw-bold text-primary">
+                    <i class="bi bi-stars me-3"></i>Key Features
+                </h2>
+                <p class="lead text-muted">Everything you need for enterprise-grade vector database management</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-link-45deg"></i>
+                </div>
+                <h4 class="fw-bold">Multiple Data Sources</h4>
+                <p class="text-muted">Git, Confluence, JIRA, Local Files, Public Docs</p>
+            </div>
+
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <h4 class="fw-bold">File Conversion</h4>
+                <p class="text-muted">PDF, Office, Images, Audio, Archives</p>
+            </div>
+
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <h4 class="fw-bold">Multi-Project</h4>
+                <p class="text-muted">Single config, multiple projects</p>
+            </div>
+
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h4 class="fw-bold">Semantic Search</h4>
+                <p class="text-muted">AI-powered document retrieval</p>
+            </div>
+
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-plug"></i>
+                </div>
+                <h4 class="fw-bold">MCP Integration</h4>
+                <p class="text-muted">Cursor IDE and AI tools</p>
+            </div>
+
+            <div class="col-lg-4 col-md-6 text-center">
+                <div class="feature-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+                <h4 class="fw-bold">Enterprise Ready</h4>
+                <p class="text-muted">Scalable, secure, monitored</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Installation Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="text-center mb-5">
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="bi bi-download me-3"></i>Quick Installation
+                    </h2>
+                    <p class="lead text-muted">Get started in seconds with pip</p>
+                </div>
+
+                <div class="card border-0 shadow">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-arrow-repeat me-2"></i>Core Package
+                                </h5>
+                                <pre class="bg-dark text-light p-3 rounded"><code>pip install qdrant-loader</code></pre>
+                                <div class="text-center mt-2">
+                                    <a href="https://pypi.org/project/qdrant-loader/"
+                                        class="btn btn-sm btn-outline-info" target="_blank">
+                                        <i class="bi bi-box me-1"></i>View on PyPI
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">
+                                    <i class="bi bi-plug me-2"></i>MCP Server
+                                </h5>
+                                <pre
+                                    class="bg-dark text-light p-3 rounded"><code>pip install qdrant-loader-mcp-server</code></pre>
+                                <div class="text-center mt-2">
+                                    <a href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                        class="btn btn-sm btn-outline-info" target="_blank">
+                                        <i class="bi bi-plug me-1"></i>View on PyPI
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="docs/" class="btn btn-primary btn-lg">
+                                <i class="bi bi-book me-2"></i>View Full Documentation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Community Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-5">
+                    <h2 class="display-6 fw-bold text-primary">
+                        <i class="bi bi-people me-3"></i>Join the Community
+                    </h2>
+                    <p class="lead text-muted">Help us build the future of vector database tooling</p>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Contributing CTA -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow-lg bg-primary text-white">
+                            <div class="card-body text-center p-5">
+                                <div class="mb-4">
+                                    <i class="bi bi-heart-fill" style="font-size: 3rem;"></i>
+                                </div>
+                                <h3 class="fw-bold mb-3">Contribute to QDrant Loader</h3>
+                                <p class="mb-4">
+                                    Join our community of developers! Whether you're fixing bugs, adding
+                                    features,
+                                    or improving documentation, every contribution makes a difference.
+                                </p>
+                                <div class="mb-4">
+                                    <span class="badge bg-light text-dark me-2 mb-2">
+                                        <i class="bi bi-code-slash me-1"></i>Code
+                                    </span>
+                                    <span class="badge bg-light text-dark me-2 mb-2">
+                                        <i class="bi bi-file-text me-1"></i>Documentation
+                                    </span>
+                                    <span class="badge bg-light text-dark me-2 mb-2">
+                                        <i class="bi bi-bug me-1"></i>Bug Reports
+                                    </span>
+                                    <span class="badge bg-light text-dark me-2 mb-2">
+                                        <i class="bi bi-lightbulb me-1"></i>Ideas
+                                    </span>
+                                </div>
+                                <a href="docs/CONTRIBUTING.html" class="btn btn-light btn-lg">
+                                    <i class="bi bi-arrow-right me-2"></i>Start Contributing
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Community Links -->
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow">
+                            <div class="card-body p-5">
+                                <h4 class="fw-bold text-primary mb-4">
+                                    <i class="bi bi-chat-dots me-2"></i>Connect With Us
+                                </h4>
+
+                                <div class="d-grid gap-3">
+                                    <a href="https://github.com/martin-papy/qdrant-loader"
+                                        class="btn btn-outline-dark btn-lg text-start" target="_blank">
+                                        <i class="bi bi-github me-3"></i>
+                                        <div class="d-inline-block">
+                                            <div class="fw-bold">GitHub Repository</div>
+                                            <small class="text-muted">Source code, issues, and discussions</small>
+                                        </div>
+                                    </a>
+
+                                    <a href="https://github.com/martin-papy/qdrant-loader/issues"
+                                        class="btn btn-outline-warning btn-lg text-start" target="_blank">
+                                        <i class="bi bi-bug me-3"></i>
+                                        <div class="d-inline-block">
+                                            <div class="fw-bold">Report Issues</div>
+                                            <small class="text-muted">Bug reports and feature requests</small>
+                                        </div>
+                                    </a>
+
+                                    <a href="https://github.com/martin-papy/qdrant-loader/discussions"
+                                        class="btn btn-outline-info btn-lg text-start" target="_blank">
+                                        <i class="bi bi-chat-square-text me-3"></i>
+                                        <div class="d-inline-block">
+                                            <div class="fw-bold">Discussions</div>
+                                            <small class="text-muted">Community Q&A and ideas</small>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Load test status if available
+    fetch('test-results/status.json')
+        .then(response => response.json())
+        .then(data => {
+            const statusClass = data.overall_status === 'success' ? 'status-success' : 'status-failure';
+            const statusText = data.overall_status === 'success' ? 'All tests passing' : 'Some tests failing';
+
+            document.getElementById('coverage-summary').innerHTML =
+                `<span class="status-indicator ${statusClass}"></span>${statusText}. ` +
+                document.getElementById('coverage-summary').innerHTML;
+        })
+        .catch(() => {
+            document.getElementById('coverage-summary').innerHTML =
+                '<span class="status-indicator status-unknown"></span>Test status unknown. ' +
+                document.getElementById('coverage-summary').innerHTML;
+        });
+</script>

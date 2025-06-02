@@ -27,8 +27,29 @@ class TestPublicDocsIntegration:
         with open(config_path) as f:
             config_data = yaml.safe_load(f)
 
-        # Get the publicdocs sources
-        publicdocs_sources = config_data.get("sources", {}).get("publicdocs", {})
+        # Look for publicdocs sources in the new multi-project format
+        projects = config_data.get("projects", {})
+
+        publicdocs_sources = None
+        for project_id, project_config in projects.items():
+            project_sources = project_config.get("sources", {})
+            if "publicdocs" in project_sources:
+                publicdocs_sources = project_sources["publicdocs"]
+                break
+
+        if not publicdocs_sources:
+            # Create a mock PublicDocs configuration for testing
+            mock_config = {
+                "source": "test-publicdocs",
+                "source_type": SourceType.PUBLICDOCS,
+                "base_url": "https://example.com/docs",
+                "version": "1.0",
+                "selectors": {"content": ".content", "title": "h1"},
+                "exclude_paths": ["/api/*", "/internal/*"],
+                "max_depth": 3,
+                "delay": 1.0,
+            }
+            return PublicDocsSourceConfig.model_validate(mock_config)
 
         # Use the first publicdocs source
         source_name = next(iter(publicdocs_sources.keys()), None)
@@ -48,6 +69,12 @@ class TestPublicDocsIntegration:
     @pytest.mark.asyncio
     async def test_document_crawling(self, publicdocs_config):
         """Test document crawling with real configuration."""
+        # Skip if using mock configuration (no real PublicDocs source available)
+        if str(publicdocs_config.base_url) == "https://example.com/docs":
+            pytest.skip(
+                "Using mock PublicDocs configuration - no real source available"
+            )
+
         # Create the connector with the real configuration
         connector = PublicDocsConnector(publicdocs_config)
         async with connector:
@@ -100,6 +127,12 @@ class TestPublicDocsIntegration:
     @pytest.mark.asyncio
     async def test_url_filtering(self, publicdocs_config):
         """Test URL filtering based on configuration."""
+        # Skip if using mock configuration (no real PublicDocs source available)
+        if str(publicdocs_config.base_url) == "https://example.com/docs":
+            pytest.skip(
+                "Using mock PublicDocs configuration - no real source available"
+            )
+
         # Create the connector with the real configuration
         connector = PublicDocsConnector(publicdocs_config)
 

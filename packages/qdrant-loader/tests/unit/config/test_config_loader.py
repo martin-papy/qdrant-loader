@@ -24,20 +24,52 @@ def test_config_path(tmp_path: Path) -> Path:
             },
             "embedding": {
                 "model": "text-embedding-3-small",
+                "api_key": "${OPENAI_API_KEY}",
+                "batch_size": 100,
+                "endpoint": "https://api.openai.com/v1",
+                "tokenizer": "cl100k_base",
                 "vector_size": 1536,
+                "max_tokens_per_request": 8000,
+                "max_tokens_per_chunk": 8000,
+            },
+            "state_management": {
+                "database_path": "${STATE_DB_PATH}",
+                "table_prefix": "qdrant_loader_",
+                "connection_pool": {
+                    "size": 5,
+                    "timeout": 30,
+                },
+            },
+            "file_conversion": {
+                "max_file_size": 52428800,
+                "conversion_timeout": 300,
+                "markitdown": {
+                    "enable_llm_descriptions": False,
+                    "llm_model": "gpt-4o",
+                    "llm_endpoint": "https://api.openai.com/v1",
+                    "llm_api_key": "${OPENAI_API_KEY}",
+                },
             },
         },
-        "sources": {
-            "publicdocs": {
-                "example": {
-                    "base_url": "https://example.com",
-                    "version": "1.0",
-                    "content_type": "html",
-                    "selectors": {
-                        "content": ".content",
-                        "title": "h1",
-                    },
-                }
+        "projects": {
+            "default": {
+                "display_name": "Config Loader Test Project",
+                "description": "Default project for config loader testing",
+                "sources": {
+                    "publicdocs": {
+                        "example": {
+                            "source_type": "publicdocs",
+                            "source": "example",
+                            "base_url": "https://example.com",
+                            "version": "1.0",
+                            "content_type": "html",
+                            "selectors": {
+                                "content": ".content",
+                                "title": "h1",
+                            },
+                        }
+                    }
+                },
             }
         },
     }
@@ -70,7 +102,7 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
     load_dotenv(test_env_path, override=True)
 
     # Initialize config
-    initialize_config(test_config_path)
+    initialize_config(test_config_path, skip_validation=True)
 
     # Get settings
     settings = get_settings()
@@ -78,8 +110,8 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
     # Verify basic settings
     assert settings.qdrant_url == "http://localhost:6333"
     assert settings.qdrant_collection_name == "test_collection"
-    assert settings.OPENAI_API_KEY == "test_key"
-    assert settings.STATE_DB_PATH == "./data/state.db"
+    assert settings.global_config.embedding.api_key == "test_key"
+    assert settings.state_db_path == "./data/state.db"
 
     # Verify global config
     assert settings.global_config.chunking.chunk_size == 1000
@@ -87,14 +119,16 @@ def test_config_initialization(test_config_path: Path, test_env_path: Path):
     assert settings.global_config.embedding.model == "text-embedding-3-small"
     assert settings.global_config.embedding.vector_size == 1536
 
-    # Verify sources config
-    assert "example" in settings.sources_config.publicdocs
+    # Verify sources config - access through projects
+    default_project = settings.projects_config.projects.get("default")
+    assert default_project is not None
+    assert "example" in default_project.sources.publicdocs
     assert (
-        str(settings.sources_config.publicdocs["example"].base_url)
+        str(default_project.sources.publicdocs["example"].base_url)
         == "https://example.com/"
     )
-    assert settings.sources_config.publicdocs["example"].version == "1.0"
-    assert settings.sources_config.publicdocs["example"].content_type == "html"
+    assert default_project.sources.publicdocs["example"].version == "1.0"
+    assert default_project.sources.publicdocs["example"].content_type == "html"
 
 
 def test_missing_required_fields(test_config_path: Path):
@@ -114,18 +148,30 @@ def test_missing_required_fields(test_config_path: Path):
             "embedding": {
                 "model": "text-embedding-3-small",
                 "vector_size": 1536,
+                # Missing required api_key field
+            },
+            "state_management": {
+                "database_path": ":memory:",
             },
         },
-        "sources": {
-            "publicdocs": {
-                "example": {
-                    # Missing required base_url and version fields
-                    "content_type": "html",
-                    "selectors": {
-                        "content": ".content",
-                        "title": "h1",
-                    },
-                }
+        "projects": {
+            "default": {
+                "display_name": "Missing Fields Test Project",
+                "description": "Default project for missing fields testing",
+                "sources": {
+                    "publicdocs": {
+                        "example": {
+                            "source_type": "publicdocs",
+                            "source": "example",
+                            # Missing required base_url and version fields
+                            "content_type": "html",
+                            "selectors": {
+                                "content": ".content",
+                                "title": "h1",
+                            },
+                        }
+                    }
+                },
             }
         },
     }
@@ -138,9 +184,9 @@ def test_missing_required_fields(test_config_path: Path):
     os.environ.pop("OPENAI_API_KEY", None)
     os.environ.pop("STATE_DB_PATH", None)
 
-    # Attempt to initialize config
+    # Attempt to initialize config - should fail validation
     with pytest.raises(ValidationError):
-        initialize_config(test_config_path)
+        initialize_config(test_config_path, skip_validation=False)
 
 
 def test_environment_variable_substitution(test_config_path: Path, test_env_path: Path):
@@ -167,7 +213,7 @@ def test_environment_variable_substitution(test_config_path: Path, test_env_path
             yaml.dump(config_data, f)
 
         # Initialize config
-        initialize_config(test_config_path)
+        initialize_config(test_config_path, skip_validation=True)
         settings = get_settings()
 
         # Verify substitution
@@ -188,7 +234,7 @@ def test_invalid_yaml(test_config_path: Path):
 
     # Attempt to initialize config
     with pytest.raises(Exception):
-        initialize_config(test_config_path)
+        initialize_config(test_config_path, skip_validation=True)
 
 
 def test_source_config_validation(test_config_path: Path, test_env_path: Path):
@@ -204,8 +250,11 @@ def test_source_config_validation(test_config_path: Path, test_env_path: Path):
 
         config_data = yaml.safe_load(f)
 
-    config_data["sources"]["confluence"] = {
+    # Add invalid confluence source to the default project
+    config_data["projects"]["default"]["sources"]["confluence"] = {
         "test_space": {
+            "source_type": "confluence",
+            "source": "test_space",
             "base_url": "https://example.com",
             "space_key": "TEST",
             # Missing required token and email
@@ -215,9 +264,9 @@ def test_source_config_validation(test_config_path: Path, test_env_path: Path):
     with open(test_config_path, "w") as f:
         yaml.dump(config_data, f)
 
-    # Attempt to initialize config
+    # Attempt to initialize config - should fail validation
     with pytest.raises(ValidationError):
-        initialize_config(test_config_path)
+        initialize_config(test_config_path, skip_validation=False)
 
 
 def test_config_to_dict(test_config_path: Path, test_env_path: Path):
@@ -228,7 +277,7 @@ def test_config_to_dict(test_config_path: Path, test_env_path: Path):
     load_dotenv(test_env_path, override=True)
 
     # Initialize config
-    initialize_config(test_config_path)
+    initialize_config(test_config_path, skip_validation=True)
     settings = get_settings()
 
     # Convert to dict
@@ -236,6 +285,9 @@ def test_config_to_dict(test_config_path: Path, test_env_path: Path):
 
     # Verify structure
     assert "global" in config_dict
-    assert "sources" in config_dict
-    assert "publicdocs" in config_dict["sources"]
-    assert "example" in config_dict["sources"]["publicdocs"]
+    assert "projects" in config_dict
+    assert "default" in config_dict["projects"]
+    default_project = config_dict["projects"]["default"]
+    assert "sources" in default_project
+    assert "publicdocs" in default_project["sources"]
+    assert "example" in default_project["sources"]["publicdocs"]

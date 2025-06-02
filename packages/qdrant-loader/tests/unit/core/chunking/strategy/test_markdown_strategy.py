@@ -26,29 +26,18 @@ def settings():
     global_config = GlobalConfig(
         qdrant=qdrant_config,
         semantic_analysis=SemanticAnalysisConfig(num_topics=3, lda_passes=10),
+        skip_validation=True,
     )
 
+    # Import ProjectsConfig for the new multi-project format
+    from qdrant_loader.config.models import ProjectsConfig
+
+    # Create empty projects config
+    projects_config = ProjectsConfig()
+
     return Settings(
-        # OpenAI configuration
-        OPENAI_API_KEY="test-key",
-        # State management
-        STATE_DB_PATH=":memory:",
-        # Git repository configuration
-        REPO_TOKEN="test-token",
-        REPO_URL="https://github.com/test/repo",
-        # Confluence configuration
-        CONFLUENCE_URL="https://test.atlassian.net",
-        CONFLUENCE_SPACE_KEY="TEST",
-        CONFLUENCE_TOKEN="test-token",
-        CONFLUENCE_EMAIL="test@example.com",
-        CONFLUENCE_PAT=None,
-        # Jira configuration
-        JIRA_URL="https://test.atlassian.net",
-        JIRA_PROJECT_KEY="TEST",
-        JIRA_TOKEN="test-token",
-        JIRA_EMAIL="test@example.com",
-        # Global configuration
         global_config=global_config,
+        projects_config=projects_config,
     )
 
 

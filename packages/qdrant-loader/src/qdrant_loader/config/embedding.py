@@ -11,6 +11,9 @@ class EmbeddingConfig(BaseConfig):
     model: str = Field(
         default="text-embedding-3-small", description="OpenAI embedding model to use"
     )
+    api_key: str | None = Field(
+        default=None, description="API key for the embedding service"
+    )
     batch_size: int = Field(
         default=100, description="Number of texts to embed in a single batch"
     )

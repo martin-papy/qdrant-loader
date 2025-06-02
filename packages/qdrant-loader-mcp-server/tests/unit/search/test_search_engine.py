@@ -110,7 +110,7 @@ async def test_search_engine_search(
         assert results[0].text == "Test content"
         assert results[0].source_type == "git"
         mock_hybrid_search.search.assert_called_once_with(
-            query="test query", limit=5, source_types=["git"]
+            query="test query", source_types=["git"], limit=5, project_ids=None
         )
 
 

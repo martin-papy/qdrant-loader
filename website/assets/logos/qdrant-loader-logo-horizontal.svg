@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="60" viewBox="0 0 300 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#48bb78;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4299e1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon -->
+  <g transform="translate(5, 5)">
+    <!-- Rocket body -->
+    <path d="M25 5 L40 15 L40 35 L25 45 L10 35 L10 15 Z" fill="url(#primaryGradient)" stroke="#fff" stroke-width="1.5"/>
+    
+    <!-- Data streams -->
+    <circle cx="15" cy="15" r="2" fill="url(#accentGradient)">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="35" cy="15" r="2" fill="url(#accentGradient)">
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="15" cy="35" r="2" fill="url(#accentGradient)">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+    </circle>
+    <circle cx="35" cy="35" r="2" fill="url(#accentGradient)">
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+    </circle>
+    
+    <!-- Central core -->
+    <circle cx="25" cy="25" r="6" fill="#fff" opacity="0.9"/>
+    <circle cx="25" cy="25" r="3" fill="url(#primaryGradient)"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="70" y="28" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="url(#primaryGradient)">QDrant</text>
+  <text x="70" y="45" font-family="Arial, sans-serif" font-size="16" font-weight="300" fill="#4a5568">Loader</text>
+</svg> 
