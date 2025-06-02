@@ -52,9 +52,9 @@ class GlobalConfig(BaseConfig):
 
     def __init__(self, **data):
         """Initialize global configuration."""
-        # If skip_validation is True, use in-memory database for state management
+        # If skip_validation is True and no state_management is provided, use in-memory database
         skip_validation = data.pop("skip_validation", False)
-        if skip_validation:
+        if skip_validation and "state_management" not in data:
             data["state_management"] = {
                 "database_path": ":memory:",
                 "table_prefix": "qdrant_loader_",
@@ -83,6 +83,7 @@ class GlobalConfig(BaseConfig):
                     "enable_llm_descriptions": self.file_conversion.markitdown.enable_llm_descriptions,
                     "llm_model": self.file_conversion.markitdown.llm_model,
                     "llm_endpoint": self.file_conversion.markitdown.llm_endpoint,
+                    "llm_api_key": self.file_conversion.markitdown.llm_api_key,
                 },
             },
             "qdrant": self.qdrant.to_dict() if self.qdrant else None,

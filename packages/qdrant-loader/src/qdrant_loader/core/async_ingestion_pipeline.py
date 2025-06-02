@@ -8,6 +8,7 @@ from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
+from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .pipeline import (
@@ -39,6 +40,7 @@ class AsyncIngestionPipeline:
         queue_size: int = 1000,
         upsert_batch_size: int | None = None,
         enable_metrics: bool = False,
+        metrics_dir: Path | None = None,  # New parameter for workspace support
     ):
         """Initialize the async ingestion pipeline.
 
@@ -53,6 +55,7 @@ class AsyncIngestionPipeline:
             queue_size: Queue size for workers
             upsert_batch_size: Batch size for upserts
             enable_metrics: Whether to enable metrics server
+            metrics_dir: Custom metrics directory (for workspace support)
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
@@ -83,6 +86,17 @@ class AsyncIngestionPipeline:
             settings.global_config.state_management
         )
 
+        # Initialize project manager for multi-project support
+        if not settings.global_config.qdrant:
+            raise ValueError(
+                "Qdrant configuration is required for project manager initialization"
+            )
+
+        self.project_manager = ProjectManager(
+            projects_config=settings.projects_config,
+            global_collection_name=settings.global_config.qdrant.collection_name,
+        )
+
         # Create pipeline components using factory
         factory = PipelineComponentsFactory()
         self.components = factory.create_components(
@@ -93,14 +107,22 @@ class AsyncIngestionPipeline:
             resource_manager=self.resource_manager,
         )
 
-        # Create orchestrator
-        self.orchestrator = PipelineOrchestrator(settings, self.components)
+        # Create orchestrator with project manager support
+        self.orchestrator = PipelineOrchestrator(
+            settings, self.components, self.project_manager
+        )
 
-        # Initialize performance monitor (maintained for compatibility)
-        metrics_dir = Path.cwd() / "metrics"
-        metrics_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Initializing metrics directory at {metrics_dir}")
-        self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
+        # Initialize performance monitor with custom or default metrics directory
+        if metrics_dir:
+            # Use provided metrics directory (workspace mode)
+            final_metrics_dir = metrics_dir
+        else:
+            # Use default metrics directory
+            final_metrics_dir = Path.cwd() / "metrics"
+
+        final_metrics_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initializing metrics directory at {final_metrics_dir}")
+        self.monitor = IngestionMonitor(str(final_metrics_dir.absolute()))
 
         # Start metrics server if enabled
         if enable_metrics:
@@ -113,43 +135,57 @@ class AsyncIngestionPipeline:
 
     async def initialize(self):
         """Initialize the pipeline (maintained for compatibility)."""
-        logger.debug("Pipeline initialization called (no-op in new architecture)")
-        pass
+        logger.debug("Pipeline initialization called")
+
+        # Initialize project manager
+        if not self.project_manager._initialized:
+            logger.debug("Initializing project manager")
+            if self.state_manager._session_factory:
+                async with self.state_manager._session_factory() as session:
+                    await self.project_manager.initialize(session)
 
     async def process_documents(
         self,
         sources_config: SourcesConfig | None = None,
         source_type: str | None = None,
         source: str | None = None,
+        project_id: str | None = None,
     ) -> list[Document]:
         """Process documents from all configured sources.
 
         Args:
-            sources_config: Sources configuration to use
+            sources_config: Sources configuration to use (deprecated, use project_id instead)
             source_type: Filter by source type
             source: Filter by specific source name
+            project_id: Process documents for a specific project
 
         Returns:
             List of processed documents
         """
-        # Ensure the pipeline is initialized (compatibility)
+        # Ensure the pipeline is initialized
         await self.initialize()
 
         # Reset metrics for new run
         self.monitor.clear_metrics()
 
         self.monitor.start_operation(
-            "ingestion_process", metadata={"source_type": source_type, "source": source}
+            "ingestion_process",
+            metadata={
+                "source_type": source_type,
+                "source": source,
+                "project_id": project_id,
+            },
         )
 
         try:
             logger.debug("Starting document processing with new pipeline architecture")
 
-            # Use the orchestrator to process documents
+            # Use the orchestrator to process documents with project support
             documents = await self.orchestrator.process_documents(
                 sources_config=sources_config,
                 source_type=source_type,
                 source=source,
+                project_id=project_id,
             )
 
             # Update metrics (maintained for compatibility)
@@ -157,7 +193,11 @@ class AsyncIngestionPipeline:
                 self.monitor.start_batch(
                     "document_batch",
                     batch_size=len(documents),
-                    metadata={"source_type": source_type, "source": source},
+                    metadata={
+                        "source_type": source_type,
+                        "source": source,
+                        "project_id": project_id,
+                    },
                 )
                 # Note: Success/error counts are handled internally by the new architecture
                 self.monitor.end_batch("document_batch", len(documents), 0, [])

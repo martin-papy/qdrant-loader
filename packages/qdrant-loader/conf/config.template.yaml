@@ -1,0 +1,281 @@
+# Template for multi-project configuration
+# Copy this file to config.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+
+# Configuration Notes:
+# 
+# 1. Project Structure:
+#    - Each project has a unique project_id
+#    - All projects use the global collection_name defined in global_config.qdrant.collection_name
+#    - Each project defines its own sources configuration
+#
+# 2. Collection Strategy:
+#    - All projects share the same Qdrant collection
+#    - Project isolation is achieved through project_id metadata
+#    - Simplifies collection management and cross-project search
+#
+# 3. Source Configuration:
+#    - Each project can use any combination of source types
+#    - Source configurations are project-specific
+#    - Same source type can be used multiple times with different names
+#
+# 4. Environment Variables:
+#    - Use ${VARIABLE_NAME} syntax for sensitive information
+#    - Recommended for tokens, passwords, and URLs
+#    - Set environment variables before running the application
+#
+# 5. Migration from Legacy Format:
+#    - Legacy single-project configurations are no longer supported
+#    - Convert by wrapping existing sources in a project structure
+#    - Move global settings to global_config section
+
+# Global configuration shared across all projects
+global_config:
+  # Qdrant vector database configuration
+  qdrant:
+    url: "http://localhost:6333"
+    api_key: null  # Optional API key for Qdrant Cloud
+    collection_name: "default_collection"  # Collection name used by all projects
+
+  # Default chunking configuration
+  # Controls how documents are split into chunks for processing
+  chunking:
+    chunk_size: 1500       # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
+    chunk_overlap: 200      # Number of characters to overlap between chunks
+  
+  # Default embedding configuration
+  # Controls how text is converted to vectors
+  embedding:
+    endpoint: "http://localhost:8080/v1" # Optional. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
+    model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (example for local use) or text-embedding-3-small (for OpenAI use)
+    api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
+    batch_size: 100                  # Number of chunks to process in one batch
+    vector_size: 384                # Optional. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+    tokenizer: "none"         # Optional. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+    # Token limits (adjust based on your embedding model):
+    # - OpenAI text-embedding-3-small/large: 8192 tokens max
+    # - OpenAI text-embedding-ada-002: 8192 tokens max  
+    # - BAAI/bge-small-en-v1.5: 512 tokens max
+    # - sentence-transformers models: varies (typically 256-512)
+    max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
+    max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
+
+  # State management configuration
+  # Controls how document ingestion state is tracked
+  state_management:
+    database_path: "${STATE_DB_PATH}"  # Path to SQLite database file, ignored in workspace mode
+    table_prefix: "qdrant_loader_"     # Prefix for database tables
+    connection_pool:                   # Connection pool settings
+      size: 5                         # Maximum number of connections
+      timeout: 30                  # Connection timeout in seconds
+
+  # File conversion configuration
+  # Controls how non-text files (PDF, Office docs, etc.) are converted to text
+  file_conversion:
+    # Maximum file size for conversion (in bytes)
+    max_file_size: 52428800  # 50MB
+    
+    # Timeout for conversion operations (in seconds)
+    conversion_timeout: 300  # 5 minutes
+    
+    # MarkItDown specific settings
+    markitdown:
+      # Enable LLM integration for image descriptions
+      enable_llm_descriptions: false
+      # LLM model for image descriptions (when enabled)
+      llm_model: "gpt-4o"
+      # LLM endpoint (when enabled)
+      llm_endpoint: "https://api.openai.com/v1"
+      # API key for LLM service (required when enable_llm_descriptions is True)
+      llm_api_key: "${OPENAI_API_KEY}"
+
+# Multi-project configuration
+# Define multiple projects, each with their own sources and settings
+# All projects use the global collection_name defined above
+projects:
+  # Example project: Documentation
+  docs-project:
+    project_id: "docs-project"
+    display_name: "Documentation Project"
+    description: "Company documentation and guides"
+    
+    # Project-specific source configurations
+    sources:
+      # Public documentation sources (websites, documentation)
+      publicdocs:
+        # Example configuration for a documentation source
+        company-docs:
+          # Base URL of the documentation website
+          base_url: "https://docs.example.com"
+          
+          # Specific version of the documentation to fetch
+          version: "1.0"
+          
+          # Content type of the documentation
+          content_type: "html"  # Options: html, markdown, etc.
+          
+          # Optional: Specific path pattern to match documentation pages
+          # Uses glob syntax: ** matches any directory, * matches any file
+          path_pattern: "/docs/{version}/**"
+          
+          # Optional: List of paths to exclude from processing
+          exclude_paths:
+            - "/docs/{version}/api-reference"
+            - "/docs/{version}/changelog"
+          
+          # Optional: CSS selectors for content extraction
+          # Helps identify and extract relevant content from HTML
+          selectors:
+            # Main content container selector
+            content: "article.main-content"
+            # Elements to remove (navigation, headers, footers)
+            remove: 
+              - "nav"
+              - "header"
+              - "footer"
+              - ".sidebar"
+            # Code blocks to preserve (will be kept in the content)
+            code_blocks: "pre code"
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true
+          # Download and process attachments
+          download_attachments: true
+
+      # Git repository sources
+      git:
+        # Example configuration for a documentation repository
+        docs-repo:
+          base_url: "https://github.com/example/docs.git"  # Repository URL
+          branch: "main"                             # Branch to process
+          include_paths:                             # Paths to include (glob patterns)
+            - "docs/**"
+            - "README.md"
+          exclude_paths:                             # Paths to exclude (glob patterns)
+            - "docs/archive/**"
+            - "node_modules/**"
+          file_types:                                # File extensions to process
+            - "*.md"
+            - "*.rst"
+            - "*.txt"
+          max_file_size: 1048576                    # Maximum file size in bytes (1MB)
+          depth: 1                                  # Maximum directory depth to process
+          token: "${DOCS_REPO_TOKEN}"               # GitHub Personal Access Token or none
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true
+
+  # Example project: Code Repository
+  code-project:
+    project_id: "code-project"
+    display_name: "Code Repository Project"
+    description: "Source code and technical documentation"
+    
+    sources:
+      git:
+        # Example configuration for a code repository
+        main-repo:
+          base_url: "${CODE_REPO_URL}"                   # Use environment variable
+          branch: "main"
+          token: "${CODE_REPO_TOKEN}"                    # GitHub Personal Access Token or none
+          include_paths:
+            - "src/**"
+            - "docs/**"
+            - "README.md"
+          exclude_paths:
+            - "src/test/**"
+            - "node_modules/**"
+            - "venv/**"
+          file_types:
+            - "*.py"
+            - "*.js"
+            - "*.ts"
+            - "*.java"
+            - "*.go"
+            - "*.md"
+            - "*.rst"
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true
+
+  # Example project: Knowledge Base
+  kb-project:
+    project_id: "kb-project"
+    display_name: "Knowledge Base Project"
+    description: "Internal knowledge base and wiki"
+    
+    sources:
+      # Confluence documentation sources
+      confluence:
+        # Example configuration for Confluence Cloud
+        company-wiki:
+          base_url: "https://mycompany.atlassian.net/wiki"  # Confluence Cloud URL
+          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
+          space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
+          content_types:                            # Types of content to process
+            - "page"
+            - "blogpost"
+          include_labels: []                        # Only process content with these labels
+          exclude_labels: []                        # Skip content with these labels
+          token: "${CONFLUENCE_TOKEN}"              # Confluence API token (from id.atlassian.com)
+          email: "${CONFLUENCE_EMAIL}"              # Confluence user email
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true
+          # Download and process attachments
+          download_attachments: true
+
+      # JIRA issue tracking sources
+      jira:
+        # Example configuration for Jira Cloud
+        support-project:
+          base_url: "https://mycompany.atlassian.net"  # Jira Cloud URL
+          deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
+          project_key: "${JIRA_PROJECT_KEY}"        # Project to process
+          requests_per_minute: 60                   # Rate limit for API calls
+          page_size: 50                            # Number of issues per API request
+          process_attachments: true                 # Whether to process issue attachments
+          track_last_sync: true                    # Track last sync time for incremental updates
+          token: "${JIRA_TOKEN}"                    # Jira API token (from id.atlassian.com)
+          email: "${JIRA_EMAIL}"                    # Jira user email
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true
+          # Download and process attachments
+          download_attachments: true
+
+  # Example project: Local Files
+  local-project:
+    project_id: "local-project"
+    display_name: "Local Files Project"
+    description: "Local documentation and files"
+    
+    sources:
+      # Local file sources
+      localfile:
+        # Example configuration for a local file source
+        local-docs:
+          base_url: "file:///path/to/local/files"  # Base directory to scan
+          include_paths:
+            - "docs/**"
+            - "README.md"
+          exclude_paths:
+            - "docs/archive/**"
+            - "tmp/**"
+          file_types:
+            - "*.md"
+            - "*.txt"
+            - "*.py"
+            - "*.json"
+            - "*.yaml"
+          max_file_size: 1048576  # Maximum file size in bytes (1MB)
+
+          # File conversion settings for this source
+          # Enable file conversion for this connector
+          enable_file_conversion: true

@@ -81,39 +81,44 @@ class SearchEngine:
         self,
         query: str,
         source_types: list[str] | None = None,
-        limit: int = 10,
+        limit: int = 5,
+        project_ids: list[str] | None = None,
     ) -> list[SearchResult]:
-        """Search for relevant documents.
+        """Search for documents using hybrid search.
 
         Args:
-            query: The search query
+            query: Search query text
             source_types: Optional list of source types to filter by
             limit: Maximum number of results to return
-
-        Returns:
-            List[SearchResult]: List of search results
+            project_ids: Optional list of project IDs to filter by
         """
-        logger.debug(
-            "Starting search", query=query, source_types=source_types, limit=limit
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+
+        self.logger.debug(
+            "Performing search",
+            query=query,
+            source_types=source_types,
+            limit=limit,
+            project_ids=project_ids,
         )
 
         try:
-            if not self.hybrid_search:
-                raise RuntimeError("Search engine not initialized")
-
-            # Use hybrid search
             results = await self.hybrid_search.search(
-                query=query, limit=limit, source_types=source_types
+                query=query,
+                source_types=source_types,
+                limit=limit,
+                project_ids=project_ids,
             )
 
-            logger.info(
+            self.logger.info(
                 "Search completed",
+                query=query,
                 result_count=len(results),
-                first_result_score=results[0].score if results else None,
+                project_ids=project_ids,
             )
 
             return results
-
-        except Exception:
-            logger.error("Search failed", exc_info=True)
+        except Exception as e:
+            self.logger.error("Search failed", error=str(e), query=query)
             raise

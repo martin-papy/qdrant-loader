@@ -8,13 +8,11 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
   actions: read
 
 concurrency:
-  group: "test-and-coverage"
-  cancel-in-progress: false
+  group: "test-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   test-loader:
@@ -160,10 +158,11 @@ jobs:
       - name: Upload loader coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-loader
+          name: coverage-loader-${{ github.run_id }}
           path: |
             htmlcov-loader
             coverage-loader.xml
+          retention-days: 30
 
   test-mcp-server:
     name: Test MCP Server
@@ -195,15 +194,15 @@ jobs:
       - name: Upload MCP server coverage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-mcp
+          name: coverage-mcp-${{ github.run_id }}
           path: |
             htmlcov-mcp
             coverage-mcp.xml
+          retention-days: 30
 
-  combined-coverage:
-    name: Combined Coverage Report
+  test-website:
+    name: Test Website Build System
     runs-on: ubuntu-latest
-    needs: [test-loader, test-mcp-server]
     steps:
       - uses: actions/checkout@v4
 
@@ -212,164 +211,83 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install system dependencies for website testing
+        run: |
+          # Install system dependencies that might be needed for favicon generation
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libgirepository1.0-dev
+
+      - name: Install website test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e packages/qdrant-loader[dev]
-          pip install -e packages/qdrant-loader-mcp-server[dev]
-          pip install coverage[toml]
+          # Install core dependencies
+          pip install pytest pytest-cov pytest-mock
+          # Install optional dependencies for comprehensive testing
+          pip install markdown pygments tomli
+          # Install favicon generation dependencies (optional)
+          pip install cairosvg pillow || echo "Optional favicon dependencies not available"
 
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          merge-multiple: false
-
-      - name: Combine coverage reports
+      - name: Run website tests with coverage
         run: |
-          # Check what coverage files we have
-          echo "=== Root directory contents ==="
-          ls -la || true
-          
-          echo "=== Looking for coverage directories ==="
-          find . -name "coverage-*" -type d || true
-          
-          echo "=== Looking for HTML coverage files ==="
-          find . -name "index.html" || true
-          
-          echo "=== Looking for XML coverage files ==="
-          find . -name "*.xml" || true
-          
-          # Create a combined coverage report
-          if [ -f "coverage-loader/coverage-loader.xml" ] && [ -f "coverage-mcp/coverage-mcp.xml" ]; then
-            echo "=== Creating combined coverage report ==="
-            
-            # Use the loader coverage as the primary report (it has more comprehensive coverage)
-            if [ -d "coverage-loader/htmlcov-loader" ]; then
-              cp -r coverage-loader/htmlcov-loader htmlcov
-              echo "Using loader HTML coverage as primary report"
-            fi
-            
-            # Also copy the MCP coverage to a separate directory
-            if [ -d "coverage-mcp/htmlcov-mcp" ]; then
-              cp -r coverage-mcp/htmlcov-mcp htmlcov/mcp-server
-              echo "Added MCP server coverage to mcp-server subdirectory"
-            fi
-            
-            # Create a combined XML report (use loader as primary)
-            cp coverage-loader/coverage-loader.xml coverage.xml
-            
-            # Create a simple overview page for the combined coverage
-            echo '<!DOCTYPE html>' > htmlcov/combined-index.html
-            echo '<html><head><title>Combined Coverage Report - QDrant Loader & MCP Server</title></head>' >> htmlcov/combined-index.html
-            echo '<body style="font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5;">' >> htmlcov/combined-index.html
-            echo '<div style="max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px;">' >> htmlcov/combined-index.html
-            echo '<h1 style="color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px;">Combined Coverage Report</h1>' >> htmlcov/combined-index.html
-            echo '<p>This report combines test coverage from both the QDrant Loader and MCP Server packages.</p>' >> htmlcov/combined-index.html
-            echo '<h2 style="color: #007acc;">📊 QDrant Loader Coverage (Primary)</h2>' >> htmlcov/combined-index.html
-            echo '<p>Comprehensive coverage report for the main QDrant Loader package.</p>' >> htmlcov/combined-index.html
-            
-            # Extract QDrant Loader coverage percentage from the detailed report
-            if [ -f "htmlcov/index.html" ]; then
-              LOADER_COVERAGE=$(grep -o '[0-9]\+%' htmlcov/index.html | head -1 || echo "N/A")
-              echo "<p><strong>Overall Coverage:</strong> $LOADER_COVERAGE</p>" >> htmlcov/combined-index.html
-            else
-              echo '<p><strong>Overall Coverage:</strong> 80% (estimated)</p>' >> htmlcov/combined-index.html
-            fi
-            
-            echo '<p><a href="detailed.html" style="color: #007acc;">📋 View Detailed QDrant Loader Coverage Report</a></p>' >> htmlcov/combined-index.html
-            echo '<h2 style="color: #007acc;">🔧 MCP Server Coverage</h2>' >> htmlcov/combined-index.html
-            echo '<p>Coverage report for the Model Context Protocol (MCP) server implementation.</p>' >> htmlcov/combined-index.html
-            
-            # Extract MCP Server coverage percentage if available
-            if [ -d "htmlcov/mcp-server" ] && [ -f "htmlcov/mcp-server/index.html" ]; then
-              MCP_COVERAGE=$(grep -o '[0-9]\+%' htmlcov/mcp-server/index.html | head -1 || echo "N/A")
-              echo "<p><strong>Overall Coverage:</strong> $MCP_COVERAGE</p>" >> htmlcov/combined-index.html
-              echo '<p><a href="mcp-server/index.html" style="color: #007acc;">📋 View Detailed MCP Server Coverage Report</a></p>' >> htmlcov/combined-index.html
-            else
-              echo '<p><em>Note: MCP Server coverage is included in the CI/CD pipeline and tested separately.</em></p>' >> htmlcov/combined-index.html
-            fi
-            
-            echo '<div style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #007acc;">' >> htmlcov/combined-index.html
-            echo '<strong>📝 Note:</strong> This combined view prioritizes the QDrant Loader coverage as it represents the core functionality.' >> htmlcov/combined-index.html
-            echo 'Both packages are tested independently in the CI/CD pipeline to ensure comprehensive coverage.' >> htmlcov/combined-index.html
-            echo '</div>' >> htmlcov/combined-index.html
-            echo '<p><small>Generated automatically by GitHub Actions CI/CD pipeline</small></p>' >> htmlcov/combined-index.html
-            echo '</div></body></html>' >> htmlcov/combined-index.html
-            
-            # Update the main index.html to indicate it's part of a combined report and rename it
-            if [ -f "htmlcov/index.html" ]; then
-              # Rename the detailed coverage report
-              mv htmlcov/index.html htmlcov/detailed.html
-              
-              # Update the detailed report
-              sed -i 's/<title>Coverage report<\/title>/<title>QDrant Loader Coverage - Detailed Report<\/title>/' htmlcov/detailed.html || true
-              sed -i 's/<h1>Coverage report:/<h1>QDrant Loader Coverage (Detailed):/' htmlcov/detailed.html || true
-              
-              # Add a navigation link back to the combined view
-              sed -i '/<body[^>]*>/a\<div style="background: #e7f3ff; padding: 10px; margin-bottom: 20px; border-radius: 4px; text-align: center;"><a href="index.html" style="color: #007acc; text-decoration: none;">← Back to Combined Coverage Overview</a></div>' htmlcov/detailed.html || true
-            fi
-            
-            # Update the MCP server coverage report if it exists
-            if [ -f "htmlcov/mcp-server/index.html" ]; then
-              # Update the MCP server report
-              sed -i 's/<title>Coverage report<\/title>/<title>MCP Server Coverage - Detailed Report<\/title>/' htmlcov/mcp-server/index.html || true
-              sed -i 's/<h1>Coverage report:/<h1>MCP Server Coverage (Detailed):/' htmlcov/mcp-server/index.html || true
-              
-              # Add a navigation link back to the combined view
-              sed -i '/<body[^>]*>/a\<div style="background: #e7f3ff; padding: 10px; margin-bottom: 20px; border-radius: 4px; text-align: center;"><a href="../index.html" style="color: #007acc; text-decoration: none;">← Back to Combined Coverage Overview</a></div>' htmlcov/mcp-server/index.html || true
-            fi
-            
-            # Make the combined overview the default index.html
-            mv htmlcov/combined-index.html htmlcov/index.html
-            
-            # Update the link in the overview to point to the detailed report
-            sed -i 's/href="index.html"/href="detailed.html"/' htmlcov/index.html || true
-            
-            echo "Created combined coverage report with overview page"
-            
-          elif [ -f "coverage-loader/coverage-loader.xml" ]; then
-            echo "=== Using loader coverage only ==="
-            if [ -d "coverage-loader/htmlcov-loader" ]; then
-              cp -r coverage-loader/htmlcov-loader htmlcov
-            else
-              cp -r coverage-loader htmlcov
-            fi
-            cp coverage-loader/coverage-loader.xml coverage.xml
-            echo "Using loader coverage report"
-            
-          elif [ -f "coverage-mcp/coverage-mcp.xml" ]; then
-            echo "=== Using MCP coverage only ==="
-            if [ -d "coverage-mcp/htmlcov-mcp" ]; then
-              cp -r coverage-mcp/htmlcov-mcp htmlcov
-            else
-              cp -r coverage-mcp htmlcov
-            fi
-            cp coverage-mcp/coverage-mcp.xml coverage.xml
-            echo "Using MCP coverage report"
-            
-          else
-            echo "=== No coverage reports found ==="
-            mkdir -p htmlcov
-            echo "<html><body><h1>No coverage reports available</h1></body></html>" > htmlcov/index.html
-          fi
-          
-          echo "=== Final htmlcov directory contents ==="
-          ls -la htmlcov/ || true
+          # Add website directory to Python path and run tests
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
+          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing -v
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload combined coverage artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload website test coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          path: htmlcov
+          name: coverage-website-${{ github.run_id }}
+          path: |
+            htmlcov-website
+            coverage-website.xml
+          retention-days: 30
 
-  deploy:
-    name: Deploy to GitHub Pages
+  test-summary:
+    name: Test Summary
     runs-on: ubuntu-latest
-    needs: combined-coverage
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test-loader, test-mcp-server, test-website]
+    if: always()
     steps:
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Check test results
+        run: |
+          echo "=== Test Results Summary ==="
+          echo "QDrant Loader Tests: ${{ needs.test-loader.result }}"
+          echo "MCP Server Tests: ${{ needs.test-mcp-server.result }}"
+          echo "Website Build Tests: ${{ needs.test-website.result }}"
+          
+          if [ "${{ needs.test-loader.result }}" != "success" ] || [ "${{ needs.test-mcp-server.result }}" != "success" ] || [ "${{ needs.test-website.result }}" != "success" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi
+
+      - name: Create test status artifact
+        run: |
+          mkdir -p test-results
+          echo "{
+            \"loader_status\": \"${{ needs.test-loader.result }}\",
+            \"mcp_status\": \"${{ needs.test-mcp-server.result }}\",
+            \"website_status\": \"${{ needs.test-website.result }}\",
+            \"overall_status\": \"${{ (needs.test-loader.result == 'success' && needs.test-mcp-server.result == 'success' && needs.test-website.result == 'success') && 'success' || 'failure' }}\",
+            \"run_id\": \"${{ github.run_id }}\",
+            \"commit_sha\": \"${{ github.sha }}\",
+            \"branch\": \"${{ github.ref_name }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+          }" > test-results/status.json
+          
+          echo "Test run completed at $(date)" > test-results/summary.txt
+          echo "Run ID: ${{ github.run_id }}" >> test-results/summary.txt
+          echo "Commit: ${{ github.sha }}" >> test-results/summary.txt
+          echo "Branch: ${{ github.ref_name }}" >> test-results/summary.txt
+          echo "Loader Tests: ${{ needs.test-loader.result }}" >> test-results/summary.txt
+          echo "MCP Server Tests: ${{ needs.test-mcp-server.result }}" >> test-results/summary.txt
+          echo "Website Tests: ${{ needs.test-website.result }}" >> test-results/summary.txt
+
+      - name: Upload test status artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-status-${{ github.run_id }}
+          path: test-results/
+          retention-days: 30

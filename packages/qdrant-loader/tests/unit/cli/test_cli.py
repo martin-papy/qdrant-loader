@@ -332,10 +332,10 @@ class TestCliCommands:
         assert result.exit_code == 0
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     def test_config_command(
-        self, mock_check_settings, mock_load_config, mock_setup_logging
+        self, mock_check_settings, mock_load_config_with_workspace, mock_setup_logging
     ):
         """Test config command."""
         mock_settings = Mock()
@@ -350,14 +350,18 @@ class TestCliCommands:
 
         # _setup_logging is called twice: once by CLI framework, once by config command
         assert mock_setup_logging.call_count == 2
-        mock_load_config.assert_called_once_with(None, None, skip_validation=True)
+        mock_load_config_with_workspace.assert_called_once_with(
+            None, None, None, skip_validation=True
+        )
         mock_check_settings.assert_called_once()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
-    def test_config_command_exception(self, mock_load_config, mock_setup_logging):
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
+    def test_config_command_exception(
+        self, mock_load_config_with_workspace, mock_setup_logging
+    ):
         """Test config command with exception."""
-        mock_load_config.side_effect = ClickException("Config error")
+        mock_load_config_with_workspace.side_effect = ClickException("Config error")
 
         result = self.runner.invoke(cli, ["config"])
         assert result.exit_code == 1
@@ -372,7 +376,7 @@ class TestInitCommand:
         self.runner = CliRunner()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli._run_init")
     @patch("qdrant_loader.cli.cli._create_database_directory")
@@ -381,7 +385,7 @@ class TestInitCommand:
         mock_create_dir,
         mock_run_init,
         mock_check_settings,
-        mock_load_config,
+        mock_load_config_with_workspace,
         mock_setup_logging,
     ):
         """Test successful init command."""
@@ -395,15 +399,19 @@ class TestInitCommand:
 
         # _setup_logging is called twice: once by CLI framework, once by init command
         assert mock_setup_logging.call_count == 2
-        mock_load_config.assert_called_once()
+        mock_load_config_with_workspace.assert_called_once()
         mock_check_settings.assert_called_once()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli._run_init")
     def test_init_command_memory_database(
-        self, mock_run_init, mock_check_settings, mock_load_config, mock_setup_logging
+        self,
+        mock_run_init,
+        mock_check_settings,
+        mock_load_config_with_workspace,
+        mock_setup_logging,
     ):
         """Test init command with memory database."""
         mock_settings = Mock()
@@ -415,11 +423,11 @@ class TestInitCommand:
 
         # _setup_logging is called twice: once by CLI framework, once by init command
         assert mock_setup_logging.call_count == 2
-        mock_load_config.assert_called_once()
+        mock_load_config_with_workspace.assert_called_once()
         mock_check_settings.assert_called_once()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli._run_init")
     @patch("qdrant_loader.cli.cli._create_database_directory")
@@ -428,7 +436,7 @@ class TestInitCommand:
         mock_create_dir,
         mock_run_init,
         mock_check_settings,
-        mock_load_config,
+        mock_load_config_with_workspace,
         mock_setup_logging,
     ):
         """Test init command with force delete."""
@@ -444,10 +452,12 @@ class TestInitCommand:
                 mock_remove.assert_called_once_with("/tmp/test.db")
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
-    def test_init_command_exception(self, mock_load_config, mock_setup_logging):
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
+    def test_init_command_exception(
+        self, mock_load_config_with_workspace, mock_setup_logging
+    ):
         """Test init command with exception."""
-        mock_load_config.side_effect = ClickException("Init error")
+        mock_load_config_with_workspace.side_effect = ClickException("Init error")
 
         result = self.runner.invoke(cli, ["init"])
         assert result.exit_code == 1
@@ -462,7 +472,7 @@ class TestIngestCommand:
         self.runner = CliRunner()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli.QdrantManager")
     @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
@@ -471,7 +481,7 @@ class TestIngestCommand:
         mock_pipeline_class,
         mock_qdrant_manager,
         mock_check_settings,
-        mock_load_config,
+        mock_load_config_with_workspace,
         mock_setup_logging,
     ):
         """Test successful ingest command."""
@@ -486,11 +496,11 @@ class TestIngestCommand:
 
         # _setup_logging is called twice: once by CLI framework, once by ingest command
         assert mock_setup_logging.call_count == 2
-        mock_load_config.assert_called_once()
+        mock_load_config_with_workspace.assert_called_once()
         mock_check_settings.assert_called_once()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli.QdrantManager")
     @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
@@ -499,7 +509,7 @@ class TestIngestCommand:
         mock_pipeline_class,
         mock_qdrant_manager,
         mock_check_settings,
-        mock_load_config,
+        mock_load_config_with_workspace,
         mock_setup_logging,
     ):
         """Test ingest command with source filters."""
@@ -516,11 +526,11 @@ class TestIngestCommand:
 
         # _setup_logging is called twice: once by CLI framework, once by ingest command
         assert mock_setup_logging.call_count == 2
-        mock_load_config.assert_called_once()
+        mock_load_config_with_workspace.assert_called_once()
         mock_check_settings.assert_called_once()
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
     @patch("qdrant_loader.cli.cli.QdrantManager")
     @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
@@ -529,7 +539,7 @@ class TestIngestCommand:
         mock_pipeline_class,
         mock_qdrant_manager,
         mock_check_settings,
-        mock_load_config,
+        mock_load_config_with_workspace,
         mock_setup_logging,
     ):
         """Test ingest command with profiling."""
@@ -551,10 +561,12 @@ class TestIngestCommand:
             mock_profiler.dump_stats.assert_called_once_with("profile.out")
 
     @patch("qdrant_loader.cli.cli._setup_logging")
-    @patch("qdrant_loader.cli.cli._load_config")
-    def test_ingest_command_exception(self, mock_load_config, mock_setup_logging):
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
+    def test_ingest_command_exception(
+        self, mock_load_config_with_workspace, mock_setup_logging
+    ):
         """Test ingest command with exception."""
-        mock_load_config.side_effect = ClickException("Ingest error")
+        mock_load_config_with_workspace.side_effect = ClickException("Ingest error")
 
         result = self.runner.invoke(cli, ["ingest"])
         assert result.exit_code == 1

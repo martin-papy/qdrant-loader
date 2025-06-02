@@ -31,6 +31,12 @@ class HybridSearchResult:
     vector_score: float = 0.0
     keyword_score: float = 0.0
 
+    # Project information (for multi-project support)
+    project_id: str | None = None
+    project_name: str | None = None
+    project_description: str | None = None
+    collection_name: str | None = None
+
     # Hierarchy information (primarily for Confluence)
     parent_id: str | None = None
     parent_title: str | None = None
@@ -139,14 +145,26 @@ class HybridSearchEngine:
             raise
 
     async def search(
-        self, query: str, limit: int = 5, source_types: list[str] | None = None
+        self,
+        query: str,
+        limit: int = 5,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
     ) -> list[SearchResult]:
-        """Perform hybrid search combining vector and keyword search."""
+        """Perform hybrid search combining vector and keyword search.
+
+        Args:
+            query: Search query text
+            limit: Maximum number of results to return
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+        """
         self.logger.debug(
             "Starting hybrid search",
             query=query,
             limit=limit,
             source_types=source_types,
+            project_ids=project_ids,
         )
 
         try:
@@ -154,17 +172,24 @@ class HybridSearchEngine:
             expanded_query = await self._expand_query(query)
 
             # Get vector search results
-            vector_results = await self._vector_search(expanded_query, limit * 3)
+            vector_results = await self._vector_search(
+                expanded_query, limit * 3, project_ids
+            )
 
             # Get keyword search results
-            keyword_results = await self._keyword_search(query, limit * 3)
+            keyword_results = await self._keyword_search(query, limit * 3, project_ids)
 
             # Analyze query for context
             query_context = self._analyze_query(query)
 
             # Combine and rerank results
             combined_results = await self._combine_results(
-                vector_results, keyword_results, query_context, limit, source_types
+                vector_results,
+                keyword_results,
+                query_context,
+                limit,
+                source_types,
+                project_ids,
             )
 
             # Convert to SearchResult objects
@@ -177,6 +202,10 @@ class HybridSearchEngine:
                     source_url=result.source_url,
                     file_path=result.file_path,
                     repo_name=result.repo_name,
+                    project_id=result.project_id,
+                    project_name=result.project_name,
+                    project_description=result.project_description,
+                    collection_name=result.collection_name,
                     parent_id=result.parent_id,
                     parent_title=result.parent_title,
                     breadcrumb_text=result.breadcrumb_text,
@@ -228,7 +257,9 @@ class HybridSearchEngine:
 
         return context
 
-    async def _vector_search(self, query: str, limit: int) -> list[dict[str, Any]]:
+    async def _vector_search(
+        self, query: str, limit: int, project_ids: list[str] | None = None
+    ) -> list[dict[str, Any]]:
         """Perform vector search using Qdrant."""
         query_embedding = await self._get_embedding(query)
 
@@ -240,6 +271,7 @@ class HybridSearchEngine:
             limit=limit,
             score_threshold=self.min_score,
             search_params=search_params,
+            query_filter=self._build_filter(project_ids),
         )
 
         return [
@@ -256,13 +288,16 @@ class HybridSearchEngine:
             for hit in results
         ]
 
-    async def _keyword_search(self, query: str, limit: int) -> list[dict[str, Any]]:
+    async def _keyword_search(
+        self, query: str, limit: int, project_ids: list[str] | None = None
+    ) -> list[dict[str, Any]]:
         """Perform keyword search using BM25."""
         scroll_results = self.qdrant_client.scroll(
             collection_name=self.collection_name,
             limit=10000,
             with_payload=True,
             with_vectors=False,
+            scroll_filter=self._build_filter(project_ids),
         )
 
         documents = []
@@ -304,6 +339,7 @@ class HybridSearchEngine:
         query_context: dict[str, Any],
         limit: int,
         source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
         """Combine and rerank results from vector and keyword search."""
         combined_dict = {}
@@ -353,6 +389,9 @@ class HybridSearchEngine:
                 # Extract hierarchy information
                 hierarchy_info = self._extract_metadata_info(metadata)
 
+                # Extract project information
+                project_info = self._extract_project_info(metadata)
+
                 combined_results.append(
                     HybridSearchResult(
                         score=combined_score,
@@ -364,6 +403,10 @@ class HybridSearchEngine:
                         repo_name=metadata.get("repository_name"),
                         vector_score=info["vector_score"],
                         keyword_score=info["keyword_score"],
+                        project_id=project_info["project_id"],
+                        project_name=project_info["project_name"],
+                        project_description=project_info["project_description"],
+                        collection_name=project_info["collection_name"],
                         parent_id=hierarchy_info["parent_id"],
                         parent_title=hierarchy_info["parent_title"],
                         breadcrumb_text=hierarchy_info["breadcrumb_text"],
@@ -474,3 +517,34 @@ class HybridSearchEngine:
 
         # Combine both hierarchy and attachment info
         return {**hierarchy_info, **attachment_info}
+
+    def _extract_project_info(self, metadata: dict) -> dict:
+        """Extract project information from document metadata.
+
+        Args:
+            metadata: Document metadata
+
+        Returns:
+            Dictionary with project information
+        """
+        return {
+            "project_id": metadata.get("project_id"),
+            "project_name": metadata.get("project_name"),
+            "project_description": metadata.get("project_description"),
+            "collection_name": metadata.get("collection_name"),
+        }
+
+    def _build_filter(
+        self, project_ids: list[str] | None = None
+    ) -> models.Filter | None:
+        """Build a Qdrant filter based on project IDs."""
+        if not project_ids:
+            return None
+
+        return models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="project_id", match=models.MatchAny(any=project_ids)
+                )
+            ]
+        )

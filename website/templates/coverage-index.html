@@ -1,0 +1,486 @@
+<!-- Coverage Header -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-graph-up me-3"></i>Coverage Reports
+                </h1>
+                <p class="lead text-muted">
+                    Test coverage analysis for QDrant Loader packages
+                </p>
+                <div id="test-status-banner" class="alert d-none" role="alert">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <span id="status-indicator" class="status-indicator me-2"></span>
+                        <span id="status-text"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Coverage Overview -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- QDrant Loader Core Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader Core
+                            </h4>
+                            <span id="loader-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Main package coverage including connectors, processing pipeline, and CLI tools.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3">
+                                    <h5 class="text-primary mb-1" id="loader-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="loader/" class="btn btn-primary">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Server Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-plug me-2"></i>MCP Server
+                            </h4>
+                            <span id="mcp-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Model Context Protocol server implementation and search capabilities.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3">
+                                    <h5 class="text-primary mb-1" id="mcp-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="mcp/" class="btn btn-success">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Website Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-info text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-globe me-2"></i>Website
+                            </h4>
+                            <span id="website-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Website build system, templates, and documentation generation tools.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3">
+                                    <h5 class="text-primary mb-1" id="website-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="website/" class="btn btn-info">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Test Information -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Test Run Information
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Last Test Run</h6>
+                                <p id="test-timestamp" class="mb-3">Loading...</p>
+
+                                <h6 class="text-muted">Commit</h6>
+                                <p id="test-commit" class="mb-3">Loading...</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Branch</h6>
+                                <p id="test-branch" class="mb-3">Loading...</p>
+
+                                <h6 class="text-muted">Run ID</h6>
+                                <p id="test-run-id" class="mb-3">Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-muted">Test Results Summary</h6>
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="loader-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>QDrant Loader Tests</strong>
+                                            </div>
+                                            <span id="loader-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="mcp-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>MCP Server Tests</strong>
+                                            </div>
+                                            <span id="mcp-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="website-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>Website Tests</strong>
+                                            </div>
+                                            <span id="website-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Actions -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h3 class="mb-4">Quick Actions</h3>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="../docs/" class="btn btn-outline-primary">
+                        <i class="bi bi-book me-2"></i>View Documentation
+                    </a>
+                    <a href="https://github.com/martin-papy/qdrant-loader/actions" class="btn btn-outline-secondary"
+                        target="_blank">
+                        <i class="bi bi-github me-2"></i>GitHub Actions
+                    </a>
+                    <a href="../" class="btn btn-outline-info">
+                        <i class="bi bi-house me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Function to calculate coverage percentage from status data
+    function calculateCoverage(statusData) {
+        let totalStatements = 0;
+        let totalMissing = 0;
+
+        // Parse the coverage status.json format
+        for (const fileKey in statusData.files) {
+            const file = statusData.files[fileKey];
+            if (file.index && file.index.nums) {
+                totalStatements += file.index.nums.n_statements;
+                totalMissing += file.index.nums.n_missing;
+            }
+        }
+
+        const lineCoverage = totalStatements === 0 ? 0 : Math.round(((totalStatements - totalMissing) / totalStatements) * 100);
+
+        return {
+            line: lineCoverage,
+            totalFiles: Object.keys(statusData.files).length,
+            totalStatements: totalStatements,
+            coveredStatements: totalStatements - totalMissing
+        };
+    }
+
+    // Function to update coverage display
+    function updateCoverageDisplay(packageName, coverageData) {
+        const lineCoverageElement = document.getElementById(`${packageName}-line-coverage`);
+
+        if (lineCoverageElement) {
+            lineCoverageElement.textContent = coverageData.line + '%';
+        }
+
+        // Update status badge
+        const statusElement = document.getElementById(`${packageName}-status`);
+        if (statusElement) {
+            const coverage = coverageData.line;
+            if (coverage >= 80) {
+                statusElement.innerHTML = '<span class="status-indicator status-success me-1"></span>Good Coverage';
+                statusElement.className = 'badge bg-success';
+            } else if (coverage >= 60) {
+                statusElement.innerHTML = '<span class="status-indicator status-warning me-1"></span>Fair Coverage';
+                statusElement.className = 'badge bg-warning';
+            } else {
+                statusElement.innerHTML = '<span class="status-indicator status-failure me-1"></span>Low Coverage';
+                statusElement.className = 'badge bg-danger';
+            }
+        }
+    }
+
+    // Load coverage data for both packages
+    Promise.all([
+        fetch('loader/status.json').then(response => {
+            if (!response.ok) throw new Error('Failed to load loader coverage');
+            return response.json();
+        }).catch(error => {
+            console.warn('Loader coverage data not available:', error);
+            return null;
+        }),
+        fetch('mcp/status.json').then(response => {
+            if (!response.ok) throw new Error('Failed to load MCP coverage');
+            return response.json();
+        }).catch(error => {
+            console.warn('MCP coverage data not available:', error);
+            return null;
+        }),
+        fetch('website/status.json').then(response => {
+            if (!response.ok) throw new Error('Failed to load website coverage');
+            return response.json();
+        }).catch(error => {
+            console.warn('Website coverage data not available:', error);
+            return null;
+        })
+    ]).then(([loaderData, mcpData, websiteData]) => {
+        // Update loader coverage
+        if (loaderData) {
+            const loaderCoverage = calculateCoverage(loaderData);
+            updateCoverageDisplay('loader', loaderCoverage);
+        } else {
+            // Handle missing loader data
+            const statusElement = document.getElementById('loader-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+                statusElement.className = 'badge bg-secondary';
+            }
+        }
+
+        // Update MCP coverage
+        if (mcpData) {
+            const mcpCoverage = calculateCoverage(mcpData);
+            updateCoverageDisplay('mcp', mcpCoverage);
+        } else {
+            // Handle missing MCP data
+            const statusElement = document.getElementById('mcp-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+                statusElement.className = 'badge bg-secondary';
+            }
+        }
+
+        // Update website coverage
+        if (websiteData) {
+            const websiteCoverage = calculateCoverage(websiteData);
+            updateCoverageDisplay('website', websiteCoverage);
+        } else {
+            // Handle missing website data
+            const statusElement = document.getElementById('website-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+                statusElement.className = 'badge bg-secondary';
+            }
+        }
+    }).catch(error => {
+        console.error('Error loading coverage data:', error);
+        // Set all to unavailable
+        const loaderStatus = document.getElementById('loader-status');
+        const mcpStatus = document.getElementById('mcp-status');
+        const websiteStatus = document.getElementById('website-status');
+        if (loaderStatus) {
+            loaderStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+            loaderStatus.className = 'badge bg-secondary';
+        }
+        if (mcpStatus) {
+            mcpStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+            mcpStatus.className = 'badge bg-secondary';
+        }
+        if (websiteStatus) {
+            websiteStatus.innerHTML = '<span class="status-indicator status-unknown me-1"></span>Data Unavailable';
+            websiteStatus.className = 'badge bg-secondary';
+        }
+    });
+
+    // Handle test status gracefully - this data is not available
+    function handleMissingTestData() {
+        // Update test status banner
+        const banner = document.getElementById('test-status-banner');
+        banner.innerHTML = '<div class="d-flex align-items-center justify-content-center"><i class="bi bi-exclamation-triangle me-2"></i>Test status information unavailable</div>';
+        banner.className = 'alert alert-warning';
+        banner.classList.remove('d-none');
+
+        // Update test information with placeholders
+        document.getElementById('test-timestamp').textContent = 'Not available';
+        document.getElementById('test-commit').textContent = 'Not available';
+        document.getElementById('test-branch').textContent = 'Not available';
+        document.getElementById('test-run-id').textContent = 'Not available';
+
+        // Update test status indicators
+        document.getElementById('loader-test-status').textContent = 'Status unknown';
+        document.getElementById('mcp-test-status').textContent = 'Status unknown';
+        document.getElementById('website-test-status').textContent = 'Status unknown';
+    }
+
+    // Try to load test status and handle gracefully if not available
+    fetch('../test-results/status.json')
+        .then(response => {
+            if (!response.ok) throw new Error('Test results not available');
+            return response.json();
+        })
+        .then(data => {
+            // Update test status banner
+            const banner = document.getElementById('test-status-banner');
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            if (banner && statusIndicator && statusText) {
+                if (data.overall_status === 'success') {
+                    banner.className = 'alert alert-success';
+                    statusIndicator.className = 'status-indicator status-success me-2';
+                    statusText.textContent = 'All tests are passing';
+                } else {
+                    banner.className = 'alert alert-danger';
+                    statusIndicator.className = 'status-indicator status-failure me-2';
+                    statusText.textContent = 'Some tests are failing';
+                }
+                banner.classList.remove('d-none');
+            }
+
+            // Update test information with available data
+            const timestampElement = document.getElementById('test-timestamp');
+            const commitElement = document.getElementById('test-commit');
+            const branchElement = document.getElementById('test-branch');
+            const runIdElement = document.getElementById('test-run-id');
+
+            if (timestampElement) {
+                timestampElement.textContent = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Not available';
+            }
+
+            // Try to load project info for additional context
+            fetch('../project-info.json')
+                .then(response => response.json())
+                .then(projectData => {
+                    if (commitElement) {
+                        commitElement.innerHTML = projectData.commit && projectData.commit.short !== 'unknown'
+                            ? `<code>${projectData.commit.short}</code> (${projectData.version})`
+                            : 'Local build';
+                    }
+                    if (branchElement) {
+                        branchElement.textContent = 'feature/20-multi-project-support'; // Current branch
+                    }
+                    if (runIdElement) {
+                        runIdElement.textContent = projectData.build && projectData.build.workflow_run_id !== 'local'
+                            ? projectData.build.workflow_run_id
+                            : 'Local development';
+                    }
+                })
+                .catch(() => {
+                    if (commitElement) {
+                        commitElement.textContent = 'Local build';
+                    }
+                    if (branchElement) {
+                        branchElement.textContent = 'feature/20-multi-project-support';
+                    }
+                    if (runIdElement) {
+                        runIdElement.textContent = 'Local development';
+                    }
+                });
+
+            // Update individual test statuses
+            if (data.packages) {
+                updateTestStatus('loader', data.packages['qdrant-loader'] || 'unknown');
+                updateTestStatus('mcp', data.packages['mcp-server'] || 'unknown');
+                updateTestStatus('website', data.packages['website'] || 'unknown');
+            }
+        })
+        .catch(() => {
+            // Handle missing test results gracefully
+            handleMissingTestData();
+        });
+
+    function updateTestStatus(packageName, status) {
+        const indicatorElement = document.getElementById(`${packageName}-test-indicator`);
+        const testStatusElement = document.getElementById(`${packageName}-test-status`);
+
+        if (indicatorElement && testStatusElement) {
+            if (status === 'success') {
+                indicatorElement.className = 'status-indicator status-success me-2';
+                testStatusElement.textContent = 'All tests passed';
+                testStatusElement.className = 'text-success';
+            } else if (status === 'failure') {
+                indicatorElement.className = 'status-indicator status-failure me-2';
+                testStatusElement.textContent = 'Some tests failed';
+                testStatusElement.className = 'text-danger';
+            } else {
+                indicatorElement.className = 'status-indicator status-unknown me-2';
+                testStatusElement.textContent = 'Status unknown';
+                testStatusElement.className = 'text-muted';
+            }
+        }
+    }
+</script>
