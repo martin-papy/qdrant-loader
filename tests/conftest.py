@@ -536,11 +536,12 @@ def sample_test_results(temp_workspace):
     status_data = {
         "overall_status": "success",
         "timestamp": "2025-01-31T12:00:00Z",
-        "packages": {
-            "qdrant-loader": "success",
-            "mcp-server": "success",
-            "website": "success",
-        },
+        "loader_status": "success",
+        "mcp_status": "success",
+        "website_status": "success",
+        "run_id": "12345",
+        "commit_sha": "abc123def456",
+        "branch": "main",
     }
 
     import json
