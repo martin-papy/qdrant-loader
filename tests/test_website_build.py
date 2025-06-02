@@ -50,7 +50,7 @@ class TestWebsiteBuildSystem:
             "index.html",
             "docs-index.html",
             "coverage-index.html",
-            "sitemap.xml",
+            "privacy-policy.html",
             "robots.txt",
         ]
 
@@ -138,16 +138,14 @@ class TestWebsiteBuildSystem:
             os.chdir(original_cwd)
 
     def test_sitemap_template_structure(self):
-        """Test that the sitemap template has valid XML structure."""
-        sitemap_template = Path("website/templates/sitemap.xml")
-        content = sitemap_template.read_text()
+        """Test that the robots.txt template has valid structure."""
+        robots_template = Path("website/templates/robots.txt")
+        content = robots_template.read_text()
 
-        # Basic XML structure checks
-        assert content.startswith("<?xml"), "Sitemap should start with XML declaration"
-        assert "<urlset" in content, "Sitemap should contain urlset element"
+        # Basic robots.txt structure checks
         assert (
-            "{{ build_date }}" in content
-        ), "Sitemap should have build_date placeholder"
+            "User-agent:" in content
+        ), "Robots.txt should contain User-agent directive"
 
     def test_robots_template_structure(self):
         """Test that the robots.txt template has valid structure."""

@@ -11,7 +11,7 @@ QDrant Loader uses a comprehensive documentation system designed to serve both e
 ### Structure Overview
 
 ```
-docs_new/
+docs/
 ├── README.md                           # Main project README (GitHub homepage)
 ├── website/README.md                   # Website documentation
 ├── packages/                           # Package-specific documentation
@@ -32,7 +32,6 @@ docs_new/
 | **Getting Started** | Onboarding and basic concepts | New users | With API changes |
 | **User Guides** | Feature documentation and workflows | End users | With feature changes |
 | **Developer Docs** | Architecture and contribution guides | Developers | With code changes |
-| **API Reference** | Technical specifications | Developers | With every API change |
 
 ## 📝 Documentation Guidelines
 
@@ -72,8 +71,9 @@ pip install qdrant-loader
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-api-key"
 
-# Run your first ingestion
-qdrant-loader ingest --source git --url https://github.com/user/repo
+# Initialize and run ingestion
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
 ```
 
 # ❌ Bad Example
@@ -89,8 +89,8 @@ pip install qdrant-loader
 
 | Trigger | Required Updates | Responsible |
 |---------|------------------|-------------|
-| **New Feature** | User guides, API docs, examples | Feature developer |
-| **API Changes** | API reference, integration guides | API developer |
+| **New Feature** | User guides, CLI docs, examples | Feature developer |
+| **CLI Changes** | CLI reference, integration guides | CLI developer |
 | **Bug Fixes** | Troubleshooting guides, known issues | Bug fixer |
 | **Configuration Changes** | Configuration reference, setup guides | Config developer |
 | **Architecture Changes** | Developer docs, architecture diagrams | Architect |
@@ -108,7 +108,7 @@ pip install qdrant-loader
 
 ### Required Documentation Updates:
 - [ ] User guides
-- [ ] API reference
+- [ ] CLI reference
 - [ ] Configuration docs
 - [ ] Examples
 - [ ] Troubleshooting
@@ -215,7 +215,7 @@ feature:
 ## Architecture
 How the feature fits into the overall system.
 
-## API Reference
+## Code Reference
 ```python
 def new_feature_function(param1: str, param2: int) -> Result:
     """
@@ -249,13 +249,13 @@ How to test the feature and what tests exist.
 
 ```bash
 # Find all documentation that mentions the changed feature
-grep -r "feature_name" docs_new/
-grep -r "old_api_name" docs_new/
+grep -r "feature_name" docs/
+grep -r "old_api_name" docs/
 ```
 
 #### 2. Update Systematically
 
-- **Start with API reference** - Update technical specifications first
+- **Start with CLI reference** - Update command specifications first
 - **Update user guides** - Modify step-by-step instructions
 - **Update examples** - Ensure all code examples still work
 - **Update troubleshooting** - Add new common issues
@@ -276,16 +276,8 @@ grep -r "old_api_name" docs_new/
 
 ```bash
 # Check for broken internal links
-find docs_new -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
+find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
   xargs -I {} bash -c 'echo "Checking: {}"; grep -o "\[.*\](\.\/[^)]*)" {}'
-```
-
-#### Code Example Testing
-
-```bash
-# Extract and test code examples
-# This should be part of CI/CD pipeline
-python scripts/test_documentation_examples.py
 ```
 
 ### Manual Review Process
@@ -295,7 +287,7 @@ python scripts/test_documentation_examples.py
 1. **Accuracy Review**
    - Test all getting started guides
    - Verify all configuration examples
-   - Check all API references
+   - Check all CLI references
 
 2. **Completeness Review**
    - Identify missing documentation
@@ -314,9 +306,9 @@ python scripts/test_documentation_examples.py
 | Metric | Target | How to Measure |
 |--------|--------|----------------|
 | **User Success Rate** | >90% | User testing of getting started guides |
-| **Documentation Coverage** | 100% | All public APIs documented |
-| **Example Accuracy** | 100% | All code examples tested in CI |
-| **Link Validity** | 100% | Automated link checking |
+| **Documentation Coverage** | 100% | All public CLI commands documented |
+| **Example Accuracy** | 100% | All code examples tested manually |
+| **Link Validity** | 100% | Manual link checking |
 | **Update Frequency** | <1 week | Time from code change to doc update |
 
 ### Tracking Documentation Debt
@@ -354,7 +346,7 @@ python scripts/test_documentation_examples.py
 2. **User feedback** - Collect and act on user feedback
 3. **Metrics tracking** - Monitor documentation quality metrics
 4. **Template maintenance** - Keep documentation templates updated
-5. **Tool automation** - Automate what can be automated
+5. **Manual validation** - Test examples and workflows regularly
 
 ### For Code Reviewers
 
@@ -369,36 +361,28 @@ python scripts/test_documentation_examples.py
 ### Documentation Tools
 
 - **Markdown Editor**: Use VS Code with Markdown extensions
-- **Link Checker**: markdown-link-check for automated validation
 - **Spell Checker**: Use built-in spell checkers
 - **Diagram Tools**: Mermaid for architecture diagrams
 
 ### Templates and Examples
 
 - **[Feature Documentation Template](./templates/feature-template.md)**
-- **[API Documentation Template](./templates/api-template.md)**
-- **[User Guide Template](./templates/user-guide-template.md)**
-- **[Troubleshooting Template](./templates/troubleshooting-template.md)**
 
 ### Style Guides
 
 - **[Writing Style Guide](./style-guide.md)**
-- **[Code Example Standards](./code-examples.md)**
-- **[Markdown Formatting Guide](./markdown-guide.md)**
 
 ## 🆘 Getting Help
 
 ### Documentation Questions
 
-- **Slack**: #documentation channel
-- **GitHub Issues**: Use `documentation` label
-- **Documentation Lead**: @documentation-team
+- **GitHub Issues**: Use `documentation` label for questions and improvements
 
 ### Review Requests
 
-- **For user docs**: Tag @user-experience-team
-- **For developer docs**: Tag @developer-experience-team
-- **For API docs**: Tag @api-team
+- **For user docs**: Request review from team members familiar with user experience
+- **For developer docs**: Request review from team members familiar with the codebase
+- **For CLI docs**: Request review from team members familiar with the CLI implementation
 
 ---
 
@@ -409,9 +393,9 @@ python scripts/test_documentation_examples.py
 | Task | Command/Process |
 |------|----------------|
 | **Create new guide** | Copy template, follow structure |
-| **Update API docs** | Update alongside code changes |
+| **Update CLI docs** | Update alongside code changes |
 | **Test examples** | Run all code examples manually |
-| **Check links** | Use markdown-link-check tool |
+| **Check links** | Manual verification of internal links |
 | **Review changes** | Use documentation checklist |
 
 ### Documentation Structure Quick Reference
@@ -425,12 +409,11 @@ User Documentation:
 └── troubleshooting/     # Problem solving
 
 Developer Documentation:
-├── getting-started/     # Developer onboarding
 ├── architecture/        # System design
-├── api-reference/       # Technical specs
-├── extending/           # Customization
-├── testing/            # Quality assurance
+├── cli/                # CLI development
 ├── deployment/         # Production setup
+├── extending/          # Customization
+├── testing/            # Quality assurance
 └── documentation/      # This guide
 ```
 
