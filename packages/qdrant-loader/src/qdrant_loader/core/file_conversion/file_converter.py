@@ -92,13 +92,24 @@ class FileConverter:
     def _create_llm_client(self):
         """Create LLM client based on configuration."""
         try:
+            # Get API key from configuration
+            api_key = self.config.markitdown.llm_api_key
+            if not api_key:
+                self.logger.warning(
+                    "No LLM API key configured for MarkItDown LLM integration"
+                )
+                # Fallback to environment variable for backward compatibility
+                api_key = os.getenv("OPENAI_API_KEY") or os.getenv(
+                    "LLM_API_KEY", "dummy-key"
+                )
+
             # Check if it's an OpenAI-compatible endpoint
             if "openai" in self.config.markitdown.llm_endpoint.lower():
                 from openai import OpenAI  # type: ignore
 
                 return OpenAI(
                     base_url=self.config.markitdown.llm_endpoint,
-                    api_key=os.getenv("OPENAI_API_KEY"),
+                    api_key=api_key,
                 )
             else:
                 # For other endpoints, try to create a generic OpenAI-compatible client
@@ -106,7 +117,7 @@ class FileConverter:
 
                 return OpenAI(
                     base_url=self.config.markitdown.llm_endpoint,
-                    api_key=os.getenv("LLM_API_KEY", "dummy-key"),
+                    api_key=api_key,
                 )
         except ImportError as e:
             self.logger.warning(

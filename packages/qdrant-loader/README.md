@@ -1,24 +1,36 @@
 # QDrant Loader
 
-A powerful tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database. Part of the QDrant Loader monorepo ecosystem that enables AI-powered development workflows through tools like Cursor, Windsurf, and GitHub Copilot.
+[![PyPI](https://img.shields.io/pypi/v/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
+[![Python](https://img.shields.io/pypi/pyversions/qdrant-loader)](https://pypi.org/project/qdrant-loader/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-## 🚀 Features
+A powerful data ingestion engine that collects and vectorizes technical content from multiple sources for storage in QDrant vector database. Part of the [QDrant Loader monorepo](../../) ecosystem.
 
-### Core Capabilities
+## 🚀 What It Does
 
-- **Multi-source ingestion**: Collect content from Git, Confluence Cloud & Data Center, JIRA Cloud & Data Center, public documentation, and local files
-- **🆕 File conversion support**: Automatically convert PDF, Office documents, images, and 20+ file types to markdown for processing
-- **Intelligent processing**: Smart chunking, preprocessing, and metadata extraction
-- **Flexible embeddings**: Support for OpenAI, local models (BAAI/bge-small-en-v1.5), and custom endpoints
-- **Vector storage**: Optimized storage in QDrant vector database
-- **State management**: Incremental updates with SQLite-based state tracking
-- **Performance monitoring**: Comprehensive logging and debugging capabilities
+QDrant Loader is the data ingestion engine that:
 
-### 🆕 File Conversion Support (v0.3.2)
+- **Collects content** from Git repositories, Confluence, JIRA, documentation sites, and local files
+- **Converts files** automatically from 20+ formats including PDF, Office docs, and images
+- **Processes intelligently** with smart chunking, metadata extraction, and change detection
+- **Stores efficiently** in QDrant vector database with optimized embeddings
+- **Updates incrementally** to keep your knowledge base current
 
-QDrant Loader now supports automatic conversion of diverse file formats using Microsoft's MarkItDown:
+## 🔄 Supported Data Sources
 
-#### Supported File Types
+| Source | Description | Key Features |
+|--------|-------------|--------------|
+| **Git** | Code repositories and documentation | Branch selection, file filtering, commit metadata |
+| **Confluence** | Cloud & Data Center/Server | Space filtering, hierarchy preservation, attachment processing |
+| **JIRA** | Cloud & Data Center/Server | Project filtering, issue tracking, attachment support |
+| **Public Docs** | External documentation sites | CSS selector extraction, version detection |
+| **Local Files** | Local directories and files | Glob patterns, recursive scanning, file type filtering |
+
+## 📄 File Conversion Support
+
+Automatically converts diverse file formats using Microsoft's MarkItDown:
+
+### Supported Formats
 
 - **Documents**: PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx)
 - **Images**: PNG, JPEG, GIF, BMP, TIFF (with optional OCR)
@@ -28,67 +40,13 @@ QDrant Loader now supports automatic conversion of diverse file formats using Mi
 - **E-books**: EPUB format
 - **And more**: 20+ file types supported
 
-#### Key Features
+### Key Features
 
-- **Automatic detection**: Files are automatically detected and converted when `enable_file_conversion: true`
-- **Attachment processing**: Download and convert attachments from Confluence, JIRA, and documentation sites
-- **Fallback handling**: Graceful handling when conversion fails with minimal document creation
-- **Metadata preservation**: Original file information preserved through the processing pipeline
-- **Performance optimized**: Configurable size limits, timeouts, and lazy loading
-
-See the [File Conversion Guide](../../docs/FileConversionGuide.md) for detailed setup and configuration.
-
-### 🔄 Upgrading to v0.3.2
-
-If you're upgrading from a previous version:
-
-1. **Backup your data**: State database and configuration files
-2. **Update package**: `pip install --upgrade qdrant-loader`
-3. **Optional**: Enable file conversion in your configuration
-4. **Test**: Verify existing functionality and new file conversion features
-
-See the [Migration Guide](../../docs/MigrationGuide.md) for detailed upgrade instructions.
-
-### 🆕 New: Data Center Support
-
-QDrant Loader now supports **both Cloud and Data Center/Server** deployments for Atlassian products:
-
-#### Confluence Data Center Support
-
-- **Secure authentication methods**: API tokens (Cloud) and Personal Access Tokens (Data Center)
-- **Deployment-specific optimization**: Proper pagination and API handling for each deployment type
-- **Seamless migration**: Easy transition from Cloud to Data Center configurations
-- **Auto-detection**: Automatic deployment type detection based on URL patterns
-
-#### JIRA Data Center Support
-
-- **Multi-deployment authentication**: Basic Auth (Cloud) and Bearer tokens (Data Center)
-- **User field compatibility**: Handles different user formats between deployments
-- **Optimized performance**: Deployment-specific rate limiting and page sizes
-- **Cross-deployment features**: All JIRA features work across both deployment types
-
-See our detailed guides:
-
-- [Confluence Data Center Support Guide](../../docs/ConfluenceDataCenterSupport.md)
-- [JIRA Data Center Support Guide](../../docs/JiraDataCenterSupport.md)
-
-### Advanced Features
-
-- **Change detection**: Intelligent incremental updates for all source types
-- **Configurable chunking**: Token-based chunking with customizable overlap
-- **Batch processing**: Efficient batch embedding with rate limiting
-- **Error recovery**: Robust error handling and retry mechanisms
-- **Extensible architecture**: Plugin-based connector system for custom sources
-
-## 🔌 Supported Connectors
-
-| Connector | Description | Key Features |
-|-----------|-------------|--------------|
-| **Git** | Code and documentation from repositories | Branch selection, file filtering, commit metadata |
-| **Confluence** | Technical documentation from Atlassian Cloud & Data Center | Space filtering, label-based selection, comment processing, secure authentication |
-| **JIRA** | Issues and specifications from Cloud & Data Center | Project filtering, attachment processing, incremental sync, cross-deployment compatibility |
-| **Public Docs** | External documentation websites | CSS selector-based extraction, version detection |
-| **Local Files** | Local directories and files | Glob pattern matching, file type filtering |
+- **Automatic detection**: Files are converted when `enable_file_conversion: true`
+- **Attachment processing**: Downloads and converts attachments from all sources
+- **Fallback handling**: Graceful handling when conversion fails
+- **Metadata preservation**: Original file information maintained
+- **Performance optimized**: Configurable size limits and timeouts
 
 ## 📦 Installation
 
@@ -109,230 +67,275 @@ cd qdrant-loader
 pip install -e packages/qdrant-loader[dev]
 ```
 
-## ⚡ Quick Start
+### With MCP Server
 
-### 1. Configuration Setup
+For complete AI integration:
 
 ```bash
-# Download configuration templates
-curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/config.template.yaml
-curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/env.template
-
-# Edit configuration files
-# .env: Add your API keys and database paths
-# config.yaml: Configure your data sources
+# Install both packages
+pip install qdrant-loader qdrant-loader-mcp-server
 ```
 
-### 2. Environment Variables
+## ⚡ Quick Start
 
-Required variables:
+### 1. Workspace Setup (Recommended)
+
+```bash
+# Create workspace directory
+mkdir my-qdrant-workspace && cd my-qdrant-workspace
+
+# Download configuration templates
+curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
+```
+
+### 2. Environment Configuration
+
+Edit `.env` file:
 
 ```bash
 # QDrant Configuration
-QDRANT_URL=http://localhost:6333  # or your QDrant Cloud URL
-QDRANT_COLLECTION_NAME=my_collection
-QDRANT_API_KEY=your_api_key  # Required for cloud, optional for local
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION_NAME=my_docs
+QDRANT_API_KEY=your_api_key  # Required for QDrant Cloud
 
 # Embedding Configuration
-OPENAI_API_KEY=your_openai_key  # If using OpenAI embeddings
+OPENAI_API_KEY=your_openai_key
 
 # State Management
-STATE_DB_PATH=/path/to/state.db
+STATE_DB_PATH=./state.db
 ```
 
-Source-specific variables (as needed):
+### 3. Data Source Configuration
+
+Edit `config.yaml`:
+
+```yaml
+# Global configuration
+global_config:
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 100
+    vector_size: 1536
+  
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300
+    markitdown:
+      enable_llm_descriptions: false
+
+# Multi-project configuration
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Documentation Project"
+    description: "Project description"
+    
+    sources:
+      git:
+        my-repo:
+          base_url: "https://github.com/your-org/your-repo.git"
+          branch: "main"
+          include_paths:
+            - "**/*.md"
+            - "**/*.py"
+          exclude_paths:
+            - "**/node_modules/**"
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
+
+      localfile:
+        local-docs:
+          base_url: "file://./docs"
+          include_paths:
+            - "**/*.md"
+            - "**/*.pdf"
+          enable_file_conversion: true
+```
+
+### 4. Load Your Data
 
 ```bash
-# Git
-REPO_TOKEN=your_github_token
-REPO_URL=https://github.com/user/repo.git
+# Initialize QDrant collection
+qdrant-loader --workspace . init
 
-# Confluence (Cloud)
-CONFLUENCE_URL=https://your-domain.atlassian.net
+# Load data from configured sources
+qdrant-loader --workspace . ingest
+
+# Check project status
+qdrant-loader project --workspace . status
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `QDRANT_URL` | QDrant instance URL | `http://localhost:6333` | Yes |
+| `QDRANT_API_KEY` | QDrant API key | None | Cloud only |
+| `QDRANT_COLLECTION_NAME` | Collection name | `documents` | Yes |
+| `OPENAI_API_KEY` | OpenAI API key | None | Yes |
+| `STATE_DB_PATH` | State database path | `./state.db` | Yes |
+
+### Source-Specific Variables
+
+#### Git Repositories
+
+```bash
+REPO_TOKEN=your_github_token
+```
+
+#### Confluence (Cloud)
+
+```bash
+CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
 CONFLUENCE_SPACE_KEY=SPACE
 CONFLUENCE_TOKEN=your_token
 CONFLUENCE_EMAIL=your_email
+```
 
-# Confluence (Data Center/Server) - Personal Access Token
+#### Confluence (Data Center/Server)
+
+```bash
+CONFLUENCE_URL=https://your-confluence-server.com
+CONFLUENCE_SPACE_KEY=SPACE
 CONFLUENCE_PAT=your_personal_access_token
+```
 
-# JIRA (Cloud)
+#### JIRA (Cloud)
+
+```bash
 JIRA_URL=https://your-domain.atlassian.net
 JIRA_PROJECT_KEY=PROJ
 JIRA_TOKEN=your_token
 JIRA_EMAIL=your_email
+```
 
-# JIRA (Data Center/Server) - Personal Access Token
+#### JIRA (Data Center/Server)
+
+```bash
+JIRA_URL=https://your-jira-server.com
+JIRA_PROJECT_KEY=PROJ
 JIRA_PAT=your_personal_access_token
 ```
 
-### 3. Basic Usage
+## 🎯 Usage Examples
+
+### Basic Commands
 
 ```bash
-# Initialize QDrant collection
-qdrant-loader init
+# Show current configuration
+qdrant-loader --workspace . config
 
-# Run full ingestion
-qdrant-loader ingest
+# Initialize collection (one-time setup)
+qdrant-loader --workspace . init
 
-# Source-specific ingestion
-qdrant-loader ingest --source-type git
-qdrant-loader ingest --source-type confluence --source my-space
-```
+# Ingest data from all configured sources
+qdrant-loader --workspace . ingest
 
-## 🛠️ Advanced Usage
+# Check project status
+qdrant-loader project --workspace . status
 
-### Command Line Interface
+# List all projects
+qdrant-loader project --workspace . list
 
-```bash
-# Show all available commands
+# Show help
 qdrant-loader --help
-
-# Configuration management
-qdrant-loader config                    # Show current config
-qdrant-loader config --validate         # Validate configuration
-
-# Selective ingestion
-qdrant-loader ingest --source-type git --source my-repo
-qdrant-loader ingest --source-type localfile --source my-docs
-
-# Debugging and monitoring
-qdrant-loader ingest --log-level DEBUG
-qdrant-loader status                    # Show ingestion status
 ```
 
-### Configuration Examples
-
-#### Git Repository
-
-```yaml
-sources:
-  git:
-    my-repo:
-      base_url: "https://github.com/user/repo.git"
-      branch: "main"
-      include_paths: ["docs/**", "src/**", "README.md"]
-      exclude_paths: ["node_modules/**", "*.log"]
-      file_types: ["*.md", "*.py", "*.js", "*.ts"]
-      max_file_size: 1048576  # 1MB
-```
-
-#### Confluence Space
-
-```yaml
-sources:
-  confluence:
-    # Confluence Cloud
-    tech-docs-cloud:
-      base_url: "${CONFLUENCE_URL}"
-      deployment_type: "cloud"
-      space_key: "TECH"
-      content_types: ["page", "blogpost"]
-      include_labels: ["public", "documentation"]
-      exclude_labels: ["draft", "archived"]
-      token: "${CONFLUENCE_TOKEN}"
-      email: "${CONFLUENCE_EMAIL}"
-    
-    # Confluence Data Center with Personal Access Token
-    tech-docs-datacenter:
-      base_url: "https://confluence.company.com"
-      deployment_type: "datacenter"
-      space_key: "TECH"
-      content_types: ["page", "blogpost"]
-      token: "${CONFLUENCE_PAT}"
-```
-
-#### JIRA Project
-
-```yaml
-sources:
-  jira:
-    # JIRA Cloud
-    support-cloud:
-      base_url: "https://mycompany.atlassian.net"
-      deployment_type: "cloud"
-      project_key: "SUPPORT"
-      token: "${JIRA_TOKEN}"
-      email: "${JIRA_EMAIL}"
-      page_size: 50
-      requests_per_minute: 60
-    
-    # JIRA Data Center with Personal Access Token
-    engineering-datacenter:
-      base_url: "https://jira.company.com"
-      deployment_type: "datacenter"
-      project_key: "ENG"
-      token: "${JIRA_PAT}"
-      page_size: 100
-      requests_per_minute: 120
-```
-
-#### Local Files
-
-```yaml
-sources:
-  localfile:
-    project-docs:
-      base_url: "file:///path/to/docs"
-      include_paths: ["**/*.md", "**/*.rst"]
-      exclude_paths: ["archive/**", "tmp/**"]
-      max_file_size: 2097152  # 2MB
-```
-
-## 🔧 Configuration Reference
-
-### Global Settings
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `chunking.chunk_size` | Maximum characters per chunk | 500 |
-| `chunking.chunk_overlap` | Character overlap between chunks | 50 |
-| `embedding.model` | Embedding model to use | text-embedding-3-small |
-| `embedding.batch_size` | Batch size for embeddings | 100 |
-| `embedding.endpoint` | Custom embedding endpoint | OpenAI API |
-
-### State Management
-
-| Setting | Description |
-|---------|-------------|
-| `state_management.database_path` | SQLite database path |
-| `state_management.table_prefix` | Database table prefix |
-| `state_management.connection_pool.size` | Connection pool size |
-
-## 🔍 Monitoring and Debugging
-
-### Logging Configuration
+### Advanced Usage
 
 ```bash
-# Set log level
-qdrant-loader ingest --log-level DEBUG
+# Specify configuration files individually
+qdrant-loader --config config.yaml --env .env ingest
 
-# Custom log format
-export LOG_FORMAT=json  # or 'text'
-export LOG_FILE=qdrant-loader.log
+# Debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest
+
+# Force full re-ingestion
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
+
+# Process specific project
+qdrant-loader --workspace . ingest --project my-project
+
+# Process specific source type
+qdrant-loader --workspace . ingest --source-type git
+
+# Enable performance profiling
+qdrant-loader --workspace . ingest --profile
 ```
 
-## 🧪 Development
-
-### Setup Development Environment
+### Project Management
 
 ```bash
-# Clone and setup
-git clone https://github.com/martin-papy/qdrant-loader.git
-cd qdrant-loader
+# Validate project configurations
+qdrant-loader project --workspace . validate
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
 
-# Install development dependencies
-pip install -e packages/qdrant-loader[dev]
+# Show project status in JSON format
+qdrant-loader project --workspace . status --format json
 
-# Run tests
-pytest packages/qdrant-loader/tests/
+# Show specific project status
+qdrant-loader project --workspace . status --project-id my-project
 ```
 
-### Testing
+## 🏗️ Architecture
+
+### Core Components
+
+- **Source Connectors**: Pluggable connectors for different data sources
+- **File Processors**: Conversion and processing pipeline for various file types
+- **Chunking Engine**: Intelligent text segmentation with configurable overlap
+- **Embedding Service**: Flexible embedding generation with multiple providers
+- **State Manager**: SQLite-based tracking for incremental updates
+- **QDrant Client**: Optimized vector storage and retrieval
+
+### Data Flow
+
+```text
+Data Sources → File Conversion → Text Processing → Chunking → Embedding → QDrant Storage
+     ↓              ↓               ↓            ↓          ↓           ↓
+Git Repos      PDF/Office      Preprocessing   Smart     OpenAI      Vector DB
+Confluence     Images/Audio    Metadata        Chunks    Local       Collections
+JIRA           Archives        Extraction      Overlap   Custom      Incremental
+Public Docs    Documents       Filtering       Context   Providers   Updates
+Local Files    20+ Formats     Cleaning        Tokens    Endpoints   State Tracking
+```
+
+## 🔍 Advanced Features
+
+### Incremental Updates
+
+- **Change detection** for all source types
+- **Efficient synchronization** with minimal reprocessing
+- **State persistence** across runs
+- **Conflict resolution** for concurrent updates
+
+### Performance Optimization
+
+- **Batch processing** for efficient embedding generation
+- **Rate limiting** to respect API limits
+- **Parallel processing** for multiple sources
+- **Memory management** for large datasets
+
+### Error Handling
+
+- **Robust retry mechanisms** for transient failures
+- **Graceful degradation** when sources are unavailable
+- **Detailed logging** for troubleshooting
+- **Recovery strategies** for partial failures
+
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -342,65 +345,45 @@ pytest packages/qdrant-loader/tests/
 pytest --cov=qdrant_loader packages/qdrant-loader/tests/
 
 # Run specific test categories
-pytest packages/qdrant-loader/tests/unit/
-pytest packages/qdrant-loader/tests/integration/
+pytest -m "unit" packages/qdrant-loader/tests/
+pytest -m "integration" packages/qdrant-loader/tests/
 ```
-
-## 🔗 Integration
-
-### With MCP Server
-
-This package works seamlessly with the [qdrant-loader-mcp-server](../qdrant-loader-mcp-server/) for AI-powered development workflows:
-
-```bash
-# Install both packages
-pip install qdrant-loader qdrant-loader-mcp-server
-
-# Load data with qdrant-loader
-qdrant-loader ingest
-
-# Start MCP server for Cursor integration
-mcp-qdrant-loader
-```
-
-### With AI Development Tools
-
-- **Cursor**: Use with MCP server for contextual code assistance
-- **Windsurf**: Compatible through MCP protocol
-- **GitHub Copilot**: Enhanced context through vector search
-
-## 📋 Requirements
-
-- **Python**: 3.12 or higher
-- **QDrant**: Local instance or QDrant Cloud
-- **Storage**: Sufficient disk space for vector database and state management
-- **Network**: Internet access for API calls and remote sources
-- **Memory**: Minimum 4GB RAM recommended for large datasets
 
 ## 🤝 Contributing
 
-We welcome contributions! See the [Contributing Guide](../../docs/CONTRIBUTING.md) for details.
+This package is part of the QDrant Loader monorepo. See the [main contributing guide](../../CONTRIBUTING.md) for details.
 
-### Development Workflow
+### Development Setup
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes in `packages/qdrant-loader/`
-4. Add tests and documentation
-5. Submit a pull request
+```bash
+# Clone and setup
+git clone https://github.com/martin-papy/qdrant-loader.git
+cd qdrant-loader
 
-## 📄 License
+# Install in development mode
+pip install -e packages/qdrant-loader[dev]
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](../../LICENSE) file for details.
+# Run tests
+pytest packages/qdrant-loader/tests/
+```
+
+## 📚 Documentation
+
+- **[Complete Documentation](../../docs/)** - Comprehensive guides and references
+- **[Getting Started](../../docs/getting-started/)** - Quick start and core concepts
+- **[User Guides](../../docs/users/)** - Detailed usage instructions
+- **[Developer Docs](../../docs/developers/)** - Architecture and API reference
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
-- **Documentation**: [Project Documentation](../../docs/)
+- **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A
+- **[Documentation](../../docs/)** - Comprehensive guides
 
-## 🔄 Related Projects
+## 📄 License
 
-- [qdrant-loader-mcp-server](../qdrant-loader-mcp-server/): MCP server for AI integration
-- [QDrant](https://qdrant.tech/): Vector database engine
-- [Model Context Protocol](https://modelcontextprotocol.io/): AI integration standard
+This project is licensed under the GNU GPLv3 - see the [LICENSE](../../LICENSE) file for details.
+
+---
+
+**Ready to load your data?** Check out the [Quick Start Guide](../../docs/getting-started/quick-start.md) or explore the [complete documentation](../../docs/).

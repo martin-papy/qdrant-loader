@@ -130,9 +130,12 @@ class StateManager:
         status: str = IngestionStatus.SUCCESS,
         error_message: str | None = None,
         document_count: int = 0,
+        project_id: str | None = None,
     ) -> None:
         """Update and get the last successful ingestion time for a source."""
-        self.logger.debug(f"Updating last ingestion for {source_type}:{source}")
+        self.logger.debug(
+            f"Updating last ingestion for {source_type}:{source} (project: {project_id})"
+        )
         try:
             async with self._session_factory() as session:  # type: ignore
                 self.logger.debug(
@@ -142,11 +145,15 @@ class StateManager:
                 self.logger.debug(
                     f"Executing query to find ingestion history for {source_type}:{source}"
                 )
-                result = await session.execute(
-                    select(IngestionHistory).filter_by(
-                        source_type=source_type, source=source
-                    )
+
+                # Build query with optional project filter
+                query = select(IngestionHistory).filter_by(
+                    source_type=source_type, source=source
                 )
+                if project_id is not None:
+                    query = query.filter_by(project_id=project_id)
+
+                result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
                 self.logger.debug(
                     f"Query result: {'Found' if ingestion else 'Not found'} ingestion history for {source_type}:{source}"
@@ -166,6 +173,7 @@ class StateManager:
                         f"Creating new ingestion history for {source_type}:{source}"
                     )
                     ingestion = IngestionHistory(
+                        project_id=project_id,
                         source_type=source_type,
                         source=source,
                         last_successful_ingestion=now,
@@ -186,6 +194,7 @@ class StateManager:
                 self.logger.debug(
                     "Ingestion history updated",
                     extra={
+                        "project_id": project_id,
                         "source_type": ingestion.source_type,
                         "source": ingestion.source,
                         "status": ingestion.status,
@@ -200,10 +209,12 @@ class StateManager:
             raise
 
     async def get_last_ingestion(
-        self, source_type: str, source: str
+        self, source_type: str, source: str, project_id: str | None = None
     ) -> IngestionHistory | None:
         """Get the last ingestion record for a source."""
-        self.logger.debug(f"Getting last ingestion for {source_type}:{source}")
+        self.logger.debug(
+            f"Getting last ingestion for {source_type}:{source} (project: {project_id})"
+        )
         try:
             async with self._session_factory() as session:  # type: ignore
                 self.logger.debug(
@@ -212,14 +223,19 @@ class StateManager:
                 self.logger.debug(
                     f"Executing query to find last ingestion for {source_type}:{source}"
                 )
-                result = await session.execute(
-                    select(IngestionHistory)
-                    .filter(
-                        IngestionHistory.source_type == source_type,
-                        IngestionHistory.source == source,
-                    )
-                    .order_by(IngestionHistory.last_successful_ingestion.desc())
+
+                # Build query with optional project filter
+                query = select(IngestionHistory).filter(
+                    IngestionHistory.source_type == source_type,
+                    IngestionHistory.source == source,
                 )
+                if project_id is not None:
+                    query = query.filter(IngestionHistory.project_id == project_id)
+
+                query = query.order_by(
+                    IngestionHistory.last_successful_ingestion.desc()
+                )
+                result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
                 self.logger.debug(
                     f"Query result: {'Found' if ingestion else 'Not found'} last ingestion for {source_type}:{source}"
@@ -233,11 +249,15 @@ class StateManager:
             raise
 
     async def mark_document_deleted(
-        self, source_type: str, source: str, document_id: str
+        self,
+        source_type: str,
+        source: str,
+        document_id: str,
+        project_id: str | None = None,
     ) -> None:
         """Mark a document as deleted."""
         self.logger.debug(
-            f"Marking document as deleted: {source_type}:{source}:{document_id}"
+            f"Marking document as deleted: {source_type}:{source}:{document_id} (project: {project_id})"
         )
         try:
             async with self._session_factory() as session:  # type: ignore
@@ -251,18 +271,23 @@ class StateManager:
                         "document_id": document_id,
                         "source_type": source_type,
                         "source": source,
+                        "project_id": project_id,
                     },
                 )
                 self.logger.debug(
                     f"Executing query to find document {source_type}:{source}:{document_id}"
                 )
-                result = await session.execute(
-                    select(DocumentStateRecord).filter(
-                        DocumentStateRecord.source_type == source_type,
-                        DocumentStateRecord.source == source,
-                        DocumentStateRecord.document_id == document_id,
-                    )
+
+                # Build query with optional project filter
+                query = select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == source_type,
+                    DocumentStateRecord.source == source,
+                    DocumentStateRecord.document_id == document_id,
                 )
+                if project_id is not None:
+                    query = query.filter(DocumentStateRecord.project_id == project_id)
+
+                result = await session.execute(query)
                 state = result.scalar_one_or_none()
                 self.logger.debug(
                     f"Query result: {'Found' if state else 'Not found'} document {source_type}:{source}:{document_id}"
@@ -287,6 +312,7 @@ class StateManager:
                             "document_id": document_id,
                             "source_type": source_type,
                             "source": source,
+                            "project_id": project_id,
                         },
                     )
                 else:
@@ -301,11 +327,15 @@ class StateManager:
             raise
 
     async def get_document_state_record(
-        self, source_type: str, source: str, document_id: str
+        self,
+        source_type: str,
+        source: str,
+        document_id: str,
+        project_id: str | None = None,
     ) -> DocumentStateRecord | None:
         """Get the state of a document."""
         self.logger.debug(
-            f"Getting document state for {source_type}:{source}:{document_id}"
+            f"Getting document state for {source_type}:{source}:{document_id} (project: {project_id})"
         )
         try:
             async with self._session_factory() as session:  # type: ignore
@@ -315,13 +345,17 @@ class StateManager:
                 self.logger.debug(
                     f"Executing query to find document state for {source_type}:{source}:{document_id}"
                 )
-                result = await session.execute(
-                    select(DocumentStateRecord).filter(
-                        DocumentStateRecord.source_type == source_type,
-                        DocumentStateRecord.source == source,
-                        DocumentStateRecord.document_id == document_id,
-                    )
+
+                # Build query with optional project filter
+                query = select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == source_type,
+                    DocumentStateRecord.source == source,
+                    DocumentStateRecord.document_id == document_id,
                 )
+                if project_id is not None:
+                    query = query.filter(DocumentStateRecord.project_id == project_id)
+
+                result = await session.execute(query)
                 state = result.scalar_one_or_none()
                 self.logger.debug(
                     f"Query result: {'Found' if state else 'Not found'} document state for {source_type}:{source}:{document_id}"
@@ -371,13 +405,15 @@ class StateManager:
             )
             raise
 
-    async def update_document_state(self, document: Document) -> DocumentStateRecord:
+    async def update_document_state(
+        self, document: Document, project_id: str | None = None
+    ) -> DocumentStateRecord:
         """Update the state of a document."""
         if not self._initialized:
             raise RuntimeError("StateManager not initialized. Call initialize() first.")
 
         self.logger.debug(
-            f"Updating document state for {document.source_type}:{document.source}:{document.id}"
+            f"Updating document state for {document.source_type}:{document.source}:{document.id} (project: {project_id})"
         )
         try:
             async with self._session_factory() as session:  # type: ignore
@@ -387,13 +423,17 @@ class StateManager:
                 self.logger.debug(
                     f"Executing query to find document state for {document.source_type}:{document.source}:{document.id}"
                 )
-                result = await session.execute(
-                    select(DocumentStateRecord).filter(
-                        DocumentStateRecord.source_type == document.source_type,
-                        DocumentStateRecord.source == document.source,
-                        DocumentStateRecord.document_id == document.id,
-                    )
+
+                # Build query with optional project filter
+                query = select(DocumentStateRecord).filter(
+                    DocumentStateRecord.source_type == document.source_type,
+                    DocumentStateRecord.source == document.source,
+                    DocumentStateRecord.document_id == document.id,
                 )
+                if project_id is not None:
+                    query = query.filter(DocumentStateRecord.project_id == project_id)
+
+                result = await session.execute(query)
                 document_state_record = result.scalar_one_or_none()
                 self.logger.debug(
                     f"Query result: {'Found' if document_state_record else 'Not found'} document state for {document.source_type}:{document.source}:{document.id}"
@@ -477,6 +517,7 @@ class StateManager:
                             )
 
                     document_state_record = DocumentStateRecord(
+                        project_id=project_id,
                         document_id=document.id,
                         source_type=document.source_type,
                         source=document.source,
@@ -518,6 +559,7 @@ class StateManager:
                 self.logger.debug(
                     "Document state updated",
                     extra={
+                        "project_id": project_id,
                         "document_id": document_state_record.document_id,
                         "content_hash": document_state_record.content_hash,
                         "updated_at": document_state_record.updated_at,
@@ -531,6 +573,7 @@ class StateManager:
             self.logger.error(
                 "Failed to update document state",
                 extra={
+                    "project_id": project_id,
                     "document_id": document.id,
                     "error": str(e),
                     "error_type": type(e).__name__,

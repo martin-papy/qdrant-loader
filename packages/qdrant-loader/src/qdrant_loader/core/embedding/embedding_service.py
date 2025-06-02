@@ -31,7 +31,7 @@ class EmbeddingService:
         # Initialize client based on endpoint
         if "https://api.openai.com/v1" == self.endpoint:
             self.client = OpenAI(
-                api_key=settings.OPENAI_API_KEY, base_url=self.endpoint
+                api_key=settings.global_config.embedding.api_key, base_url=self.endpoint
             )
             self.use_openai = True
         else:

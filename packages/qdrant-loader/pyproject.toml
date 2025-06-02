@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader"
-version = "0.3.3b1"
+version = "0.4.1"
 description = "A tool for collecting and vectorizing technical content from multiple sources and storing it in a QDrant vector database."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -17,6 +17,9 @@ keywords = [
     "vector-database",
     "embeddings",
     "document-processing",
+    "multi-project",
+    "rag",
+    "semantic-search",
 ]
 authors = [
     { name = "Martin Papy", email = "martin.papy@gmail.com" },
@@ -58,18 +61,30 @@ dependencies = [
     "tree-sitter-languages>=1.10.0",
     "tree-sitter<0.21",
     "markitdown[all]>=0.1.2",
+    "rich>=13.0.0",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
+    "Typing :: Typed",
 ]
 
 [project.urls]
-Documentation = "https://github.com/martin-papy/qdrant-loader#readme"
+Homepage = "https://qdrant-loader.net"
+Documentation = "https://qdrant-loader.net/docs/packages/qdrant-loader/README.html"
 Repository = "https://github.com/martin-papy/qdrant-loader"
 Issues = "https://github.com/martin-papy/qdrant-loader/issues"
 

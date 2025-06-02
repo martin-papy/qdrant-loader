@@ -33,13 +33,13 @@ def mock_settings():
     embedding_config.vector_size = 1536
     embedding_config.max_tokens_per_request = 8000
     embedding_config.max_tokens_per_chunk = 8000
+    embedding_config.api_key = "test-key"
 
     # Attach embedding config to global config
     global_config.embedding = embedding_config
 
     # Create main settings mock
     settings = MagicMock(spec=Settings)
-    settings.OPENAI_API_KEY = "test-key"
     settings.global_config = global_config
 
     return settings
