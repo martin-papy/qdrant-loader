@@ -1,6 +1,6 @@
 # Team Collaboration Workflow
 
-This comprehensive guide shows how to implement effective team collaboration workflows using QDrant Loader for cross-team knowledge sharing, streamlined onboarding, and collaborative documentation systems. Whether you're managing knowledge across multiple teams, onboarding new team members, or facilitating cross-functional collaboration, this workflow provides practical solutions.
+This comprehensive guide shows how to implement effective team collaboration workflows using QDrant Loader for cross-team knowledge sharing, streamlined onboarding, and collaborative documentation systems. Whether you're managing knowledge across multiple teams, onboarding new team members, or facilitating cross-functional collaboration, this workflow provides practical solutions using QDrant Loader's actual capabilities.
 
 ## 🎯 Overview
 
@@ -26,16 +26,16 @@ graph TD
     
     D --> E[QDrant Loader]
     E --> F[Vector Database]
-    F --> G[AI-Powered Search]
+    F --> G[MCP Server]
     
     G --> H[Team Members]
     G --> I[New Hires]
     G --> J[Cross-Team Projects]
     
     K[Confluence] --> E
-    L[Slack/Teams] --> E
-    M[Documentation] --> E
-    N[Meeting Notes] --> E
+    L[Git Repositories] --> E
+    M[Local Documentation] --> E
+    N[Public Documentation] --> E
 ```
 
 ## 📋 Prerequisites
@@ -43,10 +43,10 @@ graph TD
 ### Required Tools
 
 - **Team Communication Platforms** (Slack, Microsoft Teams)
-- **Documentation Systems** (Confluence, Notion, Wiki)
+- **Documentation Systems** (Confluence, Git repositories)
 - **QDrant instance** (shared across teams)
 - **OpenAI API key** for embeddings
-- **Access Management** for team permissions
+- **Development IDEs** (Cursor, Windsurf, VS Code)
 
 ### Team Structure Setup
 
@@ -64,96 +64,222 @@ graph TD
 
 ### Step 1: Multi-Team Configuration
 
-#### 1.1 Team-Specific Collections
+#### 1.1 Team-Specific Projects Configuration
 
 ```yaml
-# qdrant-loader.yaml
-qdrant:
-  url: "${QDRANT_URL}"
-  api_key: "${QDRANT_API_KEY}"
+# config.yaml - Multi-project configuration for team collaboration
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "team_collaboration"
 
-collections:
-  shared_knowledge:
-    name: "shared_knowledge"
-    description: "Cross-team shared knowledge base"
-  
-  product_team:
-    name: "product_knowledge"
-    description: "Product team specific knowledge"
-    
-  engineering_team:
-    name: "engineering_knowledge"
-    description: "Engineering team knowledge"
-    
-  design_team:
-    name: "design_knowledge"
-    description: "Design team knowledge"
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 100
+    vector_size: 1536
+    tokenizer: "cl100k_base"
+    max_tokens_per_request: 8000
+    max_tokens_per_chunk: 8000
 
-data_sources:
-  confluence:
-    base_url: "${CONFLUENCE_URL}"
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces:
-      - space: "SHARED"
-        collection: "shared_knowledge"
-      - space: "PRODUCT"
-        collection: "product_knowledge"
-      - space: "ENG"
-        collection: "engineering_knowledge"
-      - space: "DESIGN"
-        collection: "design_knowledge"
-    
-  git:
-    repositories:
-      - url: "https://github.com/company/shared-docs"
-        collection: "shared_knowledge"
-        include_patterns: ["docs/**/*.md", "README.md"]
-      - url: "https://github.com/company/product-docs"
-        collection: "product_knowledge"
-      - url: "https://github.com/company/engineering-docs"
-        collection: "engineering_knowledge"
+  chunking:
+    chunk_size: 1200
+    chunk_overlap: 300
 
-team_collaboration:
-  cross_team_search: true
-  onboarding_collections: ["shared_knowledge", "product_knowledge"]
-  expertise_tracking: true
-  knowledge_gaps_detection: true
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300
+    markitdown:
+      enable_llm_descriptions: false
+      llm_model: "gpt-4o"
+      llm_endpoint: "https://api.openai.com/v1"
+      llm_api_key: "${OPENAI_API_KEY}"
+
+  state_management:
+    database_path: "${STATE_DB_PATH}"
+    table_prefix: "qdrant_loader_"
+
+# Multi-project configuration for different teams
+projects:
+  # Shared knowledge across all teams
+  shared-knowledge:
+    project_id: "shared-knowledge"
+    display_name: "Shared Knowledge Base"
+    description: "Cross-team shared knowledge and documentation"
+    
+    sources:
+      confluence:
+        shared-space:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "SHARED"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_API_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: ["shared", "cross-team", "onboarding"]
+          enable_file_conversion: true
+          download_attachments: true
+      
+      git:
+        shared-docs:
+          base_url: "https://github.com/company/shared-docs.git"
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          include_paths:
+            - "docs/**/*.md"
+            - "onboarding/**/*.md"
+            - "processes/**/*.md"
+            - "README.md"
+            - "CONTRIBUTING.md"
+          exclude_paths:
+            - "drafts/**"
+            - "*.draft.md"
+          file_types:
+            - "*.md"
+            - "*.rst"
+            - "*.txt"
+          max_file_size: 1048576
+          depth: 10
+          enable_file_conversion: true
+
+  # Product team knowledge
+  product-team:
+    project_id: "product-team"
+    display_name: "Product Team Knowledge"
+    description: "Product team documentation and processes"
+    
+    sources:
+      confluence:
+        product-space:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "PRODUCT"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_API_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: ["product", "requirements", "roadmap"]
+          enable_file_conversion: true
+          download_attachments: true
+      
+      git:
+        product-docs:
+          base_url: "https://github.com/company/product-docs.git"
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          include_paths:
+            - "requirements/**/*.md"
+            - "roadmap/**/*.md"
+            - "user-stories/**/*.md"
+          file_types:
+            - "*.md"
+            - "*.txt"
+          max_file_size: 1048576
+          depth: 10
+          enable_file_conversion: true
+
+  # Engineering team knowledge
+  engineering-team:
+    project_id: "engineering-team"
+    display_name: "Engineering Team Knowledge"
+    description: "Engineering documentation, code, and technical guides"
+    
+    sources:
+      confluence:
+        engineering-space:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "ENG"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_API_TOKEN}"
+          content_types: ["page"]
+          include_labels: ["engineering", "technical", "architecture"]
+          enable_file_conversion: true
+          download_attachments: true
+      
+      git:
+        engineering-docs:
+          base_url: "https://github.com/company/engineering.git"
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          include_paths:
+            - "docs/**/*.md"
+            - "architecture/**/*.md"
+            - "api/**/*.yaml"
+            - "src/**/*.py"
+            - "src/**/*.js"
+            - "src/**/*.ts"
+            - "README.md"
+          exclude_paths:
+            - "src/test/**"
+            - "src/**/*.test.*"
+            - "node_modules/**"
+          file_types:
+            - "*.md"
+            - "*.py"
+            - "*.js"
+            - "*.ts"
+            - "*.yaml"
+            - "*.yml"
+          max_file_size: 1048576
+          depth: 10
+          enable_file_conversion: true
+
+  # Design team knowledge
+  design-team:
+    project_id: "design-team"
+    display_name: "Design Team Knowledge"
+    description: "Design documentation, guidelines, and assets"
+    
+    sources:
+      confluence:
+        design-space:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "DESIGN"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_API_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: ["design", "guidelines", "assets"]
+          enable_file_conversion: true
+          download_attachments: true
+      
+      localfile:
+        design-assets:
+          base_url: "file:///design/documentation"
+          include_paths:
+            - "**/*.md"
+            - "**/*.pdf"
+            - "**/*.txt"
+          exclude_paths:
+            - "**/*.tmp"
+            - "**/~*"
+          file_types:
+            - "*.md"
+            - "*.pdf"
+            - "*.txt"
+          max_file_size: 52428800
+          enable_file_conversion: true
 ```
 
-#### 1.2 Access Control and Permissions
+#### 1.2 Environment Variables
 
-```yaml
-# team-permissions.yaml
-access_control:
-  shared_knowledge:
-    read: ["all_teams"]
-    write: ["team_leads", "documentation_team"]
-  
-  product_knowledge:
-    read: ["product_team", "engineering_team", "design_team"]
-    write: ["product_team"]
-  
-  engineering_knowledge:
-    read: ["engineering_team", "product_team", "security_team"]
-    write: ["engineering_team"]
-  
-  design_knowledge:
-    read: ["design_team", "product_team", "marketing_team"]
-    write: ["design_team"]
+```bash
+# .env - Environment configuration for team collaboration
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=your_qdrant_api_key
+QDRANT_COLLECTION_NAME=team_collaboration
 
-team_roles:
-  team_leads:
-    - "product_lead@company.com"
-    - "engineering_lead@company.com"
-    - "design_lead@company.com"
-  
-  documentation_team:
-    - "docs_team@company.com"
-  
-  new_hires:
-    collections: ["shared_knowledge"]
-    mentors: ["team_leads"]
+OPENAI_API_KEY=your_openai_api_key
+
+CONFLUENCE_URL=https://company.atlassian.net
+CONFLUENCE_EMAIL=your_email@company.com
+CONFLUENCE_API_TOKEN=your_confluence_token
+
+GITHUB_TOKEN=your_github_token
+
+STATE_DB_PATH=./workspace_state.db
 ```
 
 ### Step 2: Onboarding Workflow
@@ -166,8 +292,8 @@ team_roles:
 
 set -euo pipefail
 
+WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 ONBOARDING_DIR="${ONBOARDING_DIR:-./onboarding}"
-CONFIG_FILE="${CONFIG_FILE:-./qdrant-loader.yaml}"
 
 # Function to create onboarding package
 create_onboarding_package() {
@@ -203,34 +329,86 @@ generate_team_knowledge_summary() {
     
     echo "Generating knowledge summary for $team team..."
     
-    # Search for team-specific essential knowledge
-    local essential_topics=(
-        "getting started"
-        "team processes"
-        "tools and technologies"
-        "best practices"
-        "common issues"
-    )
+    # Get project status to understand available knowledge
+    local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
     
     cat > "$output_dir/knowledge-summary.md" << EOF
 # $team Team Knowledge Summary
 
+## Welcome to the $team Team!
+
+This summary provides an overview of the knowledge and resources available to help you get started.
+
+## Available Knowledge Sources
+
+### Team-Specific Documentation
+- **Project**: ${team}-team
+- **Sources**: $(echo "$project_status" | jq -r '.[0].source_count // "N/A"' 2>/dev/null || echo "N/A")
+- **Collection**: team_collaboration
+
+### Shared Knowledge Base
+- **Project**: shared-knowledge
+- **Purpose**: Cross-team documentation and processes
+- **Access**: Available to all team members
+
 ## Essential Knowledge Areas
 
+### Getting Started
+- Team processes and workflows
+- Development environment setup
+- Communication channels and tools
+- Key contacts and resources
+
+### Team Processes
+- Daily standup procedures
+- Code review process
+- Documentation standards
+- Meeting schedules
+
+### Tools and Technologies
+- Development tools and IDEs
+- Collaboration platforms
+- Project management tools
+- Technical stack overview
+
+### Best Practices
+- Coding standards and guidelines
+- Documentation practices
+- Security considerations
+- Quality assurance processes
+
+## How to Search for Information
+
+### Using AI Tools (Cursor, Claude Desktop)
+1. Start your AI assistant with QDrant Loader MCP server
+2. Ask questions about team processes, tools, or procedures
+3. Search across both team-specific and shared knowledge
+
+### Example Queries
+- "How do I set up the development environment for the $team team?"
+- "What are the code review guidelines?"
+- "Who should I contact for access to team tools?"
+- "What are the team's current priorities and projects?"
+
+## Next Steps
+
+1. Review this knowledge summary
+2. Complete the learning path (see learning-path.md)
+3. Follow the onboarding checklist (see onboarding-checklist.md)
+4. Set up your AI assistant for easy knowledge access
+5. Schedule meetings with team members and mentor
+
+## Resources
+
+- **Learning Path**: ./learning-path.md
+- **Onboarding Checklist**: ./onboarding-checklist.md
+- **AI Assistant Setup**: ./mcp-config.json
+- **Team Contacts**: [See onboarding checklist]
+
+---
+
+**Welcome to the team!** 🎉
 EOF
-    
-    for topic in "${essential_topics[@]}"; do
-        echo "### $topic" >> "$output_dir/knowledge-summary.md"
-        echo "" >> "$output_dir/knowledge-summary.md"
-        
-        # Search for relevant content
-        qdrant-loader search "$topic" \
-            --collection "${team}_knowledge" \
-            --limit 3 \
-            --format markdown >> "$output_dir/knowledge-summary.md"
-        
-        echo "" >> "$output_dir/knowledge-summary.md"
-    done
     
     echo "Knowledge summary generated: $output_dir/knowledge-summary.md"
 }
@@ -248,37 +426,66 @@ create_learning_path() {
 - [ ] Review team processes and workflows
 - [ ] Set up development environment
 - [ ] Meet team members
+- [ ] Join team communication channels
+- [ ] Set up AI assistant with QDrant Loader MCP server
 
 ## Week 2: Deep Dive
-- [ ] Study team-specific technologies
-- [ ] Review recent projects
+- [ ] Study team-specific technologies and tools
+- [ ] Review recent projects and codebase
 - [ ] Shadow experienced team members
-- [ ] Complete first small task
+- [ ] Complete first small task or contribution
+- [ ] Attend team meetings and standups
 
 ## Week 3: Integration
-- [ ] Participate in team meetings
+- [ ] Participate actively in team meetings
 - [ ] Contribute to ongoing projects
 - [ ] Ask questions and seek clarification
-- [ ] Document learnings
+- [ ] Document learnings and feedback
+- [ ] Start taking on independent tasks
 
 ## Week 4: Contribution
-- [ ] Take on independent tasks
-- [ ] Share knowledge with team
-- [ ] Provide feedback on onboarding
+- [ ] Take on independent tasks and responsibilities
+- [ ] Share knowledge with team members
+- [ ] Provide feedback on onboarding process
 - [ ] Set goals for next month
+- [ ] Complete onboarding review with manager
 
-## Resources
+## Essential Resources
 
-### Essential Reading
-$(qdrant-loader search "essential reading $team" --collection "${team}_knowledge" --limit 5 --format list)
+### Team Documentation
+Use your AI assistant to search for:
+- "Getting started guide for $team team"
+- "Development environment setup"
+- "Team processes and workflows"
+- "Code review guidelines"
+- "Project architecture overview"
 
 ### Tools and Technologies
-$(qdrant-loader search "tools technologies $team" --collection "${team}_knowledge" --limit 5 --format list)
+Search for information about:
+- "Development tools and IDEs"
+- "Collaboration platforms"
+- "Testing frameworks and practices"
+- "Deployment and CI/CD processes"
+- "Monitoring and debugging tools"
 
 ### Team Contacts
-- Team Lead: [Contact Info]
-- Mentor: [Contact Info]
-- Buddy: [Contact Info]
+- **Team Lead**: [Contact Info - see onboarding checklist]
+- **Mentor**: [Contact Info - see onboarding checklist]
+- **Buddy**: [Contact Info - see onboarding checklist]
+- **HR Partner**: [Contact Info - see onboarding checklist]
+- **IT Support**: [Email] - [Phone]
+
+## Learning Tips
+
+1. **Use AI Assistant**: Ask questions about anything you find in the documentation
+2. **Take Notes**: Document what you learn for future reference
+3. **Ask Questions**: Don't hesitate to ask team members for clarification
+4. **Contribute Early**: Start contributing to documentation and processes
+5. **Share Feedback**: Help improve the onboarding process for future hires
+
+---
+
+**Happy Learning!** 📚
 EOF
     
     echo "Learning path created: $output_dir/learning-path.md"
@@ -291,25 +498,108 @@ setup_ai_assistant_access() {
     
     echo "Setting up AI assistant access for $user_email"
     
-    # Create user-specific MCP configuration
-    cat > "$ONBOARDING_DIR/$user_email/mcp-config.json" << EOF
+    # Create user-specific MCP configuration for Cursor
+    cat > "$ONBOARDING_DIR/$user_email/cursor-mcp-config.json" << EOF
 {
-  "servers": {
-    "team-knowledge": {
-      "command": "qdrant-loader",
-      "args": ["mcp-server", "start", "--user", "$user_email"],
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
       "env": {
         "QDRANT_URL": "${QDRANT_URL}",
-        "USER_COLLECTIONS": "shared_knowledge,${team}_knowledge"
+        "QDRANT_API_KEY": "${QDRANT_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
     }
-  },
-  "user_preferences": {
-    "default_collections": ["shared_knowledge", "${team}_knowledge"],
-    "search_suggestions": true,
-    "onboarding_mode": true
   }
 }
+EOF
+
+    # Create user-specific MCP configuration for Claude Desktop
+    cat > "$ONBOARDING_DIR/$user_email/claude-desktop-config.json" << EOF
+{
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
+      "env": {
+        "QDRANT_URL": "${QDRANT_URL}",
+        "QDRANT_API_KEY": "${QDRANT_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  }
+}
+EOF
+
+    # Create setup instructions
+    cat > "$ONBOARDING_DIR/$user_email/ai-assistant-setup.md" << EOF
+# AI Assistant Setup Instructions
+
+## Overview
+
+Your AI assistant can help you search and discover information from the team's knowledge base using QDrant Loader's MCP server.
+
+## Setup for Cursor IDE
+
+1. Copy the configuration to Cursor's MCP settings:
+   \`\`\`bash
+   cp cursor-mcp-config.json ~/.cursor/mcp_settings.json
+   \`\`\`
+
+2. Update the API keys in the configuration file
+3. Restart Cursor IDE
+4. The QDrant Loader tools will be available in Cursor
+
+## Setup for Claude Desktop
+
+1. Copy the configuration to Claude Desktop's config directory:
+   
+   **macOS:**
+   \`\`\`bash
+   cp claude-desktop-config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   \`\`\`
+   
+   **Linux:**
+   \`\`\`bash
+   cp claude-desktop-config.json ~/.config/claude/claude_desktop_config.json
+   \`\`\`
+
+2. Update the API keys in the configuration file
+3. Restart Claude Desktop
+4. The QDrant Loader tools will be available in Claude Desktop
+
+## Using Your AI Assistant
+
+### Example Queries for $team Team
+
+- "Search for getting started documentation for the $team team"
+- "Find information about our development environment setup"
+- "What are the team's coding standards and best practices?"
+- "Show me recent documentation about our project architecture"
+- "Find troubleshooting guides for common issues"
+
+### Search Tips
+
+1. **Be Specific**: Include team name or project context in your queries
+2. **Use Keywords**: Include relevant technical terms and concepts
+3. **Ask Follow-ups**: Ask for clarification or more details on topics
+4. **Explore Related**: Ask for related documentation or resources
+
+## Available Projects
+
+- **shared-knowledge**: Cross-team documentation and processes
+- **${team}-team**: Team-specific documentation and resources
+
+## Getting Help
+
+If you have issues with the AI assistant setup:
+1. Check that all API keys are correctly configured
+2. Verify that the MCP server is running: \`mcp-qdrant-loader\`
+3. Contact your mentor or team lead for assistance
+4. Check the troubleshooting documentation
+
+---
+
+**Happy Searching!** 🔍
 EOF
     
     echo "AI assistant configured for $user_email"
@@ -328,53 +618,99 @@ generate_onboarding_checklist() {
 - [ ] Set up accounts and access permissions
 - [ ] Assign mentor/buddy
 - [ ] Schedule first week meetings
+- [ ] Prepare workspace and equipment
 
 ## Day 1
 - [ ] Welcome meeting with team lead
-- [ ] Office/workspace tour
-- [ ] IT setup and tool access
+- [ ] Office/workspace tour (if applicable)
+- [ ] IT setup and tool access verification
 - [ ] Introduction to team members
+- [ ] Review onboarding package and schedule
 
-## Week 1
+## Week 1: Foundation
 - [ ] Complete knowledge summary review
 - [ ] Set up development environment
+- [ ] Configure AI assistant with QDrant Loader MCP server
 - [ ] Attend team meetings as observer
 - [ ] Schedule 1:1s with key team members
+- [ ] Join team communication channels
+- [ ] Review team documentation and processes
 
-## Week 2
+## Week 2: Learning
 - [ ] Start first project/task
 - [ ] Shadow experienced team member
-- [ ] Review team documentation
+- [ ] Review team codebase and architecture
 - [ ] Ask questions and take notes
+- [ ] Participate in code reviews (as observer)
+- [ ] Complete environment setup verification
 
-## Week 3
+## Week 3: Integration
 - [ ] Contribute to team discussions
 - [ ] Complete first deliverable
-- [ ] Provide onboarding feedback
-- [ ] Set 30-day goals
+- [ ] Participate actively in team meetings
+- [ ] Start independent work
+- [ ] Provide initial feedback on onboarding
+- [ ] Set 30-day goals with manager
 
 ## Month 1 Review
 - [ ] Performance check-in with manager
 - [ ] Feedback session with mentor
-- [ ] Update learning goals
+- [ ] Update learning goals and objectives
 - [ ] Plan next month objectives
+- [ ] Complete onboarding satisfaction survey
 
 ## Resources and Contacts
 
 ### Key Documents
-- Team Knowledge Summary: ./knowledge-summary.md
-- Learning Path: ./learning-path.md
-- Team Processes: [Link to team wiki]
+- **Team Knowledge Summary**: ./knowledge-summary.md
+- **Learning Path**: ./learning-path.md
+- **AI Assistant Setup**: ./ai-assistant-setup.md
 
 ### Important Contacts
-- Manager: [Contact]
-- Mentor: [Contact]
-- HR Partner: [Contact]
-- IT Support: [Contact]
+- **Manager**: [Name] - [Email] - [Phone]
+- **Mentor**: [Name] - [Email] - [Phone]
+- **Team Lead**: [Name] - [Email] - [Phone]
+- **HR Partner**: [Name] - [Email] - [Phone]
+- **IT Support**: [Email] - [Phone]
 
-### AI Assistant Setup
-- Configuration: ./mcp-config.json
-- Quick Start: "Ask me about team processes, tools, or any questions!"
+### Team Communication
+- **Slack Channel**: #${team}-team
+- **Email List**: ${team}-team@company.com
+- **Meeting Calendar**: [Calendar Link]
+
+### Development Resources
+- **Code Repository**: [Repository URL]
+- **Documentation**: [Documentation URL]
+- **Issue Tracker**: [Issue Tracker URL]
+- **CI/CD Pipeline**: [Pipeline URL]
+
+## AI Assistant Quick Start
+
+1. Set up MCP server configuration (see ai-assistant-setup.md)
+2. Start asking questions about team processes and documentation
+3. Use search to find specific information quickly
+4. Ask for help when you need clarification
+
+### Example First Queries
+- "What do I need to know to get started on the $team team?"
+- "How do I set up my development environment?"
+- "What are the team's current projects and priorities?"
+- "Who should I contact for different types of questions?"
+
+## Success Metrics
+
+By the end of your first month, you should:
+- [ ] Feel comfortable with team processes and tools
+- [ ] Be able to contribute independently to projects
+- [ ] Know who to contact for different types of questions
+- [ ] Understand the team's goals and priorities
+- [ ] Be able to use the AI assistant effectively for knowledge discovery
+
+---
+
+**Welcome to the $team team!** 🎉
+
+We're excited to have you join us and look forward to your contributions!
 EOF
     
     echo "Onboarding checklist created: $output_dir/onboarding-checklist.md"
@@ -399,767 +735,128 @@ main() {
             echo "Commands:"
             echo "  onboard <email> <team> [mentor]  - Create onboarding package"
             echo "  help                             - Show this help"
+            echo ""
+            echo "Available teams: shared-knowledge, product-team, engineering-team, design-team"
             ;;
     esac
 }
 
 main "$@"
+
+### Step 3: Knowledge Management and Collaboration
+
+#### 3.1 Daily Collaboration Tasks
+
+```bash
+# Update team knowledge bases
+qdrant-loader --workspace . ingest
+
+# Update specific team project
+qdrant-loader --workspace . ingest --project product-team
+
+# Check project status
+qdrant-loader project --workspace . status
+
+# Validate all projects
+qdrant-loader project --workspace . validate
 ```
 
-#### 2.2 Knowledge Gap Detection
+#### 3.2 Weekly Team Operations
 
 ```bash
 #!/bin/bash
-# scripts/knowledge-gaps.sh - Identify and address knowledge gaps
+# scripts/weekly-team-sync.sh - Weekly team knowledge synchronization
 
 set -euo pipefail
 
-CONFIG_FILE="${CONFIG_FILE:-./qdrant-loader.yaml}"
-GAPS_REPORT_DIR="${GAPS_REPORT_DIR:-./reports/knowledge-gaps}"
+WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 
-# Function to analyze team knowledge gaps
-analyze_knowledge_gaps() {
-    local team="${1:-all}"
-    
-    echo "Analyzing knowledge gaps for: $team"
-    mkdir -p "$GAPS_REPORT_DIR"
-    
-    # Common knowledge areas to check
-    local knowledge_areas=(
-        "onboarding"
-        "troubleshooting"
-        "best practices"
-        "tools and setup"
-        "processes"
-        "architecture"
-        "security"
-        "deployment"
-    )
-    
-    local gaps_found=()
-    
-    for area in "${knowledge_areas[@]}"; do
-        echo "Checking coverage for: $area"
-        
-        local collection_filter=""
-        if [ "$team" != "all" ]; then
-            collection_filter="--collection ${team}_knowledge"
-        fi
-        
-        local result_count=$(qdrant-loader search "$area" \
-            $collection_filter \
-            --limit 10 \
-            --output json | jq 'length')
-        
-        if [ "$result_count" -lt 3 ]; then
-            gaps_found+=("$area")
-            echo "  ⚠️  Gap detected: $area ($result_count results)"
-        else
-            echo "  ✅ Good coverage: $area ($result_count results)"
-        fi
-    done
-    
-    # Generate gaps report
-    generate_gaps_report "$team" "${gaps_found[@]}"
-}
+echo "Starting weekly team knowledge synchronization..."
 
-# Function to generate knowledge gaps report
-generate_gaps_report() {
-    local team="$1"
-    shift
-    local gaps=("$@")
-    
-    local report_file="$GAPS_REPORT_DIR/gaps-report-$team-$(date +%Y%m%d).md"
-    
-    cat > "$report_file" << EOF
-# Knowledge Gaps Report - $team Team
+# Update all team projects
+echo "Updating shared knowledge..."
+qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project shared-knowledge
 
-**Generated**: $(date +%Y-%m-%d)  
-**Team**: $team
+echo "Updating product team knowledge..."
+qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project product-team
 
-## Summary
+echo "Updating engineering team knowledge..."
+qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project engineering-team
 
-$(if [ ${#gaps[@]} -eq 0 ]; then
-    echo "✅ No significant knowledge gaps detected"
-else
-    echo "⚠️  ${#gaps[@]} knowledge gaps identified"
-fi)
+echo "Updating design team knowledge..."
+qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project design-team
 
-## Identified Gaps
+# Check status of all projects
+echo ""
+echo "Project status summary:"
+qdrant-loader project --workspace "$WORKSPACE_DIR" status
 
-$(for gap in "${gaps[@]}"; do
-    echo "### $gap"
-    echo ""
-    echo "**Impact**: Knowledge gap in $gap area may affect:"
-    echo "- New team member onboarding"
-    echo "- Problem resolution efficiency"
-    echo "- Team productivity"
-    echo ""
-    echo "**Recommendations**:"
-    echo "- Create documentation for $gap"
-    echo "- Identify subject matter experts"
-    echo "- Schedule knowledge sharing sessions"
-    echo ""
-done)
+echo ""
+echo "✅ Weekly team knowledge synchronization completed!"
+```
+
+#### 3.3 Monthly Knowledge Review
+
+```bash
+#!/bin/bash
+# scripts/monthly-knowledge-review.sh - Monthly knowledge base review
+
+set -euo pipefail
+
+WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
+REVIEW_DIR="${REVIEW_DIR:-./reviews}"
+
+echo "Starting monthly knowledge review..."
+
+# Create review directory
+mkdir -p "$REVIEW_DIR/$(date +%Y-%m)"
+
+# Generate project status report
+echo "Generating project status report..."
+qdrant-loader project --workspace "$WORKSPACE_DIR" status --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-status.json"
+
+# List all projects
+echo "Generating project list..."
+qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json > "$REVIEW_DIR/$(date +%Y-%m)/project-list.json"
+
+# Create summary report
+cat > "$REVIEW_DIR/$(date +%Y-%m)/monthly-review.md" << EOF
+# Monthly Knowledge Review - $(date +%B\ %Y)
+
+## Project Overview
+
+### Active Projects
+$(qdrant-loader project --workspace "$WORKSPACE_DIR" list | grep -E "^│" | head -n -1 | tail -n +2 || echo "No projects found")
+
+### Project Status
+$(qdrant-loader project --workspace "$WORKSPACE_DIR" status)
+
+## Key Metrics
+
+- **Total Projects**: $(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq 'length' 2>/dev/null || echo "0")
+- **Review Date**: $(date +%Y-%m-%d)
+- **Review Period**: $(date +%B\ %Y)
 
 ## Action Items
 
-$(for gap in "${gaps[@]}"; do
-    echo "- [ ] Address $gap knowledge gap"
-done)
+- [ ] Review project configurations
+- [ ] Update outdated documentation
+- [ ] Plan knowledge sharing sessions
+- [ ] Address any configuration issues
 
 ## Next Steps
 
-1. Prioritize gaps by impact and urgency
-2. Assign owners for each gap
-3. Create documentation plan
-4. Schedule knowledge transfer sessions
-5. Update team onboarding materials
+1. Share review with team leads
+2. Plan improvements for next month
+3. Schedule knowledge sharing sessions
+4. Update team onboarding materials
 
 ---
 
-*Generated by QDrant Loader Knowledge Gap Analysis*
+*Generated by QDrant Loader Monthly Review*
 EOF
-    
-    echo "Knowledge gaps report generated: $report_file"
-}
 
-# Function to suggest knowledge sharing opportunities
-suggest_knowledge_sharing() {
-    local source_team="$1"
-    local target_team="$2"
-    
-    echo "Analyzing knowledge sharing opportunities between $source_team and $target_team"
-    
-    # Find overlapping topics
-    local common_topics=$(qdrant-loader search "shared topics" \
-        --collection "${source_team}_knowledge" \
-        --limit 20 \
-        --output json | jq -r '.[].title' | \
-        while read -r title; do
-            if qdrant-loader search "$title" \
-                --collection "${target_team}_knowledge" \
-                --limit 1 \
-                --output json | jq -e 'length > 0' >/dev/null; then
-                echo "$title"
-            fi
-        done)
-    
-    echo "Common knowledge areas:"
-    echo "$common_topics"
-    
-    # Suggest collaboration opportunities
-    echo ""
-    echo "Suggested collaboration opportunities:"
-    echo "- Cross-team documentation review"
-    echo "- Joint knowledge sharing sessions"
-    echo "- Shared best practices documentation"
-    echo "- Cross-training programs"
-}
-
-# Main function
-main() {
-    local command="${1:-help}"
-    
-    case "$command" in
-        analyze)
-            local team="${2:-all}"
-            analyze_knowledge_gaps "$team"
-            ;;
-        sharing)
-            if [ $# -lt 3 ]; then
-                echo "Usage: $0 sharing <source_team> <target_team>"
-                exit 1
-            fi
-            suggest_knowledge_sharing "$2" "$3"
-            ;;
-        help|*)
-            echo "Knowledge Gap Analysis"
-            echo ""
-            echo "Commands:"
-            echo "  analyze [team]              - Analyze knowledge gaps"
-            echo "  sharing <team1> <team2>     - Suggest sharing opportunities"
-            echo "  help                        - Show this help"
-            ;;
-    esac
-}
-
-main "$@"
-```
-
-### Step 3: Cross-Team Knowledge Sharing
-
-#### 3.1 Knowledge Sharing Sessions
-
-```bash
-#!/bin/bash
-# scripts/knowledge-sharing.sh - Facilitate knowledge sharing sessions
-
-set -euo pipefail
-
-SESSIONS_DIR="${SESSIONS_DIR:-./knowledge-sessions}"
-CONFIG_FILE="${CONFIG_FILE:-./qdrant-loader.yaml}"
-
-# Function to plan knowledge sharing session
-plan_sharing_session() {
-    local topic="$1"
-    local presenter_team="$2"
-    local audience_teams="$3"
-    local session_date="$4"
-    
-    echo "Planning knowledge sharing session: $topic"
-    
-    local session_id="session-$(date +%Y%m%d)-$(echo "$topic" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')"
-    local session_dir="$SESSIONS_DIR/$session_id"
-    
-    mkdir -p "$session_dir"
-    
-    # Generate session plan
-    cat > "$session_dir/session-plan.md" << EOF
-# Knowledge Sharing Session: $topic
-
-## Session Details
-
-- **Topic**: $topic
-- **Presenter Team**: $presenter_team
-- **Audience Teams**: $audience_teams
-- **Date**: $session_date
-- **Duration**: 60 minutes
-
-## Agenda
-
-### 1. Introduction (5 minutes)
-- Welcome and introductions
-- Session objectives
-- Agenda overview
-
-### 2. Topic Overview (15 minutes)
-- Background and context
-- Why this knowledge is important
-- Current challenges and solutions
-
-### 3. Deep Dive (25 minutes)
-- Detailed explanation
-- Examples and case studies
-- Best practices and lessons learned
-
-### 4. Q&A and Discussion (10 minutes)
-- Questions from audience
-- Discussion and clarification
-- Additional insights
-
-### 5. Next Steps (5 minutes)
-- Action items
-- Follow-up resources
-- Future collaboration opportunities
-
-## Pre-Session Preparation
-
-### For Presenters
-- [ ] Review existing documentation
-- [ ] Prepare presentation materials
-- [ ] Gather examples and case studies
-- [ ] Test any demos or tools
-
-### For Attendees
-- [ ] Review background materials
-- [ ] Prepare questions
-- [ ] Identify specific interests
-- [ ] Consider application to own work
-
-## Resources
-
-### Background Reading
-$(qdrant-loader search "$topic" --collection "${presenter_team}_knowledge" --limit 5 --format list)
-
-### Related Documentation
-$(qdrant-loader search "$topic documentation" --collection "shared_knowledge" --limit 3 --format list)
-
-## Follow-Up Actions
-
-- [ ] Share session recording
-- [ ] Update shared documentation
-- [ ] Schedule follow-up sessions if needed
-- [ ] Collect feedback from attendees
-
-EOF
-    
-    # Generate presenter guide
-    generate_presenter_guide "$topic" "$presenter_team" "$session_dir"
-    
-    # Generate attendee guide
-    generate_attendee_guide "$topic" "$audience_teams" "$session_dir"
-    
-    echo "Session plan created: $session_dir"
-}
-
-# Function to generate presenter guide
-generate_presenter_guide() {
-    local topic="$1"
-    local presenter_team="$2"
-    local session_dir="$3"
-    
-    cat > "$session_dir/presenter-guide.md" << EOF
-# Presenter Guide: $topic
-
-## Preparation Checklist
-
-### Content Preparation
-- [ ] Review team knowledge base for $topic
-- [ ] Identify key concepts and principles
-- [ ] Gather real-world examples
-- [ ] Prepare visual aids or demos
-
-### Knowledge Extraction
-Use these commands to gather relevant information:
-
-\`\`\`bash
-# Find comprehensive information about the topic
-qdrant-loader search "$topic" --collection "${presenter_team}_knowledge" --limit 10
-
-# Look for related processes and procedures
-qdrant-loader search "$topic process" --collection "${presenter_team}_knowledge" --limit 5
-
-# Find troubleshooting and common issues
-qdrant-loader search "$topic troubleshooting" --collection "${presenter_team}_knowledge" --limit 5
-
-# Identify best practices
-qdrant-loader search "$topic best practices" --collection "${presenter_team}_knowledge" --limit 5
-\`\`\`
-
-### Presentation Structure
-
-1. **Context Setting** (Why this matters)
-2. **Core Concepts** (What you need to know)
-3. **Practical Application** (How to use it)
-4. **Common Pitfalls** (What to avoid)
-5. **Resources** (Where to learn more)
-
-### Tips for Effective Sharing
-
-- Start with the business impact
-- Use concrete examples from your team's experience
-- Encourage questions throughout
-- Share both successes and failures
-- Provide actionable takeaways
-
-## Post-Session Actions
-
-- [ ] Upload presentation materials to shared knowledge base
-- [ ] Document key questions and answers
-- [ ] Update team documentation based on feedback
-- [ ] Schedule follow-up sessions if needed
-
-EOF
-}
-
-# Function to generate attendee guide
-generate_attendee_guide() {
-    local topic="$1"
-    local audience_teams="$2"
-    local session_dir="$3"
-    
-    cat > "$session_dir/attendee-guide.md" << EOF
-# Attendee Guide: $topic
-
-## Pre-Session Preparation
-
-### Background Research
-Familiarize yourself with the topic using these searches:
-
-\`\`\`bash
-# General information about the topic
-qdrant-loader search "$topic" --collection "shared_knowledge" --limit 5
-
-# How other teams approach this topic
-qdrant-loader search "$topic approach" --collection "shared_knowledge" --limit 3
-\`\`\`
-
-### Questions to Consider
-
-- How does this topic relate to your team's work?
-- What challenges have you faced in this area?
-- What specific aspects would you like to learn more about?
-- How could you apply this knowledge in your projects?
-
-## During the Session
-
-### Active Participation
-- Ask clarifying questions
-- Share your team's perspective
-- Take notes on key insights
-- Identify potential collaboration opportunities
-
-### Note-Taking Template
-
-**Key Concepts:**
-- 
-- 
-- 
-
-**Practical Applications:**
-- 
-- 
-- 
-
-**Action Items:**
-- 
-- 
-- 
-
-**Follow-Up Questions:**
-- 
-- 
-- 
-
-## Post-Session Actions
-
-### Knowledge Integration
-- [ ] Share insights with your team
-- [ ] Update your team's documentation
-- [ ] Identify areas for further learning
-- [ ] Plan implementation of new practices
-
-### Collaboration Opportunities
-- [ ] Reach out to presenters for follow-up
-- [ ] Propose joint projects or initiatives
-- [ ] Share your team's related knowledge
-- [ ] Schedule reciprocal knowledge sharing
-
-EOF
-}
-
-# Function to capture session outcomes
-capture_session_outcomes() {
-    local session_id="$1"
-    local session_dir="$SESSIONS_DIR/$session_id"
-    
-    echo "Capturing outcomes for session: $session_id"
-    
-    cat > "$session_dir/session-outcomes.md" << EOF
-# Session Outcomes: $session_id
-
-## Attendance
-- **Total Attendees**: [Number]
-- **Teams Represented**: [List teams]
-- **Presenter(s)**: [Names and teams]
-
-## Key Insights Shared
-- 
-- 
-- 
-
-## Questions and Discussions
-- 
-- 
-- 
-
-## Action Items
-- [ ] [Action item 1] - Owner: [Name] - Due: [Date]
-- [ ] [Action item 2] - Owner: [Name] - Due: [Date]
-- [ ] [Action item 3] - Owner: [Name] - Due: [Date]
-
-## Follow-Up Sessions Planned
-- 
-- 
-
-## Knowledge Base Updates
-- [ ] Update shared documentation with new insights
-- [ ] Add session materials to knowledge base
-- [ ] Cross-reference related topics
-
-## Feedback Summary
-- **What worked well**: 
-- **Areas for improvement**: 
-- **Suggestions for future sessions**: 
-
-## Impact Metrics
-- **Knowledge gaps addressed**: [Number]
-- **New collaboration opportunities**: [Number]
-- **Documentation updates planned**: [Number]
-
-EOF
-    
-    echo "Session outcomes template created: $session_dir/session-outcomes.md"
-}
-
-# Main function
-main() {
-    local command="${1:-help}"
-    
-    case "$command" in
-        plan)
-            if [ $# -lt 5 ]; then
-                echo "Usage: $0 plan <topic> <presenter_team> <audience_teams> <date>"
-                echo "Example: $0 plan 'API Design' engineering 'product,design' '2024-02-15'"
-                exit 1
-            fi
-            plan_sharing_session "$2" "$3" "$4" "$5"
-            ;;
-        outcomes)
-            if [ $# -lt 2 ]; then
-                echo "Usage: $0 outcomes <session_id>"
-                exit 1
-            fi
-            capture_session_outcomes "$2"
-            ;;
-        help|*)
-            echo "Knowledge Sharing Sessions"
-            echo ""
-            echo "Commands:"
-            echo "  plan <topic> <presenter> <audience> <date>  - Plan sharing session"
-            echo "  outcomes <session_id>                       - Capture session outcomes"
-            echo "  help                                        - Show this help"
-            ;;
-    esac
-}
-
-main "$@"
-```
-
-### Step 4: Collaboration Analytics
-
-#### 4.1 Team Collaboration Metrics
-
-```bash
-#!/bin/bash
-# scripts/collaboration-metrics.sh - Track team collaboration effectiveness
-
-set -euo pipefail
-
-METRICS_DIR="${METRICS_DIR:-./metrics/collaboration}"
-CONFIG_FILE="${CONFIG_FILE:-./qdrant-loader.yaml}"
-
-# Function to generate collaboration metrics
-generate_collaboration_metrics() {
-    local time_period="${1:-30d}"
-    
-    echo "Generating collaboration metrics for period: $time_period"
-    mkdir -p "$METRICS_DIR"
-    
-    local report_file="$METRICS_DIR/collaboration-metrics-$(date +%Y%m%d).json"
-    
-    # Collect metrics data
-    local cross_team_searches=$(get_cross_team_search_metrics "$time_period")
-    local knowledge_sharing_sessions=$(get_knowledge_sharing_metrics "$time_period")
-    local onboarding_effectiveness=$(get_onboarding_metrics "$time_period")
-    local knowledge_gaps=$(get_knowledge_gap_metrics)
-    
-    # Generate comprehensive metrics report
-    cat > "$report_file" << EOF
-{
-  "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "period": "$time_period",
-  "metrics": {
-    "cross_team_searches": $cross_team_searches,
-    "knowledge_sharing": $knowledge_sharing_sessions,
-    "onboarding": $onboarding_effectiveness,
-    "knowledge_gaps": $knowledge_gaps
-  }
-}
-EOF
-    
-    echo "Collaboration metrics generated: $report_file"
-    
-    # Generate human-readable summary
-    generate_metrics_summary "$report_file"
-}
-
-# Function to get cross-team search metrics
-get_cross_team_search_metrics() {
-    local period="$1"
-    
-    # Simulate cross-team search analytics
-    # In practice, this would query actual search logs
-    cat << EOF
-{
-  "total_searches": 1250,
-  "cross_team_searches": 380,
-  "cross_team_percentage": 30.4,
-  "top_cross_team_queries": [
-    {"query": "API documentation", "count": 45},
-    {"query": "deployment process", "count": 38},
-    {"query": "security guidelines", "count": 32}
-  ],
-  "team_interactions": {
-    "engineering_to_product": 125,
-    "product_to_design": 89,
-    "design_to_engineering": 76,
-    "security_to_all": 90
-  }
-}
-EOF
-}
-
-# Function to get knowledge sharing session metrics
-get_knowledge_sharing_metrics() {
-    local period="$1"
-    
-    cat << EOF
-{
-  "sessions_conducted": 8,
-  "total_attendees": 156,
-  "average_attendance": 19.5,
-  "teams_participating": 6,
-  "topics_covered": [
-    "API Design Best Practices",
-    "Security Review Process",
-    "User Research Methods",
-    "Deployment Automation"
-  ],
-  "satisfaction_score": 4.3,
-  "follow_up_actions": 24
-}
-EOF
-}
-
-# Function to get onboarding effectiveness metrics
-get_onboarding_metrics() {
-    local period="$1"
-    
-    cat << EOF
-{
-  "new_hires": 5,
-  "onboarding_packages_created": 5,
-  "average_onboarding_time": "18 days",
-  "knowledge_base_usage": {
-    "searches_per_new_hire": 45,
-    "most_searched_topics": [
-      "getting started",
-      "team processes",
-      "tools setup"
-    ]
-  },
-  "mentor_feedback_score": 4.1,
-  "new_hire_satisfaction": 4.4
-}
-EOF
-}
-
-# Function to get knowledge gap metrics
-get_knowledge_gap_metrics() {
-    cat << EOF
-{
-  "gaps_identified": 12,
-  "gaps_addressed": 8,
-  "high_priority_gaps": 3,
-  "teams_with_gaps": ["engineering", "product", "design"],
-  "gap_categories": {
-    "processes": 4,
-    "tools": 3,
-    "best_practices": 3,
-    "troubleshooting": 2
-  }
-}
-EOF
-}
-
-# Function to generate metrics summary
-generate_metrics_summary() {
-    local metrics_file="$1"
-    local summary_file="${metrics_file%.json}.md"
-    
-    local period=$(jq -r '.period' "$metrics_file")
-    local generated_at=$(jq -r '.generated_at' "$metrics_file")
-    
-    cat > "$summary_file" << EOF
-# Team Collaboration Metrics Report
-
-**Period**: $period  
-**Generated**: $generated_at
-
-## Executive Summary
-
-### Key Metrics
-- **Cross-Team Searches**: $(jq -r '.metrics.cross_team_searches.cross_team_percentage' "$metrics_file")% of all searches
-- **Knowledge Sharing Sessions**: $(jq -r '.metrics.knowledge_sharing.sessions_conducted' "$metrics_file") sessions conducted
-- **New Hires Onboarded**: $(jq -r '.metrics.onboarding.new_hires' "$metrics_file") team members
-- **Knowledge Gaps Addressed**: $(jq -r '.metrics.knowledge_gaps.gaps_addressed' "$metrics_file")/$(jq -r '.metrics.knowledge_gaps.gaps_identified' "$metrics_file") gaps resolved
-
-## Cross-Team Collaboration
-
-### Search Patterns
-- Total searches: $(jq -r '.metrics.cross_team_searches.total_searches' "$metrics_file")
-- Cross-team searches: $(jq -r '.metrics.cross_team_searches.cross_team_searches' "$metrics_file") ($(jq -r '.metrics.cross_team_searches.cross_team_percentage' "$metrics_file")%)
-
-### Top Cross-Team Queries
-$(jq -r '.metrics.cross_team_searches.top_cross_team_queries[] | "- \(.query): \(.count) searches"' "$metrics_file")
-
-### Team Interaction Matrix
-$(jq -r '.metrics.cross_team_searches.team_interactions | to_entries[] | "- \(.key): \(.value) interactions"' "$metrics_file")
-
-## Knowledge Sharing Effectiveness
-
-### Session Statistics
-- Sessions conducted: $(jq -r '.metrics.knowledge_sharing.sessions_conducted' "$metrics_file")
-- Total attendees: $(jq -r '.metrics.knowledge_sharing.total_attendees' "$metrics_file")
-- Average attendance: $(jq -r '.metrics.knowledge_sharing.average_attendance' "$metrics_file")
-- Satisfaction score: $(jq -r '.metrics.knowledge_sharing.satisfaction_score' "$metrics_file")/5.0
-
-### Topics Covered
-$(jq -r '.metrics.knowledge_sharing.topics_covered[] | "- \(.)"' "$metrics_file")
-
-## Onboarding Performance
-
-### New Hire Integration
-- New hires: $(jq -r '.metrics.onboarding.new_hires' "$metrics_file")
-- Average onboarding time: $(jq -r '.metrics.onboarding.average_onboarding_time' "$metrics_file")
-- Searches per new hire: $(jq -r '.metrics.onboarding.knowledge_base_usage.searches_per_new_hire' "$metrics_file")
-
-### Satisfaction Scores
-- Mentor feedback: $(jq -r '.metrics.onboarding.mentor_feedback_score' "$metrics_file")/5.0
-- New hire satisfaction: $(jq -r '.metrics.onboarding.new_hire_satisfaction' "$metrics_file")/5.0
-
-## Knowledge Gap Analysis
-
-### Gap Status
-- Total gaps identified: $(jq -r '.metrics.knowledge_gaps.gaps_identified' "$metrics_file")
-- Gaps addressed: $(jq -r '.metrics.knowledge_gaps.gaps_addressed' "$metrics_file")
-- High priority gaps remaining: $(jq -r '.metrics.knowledge_gaps.high_priority_gaps' "$metrics_file")
-
-### Gap Categories
-$(jq -r '.metrics.knowledge_gaps.gap_categories | to_entries[] | "- \(.key): \(.value) gaps"' "$metrics_file")
-
-## Recommendations
-
-### Immediate Actions
-- Address remaining high-priority knowledge gaps
-- Increase cross-team knowledge sharing sessions
-- Improve onboarding documentation for low-scoring areas
-
-### Long-term Improvements
-- Implement automated knowledge gap detection
-- Create cross-team collaboration incentives
-- Develop advanced search and discovery features
-
----
-
-*Generated by QDrant Loader Collaboration Analytics*
-EOF
-    
-    echo "Metrics summary generated: $summary_file"
-}
-
-# Main function
-main() {
-    local command="${1:-help}"
-    
-    case "$command" in
-        generate)
-            local period="${2:-30d}"
-            generate_collaboration_metrics "$period"
-            ;;
-        help|*)
-            echo "Team Collaboration Metrics"
-            echo ""
-            echo "Commands:"
-            echo "  generate [period]  - Generate collaboration metrics (default: 30d)"
-            echo "  help               - Show this help"
-            ;;
-    esac
-}
-
-main "$@"
+echo "Monthly review completed: $REVIEW_DIR/$(date +%Y-%m)/monthly-review.md"
 ```
 
 ## 📊 Usage Examples
@@ -1170,68 +867,108 @@ main "$@"
 # Onboard new team member
 ./scripts/onboard-team-member.sh onboard john.doe@company.com engineering jane.smith@company.com
 
-# Analyze knowledge gaps
-./scripts/knowledge-gaps.sh analyze engineering
+# Update team knowledge
+./scripts/weekly-team-sync.sh
 
-# Plan knowledge sharing session
-./scripts/knowledge-sharing.sh plan "API Design" engineering "product,design" "2024-02-15"
+# Check system status
+qdrant-loader project --workspace . status
 ```
 
 ### Weekly Team Operations
 
 ```bash
-# Generate collaboration metrics
-./scripts/collaboration-metrics.sh generate 7d
+# Synchronize all team knowledge
+./scripts/weekly-team-sync.sh
 
-# Check cross-team knowledge sharing opportunities
-./scripts/knowledge-gaps.sh sharing engineering product
+# Update specific team only
+qdrant-loader --workspace . ingest --project engineering-team
 
-# Update onboarding materials
-./scripts/onboard-team-member.sh update-materials engineering
+# Validate all configurations
+qdrant-loader project --workspace . validate
 ```
 
 ### Monthly Reviews
 
 ```bash
-# Comprehensive collaboration analysis
-./scripts/collaboration-metrics.sh generate 30d
+# Generate monthly review
+./scripts/monthly-knowledge-review.sh
 
-# Review all knowledge gaps
-./scripts/knowledge-gaps.sh analyze all
+# Check project health
+qdrant-loader project --workspace . status --format json
 
-# Plan quarterly knowledge sharing sessions
-./scripts/knowledge-sharing.sh plan-quarterly
+# List all available projects
+qdrant-loader project --workspace . list
 ```
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-**Issue: Low cross-team engagement**
+**Issue: Team member can't access knowledge base**
 
 ```bash
-# Analyze search patterns
-qdrant-loader search "cross-team" --collection shared_knowledge --analytics
+# Check project status
+qdrant-loader project --workspace . status
 
-# Check knowledge sharing session attendance
-./scripts/collaboration-metrics.sh generate 30d
+# Validate configuration
+qdrant-loader --workspace . config
 
-# Identify engagement barriers
-./scripts/knowledge-gaps.sh analyze all
+# Verify MCP server is running
+mcp-qdrant-loader
 ```
 
-**Issue: Slow onboarding process**
+**Issue: Knowledge not updating**
 
 ```bash
-# Review onboarding metrics
-./scripts/collaboration-metrics.sh generate 30d
+# Force re-initialization
+qdrant-loader --workspace . init --force
 
-# Check knowledge base coverage
-./scripts/knowledge-gaps.sh analyze shared_knowledge
+# Re-ingest all content
+qdrant-loader --workspace . ingest
 
-# Update onboarding materials
-./scripts/onboard-team-member.sh update-materials
+# Check specific project
+qdrant-loader project --workspace . status --project-id team-name
 ```
+
+**Issue: Onboarding package creation fails**
+
+```bash
+# Check workspace configuration
+qdrant-loader --workspace . config
+
+# Verify project exists
+qdrant-loader project --workspace . list
+
+# Check environment variables
+echo "QDRANT_URL: $QDRANT_URL"
+echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."
+```
+
+## 📋 Best Practices
+
+### Team Collaboration
+
+1. **Regular Knowledge Updates**: Schedule weekly synchronization of all team knowledge bases
+2. **Structured Onboarding**: Use standardized onboarding packages for all new team members
+3. **Cross-Team Projects**: Organize knowledge by both team-specific and shared categories
+4. **AI Assistant Integration**: Ensure all team members have properly configured AI assistants
+5. **Documentation Standards**: Maintain consistent documentation practices across teams
+
+### Knowledge Management
+
+1. **Project Organization**: Use clear project IDs and descriptions for easy identification
+2. **Source Management**: Regularly review and update data source configurations
+3. **Access Patterns**: Monitor how teams access and use shared knowledge
+4. **Content Quality**: Regularly review and update documentation for accuracy
+5. **Feedback Loops**: Collect and act on feedback from team members
+
+### Onboarding Excellence
+
+1. **Personalized Packages**: Create team-specific onboarding materials
+2. **Mentor Assignment**: Pair new hires with experienced team members
+3. **Progressive Learning**: Structure learning paths from basic to advanced topics
+4. **Hands-On Practice**: Include practical exercises and real project work
+5. **Continuous Improvement**: Regularly update onboarding based on feedback
 
 ## 🔗 Related Documentation
 
@@ -1245,4 +982,4 @@ qdrant-loader search "cross-team" --collection shared_knowledge --analytics
 
 **Team collaboration mastery achieved!** 🎉
 
-This comprehensive team collaboration workflow provides everything you need to implement effective cross-team knowledge sharing, streamlined onboarding, and collaborative documentation systems.
+This comprehensive team collaboration workflow provides everything you need to implement effective cross-team knowledge sharing, streamlined onboarding, and collaborative documentation systems using QDrant Loader's actual capabilities.

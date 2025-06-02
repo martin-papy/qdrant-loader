@@ -314,7 +314,9 @@ class WebsiteBuilder:
             )
         else:
             # Relative URL or GitHub Pages
-            canonical_url = f"https://martin-papy.github.io/qdrant-loader/{output_file.replace('index.html', '')}"
+            canonical_url = (
+                f"https://qdrant-loader.net/{output_file.replace('index.html', '')}"
+            )
 
         # Get version from project info if available
         version = "0.4.0b1"  # Default version
@@ -472,7 +474,9 @@ class WebsiteBuilder:
             )
         else:
             # Relative URL or GitHub Pages
-            canonical_url = f"https://martin-papy.github.io/qdrant-loader/{output_file.replace('index.html', '')}"
+            canonical_url = (
+                f"https://qdrant-loader.net/{output_file.replace('index.html', '')}"
+            )
 
         # Get version from project info if available
         version = "0.4.0b1"  # Default version
@@ -704,7 +708,7 @@ class WebsiteBuilder:
         if self.base_url:
             # Replace the hardcoded domain with the provided base_url
             sitemap_content = sitemap_content.replace(
-                "https://martin-papy.github.io/qdrant-loader", self.base_url.rstrip("/")
+                "https://qdrant-loader.net", self.base_url.rstrip("/")
             )
 
         sitemap_path = self.output_dir / "sitemap.xml"

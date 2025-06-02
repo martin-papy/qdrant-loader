@@ -28,21 +28,10 @@ When you connect to Confluence, QDrant Loader can process:
 2. **Set environment variables**:
 
    ```bash
-   export CONFLUENCE_URL=https://your-domain.atlassian.net
+   export CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
    export CONFLUENCE_EMAIL=your-email@company.com
    export CONFLUENCE_TOKEN=your_api_token_here
    ```
-
-#### OAuth 2.0 (Enterprise)
-
-For enterprise setups with OAuth:
-
-```bash
-export CONFLUENCE_URL=https://your-domain.atlassian.net
-export CONFLUENCE_CLIENT_ID=your_oauth_client_id
-export CONFLUENCE_CLIENT_SECRET=your_oauth_client_secret
-export CONFLUENCE_REDIRECT_URI=your_redirect_uri
-```
 
 ### Confluence Data Center
 
@@ -61,376 +50,257 @@ export CONFLUENCE_REDIRECT_URI=your_redirect_uri
    export CONFLUENCE_TOKEN=your_personal_access_token
    ```
 
-#### Basic Authentication
-
-For older Data Center versions:
-
-```bash
-export CONFLUENCE_URL=https://confluence.your-company.com
-export CONFLUENCE_USERNAME=your_username
-export CONFLUENCE_PASSWORD=your_password
-```
-
 ## ⚙️ Configuration
+
+QDrant Loader uses a **project-based configuration structure**. Each project can have multiple Confluence sources.
 
 ### Basic Configuration
 
 ```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces:
-        - "DOCS"
-        - "TECH"
-        - "PROJ"
-      include_attachments: true
-      include_comments: false
+projects:
+  my-project:
+    display_name: "My Documentation Project"
+    description: "Company documentation and knowledge base"
+    collection_name: "my-docs"
+    
+    sources:
+      confluence:
+        company-wiki:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"  # or "datacenter"
+          space_key: "DOCS"
+          email: "${CONFLUENCE_EMAIL}"  # Required for Cloud
+          token: "${CONFLUENCE_TOKEN}"
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels: []
+          exclude_labels: []
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ### Advanced Configuration
 
 ```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Space filtering
-      spaces:
-        - "DOCS"
-        - "TECH"
-      exclude_spaces:
-        - "ARCHIVE"
-        - "TEMP"
-      
-      # Content filtering
-      include_patterns:
-        - "Architecture/*"
-        - "API Documentation/*"
-        - "User Guides/*"
-      exclude_patterns:
-        - "*/Archive/*"
-        - "*/Draft/*"
-      
-      # Page filtering
-      include_page_types:
-        - "page"
-        - "blogpost"
-      exclude_page_labels:
-        - "draft"
-        - "obsolete"
-        - "internal-only"
-      
-      # Content options
-      include_attachments: true
-      include_comments: true
-      include_page_history: false
-      max_page_versions: 1
-      
-      # File filtering for attachments
-      attachment_patterns:
-        - "**/*.pdf"
-        - "**/*.docx"
-        - "**/*.pptx"
-        - "**/*.md"
-      max_attachment_size: 10485760  # 10MB
-      
-      # Performance settings
-      max_concurrent_pages: 5
-      request_timeout: 30
-      retry_attempts: 3
-      enable_caching: true
+projects:
+  documentation:
+    display_name: "Documentation Hub"
+    description: "All company documentation sources"
+    collection_name: "docs-hub"
+    
+    sources:
+      confluence:
+        # Main documentation space
+        main-docs:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels: []
+          exclude_labels:
+            - "draft"
+            - "obsolete"
+          enable_file_conversion: true
+          download_attachments: true
+        
+        # Technical documentation space
+        tech-docs:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "TECH"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types:
+            - "page"
+          include_labels:
+            - "api"
+            - "architecture"
+          exclude_labels:
+            - "deprecated"
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ### Multiple Confluence Instances
 
 ```yaml
-sources:
-  confluence:
-    # Production Confluence
-    - url: "https://company.atlassian.net"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS", "TECH"]
-      
-    # Internal Confluence Data Center
-    - url: "https://internal-confluence.company.com"
-      username: "${INTERNAL_CONFLUENCE_USERNAME}"
-      token: "${INTERNAL_CONFLUENCE_TOKEN}"
-      spaces: ["INTERNAL", "RESEARCH"]
+projects:
+  multi-confluence:
+    display_name: "Multi-Instance Documentation"
+    description: "Documentation from multiple Confluence instances"
+    collection_name: "multi-docs"
+    
+    sources:
+      confluence:
+        # Cloud instance
+        cloud-wiki:
+          base_url: "https://company.atlassian.net/wiki"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: []
+          exclude_labels: []
+          enable_file_conversion: true
+          download_attachments: true
+        
+        # Data Center instance
+        datacenter-wiki:
+          base_url: "https://internal-confluence.company.com"
+          deployment_type: "datacenter"
+          space_key: "INTERNAL"
+          token: "${CONFLUENCE_PAT}"
+          content_types: ["page"]
+          include_labels: []
+          exclude_labels: []
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ## 🎯 Configuration Options
 
-### Connection Settings
+### Required Settings
+
+| Option | Type | Description | Example |
+|--------|------|-------------|---------|
+| `base_url` | string | Confluence base URL | `https://company.atlassian.net/wiki` |
+| `deployment_type` | string | Deployment type: `cloud`, `datacenter`, or `server` | `cloud` |
+| `space_key` | string | Confluence space key to process | `DOCS` |
+| `token` | string | API token or Personal Access Token | `${CONFLUENCE_TOKEN}` |
+
+### Cloud-Specific Settings
+
+| Option | Type | Description | Required for Cloud |
+|--------|------|-------------|-------------------|
+| `email` | string | Email associated with Confluence account | Yes |
+
+### Content Filtering
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `url` | string | Confluence base URL | Required |
-| `username` | string | Username or email | Required |
-| `token` | string | API token or password | Required |
-| `verify_ssl` | bool | Verify SSL certificates | `true` |
+| `content_types` | list | Content types to process | `["page", "blogpost"]` |
+| `include_labels` | list | Only process content with these labels | `[]` (all) |
+| `exclude_labels` | list | Skip content with these labels | `[]` |
 
-### Space and Page Filtering
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `spaces` | list | Space keys to include | All accessible |
-| `exclude_spaces` | list | Space keys to exclude | `[]` |
-| `include_patterns` | list | Page title patterns to include | `["*"]` |
-| `exclude_patterns` | list | Page title patterns to exclude | `[]` |
-| `include_page_types` | list | Page types to include | `["page"]` |
-| `exclude_page_labels` | list | Page labels to exclude | `[]` |
-
-### Content Options
+### File Processing
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `include_attachments` | bool | Process page attachments | `true` |
-| `include_comments` | bool | Include page comments | `false` |
-| `include_page_history` | bool | Include page versions | `false` |
-| `max_page_versions` | int | Maximum versions per page | `1` |
-| `strip_html` | bool | Remove HTML formatting | `true` |
-
-### Attachment Processing
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `attachment_patterns` | list | File patterns to include | `["**/*"]` |
-| `max_attachment_size` | int | Maximum file size in bytes | `10485760` |
-| `download_attachments` | bool | Download and process files | `true` |
-
-### Performance Settings
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `max_concurrent_pages` | int | Concurrent page requests | `5` |
-| `request_timeout` | int | Request timeout in seconds | `30` |
-| `retry_attempts` | int | Number of retry attempts | `3` |
-| `enable_caching` | bool | Cache pages locally | `true` |
+| `enable_file_conversion` | bool | Enable file conversion for attachments | `true` |
+| `download_attachments` | bool | Download and process attachments | `true` |
 
 ## 🚀 Usage Examples
 
 ### Documentation Team
 
 ```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Focus on documentation spaces
-      spaces:
-        - "DOCS"      # Main documentation
-        - "GUIDES"    # User guides
-        - "API"       # API documentation
-        - "ARCH"      # Architecture docs
-      
-      # Include comprehensive content
-      include_attachments: true
-      include_comments: true
-      
-      # Filter out drafts and archives
-      exclude_patterns:
-        - "*/Draft/*"
-        - "*/Archive/*"
-        - "*/Template/*"
-      exclude_page_labels:
-        - "draft"
-        - "wip"
-        - "obsolete"
-      
-      # Process various file types
-      attachment_patterns:
-        - "**/*.pdf"
-        - "**/*.docx"
-        - "**/*.pptx"
-        - "**/*.xlsx"
-        - "**/*.md"
-        - "**/*.txt"
+projects:
+  docs-team:
+    display_name: "Documentation Team"
+    description: "All documentation spaces"
+    collection_name: "documentation"
+    
+    sources:
+      confluence:
+        user-guides:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "GUIDES"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types: ["page"]
+          include_labels: ["published"]
+          exclude_labels: ["draft", "archive"]
+          enable_file_conversion: true
+          download_attachments: true
+        
+        api-docs:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "API"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: ["api", "reference"]
+          exclude_labels: ["deprecated"]
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ### Software Development Team
 
 ```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Development-focused spaces
-      spaces:
-        - "DEV"       # Development docs
-        - "ARCH"      # Architecture
-        - "API"       # API documentation
-        - "DEPLOY"    # Deployment guides
-      
-      # Include specific content types
-      include_patterns:
-        - "Architecture/*"
-        - "API/*"
-        - "Development Guidelines/*"
-        - "Deployment/*"
-      
-      # Skip meeting notes and personal pages
-      exclude_patterns:
-        - "*/Meeting Notes/*"
-        - "*/Personal/*"
-        - "*/Scratch/*"
-      
-      # Include technical attachments
-      attachment_patterns:
-        - "**/*.pdf"
-        - "**/*.md"
-        - "**/*.yaml"
-        - "**/*.json"
-        - "**/*.xml"
-```
-
-### Knowledge Management
-
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # All knowledge spaces
-      spaces:
-        - "KB"        # Knowledge base
-        - "FAQ"       # Frequently asked questions
-        - "PROC"      # Processes and procedures
-        - "TRAIN"     # Training materials
-      
-      # Include everything except archives
-      exclude_patterns:
-        - "*/Archive/*"
-        - "*/Deprecated/*"
-      
-      # Include comments for context
-      include_comments: true
-      
-      # Process all document types
-      include_attachments: true
-      max_attachment_size: 20971520  # 20MB
-```
-
-## 🔍 Advanced Features
-
-### Hierarchy-Aware Processing
-
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS"]
-      
-      # Preserve page hierarchy
-      preserve_hierarchy: true
-      include_parent_context: true
-      
-      # Process child pages
-      include_child_pages: true
-      max_depth: 5
-```
-
-### Version and History Tracking
-
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS"]
-      
-      # Include page history
-      include_page_history: true
-      max_page_versions: 5
-      
-      # Track changes
-      include_version_metadata: true
-      track_page_changes: true
-```
-
-### Custom Field Processing
-
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS"]
-      
-      # Include custom metadata
-      include_custom_fields: true
-      custom_field_mapping:
-        "customfield_10001": "priority"
-        "customfield_10002": "category"
-        "customfield_10003": "owner"
-```
-
-### Performance Optimization
-
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS"]
-      
-      # Optimize for large spaces
-      max_concurrent_pages: 10
-      batch_size: 50
-      
-      # Enable aggressive caching
-      enable_caching: true
-      cache_ttl_hours: 24
-      
-      # Limit processing scope
-      max_pages_per_space: 1000
-      modified_since: "2024-01-01"
+projects:
+  dev-team:
+    display_name: "Development Team"
+    description: "Technical documentation and architecture"
+    collection_name: "dev-docs"
+    
+    sources:
+      confluence:
+        architecture:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "ARCH"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types: ["page"]
+          include_labels: ["architecture", "design"]
+          exclude_labels: ["obsolete"]
+          enable_file_conversion: true
+          download_attachments: true
+        
+        development:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"
+          space_key: "DEV"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+          content_types: ["page", "blogpost"]
+          include_labels: ["development", "guidelines"]
+          exclude_labels: ["draft"]
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ## 🧪 Testing and Validation
 
-### Test Confluence Connection
+### Initialize and Test Configuration
 
 ```bash
-# Test Confluence connectivity
-qdrant-loader --workspace . test-connections --sources confluence
+# Initialize the project (creates collection if needed)
+qdrant-loader --workspace . init
 
-# Validate Confluence configuration
-qdrant-loader --workspace . validate --sources confluence
+# Test ingestion with your Confluence configuration
+qdrant-loader --workspace . ingest --project my-project
 
-# List accessible spaces
-qdrant-loader --workspace . list-spaces --sources confluence
+# Check project status
+qdrant-loader --workspace . project status --project-id my-project
 
-# Dry run to see what would be processed
-qdrant-loader --workspace . --dry-run ingest --sources confluence
+# List all configured projects
+qdrant-loader --workspace . project list
+
+# Validate project configuration
+qdrant-loader --workspace . project validate --project-id my-project
 ```
 
 ### Debug Confluence Processing
 
 ```bash
-# Enable verbose logging
-qdrant-loader --workspace . --verbose ingest --sources confluence
+# Enable debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
 
-# Process specific spaces only
-qdrant-loader --workspace . ingest --sources confluence --spaces DOCS,TECH
+# Process specific project only
+qdrant-loader --workspace . ingest --project my-project
 
-# Check processing status
-qdrant-loader --workspace . status --sources confluence --detailed
+# Process specific source within a project
+qdrant-loader --workspace . ingest --project my-project --source-type confluence --source company-wiki
 ```
 
 ## 🔧 Troubleshooting
@@ -444,18 +314,21 @@ qdrant-loader --workspace . status --sources confluence --detailed
 **Solutions**:
 
 ```bash
-# Test API token manually
+# Test API token manually for Cloud
 curl -u "your-email@company.com:your-api-token" \
   "https://your-domain.atlassian.net/wiki/rest/api/space"
 
-# Check token permissions
-curl -u "your-email@company.com:your-api-token" \
-  "https://your-domain.atlassian.net/wiki/rest/api/user/current"
-
-# For Data Center, test with username/password
-curl -u "username:password" \
+# Test Personal Access Token for Data Center
+curl -H "Authorization: Bearer your-personal-access-token" \
   "https://confluence.company.com/rest/api/space"
 ```
+
+**Check your configuration**:
+
+- Ensure `deployment_type` matches your Confluence instance
+- For Cloud: verify both `email` and `token` are set
+- For Data Center: verify `token` (Personal Access Token) is set
+- Ensure the token has appropriate permissions
 
 #### Space Access Issues
 
@@ -464,14 +337,52 @@ curl -u "username:password" \
 **Solutions**:
 
 ```bash
-# List accessible spaces
+# List accessible spaces for Cloud
 curl -u "your-email:your-token" \
   "https://your-domain.atlassian.net/wiki/rest/api/space" | jq '.results[].key'
 
-# Check specific space permissions
-curl -u "your-email:your-token" \
-  "https://your-domain.atlassian.net/wiki/rest/api/space/SPACKEY"
+# List accessible spaces for Data Center
+curl -H "Authorization: Bearer your-token" \
+  "https://confluence.company.com/rest/api/space" | jq '.results[].key'
 ```
+
+**Check your configuration**:
+
+- Verify the `space_key` exists and is accessible
+- Ensure your account has read permissions for the space
+- Check that the space key is correct (case-sensitive)
+
+#### Configuration Issues
+
+**Problem**: Configuration validation errors
+
+**Solutions**:
+
+1. **Verify project structure**:
+
+   ```yaml
+   projects:
+     your-project:  # Project ID
+       sources:
+         confluence:
+           source-name:  # Source name
+             base_url: "..."
+             # ... other settings
+   ```
+
+2. **Check required fields**:
+   - `base_url`: Must include `/wiki` for Cloud instances
+   - `deployment_type`: Must be `cloud`, `datacenter`, or `server`
+   - `space_key`: Must be a valid space key
+   - `token`: Must be set via environment variable or directly
+
+3. **Validate environment variables**:
+
+   ```bash
+   echo $CONFLUENCE_URL
+   echo $CONFLUENCE_EMAIL
+   echo $CONFLUENCE_TOKEN
+   ```
 
 #### Rate Limiting
 
@@ -479,21 +390,11 @@ curl -u "your-email:your-token" \
 
 **Solutions**:
 
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Reduce concurrent requests
-      max_concurrent_pages: 2
-      request_delay: 1.0
-      
-      # Increase timeout
-      request_timeout: 60
-      retry_attempts: 5
-```
+The Confluence connector automatically handles rate limiting, but you can:
+
+1. **Check your API usage** in Atlassian Admin Console
+2. **Reduce concurrent processing** by processing fewer projects simultaneously
+3. **Contact your Confluence administrator** if limits are too restrictive
 
 #### Large Space Performance
 
@@ -501,60 +402,38 @@ sources:
 
 **Solutions**:
 
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Limit scope
-      spaces: ["DOCS"]
-      max_pages_per_space: 500
-      
-      # Filter aggressively
-      exclude_patterns:
-        - "*/Archive/*"
-        - "*/Old/*"
-        - "*/Deprecated/*"
-      
-      # Optimize processing
-      include_attachments: false
-      include_comments: false
-      max_concurrent_pages: 3
-```
+1. **Filter content with labels**:
 
-#### Attachment Processing Issues
+   ```yaml
+   confluence:
+     large-space:
+       space_key: "LARGE"
+       include_labels: ["important", "current"]
+       exclude_labels: ["archive", "deprecated"]
+   ```
 
-**Problem**: Attachments fail to download or process
+2. **Process specific content types**:
 
-**Solutions**:
+   ```yaml
+   confluence:
+     pages-only:
+       space_key: "DOCS"
+       content_types: ["page"]  # Skip blogposts
+   ```
 
-```yaml
-sources:
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_EMAIL}"
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Limit attachment processing
-      max_attachment_size: 5242880  # 5MB
-      attachment_patterns:
-        - "**/*.pdf"
-        - "**/*.docx"
-        - "**/*.md"
-      
-      # Skip problematic file types
-      exclude_attachment_patterns:
-        - "**/*.exe"
-        - "**/*.zip"
-        - "**/*.bin"
-```
+3. **Disable attachment processing temporarily**:
+
+   ```yaml
+   confluence:
+     no-attachments:
+       space_key: "DOCS"
+       download_attachments: false
+   ```
 
 ### Debugging Commands
 
 ```bash
-# Check Confluence API version
+# Check Confluence API connectivity
 curl -u "email:token" "https://domain.atlassian.net/wiki/rest/api/space" | jq '.size'
 
 # List pages in a space
@@ -562,51 +441,51 @@ curl -u "email:token" \
   "https://domain.atlassian.net/wiki/rest/api/space/DOCS/content/page" | \
   jq '.results[].title'
 
-# Check page content
+# Check specific page content
 curl -u "email:token" \
   "https://domain.atlassian.net/wiki/rest/api/content/PAGE_ID?expand=body.storage"
 ```
 
-## 📊 Monitoring and Metrics
+## 📊 Monitoring and Processing
 
-### Processing Statistics
+### Check Processing Status
 
 ```bash
-# View Confluence processing statistics
-qdrant-loader --workspace . stats --sources confluence
+# View project status
+qdrant-loader --workspace . project status
 
-# Check space-specific statistics
-qdrant-loader --workspace . stats --sources confluence --spaces DOCS
+# Check specific project
+qdrant-loader --workspace . project status --project-id my-project
 
-# Monitor processing progress
-qdrant-loader --workspace . status --sources confluence --watch
+# List all projects
+qdrant-loader --workspace . project list
 ```
 
-### Performance Metrics
+### Configuration Management
 
-Monitor these metrics for Confluence processing:
+```bash
+# View current configuration
+qdrant-loader --workspace . config
 
-- **Pages processed per minute** - Processing throughput
-- **API request rate** - Requests per second to Confluence
-- **Error rate** - Percentage of failed page requests
-- **Attachment download time** - Time to download and process files
-- **Memory usage** - Peak memory during processing
+# Validate all projects
+qdrant-loader --workspace . project validate
+```
 
 ## 🔄 Best Practices
 
 ### Content Organization
 
 1. **Use descriptive space keys** - Make spaces easy to identify
-2. **Organize with page hierarchy** - Use parent/child relationships
-3. **Apply consistent labeling** - Use labels for categorization
+2. **Apply consistent labeling** - Use labels for categorization and filtering
+3. **Organize with page hierarchy** - Use parent/child relationships
 4. **Archive old content** - Move outdated content to archive spaces
 
-### Performance Optimization
+### Configuration Management
 
-1. **Filter aggressively** - Only process content you need
-2. **Limit attachment sizes** - Set reasonable size limits
-3. **Use caching** - Enable local caching for repeated runs
-4. **Process incrementally** - Use modified date filtering
+1. **Use environment variables** - Keep sensitive data out of config files
+2. **Organize by teams/purposes** - Create separate projects for different use cases
+3. **Filter content appropriately** - Use labels to include/exclude content
+4. **Test configurations** - Validate before running full ingestion
 
 ### Security Considerations
 
@@ -614,20 +493,22 @@ Monitor these metrics for Confluence processing:
 2. **Limit token scope** - Grant minimal necessary permissions
 3. **Rotate tokens regularly** - Update tokens periodically
 4. **Monitor access** - Track which content is being accessed
+5. **Use environment variables** - Never commit tokens to version control
 
-### Content Quality
+### Performance Optimization
 
-1. **Maintain page hierarchy** - Keep logical organization
-2. **Use consistent formatting** - Follow documentation standards
-3. **Update regularly** - Keep content current and relevant
-4. **Remove duplicates** - Avoid redundant information
+1. **Filter aggressively** - Only process content you need
+2. **Use appropriate labels** - Filter by labels to reduce processing
+3. **Process incrementally** - Run regular updates rather than full reprocessing
+4. **Monitor resource usage** - Watch memory and network usage during processing
 
 ## 📚 Related Documentation
 
-- **[File Conversion](../file-conversion/)** - Processing Confluence attachments
 - **[Configuration Reference](../../configuration/)** - Complete configuration options
+- **[File Conversion](../file-conversion/)** - Processing Confluence attachments
 - **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
 - **[MCP Server](../mcp-server/)** - Using processed Confluence content with AI tools
+- **[Project Management](../../cli-reference/)** - Managing multiple projects
 
 ---
 

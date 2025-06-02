@@ -55,8 +55,8 @@ export QDRANT_URL="http://localhost:6333"
 export QDRANT_URL="https://your-instance.qdrant.cloud"
 export QDRANT_URL="http://192.168.1.100:6333"
 
-# Test connection
-qdrant-loader config test --connection qdrant
+# Test configuration
+qdrant-loader --workspace . config
 ```
 
 2. **Check QDrant instance status:**
@@ -93,35 +93,17 @@ sudo iptables -L
 
 **Solutions:**
 
-```bash
-# Increase connection timeout
-qdrant-loader config set qdrant.timeout 60
-
-# Enable connection retry
-qdrant-loader config set qdrant.max_retries 5
-qdrant-loader config set qdrant.retry_delay 2
-
-# Use connection pooling
-qdrant-loader config set qdrant.connection_pool_size 10
-```
-
-**Configuration for unstable connections:**
+Configure connection settings in your workspace configuration:
 
 ```yaml
-qdrant:
-  url: "${QDRANT_URL}"
-  api_key: "${QDRANT_API_KEY}"
-  timeout: 60
-  max_retries: 5
-  retry_delay: 2
-  connection_pool_size: 10
-  keep_alive: true
-  
-  # Circuit breaker for failing connections
-  circuit_breaker:
-    failure_threshold: 5
-    recovery_timeout: 30
-    half_open_max_calls: 3
+# config.yaml
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    timeout: 60
+    max_retries: 5
+    retry_delay: 2
 ```
 
 ### Issue: QDrant authentication fails
@@ -144,10 +126,10 @@ echo $QDRANT_API_KEY | head -c 10  # Check first few characters
 curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/collections"
 
 # Verify API key in configuration
-qdrant-loader config show | grep -A 2 qdrant
+qdrant-loader --workspace . config
 
-# Test with explicit API key
-qdrant-loader status --qdrant-api-key "your-api-key-here"
+# Check environment variables
+env | grep QDRANT
 ```
 
 ## 🔑 Authentication Problems
@@ -183,11 +165,11 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 # Verify API key is set correctly
 export OPENAI_API_KEY="sk-your-actual-key-here"
 
-# Test with QDrant Loader
-qdrant-loader config test --connection openai
+# Check configuration
+qdrant-loader --workspace . config
 
-# Check for rate limiting
-qdrant-loader load --source local --path ./small-test --rate-limit 10
+# Test with debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest
 ```
 
 ### Issue: Confluence authentication fails
@@ -204,32 +186,33 @@ qdrant-loader load --source local --path ./small-test --rate-limit 10
 ```bash
 # Check Confluence credentials
 echo $CONFLUENCE_USERNAME
-echo $CONFLUENCE_API_TOKEN | wc -c
+echo $CONFLUENCE_TOKEN | wc -c
 
 # Test Confluence API manually
-curl -u "$CONFLUENCE_USERNAME:$CONFLUENCE_API_TOKEN" \
+curl -u "$CONFLUENCE_USERNAME:$CONFLUENCE_TOKEN" \
   "$CONFLUENCE_URL/rest/api/content?limit=1"
 
 # Verify base URL format
 echo $CONFLUENCE_URL  # Should be like https://company.atlassian.net
 
-# Test with QDrant Loader
-qdrant-loader config test --source confluence
+# Check project configuration
+qdrant-loader --workspace . config
 ```
 
 **Confluence authentication configuration:**
 
 ```yaml
-data_sources:
-  confluence:
-    base_url: "${CONFLUENCE_URL}"
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    
-    # Authentication troubleshooting
-    auth_method: "basic"  # or "bearer" for some setups
-    verify_ssl: true
-    timeout: 30
+# config.yaml
+projects:
+  my-project:
+    sources:
+      confluence:
+        my-confluence:
+          base_url: "${CONFLUENCE_URL}"
+          deployment_type: "cloud"  # or "datacenter"
+          space_key: "MYSPACE"
+          email: "${CONFLUENCE_USERNAME}"
+          token: "${CONFLUENCE_TOKEN}"
 ```
 
 ### Issue: Git repository authentication fails
@@ -251,13 +234,22 @@ git clone https://token:$GITHUB_TOKEN@github.com/user/repo.git
 ssh-add ~/.ssh/id_rsa
 ssh -T git@github.com
 
-# Test repository access
-qdrant-loader config test --source git --url "https://github.com/user/repo"
+# Check project configuration
+qdrant-loader --workspace . config
+```
 
-# Use explicit credentials
-qdrant-loader load --source git \
-  --url "https://github.com/user/repo" \
-  --git-token "$GITHUB_TOKEN"
+**Git authentication configuration:**
+
+```yaml
+# config.yaml
+projects:
+  my-project:
+    sources:
+      git:
+        my-repo:
+          base_url: "https://github.com/user/repo"
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
 ```
 
 ## 🌐 Network Issues
@@ -291,34 +283,19 @@ nethogs
 
 **Solutions:**
 
-```bash
-# Increase timeouts globally
-export QDRANT_LOADER_TIMEOUT=120
-
-# Configure per-operation timeouts
-qdrant-loader load --source local --path ./docs --timeout 300
-
-# Use compression to reduce bandwidth
-qdrant-loader load --source git --url repo --compression gzip
-```
-
-**Network optimization configuration:**
+Configure timeouts in your workspace configuration:
 
 ```yaml
-network:
-  timeout: 120
-  connect_timeout: 30
-  read_timeout: 60
-  max_retries: 3
-  retry_delay: 5
-  compression: true
-  keep_alive: true
-  
-  # Proxy configuration if needed
-  proxy:
-    http: "http://proxy.company.com:8080"
-    https: "https://proxy.company.com:8080"
-    no_proxy: "localhost,127.0.0.1,.local"
+# config.yaml
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    timeout: 120
+    
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    timeout: 60
 ```
 
 ### Issue: DNS resolution problems
@@ -418,23 +395,6 @@ export HTTP_PROXY="http://username:password@proxy.company.com:8080"
 curl --proxy "$HTTP_PROXY" -v "https://api.openai.com/v1/models"
 ```
 
-**Proxy configuration:**
-
-```yaml
-network:
-  proxy:
-    http: "${HTTP_PROXY}"
-    https: "${HTTPS_PROXY}"
-    no_proxy: "${NO_PROXY}"
-    
-    # Proxy authentication
-    username: "${PROXY_USERNAME}"
-    password: "${PROXY_PASSWORD}"
-    
-    # SSL verification
-    verify_ssl: false  # Only if corporate proxy intercepts SSL
-```
-
 ## 📡 External API Issues
 
 ### Issue: OpenAI API connectivity problems
@@ -456,11 +416,8 @@ curl -v "https://api.openai.com/v1/models"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
   "https://api.openai.com/v1/usage"
 
-# Use different endpoint if available
-export OPENAI_API_BASE="https://api.openai.com/v1"
-
-# Configure rate limiting
-qdrant-loader load --source local --path ./docs --rate-limit 10 --batch-size 5
+# Test with debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest
 ```
 
 ### Issue: Confluence API connectivity
@@ -481,8 +438,48 @@ curl "$CONFLUENCE_URL/rest/api/content?limit=1"
 # Check API capabilities
 curl "$CONFLUENCE_URL/rest/api/space"
 
-# Use appropriate API version
-qdrant-loader config set confluence.api_version "cloud"  # or "server"
+# Verify project configuration
+qdrant-loader --workspace . config
+```
+
+### Issue: JIRA API connectivity
+
+**Symptoms:**
+
+- Cannot reach JIRA instance
+- API authentication failures
+- Rate limiting from JIRA
+- Project access denied
+
+**Solutions:**
+
+```bash
+# Test JIRA API connectivity
+curl -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+  "$JIRA_URL/rest/api/2/project"
+
+# Check project access
+curl -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+  "$JIRA_URL/rest/api/2/project/PROJECTKEY"
+
+# Verify project configuration
+qdrant-loader --workspace . config
+```
+
+**JIRA authentication configuration:**
+
+```yaml
+# config.yaml
+projects:
+  my-project:
+    sources:
+      jira:
+        my-jira:
+          base_url: "${JIRA_URL}"
+          deployment_type: "cloud"  # or "datacenter"
+          project_key: "MYPROJECT"
+          email: "${JIRA_EMAIL}"
+          token: "${JIRA_TOKEN}"
 ```
 
 ## 🔒 SSL/TLS Issues
@@ -512,10 +509,6 @@ curl -vvv "https://your-qdrant-instance.com"
 **Solutions:**
 
 ```bash
-# Temporary: Disable SSL verification (NOT for production)
-export PYTHONHTTPSVERIFY=0
-qdrant-loader config set verify_ssl false
-
 # Update certificates
 sudo apt-get update && sudo apt-get install ca-certificates
 # or
@@ -524,70 +517,9 @@ brew install ca-certificates
 # Use specific certificate bundle
 export SSL_CERT_FILE="/path/to/certificates.pem"
 export REQUESTS_CA_BUNDLE="/path/to/certificates.pem"
-```
 
-**SSL configuration:**
-
-```yaml
-network:
-  ssl:
-    verify: true
-    cert_file: "/path/to/client.crt"
-    key_file: "/path/to/client.key"
-    ca_bundle: "/path/to/ca-bundle.crt"
-    
-    # For self-signed certificates (development only)
-    verify_hostname: false
-    check_hostname: false
-```
-
-## 🔧 Advanced Connection Troubleshooting
-
-### Connection pooling issues
-
-**Symptoms:**
-
-- "Connection pool exhausted" errors
-- Slow connection establishment
-- Resource leaks
-- Performance degradation
-
-**Solutions:**
-
-```yaml
-# Optimize connection pooling
-qdrant:
-  connection_pool_size: 20
-  connection_pool_maxsize: 50
-  connection_pool_block: false
-  connection_timeout: 30
-  
-  # Connection lifecycle
-  pool_pre_ping: true
-  pool_recycle: 3600
-  pool_reset_on_return: "commit"
-```
-
-### Load balancer issues
-
-**Symptoms:**
-
-- Inconsistent responses
-- Session affinity problems
-- Health check failures
-- Timeout variations
-
-**Solutions:**
-
-```bash
-# Test different endpoints
-curl -v "$QDRANT_URL/health"
-curl -v "$QDRANT_URL/collections"
-
-# Check load balancer configuration
-# Ensure health checks are properly configured
-# Verify session affinity settings
-# Check timeout configurations
+# For development only (NOT for production)
+export PYTHONHTTPSVERIFY=0
 ```
 
 ## 🚨 Emergency Connection Recovery
@@ -609,8 +541,8 @@ sudo systemctl restart systemd-resolved
 # 4. Reset network configuration
 sudo dhclient -r && sudo dhclient
 
-# 5. Test with minimal configuration
-qdrant-loader config test --minimal
+# 5. Test configuration
+qdrant-loader --workspace . config
 ```
 
 ### Connection recovery script
@@ -638,7 +570,7 @@ fi
 # Test QDrant connectivity
 if ! curl -s --max-time 10 "$QDRANT_URL/health" >/dev/null; then
     echo "🔄 QDrant connection failed, checking configuration..."
-    qdrant-loader config validate
+    qdrant-loader --workspace . config
 fi
 
 # Test OpenAI API
@@ -646,42 +578,59 @@ if ! curl -s --max-time 10 "https://api.openai.com/v1/models" >/dev/null; then
     echo "🔄 OpenAI API connection failed"
 fi
 
-# Restart MCP server
-echo "🔄 Restarting MCP server..."
-qdrant-loader mcp-server restart
-
 echo "✅ Connection recovery completed"
 ```
 
 ## 📊 Connection Monitoring
 
-### Continuous monitoring setup
+### Basic monitoring
 
 ```bash
-# Monitor connection health
-qdrant-loader monitor connections --interval 60 --alert-on-failure
+# Check project status
+qdrant-loader project --workspace . status
 
-# Log connection metrics
-qdrant-loader monitor connections --log-file connection-health.log
+# Test configuration
+qdrant-loader --workspace . config
 
-# Set up alerts
-qdrant-loader alert create \
-  --metric "connection_failures" \
-  --threshold 3 \
-  --action "restart_mcp_server"
+# Validate projects
+qdrant-loader project --workspace . validate
+
+# Monitor system resources
+top -p $(pgrep -f qdrant-loader)
 ```
 
-### Connection health dashboard
+### Environment verification
 
 ```bash
-# Create connection dashboard
-qdrant-loader dashboard create --type connections --port 8080
+# Check all required environment variables
+env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 
-# Monitor key metrics:
-# - Connection success rate
-# - Response times
-# - Error rates
-# - Retry attempts
+# Test basic connectivity
+curl -s "$QDRANT_URL/health"
+curl -s "https://api.openai.com/v1/models"
+
+# Verify workspace configuration
+qdrant-loader --workspace . config
+```
+
+### Connection testing workflow
+
+```bash
+# 1. Validate configuration
+qdrant-loader project --workspace . validate
+
+# 2. Check environment variables
+env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
+
+# 3. Test external connectivity
+curl -s "$QDRANT_URL/health"
+curl -s "https://api.openai.com/v1/models"
+
+# 4. Test with debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest --project test-project
+
+# 5. Check project status
+qdrant-loader project --workspace . status
 ```
 
 ## 🔗 Related Documentation
@@ -690,7 +639,6 @@ qdrant-loader dashboard create --type connections --port 8080
 - **[Performance Issues](./performance-issues.md)** - Performance optimization
 - **[Error Messages Reference](./error-messages-reference.md)** - Detailed error explanations
 - **[Security Considerations](../configuration/security-considerations.md)** - Security configuration
-- **[Network Configuration](../configuration/advanced-settings.md#network-settings)** - Advanced network settings
 
 ---
 

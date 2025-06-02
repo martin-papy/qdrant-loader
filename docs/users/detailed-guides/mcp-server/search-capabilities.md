@@ -39,18 +39,9 @@ Results: Documents about deployment, CI/CD, containers, etc.
   "name": "search",
   "parameters": {
     "query": "string",              // Required: Search query or question
-    "limit": 10,                    // Optional: Number of results (default: 10)
-    "threshold": 0.7,               // Optional: Similarity threshold (0.0-1.0)
-    "source_filter": "string",      // Optional: Filter by data source
-    "project_filter": "string",     // Optional: Filter by project
-    "date_filter": {                // Optional: Date range filter
-      "start": "2024-01-01",
-      "end": "2024-12-31"
-    },
-    "content_type": "string",       // Optional: Filter by content type
-    "include_metadata": true,       // Optional: Include document metadata
-    "include_content": true,        // Optional: Include document content
-    "max_content_length": 500       // Optional: Limit content length
+    "limit": 10,                    // Optional: Number of results (default: 5)
+    "source_types": ["git", "confluence", "jira", "documentation", "localfile"], // Optional: Filter by source types
+    "project_ids": ["project1", "project2"]  // Optional: Filter by specific projects
   }
 }
 ```
@@ -65,33 +56,26 @@ Query: "authentication methods"
 Results:
 1. [auth/jwt.md] JWT Token Authentication
    - Explains JWT implementation and best practices
-   - Similarity: 0.89
 
 2. [security/oauth.md] OAuth 2.0 Integration
    - OAuth flow and configuration
-   - Similarity: 0.85
 
 3. [api/auth-endpoints.md] Authentication API Endpoints
    - Login, logout, and token refresh endpoints
-   - Similarity: 0.82
 ```
 
 #### Filtered Search
 
 ```
 Query: "deployment strategies"
-Filters: source_filter="confluence", date_filter={"start": "2024-01-01"}
+Filters: source_types=["confluence"], project_ids=["devops-project"]
 
 Results:
 1. [Confluence: DevOps/Deployment] Blue-Green Deployment Strategy
-   - Updated: 2024-03-15
    - Comprehensive guide to blue-green deployments
-   - Similarity: 0.91
 
 2. [Confluence: Architecture/Scaling] Canary Deployment Process
-   - Updated: 2024-02-20
    - Step-by-step canary deployment guide
-   - Similarity: 0.87
 ```
 
 ### Advanced Search Techniques
@@ -132,22 +116,6 @@ Combine multiple concepts:
 
 ### Search Quality Optimization
 
-#### Similarity Threshold Guidelines
-
-```yaml
-# High precision, fewer results
-threshold: 0.8-1.0    # Very relevant results only
-
-# Balanced precision and recall
-threshold: 0.7-0.8    # Good balance (recommended)
-
-# High recall, more results
-threshold: 0.5-0.7    # Include potentially relevant results
-
-# Exploratory search
-threshold: 0.3-0.5    # Cast a wide net
-```
-
 #### Result Limit Guidelines
 
 ```yaml
@@ -159,6 +127,32 @@ limit: 10-15         # Good coverage (recommended)
 
 # Exhaustive search
 limit: 20-50         # Maximum coverage
+```
+
+#### Source Type Filtering
+
+```yaml
+# Search specific sources
+source_types: ["git"]           # Only Git repositories
+source_types: ["confluence"]    # Only Confluence pages
+source_types: ["jira"]          # Only JIRA issues
+source_types: ["localfile"]     # Only local files
+source_types: ["documentation"] # Only documentation
+
+# Search multiple sources
+source_types: ["git", "confluence"]  # Git and Confluence
+source_types: ["jira", "confluence"] # JIRA and Confluence
+```
+
+#### Project Filtering
+
+```yaml
+# Search specific projects
+project_ids: ["api-docs"]           # Only API documentation project
+project_ids: ["team-knowledge"]     # Only team knowledge project
+
+# Search multiple projects
+project_ids: ["api-docs", "user-guides"]  # Multiple projects
 ```
 
 ## 🏗️ Hierarchy Search Tool
@@ -190,14 +184,13 @@ Results with Parent-Child Relationships:
   "name": "hierarchy_search",
   "parameters": {
     "query": "string",              // Required: Search query
-    "include_hierarchy": true,      // Optional: Include hierarchy info
-    "depth": 3,                     // Optional: Maximum hierarchy depth
-    "organize_by_hierarchy": false, // Optional: Group results by structure
-    "parent_filter": "string",      // Optional: Filter by parent document
+    "limit": 10,                    // Optional: Number of results (default: 10)
+    "organize_by_hierarchy": false, // Optional: Group results by structure (default: false)
     "hierarchy_filter": {           // Optional: Hierarchy-specific filters
-      "root_only": false,
-      "has_children": true,
-      "depth": 2
+      "depth": 3,                   // Filter by specific hierarchy depth
+      "has_children": true,         // Filter by whether pages have children
+      "parent_title": "API Documentation", // Filter by parent page title
+      "root_only": false            // Show only root pages (no parent)
     }
   }
 }
@@ -205,77 +198,65 @@ Results with Parent-Child Relationships:
 
 ### Example Queries
 
-#### Structure Navigation
+#### Basic Hierarchy Search
 
 ```
-Query: "Show me the structure of our deployment documentation"
-
-Results (organized by hierarchy):
-📁 Deployment Documentation
-├── 📄 Overview (deployment/README.md)
-├── 📁 Environments
-│   ├── 📄 Development Setup (deployment/dev.md)
-│   ├── 📄 Staging Environment (deployment/staging.md)
-│   └── 📄 Production Deployment (deployment/prod.md)
-├── 📁 Platforms
-│   ├── 📄 AWS Deployment (deployment/aws.md)
-│   ├── 📄 Docker Containers (deployment/docker.md)
-│   └── 📄 Kubernetes Setup (deployment/k8s.md)
-└── 📁 Troubleshooting
-    ├── 📄 Common Issues (deployment/troubleshooting.md)
-    └── 📄 Performance Problems (deployment/performance.md)
-```
-
-#### Parent-Child Relationships
-
-```
-Query: "Find all child pages under the API documentation"
+Query: "API documentation"
 
 Results:
-Parent: API Documentation (api/README.md)
-├── Authentication (api/auth.md)
-├── User Endpoints (api/users.md)
-├── Data Endpoints (api/data.md)
-├── Error Handling (api/errors.md)
-└── Rate Limiting (api/rate-limits.md)
+1. API Documentation (Root)
+   └── Children: Authentication, Endpoints, Examples
 
-Each child contains:
-- Detailed implementation guides
-- Code examples
-- Best practices
+2. Authentication (Child of API Documentation)
+   └── Children: JWT Guide, OAuth Setup
+
+3. Endpoints (Child of API Documentation)
+   └── Children: User Management, Data Operations
 ```
 
-### Hierarchy-Specific Use Cases
-
-#### 1. Documentation Navigation
+#### Filtered Hierarchy Search
 
 ```
-"What are all the sections in our onboarding documentation?"
-"Show me the complete structure of the troubleshooting guides"
-"Find all child pages under the security documentation"
+Query: "deployment guides"
+Filters: hierarchy_filter={"has_children": true, "depth": 1}
+
+Results:
+1. Deployment (Root - Depth 1)
+   └── Children: AWS Deployment, Docker Deployment, CI/CD
+
+2. Infrastructure (Root - Depth 1)
+   └── Children: Monitoring, Scaling, Security
 ```
 
-#### 2. Content Organization
+### Hierarchy Navigation Patterns
+
+#### 1. Finding Document Structure
 
 ```
-"Where should I add documentation about new API endpoints?"
-"What's the hierarchy of our architecture documentation?"
-"Show me all root-level documentation pages"
+Query: "Show me the structure of our API documentation"
+Purpose: Understand how documentation is organized
 ```
 
-#### 3. Completeness Checking
+#### 2. Finding Parent-Child Relationships
 
 ```
-"Are there any missing sections in our deployment documentation?"
-"What topics are covered under the development guidelines?"
-"Show me all leaf pages (pages with no children) in the API docs"
+Query: "What are all the deployment guides under Infrastructure?"
+Purpose: Find all related documents in a hierarchy
+```
+
+#### 3. Finding Root Documents
+
+```
+Query: "What are the main sections of our knowledge base?"
+Filters: hierarchy_filter={"root_only": true}
+Purpose: Get top-level organization
 ```
 
 ## 📎 Attachment Search Tool
 
 ### Purpose
 
-The attachment search tool specializes in finding file attachments (PDFs, documents, spreadsheets, images) and their parent documents, with content extraction and metadata analysis.
+The attachment search tool specializes in finding file attachments and their parent documents, perfect for locating specific files, diagrams, or documents attached to pages.
 
 ### How It Works
 
@@ -285,9 +266,9 @@ Query: "architecture diagrams"
 Search Attachments + Parent Context
     ↓
 Results:
-1. system-architecture.pdf (attached to Architecture Overview)
-2. database-schema.png (attached to Database Design)
-3. api-flow-diagram.svg (attached to API Documentation)
+- system-architecture.pdf (attached to Architecture Overview)
+- api-flow-diagram.png (attached to API Documentation)
+- deployment-diagram.svg (attached to Deployment Guide)
 ```
 
 ### Parameters
@@ -297,314 +278,342 @@ Results:
   "name": "attachment_search",
   "parameters": {
     "query": "string",              // Required: Search query
-    "file_types": ["pdf", "docx"],  // Optional: Filter by file type
-    "include_parent_context": true, // Optional: Include parent document
+    "limit": 10,                    // Optional: Number of results (default: 10)
+    "include_parent_context": true, // Optional: Include parent document info (default: true)
     "attachment_filter": {          // Optional: Attachment-specific filters
-      "file_size_min": 1024,
-      "file_size_max": 10485760,
-      "author": "string",
-      "created_after": "2024-01-01"
+      "file_type": "pdf",           // Filter by file type
+      "file_size_min": 1024,        // Minimum file size in bytes
+      "file_size_max": 10485760,    // Maximum file size in bytes
+      "attachments_only": true,     // Show only attachments, not parent docs
+      "author": "john.doe",         // Filter by attachment author
+      "parent_document_title": "API Documentation" // Filter by parent document
     }
   }
 }
 ```
 
-### Supported File Types
-
-#### Document Files
-
-- **PDF** (.pdf) - Full text extraction
-- **Word** (.docx, .doc) - Content and metadata
-- **PowerPoint** (.pptx, .ppt) - Slides and notes
-- **Excel** (.xlsx, .xls) - Sheet data and formulas
-
-#### Image Files
-
-- **PNG** (.png) - OCR text extraction
-- **JPEG** (.jpg, .jpeg) - OCR text extraction
-- **SVG** (.svg) - Text and metadata
-- **GIF** (.gif) - Basic metadata
-
-#### Other Files
-
-- **Text** (.txt, .md) - Full content
-- **CSV** (.csv) - Data structure analysis
-- **JSON** (.json) - Structure and content
-- **YAML** (.yaml, .yml) - Configuration analysis
-
 ### Example Queries
 
-#### Finding Specific File Types
+#### Basic Attachment Search
+
+```
+Query: "API documentation PDF"
+
+Results:
+1. api-reference-v2.pdf
+   - Parent: API Documentation
+   - Size: 2.3 MB
+   - Type: PDF
+
+2. api-examples.pdf
+   - Parent: API Examples
+   - Size: 1.1 MB
+   - Type: PDF
+```
+
+#### Filtered Attachment Search
 
 ```
 Query: "architecture diagrams"
-File Types: ["pdf", "png", "svg"]
+Filters: attachment_filter={"file_type": "png", "file_size_min": 100000}
 
 Results:
-1. 📄 system-architecture.pdf (2.3 MB)
-   Parent: Architecture Overview
-   Content: System components, data flow, security boundaries
-   
-2. 🖼️ database-schema.png (856 KB)
-   Parent: Database Design
-   Content: Entity relationships, table structures, indexes
-   
-3. 🖼️ api-flow-diagram.svg (234 KB)
-   Parent: API Documentation
-   Content: Request flow, authentication, response handling
+1. system-architecture.png
+   - Parent: System Architecture
+   - Size: 450 KB
+   - Type: PNG
+
+2. database-schema.png
+   - Parent: Database Design
+   - Size: 320 KB
+   - Type: PNG
 ```
 
-#### Content-Based Search
+### Attachment Types and Use Cases
+
+#### 1. Documentation Files
 
 ```
-Query: "performance metrics and benchmarks"
-File Types: ["xlsx", "pdf"]
-
-Results:
-1. 📊 performance-benchmarks.xlsx (1.2 MB)
-   Parent: Performance Testing
-   Content: Load test results, response times, throughput data
-   Sheets: ["API Benchmarks", "Database Performance", "Memory Usage"]
-   
-2. 📄 performance-analysis-q4.pdf (3.1 MB)
-   Parent: Quarterly Reports
-   Content: Performance trends, optimization recommendations
-   Pages: 15, Created: 2024-01-15
+Query: "user manual PDF"
+File Types: PDF, DOC, DOCX
+Use Case: Finding comprehensive documentation
 ```
 
-#### Author and Date Filtering
+#### 2. Diagrams and Images
 
 ```
-Query: "deployment procedures"
-Filters: {
-  "author": "devops-team",
-  "created_after": "2024-01-01",
-  "file_types": ["pdf", "docx"]
-}
-
-Results:
-1. 📄 deployment-runbook-v2.pdf (1.8 MB)
-   Author: devops-team
-   Created: 2024-02-15
-   Parent: Deployment Documentation
-   
-2. 📄 rollback-procedures.docx (456 KB)
-   Author: devops-team
-   Created: 2024-01-20
-   Parent: Emergency Procedures
+Query: "system architecture diagram"
+File Types: PNG, JPG, SVG, PDF
+Use Case: Finding visual documentation
 ```
 
-### Advanced Attachment Features
-
-#### 1. Content Extraction
-
-The tool extracts and indexes content from attachments:
+#### 3. Data Files
 
 ```
-PDF Content: "To deploy the application, first ensure all dependencies..."
-Excel Data: "Server response times: 95th percentile: 250ms, 99th percentile: 500ms"
-Image OCR: "System Architecture Diagram - Web Layer, API Layer, Database Layer"
+Query: "configuration templates"
+File Types: YAML, JSON, XML, CSV
+Use Case: Finding configuration examples
 ```
 
-#### 2. Metadata Analysis
-
-Rich metadata is extracted and searchable:
-
-```json
-{
-  "filename": "api-documentation.pdf",
-  "size": 2457600,
-  "created": "2024-01-15T10:30:00Z",
-  "modified": "2024-01-20T14:45:00Z",
-  "author": "technical-writing-team",
-  "pages": 42,
-  "content_type": "application/pdf",
-  "parent_document": "API Reference Guide",
-  "tags": ["api", "documentation", "reference"]
-}
-```
-
-#### 3. Parent Context Integration
-
-Results include context from the parent document:
+#### 4. Presentations
 
 ```
-Attachment: database-migration-script.sql
-Parent Context: "This migration script updates the user table schema to support new authentication features. Run this script during the maintenance window scheduled for..."
+Query: "project roadmap presentation"
+File Types: PPT, PPTX, PDF
+Use Case: Finding presentation materials
 ```
 
-## 🔧 Search Optimization Strategies
+## 🎯 Search Strategy Best Practices
 
-### 1. Query Optimization
+### 1. Choose the Right Tool
 
-#### Use Specific Terms
+#### Use Semantic Search When
 
-```
-❌ "docs"
-✅ "API documentation for user authentication"
+- Looking for general information across all documents
+- Asking conceptual questions
+- Need broad coverage of results
+- Working with unstructured content
 
-❌ "config"
-✅ "database configuration for production environment"
-```
+#### Use Hierarchy Search When
 
-#### Include Context
+- Navigating structured documentation
+- Understanding document organization
+- Finding related documents in a hierarchy
+- Working with Confluence or wiki-style content
+
+#### Use Attachment Search When
+
+- Looking for specific files or documents
+- Need diagrams, presentations, or data files
+- Want to find files by type or size
+- Need parent document context for attachments
+
+### 2. Optimize Your Queries
+
+#### Be Specific and Contextual
 
 ```
 ❌ "error"
-✅ "database connection error in Python application"
+✅ "database connection timeout error in production"
 
-❌ "deployment"
-✅ "Docker deployment to AWS ECS cluster"
+❌ "config"
+✅ "Redis configuration for caching in our Node.js application"
 ```
 
-### 2. Filter Optimization
+#### Use Natural Language
 
-#### Source Filtering
+```
+❌ "auth JWT token"
+✅ "How do I implement JWT token authentication?"
 
-```json
-{
-  "source_filter": "confluence",     // Search only Confluence
-  "source_filter": "git",           // Search only Git repositories
-  "source_filter": "local"          // Search only local files
-}
+❌ "deploy docker k8s"
+✅ "What's the process for deploying Docker containers to Kubernetes?"
 ```
 
-#### Date Filtering
+#### Combine Multiple Concepts
 
-```json
-{
-  "date_filter": {
-    "start": "2024-01-01",          // Recent documents only
-    "end": "2024-12-31"
-  }
-}
+```
+"How to monitor performance of our microservices in production?"
+"What are the security best practices for file uploads in our web app?"
+"How to implement rate limiting for our REST API endpoints?"
 ```
 
-#### Content Type Filtering
+### 3. Use Filters Effectively
 
-```json
-{
-  "content_type": "markdown",        // Only Markdown files
-  "content_type": "documentation",   // Only documentation
-  "content_type": "code"            // Only code files
-}
-```
-
-### 3. Result Optimization
-
-#### Adjust Similarity Threshold
-
-```json
-{
-  "threshold": 0.8,                 // High precision
-  "threshold": 0.6,                 // Balanced
-  "threshold": 0.4                  // High recall
-}
-```
-
-#### Control Result Size
-
-```json
-{
-  "limit": 5,                       // Quick answers
-  "limit": 15,                      // Comprehensive
-  "max_content_length": 300         // Shorter snippets
-}
-```
-
-## 📊 Search Analytics and Monitoring
-
-### Query Performance
-
-Monitor search performance to optimize your knowledge base:
-
-```bash
-# View search performance logs
-tail -f ~/.qdrant-loader/logs/mcp-server.log | grep "search_performance"
-
-# Common metrics:
-# - Query processing time
-# - Number of results found
-# - Similarity scores
-# - Filter effectiveness
-```
-
-### Popular Queries
-
-Track common queries to improve documentation:
-
-```bash
-# View most common search terms
-grep "search_query" ~/.qdrant-loader/logs/mcp-analytics.log | \
-  cut -d'"' -f4 | sort | uniq -c | sort -nr | head -20
-```
-
-### Search Quality Metrics
-
-Monitor search quality indicators:
+#### Source Type Filtering
 
 ```yaml
-# Good search quality indicators:
-- High similarity scores (>0.7)
-- Consistent result relevance
-- Low "no results" rate
-- Fast response times (<2s)
+# For code-related questions
+source_types: ["git"]
 
-# Poor search quality indicators:
-- Low similarity scores (<0.5)
-- Irrelevant results
-- High "no results" rate
-- Slow response times (>5s)
+# For process documentation
+source_types: ["confluence"]
+
+# For issue tracking
+source_types: ["jira"]
+
+# For comprehensive search
+source_types: ["git", "confluence", "jira"]
 ```
 
-## 🎯 Best Practices
+#### Project Filtering
 
-### 1. Query Design
+```yaml
+# For specific project context
+project_ids: ["api-project"]
 
-- **Be specific**: Include relevant context and details
-- **Use natural language**: Ask questions as you would to a human
-- **Combine concepts**: Include multiple related terms
-- **Avoid jargon**: Use clear, descriptive language
+# For multiple related projects
+project_ids: ["api-project", "frontend-project"]
+```
 
-### 2. Filter Usage
+#### Hierarchy Filtering
 
-- **Start broad**: Begin with general queries, then add filters
-- **Use source filters**: When you know where information should be
-- **Apply date filters**: For recent or historical information
-- **Combine filters**: Use multiple filters for precise results
+```yaml
+# For top-level organization
+hierarchy_filter: {"root_only": true}
 
-### 3. Result Interpretation
+# For specific depth
+hierarchy_filter: {"depth": 2}
 
-- **Check similarity scores**: Higher scores indicate better matches
-- **Review metadata**: Understand document context and freshness
-- **Use hierarchy info**: Understand document relationships
-- **Consider parent context**: For attachments and child documents
+# For documents with children
+hierarchy_filter: {"has_children": true}
+```
 
-### 4. Iterative Search
+#### Attachment Filtering
 
-- **Refine queries**: Adjust based on initial results
-- **Try different tools**: Use hierarchy or attachment search for specific needs
-- **Adjust thresholds**: Balance precision and recall
-- **Follow up**: Ask clarifying questions based on results
+```yaml
+# For specific file types
+attachment_filter: {"file_type": "pdf"}
+
+# For size constraints
+attachment_filter: {"file_size_max": 5242880}  # 5MB
+
+# For specific authors
+attachment_filter: {"author": "tech.writer"}
+```
+
+## 🔧 Troubleshooting Search Issues
+
+### Common Problems and Solutions
+
+#### 1. No Results Found
+
+**Problem**: Search returns empty results
+
+**Solutions**:
+
+- Verify documents are ingested: `qdrant-loader --workspace . project status`
+- Try broader search terms
+- Remove filters to expand search scope
+- Check if the collection exists in QDrant
+
+#### 2. Irrelevant Results
+
+**Problem**: Search results don't match the query
+
+**Solutions**:
+
+- Use more specific search terms
+- Add context to your query
+- Use appropriate search tool for your use case
+- Apply source type or project filters
+
+#### 3. Missing Expected Documents
+
+**Problem**: Known documents don't appear in results
+
+**Solutions**:
+
+- Check if documents are properly ingested
+- Verify document content is searchable
+- Try different search terms or synonyms
+- Check if documents are in filtered sources/projects
+
+#### 4. Slow Search Performance
+
+**Problem**: Searches take too long
+
+**Solutions**:
+
+- Reduce the limit parameter
+- Use more specific filters
+- Check QDrant server performance
+- Verify network connectivity
+
+### Debug Search Queries
+
+```bash
+# Check QDrant collection status
+curl http://localhost:6333/collections/documents
+
+# Verify document count
+curl http://localhost:6333/collections/documents/points/count
+
+# Test direct QDrant search
+curl -X POST http://localhost:6333/collections/documents/points/search \
+  -H "Content-Type: application/json" \
+  -d '{"vector": [0.1, 0.2, 0.3], "limit": 5}'
+```
+
+## 📊 Search Performance Optimization
+
+### Best Practices for Performance
+
+#### 1. Use Appropriate Limits
+
+```yaml
+# For quick answers
+limit: 3-5
+
+# For comprehensive results
+limit: 10-15
+
+# Avoid very large limits
+limit: 50+  # Can be slow
+```
+
+#### 2. Apply Filters Early
+
+```yaml
+# Filter by source type
+source_types: ["confluence"]
+
+# Filter by project
+project_ids: ["current-project"]
+
+# Use hierarchy filters
+hierarchy_filter: {"depth": 2}
+```
+
+#### 3. Optimize Query Specificity
+
+```yaml
+# Too broad (slow)
+query: "documentation"
+
+# Better (faster)
+query: "API authentication documentation"
+
+# Best (fastest)
+query: "JWT authentication implementation guide"
+```
 
 ## 🔗 Related Documentation
 
 - **[MCP Server Overview](./README.md)** - Complete MCP server guide
+- **[Setup and Integration](./setup-and-integration.md)** - Setting up the MCP server
+- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup
 - **[Hierarchy Search](./hierarchy-search.md)** - Detailed hierarchy search guide
 - **[Attachment Search](./attachment-search.md)** - Detailed attachment search guide
-- **[Cursor Integration](./cursor-integration.md)** - Using search in Cursor IDE
 
 ## 📋 Search Capabilities Checklist
 
-- [ ] **Understand search tools** - Know when to use each tool
-- [ ] **Optimize queries** - Use specific, contextual queries
-- [ ] **Apply filters** - Use source, date, and content filters effectively
-- [ ] **Adjust thresholds** - Balance precision and recall
-- [ ] **Monitor performance** - Track search quality and speed
-- [ ] **Iterate and refine** - Improve queries based on results
+### Understanding Search Tools
+
+- [ ] **Semantic search** - Understand when to use for general queries
+- [ ] **Hierarchy search** - Know when to use for structured content
+- [ ] **Attachment search** - Recognize when to search for files
+
+### Query Optimization
+
+- [ ] **Natural language** - Use conversational queries
+- [ ] **Specific context** - Provide relevant context in queries
+- [ ] **Appropriate filters** - Apply source, project, and type filters
+
+### Performance Optimization
+
+- [ ] **Reasonable limits** - Use appropriate result limits
+- [ ] **Effective filters** - Apply filters to narrow search scope
+- [ ] **Query specificity** - Make queries specific and targeted
+
+### Troubleshooting
+
+- [ ] **Verify ingestion** - Ensure documents are properly ingested
+- [ ] **Test connectivity** - Check QDrant server connectivity
+- [ ] **Debug queries** - Use debug tools when needed
 
 ---
 
-**Master your knowledge search capabilities!** 🔍
+**Master the search capabilities to unlock the full power of your knowledge base!** 🔍
 
-With these search tools and techniques, you can efficiently find any information in your knowledge base, whether it's buried in documentation, attached files, or complex hierarchical structures. The key is understanding which tool to use for each situation and how to craft effective queries.
+With these three search tools and optimization techniques, you can efficiently find any information in your knowledge base, whether it's code documentation, process guides, or specific files and attachments.

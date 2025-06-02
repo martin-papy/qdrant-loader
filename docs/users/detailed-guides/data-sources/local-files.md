@@ -6,449 +6,358 @@ Connect QDrant Loader to your local file system to index documents, research mat
 
 When you configure local file processing, QDrant Loader can handle:
 
-- **Documents** - PDFs, Word docs, PowerPoint, Excel files
-- **Text files** - Markdown, plain text, reStructuredText, LaTeX
+- **Documents** - PDFs, Word docs, PowerPoint, Excel files (with file conversion)
+- **Text files** - Markdown, plain text, and other text formats
 - **Code files** - Python, JavaScript, Java, C++, and more
 - **Data files** - JSON, CSV, XML, YAML configuration files
-- **Images** - PNG, JPEG, GIF (with OCR text extraction)
-- **Archives** - ZIP, TAR, 7Z files (extracts and processes contents)
-- **Audio files** - MP3, WAV (with transcription)
-- **Structured data** - Database exports, log files
+- **Any file type** - When file conversion is enabled, many additional formats are supported
 
 ## 🔧 Setup and Configuration
 
 ### Basic Configuration
 
 ```yaml
-sources:
-  local_files:
-    - path: "/path/to/documents"
-      include_patterns:
-        - "**/*.pdf"
-        - "**/*.docx"
-        - "**/*.md"
-        - "**/*.txt"
-      exclude_patterns:
-        - "**/.*"
-        - "**/node_modules/**"
-        - "**/__pycache__/**"
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///path/to/documents"
+          include_paths:
+            - "**"
+          exclude_paths:
+            - ".*"
+            - "~*"
+            - "*.tmp"
+          file_types:
+            - "*.pdf"
+            - "*.docx"
+            - "*.md"
+            - "*.txt"
+          max_file_size: 52428800  # 50MB
 ```
 
 ### Advanced Configuration
 
 ```yaml
-sources:
-  local_files:
-    - path: "/path/to/documents"
-      name: "main_documents"  # Optional identifier
-      
-      # File filtering
-      include_patterns:
-        - "**/*.pdf"
-        - "**/*.docx"
-        - "**/*.pptx"
-        - "**/*.xlsx"
-        - "**/*.md"
-        - "**/*.txt"
-        - "**/*.py"
-        - "**/*.js"
-        - "**/*.json"
-        - "**/*.yaml"
-      exclude_patterns:
-        - "**/.*"              # Hidden files
-        - "**/node_modules/**" # Dependencies
-        - "**/__pycache__/**"  # Python cache
-        - "**/build/**"        # Build artifacts
-        - "**/dist/**"         # Distribution files
-        - "**/*.log"           # Log files
-        - "**/*.tmp"           # Temporary files
-      
-      # Size and age limits
-      max_file_size: 52428800    # 50MB
-      max_age_days: 365          # Only files modified in last year
-      min_file_size: 100         # Skip very small files
-      
-      # Directory traversal
-      max_depth: 10              # Maximum directory depth
-      follow_symlinks: false     # Don't follow symbolic links
-      include_hidden: false      # Skip hidden files/directories
-      
-      # File processing options
-      extract_metadata: true     # Extract file metadata
-      preserve_structure: true   # Maintain directory structure
-      include_file_content: true # Process file contents
-      
-      # Archive handling
-      extract_archives: true     # Extract ZIP, TAR, etc.
-      max_archive_size: 104857600 # 100MB
-      archive_password: null     # Password for encrypted archives
-      
-      # Performance settings
-      max_concurrent_files: 5    # Concurrent file processing
-      chunk_size: 1000           # Text chunk size
-      enable_caching: true       # Cache processed files
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///path/to/documents"
+          
+          # File filtering
+          include_paths:
+            - "**"  # Include all files recursively
+          exclude_paths:
+            - ".*"              # Hidden files
+            - "~*"              # Temporary files
+            - "*.tmp"           # Temporary files
+            - "node_modules/**" # Dependencies
+            - "__pycache__/**"  # Python cache
+            - "build/**"        # Build artifacts
+            - "dist/**"         # Distribution files
+          
+          # File types to process
+          file_types:
+            - "*.pdf"
+            - "*.docx"
+            - "*.doc"
+            - "*.pptx"
+            - "*.ppt"
+            - "*.xlsx"
+            - "*.xls"
+            - "*.md"
+            - "*.txt"
+            - "*.py"
+            - "*.js"
+            - "*.json"
+            - "*.yaml"
+            - "*.yml"
+          
+          # Size limits
+          max_file_size: 52428800  # 50MB
+          
+          # File conversion (requires global file_conversion config)
+          enable_file_conversion: true
 ```
 
 ### Multiple Directory Sources
 
 ```yaml
-sources:
-  local_files:
-    # Research papers
-    - path: "/home/user/research/papers"
-      name: "research_papers"
-      include_patterns: ["**/*.pdf", "**/*.tex"]
-      
-    # Project documentation
-    - path: "/home/user/projects/docs"
-      name: "project_docs"
-      include_patterns: ["**/*.md", "**/*.rst"]
-      
-    # Code repositories
-    - path: "/home/user/code"
-      name: "source_code"
-      include_patterns: ["**/*.py", "**/*.js", "**/*.java"]
-      exclude_patterns: ["**/node_modules/**", "**/.git/**"]
-      
-    # Legacy documents
-    - path: "/archive/old_docs"
-      name: "legacy_docs"
-      include_patterns: ["**/*.doc", "**/*.xls", "**/*.ppt"]
-      max_age_days: null  # Process all files regardless of age
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  my-project:
+    sources:
+      localfile:
+        # Research papers
+        research-papers:
+          base_url: "file:///home/user/research/papers"
+          file_types:
+            - "*.pdf"
+            - "*.tex"
+          max_file_size: 104857600  # 100MB
+          
+        # Project documentation
+        project-docs:
+          base_url: "file:///home/user/projects/docs"
+          file_types:
+            - "*.md"
+            - "*.rst"
+          exclude_paths:
+            - "build/**"
+            - "_build/**"
+          
+        # Source code
+        source-code:
+          base_url: "file:///home/user/code"
+          file_types:
+            - "*.py"
+            - "*.js"
+            - "*.java"
+            - "*.cpp"
+            - "*.h"
+          exclude_paths:
+            - "node_modules/**"
+            - "__pycache__/**"
+            - ".git/**"
+            - "build/**"
+            - "dist/**"
 ```
 
 ## 🎯 Configuration Options
 
-### Path and Identification
+### Connection Settings
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `path` | string | Directory path to process | Required |
-| `name` | string | Identifier for this source | Directory name |
-| `description` | string | Human-readable description | None |
+| `base_url` | string | Directory path with `file://` prefix | Required |
 
 ### File Filtering
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `include_patterns` | list | Glob patterns for files to include | `["**/*"]` |
-| `exclude_patterns` | list | Glob patterns for files to exclude | `[]` |
-| `max_file_size` | int | Maximum file size in bytes | `52428800` (50MB) |
-| `min_file_size` | int | Minimum file size in bytes | `1` |
-| `max_age_days` | int | Only process files modified within N days | None |
-
-### Directory Traversal
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `max_depth` | int | Maximum directory depth to traverse | `10` |
-| `follow_symlinks` | bool | Follow symbolic links | `false` |
-| `include_hidden` | bool | Include hidden files/directories | `false` |
-| `case_sensitive` | bool | Case-sensitive pattern matching | `true` |
+| `include_paths` | list | Glob patterns for paths to include | `[]` |
+| `exclude_paths` | list | Glob patterns for paths to exclude | `[]` |
+| `file_types` | list | File extensions to process | `[]` |
+| `max_file_size` | int | Maximum file size in bytes | `1048576` (1MB) |
 
 ### Processing Options
 
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
-| `extract_metadata` | bool | Extract file metadata | `true` |
-| `preserve_structure` | bool | Maintain directory structure | `true` |
-| `include_file_content` | bool | Process file contents | `true` |
-| `detect_encoding` | bool | Auto-detect text encoding | `true` |
-
-### Archive Handling
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `extract_archives` | bool | Extract and process archive contents | `true` |
-| `max_archive_size` | int | Maximum archive size to process | `104857600` (100MB) |
-| `archive_password` | string | Password for encrypted archives | None |
-| `archive_formats` | list | Archive formats to process | `["zip", "tar", "gz", "7z"]` |
-
-### Performance Settings
-
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `max_concurrent_files` | int | Concurrent file processing | `5` |
-| `chunk_size` | int | Text chunk size for processing | `1000` |
-| `enable_caching` | bool | Cache processed files | `true` |
-| `cache_ttl_hours` | int | Cache time-to-live in hours | `24` |
+| `enable_file_conversion` | bool | Enable file conversion for supported formats | `false` |
 
 ## 🚀 Usage Examples
 
 ### Research Team
 
 ```yaml
-sources:
-  local_files:
-    # Research papers and publications
-    - path: "/research/papers"
-      name: "research_papers"
-      include_patterns:
-        - "**/*.pdf"
-        - "**/*.tex"
-        - "**/*.bib"
-        - "**/*.md"
-      max_file_size: 104857600  # 100MB for large papers
-      
-    # Datasets and data files
-    - path: "/research/datasets"
-      name: "research_data"
-      include_patterns:
-        - "**/*.csv"
-        - "**/*.json"
-        - "**/*.xml"
-        - "**/*.xlsx"
-      exclude_patterns:
-        - "**/raw/**"      # Skip raw data
-        - "**/temp/**"     # Skip temporary files
-      
-    # Analysis notebooks
-    - path: "/research/notebooks"
-      name: "analysis_notebooks"
-      include_patterns:
-        - "**/*.ipynb"
-        - "**/*.py"
-        - "**/*.r"
-        - "**/*.md"
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "research-docs"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  research:
+    sources:
+      localfile:
+        # Research papers and publications
+        research-papers:
+          base_url: "file:///research/papers"
+          file_types:
+            - "*.pdf"
+            - "*.tex"
+            - "*.bib"
+            - "*.md"
+          max_file_size: 104857600  # 100MB for large papers
+          enable_file_conversion: true
+          
+        # Datasets and data files
+        research-data:
+          base_url: "file:///research/datasets"
+          file_types:
+            - "*.csv"
+            - "*.json"
+            - "*.xml"
+            - "*.xlsx"
+          exclude_paths:
+            - "raw/**"      # Skip raw data
+            - "temp/**"     # Skip temporary files
 ```
 
 ### Documentation Team
 
 ```yaml
-sources:
-  local_files:
-    # Main documentation
-    - path: "/docs/content"
-      name: "documentation"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.rst"
-        - "**/*.txt"
-        - "**/*.adoc"
-      preserve_structure: true
-      
-    # Legacy documents
-    - path: "/docs/legacy"
-      name: "legacy_docs"
-      include_patterns:
-        - "**/*.doc"
-        - "**/*.docx"
-        - "**/*.pdf"
-        - "**/*.ppt"
-        - "**/*.pptx"
-      extract_archives: true
-      
-    # Images and diagrams
-    - path: "/docs/images"
-      name: "documentation_images"
-      include_patterns:
-        - "**/*.png"
-        - "**/*.jpg"
-        - "**/*.svg"
-        - "**/*.drawio"
-      max_file_size: 20971520  # 20MB for images
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documentation"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  documentation:
+    sources:
+      localfile:
+        # Main documentation
+        docs-content:
+          base_url: "file:///docs/content"
+          file_types:
+            - "*.md"
+            - "*.rst"
+            - "*.txt"
+            - "*.adoc"
+          
+        # Legacy documents
+        legacy-docs:
+          base_url: "file:///docs/legacy"
+          file_types:
+            - "*.doc"
+            - "*.docx"
+            - "*.pdf"
+            - "*.ppt"
+            - "*.pptx"
+          enable_file_conversion: true
+          max_file_size: 20971520  # 20MB
 ```
 
 ### Software Development
 
 ```yaml
-sources:
-  local_files:
-    # Source code
-    - path: "/projects/src"
-      name: "source_code"
-      include_patterns:
-        - "**/*.py"
-        - "**/*.js"
-        - "**/*.ts"
-        - "**/*.java"
-        - "**/*.cpp"
-        - "**/*.h"
-        - "**/*.md"
-        - "**/*.rst"
-      exclude_patterns:
-        - "**/node_modules/**"
-        - "**/__pycache__/**"
-        - "**/build/**"
-        - "**/dist/**"
-        - "**/.git/**"
-      
-    # Configuration files
-    - path: "/projects/config"
-      name: "configuration"
-      include_patterns:
-        - "**/*.yaml"
-        - "**/*.yml"
-        - "**/*.json"
-        - "**/*.toml"
-        - "**/*.ini"
-        - "**/*.conf"
-      
-    # Documentation and specs
-    - path: "/projects/docs"
-      name: "project_docs"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.rst"
-        - "**/*.txt"
-        - "**/*.pdf"
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "dev-docs"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  development:
+    sources:
+      localfile:
+        # Source code
+        source-code:
+          base_url: "file:///projects/src"
+          file_types:
+            - "*.py"
+            - "*.js"
+            - "*.ts"
+            - "*.java"
+            - "*.cpp"
+            - "*.h"
+            - "*.md"
+            - "*.rst"
+          exclude_paths:
+            - "node_modules/**"
+            - "__pycache__/**"
+            - "build/**"
+            - "dist/**"
+            - ".git/**"
+          
+        # Configuration files
+        config-files:
+          base_url: "file:///projects/config"
+          file_types:
+            - "*.yaml"
+            - "*.yml"
+            - "*.json"
+            - "*.toml"
+            - "*.ini"
+            - "*.conf"
 ```
 
 ### Personal Knowledge Base
 
 ```yaml
-sources:
-  local_files:
-    # Notes and writings
-    - path: "/personal/notes"
-      name: "personal_notes"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.txt"
-        - "**/*.org"
-        - "**/*.tex"
-      preserve_structure: true
-      
-    # Books and references
-    - path: "/personal/library"
-      name: "personal_library"
-      include_patterns:
-        - "**/*.pdf"
-        - "**/*.epub"
-        - "**/*.mobi"
-      max_file_size: 209715200  # 200MB for large books
-      
-    # Archives and backups
-    - path: "/personal/archives"
-      name: "personal_archives"
-      include_patterns:
-        - "**/*.zip"
-        - "**/*.tar.gz"
-        - "**/*.7z"
-      extract_archives: true
-      max_archive_size: 524288000  # 500MB
-```
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "personal-knowledge"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
 
-## 🔍 Advanced Features
-
-### Metadata Extraction
-
-```yaml
-sources:
-  local_files:
-    - path: "/documents"
-      extract_metadata: true
-      metadata_fields:
-        - "author"
-        - "title"
-        - "creation_date"
-        - "modification_date"
-        - "file_size"
-        - "mime_type"
-        - "encoding"
-      
-      # Custom metadata extraction
-      custom_metadata:
-        project: "extract_from_path"  # Extract project from path
-        category: "infer_from_content"  # Infer category from content
-```
-
-### Content Processing
-
-```yaml
-sources:
-  local_files:
-    - path: "/documents"
-      # Text processing options
-      normalize_text: true
-      remove_formatting: false
-      extract_tables: true
-      extract_images: true
-      
-      # Language detection
-      detect_language: true
-      language_threshold: 0.8
-      
-      # OCR for images
-      enable_ocr: true
-      ocr_languages: ["eng", "fra", "deu"]
-```
-
-### Archive Processing
-
-```yaml
-sources:
-  local_files:
-    - path: "/archives"
-      extract_archives: true
-      
-      # Archive-specific settings
-      archive_formats: ["zip", "tar", "gz", "bz2", "xz", "7z"]
-      max_archive_depth: 3  # Nested archive levels
-      preserve_archive_structure: true
-      
-      # Password-protected archives
-      archive_passwords:
-        "sensitive.zip": "password123"
-        "backup_*.7z": "backup_password"
-```
-
-### Performance Optimization
-
-```yaml
-sources:
-  local_files:
-    - path: "/large_dataset"
-      # Parallel processing
-      max_concurrent_files: 10
-      batch_size: 100
-      
-      # Memory management
-      max_memory_usage: 2147483648  # 2GB
-      stream_large_files: true
-      
-      # Caching
-      enable_caching: true
-      cache_directory: "/tmp/qdrant_cache"
-      cache_ttl_hours: 48
-      
-      # Progress tracking
-      show_progress: true
-      progress_interval: 100
+projects:
+  personal:
+    sources:
+      localfile:
+        # Notes and writings
+        personal-notes:
+          base_url: "file:///personal/notes"
+          file_types:
+            - "*.md"
+            - "*.txt"
+            - "*.org"
+          
+        # Books and references
+        personal-library:
+          base_url: "file:///personal/library"
+          file_types:
+            - "*.pdf"
+            - "*.epub"
+          max_file_size: 209715200  # 200MB for large books
+          enable_file_conversion: true
 ```
 
 ## 🧪 Testing and Validation
 
-### Test Local File Processing
+### Initialize and Configure
 
 ```bash
-# Test local file access
-qdrant-loader --workspace . test-connections --sources local_files
+# Initialize workspace
+qdrant-loader --workspace . init
 
-# Validate local file configuration
-qdrant-loader --workspace . validate --sources local_files
-
-# List files that would be processed
-qdrant-loader --workspace . list-files --sources local_files
-
-# Dry run to see processing plan
-qdrant-loader --workspace . --dry-run ingest --sources local_files
-
-# Process specific directory
-qdrant-loader --workspace . ingest --sources local_files --path "/specific/path"
+# Configure the project
+qdrant-loader --workspace . config
 ```
 
-### Debug File Processing
+### Validate Configuration
 
 ```bash
-# Enable verbose logging
-qdrant-loader --workspace . --verbose ingest --sources local_files
+# Validate project configuration
+qdrant-loader --workspace . project validate
 
-# Process single file for testing
-qdrant-loader --workspace . process-file --file "/path/to/test.pdf"
+# Check project status
+qdrant-loader --workspace . project status
 
-# Check file processing status
-qdrant-loader --workspace . status --sources local_files --detailed
+# List all projects
+qdrant-loader --workspace . project list
+```
+
+### Process Local Files
+
+```bash
+# Process all configured sources
+qdrant-loader --workspace . ingest
+
+# Process specific project
+qdrant-loader --workspace . ingest --project my-project
+
+# Process with verbose logging
+qdrant-loader --workspace . --log-level debug ingest
 ```
 
 ## 🔧 Troubleshooting
@@ -479,80 +388,69 @@ sudo -u qdrant-user ls /path/to/files
 **Solutions**:
 
 ```yaml
-sources:
-  local_files:
-    - path: "/large_files"
-      # Increase size limits
-      max_file_size: 209715200  # 200MB
-      
-      # Optimize processing
-      max_concurrent_files: 2
-      stream_large_files: true
-      
-      # Skip very large files
-      exclude_patterns:
-        - "**/*.iso"
-        - "**/*.dmg"
-        - "**/*.vm*"
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///large_files"
+          # Increase size limits
+          max_file_size: 209715200  # 200MB
+          
+          # Skip very large files
+          exclude_paths:
+            - "*.iso"
+            - "*.dmg"
+            - "*.vm*"
 ```
 
-#### Encoding Issues
+#### File Type Issues
 
-**Problem**: Text files with encoding errors
+**Problem**: Files not being processed
 
 **Solutions**:
 
 ```yaml
-sources:
-  local_files:
-    - path: "/text_files"
-      # Enable encoding detection
-      detect_encoding: true
-      fallback_encoding: "utf-8"
-      
-      # Handle encoding errors
-      encoding_errors: "replace"  # or "ignore"
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///documents"
+          # Ensure file types are specified
+          file_types:
+            - "*.pdf"
+            - "*.docx"
+            - "*.txt"
+            - "*.md"
+          
+          # Enable file conversion for additional formats
+          enable_file_conversion: true
 ```
 
-#### Archive Processing Issues
+#### Path Issues
 
-**Problem**: Archives fail to extract or process
+**Problem**: Files not found or incorrect paths
 
 **Solutions**:
 
 ```yaml
-sources:
-  local_files:
-    - path: "/archives"
-      # Limit archive processing
-      max_archive_size: 52428800  # 50MB
-      max_archive_depth: 2
-      
-      # Skip problematic archives
-      exclude_patterns:
-        - "**/*.rar"  # If RAR support not available
-        - "**/*.dmg"  # macOS disk images
-```
-
-#### Memory Issues
-
-**Problem**: High memory usage or out-of-memory errors
-
-**Solutions**:
-
-```yaml
-sources:
-  local_files:
-    - path: "/large_dataset"
-      # Reduce concurrent processing
-      max_concurrent_files: 2
-      
-      # Enable streaming for large files
-      stream_large_files: true
-      max_memory_usage: 1073741824  # 1GB
-      
-      # Process in smaller batches
-      batch_size: 50
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          # Use absolute path with file:// prefix
+          base_url: "file:///absolute/path/to/documents"
+          
+          # Include all files recursively
+          include_paths:
+            - "**"
+          
+          # Check exclude patterns
+          exclude_paths:
+            - ".*"  # Hidden files
+            - "~*"  # Temporary files
 ```
 
 ### Debugging Commands
@@ -568,35 +466,34 @@ head -100 /path/to/test.txt
 # Check disk space
 df -h /path/to/files
 
-# Monitor processing
-tail -f /var/log/qdrant-loader.log
+# Monitor processing with verbose logging
+qdrant-loader --workspace . --log-level debug ingest
 ```
 
-## 📊 Monitoring and Metrics
+## 📊 Monitoring and Performance
 
-### Processing Statistics
+### Check Processing Status
 
 ```bash
-# View local file processing statistics
-qdrant-loader --workspace . stats --sources local_files
+# Check project status
+qdrant-loader --workspace . project status
 
-# Check directory-specific statistics
-qdrant-loader --workspace . stats --sources local_files --path "/specific/path"
+# Check specific project
+qdrant-loader --workspace . project status --project-id my-project
 
-# Monitor processing progress
-qdrant-loader --workspace . status --sources local_files --watch
+# List all projects
+qdrant-loader --workspace . project list
 ```
 
-### Performance Metrics
+### Performance Optimization
 
-Monitor these metrics for local file processing:
+Monitor these aspects for local file processing:
 
 - **Files processed per minute** - Processing throughput
 - **File size distribution** - Understanding data characteristics
 - **Error rate** - Percentage of files that failed to process
 - **Memory usage** - Peak memory during processing
 - **Disk I/O** - Read/write operations per second
-- **Cache hit rate** - Effectiveness of file caching
 
 ## 🔄 Best Practices
 
@@ -609,10 +506,10 @@ Monitor these metrics for local file processing:
 
 ### Performance Optimization
 
-1. **Filter aggressively** - Only process files you need
+1. **Filter aggressively** - Only process files you need with specific file_types
 2. **Set appropriate size limits** - Avoid processing very large files
-3. **Use caching** - Enable caching for repeated processing
-4. **Monitor disk space** - Ensure adequate storage for processing
+3. **Use exclude patterns** - Skip unnecessary directories and files
+4. **Enable file conversion selectively** - Only when needed for additional formats
 
 ### Security Considerations
 

@@ -170,58 +170,99 @@ All data sources that handle files benefit from QDrant Loader's comprehensive [f
 
 ## ⚙️ Configuration Overview
 
-### Basic Multi-Source Setup
+### Multi-Project Configuration Structure
+
+QDrant Loader uses a multi-project configuration structure. Here's the basic format:
 
 ```yaml
-# Configure multiple data sources
-sources:
-  # Git repositories
-  git:
-    - url: "https://github.com/company/docs"
-      name: "company_docs"
-      auth_token: "${GITHUB_TOKEN}"
-      
-  # Confluence spaces
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      username: "${CONFLUENCE_USER}"
-      api_token: "${CONFLUENCE_TOKEN}"
-      spaces: ["DOCS", "TECH"]
-      
-  # JIRA projects
-  jira:
-    - url: "${JIRA_URL}"
-      username: "${JIRA_USER}"
-      api_token: "${JIRA_TOKEN}"
-      projects: ["PROJ", "SUPPORT"]
-      
-  # Local documentation
-  local_files:
-    - path: "/docs/internal"
-      include_patterns: ["**/*.md", "**/*.pdf"]
-      
-  # Public API docs
-  public_docs:
-    - url: "https://api.example.com/docs"
-      css_selector: ".api-content"
-      include_patterns: ["/docs/**"]
+# Global configuration
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+# Project configurations
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Project"
+    description: "Project description"
+    
+    sources:
+      # Git repositories
+      git:
+        company-docs:
+          source_type: "git"
+          source: "company-docs"
+          base_url: "https://github.com/company/docs"
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          
+      # Confluence spaces
+      confluence:
+        tech-docs:
+          source_type: "confluence"
+          source: "tech-docs"
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "TECH"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          
+      # JIRA projects
+      jira:
+        support:
+          source_type: "jira"
+          source: "support"
+          base_url: "${JIRA_URL}"
+          project_key: "SUP"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          
+      # Local documentation
+      localfile:
+        local-docs:
+          source_type: "localfile"
+          source: "local-docs"
+          base_url: "file:///docs/internal"
+          include_paths: ["**/*.md", "**/*.pdf"]
+          
+      # Public API docs
+      publicdocs:
+        api-docs:
+          source_type: "publicdocs"
+          source: "api-docs"
+          base_url: "https://api.example.com/docs"
+          content_selector: ".api-content"
+          include_paths: ["/docs/**"]
 ```
 
 ### Environment Variables
 
 ```bash
+# QDrant configuration
+export QDRANT_URL="https://your-qdrant-instance.com"
+export QDRANT_API_KEY="your-qdrant-api-key"
+export QDRANT_COLLECTION_NAME="documents"
+
+# OpenAI configuration
+export OPENAI_API_KEY="sk-your-openai-api-key"
+
 # Git authentication
 export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
 export GITLAB_TOKEN="glpat-xxxxxxxxxxxx"
 
 # Confluence authentication
-export CONFLUENCE_URL="https://company.atlassian.net"
-export CONFLUENCE_USER="user@company.com"
+export CONFLUENCE_URL="https://company.atlassian.net/wiki"
+export CONFLUENCE_EMAIL="user@company.com"
 export CONFLUENCE_TOKEN="ATATT3xFfGF0xxxxxxxxxxxx"
 
 # JIRA authentication
 export JIRA_URL="https://company.atlassian.net"
-export JIRA_USER="user@company.com"
+export JIRA_EMAIL="user@company.com"
 export JIRA_TOKEN="ATATT3xFfGF0xxxxxxxxxxxx"
 ```
 
@@ -230,146 +271,251 @@ export JIRA_TOKEN="ATATT3xFfGF0xxxxxxxxxxxx"
 ### Development Team
 
 ```yaml
-sources:
-  # Source code repositories
-  git:
-    - url: "https://github.com/company/backend"
-      include_patterns: ["**/*.py", "**/*.md"]
-    - url: "https://github.com/company/frontend"
-      include_patterns: ["**/*.js", "**/*.ts", "**/*.md"]
-      
-  # Technical documentation
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      spaces: ["DEV", "API", "ARCH"]
-      
-  # Development tickets
-  jira:
-    - url: "${JIRA_URL}"
-      projects: ["DEV", "BUG"]
-      jql: "project in (DEV, BUG) AND status != Closed"
+projects:
+  dev-team:
+    project_id: "dev-team"
+    display_name: "Development Team"
+    description: "Source code and development documentation"
+    
+    sources:
+      # Source code repositories
+      git:
+        backend:
+          source_type: "git"
+          source: "backend"
+          base_url: "https://github.com/company/backend"
+          include_paths: ["**/*.py", "**/*.md"]
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+        frontend:
+          source_type: "git"
+          source: "frontend"
+          base_url: "https://github.com/company/frontend"
+          include_paths: ["**/*.js", "**/*.ts", "**/*.md"]
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          
+      # Technical documentation
+      confluence:
+        dev-docs:
+          source_type: "confluence"
+          source: "dev-docs"
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "DEV"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          
+      # Development tickets
+      jira:
+        dev-issues:
+          source_type: "jira"
+          source: "dev-issues"
+          base_url: "${JIRA_URL}"
+          project_key: "DEV"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
 ```
 
 ### Documentation Team
 
 ```yaml
-sources:
-  # Documentation repositories
-  git:
-    - url: "https://github.com/company/docs"
-      include_patterns: ["**/*.md", "**/*.rst"]
-      
-  # Knowledge base
-  confluence:
-    - url: "${CONFLUENCE_URL}"
-      spaces: ["DOCS", "KB", "HELP"]
-      include_attachments: true
-      
-  # Legacy documents
-  local_files:
-    - path: "/docs/legacy"
-      include_patterns: ["**/*.pdf", "**/*.docx"]
-      
-  # External API documentation
-  public_docs:
-    - url: "https://docs.external-api.com"
-      css_selector: ".documentation"
+projects:
+  docs-team:
+    project_id: "docs-team"
+    display_name: "Documentation Team"
+    description: "All documentation sources"
+    
+    sources:
+      # Documentation repositories
+      git:
+        docs-repo:
+          source_type: "git"
+          source: "docs-repo"
+          base_url: "https://github.com/company/docs"
+          include_paths: ["**/*.md", "**/*.rst"]
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          
+      # Knowledge base
+      confluence:
+        knowledge-base:
+          source_type: "confluence"
+          source: "knowledge-base"
+          base_url: "${CONFLUENCE_URL}"
+          space_key: "KB"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          download_attachments: true
+          
+      # Legacy documents
+      localfile:
+        legacy-docs:
+          source_type: "localfile"
+          source: "legacy-docs"
+          base_url: "file:///docs/legacy"
+          include_paths: ["**/*.pdf", "**/*.docx"]
+          
+      # External API documentation
+      publicdocs:
+        external-api:
+          source_type: "publicdocs"
+          source: "external-api"
+          base_url: "https://docs.external-api.com"
+          content_selector: ".documentation"
 ```
 
 ### Research Team
 
 ```yaml
-sources:
-  # Research repositories
-  git:
-    - url: "https://github.com/research/papers"
-      include_patterns: ["**/*.tex", "**/*.bib", "**/*.md"]
-      
-  # Research papers and datasets
-  local_files:
-    - path: "/research/papers"
-      include_patterns: ["**/*.pdf", "**/*.tex"]
-    - path: "/research/datasets"
-      include_patterns: ["**/*.csv", "**/*.json"]
-      
-  # Project tracking
-  jira:
-    - url: "${JIRA_URL}"
-      projects: ["RESEARCH"]
-      include_attachments: true
+projects:
+  research-team:
+    project_id: "research-team"
+    display_name: "Research Team"
+    description: "Research papers and datasets"
+    
+    sources:
+      # Research repositories
+      git:
+        research-papers:
+          source_type: "git"
+          source: "research-papers"
+          base_url: "https://github.com/research/papers"
+          include_paths: ["**/*.tex", "**/*.bib", "**/*.md"]
+          branch: "main"
+          token: "${GITHUB_TOKEN}"
+          
+      # Research papers and datasets
+      localfile:
+        papers:
+          source_type: "localfile"
+          source: "papers"
+          base_url: "file:///research/papers"
+          include_paths: ["**/*.pdf", "**/*.tex"]
+        datasets:
+          source_type: "localfile"
+          source: "datasets"
+          base_url: "file:///research/datasets"
+          include_paths: ["**/*.csv", "**/*.json"]
+          
+      # Project tracking
+      jira:
+        research-projects:
+          source_type: "jira"
+          source: "research-projects"
+          base_url: "${JIRA_URL}"
+          project_key: "RESEARCH"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          process_attachments: true
 ```
 
-## 🧪 Testing and Validation
+## 🧪 Configuration Management
 
-### Test All Data Sources
+### Basic Commands
 
 ```bash
-# Test connectivity to all configured sources
-qdrant-loader --workspace . test-connections
+# Show current configuration
+qdrant-loader --workspace . config
 
-# Validate all source configurations
-qdrant-loader --workspace . validate
+# Initialize collection (one-time setup)
+qdrant-loader --workspace . init
 
-# Preview what would be processed
-qdrant-loader --workspace . --dry-run ingest
+# Ingest data from all configured sources
+qdrant-loader --workspace . ingest
 
-# Process specific sources only
-qdrant-loader --workspace . ingest --sources git,confluence
+# Force full re-ingestion
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
 ```
 
-### Debug Individual Sources
+### Project Management
 
 ```bash
-# Test specific source type
-qdrant-loader --workspace . test-connections --sources git
-qdrant-loader --workspace . test-connections --sources confluence
+# List all configured projects
+qdrant-loader project list --workspace .
 
-# Validate specific configuration
-qdrant-loader --workspace . validate --sources local_files
+# Show project status
+qdrant-loader project status --workspace .
 
-# Check processing status
-qdrant-loader --workspace . status --detailed
+# Show specific project status
+qdrant-loader project status --workspace . --project-id my-project
+
+# Validate project configurations
+qdrant-loader project validate --workspace .
+
+# Validate specific project
+qdrant-loader project validate --workspace . --project-id my-project
+```
+
+### Selective Processing
+
+```bash
+# Process specific project
+qdrant-loader --workspace . ingest --project my-project
+
+# Process specific source type from all projects
+qdrant-loader --workspace . ingest --source-type git
+
+# Process specific source type from specific project
+qdrant-loader --workspace . ingest --project my-project --source-type git
+
+# Process specific source from specific project
+qdrant-loader --workspace . ingest --project my-project --source-type git --source my-repo
 ```
 
 ## 📊 Monitoring and Management
 
-### Processing Statistics
+### Configuration Validation
 
 ```bash
-# View overall processing statistics
-qdrant-loader --workspace . stats
+# Validate all project configurations
+qdrant-loader project validate --workspace .
 
-# Source-specific statistics
-qdrant-loader --workspace . stats --sources git
-qdrant-loader --workspace . stats --sources confluence
+# Validate specific project
+qdrant-loader project validate --workspace . --project-id my-project
 
-# Monitor processing progress
-qdrant-loader --workspace . status --watch
+# Show configuration in JSON format
+qdrant-loader project list --workspace . --format json
+qdrant-loader project status --workspace . --format json
 ```
 
 ### Performance Optimization
 
 ```yaml
-# Global performance settings
-performance:
-  max_concurrent_sources: 3
-  max_concurrent_files: 5
-  batch_size: 100
-  enable_caching: true
-  
-# Source-specific optimization
-sources:
-  git:
-    - url: "https://github.com/large-repo"
-      # Optimize for large repositories
-      max_file_size: 10485760  # 10MB
-      exclude_patterns: ["**/node_modules/**"]
+# Global performance settings in config.yaml
+global_config:
+  # File conversion settings
+  file_conversion:
+    markitdown:
+      enable_llm_descriptions: false  # Disable for better performance
       
-  local_files:
-    - path: "/large-dataset"
-      # Optimize for many files
-      max_concurrent_files: 10
-      enable_caching: true
+  # Processing settings
+  processing:
+    max_concurrent_sources: 3
+    max_concurrent_files: 5
+    batch_size: 100
+    
+# Source-specific optimization
+projects:
+  my-project:
+    sources:
+      git:
+        large-repo:
+          source_type: "git"
+          source: "large-repo"
+          base_url: "https://github.com/large-repo"
+          # Optimize for large repositories
+          max_file_size: 10485760  # 10MB
+          exclude_paths: ["**/node_modules/**", "**/target/**"]
+          
+      localfile:
+        large-dataset:
+          source_type: "localfile"
+          source: "large-dataset"
+          base_url: "file:///large-dataset"
+          # Optimize for many files
+          max_file_size: 52428800  # 50MB
+          include_paths: ["**/*.md", "**/*.txt"]
 ```
 
 ## 🔧 Troubleshooting
@@ -382,10 +528,21 @@ sources:
 
 **Solutions**:
 
-1. Verify API tokens and credentials
+1. Verify API tokens and credentials in environment variables
 2. Check token permissions and scopes
-3. Ensure URLs are correct
-4. Test authentication manually
+3. Ensure URLs are correct (include `/wiki` for Confluence)
+4. Test authentication manually with curl
+
+#### Configuration Issues
+
+**Problem**: Configuration validation errors
+
+**Solutions**:
+
+1. Check YAML syntax and indentation
+2. Verify all required fields are present
+3. Ensure source_type and source fields match
+4. Validate environment variable references
 
 #### Performance Issues
 
@@ -393,10 +550,10 @@ sources:
 
 **Solutions**:
 
-1. Reduce concurrent operations
-2. Filter content more aggressively
-3. Enable caching
-4. Process in smaller batches
+1. Reduce concurrent operations in global_config
+2. Filter content more aggressively with include/exclude patterns
+3. Increase max_file_size limits if needed
+4. Process projects individually
 
 #### Content Not Found
 
@@ -404,25 +561,27 @@ sources:
 
 **Solutions**:
 
-1. Check include/exclude patterns
-2. Verify source permissions
-3. Test with verbose logging
-4. Validate configuration syntax
+1. Check include_paths and exclude_paths patterns
+2. Verify source permissions and access
+3. Use verbose logging: `--log-level DEBUG`
+4. Validate configuration with `project validate`
 
 ### Getting Help
 
 ```bash
 # Enable verbose logging for debugging
-qdrant-loader --workspace . --verbose ingest
+qdrant-loader --workspace . --log-level DEBUG ingest
 
 # Check configuration syntax
-qdrant-loader --workspace . validate
+qdrant-loader project validate --workspace .
 
-# View detailed error information
-qdrant-loader --workspace . status --detailed
+# View project information
+qdrant-loader project status --workspace .
 
-# Test individual components
-qdrant-loader --workspace . test-connections --sources git
+# Show help for commands
+qdrant-loader --help
+qdrant-loader project --help
+qdrant-loader ingest --help
 ```
 
 ## 📚 Detailed Guides

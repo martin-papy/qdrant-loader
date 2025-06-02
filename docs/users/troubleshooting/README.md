@@ -27,7 +27,7 @@ Use this quick reference to identify your issue and jump to the right solution:
 Got a specific error message? Look it up directly:
 
 ```bash
-# Search for your error message
+# Search for your error message in documentation
 grep -r "your error message" docs/users/troubleshooting/
 
 # Or check the comprehensive error reference
@@ -105,33 +105,33 @@ Comprehensive reference for all error messages with exact solutions.
 ### When Everything Fails
 
 ```bash
-# 1. Emergency reset
-qdrant-loader emergency-recovery --reset-all
+# 1. Check basic configuration
+qdrant-loader --workspace . config
 
-# 2. Test basic connectivity
-qdrant-loader config test --minimal
+# 2. Validate project configuration
+qdrant-loader project --workspace . validate
 
 # 3. Check system resources
 free -h && df -h && ps aux | grep qdrant-loader
 
-# 4. Restart with safe mode
-qdrant-loader mcp-server restart --safe-mode
+# 4. Reinitialize collection (WARNING: This will delete existing data)
+qdrant-loader --workspace . init --force
 ```
 
 ### Critical System Recovery
 
 ```bash
-# Network connectivity issues
+# Test network connectivity
 ping 8.8.8.8 && curl -v https://api.openai.com/v1/models
 
-# QDrant connectivity
+# Test QDrant connectivity
 curl -v "$QDRANT_URL/health"
 
-# Clear all caches and temporary files
-qdrant-loader cache clear && rm -rf /tmp/qdrant-loader-*
+# Check environment variables
+env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 
-# Reset configuration to defaults
-qdrant-loader config reset --backup-current
+# Verify workspace structure
+ls -la config.yaml .env
 ```
 
 ## 🔍 Diagnostic Tools
@@ -139,17 +139,20 @@ qdrant-loader config reset --backup-current
 ### Built-in Diagnostics
 
 ```bash
-# Comprehensive system check
-qdrant-loader doctor --full-check
+# Check current configuration
+qdrant-loader --workspace . config
 
-# Test all connections
-qdrant-loader config test --all-connections
+# List all projects
+qdrant-loader project --workspace . list
 
-# Performance benchmark
-qdrant-loader benchmark --quick
+# Check project status
+qdrant-loader project --workspace . status
 
-# Generate diagnostic report
-qdrant-loader diagnostics --output diagnostic-report.html
+# Validate configuration
+qdrant-loader project --workspace . validate
+
+# Test with debug logging
+qdrant-loader --workspace . --log-level DEBUG config
 ```
 
 ### Manual Diagnostics
@@ -258,17 +261,17 @@ docker ps | grep qdrant  # If using Docker
 ### Diagnostic Commands
 
 ```bash
-# Basic health check
-qdrant-loader status --verbose
+# Basic configuration check
+qdrant-loader --workspace . config
 
-# Connection testing
-qdrant-loader config test --all
+# Project validation
+qdrant-loader project --workspace . validate
 
-# Performance analysis
-qdrant-loader analyze performance --collection your_collection
+# Project status check
+qdrant-loader project --workspace . status
 
-# Error analysis
-qdrant-loader logs analyze --errors-only --last 24h
+# Debug mode for detailed logging
+qdrant-loader --workspace . --log-level DEBUG ingest
 ```
 
 ## 📈 Monitoring and Prevention
@@ -276,14 +279,14 @@ qdrant-loader logs analyze --errors-only --last 24h
 ### Proactive Monitoring
 
 ```bash
-# Set up health monitoring
-qdrant-loader monitor health --interval 300 --alert-on-failure
+# Regular configuration validation
+qdrant-loader project --workspace . validate
 
-# Performance monitoring
-qdrant-loader monitor performance --metrics all --dashboard
+# Check project status regularly
+qdrant-loader project --workspace . status
 
-# Error rate monitoring
-qdrant-loader monitor errors --threshold 5 --alert-email admin@company.com
+# Monitor system resources
+watch -n 30 'free -h && df -h'
 ```
 
 ### Prevention Strategies
@@ -291,37 +294,38 @@ qdrant-loader monitor errors --threshold 5 --alert-email admin@company.com
 1. **Regular Health Checks**
 
    ```bash
-   # Daily health check script
-   qdrant-loader doctor --quick --log-file daily-health.log
+   # Daily configuration validation script
+   qdrant-loader project --workspace . validate >> daily-health.log 2>&1
    ```
 
 2. **Configuration Validation**
 
    ```bash
    # Validate before deployment
-   qdrant-loader config validate --strict --environment production
+   qdrant-loader project --workspace . validate
    ```
 
-3. **Performance Baselines**
+3. **System Monitoring**
 
    ```bash
-   # Establish performance baselines
-   qdrant-loader benchmark --save-baseline --collection your_collection
+   # Monitor system resources
+   free -h && df -h && ps aux | grep qdrant-loader
    ```
 
-4. **Automated Recovery**
+4. **Backup Strategy**
 
    ```bash
-   # Set up automatic recovery
-   qdrant-loader recovery setup --auto-restart --memory-limit 2GB
+   # Backup configuration files
+   cp config.yaml config.yaml.backup
+   cp .env .env.backup
    ```
 
 ## 🔗 Getting Additional Help
 
 ### Community Resources
 
-- **GitHub Issues**: [Report bugs and get help](https://github.com/your-org/qdrant-loader/issues)
-- **Discussions**: [Community Q&A and tips](https://github.com/your-org/qdrant-loader/discussions)
+- **GitHub Issues**: [Report bugs and get help](https://github.com/martin-papy/qdrant-loader/issues)
+- **Discussions**: [Community Q&A and tips](https://github.com/martin-papy/qdrant-loader/discussions)
 - **Documentation**: [Complete documentation](../../README.md)
 
 ### Professional Support
@@ -337,7 +341,11 @@ qdrant-loader monitor errors --threshold 5 --alert-email admin@company.com
 3. **Gather diagnostic information**:
 
    ```bash
-   qdrant-loader diagnostics --full --output my-diagnostics.zip
+   # Collect configuration and status information
+   qdrant-loader --workspace . config > diagnostics.txt
+   qdrant-loader project --workspace . list >> diagnostics.txt
+   qdrant-loader project --workspace . status >> diagnostics.txt
+   qdrant-loader project --workspace . validate >> diagnostics.txt 2>&1
    ```
 
 4. **Provide clear details**:
@@ -377,10 +385,10 @@ curl -v "$QDRANT_URL/health"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 
 # Check environment variables
-env | grep -E "(QDRANT|OPENAI|CONFLUENCE)"
+env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 
-# Test with minimal config
-qdrant-loader config test --minimal
+# Test configuration
+qdrant-loader --workspace . config
 ```
 
 ### Performance Issues Quick Card
@@ -389,15 +397,14 @@ qdrant-loader config test --minimal
 # Check system resources
 free -h && df -h && top
 
-# Monitor QDrant Loader
+# Monitor QDrant Loader process
 ps aux | grep qdrant-loader
 
-# Quick performance test
-time qdrant-loader search "test" --collection your_collection
+# Check project status
+qdrant-loader project --workspace . status
 
-# Optimize settings
-qdrant-loader config set processing.workers 4
-qdrant-loader config set processing.batch_size 50
+# Use debug logging for performance analysis
+qdrant-loader --workspace . --log-level DEBUG ingest --profile
 ```
 
 ### Data Loading Quick Card
@@ -406,14 +413,30 @@ qdrant-loader config set processing.batch_size 50
 # Check source accessibility
 ls -la /path/to/docs
 
-# Test with dry run
-qdrant-loader load --source local --path ./docs --dry-run
+# Validate configuration
+qdrant-loader project --workspace . validate
 
-# Check file patterns
-find ./docs -name "*.md" | head -10
+# Check project configuration
+qdrant-loader --workspace . config
 
 # Load with verbose output
-qdrant-loader load --source local --path ./docs --verbose
+qdrant-loader --workspace . --log-level DEBUG ingest
+```
+
+### Configuration Issues Quick Card
+
+```bash
+# Display current configuration
+qdrant-loader --workspace . config
+
+# Validate all projects
+qdrant-loader project --workspace . validate
+
+# List configured projects
+qdrant-loader project --workspace . list
+
+# Check specific project
+qdrant-loader project --workspace . status --project-id PROJECT_ID
 ```
 
 ---

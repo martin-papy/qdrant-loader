@@ -1,14 +1,13 @@
 # Developer Documentation
 
-Welcome to the QDrant Loader developer documentation! This comprehensive guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
+Welcome to the QDrant Loader developer documentation! This guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
 
 ## 🎯 Quick Navigation
 
 ### Core Development
 
 - **[Architecture Guide](./architecture.md)** - System design, components, and data flow
-- **[API Reference](./api-reference.md)** - Complete API documentation with examples
-- **[Extending QDrant Loader](./extending.md)** - Custom connectors, processors, and plugins
+- **[Extending QDrant Loader](./extending.md)** - Custom connectors and processors
 
 ### Quality & Deployment
 
@@ -21,7 +20,7 @@ Welcome to the QDrant Loader developer documentation! This comprehensive guide p
 
 ## 🏗️ Architecture Overview
 
-QDrant Loader follows a modular, plugin-based architecture designed for extensibility and scalability:
+QDrant Loader follows a modular architecture designed for multi-project document ingestion and vector storage:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -30,18 +29,20 @@ QDrant Loader follows a modular, plugin-based architecture designed for extensib
 │  Data Sources    │  Processing      │  Vector Storage       │
 │  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
 │  │ Connectors  │ │  │ Processors  │ │  │ QDrant Client   │  │
-│  │ - Local     │ │  │ - Text      │ │  │ - Collections   │  │
-│  │ - Git       │ │  │ - PDF       │ │  │ - Vectors       │  │
-│  │ - Confluence│ │  │ - Markdown  │ │  │ - Search        │  │
-│  │ - Jira      │ │  │ - Code      │ │  │ - Metadata      │  │
+│  │ - Local     │ │  │ - MarkItDown│ │  │ - Collections   │  │
+│  │ - Git       │ │  │ - Text      │ │  │ - Vectors       │  │
+│  │ - Confluence│ │  │ - Chunking  │ │  │ - Search        │  │
+│  │ - Jira      │ │  │ - Embedding │ │  │ - Metadata      │  │
+│  │ - PublicDocs│ │  │             │ │  │                 │  │
 │  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
 │  MCP Server      │  CLI Interface   │  Configuration       │
 │  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
-│  │ Search APIs │ │  │ Commands    │ │  │ YAML/JSON       │  │
-│  │ - Semantic  │ │  │ - Load      │ │  │ - Environment   │  │
-│  │ - Hierarchy │ │  │ - Search    │ │  │ - Validation    │  │
-│  │ - Attachment│ │  │ - Status    │ │  │ - Schemas       │  │
+│  │ Search APIs │ │  │ Commands    │ │  │ YAML Config     │  │
+│  │ - Semantic  │ │  │ - init      │ │  │ - Multi-project │  │
+│  │ - Hierarchy │ │  │ - ingest    │ │  │ - Workspace     │  │
+│  │ - Attachment│ │  │ - config    │ │  │ - Environment   │  │
+│  │             │ │  │ - project   │ │  │ - Validation    │  │
 │  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -52,7 +53,7 @@ QDrant Loader follows a modular, plugin-based architecture designed for extensib
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/qdrant-loader.git
+git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Create virtual environment
@@ -60,10 +61,12 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install development dependencies
+cd packages/qdrant-loader
 pip install -e ".[dev]"
 
-# Install pre-commit hooks
-pre-commit install
+# Install MCP server package
+cd ../qdrant-loader-mcp-server
+pip install -e ".[dev]"
 
 # Start QDrant for development
 docker run -p 6333:6333 qdrant/qdrant:latest
@@ -72,32 +75,34 @@ docker run -p 6333:6333 qdrant/qdrant:latest
 ### 2. Running Tests
 
 ```bash
-# Run all tests
-pytest
+# Run all tests from workspace root
+make test
 
-# Run specific test categories
-pytest tests/unit/          # Unit tests
-pytest tests/integration/   # Integration tests
-pytest tests/e2e/          # End-to-end tests
+# Run specific package tests
+cd packages/qdrant-loader
+pytest
 
 # Run with coverage
 pytest --cov=qdrant_loader --cov-report=html
+
+# Run MCP server tests
+cd packages/qdrant-loader-mcp-server
+pytest
 ```
 
 ### 3. Code Quality Checks
 
 ```bash
-# Format code
-black qdrant_loader/
-isort qdrant_loader/
+# From workspace root
+make lint
+make format
 
-# Lint code
-flake8 qdrant_loader/
-mypy qdrant_loader/
-
-# Security checks
-bandit -r qdrant_loader/
-safety check
+# Or manually
+cd packages/qdrant-loader
+black src/
+isort src/
+flake8 src/
+mypy src/
 ```
 
 ## 📚 Core Concepts for Developers
@@ -106,53 +111,69 @@ safety check
 
 Understanding the data flow is crucial for development:
 
-1. **Ingestion Phase**
-   - Connectors fetch documents from data sources
-   - Processors extract and clean content
-   - Chunking strategies split large documents
-   - Metadata extraction enriches documents
+1. **Configuration Phase**
+   - Multi-project workspace configuration
+   - Global settings and project-specific sources
+   - Environment variable management
+   - Validation and initialization
 
-2. **Embedding Phase**
-   - Text content is converted to embeddings
-   - Multiple embedding providers supported
+2. **Ingestion Phase**
+   - Connectors fetch documents from data sources
+   - File conversion using MarkItDown library
+   - Content extraction and cleaning
+   - Chunking strategies for large documents
+   - Metadata extraction and enrichment
+
+3. **Embedding Phase**
+   - Text content converted to embeddings via OpenAI
    - Batch processing for efficiency
    - Error handling and retries
+   - Progress tracking and metrics
 
-3. **Storage Phase**
+4. **Storage Phase**
    - Vectors stored in QDrant collections
    - Metadata indexed for filtering
-   - Collection management and optimization
-   - Backup and recovery strategies
+   - Project-based organization
+   - State tracking and change detection
 
-4. **Search Phase**
-   - Multiple search algorithms available
+5. **Search Phase (MCP Server)**
    - Semantic similarity search
    - Hierarchy-aware search
    - Attachment-specific search
+   - Project filtering and organization
 
-### Plugin System
+### Connector System
 
-QDrant Loader uses a plugin-based architecture for extensibility:
+QDrant Loader uses a connector-based architecture for data sources:
 
 ```python
-# Example custom connector
+# Example connector implementation
 from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.core.document import Document
 
 class CustomConnector(BaseConnector):
-    def fetch_documents(self):
+    async def get_documents(self) -> list[Document]:
+        """Get documents from the source."""
+        documents = []
         # Your custom logic here
-        pass
+        for item in self.fetch_data():
+            doc = Document(
+                content=item.content,
+                metadata=item.metadata,
+                source_type="custom",
+                source_name=self.config.name
+            )
+            documents.append(doc)
+        return documents
 ```
 
-Entry points in `setup.py`:
+Available connectors:
 
-```python
-entry_points={
-    "qdrant_loader.connectors": [
-        "custom = my_plugin.connectors:CustomConnector",
-    ],
-}
-```
+- `LocalFileConnector` - Local file system
+- `GitConnector` - Git repositories
+- `ConfluenceConnector` - Confluence spaces
+- `JiraConnector` - Jira projects
+- `PublicDocsConnector` - Public documentation sites
 
 ## 🔧 Development Workflows
 
@@ -163,7 +184,7 @@ entry_points={
    ```bash
    git clone https://github.com/your-username/qdrant-loader.git
    cd qdrant-loader
-   git remote add upstream https://github.com/original-org/qdrant-loader.git
+   git remote add upstream https://github.com/martin-papy/qdrant-loader.git
    ```
 
 2. **Create Feature Branch**
@@ -177,10 +198,10 @@ entry_points={
    ```bash
    # Make changes
    # Run tests
-   pytest tests/
+   make test
    
    # Check code quality
-   pre-commit run --all-files
+   make lint
    
    # Commit changes
    git commit -m "feat: add new feature"
@@ -192,32 +213,47 @@ entry_points={
    - Add changelog entry
    - Request review
 
-### Custom Extension Development
+### Custom Connector Development
 
-1. **Create Plugin Structure**
+1. **Create Connector Structure**
 
    ```
-   my-qdrant-plugin/
-   ├── setup.py
-   ├── my_plugin/
-   │   ├── __init__.py
-   │   ├── connectors/
-   │   ├── processors/
-   │   └── search/
-   └── tests/
+   my-connector/
+   ├── src/
+   │   └── my_connector/
+   │       ├── __init__.py
+   │       ├── connector.py
+   │       └── config.py
+   ├── tests/
+   └── pyproject.toml
    ```
 
-2. **Implement Interfaces**
-   - Extend base classes
-   - Follow naming conventions
-   - Add comprehensive tests
-   - Document your extension
+2. **Implement Connector Interface**
 
-3. **Package and Distribute**
+   ```python
+   from qdrant_loader.connectors.base import BaseConnector
+   from qdrant_loader.config.source_config import SourceConfig
+   
+   class MyConnector(BaseConnector):
+       def __init__(self, config: SourceConfig):
+           super().__init__(config)
+           # Initialize your connector
+   
+       async def get_documents(self) -> list[Document]:
+           # Implement document fetching logic
+           pass
+   ```
 
-   ```bash
-   python setup.py sdist bdist_wheel
-   pip install my-qdrant-plugin
+3. **Add Configuration Support**
+
+   ```python
+   from pydantic import BaseModel
+   
+   class MyConnectorConfig(SourceConfig):
+       source_type: str = "my_connector"
+       api_key: str
+       base_url: str
+       # Add your configuration fields
    ```
 
 ## 📖 Detailed Guides
@@ -228,36 +264,22 @@ Deep dive into system design, component interactions, and architectural decision
 
 **Key Topics:**
 
-- System architecture and design patterns
-- Component responsibilities and interfaces
-- Data flow and processing pipelines
-- Scalability and performance considerations
-- Security architecture and threat model
-
-### [API Reference](./api-reference.md)
-
-Complete API documentation with detailed examples and usage patterns. Your go-to reference for programmatic integration.
-
-**Key Topics:**
-
-- Core classes and methods
-- Data models and schemas
-- Configuration APIs
-- Search and retrieval APIs
-- Error handling and exceptions
-- Authentication and authorization
+- Multi-project workspace architecture
+- Connector and processor interfaces
+- Async ingestion pipeline design
+- State management and change detection
+- MCP server integration
 
 ### [Extending Guide](./extending.md)
 
-Comprehensive guide for building custom functionality and plugins. Learn how to extend QDrant Loader for your specific needs.
+Comprehensive guide for building custom functionality and connectors. Learn how to extend QDrant Loader for your specific needs.
 
 **Key Topics:**
 
-- Plugin development framework
-- Custom data source connectors
-- File processors and content extractors
-- Search providers and algorithms
-- Authentication providers
+- Custom connector development
+- File conversion extensions
+- Configuration schema extensions
+- Testing custom components
 - Packaging and distribution
 
 ### [Testing Guide](./testing.md)
@@ -268,9 +290,8 @@ Testing strategies, frameworks, and best practices for ensuring code quality and
 
 - Unit testing with pytest
 - Integration testing strategies
-- End-to-end testing scenarios
-- Performance and load testing
-- Security testing approaches
+- Async testing patterns
+- Mock and fixture usage
 - CI/CD integration
 
 ### [Deployment Guide](./deployment.md)
@@ -280,129 +301,125 @@ Production deployment strategies, containerization, and operational best practic
 **Key Topics:**
 
 - Docker containerization
-- Kubernetes deployment
-- Cloud platform integration (AWS, Azure, GCP)
-- CI/CD pipelines
-- Monitoring and observability
-- Security configuration
+- Environment configuration
+- Monitoring and logging
+- Performance optimization
+- Security considerations
 
 ## 🛠️ Development Tools and Utilities
 
-### Code Generation
+### Available CLI Commands
 
 ```bash
-# Generate API documentation
-sphinx-build -b html docs/ docs/_build/
+# Initialize QDrant collection
+qdrant-loader --workspace . init
 
-# Generate type stubs
-stubgen -p qdrant_loader -o stubs/
+# Ingest documents
+qdrant-loader --workspace . ingest
 
-# Generate configuration schema
-python scripts/generate_config_schema.py
+# View configuration
+qdrant-loader --workspace . config
+
+# Project management
+qdrant-loader --workspace . project list
+qdrant-loader --workspace . project status
+qdrant-loader --workspace . project validate
+
+# Start MCP server
+mcp-qdrant-loader
 ```
 
 ### Debugging and Profiling
 
-```python
+```bash
 # Enable debug logging
-import logging
-logging.basicConfig(level=logging.DEBUG)
+qdrant-loader --log-level DEBUG --workspace . ingest
 
 # Profile performance
-import cProfile
-cProfile.run('your_function()')
+qdrant-loader --workspace . ingest --profile
 
-# Memory profiling
-from memory_profiler import profile
-@profile
-def your_function():
-    pass
+# Memory profiling (requires memory_profiler)
+python -m memory_profiler your_script.py
 ```
 
 ### Development Scripts
 
 ```bash
-# scripts/dev-setup.sh - Development environment setup
-# scripts/run-tests.sh - Comprehensive test runner
-# scripts/build-docs.sh - Documentation builder
-# scripts/release.sh - Release automation
+# Makefile targets
+make test          # Run all tests
+make lint          # Run linting
+make format        # Format code
+make docs          # Build documentation
+make clean         # Clean build artifacts
 ```
 
 ## 🔗 Integration Examples
 
+### Workspace Configuration
+
+```yaml
+# config.yaml
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "my_collection"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+
+projects:
+  - project_id: "docs"
+    sources:
+      - source_type: "local_files"
+        name: "documentation"
+        config:
+          base_url: "file://./docs"
+          include_paths: ["**/*.md"]
+```
+
 ### Programmatic Usage
 
 ```python
-from qdrant_loader import QDrantLoader
-from qdrant_loader.config import Config
+from qdrant_loader.config import Settings, get_settings
+from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 
-# Load configuration
-config = Config.from_file("config.yaml")
+# Load settings
+settings = get_settings()
 
-# Initialize loader
-loader = QDrantLoader(config)
-
-# Load documents
-result = loader.load_source("my_documents")
-
-# Search documents
-results = loader.search("query", limit=10)
-```
-
-### Custom Connector Example
-
-```python
-from qdrant_loader.connectors.base import BaseConnector
-from qdrant_loader.models import Document
-
-class DatabaseConnector(BaseConnector):
-    def fetch_documents(self):
-        # Connect to database
-        # Fetch records
-        # Convert to Document objects
-        for record in self.fetch_records():
-            yield Document(
-                content=record.content,
-                metadata=record.metadata,
-                source_type="database"
-            )
+# Create and run pipeline
+pipeline = AsyncIngestionPipeline(settings)
+await pipeline.run()
 ```
 
 ### MCP Server Integration
 
 ```python
-from qdrant_loader.mcp_server import MCPServer
+# The MCP server runs as a separate process
+# Start with: mcp-qdrant-loader
 
-# Start MCP server
-server = MCPServer(config)
-server.start()
-
-# Use with AI tools
-# The server provides search capabilities to AI development tools
+# It provides search tools to AI development environments
+# Tools available:
+# - search_documents
+# - search_with_hierarchy
+# - search_attachments
 ```
 
 ## 📋 Development Checklist
 
 ### Before Submitting Code
 
-- [ ] All tests pass (`pytest`)
-- [ ] Code coverage meets requirements (>80%)
-- [ ] Code style checks pass (`black`, `isort`, `flake8`)
+- [ ] All tests pass (`make test`)
+- [ ] Code style checks pass (`make lint`)
 - [ ] Type checking passes (`mypy`)
-- [ ] Security checks pass (`bandit`, `safety`)
 - [ ] Documentation updated
-- [ ] Changelog entry added
-- [ ] Performance impact assessed
+- [ ] Changelog entry added (if applicable)
 
 ### For New Features
 
-- [ ] Design document created
-- [ ] API design reviewed
+- [ ] Design document created (for major features)
 - [ ] Tests cover all code paths
 - [ ] Documentation includes examples
 - [ ] Backward compatibility maintained
-- [ ] Migration guide provided (if needed)
-- [ ] Performance benchmarks included
+- [ ] Configuration schema updated (if needed)
 
 ### For Bug Fixes
 
@@ -410,7 +427,6 @@ server.start()
 - [ ] Regression test added
 - [ ] Fix verified in multiple environments
 - [ ] Documentation updated (if needed)
-- [ ] Related issues linked
 
 ## 🤝 Community and Support
 
@@ -431,9 +447,8 @@ server.start()
 
 ### Development Roadmap
 
-- **Core Features** - Enhanced search capabilities
-- **Performance** - Optimization and scaling improvements
-- **Integrations** - Additional data source connectors
+- **Core Features** - Enhanced search capabilities and performance
+- **Connectors** - Additional data source integrations
 - **Developer Experience** - Better tooling and documentation
 - **Enterprise Features** - Advanced security and compliance
 
@@ -442,8 +457,7 @@ server.start()
 **Ready to start developing?** Choose your path:
 
 - **New to QDrant Loader?** Start with the [Architecture Guide](./architecture.md)
-- **Building integrations?** Check the [API Reference](./api-reference.md)
-- **Creating extensions?** Follow the [Extending Guide](./extending.md)
+- **Creating connectors?** Follow the [Extending Guide](./extending.md)
 - **Setting up CI/CD?** Use the [Deployment Guide](./deployment.md)
 
 **Need help?** Join our community discussions or open an issue on GitHub!

@@ -44,12 +44,9 @@ qdrant-loader --version
 curl http://localhost:6333/health
 
 # 3. Verify documents are ingested
-qdrant-loader list
+qdrant-loader --workspace . project status
 
-# 4. Test search functionality
-qdrant-loader search "test query"
-
-# 5. Install MCP server if not already installed
+# 4. Install MCP server if not already installed
 pip install qdrant-loader-mcp-server
 ```
 
@@ -76,14 +73,8 @@ pip install -e ".[mcp]"
 # Check MCP server is available
 mcp-qdrant-loader --version
 
-# Test MCP server startup
-mcp-qdrant-loader --test
-
-# Expected output:
-# ✅ QDrant connection: OK
-# ✅ OpenAI API: OK
-# ✅ MCP tools: 3 available
-# ✅ Configuration: Valid
+# Check help for available options
+mcp-qdrant-loader --help
 ```
 
 ### Environment Setup
@@ -100,9 +91,7 @@ OPENAI_API_KEY=sk-your-openai-api-key
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 
 # Optional: MCP Server customization
-MCP_SERVER_LOG_LEVEL=INFO
-MCP_SERVER_MAX_RESULTS=10
-MCP_SERVER_TIMEOUT=30
+MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
 ```
 
 ## 🎨 Cursor IDE
@@ -200,75 +189,15 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
    Or: Click the chat icon in the sidebar
    ```
 
-3. **Verify MCP Tools**
-   - You should see "QDrant Loader" listed as available tools
-   - The status should show "Connected"
-
-4. **Test Search**
+3. **Test Knowledge Access**
 
    ```
-   Type: "Can you search for information about deployment?"
+   Ask: "Can you search my knowledge base for information about API authentication?"
    ```
-
-   Expected response: The AI should use the MCP server to search your knowledge base and provide relevant results.
-
-### Advanced Cursor Configuration
-
-#### Project-Specific Setup
-
-For different projects with different knowledge bases:
-
-```json
-{
-  "mcpServers": {
-    "project-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "project_docs"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "project_docs"
-      }
-    },
-    "team-knowledge": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "team_knowledge"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "team_knowledge"
-      }
-    }
-  }
-}
-```
-
-#### Performance Optimization
-
-```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [
-        "--max-results", "5",
-        "--timeout", "10",
-        "--log-level", "WARNING"
-      ],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "MCP_SERVER_CACHE_ENABLED": "true",
-        "MCP_SERVER_CACHE_TTL": "300"
-      }
-    }
-  }
-}
-```
 
 ## 🌊 Windsurf
 
-Windsurf is an AI development environment with MCP support for enhanced development workflows.
+Windsurf is an AI development environment with MCP support.
 
 ### Installation
 
@@ -279,51 +208,19 @@ Windsurf is an AI development environment with MCP support for enhanced developm
 
 ### Configuration
 
-1. **Open Windsurf Settings**
+1. **Open Settings**
 
    ```
    Windsurf → Preferences → Settings
-   Or: File → Preferences → Settings
    ```
 
 2. **Navigate to MCP Configuration**
 
    ```
    Search: "MCP" or "Model Context Protocol"
-   Or: Extensions → MCP Servers
    ```
 
-3. **Add QDrant Loader Configuration**
-
-   ```json
-   {
-     "mcpServers": {
-       "qdrant-loader": {
-         "command": "mcp-qdrant-loader",
-         "args": [],
-         "env": {
-           "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your-openai-api-key",
-           "QDRANT_COLLECTION_NAME": "documents"
-         }
-       }
-     }
-   }
-   ```
-
-### Alternative Configuration File
-
-If Windsurf uses a configuration file:
-
-1. **Locate Configuration File**
-
-   ```bash
-   # Common locations
-   ~/.windsurf/config.json
-   ~/.config/windsurf/mcp-servers.json
-   ```
-
-2. **Add MCP Server Configuration**
+3. **Add QDrant Loader Server**
 
    ```json
    {
@@ -331,11 +228,10 @@ If Windsurf uses a configuration file:
        "servers": {
          "qdrant-loader": {
            "command": "mcp-qdrant-loader",
-           "args": [],
            "env": {
              "QDRANT_URL": "http://localhost:6333",
-             "OPENAI_API_KEY": "your-openai-api-key",
-             "QDRANT_COLLECTION_NAME": "documents"
+             "OPENAI_API_KEY": "your_openai_key",
+             "MCP_DISABLE_CONSOLE_LOGGING": "true"
            }
          }
        }
@@ -347,30 +243,26 @@ If Windsurf uses a configuration file:
 
 1. **Restart Windsurf** after configuration
 
-2. **Access AI Features**
-   - Open the AI chat or assistant panel
-   - Look for MCP tools or knowledge base access
+2. **Open AI Chat**
 
-3. **Test Knowledge Search**
+3. **Test Knowledge Access**
 
    ```
-   Ask: "Search our documentation for deployment procedures"
+   Ask: "Can you search for information about deployment procedures?"
    ```
 
 ## 🤖 Claude Desktop
 
-Claude Desktop is Anthropic's desktop application with MCP support for enhanced AI assistance.
+Claude Desktop is Anthropic's desktop AI assistant with MCP support.
 
 ### Installation
 
 1. **Download Claude Desktop**
    - Visit [claude.ai](https://claude.ai/)
    - Download the desktop application
-   - Install and sign in with your Anthropic account
+   - Install and launch Claude Desktop
 
 ### Configuration
-
-Claude Desktop uses a configuration file for MCP servers:
 
 1. **Locate Configuration File**
 
@@ -385,7 +277,7 @@ Claude Desktop uses a configuration file for MCP servers:
    ~/.config/Claude/claude_desktop_config.json
    ```
 
-2. **Create or Edit Configuration**
+2. **Edit Configuration File**
 
    ```json
    {
@@ -395,30 +287,7 @@ Claude Desktop uses a configuration file for MCP servers:
          "args": [],
          "env": {
            "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your-openai-api-key",
-           "QDRANT_COLLECTION_NAME": "documents"
-         }
-       }
-     }
-   }
-   ```
-
-3. **Advanced Configuration**
-
-   ```json
-   {
-     "mcpServers": {
-       "qdrant-loader": {
-         "command": "mcp-qdrant-loader",
-         "args": [
-           "--max-results", "10",
-           "--log-level", "INFO"
-         ],
-         "env": {
-           "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your-openai-api-key",
-           "QDRANT_COLLECTION_NAME": "documents",
-           "MCP_SERVER_TIMEOUT": "30"
+           "OPENAI_API_KEY": "your_openai_key"
          }
        }
      }
@@ -427,11 +296,9 @@ Claude Desktop uses a configuration file for MCP servers:
 
 ### Testing Claude Desktop Integration
 
-1. **Restart Claude Desktop** after configuration changes
+1. **Restart Claude Desktop** after configuration
 
-2. **Check MCP Status**
-   - Look for MCP server indicators in the interface
-   - Check for "QDrant Loader" in available tools
+2. **Start a New Conversation**
 
 3. **Test Knowledge Access**
 
@@ -468,17 +335,14 @@ Most MCP-compatible tools use similar configuration patterns:
 Test MCP server compatibility:
 
 ```bash
-# Test MCP server directly
-mcp-qdrant-loader --test
-
 # Run MCP server in stdio mode (most common)
 mcp-qdrant-loader
 
 # Run with specific configuration
 mcp-qdrant-loader --config custom-config.yaml
 
-# List available tools
-mcp-qdrant-loader --list-tools
+# Run with debug logging
+mcp-qdrant-loader --log-level DEBUG
 ```
 
 ## 🔧 Troubleshooting
@@ -518,7 +382,7 @@ curl http://localhost:6333/health
 docker run -p 6333:6333 qdrant/qdrant
 
 # Check configuration
-qdrant-loader config show
+qdrant-loader --workspace . config
 ```
 
 #### 3. Authentication Errors
@@ -551,235 +415,138 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 
 ```bash
 # Verify documents are ingested
-qdrant-loader list
+qdrant-loader --workspace . project status
 
 # Check collection exists
-qdrant-loader status
-
-# Test search directly
-qdrant-loader search "test query"
+curl http://localhost:6333/collections/documents
 
 # Re-ingest if needed
-qdrant-loader ingest --source local --path docs/
+qdrant-loader --workspace . ingest
 ```
 
-#### 5. Slow Performance
+#### 5. AI Tool Connection Issues
 
-**Problem**: MCP searches are slow
+**Error**: AI tool can't connect to MCP server
 
 **Solutions**:
 
-```json
-{
-  "args": ["--max-results", "3", "--timeout", "5"],
-  "env": {
-    "MCP_SERVER_CACHE_ENABLED": "true",
-    "MCP_SERVER_CACHE_TTL": "300"
-  }
-}
-```
+1. **Check MCP server is running**
+2. **Verify configuration syntax** (valid JSON)
+3. **Restart AI tool** after configuration changes
+4. **Check logs** for error messages
+5. **Use full path** to mcp-qdrant-loader executable
 
-### Debug Mode
+### Advanced Troubleshooting
 
-Enable debug logging for troubleshooting:
-
-```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--log-level", "DEBUG"],
-      "env": {
-        "MCP_SERVER_LOG_LEVEL": "DEBUG"
-      }
-    }
-  }
-}
-```
-
-Check logs:
+#### Debug MCP Communication
 
 ```bash
-# View MCP server logs
-tail -f ~/.qdrant-loader/logs/mcp-server.log
+# Enable debug logging
+export MCP_LOG_LEVEL=DEBUG
+export MCP_LOG_FILE="/tmp/mcp-debug.log"
+mcp-qdrant-loader
 
-# View AI tool logs (varies by tool)
-# Cursor: ~/Library/Logs/Cursor/main.log
-# Claude: ~/Library/Logs/Claude/main.log
+# Monitor logs
+tail -f /tmp/mcp-debug.log
 ```
 
-## ⚙️ Advanced Configuration
-
-### Multiple Knowledge Bases
-
-Configure different MCP servers for different knowledge bases:
-
-```json
-{
-  "mcpServers": {
-    "project-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "project_docs"],
-      "env": {
-        "QDRANT_COLLECTION_NAME": "project_docs"
-      }
-    },
-    "company-wiki": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "company_wiki"],
-      "env": {
-        "QDRANT_COLLECTION_NAME": "company_wiki"
-      }
-    },
-    "api-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--collection", "api_documentation"],
-      "env": {
-        "QDRANT_COLLECTION_NAME": "api_documentation"
-      }
-    }
-  }
-}
-```
-
-### Performance Tuning
-
-#### For Large Knowledge Bases
-
-```json
-{
-  "args": [
-    "--max-results", "5",
-    "--timeout", "15",
-    "--similarity-threshold", "0.8"
-  ],
-  "env": {
-    "MCP_SERVER_CACHE_ENABLED": "true",
-    "MCP_SERVER_CACHE_TTL": "600",
-    "MCP_SERVER_MAX_CONNECTIONS": "3"
-  }
-}
-```
-
-#### For Real-time Usage
-
-```json
-{
-  "args": [
-    "--max-results", "3",
-    "--timeout", "5",
-    "--quick-mode"
-  ],
-  "env": {
-    "MCP_SERVER_CACHE_ENABLED": "true",
-    "MCP_SERVER_CACHE_TTL": "300"
-  }
-}
-```
-
-### Security Configuration
-
-#### Secure Environment Variables
+#### Test MCP Server Manually
 
 ```bash
-# Use environment file
-export $(cat .env | xargs)
+# Test JSON-RPC communication
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | mcp-qdrant-loader
 
-# Or use secure credential storage
-# macOS Keychain, Windows Credential Manager, etc.
+# Test search functionality
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | mcp-qdrant-loader
 ```
 
-#### Network Security
+## 🚀 Performance Optimization
 
-```json
-{
-  "env": {
-    "QDRANT_URL": "https://your-secure-qdrant-instance.com",
-    "QDRANT_API_KEY": "your-secure-api-key",
-    "MCP_SERVER_TLS_ENABLED": "true"
-  }
-}
-```
+### For Large Knowledge Bases
 
-## 📊 Monitoring and Analytics
+1. **Optimize Search Parameters**
+   - Use smaller `limit` values
+   - Filter by `source_types` or `project_ids`
+   - Use specific search tools for targeted queries
 
-### Usage Tracking
+2. **Environment Configuration**
 
-Enable analytics to monitor MCP server usage:
+   ```bash
+   # Disable console logging for better performance
+   export MCP_DISABLE_CONSOLE_LOGGING=true
+   
+   # Use log file for debugging
+   export MCP_LOG_FILE="/path/to/mcp.log"
+   ```
 
-```json
-{
-  "env": {
-    "MCP_SERVER_ANALYTICS": "true",
-    "MCP_SERVER_ANALYTICS_FILE": "~/.qdrant-loader/logs/mcp-analytics.log"
-  }
-}
-```
+### For Real-time Usage
 
-### Performance Monitoring
+1. **Keep MCP Server Running**
+   - Don't restart for each query
+   - Use persistent connections
 
-```bash
-# Monitor search performance
-tail -f ~/.qdrant-loader/logs/mcp-server.log | grep "performance"
+2. **Optimize QDrant Configuration**
+   - Use appropriate vector dimensions
+   - Configure proper indexing
 
-# View usage statistics
-grep "search_query" ~/.qdrant-loader/logs/mcp-analytics.log | \
-  cut -d'"' -f4 | sort | uniq -c | sort -nr | head -10
-```
+3. **Monitor Resource Usage**
+   - Watch memory consumption
+   - Monitor QDrant performance
+
+## 📊 Monitoring and Maintenance
 
 ### Health Checks
 
 ```bash
-# Check MCP server health
-mcp-qdrant-loader --health
+# Check QDrant health
+curl http://localhost:6333/health
 
-# Test all connections
-mcp-qdrant-loader --test-all
+# Check collection status
+curl http://localhost:6333/collections/documents
 
-# Monitor continuously
-watch -n 30 'mcp-qdrant-loader --health'
+# Verify MCP server
+mcp-qdrant-loader --version
 ```
 
-## 🔗 Related Documentation
+### Log Management
 
-- **[MCP Server Overview](./README.md)** - Complete MCP server guide
+```bash
+# Configure logging
+export MCP_LOG_LEVEL=INFO
+export MCP_LOG_FILE="/var/log/mcp-qdrant-loader.log"
+
+# Rotate logs (add to crontab)
+0 0 * * * /usr/sbin/logrotate /etc/logrotate.d/mcp-qdrant-loader
+```
+
+### Regular Maintenance
+
+1. **Update Dependencies**
+
+   ```bash
+   pip install --upgrade qdrant-loader-mcp-server
+   ```
+
+2. **Monitor Performance**
+   - Track search response times
+   - Monitor memory usage
+   - Check error rates
+
+3. **Backup Configuration**
+   - Save MCP server configurations
+   - Document environment variables
+   - Keep track of AI tool settings
+
+## 📚 Related Documentation
+
+- **[MCP Server Overview](./README.md)** - Main MCP server guide
+- **[Search Capabilities](./search-capabilities.md)** - Complete search features
 - **[Cursor Integration](./cursor-integration.md)** - Detailed Cursor setup
-- **[Search Capabilities](./search-capabilities.md)** - Available search features
-- **[Basic Configuration](../../getting-started/basic-configuration.md)** - QDrant Loader setup
-
-## 📋 Setup Checklist
-
-### Pre-Setup
-
-- [ ] **QDrant Loader** installed and configured
-- [ ] **QDrant database** running and accessible
-- [ ] **Documents ingested** into QDrant collection
-- [ ] **OpenAI API key** configured
-- [ ] **AI tool** installed and updated
-
-### MCP Server Setup
-
-- [ ] **MCP server package** installed
-- [ ] **Environment variables** configured
-- [ ] **MCP server** starts without errors
-- [ ] **Test mode** passes all checks
-
-### AI Tool Integration
-
-- [ ] **MCP configuration** added to AI tool
-- [ ] **AI tool restarted** after configuration
-- [ ] **MCP tools** visible in AI tool interface
-- [ ] **Search functionality** tested and working
-
-### Optimization
-
-- [ ] **Performance settings** tuned for use case
-- [ ] **Caching enabled** if needed
-- [ ] **Logging configured** appropriately
-- [ ] **Monitoring enabled** if desired
+- **[Configuration Reference](../../configuration/)** - QDrant Loader configuration
+- **[Troubleshooting](../../troubleshooting/)** - General troubleshooting
 
 ---
 
-**Your AI tools are now supercharged with your knowledge base!** 🚀
+**Ready to integrate AI tools with your knowledge base!** 🚀
 
-With the MCP server properly configured, your AI development tools can now access and search your entire knowledge base, making development faster, more informed, and more efficient. The AI can help you understand code, implement features, debug issues, and maintain documentation - all grounded in your actual project knowledge.
+Choose your AI tool from the sections above and follow the specific setup instructions. The MCP server will provide powerful search capabilities that make your AI tools much more useful by grounding them in your actual documentation and codebase.

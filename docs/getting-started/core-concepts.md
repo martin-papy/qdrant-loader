@@ -155,35 +155,52 @@ Search Query → Vector → QDrant Search → Ranked Results
 
 ### Search Types
 
-#### 1. Semantic Search
+#### 1. Semantic Search (via MCP Server)
 
-Finds content based on meaning, not just keywords:
+Finds content based on meaning, not just keywords. Search is performed through the MCP server tools:
 
 ```bash
-# Query: "authentication methods"
-# Finds: "login procedures", "security protocols", "user verification"
-qdrant-loader search "authentication methods"
+# Search is performed via MCP server tools in AI applications
+# Basic semantic search
+{
+  "name": "search",
+  "arguments": {
+    "query": "authentication methods",
+    "limit": 10
+  }
+}
 ```
 
-#### 2. Hybrid Search
+#### 2. Hierarchy Search (via MCP Server)
 
-Combines semantic and keyword search:
+Combines semantic search with document structure awareness:
 
 ```bash
-# Finds both semantic matches and exact keyword matches
-qdrant-loader search "API authentication" --hybrid
+# Hierarchy-aware search via MCP server
+{
+  "name": "hierarchy_search", 
+  "arguments": {
+    "query": "API authentication",
+    "organize_by_hierarchy": true
+  }
+}
 ```
 
-#### 3. Filtered Search
+#### 3. Attachment Search (via MCP Server)
 
-Search within specific sources or metadata:
+Search within file attachments and their parent documents:
 
 ```bash
-# Search only in Git repositories
-qdrant-loader search "deployment" --source git
-
-# Search only recent documents
-qdrant-loader search "features" --after 2024-01-01
+# Attachment search via MCP server
+{
+  "name": "attachment_search",
+  "arguments": {
+    "query": "deployment scripts",
+    "attachment_filter": {
+      "file_type": "sh"
+    }
+  }
+}
 ```
 
 ## 🤖 MCP Server and AI Integration
@@ -221,7 +238,7 @@ Basic semantic search across all documents:
   "parameters": {
     "query": "search terms",
     "limit": 10,
-    "threshold": 0.7
+    "source_types": ["git", "confluence"]
   }
 }
 ```
@@ -236,8 +253,11 @@ Search with document structure awareness:
   "description": "Search with document hierarchy context",
   "parameters": {
     "query": "search terms",
-    "include_hierarchy": true,
-    "depth": 3
+    "organize_by_hierarchy": true,
+    "hierarchy_filter": {
+      "depth": 3,
+      "has_children": true
+    }
   }
 }
 ```
@@ -252,8 +272,10 @@ Search file attachments and their parent documents:
   "description": "Search file attachments",
   "parameters": {
     "query": "search terms",
-    "file_types": ["pdf", "docx"],
-    "include_parent": true
+    "attachment_filter": {
+      "file_type": "pdf",
+      "include_parent_context": true
+    }
   }
 }
 ```
@@ -328,6 +350,45 @@ Command Line Arguments
 Default Values (lowest priority)
 ```
 
+### Project-Based Configuration
+
+QDrant Loader uses a project-based configuration structure:
+
+```yaml
+# Multi-project configuration
+projects:
+  # Development project
+  dev-project:
+    project_id: "dev-project"
+    display_name: "Development Documentation"
+    description: "Development team documentation and code"
+    
+    sources:
+      git:
+        backend-repo:
+          base_url: "https://github.com/company/backend"
+          include_paths: ["docs/**", "README.md"]
+          
+      confluence:
+        dev-space:
+          base_url: "https://company.atlassian.net/wiki"
+          space_key: "DEV"
+          token: "${CONFLUENCE_TOKEN}"
+          
+  # Production project  
+  prod-project:
+    project_id: "prod-project"
+    display_name: "Production Documentation"
+    description: "Production systems and operations"
+    
+    sources:
+      confluence:
+        ops-space:
+          base_url: "https://company.atlassian.net/wiki"
+          space_key: "OPS"
+          token: "${CONFLUENCE_TOKEN}"
+```
+
 ### Key Configuration Areas
 
 #### 1. Vector Database Settings
@@ -343,17 +404,18 @@ qdrant:
 #### 2. Embedding Configuration
 
 ```yaml
-openai:
-  api_key: "${OPENAI_API_KEY}"
+embedding:
   model: "text-embedding-3-small"
+  api_key: "${OPENAI_API_KEY}"
   batch_size: 100
-  rate_limit: 1000
+  endpoint: "https://api.openai.com/v1"
+  vector_size: 1536
 ```
 
 #### 3. Processing Settings
 
 ```yaml
-processing:
+chunking:
   chunk_size: 1000
   chunk_overlap: 200
   max_file_size: "10MB"
@@ -365,15 +427,18 @@ processing:
 ```yaml
 sources:
   git:
-    enabled: true
-    clone_depth: 1
-    include_patterns: ["*.md", "*.rst", "*.txt"]
-    exclude_patterns: ["node_modules/", ".git/"]
+    my-repo:
+      base_url: "https://github.com/company/docs"
+      branch: "main"
+      include_paths: ["**/*.md", "**/*.rst"]
+      exclude_paths: ["node_modules/", ".git/"]
   
   confluence:
-    enabled: false
-    base_url: "https://company.atlassian.net"
-    spaces: ["DOCS", "TECH"]
+    company-wiki:
+      base_url: "https://company.atlassian.net/wiki"
+      space_key: "DOCS"
+      token: "${CONFLUENCE_TOKEN}"
+      email: "${CONFLUENCE_EMAIL}"
 ```
 
 ## 🔧 Performance and Optimization
@@ -414,14 +479,14 @@ qdrant:
 ### Monitoring Performance
 
 ```bash
-# Check ingestion speed
-qdrant-loader ingest --source local --path docs/ --verbose
+# Check ingestion status
+qdrant-loader project --workspace . status
 
-# Monitor QDrant performance
+# Monitor QDrant performance (direct API call)
 curl http://localhost:6333/metrics
 
 # Check collection statistics
-qdrant-loader status --detailed
+qdrant-loader project --workspace . status --detailed
 ```
 
 ## 🔗 Integration Patterns

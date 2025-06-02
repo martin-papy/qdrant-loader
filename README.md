@@ -2,7 +2,7 @@
 
 [![PyPI - qdrant-loader](https://img.shields.io/pypi/v/qdrant-loader?label=qdrant-loader)](https://pypi.org/project/qdrant-loader/)
 [![PyPI - mcp-server](https://img.shields.io/pypi/v/qdrant-loader-mcp-server?label=mcp-server)](https://pypi.org/project/qdrant-loader-mcp-server/)
-[![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://martin-papy.github.io/qdrant-loader/)
+[![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
@@ -171,9 +171,9 @@ qdrant-loader/
 ### 🛠️ For Developers
 
 - **[Developer Documentation](./docs/developers/)** - Architecture and contribution guides
-- **[Getting Started](./docs/developers/getting-started/)** - Development environment setup
 - **[Architecture](./docs/developers/architecture/)** - System design and components
-- **[API Reference](./docs/developers/api-reference/)** - Complete API documentation
+- **[Testing](./docs/developers/testing/)** - Testing guide and best practices
+- **[Deployment](./docs/developers/deployment/)** - Deployment guide and configurations
 - **[Extending](./docs/developers/extending/)** - Custom data sources and processors
 
 ### 📦 Package Documentation

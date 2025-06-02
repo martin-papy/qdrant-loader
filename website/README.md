@@ -152,7 +152,7 @@ python generate_favicons.py
 export GA_TRACKING_ID="G-XXXXXXXXXX"
 
 # Optional: Base URL for absolute links
-export SITE_BASE_URL="https://martin-papy.github.io/qdrant-loader"
+export SITE_BASE_URL="https://qdrant-loader.net"
 ```
 
 ### Frontmatter Options

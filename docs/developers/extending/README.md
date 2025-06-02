@@ -1,48 +1,42 @@
 # Extension Guide
 
-This section provides comprehensive guides for extending QDrant Loader with new functionality. Whether you want to add support for new data sources, file formats, or search capabilities, you'll find the patterns and examples you need here.
+This guide provides instructions for extending QDrant Loader with custom functionality. QDrant Loader is designed with a modular architecture that allows for extension through custom connectors and configuration.
 
 ## 🎯 Extension Overview
 
-QDrant Loader is designed to be highly extensible through a plugin-based architecture. You can extend the system in several ways:
+QDrant Loader currently supports extension through:
 
-### 🔌 Extension Types
+- **Custom Data Source Connectors** - Add support for new data sources by implementing the BaseConnector interface
+- **Configuration Extensions** - Extend configuration options for existing connectors
+- **File Conversion Extensions** - Leverage the MarkItDown library for additional file format support
 
-- **[Data Source Connectors](./data-source-connectors.md)** - Add support for new data sources
-- **[File Converters](./file-converters.md)** - Support new file formats and conversion methods
-- **[Search Tools](./search-tools.md)** - Extend MCP server with new search capabilities
-- **[Custom Processors](./custom-processors.md)** - Add custom content processing logic
-
-### 🏗️ Extension Architecture
-
-QDrant Loader uses a plugin-based architecture with well-defined interfaces:
+### Current Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader Core                      │
+│                    QDrant Loader CLI                        │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │   Plugin    │  │   Plugin    │  │   Plugin    │         │
-│  │  Registry   │  │ Interface   │  │  Manager    │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-│                                                             │
+│                  Project Manager                            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │   Config    │ │   State     │ │ Monitoring  │          │
+│  │ Management  │ │ Management  │ │             │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 ├─────────────────────────────────────────────────────────────┤
-│                    Plugin Ecosystem                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │    Data     │  │    File     │  │   Search    │         │
-│  │   Source    │  │ Converter   │  │    Tool     │         │
-│  │  Plugins    │  │  Plugins    │  │  Plugins    │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-│                                                             │
+│                Async Ingestion Pipeline                     │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ Connectors  │ │   Chunking  │ │ Embeddings  │          │
+│  │             │ │             │ │             │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │    File     │ │   QDrant    │ │    State    │          │
+│  │ Conversion  │ │   Manager   │ │   Tracking  │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 Development Environment Setup
 
-### Development Environment Setup
+### Prerequisites
 
 ```bash
 # Clone the repository
@@ -59,311 +53,340 @@ poetry shell
 pytest
 ```
 
-### Creating Your First Extension
+## 📊 Custom Data Source Connectors
 
-Let's create a simple data source connector:
+### Creating a Custom Connector
 
-```python
-# my_extension/custom_source.py
-from typing import AsyncIterator, Dict, Any
-from qdrant_loader.plugins import DataSourcePlugin
-from qdrant_loader.types import Document
-
-class CustomDataSource(DataSourcePlugin):
-    """Example custom data source."""
-    
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
-        self.api_url = config.get("api_url")
-        self.api_key = config.get("api_key")
-    
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        """Fetch documents from the custom API."""
-        # Your implementation here
-        yield Document(
-            id="example_1",
-            title="Example Document",
-            content="This is example content",
-            metadata={"source": "custom_api"},
-            source_type="custom",
-            source_id="example_1"
-        )
-    
-    async def test_connection(self) -> bool:
-        """Test connection to the data source."""
-        # Test your API connection
-        return True
-```
-
-### Registering Your Extension
-
-```python
-# my_extension/__init__.py
-from qdrant_loader.plugins import register_plugin
-from .custom_source import CustomDataSource
-
-# Register your plugin
-register_plugin("custom", CustomDataSource)
-```
-
-### Using Your Extension
-
-```yaml
-# config.yaml
-sources:
-  custom:
-    - api_url: "https://api.example.com"
-      api_key: "your_api_key"
-```
-
-## 🔧 Plugin Development Patterns
-
-### Base Plugin Interface
-
-All plugins inherit from a base plugin class:
+Data source connectors fetch documents from external systems. All connectors must implement the `BaseConnector` interface:
 
 ```python
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from qdrant_loader.config.source_config import SourceConfig
+from qdrant_loader.core.document import Document
 
-class BasePlugin(ABC):
-    """Base class for all plugins."""
-    
-    def __init__(self, config: Dict[str, Any]):
+class BaseConnector(ABC):
+    """Base class for all connectors."""
+
+    def __init__(self, config: SourceConfig):
         self.config = config
-        self.logger = self._setup_logger()
-    
-    def _setup_logger(self):
-        """Set up plugin-specific logging."""
-        import logging
-        return logging.getLogger(f"qdrant_loader.plugins.{self.__class__.__name__}")
-    
+        self._initialized = False
+
+    async def __aenter__(self):
+        """Async context manager entry."""
+        self._initialized = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        self._initialized = False
+
     @abstractmethod
-    async def initialize(self) -> None:
-        """Initialize the plugin."""
-        pass
-    
-    @abstractmethod
-    async def cleanup(self) -> None:
-        """Clean up plugin resources."""
+    async def get_documents(self) -> list[Document]:
+        """Get documents from the source."""
         pass
 ```
 
-### Configuration Validation
+### Example Custom Connector Implementation
+
+Here's an example of implementing a custom connector for a REST API:
+
+```python
+import httpx
+from typing import Any
+from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.core.document import Document
+from qdrant_loader.config.source_config import SourceConfig
+from qdrant_loader.utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
+
+class CustomAPIConnector(BaseConnector):
+    """Connector for custom REST API data source."""
+    
+    def __init__(self, config: SourceConfig):
+        super().__init__(config)
+        # Access configuration through config.config dict
+        self.api_url = config.config["api_url"]
+        self.api_key = config.config.get("api_key")
+        self.batch_size = config.config.get("batch_size", 100)
+        
+    async def get_documents(self) -> list[Document]:
+        """Fetch documents from the custom API."""
+        documents = []
+        
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.api_url}/documents",
+                    headers=headers,
+                    params={"limit": self.batch_size}
+                )
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                for item in data.get("documents", []):
+                    document = self._convert_to_document(item)
+                    if document:
+                        documents.append(document)
+                        
+            except httpx.RequestError as e:
+                logger.error(f"API request failed: {e}")
+                raise
+        
+        return documents
+    
+    def _convert_to_document(self, api_item: dict[str, Any]) -> Document:
+        """Convert API response item to Document."""
+        return Document(
+            title=api_item.get("title", "Untitled"),
+            content_type="text/plain",
+            content=api_item["content"],
+            metadata={
+                "api_id": api_item["id"],
+                "author": api_item.get("author"),
+                "created_at": api_item.get("created_at"),
+                "tags": api_item.get("tags", []),
+            },
+            source_type="custom_api",
+            source=self.config.config["api_url"],
+            url=f"{self.api_url}/documents/{api_item['id']}"
+        )
+```
+
+### Integrating Custom Connectors
+
+To integrate a custom connector into QDrant Loader:
+
+1. **Create the connector class** implementing `BaseConnector`
+2. **Add configuration support** by extending the source configuration
+3. **Register the connector** in your project's connector factory
+
+Example connector factory extension:
+
+```python
+from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.config.source_config import SourceConfig
+
+def create_connector(source_type: str, config: SourceConfig) -> BaseConnector:
+    """Factory function to create connectors."""
+    
+    if source_type == "custom_api":
+        from .custom_api import CustomAPIConnector
+        return CustomAPIConnector(config)
+    elif source_type == "confluence":
+        from qdrant_loader.connectors.confluence import ConfluenceConnector
+        return ConfluenceConnector(config)
+    # ... other existing connectors
+    else:
+        raise ValueError(f"Unknown source type: {source_type}")
+```
+
+## 📄 Document Model
+
+The `Document` model is the core data structure used throughout QDrant Loader:
+
+```python
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
+@dataclass
+class Document:
+    """Document model for QDrant Loader."""
+    
+    title: str
+    content_type: str
+    content: str
+    metadata: Dict[str, Any]
+    source_type: str
+    source: str
+    url: Optional[str] = None
+    
+    # Additional fields for specific use cases
+    file_path: Optional[str] = None
+    parent_id: Optional[str] = None
+    hierarchy_context: Optional[str] = None
+```
+
+### Document Creation Best Practices
+
+1. **Provide meaningful titles** - Use descriptive titles that help with search
+2. **Set appropriate content_type** - Use MIME types when possible
+3. **Include rich metadata** - Add author, creation date, tags, etc.
+4. **Use consistent source_type** - Follow naming conventions
+5. **Provide URLs when available** - Enable linking back to original content
+
+## 🔧 Configuration Extensions
+
+### Custom Configuration Classes
+
+Create configuration classes for your custom connectors:
 
 ```python
 from pydantic import BaseModel, validator
+from typing import Optional, List
 
-class CustomSourceConfig(BaseModel):
-    """Configuration schema for custom data source."""
+class CustomAPIConfig(BaseModel):
+    """Configuration for custom API connector."""
+    
     api_url: str
-    api_key: str
+    api_key: Optional[str] = None
+    batch_size: int = 100
     timeout: int = 30
     max_retries: int = 3
+    include_tags: List[str] = []
+    exclude_tags: List[str] = []
     
     @validator('api_url')
     def validate_api_url(cls, v):
         if not v.startswith(('http://', 'https://')):
             raise ValueError('API URL must start with http:// or https://')
         return v
-
-class CustomDataSource(DataSourcePlugin):
-    def __init__(self, config: Dict[str, Any]):
-        # Validate configuration
-        self.config_obj = CustomSourceConfig(**config)
-        super().__init__(config)
+    
+    @validator('batch_size')
+    def validate_batch_size(cls, v):
+        if v < 1 or v > 1000:
+            raise ValueError('Batch size must be between 1 and 1000')
+        return v
 ```
 
-### Error Handling
+### Configuration Usage
+
+```yaml
+# config.yaml
+projects:
+  my-project:
+    sources:
+      custom_api:
+        my-api-source:
+          api_url: "https://api.example.com"
+          api_key: "${API_KEY}"
+          batch_size: 50
+          timeout: 60
+          include_tags: ["published", "public"]
+          exclude_tags: ["draft", "private"]
+```
+
+## 🔄 File Conversion Extensions
+
+QDrant Loader uses the MarkItDown library for file conversion. You can extend file conversion capabilities by:
+
+### 1. Leveraging MarkItDown Features
 
 ```python
-from qdrant_loader.exceptions import DataSourceError
+from qdrant_loader.core.file_conversion import FileConverter, FileConversionConfig
 
-class CustomDataSource(DataSourcePlugin):
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        try:
-            # Your implementation
-            pass
-        except Exception as e:
-            raise DataSourceError(
-                f"Failed to fetch documents from {self.api_url}: {e}",
-                source_type="custom",
-                source_id=self.api_url
-            ) from e
+# Configure file conversion
+config = FileConversionConfig(
+    enable_llm_descriptions=True,
+    llm_client=openai_client,
+    max_file_size=50 * 1024 * 1024,  # 50MB
+    supported_formats=[
+        "pdf", "docx", "pptx", "xlsx", 
+        "png", "jpg", "gif",  # Images with OCR
+        "mp3", "wav",         # Audio transcription
+        "zip", "tar"          # Archive extraction
+    ]
+)
+
+converter = FileConverter(config)
 ```
 
-### Async Best Practices
+### 2. Custom File Processing
 
 ```python
-import asyncio
-import aiohttp
-from typing import List
-
-class CustomDataSource(DataSourcePlugin):
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
-        self.session = None
-        self.semaphore = asyncio.Semaphore(10)  # Limit concurrency
+class CustomFileProcessor:
+    """Custom file processor for specific formats."""
     
-    async def initialize(self) -> None:
-        """Initialize HTTP session."""
-        self.session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=self.config_obj.timeout)
-        )
+    def __init__(self, converter: FileConverter):
+        self.converter = converter
     
-    async def cleanup(self) -> None:
-        """Clean up HTTP session."""
-        if self.session:
-            await self.session.close()
+    async def process_custom_format(self, file_path: str) -> str:
+        """Process custom file format."""
+        if file_path.endswith('.custom'):
+            # Custom processing logic
+            with open(file_path, 'rb') as f:
+                content = f.read()
+                return self._parse_custom_format(content)
+        else:
+            # Fall back to MarkItDown
+            return await self.converter.convert_file(file_path)
     
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        """Fetch documents with proper async handling."""
-        async with self.semaphore:
-            async with self.session.get(self.api_url) as response:
-                data = await response.json()
-                for item in data:
-                    yield self._create_document(item)
+    def _parse_custom_format(self, content: bytes) -> str:
+        """Parse custom file format."""
+        # Your custom parsing logic here
+        return content.decode('utf-8')
 ```
 
-## 📚 Extension Types
-
-### Data Source Connectors
-
-Connect to new data sources like databases, APIs, or file systems:
-
-```python
-class DatabaseSource(DataSourcePlugin):
-    """Connect to SQL databases."""
-    
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        async with self.get_db_connection() as conn:
-            async for row in conn.execute("SELECT * FROM documents"):
-                yield Document(
-                    id=str(row['id']),
-                    title=row['title'],
-                    content=row['content'],
-                    metadata={"table": "documents"},
-                    source_type="database",
-                    source_id=str(row['id'])
-                )
-```
-
-### File Converters
-
-Add support for new file formats:
-
-```python
-class CustomFileConverter(ConverterPlugin):
-    """Convert custom file format to text."""
-    
-    def can_convert(self, file_path: str) -> bool:
-        """Check if this converter can handle the file."""
-        return file_path.endswith('.custom')
-    
-    async def convert(self, file_path: str) -> str:
-        """Convert file to text."""
-        # Your conversion logic
-        with open(file_path, 'rb') as f:
-            content = f.read()
-            return self._parse_custom_format(content)
-    
-    def get_metadata(self, file_path: str) -> Dict[str, Any]:
-        """Extract metadata from the file."""
-        return {
-            "format": "custom",
-            "size": os.path.getsize(file_path),
-            "converter": "custom_converter"
-        }
-```
-
-### Search Tools
-
-Extend MCP server with new search capabilities:
-
-```python
-from qdrant_loader_mcp_server.tools import SearchTool
-
-class SemanticSearchTool(SearchTool):
-    """Advanced semantic search tool."""
-    
-    name = "semantic_search"
-    description = "Perform semantic search with advanced filtering"
-    
-    async def execute(self, query: str, **kwargs) -> Dict[str, Any]:
-        """Execute semantic search."""
-        filters = kwargs.get('filters', {})
-        limit = kwargs.get('limit', 10)
-        
-        # Your search logic
-        results = await self.search_engine.semantic_search(
-            query=query,
-            filters=filters,
-            limit=limit
-        )
-        
-        return {
-            "query": query,
-            "results": [self._format_result(r) for r in results],
-            "total": len(results)
-        }
-```
-
-## 🧪 Testing Extensions
+## 🧪 Testing Custom Extensions
 
 ### Unit Testing
 
 ```python
 import pytest
 from unittest.mock import AsyncMock, patch
-from my_extension.custom_source import CustomDataSource
+from your_extension.custom_api import CustomAPIConnector
 
 @pytest.mark.asyncio
-async def test_custom_source_fetch_documents():
+async def test_custom_connector_fetch_documents():
     """Test document fetching."""
-    config = {
-        "api_url": "https://api.example.com",
-        "api_key": "test_key"
-    }
+    config = SourceConfig(
+        source_id="test-source",
+        name="Test Source",
+        config={
+            "api_url": "https://api.example.com",
+            "api_key": "test_key"
+        }
+    )
     
-    source = CustomDataSource(config)
+    connector = CustomAPIConnector(config)
     
     # Mock the API response
-    with patch('aiohttp.ClientSession.get') as mock_get:
+    with patch('httpx.AsyncClient.get') as mock_get:
         mock_response = AsyncMock()
-        mock_response.json.return_value = [
-            {"id": "1", "title": "Test", "content": "Test content"}
-        ]
+        mock_response.json.return_value = {
+            "documents": [
+                {"id": "1", "title": "Test", "content": "Test content"}
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
         mock_get.return_value.__aenter__.return_value = mock_response
         
-        documents = []
-        async for doc in source.fetch_documents():
-            documents.append(doc)
+        documents = await connector.get_documents()
         
         assert len(documents) == 1
         assert documents[0].title == "Test"
+        assert documents[0].content == "Test content"
 ```
 
 ### Integration Testing
 
 ```python
 @pytest.mark.asyncio
-async def test_custom_source_integration():
+async def test_custom_connector_integration():
     """Test full integration with QDrant Loader."""
-    from qdrant_loader import QDrantLoader
-    from qdrant_loader.config import Config
+    from qdrant_loader.core.pipeline import AsyncIngestionPipeline
+    from qdrant_loader.config.project_config import ProjectConfig
     
-    config = Config(
-        qdrant_url="memory://test",
+    config = ProjectConfig(
+        project_id="test",
         collection_name="test",
-        sources=[{
-            "type": "custom",
-            "api_url": "https://api.example.com",
-            "api_key": "test_key"
-        }]
+        sources={
+            "custom_api": {
+                "test-source": {
+                    "api_url": "https://api.example.com",
+                    "api_key": "test_key"
+                }
+            }
+        }
     )
     
-    loader = QDrantLoader(config)
-    result = await loader.ingest()
+    pipeline = AsyncIngestionPipeline(config)
+    result = await pipeline.ingest()
     
     assert result.processed_count > 0
 ```
@@ -373,163 +396,131 @@ async def test_custom_source_integration():
 ### Creating a Package
 
 ```python
-# setup.py
-from setuptools import setup, find_packages
+# setup.py or pyproject.toml
+[project]
+name = "qdrant-loader-custom-extension"
+version = "1.0.0"
+dependencies = [
+    "qdrant-loader>=1.0.0",
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0"
+]
 
-setup(
-    name="qdrant-loader-custom-extension",
-    version="1.0.0",
-    packages=find_packages(),
-    install_requires=[
-        "qdrant-loader>=1.0.0",
-        "aiohttp>=3.8.0",
-        "pydantic>=1.10.0"
-    ],
-    entry_points={
-        "qdrant_loader.plugins": [
-            "custom = my_extension:CustomDataSource"
-        ]
-    },
-    author="Your Name",
-    author_email="your.email@example.com",
-    description="Custom data source for QDrant Loader",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/qdrant-loader-custom-extension",
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-    ],
-    python_requires=">=3.8",
-)
+[project.entry-points."qdrant_loader.connectors"]
+custom_api = "my_extension.custom_api:CustomAPIConnector"
 ```
 
-### Plugin Discovery
+### Distribution
 
-```python
-# my_extension/__init__.py
-from qdrant_loader.plugins import register_plugin
-from .custom_source import CustomDataSource
+```bash
+# Build package
+python -m build
 
-def load_plugin():
-    """Load and register the plugin."""
-    register_plugin("custom", CustomDataSource)
+# Install locally for testing
+pip install -e .
 
-# Auto-register when imported
-load_plugin()
+# Publish to PyPI
+python -m twine upload dist/*
 ```
 
 ## 🔍 Advanced Patterns
 
-### Plugin Composition
+### Error Handling
 
 ```python
-class CompositeDataSource(DataSourcePlugin):
-    """Combine multiple data sources."""
-    
-    def __init__(self, config: Dict[str, Any]):
-        super().__init__(config)
-        self.sources = []
-        for source_config in config.get("sources", []):
-            source_type = source_config["type"]
-            source_class = get_plugin_class(source_type)
-            self.sources.append(source_class(source_config))
-    
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        """Fetch from all configured sources."""
-        for source in self.sources:
-            async for document in source.fetch_documents():
-                yield document
+from qdrant_loader.connectors.exceptions import ConnectorError
+
+class CustomAPIConnector(BaseConnector):
+    async def get_documents(self) -> list[Document]:
+        try:
+            # Your implementation
+            pass
+        except httpx.RequestError as e:
+            raise ConnectorError(
+                f"Failed to fetch documents from {self.api_url}: {e}"
+            ) from e
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
 ```
 
-### Middleware Pattern
+### Async Best Practices
 
 ```python
-class ProcessingMiddleware:
-    """Middleware for document processing."""
+import asyncio
+from typing import List
+
+class CustomAPIConnector(BaseConnector):
+    def __init__(self, config: SourceConfig):
+        super().__init__(config)
+        self.session = None
+        self.semaphore = asyncio.Semaphore(10)  # Limit concurrency
     
-    def __init__(self, next_processor):
-        self.next_processor = next_processor
+    async def __aenter__(self):
+        """Initialize HTTP session."""
+        await super().__aenter__()
+        self.session = httpx.AsyncClient(
+            timeout=httpx.Timeout(self.config.config.get("timeout", 30))
+        )
+        return self
     
-    async def process(self, document: Document) -> Document:
-        """Process document with middleware chain."""
-        # Pre-processing
-        document = await self.pre_process(document)
-        
-        # Call next processor
-        document = await self.next_processor.process(document)
-        
-        # Post-processing
-        document = await self.post_process(document)
-        
-        return document
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Clean up HTTP session."""
+        if self.session:
+            await self.session.aclose()
+        await super().__aexit__(exc_type, exc_val, exc_tb)
     
-    async def pre_process(self, document: Document) -> Document:
-        """Override in subclasses."""
-        return document
-    
-    async def post_process(self, document: Document) -> Document:
-        """Override in subclasses."""
-        return document
+    async def get_documents(self) -> list[Document]:
+        """Fetch documents with proper async handling."""
+        async with self.semaphore:
+            response = await self.session.get(f"{self.api_url}/documents")
+            response.raise_for_status()
+            data = response.json()
+            return [self._convert_to_document(item) for item in data["documents"]]
 ```
 
 ### Configuration Inheritance
 
 ```python
-class BaseAPISource(DataSourcePlugin):
-    """Base class for API-based sources."""
+class BaseAPIConnector(BaseConnector):
+    """Base class for API-based connectors."""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: SourceConfig):
         super().__init__(config)
-        self.base_url = config["base_url"]
-        self.api_key = config["api_key"]
+        self.base_url = config.config["base_url"]
+        self.api_key = config.config.get("api_key")
         self.session = None
     
-    async def initialize(self) -> None:
+    async def __aenter__(self):
         """Initialize HTTP session with common settings."""
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        self.session = aiohttp.ClientSession(headers=headers)
+        await super().__aenter__()
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        self.session = httpx.AsyncClient(headers=headers)
+        return self
 
-class GitHubSource(BaseAPISource):
+class GitHubConnector(BaseAPIConnector):
     """GitHub-specific implementation."""
     
-    async def fetch_documents(self) -> AsyncIterator[Document]:
+    async def get_documents(self) -> list[Document]:
         """Fetch from GitHub API."""
-        async with self.session.get(f"{self.base_url}/repos") as response:
-            # GitHub-specific logic
-            pass
+        response = await self.session.get(f"{self.base_url}/repos")
+        # GitHub-specific logic
+        pass
 ```
 
-## 📚 Extension Documentation
+## 📚 Available Connectors
 
-### Detailed Guides
+QDrant Loader includes several built-in connectors you can reference:
 
-- **[Data Source Connectors](./data-source-connectors.md)** - Complete guide to creating data source plugins
-- **[File Converters](./file-converters.md)** - Adding support for new file formats
-- **[Search Tools](./search-tools.md)** - Extending MCP server search capabilities
-- **[Custom Processors](./custom-processors.md)** - Building custom content processors
+- **GitConnector** - Git repository processing with branch and path filtering
+- **ConfluenceConnector** - Atlassian Confluence space integration
+- **JiraConnector** - Atlassian Jira project integration  
+- **LocalFileConnector** - Local file system processing
+- **PublicDocsConnector** - Public documentation websites
 
-### Best Practices
-
-1. **Follow the plugin interface** - Implement all required methods
-2. **Validate configuration** - Use Pydantic for robust config validation
-3. **Handle errors gracefully** - Provide meaningful error messages
-4. **Use async/await properly** - Follow async best practices
-5. **Write comprehensive tests** - Unit and integration tests
-6. **Document your extension** - Clear documentation and examples
-
-### Performance Considerations
-
-1. **Use connection pooling** - Reuse HTTP connections
-2. **Implement rate limiting** - Respect API limits
-3. **Batch operations** - Process multiple items together
-4. **Cache when appropriate** - Avoid redundant operations
-5. **Monitor resource usage** - Memory and CPU optimization
+Each connector demonstrates different patterns and can serve as examples for your custom implementations.
 
 ## 🆘 Getting Help
 
@@ -539,11 +530,12 @@ class GitHubSource(BaseAPISource):
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report bugs or request features
 - **[Contributing Guide](../../CONTRIBUTING.md)** - Contribution guidelines
 
-### Community Extensions
+### Related Documentation
 
-- **[Extension Registry](https://github.com/martin-papy/qdrant-loader/wiki/Extensions)** - Community-maintained extensions
-- **[Example Extensions](https://github.com/martin-papy/qdrant-loader/tree/main/examples/extensions)** - Reference implementations
+- **[Architecture Overview](../architecture/)** - System design and components
+- **[Configuration Reference](../../users/configuration/)** - Configuration options
+- **[API Documentation](../api/)** - Core API reference
 
 ---
 
-**Ready to extend QDrant Loader?** Choose the type of extension you want to create and dive into the detailed guides. Start with [Data Source Connectors](./data-source-connectors.md) for adding new data sources or [File Converters](./file-converters.md) for new file format support.
+**Ready to extend QDrant Loader?** Start by implementing a custom connector using the BaseConnector interface and follow the patterns shown in the existing connectors.

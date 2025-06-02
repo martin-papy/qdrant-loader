@@ -17,7 +17,6 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 - **[Configuration Reference](./configuration/)** - Complete configuration options and examples
 - **[Environment Variables](./configuration/environment-variables.md)** - All environment settings explained
-- **[Advanced Settings](./configuration/advanced-settings.md)** - Performance tuning and optimization
 
 ### 🖥️ Command Line Interface
 
@@ -59,7 +58,6 @@ This documentation is organized to help you accomplish specific tasks and unders
 #### ⚙️ **Configure and optimize**
 
 - [Environment setup](./configuration/environment-variables.md) - Required and optional settings
-- [Performance tuning](./configuration/advanced-settings.md) - Speed and memory optimization
 - [Security considerations](./configuration/security-considerations.md) - API keys and permissions
 
 #### 🔧 **Solve problems**
