@@ -743,54 +743,59 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("All packages use the same version:")
 
     # Get new version strategy
-    if not dry_run:
-        print("\n🔢 VERSION BUMP OPTIONS")
-        print("─" * 30)
-        print("1. Major (e.g., 1.0.0)")
-        print("2. Minor (e.g., 0.2.0)")
-        print("3. Patch (e.g., 0.1.4)")
-        print("4. Beta (e.g., 0.1.3b2)")
-        print("5. Custom (specify exact version)")
+    print("\n🔢 VERSION BUMP OPTIONS")
+    print("─" * 30)
+
+    # Calculate and show actual version examples based on current version
+    major_version = calculate_new_version(current_version, 1)
+    minor_version = calculate_new_version(current_version, 2)
+    patch_version = calculate_new_version(current_version, 3)
+    beta_version = calculate_new_version(current_version, 4)
+
+    print(f"1. Major ({current_version} → {major_version})")
+    print(f"2. Minor ({current_version} → {minor_version})")
+    print(f"3. Patch ({current_version} → {patch_version})")
+    print(f"4. Beta ({current_version} → {beta_version})")
+    print("5. Custom (specify exact version)")
+
+    choice = prompt("Select version bump type", type=int)
+
+    custom_version = None
+    if choice == 5:
+        print(f"\nCurrent version: {current_version}")
+        print("Enter the new version (format: X.Y.Z or X.Y.Zb<num>)")
+        print("Examples: 1.2.3, 0.5.0, 2.1.0b1")
+
+        while True:
+            custom_version = prompt("New version").strip()
+            if not custom_version:
+                logger.error("Version cannot be empty")
+                continue
+
+            try:
+                # Validate the version format using the same logic as calculate_new_version
+                import re
+
+                version_pattern = r"^\d+\.\d+\.\d+(?:b\d+)?$"
+                if not re.match(version_pattern, custom_version):
+                    logger.error(
+                        "Invalid version format. Expected format: X.Y.Z or X.Y.Zb<num>"
+                    )
+                    continue
+                break
+            except Exception as e:
+                logger.error(f"Invalid version: {e}")
+                continue
+
+    elif choice not in [1, 2, 3, 4]:
+        logger.error("Invalid choice")
+        sys.exit(1)
 
     if dry_run:
-        # In dry run mode, use patch version bump as default example
-        choice = 3
-        custom_version = None
-        print("🔢 VERSION CHANGE (using patch bump as example)")
+        print(
+            f"\n🔢 VERSION CHANGE (using {'major' if choice == 1 else 'minor' if choice == 2 else 'patch' if choice == 3 else 'beta' if choice == 4 else 'custom'} bump)"
+        )
         print("─" * 50)
-    else:
-        choice = prompt("Select version bump type", type=int)
-
-        custom_version = None
-        if choice == 5:
-            print(f"\nCurrent version: {current_version}")
-            print("Enter the new version (format: X.Y.Z or X.Y.Zb<num>)")
-            print("Examples: 1.2.3, 0.5.0, 2.1.0b1")
-
-            while True:
-                custom_version = prompt("New version").strip()
-                if not custom_version:
-                    logger.error("Version cannot be empty")
-                    continue
-
-                try:
-                    # Validate the version format using the same logic as calculate_new_version
-                    import re
-
-                    version_pattern = r"^\d+\.\d+\.\d+(?:b\d+)?$"
-                    if not re.match(version_pattern, custom_version):
-                        logger.error(
-                            "Invalid version format. Expected format: X.Y.Z or X.Y.Zb<num>"
-                        )
-                        continue
-                    break
-                except Exception as e:
-                    logger.error(f"Invalid version: {e}")
-                    continue
-
-        elif choice not in [1, 2, 3, 4]:
-            logger.error("Invalid choice")
-            sys.exit(1)
 
     # Calculate new version (same for all packages)
     try:
