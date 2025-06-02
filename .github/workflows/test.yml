@@ -220,12 +220,10 @@ jobs:
       - name: Install website test dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install core dependencies
-          pip install pytest pytest-cov pytest-mock
-          # Install optional dependencies for comprehensive testing
-          pip install markdown pygments tomli
-          # Install favicon generation dependencies (optional)
-          pip install cairosvg pillow || echo "Optional favicon dependencies not available"
+          # Install dev dependencies from root pyproject.toml which includes requests, responses, and other test dependencies
+          pip install -e .[dev]
+          # Install optional docs dependencies for comprehensive testing
+          pip install -e .[docs] || echo "Optional docs dependencies not available"
 
       - name: Run website tests with coverage
         run: |
