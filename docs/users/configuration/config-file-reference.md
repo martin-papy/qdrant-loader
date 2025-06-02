@@ -1,29 +1,42 @@
 # Configuration File Reference
 
-This comprehensive reference covers all configuration options available in QDrant Loader's YAML configuration files. Configuration files provide a structured way to manage complex settings and are ideal for version control and team collaboration.
+This comprehensive reference covers all configuration options available in QDrant Loader's YAML configuration files. QDrant Loader uses a **multi-project configuration structure** that allows you to organize multiple data sources into logical projects within a single workspace.
 
 ## 🎯 Overview
 
-QDrant Loader supports YAML configuration files for managing settings in a structured, version-controllable format. Configuration files are particularly useful for complex setups, team environments, and when you need to document your configuration choices.
+QDrant Loader supports YAML configuration files for managing settings in a structured, version-controllable format. The configuration follows a **multi-project architecture** where:
+
+- **Global settings** apply to all projects (embedding, chunking, state management)
+- **Project-specific settings** define data sources and project metadata
+- **All projects** share the same QDrant collection for unified search
+
+### Configuration Structure
+
+```yaml
+# Multi-project configuration structure
+global_config:          # Global settings for all projects
+  qdrant: {...}         # QDrant connection settings
+  embedding: {...}      # Embedding model configuration
+  chunking: {...}       # Text chunking settings
+  state_management: {...} # State database settings
+  file_conversion: {...} # File conversion settings
+
+projects:               # Project definitions
+  project-1:            # Project ID
+    project_id: "project-1"
+    display_name: "Project One"
+    description: "Project description"
+    sources: {...}      # Project-specific data sources
+  project-2: {...}      # Additional projects
+```
 
 ### Configuration Priority
 
-```
+```text
 1. Command-line arguments    (highest priority)
 2. Environment variables
 3. Configuration file        ← This guide
 4. Default values           (lowest priority)
-```
-
-### Configuration File Locations
-
-QDrant Loader looks for configuration files in the following order:
-
-```
-1. ./qdrant-loader.yaml      (current directory)
-2. ./config.yaml             (current directory)
-3. ~/.qdrant-loader.yaml     (home directory)
-4. /etc/qdrant-loader.yaml   (system-wide)
 ```
 
 ## 📁 Basic Configuration File
@@ -31,850 +44,499 @@ QDrant Loader looks for configuration files in the following order:
 ### Minimal Configuration
 
 ```yaml
-# qdrant-loader.yaml - Minimal configuration
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "documents"
+# config.yaml - Minimal multi-project configuration
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
 
-openai:
-  api_key: "sk-your-openai-api-key-here"
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Project"
+    description: "Basic project setup"
+    sources:
+      git:
+        my-repo:
+          base_url: "https://github.com/user/repo.git"
+          branch: "main"
+          token: "${REPO_TOKEN}"
 ```
 
 ### Complete Configuration Template
 
 ```yaml
-# qdrant-loader.yaml - Complete configuration template
-# Copy this template and customize for your needs
-
-# QDrant Database Configuration
-qdrant:
-  url: "http://localhost:6333"
-  api_key: null  # Optional: for QDrant Cloud or secured instances
-  collection_name: "documents"
-  timeout: 30
-  batch_size: 100
+# config.yaml - Complete multi-project configuration template
+global_config:
+  # QDrant vector database configuration
+  qdrant:
+    url: "http://localhost:6333"
+    api_key: "${QDRANT_API_KEY}"  # Optional: for QDrant Cloud
+    collection_name: "documents"
   
-# OpenAI Configuration
-openai:
-  api_key: "sk-your-openai-api-key-here"
-  model: "text-embedding-3-small"
-  batch_size: 100
-  max_retries: 3
-  timeout: 30
+  # Embedding model configuration
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+    batch_size: 100
+    vector_size: 1536
+    max_tokens_per_request: 8000
+    max_tokens_per_chunk: 8000
+  
+  # Text chunking configuration
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
+  
+  # State management configuration
+  state_management:
+    database_path: "${STATE_DB_PATH}"
+    table_prefix: "qdrant_loader_"
+    connection_pool:
+      size: 5
+      timeout: 30
+  
+  # File conversion configuration
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300  # 5 minutes
+    markitdown:
+      enable_llm_descriptions: false
+      llm_model: "gpt-4o"
+      llm_endpoint: "https://api.openai.com/v1"
+      llm_api_key: "${OPENAI_API_KEY}"
 
-# Data Sources Configuration
-data_sources:
-  git:
-    username: null
-    token: null
-    clone_depth: 1
+# Multi-project configuration
+projects:
+  # Example project: Documentation
+  docs-project:
+    project_id: "docs-project"
+    display_name: "Documentation Project"
+    description: "Company documentation and guides"
     
-  confluence:
-    base_url: null
-    username: null
-    api_token: null
-    spaces: []  # Empty list means all accessible spaces
+    sources:
+      # Git repository sources
+      git:
+        docs-repo:
+          base_url: "https://github.com/company/docs.git"
+          branch: "main"
+          include_paths: ["docs/**", "README.md"]
+          exclude_paths: ["docs/archive/**"]
+          file_types: ["*.md", "*.rst", "*.txt"]
+          max_file_size: 1048576  # 1MB
+          token: "${DOCS_REPO_TOKEN}"
+          enable_file_conversion: true
+      
+      # Confluence sources
+      confluence:
+        company-wiki:
+          base_url: "https://company.atlassian.net/wiki"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          content_types: ["page", "blogpost"]
+          include_labels: []
+          exclude_labels: []
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+  
+  # Example project: Support Knowledge Base
+  support-project:
+    project_id: "support-project"
+    display_name: "Support Knowledge Base"
+    description: "Customer support documentation and tickets"
     
-  jira:
-    base_url: null
-    username: null
-    api_token: null
-    projects: []  # Empty list means all accessible projects
-
-# Processing Configuration
-processing:
-  chunk_size: 1000
-  chunk_overlap: 200
-  max_file_size: "50MB"
-  supported_formats:
-    - "md"
-    - "txt"
-    - "pdf"
-    - "docx"
-    - "pptx"
-    - "xlsx"
-  exclude_patterns:
-    - "*.log"
-    - "node_modules/"
-    - "__pycache__/"
-
-# MCP Server Configuration
-mcp_server:
-  log_level: "INFO"
-  max_results: 10
-  timeout: 30
-  similarity_threshold: 0.7
-  cache:
-    enabled: false
-    ttl: 300
-
-# Logging Configuration
-logging:
-  level: "INFO"
-  file: null  # null means console only
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-
-# Security Configuration
-security:
-  tls_verify: true
-  proxy: null
-
-# Monitoring Configuration
-monitoring:
-  metrics_enabled: false
-  metrics_port: 9090
+    sources:
+      # JIRA sources
+      jira:
+        support-tickets:
+          base_url: "https://company.atlassian.net"
+          deployment_type: "cloud"
+          project_key: "SUPPORT"
+          requests_per_minute: 60
+          page_size: 50
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+      
+      # Local file sources
+      localfile:
+        support-docs:
+          base_url: "file:///path/to/support/docs"
+          include_paths: ["**/*.md", "**/*.pdf"]
+          exclude_paths: ["tmp/**", "archive/**"]
+          file_types: ["*.md", "*.pdf", "*.txt"]
+          max_file_size: 52428800  # 50MB
+          enable_file_conversion: true
 ```
 
 ## 🔧 Detailed Configuration Sections
 
-### QDrant Database Configuration
+### Global Configuration (`global_config`)
+
+#### QDrant Database Configuration
 
 ```yaml
-qdrant:
-  # Required: URL of your QDrant database instance
-  url: "http://localhost:6333"
-  
-  # Optional: API key for QDrant Cloud or secured instances
-  api_key: "your-qdrant-cloud-api-key"
-  
-  # Optional: Name of the QDrant collection (default: "documents")
-  collection_name: "my_project_docs"
-  
-  # Optional: Timeout for QDrant operations in seconds (default: 30)
-  timeout: 60
-  
-  # Optional: Batch size for QDrant operations (default: 100)
-  batch_size: 200
-  
-  # Optional: Vector dimension (auto-detected from embedding model)
-  vector_size: 1536
-  
-  # Optional: Distance metric for similarity search
-  distance: "Cosine"  # Options: Cosine, Euclidean, Dot
-  
-  # Optional: Collection configuration
-  collection:
-    # Replication factor for the collection
-    replication_factor: 1
+global_config:
+  qdrant:
+    # Required: URL of your QDrant database instance
+    url: "http://localhost:6333"
     
-    # Write consistency factor
-    write_consistency_factor: 1
+    # Optional: API key for QDrant Cloud or secured instances
+    api_key: "${QDRANT_API_KEY}"
     
-    # Shard number
-    shard_number: 1
-    
-    # On-disk payload storage
-    on_disk_payload: false
+    # Required: Name of the QDrant collection (shared by all projects)
+    collection_name: "documents"
 ```
 
-### OpenAI Configuration
+**Required Fields:**
+
+- `url` - QDrant instance URL
+- `collection_name` - Collection name for all projects
+
+**Optional Fields:**
+
+- `api_key` - API key for QDrant Cloud (use environment variable)
+
+#### Embedding Configuration
 
 ```yaml
-openai:
-  # Required: OpenAI API key
-  api_key: "sk-your-openai-api-key-here"
-  
-  # Optional: Embedding model (default: "text-embedding-3-small")
-  model: "text-embedding-3-large"
-  
-  # Optional: Batch size for API calls (default: 100)
-  batch_size: 500
-  
-  # Optional: Maximum retries for failed API calls (default: 3)
-  max_retries: 5
-  
-  # Optional: Timeout for API calls in seconds (default: 30)
-  timeout: 60
-  
-  # Optional: Base URL for OpenAI API (for custom endpoints)
-  base_url: "https://api.openai.com/v1"
-  
-  # Optional: Organization ID
-  organization: "org-your-organization-id"
-  
-  # Optional: Rate limiting
-  rate_limit:
-    requests_per_minute: 3000
-    tokens_per_minute: 1000000
+global_config:
+  embedding:
+    # Required: OpenAI API endpoint
+    endpoint: "https://api.openai.com/v1"
+    
+    # Required: OpenAI API key
+    api_key: "${OPENAI_API_KEY}"
+    
+    # Optional: Embedding model (default: "text-embedding-3-small")
+    model: "text-embedding-3-small"
+    
+    # Optional: Batch size for API calls (default: 100)
+    batch_size: 100
+    
+    # Optional: Vector dimension (default: 1536)
+    vector_size: 1536
+    
+    # Optional: Maximum tokens per API request (default: 8000)
+    max_tokens_per_request: 8000
+    
+    # Optional: Maximum tokens per chunk (default: 8000)
+    max_tokens_per_chunk: 8000
 ```
 
-### Data Sources Configuration
+**Required Fields:**
 
-#### Git Repository Configuration
+- `endpoint` - OpenAI API endpoint URL
+- `api_key` - OpenAI API key (use environment variable)
 
-```yaml
-data_sources:
-  git:
-    # Optional: Username for Git authentication
-    username: "your-github-username"
-    
-    # Optional: Personal access token for Git authentication
-    token: "ghp_your-github-token"
-    
-    # Optional: Clone depth (default: 1 for shallow clone)
-    clone_depth: 1
-    
-    # Optional: Default branch to clone
-    default_branch: "main"
-    
-    # Optional: SSH key path for Git authentication
-    ssh_key_path: "~/.ssh/id_rsa"
-    
-    # Optional: Git configuration
-    config:
-      # Timeout for Git operations in seconds
-      timeout: 300
-      
-      # Maximum repository size to clone
-      max_repo_size: "1GB"
-      
-      # File patterns to include
-      include_patterns:
-        - "*.md"
-        - "*.txt"
-        - "*.rst"
-        - "docs/**"
-      
-      # File patterns to exclude
-      exclude_patterns:
-        - ".git/"
-        - "node_modules/"
-        - "*.log"
-        - "build/"
-        - "dist/"
-```
-
-#### Confluence Configuration
+#### Chunking Configuration
 
 ```yaml
-data_sources:
-  confluence:
-    # Required: Base URL of your Confluence instance
-    base_url: "https://company.atlassian.net"
-    
-    # Required: Confluence username or email
-    username: "user@company.com"
-    
-    # Required: Confluence API token
-    api_token: "your-confluence-api-token"
-    
-    # Optional: Specific spaces to index (empty means all accessible)
-    spaces:
-      - "DOCS"
-      - "TECH"
-      - "SUPPORT"
-    
-    # Optional: Confluence-specific settings
-    settings:
-      # Include page attachments
-      include_attachments: true
-      
-      # Include page comments
-      include_comments: false
-      
-      # Include archived pages
-      include_archived: false
-      
-      # Maximum pages to fetch per request
-      page_size: 50
-      
-      # Content expansion options
-      expand:
-        - "body.storage"
-        - "metadata"
-        - "version"
-        - "space"
-      
-      # CQL (Confluence Query Language) filter
-      cql_filter: "type=page AND space in (DOCS, TECH)"
-```
-
-#### JIRA Configuration
-
-```yaml
-data_sources:
-  jira:
-    # Required: Base URL of your JIRA instance
-    base_url: "https://company.atlassian.net"
-    
-    # Required: JIRA username or email
-    username: "user@company.com"
-    
-    # Required: JIRA API token
-    api_token: "your-jira-api-token"
-    
-    # Optional: Specific projects to index (empty means all accessible)
-    projects:
-      - "PROJ"
-      - "DOCS"
-      - "SUPPORT"
-    
-    # Optional: JIRA-specific settings
-    settings:
-      # Include issue comments
-      include_comments: true
-      
-      # Include issue attachments
-      include_attachments: true
-      
-      # Include issue history
-      include_history: false
-      
-      # Issue types to include
-      issue_types:
-        - "Story"
-        - "Bug"
-        - "Task"
-        - "Epic"
-      
-      # Issue statuses to include
-      statuses:
-        - "Open"
-        - "In Progress"
-        - "Done"
-      
-      # JQL (JIRA Query Language) filter
-      jql_filter: "project in (PROJ, DOCS) AND status != Closed"
-      
-      # Maximum issues to fetch per request
-      max_results: 50
-      
-      # Fields to expand
-      expand:
-        - "changelog"
-        - "renderedFields"
-        - "names"
-        - "schema"
-```
-
-### Processing Configuration
-
-```yaml
-processing:
-  # Text chunking settings
+global_config:
   chunking:
-    # Maximum size of text chunks in tokens (default: 1000)
+    # Optional: Maximum size of text chunks in tokens (default: 1500)
     chunk_size: 1500
     
-    # Overlap between chunks in tokens (default: 200)
-    chunk_overlap: 300
-    
-    # Chunking strategy
-    strategy: "recursive"  # Options: recursive, semantic, fixed
-    
-    # Separators for recursive chunking
-    separators:
-      - "\n\n"
-      - "\n"
-      - " "
-      - ""
-  
-  # File processing settings
-  files:
-    # Maximum file size to process
-    max_file_size: "100MB"
-    
-    # Supported file formats
-    supported_formats:
-      - "md"
-      - "txt"
-      - "pdf"
-      - "docx"
-      - "pptx"
-      - "xlsx"
-      - "html"
-      - "json"
-      - "yaml"
-      - "csv"
-    
-    # File patterns to exclude
-    exclude_patterns:
-      - "*.log"
-      - "*.tmp"
-      - "node_modules/"
-      - "__pycache__/"
-      - ".git/"
-      - "build/"
-      - "dist/"
-    
-    # File patterns to include (overrides exclude)
-    include_patterns:
-      - "docs/**"
-      - "*.md"
-      - "README*"
-  
-  # Content extraction settings
-  extraction:
-    # Extract text from images using OCR
-    ocr_enabled: false
-    
-    # OCR language
-    ocr_language: "eng"
-    
-    # Extract metadata from files
-    extract_metadata: true
-    
-    # Clean extracted text
-    clean_text: true
-    
-    # Remove empty lines
-    remove_empty_lines: true
-    
-    # Normalize whitespace
-    normalize_whitespace: true
-  
-  # Parallel processing settings
-  parallel:
-    # Number of worker processes (default: CPU count)
-    workers: 4
-    
-    # Maximum files to process in parallel
-    max_files: 10
-    
-    # Batch size for parallel processing
-    batch_size: 50
+    # Optional: Overlap between chunks in tokens (default: 200)
+    chunk_overlap: 200
 ```
 
-### MCP Server Configuration
+#### State Management Configuration
 
 ```yaml
-mcp_server:
-  # Logging level for MCP server
-  log_level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
-  
-  # Maximum number of search results to return
-  max_results: 20
-  
-  # Timeout for MCP server operations in seconds
-  timeout: 60
-  
-  # Minimum similarity score for search results
-  similarity_threshold: 0.75
-  
-  # Search configuration
-  search:
-    # Enable fuzzy search
-    fuzzy_search: true
+global_config:
+  state_management:
+    # Required: Path to SQLite database file
+    database_path: "${STATE_DB_PATH}"
     
-    # Fuzzy search threshold
-    fuzzy_threshold: 0.8
+    # Optional: Prefix for database tables (default: "qdrant_loader_")
+    table_prefix: "qdrant_loader_"
     
-    # Enable semantic search
-    semantic_search: true
-    
-    # Enable keyword search
-    keyword_search: true
-    
-    # Search result ranking weights
-    ranking:
-      semantic_weight: 0.7
-      keyword_weight: 0.2
-      recency_weight: 0.1
-  
-  # Caching configuration
-  cache:
-    # Enable caching for search results
-    enabled: true
-    
-    # Cache time-to-live in seconds
-    ttl: 600
-    
-    # Maximum cache size (number of entries)
-    max_size: 1000
-    
-    # Cache backend
-    backend: "memory"  # Options: memory, redis
-    
-    # Redis configuration (if backend is redis)
-    redis:
-      host: "localhost"
-      port: 6379
-      db: 0
-      password: null
-  
-  # Server configuration
-  server:
-    # Server host
-    host: "localhost"
-    
-    # Server port
-    port: 8080
-    
-    # Enable CORS
-    cors_enabled: true
-    
-    # CORS origins
-    cors_origins:
-      - "http://localhost:3000"
-      - "https://cursor.sh"
-    
-    # Request timeout
-    request_timeout: 30
-    
-    # Maximum request size
-    max_request_size: "10MB"
+    # Optional: Connection pool settings
+    connection_pool:
+      size: 5      # Maximum connections (default: 5)
+      timeout: 30  # Connection timeout in seconds (default: 30)
 ```
 
-### Logging Configuration
+#### File Conversion Configuration
 
 ```yaml
-logging:
-  # Log level
-  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
-  
-  # Log file path (null means console only)
-  file: "/var/log/qdrant-loader/app.log"
-  
-  # Log format
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  
-  # Log rotation
-  rotation:
-    # Enable log rotation
-    enabled: true
+global_config:
+  file_conversion:
+    # Optional: Maximum file size for conversion in bytes (default: 50MB)
+    max_file_size: 52428800
     
-    # Maximum file size before rotation
-    max_size: "100MB"
+    # Optional: Timeout for conversion operations in seconds (default: 300)
+    conversion_timeout: 300
     
-    # Number of backup files to keep
-    backup_count: 5
-    
-    # Rotation interval
-    interval: "daily"  # Options: daily, weekly, monthly
-  
-  # Structured logging
-  structured:
-    # Enable JSON logging
-    enabled: false
-    
-    # Additional fields to include
-    fields:
-      service: "qdrant-loader"
-      version: "1.0.0"
-      environment: "production"
-  
-  # Logger-specific configuration
-  loggers:
-    qdrant_loader:
-      level: "INFO"
-      handlers: ["console", "file"]
-    
-    mcp_server:
-      level: "DEBUG"
-      handlers: ["console"]
-    
-    openai:
-      level: "WARNING"
-      handlers: ["file"]
+    # Optional: MarkItDown specific settings
+    markitdown:
+      # Enable LLM integration for image descriptions (default: false)
+      enable_llm_descriptions: false
+      
+      # LLM model for image descriptions (default: "gpt-4o")
+      llm_model: "gpt-4o"
+      
+      # LLM endpoint (default: "https://api.openai.com/v1")
+      llm_endpoint: "https://api.openai.com/v1"
+      
+      # API key for LLM service (required when enable_llm_descriptions is true)
+      llm_api_key: "${OPENAI_API_KEY}"
 ```
 
-### Security Configuration
+### Project Configuration (`projects`)
+
+#### Project Structure
 
 ```yaml
-security:
-  # TLS/SSL configuration
-  tls:
-    # Verify TLS certificates
-    verify: true
-    
-    # CA certificate bundle path
-    ca_bundle: null
-    
-    # Client certificate path
-    cert_file: null
-    
-    # Client private key path
-    key_file: null
-  
-  # Proxy configuration
-  proxy:
-    # HTTP proxy URL
-    http: "http://proxy.company.com:8080"
-    
-    # HTTPS proxy URL
-    https: "https://proxy.company.com:8080"
-    
-    # No proxy hosts
-    no_proxy:
-      - "localhost"
-      - "127.0.0.1"
-      - "*.local"
-  
-  # API key management
-  api_keys:
-    # Encryption key for storing API keys
-    encryption_key: null
-    
-    # Key storage backend
-    storage: "file"  # Options: file, keyring, vault
-    
-    # Storage configuration
-    storage_config:
-      file_path: "~/.qdrant-loader/keys.enc"
-  
-  # Access control
-  access_control:
-    # Enable access control
-    enabled: false
-    
-    # Allowed IP addresses
-    allowed_ips:
-      - "127.0.0.1"
-      - "192.168.1.0/24"
-    
-    # API key for MCP server access
-    api_key: "your-mcp-server-api-key"
+projects:
+  project-id:                    # Unique project identifier
+    project_id: "project-id"     # Must match the key above
+    display_name: "Project Name" # Human-readable name
+    description: "Description"   # Optional project description
+    sources:                     # Project-specific data sources
+      # Source configurations go here
 ```
 
-### Monitoring Configuration
+**Required Fields:**
+
+- `project_id` - Unique identifier (must match YAML key)
+- `display_name` - Human-readable project name
+
+**Optional Fields:**
+
+- `description` - Project description
+- `sources` - Data source configurations (can be empty)
+
+#### Data Source Types
+
+QDrant Loader supports five data source types:
+
+##### Git Repository Sources
 
 ```yaml
-monitoring:
-  # Enable performance metrics collection
-  metrics_enabled: true
-  
-  # Metrics server port
-  metrics_port: 9090
-  
-  # Metrics endpoint path
-  metrics_path: "/metrics"
-  
-  # Health check configuration
-  health_check:
-    # Enable health check endpoint
-    enabled: true
-    
-    # Health check port
-    port: 8081
-    
-    # Health check path
-    path: "/health"
-    
-    # Health check interval
-    interval: 30
-  
-  # Performance monitoring
-  performance:
-    # Enable performance tracking
-    enabled: true
-    
-    # Sample rate for performance tracking
-    sample_rate: 0.1
-    
-    # Performance thresholds
-    thresholds:
-      response_time: 1000  # milliseconds
-      memory_usage: 80     # percentage
-      cpu_usage: 80        # percentage
-  
-  # External monitoring integrations
-  integrations:
-    # Prometheus configuration
-    prometheus:
-      enabled: true
-      job_name: "qdrant-loader"
-      scrape_interval: "15s"
-    
-    # Grafana configuration
-    grafana:
-      enabled: false
-      dashboard_url: "http://grafana.company.com"
-    
-    # Custom webhook for alerts
-    webhook:
-      enabled: false
-      url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
-```
-
-## 📋 Environment-Specific Configurations
-
-### Development Configuration
-
-```yaml
-# qdrant-loader.dev.yaml - Development environment
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "dev_documents"
-  timeout: 30
-
-openai:
-  api_key: "sk-your-dev-openai-api-key"
-  model: "text-embedding-3-small"
-  batch_size: 50
-
-processing:
-  chunk_size: 500
-  chunk_overlap: 100
-  max_file_size: "10MB"
-  parallel:
-    workers: 2
-
-mcp_server:
-  log_level: "DEBUG"
-  max_results: 5
-  timeout: 10
-  cache:
-    enabled: false
-
-logging:
-  level: "DEBUG"
-  file: null  # Console only for development
-
-security:
-  tls:
-    verify: false  # For local development only
-
-monitoring:
-  metrics_enabled: false
-```
-
-### Production Configuration
-
-```yaml
-# qdrant-loader.prod.yaml - Production environment
-qdrant:
-  url: "https://your-qdrant-cluster.qdrant.io"
-  api_key: "your-production-qdrant-api-key"
-  collection_name: "production_documents"
-  timeout: 60
-  batch_size: 200
-
-openai:
-  api_key: "sk-your-prod-openai-api-key"
-  model: "text-embedding-3-small"
-  batch_size: 200
-  max_retries: 5
-
-data_sources:
-  confluence:
-    base_url: "https://company.atlassian.net"
-    username: "service-account@company.com"
-    api_token: "your-confluence-api-token"
-    spaces: ["DOCS", "TECH", "SUPPORT"]
-  
-  jira:
-    base_url: "https://company.atlassian.net"
-    username: "service-account@company.com"
-    api_token: "your-jira-api-token"
-    projects: ["PROJ", "DOCS", "SUPPORT"]
-
-processing:
-  chunk_size: 1200
-  chunk_overlap: 300
-  max_file_size: "100MB"
-  parallel:
-    workers: 8
-
-mcp_server:
-  log_level: "INFO"
-  max_results: 15
-  timeout: 30
-  similarity_threshold: 0.75
-  cache:
-    enabled: true
-    ttl: 600
-
-logging:
-  level: "INFO"
-  file: "/var/log/qdrant-loader/app.log"
-  rotation:
-    enabled: true
-    max_size: "100MB"
-    backup_count: 5
-
-security:
-  tls:
-    verify: true
-  proxy:
-    http: "http://proxy.company.com:8080"
-    https: "https://proxy.company.com:8080"
-
-monitoring:
-  metrics_enabled: true
-  metrics_port: 9090
-  health_check:
-    enabled: true
-    port: 8081
-```
-
-### Team Configuration
-
-```yaml
-# qdrant-loader.team.yaml - Team/shared environment
-qdrant:
-  url: "http://qdrant.team.local:6333"
-  collection_name: "team_knowledge"
-  timeout: 45
-
-openai:
-  api_key: "sk-your-team-openai-api-key"
-  model: "text-embedding-3-small"
-  batch_size: 100
-
-data_sources:
-  confluence:
-    base_url: "https://team.atlassian.net"
-    # Use environment variables for personal credentials
-    username: "${CONFLUENCE_USERNAME}"
-    api_token: "${CONFLUENCE_API_TOKEN}"
-    spaces: ["TEAM", "DOCS", "TECH"]
-  
+sources:
   git:
-    username: "${GIT_USERNAME}"
-    token: "${GIT_TOKEN}"
+    source-name:
+      # Required: Repository URL
+      base_url: "https://github.com/user/repo.git"
+      
+      # Optional: Branch to process (default: "main")
+      branch: "main"
+      
+      # Optional: Paths to include (glob patterns)
+      include_paths:
+        - "docs/**"
+        - "README.md"
+      
+      # Optional: Paths to exclude (glob patterns)
+      exclude_paths:
+        - "node_modules/**"
+        - ".git/**"
+      
+      # Optional: File extensions to process
+      file_types:
+        - "*.md"
+        - "*.rst"
+        - "*.txt"
+      
+      # Optional: Maximum file size in bytes (default: 1MB)
+      max_file_size: 1048576
+      
+      # Optional: Maximum directory depth (default: unlimited)
+      depth: 10
+      
+      # Optional: GitHub token for private repositories
+      token: "${REPO_TOKEN}"
+      
+      # Optional: Enable file conversion (default: false)
+      enable_file_conversion: true
+```
 
-processing:
-  chunk_size: 1000
-  chunk_overlap: 200
-  max_file_size: "50MB"
-  parallel:
-    workers: 4
+##### Confluence Sources
 
-mcp_server:
-  log_level: "INFO"
-  max_results: 10
-  timeout: 30
-  cache:
-    enabled: true
-    ttl: 300
+```yaml
+sources:
+  confluence:
+    source-name:
+      # Required: Confluence instance URL
+      base_url: "https://company.atlassian.net/wiki"
+      
+      # Required: Deployment type
+      deployment_type: "cloud"  # Options: cloud, datacenter, server
+      
+      # Required: Space key to process
+      space_key: "DOCS"
+      
+      # Optional: Content types to process (default: ["page"])
+      content_types:
+        - "page"
+        - "blogpost"
+      
+      # Optional: Include only content with these labels
+      include_labels: []
+      
+      # Optional: Exclude content with these labels
+      exclude_labels: []
+      
+      # Required for Cloud: API token
+      token: "${CONFLUENCE_TOKEN}"
+      
+      # Required for Cloud: User email
+      email: "${CONFLUENCE_EMAIL}"
+      
+      # Optional: Enable file conversion (default: false)
+      enable_file_conversion: true
+      
+      # Optional: Download and process attachments (default: false)
+      download_attachments: true
+```
 
-logging:
-  level: "INFO"
-  file: "~/.qdrant-loader/logs/team.log"
+##### JIRA Sources
 
-monitoring:
-  metrics_enabled: true
-  metrics_port: 9090
+```yaml
+sources:
+  jira:
+    source-name:
+      # Required: JIRA instance URL
+      base_url: "https://company.atlassian.net"
+      
+      # Required: Deployment type
+      deployment_type: "cloud"  # Options: cloud, datacenter, server
+      
+      # Required: Project key to process
+      project_key: "PROJ"
+      
+      # Optional: Rate limit for API calls (default: 60)
+      requests_per_minute: 60
+      
+      # Optional: Number of issues per API request (default: 50)
+      page_size: 50
+      
+      # Required for Cloud: API token
+      token: "${JIRA_TOKEN}"
+      
+      # Required for Cloud: User email
+      email: "${JIRA_EMAIL}"
+      
+      # Optional: Enable file conversion (default: false)
+      enable_file_conversion: true
+      
+      # Optional: Download and process attachments (default: false)
+      download_attachments: true
+```
+
+##### Local File Sources
+
+```yaml
+sources:
+  localfile:
+    source-name:
+      # Required: Base directory path (must use file:// prefix)
+      base_url: "file:///path/to/files"
+      
+      # Optional: Paths to include (glob patterns)
+      include_paths:
+        - "docs/**"
+        - "*.md"
+      
+      # Optional: Paths to exclude (glob patterns)
+      exclude_paths:
+        - "tmp/**"
+        - ".*"  # Hidden files
+      
+      # Optional: File extensions to process
+      file_types:
+        - "*.md"
+        - "*.pdf"
+        - "*.txt"
+      
+      # Optional: Maximum file size in bytes (default: 50MB)
+      max_file_size: 52428800
+      
+      # Optional: Enable file conversion (default: false)
+      enable_file_conversion: true
+```
+
+##### Public Documentation Sources
+
+```yaml
+sources:
+  publicdocs:
+    source-name:
+      # Required: Base URL of documentation site
+      base_url: "https://docs.example.com"
+      
+      # Optional: Documentation version (default: "latest")
+      version: "1.0"
+      
+      # Optional: Content type (default: "html")
+      content_type: "html"
+      
+      # Optional: URL path pattern
+      path_pattern: "/docs/{version}/**"
+      
+      # Optional: Paths to exclude
+      exclude_paths:
+        - "/api/**"
+        - "/internal/**"
+      
+      # Optional: CSS selectors for content extraction
+      selectors:
+        content: "article.main-content"  # Main content selector
+        remove:                          # Elements to remove
+          - "nav"
+          - "header"
+          - "footer"
+        code_blocks: "pre code, .code"   # Code block selectors
+      
+      # Optional: Enable file conversion (default: false)
+      enable_file_conversion: true
+      
+      # Optional: Download and process attachments (default: false)
+      download_attachments: true
+      
+      # Optional: Attachment selectors
+      attachment_selectors:
+        - "a[href$='.pdf']"
+        - "a[href$='.docx']"
 ```
 
 ## 🔧 Configuration Management
 
-### Loading Configuration Files
+### Using Configuration Files
 
-#### Specify Configuration File
+#### Workspace Mode (Recommended)
 
 ```bash
-# Use specific configuration file
-qdrant-loader --config /path/to/config.yaml status
+# Create workspace directory
+mkdir my-workspace && cd my-workspace
 
-# Use environment-specific configuration
-qdrant-loader --config qdrant-loader.prod.yaml load
+# Download configuration templates
+curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
+curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
 
-# Use configuration from URL
-qdrant-loader --config https://config.company.com/qdrant-loader.yaml status
+# Edit configuration files
+# Then use workspace mode
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
 ```
 
-#### Configuration File Discovery
+#### Traditional Mode
 
 ```bash
-# QDrant Loader automatically looks for configuration files in:
-# 1. ./qdrant-loader.yaml (current directory)
-# 2. ./config.yaml (current directory)
-# 3. ~/.qdrant-loader.yaml (home directory)
-# 4. /etc/qdrant-loader.yaml (system-wide)
-
-# Check which configuration file is being used
-qdrant-loader config show --source
+# Use specific configuration files
+qdrant-loader --config /path/to/config.yaml --env /path/to/.env init
+qdrant-loader --config /path/to/config.yaml --env /path/to/.env ingest
 ```
 
 ### Configuration Validation
@@ -882,101 +544,165 @@ qdrant-loader config show --source
 #### Validate Configuration
 
 ```bash
-# Validate configuration file syntax
-qdrant-loader config validate
+# Validate all project configurations
+qdrant-loader project --workspace . validate
 
-# Validate specific configuration file
-qdrant-loader config validate --config qdrant-loader.prod.yaml
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
 
-# Test configuration connectivity
-qdrant-loader config test
-
-# Show effective configuration (after merging all sources)
-qdrant-loader config show
+# View current configuration
+qdrant-loader --workspace . config
 ```
 
-#### Configuration Schema
-
-```yaml
-# JSON Schema for configuration validation
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "qdrant": {
-      "type": "object",
-      "properties": {
-        "url": {"type": "string", "format": "uri"},
-        "api_key": {"type": ["string", "null"]},
-        "collection_name": {"type": "string"},
-        "timeout": {"type": "integer", "minimum": 1}
-      },
-      "required": ["url", "collection_name"]
-    },
-    "openai": {
-      "type": "object",
-      "properties": {
-        "api_key": {"type": "string"},
-        "model": {"type": "string"},
-        "batch_size": {"type": "integer", "minimum": 1, "maximum": 2048}
-      },
-      "required": ["api_key"]
-    }
-  },
-  "required": ["qdrant", "openai"]
-}
-```
-
-### Configuration Templates
-
-#### Generate Configuration Template
+#### Project Management
 
 ```bash
-# Generate basic configuration template
-qdrant-loader config init
+# List all configured projects
+qdrant-loader project --workspace . list
 
-# Generate configuration for specific environment
-qdrant-loader config init --env production
+# Show project status
+qdrant-loader project --workspace . status
 
-# Generate configuration with all options
-qdrant-loader config init --full
-
-# Generate configuration from existing setup
-qdrant-loader config export > current-config.yaml
+# Show status for specific project
+qdrant-loader project --workspace . status --project-id my-project
 ```
 
-#### Configuration Inheritance
+## 📋 Environment Variables
+
+Configuration files support environment variable substitution using `${VARIABLE_NAME}` syntax:
+
+### Required Environment Variables
+
+```bash
+# QDrant Configuration
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION_NAME=documents
+QDRANT_API_KEY=your_api_key  # Optional: for QDrant Cloud
+
+# Embedding Configuration
+OPENAI_API_KEY=your_openai_key
+
+# State Management
+STATE_DB_PATH=./state.db
+```
+
+### Source-Specific Environment Variables
+
+```bash
+# Git Repositories
+REPO_TOKEN=your_github_token
+
+# Confluence (Cloud)
+CONFLUENCE_TOKEN=your_confluence_token
+CONFLUENCE_EMAIL=your_email
+
+# JIRA (Cloud)
+JIRA_TOKEN=your_jira_token
+JIRA_EMAIL=your_email
+```
+
+## 🎯 Configuration Examples
+
+### Single Project Setup
 
 ```yaml
-# base.yaml - Base configuration
-qdrant:
-  collection_name: "documents"
-  timeout: 30
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+  
+  state_management:
+    database_path: "${STATE_DB_PATH}"
 
-openai:
-  model: "text-embedding-3-small"
-  batch_size: 100
+projects:
+  main:
+    project_id: "main"
+    display_name: "Main Project"
+    description: "Primary documentation project"
+    
+    sources:
+      git:
+        docs:
+          base_url: "https://github.com/company/docs.git"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
+```
 
-processing:
-  chunk_size: 1000
-  chunk_overlap: 200
+### Multi-Project Setup
 
----
-# production.yaml - Production overrides
-extends: "base.yaml"
+```yaml
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+  
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
+  
+  state_management:
+    database_path: "${STATE_DB_PATH}"
+  
+  file_conversion:
+    max_file_size: 52428800
+    enable_llm_descriptions: false
 
-qdrant:
-  url: "https://prod-qdrant.company.com"
-  api_key: "prod-api-key"
-  collection_name: "production_documents"
-
-openai:
-  api_key: "sk-prod-openai-key"
-  batch_size: 200
-
-logging:
-  level: "INFO"
-  file: "/var/log/qdrant-loader/app.log"
+projects:
+  documentation:
+    project_id: "documentation"
+    display_name: "Documentation"
+    description: "Technical documentation and guides"
+    
+    sources:
+      git:
+        docs-repo:
+          base_url: "https://github.com/company/docs.git"
+          branch: "main"
+          include_paths: ["docs/**", "README.md"]
+          token: "${DOCS_REPO_TOKEN}"
+          enable_file_conversion: true
+      
+      confluence:
+        tech-wiki:
+          base_url: "https://company.atlassian.net/wiki"
+          deployment_type: "cloud"
+          space_key: "TECH"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+  
+  support:
+    project_id: "support"
+    display_name: "Customer Support"
+    description: "Support documentation and tickets"
+    
+    sources:
+      jira:
+        support-tickets:
+          base_url: "https://company.atlassian.net"
+          deployment_type: "cloud"
+          project_key: "SUPPORT"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+      
+      localfile:
+        support-docs:
+          base_url: "file:///path/to/support/docs"
+          include_paths: ["**/*.md", "**/*.pdf"]
+          file_types: ["*.md", "*.pdf"]
+          enable_file_conversion: true
 ```
 
 ## 🔗 Related Documentation
@@ -984,22 +710,22 @@ logging:
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
 - **[Basic Configuration](../../getting-started/basic-configuration.md)** - Getting started with configuration
 - **[Data Sources](../detailed-guides/data-sources/)** - Source-specific configuration guides
+- **[Workspace Mode](./workspace-mode.md)** - Workspace configuration details
 
-## 📋 Configuration File Checklist
+## 📋 Configuration Checklist
 
-- [ ] **Configuration file** created in appropriate location
-- [ ] **Required sections** configured (qdrant, openai)
+- [ ] **Global configuration** completed (qdrant, embedding, state_management)
+- [ ] **Environment variables** configured in `.env` file
+- [ ] **Project definitions** created with unique project IDs
 - [ ] **Data source credentials** configured for your sources
-- [ ] **Processing settings** tuned for your use case
-- [ ] **MCP server settings** configured for AI tools
-- [ ] **Logging configuration** appropriate for your environment
-- [ ] **Security settings** properly configured
-- [ ] **Configuration validated** with test commands
+- [ ] **File conversion settings** configured if processing non-text files
+- [ ] **Configuration validated** with `qdrant-loader project validate`
+- [ ] **Projects listed** with `qdrant-loader project list`
 - [ ] **File permissions** set appropriately (chmod 600 for sensitive configs)
-- [ ] **Version control** configured (exclude sensitive files)
+- [ ] **Version control** configured (exclude `.env` files)
 
 ---
 
-**Configuration file setup complete!** 🎉
+**Multi-project configuration complete!** 🎉
 
-Your QDrant Loader is now configured using structured YAML files. This provides a maintainable, version-controllable way to manage complex configurations while supporting different environments and team collaboration.
+Your QDrant Loader is now configured using the multi-project structure. This provides organized, scalable configuration management while maintaining unified search across all your projects through a shared QDrant collection.

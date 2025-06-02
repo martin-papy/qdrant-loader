@@ -101,7 +101,7 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
 ### Installation
 
 1. **Download Cursor IDE**
-   - Visit [cursor.sh](https://cursor.sh/)
+   - Visit [cursor.com](https://www.cursor.com/)
    - Download for your platform (macOS, Windows, Linux)
    - Install and launch Cursor
 

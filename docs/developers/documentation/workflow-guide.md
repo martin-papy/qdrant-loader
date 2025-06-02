@@ -1,10 +1,10 @@
 # Documentation Update Workflow
 
-This guide provides step-by-step workflows for updating documentation as part of your development process. Follow these workflows to ensure documentation stays current and accurate.
+This guide provides step-by-step workflows for updating documentation as part of your development process. Follow these workflows to ensure documentation stays current and accurate with the actual QDrant Loader implementation.
 
 ## 🎯 Overview
 
-Documentation updates should be integrated into your development workflow, not treated as an afterthought. This guide shows you exactly when and how to update documentation for different types of changes.
+Documentation updates should be integrated into your development workflow, not treated as an afterthought. This guide shows you exactly when and how to update documentation for different types of changes in the QDrant Loader project.
 
 ## 🔄 General Workflow Principles
 
@@ -61,8 +61,8 @@ git push origin feature/new-feature
 git checkout -b feature/multi-project-support
 
 # 2. Create documentation structure first
-mkdir -p docs_new/docs/users/detailed-guides/workspace-management
-touch docs_new/docs/users/detailed-guides/workspace-management/README.md
+mkdir -p docs/users/detailed-guides/workspace-management
+touch docs/users/detailed-guides/workspace-management/README.md
 
 # 3. Write initial documentation outline
 # (Use feature template from templates/feature-template.md)
@@ -74,7 +74,7 @@ touch docs_new/docs/users/detailed-guides/workspace-management/README.md
 # ... documentation updates ...
 
 # 6. Test both code and documentation
-pytest tests/
+make test
 # Test all documentation examples manually
 
 # 7. Commit together
@@ -101,7 +101,6 @@ Closes #123"
 
 - [ ] **Developer Documentation**
   - [ ] Architecture explanation
-  - [ ] API reference updates
   - [ ] Extension points
   - [ ] Testing guidelines
 
@@ -116,11 +115,11 @@ Closes #123"
 
 ```bash
 # Find all documentation that mentions the feature
-grep -r "workspace" docs_new/ --include="*.md"
-grep -r "multi-project" docs_new/ --include="*.md"
+grep -r "workspace" docs/ --include="*.md"
+grep -r "multi-project" docs/ --include="*.md"
 
 # Check for configuration references
-grep -r "workspace_config" docs_new/ --include="*.md"
+grep -r "workspace_config" docs/ --include="*.md"
 ```
 
 #### Update Workflow
@@ -131,13 +130,13 @@ git checkout -b fix/workspace-configuration-update
 
 # 2. Identify affected documentation
 echo "Affected documentation files:" > doc_update_plan.md
-grep -l "workspace" docs_new/docs/**/*.md >> doc_update_plan.md
+grep -l "workspace" docs/**/*.md >> doc_update_plan.md
 
 # 3. Update code
 # ... implement changes ...
 
 # 4. Update documentation systematically
-# Start with API reference, then user guides, then examples
+# Start with CLI reference, then user guides, then examples
 
 # 5. Test updated examples
 # Run through all examples in updated documentation
@@ -167,13 +166,13 @@ Fixes #456"
 # If yes, update documentation
 
 # 2. Add to troubleshooting if it's a common issue
-# docs_new/docs/users/troubleshooting/common-issues.md
+# docs/users/troubleshooting/common-issues.md
 
 # 3. Update examples if they were incorrect
 # Test all related examples
 
 # 4. Update error message documentation if changed
-# docs_new/docs/users/troubleshooting/error-messages.md
+# docs/users/troubleshooting/error-messages-reference.md
 ```
 
 #### Example Bug Fix Documentation Update
@@ -192,32 +191,32 @@ Fixes #456"
 **Solution**:
 ```bash
 # Ensure workspace config is in the correct location
-ls -la .qdrant-loader/workspace.yaml
+ls -la config.yaml
 
 # If missing, create with:
-qdrant-loader workspace init
+qdrant-loader --workspace . init
 ```
 
 **Fixed In**: Version 1.2.1
 
 ```
 
-### 4. API Changes
+### 4. CLI Changes
 
-#### Breaking Changes Workflow
+#### New Commands Workflow
 
 ```bash
-# 1. Update API reference first
-# docs_new/docs/developers/api-reference/
+# 1. Update CLI reference first
+# docs/users/cli-reference/commands.md
 
-# 2. Update all user guides that use the API
-grep -r "old_api_method" docs_new/docs/users/
+# 2. Update all user guides that use the CLI
+grep -r "qdrant-loader" docs/users/
 
 # 3. Update examples and code snippets
-# Test all examples with new API
+# Test all examples with new CLI
 
-# 4. Add migration guide if needed
-# docs_new/docs/users/migration/api-changes.md
+# 4. Add migration guide if needed (for breaking changes)
+# docs/users/migration/cli-changes.md
 
 # 5. Update troubleshooting for new error messages
 ```
@@ -225,7 +224,7 @@ grep -r "old_api_method" docs_new/docs/users/
 #### Non-Breaking Changes Workflow
 
 ```bash
-# 1. Add new API documentation
+# 1. Add new CLI documentation
 # 2. Update examples to show new capabilities
 # 3. Add to feature guides where relevant
 # 4. No migration documentation needed
@@ -249,8 +248,8 @@ Before submitting your PR, verify:
 
 ### Technical Accuracy
 - [ ] **Commands tested** - All CLI commands work as shown
-- [ ] **Config examples valid** - All YAML/JSON examples are valid
-- [ ] **API references current** - Matches actual implementation
+- [ ] **Config examples valid** - All YAML examples are valid
+- [ ] **Implementation verified** - Matches actual codebase
 - [ ] **Version info correct** - Requirements and compatibility accurate
 
 ### Structure and Navigation
@@ -303,63 +302,68 @@ Example:
 
 ## 🔧 Tools and Automation
 
-### Documentation Testing
+### Manual Documentation Testing
 
 ```bash
-# Test all code examples in documentation
-python scripts/test_docs_examples.py
+# Test CLI commands manually
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
+qdrant-loader --workspace . config
 
-# Check for broken links
-find docs_new -name "*.md" -exec markdown-link-check {} \;
+# Validate YAML configuration files
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
-# Spell check
-aspell check docs_new/docs/users/new-guide.md
-
-# Style check
-markdownlint docs_new/docs/users/new-guide.md
+# Check for broken internal links manually
+# (No automated tools currently available)
 ```
 
-### Automated Checks in CI
+### GitHub Actions Integration
+
+The project uses GitHub Actions for documentation deployment:
 
 ```yaml
-# .github/workflows/docs.yml
-name: Documentation
-on: [push, pull_request]
+# .github/workflows/docs.yml (actual workflow)
+name: Documentation Website
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'website/**'
 
 jobs:
-  docs-check:
+  build-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Check links
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build website using templates
         run: |
-          npm install -g markdown-link-check
-          find docs_new -name "*.md" -exec markdown-link-check {} \;
-      
-      - name: Test code examples
-        run: |
-          python scripts/test_docs_examples.py
-      
-      - name: Check formatting
-        run: |
-          npm install -g markdownlint-cli
-          markdownlint docs_new/**/*.md
+          python website/build.py \
+            --output site \
+            --templates website/templates
 ```
 
-### Documentation Metrics
+### Documentation Quality Checks
 
-Track these metrics to ensure documentation quality:
+Manual checks to ensure documentation quality:
 
 ```bash
-# Documentation coverage
-python scripts/check_doc_coverage.py
+# Verify CLI commands work
+qdrant-loader --help
+qdrant-loader init --help
+qdrant-loader ingest --help
 
-# Example success rate
-python scripts/test_example_success_rate.py
+# Check configuration examples
+cd examples/workspace
+qdrant-loader --workspace . config
 
-# Link health
-python scripts/check_link_health.py
+# Validate project structure
+make test  # Run actual test suite
 ```
 
 ## 🚀 Common Scenarios
@@ -367,9 +371,9 @@ python scripts/check_link_health.py
 ### Scenario 1: Adding a New CLI Command
 
 ```bash
-# 1. Implement the command
+# 1. Implement the command in packages/qdrant-loader/src/qdrant_loader/cli/
 # 2. Update CLI reference
-echo "## qdrant-loader new-command" >> docs_new/docs/users/cli-reference/commands.md
+echo "## qdrant-loader new-command" >> docs/users/cli-reference/commands.md
 
 # 3. Add to user guide if it's a major feature
 # 4. Add examples
@@ -380,13 +384,13 @@ echo "## qdrant-loader new-command" >> docs_new/docs/users/cli-reference/command
 
 ```bash
 # 1. Update configuration reference
-# docs_new/docs/users/configuration/config-file-reference.md
+# docs/users/configuration/config-file-reference.md
 
 # 2. Update all examples that use the old format
-grep -r "old_config_format" docs_new/ --include="*.md"
+grep -r "old_config_format" docs/ --include="*.md"
 
 # 3. Add migration guide if breaking
-# docs_new/docs/users/migration/config-migration.md
+# docs/users/migration/config-migration.md
 
 # 4. Update troubleshooting for new validation errors
 ```
@@ -395,11 +399,11 @@ grep -r "old_config_format" docs_new/ --include="*.md"
 
 ```bash
 # 1. Create new data source guide
-cp docs_new/docs/users/detailed-guides/data-sources/git-repositories.md \
-   docs_new/docs/users/detailed-guides/data-sources/new-source.md
+cp docs/users/detailed-guides/data-sources/git-repositories.md \
+   docs/users/detailed-guides/data-sources/new-source.md
 
 # 2. Update data sources overview
-# docs_new/docs/users/detailed-guides/data-sources/README.md
+# docs/users/detailed-guides/data-sources/README.md
 
 # 3. Add configuration documentation
 # 4. Add examples and troubleshooting
@@ -412,14 +416,14 @@ cp docs_new/docs/users/detailed-guides/data-sources/git-repositories.md \
 
 - [ ] **Review open documentation issues** on GitHub
 - [ ] **Test getting started guides** with fresh environment
-- [ ] **Check for broken links** in recently updated docs
+- [ ] **Check for broken links** manually in recently updated docs
 
 ### Monthly Tasks
 
 - [ ] **Full documentation audit** - Test all major workflows
 - [ ] **Update version-specific information**
 - [ ] **Review and update troubleshooting** based on support tickets
-- [ ] **Check documentation metrics** and identify improvement areas
+- [ ] **Check documentation coverage** for new features
 
 ### Release Tasks
 
@@ -433,13 +437,12 @@ cp docs_new/docs/users/detailed-guides/data-sources/git-repositories.md \
 ### Documentation Questions
 
 - **GitHub Issues**: Use `documentation` label for doc-specific issues
-- **Slack**: #documentation channel for quick questions
-- **Code Review**: Tag @docs-team for documentation review
+- **Code Review**: Request documentation review in PRs
 
 ### Templates and Resources
 
-- **Feature Template**: `docs_new/docs/developers/documentation/templates/feature-template.md`
-- **Style Guide**: `docs_new/docs/developers/documentation/style-guide.md`
+- **Feature Template**: `docs/developers/documentation/templates/feature-template.md`
+- **Style Guide**: `docs/developers/documentation/style-guide.md`
 - **Examples**: Look at existing documentation for patterns
 
 ---
@@ -449,29 +452,50 @@ cp docs_new/docs/users/detailed-guides/data-sources/git-repositories.md \
 ### Common Commands
 
 ```bash
-# Create new documentation from template
-cp docs_new/docs/developers/documentation/templates/feature-template.md \
-   docs_new/docs/users/detailed-guides/new-feature.md
+# Test CLI commands
+qdrant-loader --workspace . init
+qdrant-loader --workspace . ingest
+qdrant-loader --workspace . config
+qdrant-loader project --workspace . list
 
-# Test documentation examples
-python scripts/test_docs_examples.py docs_new/docs/users/new-guide.md
+# Find references to a feature
+grep -r "feature_name" docs/ --include="*.md"
 
-# Check links in specific file
-markdown-link-check docs_new/docs/users/new-guide.md
-
-# Find all references to a feature
-grep -r "feature_name" docs_new/ --include="*.md"
+# Validate YAML configuration
+python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 ```
 
 ### Documentation Structure
 
 ```
 When adding documentation, place it in:
-- User guides: docs_new/docs/users/detailed-guides/
-- Configuration: docs_new/docs/users/configuration/
-- CLI reference: docs_new/docs/users/cli-reference/
-- Troubleshooting: docs_new/docs/users/troubleshooting/
-- Developer guides: docs_new/docs/developers/
+- User guides: docs/users/detailed-guides/
+- Configuration: docs/users/configuration/
+- CLI reference: docs/users/cli-reference/
+- Troubleshooting: docs/users/troubleshooting/
+- Developer guides: docs/developers/
+```
+
+### Actual CLI Commands Reference
+
+Only these CLI commands exist in the implementation:
+
+```bash
+# Main commands
+qdrant-loader init [--force]
+qdrant-loader ingest [--project PROJECT] [--source-type TYPE] [--source SOURCE]
+qdrant-loader config
+
+# Project management
+qdrant-loader project list [--format json]
+qdrant-loader project status [--project-id PROJECT] [--format json]
+qdrant-loader project validate [--project-id PROJECT]
+
+# Global options
+--workspace PATH    # Workspace directory
+--config PATH       # Configuration file (alternative to workspace)
+--env PATH          # Environment file (alternative to workspace)
+--log-level LEVEL   # Logging level
 ```
 
 Remember: **Documentation is part of the feature**. Plan it, write it, test it, and maintain it with the same care you give to your code.

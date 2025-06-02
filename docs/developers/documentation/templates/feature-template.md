@@ -45,7 +45,7 @@
 
 ```bash
 # [Brief comment about what this does]
-qdrant-loader [command] [basic-options]
+qdrant-loader --workspace . [command] [basic-options]
 
 # [Expected output or result]
 ```
@@ -53,10 +53,26 @@ qdrant-loader [command] [basic-options]
 ### Minimal Configuration
 
 ```yaml
-# [config-file.yaml]
-[feature-name]:
-  enabled: true
-  [basic-option]: [value]
+# config.yaml - Multi-project configuration structure
+global:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "[collection-name]"
+  
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+
+projects:
+  [project-id]:
+    project_id: "[project-id]"
+    display_name: "[Project Display Name]"
+    description: "[Project description]"
+    
+    sources:
+      [source-type]:
+        [source-name]:
+          [basic-option]: [value]
 ```
 
 ## ⚙️ Configuration
@@ -71,21 +87,34 @@ qdrant-loader [command] [basic-options]
 ### Configuration File Options
 
 ```yaml
-[feature-name]:
-  # [Description of this section]
-  [option-1]: [value]  # [Description of option]
-  [option-2]: [value]  # [Description of option]
-  
-  # [Description of advanced options]
-  advanced:
-    [advanced-option]: [value]  # [When to use this]
+# config.yaml - Multi-project structure
+global:
+  [feature-name]:
+    # [Description of this section]
+    [option-1]: [value]  # [Description of option]
+    [option-2]: [value]  # [Description of option]
+    
+    # [Description of advanced options]
+    advanced:
+      [advanced-option]: [value]  # [When to use this]
+
+projects:
+  [project-id]:
+    project_id: "[project-id]"
+    display_name: "[Project Name]"
+    description: "[Project description]"
+    
+    sources:
+      [source-type]:
+        [source-name]:
+          [source-option]: [value]  # [Description]
 ```
 
 ### CLI Options
 
 ```bash
 # [Feature-specific command options]
-qdrant-loader [command] \
+qdrant-loader --workspace . [command] \
   --[option-1] [value] \      # [Description]
   --[option-2] [value] \      # [Description]
   --[flag]                    # [Description]
@@ -99,10 +128,10 @@ qdrant-loader [command] \
 
 ```bash
 # Step 1: [What this step does]
-qdrant-loader [command] [options]
+qdrant-loader --workspace . [command] [options]
 
 # Step 2: [Next step]
-qdrant-loader [another-command] [options]
+qdrant-loader --workspace . [another-command] [options]
 ```
 
 **Expected Result**: [What the user should see]
@@ -112,17 +141,29 @@ qdrant-loader [another-command] [options]
 **Scenario**: [Describe the more complex use case]
 
 ```yaml
-# Configuration for advanced usage
-[feature-name]:
-  [advanced-config]: [value]
-  [complex-option]:
-    - [item-1]
-    - [item-2]
+# config.yaml - Advanced configuration
+global:
+  [feature-name]:
+    [advanced-config]: [value]
+    [complex-option]:
+      - [item-1]
+      - [item-2]
+
+projects:
+  [project-id]:
+    project_id: "[project-id]"
+    display_name: "[Advanced Project]"
+    description: "[Advanced use case description]"
+    
+    sources:
+      [source-type]:
+        [source-name]:
+          [advanced-option]: [value]
 ```
 
 ```bash
 # Execute with advanced configuration
-qdrant-loader [command] --config advanced-config.yaml
+qdrant-loader --workspace . [command]
 ```
 
 **Expected Result**: [What happens with this configuration]
@@ -133,7 +174,7 @@ qdrant-loader [command] --config advanced-config.yaml
 
 ```bash
 # Combined usage with other features
-qdrant-loader [command] \
+qdrant-loader --workspace . [command] \
   --[feature-option] [value] \
   --[other-feature-option] [value]
 ```
@@ -146,7 +187,7 @@ qdrant-loader [command] \
 
 ```bash
 # Advanced example
-[complex-command-example]
+qdrant-loader --workspace . [complex-command-example]
 ```
 
 ### [Advanced Topic 2]
@@ -154,8 +195,13 @@ qdrant-loader [command] \
 [Another advanced topic]
 
 ```yaml
-# Advanced configuration
-[complex-config-example]
+# config.yaml - Advanced configuration
+global:
+  [complex-config-example]
+
+projects:
+  [project-id]:
+    [complex-project-config]
 ```
 
 ## 🔧 Troubleshooting
@@ -175,8 +221,8 @@ qdrant-loader [command] \
 
 ```bash
 # Steps to fix the issue
-[fix-command-1]
-[fix-command-2]
+qdrant-loader --workspace . [fix-command-1]
+qdrant-loader --workspace . [fix-command-2]
 ```
 
 #### Issue: [Another Common Problem]
@@ -203,7 +249,7 @@ qdrant-loader [command] \
 
 ```bash
 # Fix command
-[solution-command]
+qdrant-loader --workspace . [solution-command]
 ```
 
 #### `[Another Error Message]`
@@ -227,8 +273,8 @@ qdrant-loader [command] \
 
 ### Developer Documentation
 
-- **[API Reference]**: [Link to relevant API docs]
 - **[Architecture Guide]**: [Link to architecture documentation]
+- **[Extension Guide]**: [Link to extension documentation]
 
 ### Configuration References
 
@@ -241,8 +287,8 @@ qdrant-loader [command] \
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| `[command-1]` | [What it does] | `qdrant-loader [command-1] [options]` |
-| `[command-2]` | [What it does] | `qdrant-loader [command-2] [options]` |
+| `[command-1]` | [What it does] | `qdrant-loader --workspace . [command-1] [options]` |
+| `[command-2]` | [What it does] | `qdrant-loader --workspace . [command-2] [options]` |
 
 ### Configuration Reference
 
@@ -251,12 +297,27 @@ qdrant-loader [command] \
 | `[option-1]` | `[type]` | `[default]` | [Description] |
 | `[option-2]` | `[type]` | `[default]` | [Description] |
 
-### API Endpoints (if applicable)
+### Available CLI Commands
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `[endpoint-1]` | `[GET/POST]` | [What it does] |
-| `[endpoint-2]` | `[GET/POST]` | [What it does] |
+QDrant Loader provides these commands:
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `init` | Initialize QDrant collection | `qdrant-loader --workspace . init [--force]` |
+| `ingest` | Process and load data | `qdrant-loader --workspace . ingest [--project PROJECT]` |
+| `config` | Display configuration | `qdrant-loader --workspace . config` |
+| `project list` | List projects | `qdrant-loader project --workspace . list [--format json]` |
+| `project status` | Show project status | `qdrant-loader project --workspace . status [--project-id PROJECT]` |
+| `project validate` | Validate projects | `qdrant-loader project --workspace . validate [--project-id PROJECT]` |
+
+### Global Options
+
+| Option | Description | Example |
+|--------|-------------|---------|
+| `--workspace PATH` | Workspace directory | `--workspace .` |
+| `--config PATH` | Configuration file | `--config config.yaml` |
+| `--env PATH` | Environment file | `--env .env` |
+| `--log-level LEVEL` | Logging level | `--log-level DEBUG` |
 
 ---
 

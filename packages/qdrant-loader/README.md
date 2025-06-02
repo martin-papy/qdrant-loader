@@ -111,24 +111,52 @@ STATE_DB_PATH=./state.db
 Edit `config.yaml`:
 
 ```yaml
-sources:
-  git:
-    - url: "https://github.com/your-org/your-repo.git"
-      branch: "main"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.py"
-      exclude_patterns:
-        - "**/node_modules/**"
+# Global configuration
+global_config:
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 100
+    vector_size: 1536
+  
+  file_conversion:
+    max_file_size: 52428800  # 50MB
+    conversion_timeout: 300
+    markitdown:
+      enable_llm_descriptions: false
 
-  local_files:
-    - path: "./docs"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.pdf"
+# Multi-project configuration
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Documentation Project"
+    description: "Project description"
+    
+    sources:
+      git:
+        my-repo:
+          base_url: "https://github.com/your-org/your-repo.git"
+          branch: "main"
+          include_paths:
+            - "**/*.md"
+            - "**/*.py"
+          exclude_paths:
+            - "**/node_modules/**"
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
 
-# Enable file conversion
-enable_file_conversion: true
+      localfile:
+        local-docs:
+          base_url: "file://./docs"
+          include_paths:
+            - "**/*.md"
+            - "**/*.pdf"
+          enable_file_conversion: true
 ```
 
 ### 4. Load Your Data
@@ -140,8 +168,8 @@ qdrant-loader --workspace . init
 # Load data from configured sources
 qdrant-loader --workspace . ingest
 
-# Check status
-qdrant-loader --workspace . status
+# Check project status
+qdrant-loader project --workspace . status
 ```
 
 ## 🔧 Configuration
@@ -162,13 +190,12 @@ qdrant-loader --workspace . status
 
 ```bash
 REPO_TOKEN=your_github_token
-REPO_URL=https://github.com/user/repo.git
 ```
 
 #### Confluence (Cloud)
 
 ```bash
-CONFLUENCE_URL=https://your-domain.atlassian.net
+CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
 CONFLUENCE_SPACE_KEY=SPACE
 CONFLUENCE_TOKEN=your_token
 CONFLUENCE_EMAIL=your_email
@@ -213,8 +240,11 @@ qdrant-loader --workspace . init
 # Ingest data from all configured sources
 qdrant-loader --workspace . ingest
 
-# Check ingestion status
-qdrant-loader --workspace . status
+# Check project status
+qdrant-loader project --workspace . status
+
+# List all projects
+qdrant-loader project --workspace . list
 
 # Show help
 qdrant-loader --help
@@ -226,27 +256,37 @@ qdrant-loader --help
 # Specify configuration files individually
 qdrant-loader --config config.yaml --env .env ingest
 
-# Verbose logging
-qdrant-loader --workspace . --verbose ingest
-
-# Dry run (show what would be processed)
-qdrant-loader --workspace . --dry-run ingest
+# Debug logging
+qdrant-loader --workspace . --log-level DEBUG ingest
 
 # Force full re-ingestion
-qdrant-loader --workspace . --force ingest
+qdrant-loader --workspace . init --force
+qdrant-loader --workspace . ingest
+
+# Process specific project
+qdrant-loader --workspace . ingest --project my-project
+
+# Process specific source type
+qdrant-loader --workspace . ingest --source-type git
+
+# Enable performance profiling
+qdrant-loader --workspace . ingest --profile
 ```
 
-### Configuration Validation
+### Project Management
 
 ```bash
-# Validate configuration
-qdrant-loader --workspace . validate
+# Validate project configurations
+qdrant-loader project --workspace . validate
 
-# Test data source connections
-qdrant-loader --workspace . test-connections
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id my-project
 
-# Show collection statistics
-qdrant-loader --workspace . stats
+# Show project status in JSON format
+qdrant-loader project --workspace . status --format json
+
+# Show specific project status
+qdrant-loader project --workspace . status --project-id my-project
 ```
 
 ## 🏗️ Architecture

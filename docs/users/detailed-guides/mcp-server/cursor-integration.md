@@ -15,7 +15,7 @@ Cursor IDE is an AI-powered code editor that supports the Model Context Protocol
 
 ### Prerequisites
 
-- **Cursor IDE** installed ([download here](https://cursor.sh/))
+- **Cursor IDE** installed ([download here](https://www.cursor.com/))
 - **QDrant Loader** installed and configured
 - **Documents ingested** into your QDrant database
 - **MCP server** package installed

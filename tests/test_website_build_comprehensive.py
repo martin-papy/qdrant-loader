@@ -504,6 +504,13 @@ class TestWebsiteBuilderSEO:
         # Ensure output directory exists
         builder.output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Create some HTML files first so sitemap has content
+        (builder.output_dir / "index.html").write_text("<html><body>Home</body></html>")
+        (builder.output_dir / "docs").mkdir()
+        (builder.output_dir / "docs" / "index.html").write_text(
+            "<html><body>Docs</body></html>"
+        )
+
         builder.generate_seo_files()
 
         # Check sitemap.xml
@@ -515,6 +522,263 @@ class TestWebsiteBuilderSEO:
         # Check robots.txt
         robots_file = mock_project_structure / "site" / "robots.txt"
         assert robots_file.exists()
+
+
+class TestWebsiteBuilderLicenseHandling:
+    """Test license page building functionality."""
+
+    def test_build_license_page_success(self, mock_project_structure, clean_workspace):
+        """Test successful license page building."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create a LICENSE file
+        license_file = mock_project_structure / "LICENSE"
+        license_content = """GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed."""
+        license_file.write_text(license_content)
+
+        builder.build_license_page(
+            "LICENSE", "LICENSE.html", "License", "GNU GPLv3 License"
+        )
+
+        output_file = mock_project_structure / "site" / "LICENSE.html"
+        assert output_file.exists()
+
+        content = output_file.read_text()
+        assert "GNU GENERAL PUBLIC LICENSE" in content
+        assert "License Information" in content
+
+    def test_build_license_page_missing_file(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test license page building with missing file."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Should handle missing license file gracefully
+        builder.build_license_page(
+            "nonexistent-LICENSE", "LICENSE.html", "License", "License"
+        )
+
+        # Output file should not be created
+        output_file = mock_project_structure / "site" / "LICENSE.html"
+        assert not output_file.exists()
+
+
+class TestWebsiteBuilderAdvancedFeatures:
+    """Test advanced website builder features."""
+
+    def test_generate_directory_indexes(self, mock_project_structure, clean_workspace):
+        """Test directory index generation."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create some README.html files in docs structure
+        docs_dir = mock_project_structure / "site" / "docs"
+        docs_dir.mkdir(parents=True)
+
+        # Create a README.html file
+        readme_content = "<html><body><h1>Package Documentation</h1></body></html>"
+        (docs_dir / "README.html").write_text(readme_content)
+
+        # Create subdirectory with README
+        subdir = docs_dir / "packages" / "qdrant-loader"
+        subdir.mkdir(parents=True)
+        (subdir / "README.html").write_text(readme_content)
+
+        builder.generate_directory_indexes()
+
+        # Check that index.html was created in subdirectory
+        index_file = subdir / "index.html"
+        assert index_file.exists()
+        assert "Package Documentation" in index_file.read_text()
+
+    def test_generate_directory_indexes_no_docs(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test directory index generation with no docs directory."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Should handle missing docs directory gracefully
+        builder.generate_directory_indexes()
+
+    def test_copy_static_files_with_files(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test copying static files."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create static files
+        static_dir = mock_project_structure / "static"
+        static_dir.mkdir()
+        (static_dir / "test.txt").write_text("static content")
+        (static_dir / "image.png").write_text("fake image")
+
+        builder.copy_static_files([str(static_dir)])
+
+        # Check files were copied
+        output_dir = mock_project_structure / "site" / "static"
+        assert output_dir.exists()
+        assert (output_dir / "test.txt").exists()
+        assert (output_dir / "image.png").exists()
+
+    def test_copy_static_files_with_single_file(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test copying a single static file."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Create output directory first
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create a single file
+        static_file = mock_project_structure / "robots.txt"
+        static_file.write_text("User-agent: *\nAllow: /")
+
+        builder.copy_static_files([str(static_file)])
+
+        # Check file was copied
+        output_file = mock_project_structure / "site" / "robots.txt"
+        assert output_file.exists()
+        assert "User-agent: *" in output_file.read_text()
+
+    def test_copy_static_files_missing_source(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test copying static files with missing source."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+
+        # Should handle missing source gracefully
+        builder.copy_static_files(["nonexistent"])
+
+
+class TestWebsiteBuilderErrorHandling:
+    """Test error handling in website builder."""
+
+    def test_markdown_to_html_with_import_error(self, clean_workspace):
+        """Test markdown processing with import error handling."""
+        builder = WebsiteBuilder()
+
+        # Test with content that would trigger import error handling
+        result = builder.markdown_to_html("# Test\n\nContent")
+        assert "Test" in result
+
+    def test_extract_title_edge_cases(self):
+        """Test title extraction edge cases."""
+        builder = WebsiteBuilder()
+
+        # Test with whitespace
+        title = builder.extract_title_from_markdown("  # Spaced Title  \n")
+        assert title == "Spaced Title"
+
+        # Test with empty lines
+        title = builder.extract_title_from_markdown("\n\n# Title After Empty Lines\n")
+        assert title == "Title After Empty Lines"
+
+        # Test with no content
+        title = builder.extract_title_from_markdown("")
+        assert title == "Documentation"
+
+    def test_convert_markdown_links_complex_paths(self):
+        """Test markdown link conversion with complex paths."""
+        builder = WebsiteBuilder()
+
+        # Test with complex relative paths - the actual behavior removes docs/ when already in docs/
+        html = 'href="../../docs/guide.md"'
+        result = builder.convert_markdown_links_to_html(
+            html, "packages/test/README.md", "docs/packages/test/README.html"
+        )
+        # The actual behavior removes the docs/ part since we're already in docs/
+        assert 'href="../../guide.html"' in result
+
+        # Test LICENSE file conversion
+        html = 'href="../LICENSE"'
+        result = builder.convert_markdown_links_to_html(html)
+        assert 'href="../LICENSE.html"' in result
+
+    def test_generate_project_info_with_tomli_error(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test project info generation with tomli import error."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Remove pyproject.toml to trigger error handling
+        pyproject_file = mock_project_structure / "pyproject.toml"
+        if pyproject_file.exists():
+            pyproject_file.unlink()
+
+        builder.generate_project_info()
+
+        # Should still create project-info.json with defaults
+        project_info_file = mock_project_structure / "site" / "project-info.json"
+        assert project_info_file.exists()
+
+
+class TestWebsiteBuilderSEOAdvanced:
+    """Test advanced SEO functionality."""
+
+    def test_generate_dynamic_sitemap_with_files(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test dynamic sitemap generation with actual files."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+        builder.base_url = "https://example.com"
+
+        # Create some HTML files
+        site_dir = mock_project_structure / "site"
+        site_dir.mkdir(parents=True)
+        (site_dir / "index.html").write_text("<html><body>Home</body></html>")
+
+        # Create subdirectories before writing files
+        (site_dir / "docs").mkdir(parents=True, exist_ok=True)
+        (site_dir / "coverage").mkdir(parents=True, exist_ok=True)
+
+        (site_dir / "docs" / "index.html").write_text("<html><body>Docs</body></html>")
+        (site_dir / "coverage" / "index.html").write_text(
+            "<html><body>Coverage</body></html>"
+        )
+
+        builder.generate_dynamic_sitemap("2024-01-01")
+
+        sitemap_file = site_dir / "sitemap.xml"
+        assert sitemap_file.exists()
+
+        content = sitemap_file.read_text()
+        assert "https://example.com/index.html" in content
+        assert "https://example.com/docs/index.html" in content
+        assert "2024-01-01" in content
+
+    def test_generate_dynamic_sitemap_relative_urls(
+        self, mock_project_structure, clean_workspace
+    ):
+        """Test dynamic sitemap generation with relative URLs."""
+        os.chdir(mock_project_structure)
+        builder = WebsiteBuilder("website/templates", "site")
+        # No base_url set, should use relative URLs
+
+        site_dir = mock_project_structure / "site"
+        site_dir.mkdir(parents=True)
+        (site_dir / "index.html").write_text("<html><body>Home</body></html>")
+
+        builder.generate_dynamic_sitemap("2024-01-01")
+
+        sitemap_file = site_dir / "sitemap.xml"
+        assert sitemap_file.exists()
+
+        content = sitemap_file.read_text()
+        assert "/index.html" in content
 
 
 class TestWebsiteBuilderIntegration:

@@ -218,10 +218,49 @@
                 font-size: 1.1rem;
             }
         }
+
+        body.clickio-cmp-in-scope .clickio-cmp-settings-display {
+            display: inherit !important;
+        }
     </style>
 
     {{ additional_head }}
 </head>
+<!-- Default Consent Mode config -->
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('consent', 'default', {
+        'ad_storage': 'granted',
+        'analytics_storage': 'granted',
+        'functionality_storage': 'granted',
+        'personalization_storage': 'granted',
+        'security_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted',
+        'wait_for_update': 1500
+    });
+    gtag('consent', 'default', {
+        'region': ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'CH'],
+        'ad_storage': 'denied',
+        'analytics_storage': 'denied',
+        'functionality_storage': 'denied',
+        'personalization_storage': 'denied',
+        'security_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'wait_for_update': 1500
+    });
+    gtag('set', 'ads_data_redaction', true);
+    gtag('set', 'url_passthrough', false);
+    (function () {
+        const s = { adStorage: { storageName: "ad_storage", serialNumber: 0 }, analyticsStorage: { storageName: "analytics_storage", serialNumber: 1 }, functionalityStorage: { storageName: "functionality_storage", serialNumber: 2 }, personalizationStorage: { storageName: "personalization_storage", serialNumber: 3 }, securityStorage: { storageName: "security_storage", serialNumber: 4 }, adUserData: { storageName: "ad_user_data", serialNumber: 5 }, adPersonalization: { storageName: "ad_personalization", serialNumber: 6 } }; let c = localStorage.getItem("__lxG__consent__v2"); if (c) { c = JSON.parse(c); if (c && c.cls_val) c = c.cls_val; if (c) c = c.split("|"); if (c && c.length && typeof c[14] !== undefined) { c = c[14].split("").map(e => e - 0); if (c.length) { let t = {}; Object.values(s).sort((e, t) => e.serialNumber - t.serialNumber).forEach(e => { t[e.storageName] = c[e.serialNumber] ? "granted" : "denied" }); gtag("consent", "update", t) } } }
+        if (Math.random() < 0.05) { if (window.dataLayer && (window.dataLayer.some(e => e[0] === 'js' && e[1] instanceof Date) || window.dataLayer.some(e => e['event'] === 'gtm.js' && e['gtm.start'] == true))) { document.head.appendChild(document.createElement('img')).src = "//clickiocdn.com/utr/gtag/?sid=243388"; } }
+    })();
+</script>
+
+<!-- Clickio Consent Main tag -->
+<script async type="text/javascript" src="//clickiocmp.com/t/consent_243388.js"></script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GEEM7K6QL1"></script>
 <script>
@@ -302,38 +341,62 @@
                         bases from multiple data sources.</p>
                 </div>
                 <div class="col-md-6">
-                    <h6 class="text-white mb-3">Quick Links</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="{{ base_url }}docs/" class="text-light text-decoration-none">Documentation</a></li>
-                        <li><a href="https://github.com/martin-papy/qdrant-loader"
-                                class="text-light text-decoration-none">GitHub Repository</a></li>
-                        <li><a href="https://pypi.org/project/qdrant-loader/"
-                                class="text-light text-decoration-none">QDrant Loader PyPI</a></li>
-                        <li><a href="https://pypi.org/project/qdrant-loader-mcp-server/"
-                                class="text-light text-decoration-none">MCP Server PyPI</a></li>
-                        <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test Coverage</a>
-                        </li>
-                    </ul>
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-white mb-3">Quick Links</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{{ base_url }}docs/"
+                                        class="text-light text-decoration-none">Documentation</a></li>
+                                <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test
+                                        Coverage</a></li>
+                                <li><a href="{{ base_url }}privacy-policy.html" class="text-light text-decoration-none">
+                                        <i class="bi bi-shield-lock me-1"></i>Privacy Policy</a>
+                                </li>
+                                <li>
+                                    <a class="clickio-cmp-settings-text clickio-cmp-settings-display text-light text-decoration-none"
+                                        style="display:none;" href="#">
+                                        <i class="bi bi-gear me-1"></i>Your Privacy Choices
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-white mb-3">Packages & Code</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="https://github.com/martin-papy/qdrant-loader"
+                                        class="text-light text-decoration-none">GitHub Repository</a></li>
+                                <li><a href="https://pypi.org/project/qdrant-loader/"
+                                        class="text-light text-decoration-none">QDrant Loader PyPI</a></li>
+                                <li><a href="https://pypi.org/project/qdrant-loader-mcp-server/"
+                                        class="text-light text-decoration-none">MCP Server PyPI</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
             <hr class="my-4 border-light">
             <div class="row align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-8">
                     <p class="mb-0 text-light">&copy; 2025 QDrant Loader. Built with ❤️ for the AI development
                         community.</p>
+                    <p class="mb-0 text-light small opacity-75">
+                        <i class="bi bi-info-circle me-1"></i>
+                        This site uses Google Analytics to improve user experience.
+                        <a href="{{ base_url }}privacy-policy.html" class="text-light">Learn more</a>
+                    </p>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="d-flex justify-content-md-end align-items-center">
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex justify-content-md-end align-items-center mb-2">
                         <a href="https://www.linkedin.com/in/martin-papy/" target="_blank" class="text-light me-3"
                             title="Connect with Martin Papy on LinkedIn">
                             <i class="bi bi-linkedin"></i>
                         </a>
-                        <a href="https://github.com/martin-papy" target="_blank" class="text-light me-3"
+                        <a href="https://github.com/martin-papy" target="_blank" class="text-light"
                             title="Follow Martin Papy on GitHub">
                             <i class="bi bi-github"></i>
                         </a>
-                        <p class="mb-0 text-light" id="build-info">Loading build information...</p>
                     </div>
+                    <p class="mb-0 text-light small text-nowrap" id="build-info">Loading build information...</p>
                 </div>
             </div>
         </div>
@@ -351,8 +414,10 @@
         fetch('{{ base_url }}project-info.json')
             .then(response => response.json())
             .then(data => {
+                const buildDate = new Date(data.build.timestamp);
+                const formattedDate = `${buildDate.getDate().toString().padStart(2, '0')}-${(buildDate.getMonth() + 1).toString().padStart(2, '0')}-${buildDate.getFullYear()}`;
                 document.getElementById('build-info').innerHTML =
-                    `Version ${data.version} • Built ${new Date(data.build.timestamp).toLocaleDateString()} • Commit ${data.commit.short}`;
+                    `Version ${data.version} • Built ${formattedDate} • Commit ${data.commit.short}`;
             })
             .catch(() => {
                 document.getElementById('build-info').innerHTML = 'Build information unavailable';

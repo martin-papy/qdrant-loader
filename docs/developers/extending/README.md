@@ -153,7 +153,7 @@ class CustomAPIConnector(BaseConnector):
                 "tags": api_item.get("tags", []),
             },
             source_type="custom_api",
-            source=self.config.config["api_url"],
+            source=self.config.source,
             url=f"{self.api_url}/documents/{api_item['id']}"
         )
 ```
@@ -188,28 +188,28 @@ def create_connector(source_type: str, config: SourceConfig) -> BaseConnector:
 
 ## 📄 Document Model
 
-The `Document` model is the core data structure used throughout QDrant Loader:
+The `Document` model is the core data structure used throughout QDrant Loader. It uses Pydantic BaseModel:
 
 ```python
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from pydantic import BaseModel, Field
+from typing import Any
+from datetime import datetime, UTC
 
-@dataclass
-class Document:
-    """Document model for QDrant Loader."""
-    
+class Document(BaseModel):
+    """Document model with enhanced metadata support."""
+
+    id: str  # Auto-generated from source_type, source, and url
     title: str
     content_type: str
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    content_hash: str  # Auto-generated hash of content
     source_type: str
     source: str
-    url: Optional[str] = None
-    
-    # Additional fields for specific use cases
-    file_path: Optional[str] = None
-    parent_id: Optional[str] = None
-    hierarchy_context: Optional[str] = None
+    url: str
+    is_deleted: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 ```
 
 ### Document Creation Best Practices
@@ -220,20 +220,40 @@ class Document:
 4. **Use consistent source_type** - Follow naming conventions
 5. **Provide URLs when available** - Enable linking back to original content
 
+### Document Creation Example
+
+```python
+# The Document constructor automatically generates id and content_hash
+document = Document(
+    title="API Documentation",
+    content_type="text/markdown",
+    content="# API Reference\n\nThis is the API documentation...",
+    metadata={
+        "author": "John Doe",
+        "version": "1.0",
+        "tags": ["api", "documentation"],
+        "last_modified": "2024-01-15T10:30:00Z"
+    },
+    source_type="custom_api",
+    source="my-api-docs",
+    url="https://api.example.com/docs/reference"
+)
+```
+
 ## 🔧 Configuration Extensions
 
 ### Custom Configuration Classes
 
-Create configuration classes for your custom connectors:
+Create configuration classes for your custom connectors by extending `SourceConfig`:
 
 ```python
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
+from qdrant_loader.config.source_config import SourceConfig
 
-class CustomAPIConfig(BaseModel):
+class CustomAPIConfig(SourceConfig):
     """Configuration for custom API connector."""
     
-    api_url: str
     api_key: Optional[str] = None
     batch_size: int = 100
     timeout: int = 30
@@ -241,13 +261,8 @@ class CustomAPIConfig(BaseModel):
     include_tags: List[str] = []
     exclude_tags: List[str] = []
     
-    @validator('api_url')
-    def validate_api_url(cls, v):
-        if not v.startswith(('http://', 'https://')):
-            raise ValueError('API URL must start with http:// or https://')
-        return v
-    
-    @validator('batch_size')
+    @field_validator('batch_size')
+    @classmethod
     def validate_batch_size(cls, v):
         if v < 1 or v > 1000:
             raise ValueError('Batch size must be between 1 and 1000')
@@ -258,12 +273,20 @@ class CustomAPIConfig(BaseModel):
 
 ```yaml
 # config.yaml
+global_config:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "my-collection"
+
 projects:
   my-project:
+    display_name: "My Custom API Project"
+    description: "Project using custom API connector"
     sources:
       custom_api:
         my-api-source:
-          api_url: "https://api.example.com"
+          base_url: "https://api.example.com"
           api_key: "${API_KEY}"
           batch_size: 50
           timeout: 60
@@ -283,14 +306,9 @@ from qdrant_loader.core.file_conversion import FileConverter, FileConversionConf
 # Configure file conversion
 config = FileConversionConfig(
     enable_llm_descriptions=True,
-    llm_client=openai_client,
+    llm_model="gpt-4o-mini",
     max_file_size=50 * 1024 * 1024,  # 50MB
-    supported_formats=[
-        "pdf", "docx", "pptx", "xlsx", 
-        "png", "jpg", "gif",  # Images with OCR
-        "mp3", "wav",         # Audio transcription
-        "zip", "tar"          # Archive extraction
-    ]
+    conversion_timeout=300  # 5 minutes
 )
 
 converter = FileConverter(config)
@@ -330,13 +348,15 @@ class CustomFileProcessor:
 import pytest
 from unittest.mock import AsyncMock, patch
 from your_extension.custom_api import CustomAPIConnector
+from qdrant_loader.config.source_config import SourceConfig
 
 @pytest.mark.asyncio
 async def test_custom_connector_fetch_documents():
     """Test document fetching."""
     config = SourceConfig(
-        source_id="test-source",
-        name="Test Source",
+        source_type="custom_api",
+        source="test-source",
+        base_url="https://api.example.com",
         config={
             "api_url": "https://api.example.com",
             "api_key": "test_key"
@@ -369,34 +389,25 @@ async def test_custom_connector_fetch_documents():
 @pytest.mark.asyncio
 async def test_custom_connector_integration():
     """Test full integration with QDrant Loader."""
-    from qdrant_loader.core.pipeline import AsyncIngestionPipeline
-    from qdrant_loader.config.project_config import ProjectConfig
+    from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+    from qdrant_loader.config import Settings
     
-    config = ProjectConfig(
-        project_id="test",
-        collection_name="test",
-        sources={
-            "custom_api": {
-                "test-source": {
-                    "api_url": "https://api.example.com",
-                    "api_key": "test_key"
-                }
-            }
-        }
-    )
+    # Load test configuration
+    settings = Settings.from_yaml("test_config.yaml")
     
-    pipeline = AsyncIngestionPipeline(config)
-    result = await pipeline.ingest()
+    # Create pipeline with custom connector
+    pipeline = AsyncIngestionPipeline(settings)
+    result = await pipeline.process_documents(project_id="test-project")
     
-    assert result.processed_count > 0
+    assert len(result) > 0
 ```
 
 ## 📦 Packaging Extensions
 
 ### Creating a Package
 
-```python
-# setup.py or pyproject.toml
+```toml
+# pyproject.toml
 [project]
 name = "qdrant-loader-custom-extension"
 version = "1.0.0"
@@ -487,7 +498,7 @@ class BaseAPIConnector(BaseConnector):
     
     def __init__(self, config: SourceConfig):
         super().__init__(config)
-        self.base_url = config.config["base_url"]
+        self.base_url = str(config.base_url)
         self.api_key = config.config.get("api_key")
         self.session = None
     
@@ -534,7 +545,6 @@ Each connector demonstrates different patterns and can serve as examples for you
 
 - **[Architecture Overview](../architecture/)** - System design and components
 - **[Configuration Reference](../../users/configuration/)** - Configuration options
-- **[API Documentation](../api/)** - Core API reference
 
 ---
 

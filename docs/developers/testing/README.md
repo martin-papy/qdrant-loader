@@ -1,6 +1,6 @@
 # Testing Guide
 
-This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, performance testing, and quality assurance practices.
+This section provides comprehensive testing documentation for QDrant Loader, covering unit testing, integration testing, and quality assurance practices.
 
 ## 🎯 Testing Overview
 
@@ -16,10 +16,9 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 
 ### 📚 Testing Categories
 
-- **[Unit Testing](./unit-testing.md)** - Testing individual components in isolation
-- **[Integration Testing](./integration-testing.md)** - Testing component interactions and end-to-end workflows
-- **[Performance Testing](./performance-testing.md)** - Load testing, benchmarking, and performance validation
-- **[Quality Assurance](./quality-assurance.md)** - Code quality, review processes, and standards
+- **Unit Testing** - Testing individual components in isolation
+- **Integration Testing** - Testing component interactions and end-to-end workflows
+- **Quality Assurance** - Code quality, review processes, and standards
 
 ## 🚀 Quick Start
 
@@ -52,14 +51,11 @@ pytest tests/unit/
 # Integration tests only
 pytest tests/integration/
 
-# Performance tests
-pytest tests/performance/
-
 # Specific test file
-pytest tests/unit/test_sources.py
+pytest tests/unit/core/test_qdrant_manager.py
 
 # Specific test function
-pytest tests/unit/test_sources.py::test_git_source_fetch_documents
+pytest tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initialization_default_settings
 ```
 
 ## 🧪 Testing Framework
@@ -72,33 +68,24 @@ pytest tests/unit/test_sources.py::test_git_source_fetch_documents
 | **pytest-asyncio** | Async test support | Testing async functions |
 | **pytest-cov** | Coverage reporting | Code coverage analysis |
 | **pytest-mock** | Mocking utilities | Mock external dependencies |
-| **pytest-benchmark** | Performance testing | Benchmark test execution |
-| **factory-boy** | Test data generation | Create test fixtures |
+| **requests-mock** | HTTP mocking | Mock external HTTP calls |
+| **pytest-timeout** | Test timeouts | Prevent hanging tests |
 
 ### Test Configuration
 
-```python
-# pytest.ini
-[tool:pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts = 
-    --strict-markers
-    --strict-config
-    --verbose
-    --tb=short
-    --cov=qdrant_loader
-    --cov-report=term-missing
-    --cov-report=html:htmlcov
-    --cov-fail-under=85
-markers =
-    unit: Unit tests
-    integration: Integration tests
-    performance: Performance tests
-    slow: Slow running tests
-asyncio_mode = auto
+The project uses `pyproject.toml` for pytest configuration:
+
+```toml
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-timeout>=2.3.0",
+    "responses>=0.24.1",
+    "requests_mock>=1.11.0",
+]
 ```
 
 ### Test Structure
@@ -106,21 +93,20 @@ asyncio_mode = auto
 ```
 tests/
 ├── conftest.py              # Shared fixtures and configuration
+├── config.test.yaml         # Test configuration file
+├── config.test.template.yaml # Template for test configuration
+├── .env.test.template       # Environment variables template
+├── utils.py                 # Test utilities
 ├── unit/                    # Unit tests
-│   ├── test_sources.py      # Data source tests
-│   ├── test_converters.py   # File converter tests
-│   ├── test_processors.py   # Content processor tests
-│   └── test_vector.py       # Vector engine tests
+│   ├── cli/                 # CLI command tests
+│   ├── config/              # Configuration tests
+│   ├── connectors/          # Connector tests
+│   ├── core/                # Core component tests
+│   │   └── pipeline/        # Pipeline tests
+│   └── utils/               # Utility tests
 ├── integration/             # Integration tests
-│   ├── test_full_pipeline.py
-│   ├── test_mcp_server.py
-│   └── test_cli.py
-├── performance/             # Performance tests
-│   ├── test_ingestion_speed.py
-│   └── test_search_performance.py
-└── fixtures/                # Test data and fixtures
-    ├── sample_documents/
-    └── test_configs/
+├── fixtures/                # Test data and fixtures
+└── scripts/                 # Test utility scripts
 ```
 
 ## 🔧 Test Fixtures and Utilities
@@ -130,239 +116,267 @@ tests/
 ```python
 # conftest.py
 import pytest
-import tempfile
-import asyncio
 from pathlib import Path
-from qdrant_loader.config import Config
-from qdrant_loader import QDrantLoader
+from qdrant_loader.config import get_settings, initialize_config
 
-@pytest.fixture
-def temp_workspace():
-    """Create a temporary workspace for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        workspace = Path(temp_dir)
-        yield workspace
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Setup test environment before running tests."""
+    # Create necessary directories
+    data_dir = Path("./data")
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-@pytest.fixture
-def test_config():
-    """Create a test configuration."""
-    return Config(
-        qdrant_url="memory://test",
-        collection_name="test_collection",
-        sources=[],
-        chunk_size=500,
-        batch_size=10
+    # Load test configuration
+    config_path = Path("tests/config.test.yaml")
+    env_path = Path("tests/.env.test")
+
+    # Load environment variables first
+    load_dotenv(env_path, override=True)
+
+    # Initialize config using the same function as CLI
+    initialize_config(config_path)
+
+    yield
+
+    # Clean up after all tests
+    if data_dir.exists():
+        shutil.rmtree(data_dir)
+
+@pytest.fixture(scope="session")
+def test_settings():
+    """Get test settings."""
+    settings = get_settings()
+    return settings
+
+@pytest.fixture(scope="session")
+def test_global_config():
+    """Get test configuration."""
+    config = get_settings().global_config
+    return config
+
+@pytest.fixture(scope="session")
+def qdrant_client(test_global_config):
+    """Create and return a Qdrant client for testing."""
+    from qdrant_client import QdrantClient
+    
+    client = QdrantClient(
+        url=os.getenv("QDRANT_URL"), 
+        api_key=os.getenv("QDRANT_API_KEY")
     )
+    yield client
+    # Cleanup: Delete test collection after tests
+    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    if collection_name:
+        client.delete_collection(collection_name)
 
-@pytest.fixture
-async def qdrant_loader(test_config):
-    """Create a QDrant Loader instance for testing."""
-    loader = QDrantLoader(test_config)
-    await loader.initialize()
-    yield loader
-    await loader.cleanup()
-
-@pytest.fixture
-def sample_documents():
-    """Generate sample documents for testing."""
-    from qdrant_loader.types import Document
-    return [
-        Document(
-            id="doc_1",
-            title="Test Document 1",
-            content="This is test content for document 1",
-            metadata={"source": "test"},
-            source_type="test",
-            source_id="1"
-        ),
-        Document(
-            id="doc_2",
-            title="Test Document 2",
-            content="This is test content for document 2",
-            metadata={"source": "test"},
-            source_type="test",
-            source_id="2"
+@pytest.fixture(scope="function")
+def clean_collection(qdrant_client):
+    """Ensure the test collection is empty before each test."""
+    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    if collection_name:
+        qdrant_client.delete_collection(collection_name)
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config={
+                "size": 1536,
+                "distance": "Cosine",
+            },  # OpenAI embedding size
         )
-    ]
 ```
 
 ### Mock Utilities
 
 ```python
-# tests/utils/mocks.py
-from unittest.mock import AsyncMock, MagicMock
-from typing import List, AsyncIterator
-from qdrant_loader.types import Document
+# tests/utils.py
+from unittest.mock import Mock
+from typing import List
+from qdrant_loader.core.document import Document
 
-class MockDataSource:
-    """Mock data source for testing."""
-    
-    def __init__(self, documents: List[Document]):
-        self.documents = documents
-    
-    async def fetch_documents(self) -> AsyncIterator[Document]:
-        """Yield mock documents."""
-        for doc in self.documents:
-            yield doc
-    
-    async def test_connection(self) -> bool:
-        """Mock connection test."""
-        return True
-
-class MockVectorEngine:
-    """Mock vector engine for testing."""
-    
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Return mock embeddings."""
-        return [[0.1, 0.2, 0.3] for _ in texts]
-    
-    async def search(self, query_vector: List[float], limit: int = 10):
-        """Return mock search results."""
-        return []
-
-def mock_openai_client():
-    """Create a mock OpenAI client."""
-    client = MagicMock()
-    client.embeddings.create.return_value.data = [
-        MagicMock(embedding=[0.1, 0.2, 0.3])
-    ]
+def create_mock_qdrant_client():
+    """Create a mock QdrantClient."""
+    client = Mock()
+    client.get_collections.return_value = Mock(collections=[])
+    client.create_collection = Mock()
+    client.create_payload_index = Mock()
+    client.upsert = Mock()
+    client.search.return_value = []
+    client.delete_collection = Mock()
+    client.delete = Mock()
     return client
+
+def create_mock_settings():
+    """Create mock settings for testing."""
+    from qdrant_loader.config import Settings
+    settings = Mock(spec=Settings)
+    settings.qdrant_url = "http://localhost:6333"
+    settings.qdrant_api_key = None
+    settings.qdrant_collection_name = "test_collection"
+    return settings
 ```
 
 ## 🧪 Unit Testing Patterns
 
-### Testing Data Sources
+### Testing Core Components
 
 ```python
-# tests/unit/test_sources.py
+# tests/unit/core/test_qdrant_manager.py
 import pytest
-from unittest.mock import patch, AsyncMock
-from qdrant_loader.sources import GitSource
+from unittest.mock import Mock, patch
+from qdrant_loader.config import Settings
+from qdrant_loader.core.qdrant_manager import QdrantManager, QdrantConnectionError
 
-@pytest.mark.asyncio
-async def test_git_source_fetch_documents():
-    """Test Git source document fetching."""
-    config = {
-        "url": "https://github.com/test/repo.git",
-        "branch": "main",
-        "include_patterns": ["**/*.md"]
-    }
-    
-    source = GitSource(config)
-    
-    # Mock git operations
-    with patch('qdrant_loader.sources.git.Repo') as mock_repo:
-        mock_repo.clone_from.return_value = mock_repo
-        mock_repo.iter_tree_files.return_value = [
-            "README.md", "docs/guide.md"
-        ]
-        
-        documents = []
-        async for doc in source.fetch_documents():
-            documents.append(doc)
-        
-        assert len(documents) == 2
-        assert all(doc.source_type == "git" for doc in documents)
+class TestQdrantManager:
+    """Test cases for QdrantManager."""
 
-@pytest.mark.asyncio
-async def test_git_source_connection_test():
-    """Test Git source connection testing."""
-    config = {"url": "https://github.com/test/repo.git"}
-    source = GitSource(config)
-    
-    with patch('qdrant_loader.sources.git.git.cmd.Git') as mock_git:
-        mock_git.return_value.ls_remote.return_value = "refs/heads/main"
-        
-        result = await source.test_connection()
-        assert result is True
-```
+    @pytest.fixture
+    def mock_settings(self):
+        """Mock settings for testing."""
+        settings = Mock(spec=Settings)
+        settings.qdrant_url = "http://localhost:6333"
+        settings.qdrant_api_key = None
+        settings.qdrant_collection_name = "test_collection"
+        return settings
 
-### Testing File Converters
+    @pytest.fixture
+    def mock_qdrant_client(self):
+        """Mock QdrantClient for testing."""
+        client = Mock()
+        client.get_collections.return_value = Mock(collections=[])
+        client.create_collection = Mock()
+        client.upsert = Mock()
+        client.search.return_value = []
+        return client
 
-```python
-# tests/unit/test_converters.py
-import pytest
-import tempfile
-from pathlib import Path
-from qdrant_loader.converters import PDFConverter
+    def test_initialization_default_settings(self, mock_settings, mock_global_config):
+        """Test QdrantManager initialization with default settings."""
+        with (
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_settings",
+                return_value=mock_settings,
+            ),
+            patch(
+                "qdrant_loader.core.qdrant_manager.get_global_config",
+                return_value=mock_global_config,
+            ),
+            patch.object(QdrantManager, "connect"),
+        ):
+            manager = QdrantManager()
 
-def test_pdf_converter_can_convert():
-    """Test PDF converter file type detection."""
-    converter = PDFConverter()
-    
-    assert converter.can_convert("document.pdf") is True
-    assert converter.can_convert("document.txt") is False
-    assert converter.can_convert("document.PDF") is True
+            assert manager.settings == mock_settings
+            assert manager.collection_name == "test_collection"
 
-@pytest.mark.asyncio
-async def test_pdf_converter_convert():
-    """Test PDF conversion to text."""
-    converter = PDFConverter()
-    
-    # Create a test PDF file
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
-        # Write minimal PDF content
-        temp_file.write(b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\n")
-        temp_path = temp_file.name
-    
-    try:
-        with patch('qdrant_loader.converters.pdf.PyPDF2') as mock_pdf:
-            mock_pdf.PdfReader.return_value.pages = [
-                MagicMock(extract_text=lambda: "Test PDF content")
+    @pytest.mark.asyncio
+    async def test_upsert_points_success(self, mock_settings, mock_qdrant_client):
+        """Test successful point upsert."""
+        with (
+            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch.object(QdrantManager, "connect"),
+        ):
+            manager = QdrantManager(mock_settings)
+            manager.client = mock_qdrant_client
+
+            points = [
+                {"id": "1", "vector": [0.1, 0.2, 0.3], "payload": {"text": "test"}}
             ]
-            
-            result = await converter.convert(temp_path)
-            assert "Test PDF content" in result
-    finally:
-        Path(temp_path).unlink()
+
+            await manager.upsert_points(points)
+
+            mock_qdrant_client.upsert.assert_called_once()
 ```
 
-### Testing Vector Operations
+### Testing CLI Commands
 
 ```python
-# tests/unit/test_vector.py
+# tests/unit/cli/test_cli.py
 import pytest
-from unittest.mock import patch, AsyncMock
-from qdrant_loader.vector import VectorEngine
+from unittest.mock import patch, Mock
+from click.testing import CliRunner
+from qdrant_loader.cli.cli import cli
 
-@pytest.mark.asyncio
-async def test_vector_engine_embed_texts():
-    """Test text embedding generation."""
-    engine = VectorEngine(model_name="text-embedding-ada-002")
-    
-    with patch('openai.OpenAI') as mock_openai:
-        mock_client = mock_openai.return_value
-        mock_client.embeddings.create.return_value.data = [
-            MagicMock(embedding=[0.1, 0.2, 0.3]),
-            MagicMock(embedding=[0.4, 0.5, 0.6])
-        ]
-        
-        texts = ["Hello world", "Test text"]
-        embeddings = await engine.embed_texts(texts)
-        
-        assert len(embeddings) == 2
-        assert embeddings[0] == [0.1, 0.2, 0.3]
-        assert embeddings[1] == [0.4, 0.5, 0.6]
+class TestCliCommands:
+    """Test CLI command functionality."""
 
-@pytest.mark.asyncio
-async def test_vector_engine_batch_processing():
-    """Test batch embedding processing."""
-    engine = VectorEngine(model_name="text-embedding-ada-002", batch_size=2)
+    def setup_method(self):
+        """Setup test runner."""
+        self.runner = CliRunner()
+
+    @patch("qdrant_loader.cli.cli._setup_logging")
+    @patch("qdrant_loader.cli.cli._load_config_with_workspace")
+    @patch("qdrant_loader.cli.cli._check_settings")
+    @patch("qdrant_loader.cli.cli.QdrantManager")
+    @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
+    def test_ingest_command_success(
+        self,
+        mock_pipeline_class,
+        mock_qdrant_manager,
+        mock_check_settings,
+        mock_load_config_with_workspace,
+        mock_setup_logging,
+    ):
+        """Test successful ingest command."""
+        # Setup mocks
+        mock_pipeline = Mock()
+        mock_pipeline.initialize = Mock()
+        mock_pipeline.process_documents = Mock(return_value=[])
+        mock_pipeline.cleanup = Mock()
+        mock_pipeline_class.return_value = mock_pipeline
+
+        # Run command
+        result = self.runner.invoke(cli, ["ingest"])
+
+        # Verify success
+        assert result.exit_code == 0
+        mock_pipeline.initialize.assert_called_once()
+        mock_pipeline.process_documents.assert_called_once()
+        mock_pipeline.cleanup.assert_called_once()
+```
+
+### Testing Document Processing
+
+```python
+# tests/unit/core/test_document.py
+import pytest
+from qdrant_loader.core.document import Document
+
+def test_document_creation():
+    """Test document creation with auto-generated fields."""
+    doc = Document(
+        title="Test Document",
+        content_type="text/plain",
+        content="This is test content",
+        metadata={"author": "test"},
+        source_type="test",
+        source="test_source",
+        url="http://example.com/doc1"
+    )
     
-    with patch.object(engine, 'embed_texts') as mock_embed:
-        mock_embed.side_effect = [
-            [[0.1, 0.2], [0.3, 0.4]],  # First batch
-            [[0.5, 0.6]]               # Second batch
-        ]
-        
-        texts = ["text1", "text2", "text3"]
-        all_embeddings = []
-        
-        async for batch_embeddings in engine.embed_batch(texts):
-            all_embeddings.extend(batch_embeddings)
-        
-        assert len(all_embeddings) == 3
-        assert mock_embed.call_count == 2
+    assert doc.title == "Test Document"
+    assert doc.content == "This is test content"
+    assert doc.source_type == "test"
+    assert doc.id is not None  # Auto-generated
+    assert doc.content_hash is not None  # Auto-generated
+
+def test_document_id_consistency():
+    """Test that document IDs are consistent for same inputs."""
+    doc1 = Document(
+        title="Test",
+        content_type="text/plain",
+        content="Content",
+        source_type="test",
+        source="source",
+        url="http://example.com"
+    )
+    
+    doc2 = Document(
+        title="Test",
+        content_type="text/plain",
+        content="Content",
+        source_type="test",
+        source="source",
+        url="http://example.com"
+    )
+    
+    assert doc1.id == doc2.id
 ```
 
 ## 🔗 Integration Testing
@@ -372,101 +386,52 @@ async def test_vector_engine_batch_processing():
 ```python
 # tests/integration/test_full_pipeline.py
 import pytest
-from qdrant_loader import QDrantLoader
-from qdrant_loader.config import Config
+from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.config import Settings
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_full_ingestion_pipeline(temp_workspace, sample_documents):
+async def test_full_ingestion_pipeline(test_settings):
     """Test complete ingestion pipeline."""
-    # Create test configuration
-    config = Config(
-        qdrant_url="memory://test",
-        collection_name="test_docs",
-        sources=[{
-            "type": "test",
-            "documents": sample_documents
-        }]
+    # Create QdrantManager
+    qdrant_manager = QdrantManager(test_settings)
+    
+    # Initialize pipeline
+    pipeline = AsyncIngestionPipeline(
+        settings=test_settings,
+        qdrant_manager=qdrant_manager
     )
     
-    # Initialize loader
-    loader = QDrantLoader(config)
-    await loader.initialize()
-    
     try:
-        # Run ingestion
-        result = await loader.ingest()
+        # Initialize pipeline
+        await pipeline.initialize()
+        
+        # Run ingestion for a specific project
+        documents = await pipeline.process_documents(project_id="test-project")
         
         # Verify results
-        assert result.processed_count == len(sample_documents)
-        assert result.error_count == 0
-        
-        # Test search functionality
-        search_results = await loader.search("test content")
-        assert len(search_results.results) > 0
+        assert isinstance(documents, list)
         
     finally:
-        await loader.cleanup()
+        await pipeline.cleanup()
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_incremental_updates(temp_workspace):
-    """Test incremental update functionality."""
-    config = Config(
-        qdrant_url="memory://test",
-        collection_name="test_docs",
-        sources=[{"type": "test"}]
-    )
+async def test_cli_integration(tmp_path):
+    """Test CLI integration."""
+    from qdrant_loader.cli.cli import cli
+    from click.testing import CliRunner
     
-    loader = QDrantLoader(config)
-    await loader.initialize()
+    runner = CliRunner()
     
-    try:
-        # First ingestion
-        result1 = await loader.ingest()
-        
-        # Second ingestion (should skip unchanged documents)
-        result2 = await loader.ingest()
-        
-        assert result2.skipped_count > 0
-        
-    finally:
-        await loader.cleanup()
-```
-
-### MCP Server Testing
-
-```python
-# tests/integration/test_mcp_server.py
-import pytest
-import asyncio
-from qdrant_loader_mcp_server import MCPServer
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_mcp_server_search_tools(temp_workspace):
-    """Test MCP server search functionality."""
-    server = MCPServer(
-        name="test-server",
-        version="1.0.0",
-        workspace_path=str(temp_workspace)
-    )
+    # Test init command
+    result = runner.invoke(cli, [
+        '--workspace', str(tmp_path),
+        'init'
+    ])
     
-    # Start server
-    await server.start()
-    
-    try:
-        # Test search tool
-        result = await server.execute_tool(
-            "search",
-            {"query": "test query", "limit": 5}
-        )
-        
-        assert "results" in result
-        assert isinstance(result["results"], list)
-        
-    finally:
-        await server.stop()
+    assert result.exit_code == 0
 ```
 
 ## 📊 Performance Testing
@@ -477,73 +442,29 @@ async def test_mcp_server_search_tools(temp_workspace):
 # tests/performance/test_ingestion_speed.py
 import pytest
 import time
-from qdrant_loader import QDrantLoader
+from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 
 @pytest.mark.performance
 @pytest.mark.asyncio
-async def test_ingestion_performance(benchmark, large_document_set):
+async def test_ingestion_performance(test_settings):
     """Benchmark ingestion performance."""
-    config = create_test_config()
-    loader = QDrantLoader(config)
+    pipeline = AsyncIngestionPipeline(settings=test_settings)
     
-    async def run_ingestion():
-        await loader.initialize()
-        try:
-            result = await loader.ingest()
-            return result
-        finally:
-            await loader.cleanup()
-    
-    # Benchmark the ingestion
-    result = await benchmark(run_ingestion)
-    
-    # Performance assertions
-    assert result.processed_count > 0
-    assert benchmark.stats.mean < 10.0  # Should complete in under 10 seconds
-
-@pytest.mark.performance
-def test_memory_usage(memory_profiler):
-    """Test memory usage during processing."""
-    with memory_profiler:
-        # Run memory-intensive operations
-        loader = QDrantLoader(config)
-        # ... processing logic
-    
-    # Assert memory usage is within acceptable limits
-    assert memory_profiler.peak_memory < 1024  # MB
-```
-
-### Load Testing
-
-```python
-# tests/performance/test_concurrent_processing.py
-import pytest
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
-@pytest.mark.performance
-@pytest.mark.asyncio
-async def test_concurrent_search_performance():
-    """Test search performance under concurrent load."""
-    loader = QDrantLoader(config)
-    await loader.initialize()
-    
-    async def search_task(query):
-        return await loader.search(f"query {query}")
-    
-    # Run concurrent searches
-    tasks = [search_task(i) for i in range(100)]
     start_time = time.time()
     
-    results = await asyncio.gather(*tasks)
-    
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    # Performance assertions
-    assert len(results) == 100
-    assert duration < 30.0  # Should complete in under 30 seconds
-    assert all(len(r.results) >= 0 for r in results)
+    try:
+        await pipeline.initialize()
+        documents = await pipeline.process_documents(project_id="test-project")
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        # Performance assertions
+        assert duration < 30.0  # Should complete in under 30 seconds
+        assert isinstance(documents, list)
+        
+    finally:
+        await pipeline.cleanup()
 ```
 
 ## 🔍 Quality Assurance
@@ -552,75 +473,54 @@ async def test_concurrent_search_performance():
 
 ```bash
 # Run all quality checks
-make quality-check
+make test
+make lint
+make format-check
 
 # Individual checks
-black --check .                    # Code formatting
-isort --check-only .               # Import sorting
 ruff check .                       # Linting
+ruff format --check .              # Code formatting
 mypy .                            # Type checking
 pytest --cov=qdrant_loader        # Test coverage
 ```
 
-### Pre-commit Hooks
-
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
-    hooks:
-      - id: black
-        language_version: python3.8
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.270
-    hooks:
-      - id: ruff
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.3.0
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-requests]
-```
-
 ### Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
 
 ```yaml
 # .github/workflows/test.yml
-name: Tests
+name: Test and Coverage
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9, "3.10", "3.11"]
+        python-version: ["3.12", "3.13"]
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+    
     - name: Install dependencies
-      run: |
-        pip install poetry
-        poetry install --with dev
+      run: poetry install --with dev
     
     - name: Run tests
-      run: |
-        poetry run pytest --cov=qdrant_loader --cov-report=xml
+      run: poetry run pytest --cov=qdrant_loader --cov-report=xml
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
@@ -628,16 +528,9 @@ jobs:
         file: ./coverage.xml
 ```
 
-## 📚 Testing Documentation
+## 📚 Testing Best Practices
 
-### Detailed Testing Guides
-
-- **[Unit Testing](./unit-testing.md)** - Comprehensive unit testing strategies
-- **[Integration Testing](./integration-testing.md)** - End-to-end testing approaches
-- **[Performance Testing](./performance-testing.md)** - Load testing and benchmarking
-- **[Quality Assurance](./quality-assurance.md)** - Code quality and review processes
-
-### Best Practices
+### Guidelines
 
 1. **Write tests first** - Follow TDD principles
 2. **Test behavior, not implementation** - Focus on what, not how
@@ -650,11 +543,40 @@ jobs:
 
 - [ ] Unit tests for all new functionality
 - [ ] Integration tests for user workflows
-- [ ] Performance tests for critical paths
 - [ ] Error handling and edge cases covered
 - [ ] Mocks for external dependencies
 - [ ] Test data cleanup
 - [ ] Documentation updated
+
+### Common Patterns
+
+```python
+# Async testing
+@pytest.mark.asyncio
+async def test_async_function():
+    result = await some_async_function()
+    assert result is not None
+
+# Exception testing
+def test_exception_handling():
+    with pytest.raises(ValueError, match="Expected error message"):
+        function_that_should_raise()
+
+# Parametrized testing
+@pytest.mark.parametrize("input,expected", [
+    ("test1", "result1"),
+    ("test2", "result2"),
+])
+def test_multiple_inputs(input, expected):
+    assert process_input(input) == expected
+
+# Mocking with patch
+@patch("module.external_function")
+def test_with_mock(mock_function):
+    mock_function.return_value = "mocked_result"
+    result = function_under_test()
+    assert result == "expected_result"
+```
 
 ## 🆘 Getting Help
 
@@ -662,14 +584,13 @@ jobs:
 
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report testing issues
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask testing questions
-- **[Testing Examples](https://github.com/martin-papy/qdrant-loader/tree/main/tests)** - Reference implementations
+- **[Test Examples](https://github.com/martin-papy/qdrant-loader/tree/main/packages/qdrant-loader/tests)** - Reference implementations
 
 ### Contributing Tests
 
 - **[Contributing Guide](../../CONTRIBUTING.md)** - How to contribute tests
-- **[Test Standards](./quality-assurance.md)** - Testing quality standards
-- **[Code Review Process](./quality-assurance.md#code-review)** - Review guidelines
+- **[Development Setup](../README.md)** - Development environment setup
 
 ---
 
-**Ready to write tests?** Start with [Unit Testing](./unit-testing.md) for component-level testing or check out [Integration Testing](./integration-testing.md) for end-to-end testing strategies.
+**Ready to write tests?** Start with unit tests for individual components or check out the existing test suite for patterns and examples.

@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://qdrant-loader.net/sitemap.xml
+Sitemap: /sitemap.xml
 
 # Crawl-delay for politeness
 Crawl-delay: 1

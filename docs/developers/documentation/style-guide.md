@@ -35,7 +35,7 @@ This style guide ensures consistency, clarity, and professionalism across all QD
 
 - Include **why** and **how it works**
 - Provide technical details and architecture
-- Include code examples and API references
+- Include code examples and implementation references
 - Explain extension points and customization
 
 ## 🏗️ Document Structure
@@ -101,12 +101,12 @@ Always specify the language for syntax highlighting:
 ```markdown
 ```bash
 # Good: Language specified
-qdrant-loader ingest --source git
+qdrant-loader --workspace . ingest
 ```
 
 ```
 # Bad: No language specified
-qdrant-loader ingest --source git
+qdrant-loader --workspace . ingest
 ```
 
 ```
@@ -133,15 +133,23 @@ pip install qdrant-loader
 
 ```yaml
 # Minimal configuration
-qdrant:
-  url: "http://localhost:6333"
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "my_documents"
   
 # Comprehensive configuration
-qdrant:
-  url: "http://localhost:6333"
-  collection_name: "my_documents"
-  timeout: 30
-  batch_size: 100
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "my_documents"
+    api_key: "${QDRANT_API_KEY}"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+  chunking:
+    chunk_size: 1000
+    chunk_overlap: 200
 ```
 
 ### File Paths and Names
@@ -201,16 +209,15 @@ Click [here](https://github.com/user/repo/docs/config.md) for more info.
 
 ### External Links
 
-- **Open in new tabs** for external resources (when applicable)
 - **Include context** about what the link contains
 - **Use HTTPS** when available
 
 ```markdown
 # Good: Context provided
-Learn more about vector databases in the [Pinecone documentation](https://docs.pinecone.io/docs/overview).
+Learn more about vector databases in the [Qdrant documentation](https://qdrant.tech/documentation/).
 
 # Bad: No context
-Check out [this link](https://docs.pinecone.io/docs/overview).
+Check out [this link](https://qdrant.tech/documentation/).
 ```
 
 ## ⚠️ Callouts and Alerts
@@ -220,7 +227,7 @@ Use consistent formatting for different types of callouts:
 ### Information
 
 ```markdown
-> **Note**: This feature requires QDrant version 1.5 or higher.
+> **Note**: This feature requires Qdrant version 1.5 or higher.
 ```
 
 ### Warnings
@@ -232,7 +239,7 @@ Use consistent formatting for different types of callouts:
 ### Tips
 
 ```markdown
-> **Tip**: Use the `--dry-run` flag to preview changes before applying them.
+> **Tip**: Use the `--force` flag to recreate the collection if needed.
 ```
 
 ### Important
@@ -255,9 +262,10 @@ Use consistent formatting for different types of callouts:
 **Scenario**: You want to index documentation from a public GitHub repository.
 
 **Steps**:
-1. Configure your environment
-2. Run the ingestion command
-3. Verify the results
+1. Configure your workspace with `config.yaml` and `.env`
+2. Run the initialization: `qdrant-loader --workspace . init`
+3. Run the ingestion: `qdrant-loader --workspace . ingest`
+4. Verify with project status: `qdrant-loader project --workspace . status`
 
 **Expected Outcome**: 150 documents indexed with embeddings generated.
 ```
@@ -269,15 +277,17 @@ Use consistent formatting for different types of callouts:
 - **Show both success and failure cases**
 
 ```python
-# Good: Complete example with error handling
+# Good: Complete example with actual implementation
+from qdrant_loader.config import get_settings
+from qdrant_loader.core.qdrant_manager import QdrantManager
+
 try:
-    loader = QDrantLoader(config_path="config.yaml")
-    result = loader.ingest_git_repo("https://github.com/user/repo")
-    print(f"Successfully indexed {result.document_count} documents")
-except ConfigurationError as e:
-    print(f"Configuration error: {e}")
+    settings = get_settings()
+    manager = QdrantManager(settings)
+    manager.create_collection()
+    print(f"Successfully created collection: {settings.qdrant_collection_name}")
 except Exception as e:
-    print(f"Unexpected error: {e}")
+    print(f"Failed to create collection: {e}")
 ```
 
 ## 🔧 Troubleshooting Documentation
@@ -289,18 +299,18 @@ except Exception as e:
 - **Provide step-by-step solutions**
 
 ```markdown
-#### Error: `ConnectionError: Unable to connect to QDrant at localhost:6333`
+#### Error: `QdrantConnectionError: Failed to connect to qDrant: Connection error`
 
-**Meaning**: QDrant Loader cannot establish a connection to the QDrant database.
+**Meaning**: QDrant Loader cannot establish a connection to the Qdrant database.
 
 **Common Causes**:
-- QDrant server is not running
+- Qdrant server is not running
 - Incorrect URL configuration
 - Network connectivity issues
 
 **Solution**:
-1. Verify QDrant is running: `docker ps | grep qdrant`
-2. Check your configuration: `cat config.yaml`
+1. Verify Qdrant is running: `docker ps | grep qdrant`
+2. Check your configuration: `qdrant-loader --workspace . config`
 3. Test connectivity: `curl http://localhost:6333/health`
 ```
 
@@ -340,7 +350,7 @@ Before publishing documentation, verify:
 
 - [ ] **Commands are correct** and tested
 - [ ] **Configuration examples** are valid
-- [ ] **API references** match implementation
+- [ ] **CLI references** match implementation
 - [ ] **Version requirements** are current
 
 ### Structure and Style
@@ -385,7 +395,6 @@ Before publishing documentation, verify:
 ### Tools
 
 - **Markdown Editor**: VS Code with Markdown extensions
-- **Link Checker**: markdown-link-check
 - **Spell Checker**: Built-in spell checkers
 - **Grammar**: Grammarly or similar tools
 
