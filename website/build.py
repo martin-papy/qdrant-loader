@@ -899,7 +899,8 @@ class WebsiteBuilder:
             # Process coverage artifacts
             artifacts_path = Path(coverage_artifacts_dir)
 
-            # Find and copy coverage reports
+            # First, look for htmlcov-* directories directly in the artifacts directory
+            # (for backward compatibility or local builds)
             for coverage_dir in artifacts_path.glob("htmlcov-*"):
                 if coverage_dir.is_dir():
                     package_name = coverage_dir.name.replace("htmlcov-", "")
@@ -909,6 +910,23 @@ class WebsiteBuilder:
                         shutil.rmtree(dest_path)
                     shutil.copytree(coverage_dir, dest_path)
                     print(f"📊 Copied coverage: {package_name}")
+
+            # Then, look for coverage artifacts in subdirectories (GitHub Actions structure)
+            # Pattern: coverage-artifacts/coverage-{package}-{run_id}/htmlcov-{package}/
+            for artifact_dir in artifacts_path.glob("coverage-*"):
+                if artifact_dir.is_dir():
+                    # Look for htmlcov-* directories inside this artifact directory
+                    for coverage_dir in artifact_dir.glob("htmlcov-*"):
+                        if coverage_dir.is_dir():
+                            package_name = coverage_dir.name.replace("htmlcov-", "")
+                            dest_path = coverage_output / package_name
+
+                            if dest_path.exists():
+                                shutil.rmtree(dest_path)
+                            shutil.copytree(coverage_dir, dest_path)
+                            print(
+                                f"📊 Copied coverage: {package_name} (from {artifact_dir.name})"
+                            )
         else:
             print("⚠️  No coverage artifacts found")
 
