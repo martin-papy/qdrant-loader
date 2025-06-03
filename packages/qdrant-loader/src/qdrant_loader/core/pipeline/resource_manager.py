@@ -18,6 +18,9 @@ class ResourceManager:
         self.active_tasks: set[asyncio.Task] = set()
         self.cleanup_done = False
         self.chunk_executor: concurrent.futures.ThreadPoolExecutor | None = None
+        self._signal_shutdown = (
+            False  # Flag to track if shutdown was triggered by signal
+        )
 
     def set_chunk_executor(self, executor: concurrent.futures.ThreadPoolExecutor):
         """Set the chunk executor for cleanup."""
@@ -37,9 +40,23 @@ class ResourceManager:
         try:
             logger.info("Cleaning up resources...")
 
-            # Don't set shutdown event during normal cleanup - only during signal-based shutdown
-            # The shutdown event should only be set when we receive SIGINT/SIGTERM
-            # Setting it during normal cleanup interferes with the pipeline processing
+            # Only set shutdown event if this is NOT a normal atexit cleanup
+            # or if we're in signal-based shutdown mode
+            if (
+                self._signal_shutdown
+                and hasattr(self, "shutdown_event")
+                and not self.shutdown_event.is_set()
+            ):
+                try:
+                    # Try to set shutdown event via running loop if available
+                    loop = asyncio.get_running_loop()
+                    loop.call_soon_threadsafe(self.shutdown_event.set)
+                except RuntimeError:
+                    # No running loop, run async cleanup directly
+                    try:
+                        asyncio.run(self._async_cleanup())
+                    except Exception as e:
+                        logger.error(f"Error in async cleanup: {e}")
 
             # Shutdown thread pool executor
             if self.chunk_executor:
@@ -80,6 +97,7 @@ class ResourceManager:
             return
 
         logger.info("Received SIGINT, initiating shutdown...")
+        self._signal_shutdown = True  # Mark as signal-based shutdown
         self.shutdown_event.set()
 
         # Try to schedule graceful shutdown
@@ -103,6 +121,7 @@ class ResourceManager:
             return
 
         logger.info("Received SIGTERM, initiating shutdown...")
+        self._signal_shutdown = True  # Mark as signal-based shutdown
         self.shutdown_event.set()
 
         try:

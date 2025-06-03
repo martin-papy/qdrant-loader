@@ -71,12 +71,11 @@ class TestResourceManager:
         mock_executor = Mock(spec=concurrent.futures.ThreadPoolExecutor)
         self.resource_manager.chunk_executor = mock_executor
 
+        # Test normal cleanup (not signal-based)
         self.resource_manager._cleanup()
 
-        # Verify shutdown event is set via loop
-        mock_loop.call_soon_threadsafe.assert_called_once_with(
-            self.resource_manager.shutdown_event.set
-        )
+        # Verify shutdown event is NOT set during normal cleanup
+        mock_loop.call_soon_threadsafe.assert_not_called()
 
         # Verify executor shutdown
         mock_executor.shutdown.assert_called_once_with(wait=True)
@@ -94,13 +93,11 @@ class TestResourceManager:
         self.resource_manager.shutdown_event = Mock()
         self.resource_manager.shutdown_event.is_set.return_value = False
 
+        # Test normal cleanup (not signal-based) - should not call asyncio.run
         self.resource_manager._cleanup()
 
-        # Verify async cleanup is called (check that it was called, not the exact coroutine object)
-        mock_asyncio_run.assert_called_once()
-        # Verify the call was made with a coroutine
-        call_args = mock_asyncio_run.call_args[0][0]
-        assert hasattr(call_args, "__await__")  # It's a coroutine
+        # Verify async cleanup is NOT called during normal cleanup
+        mock_asyncio_run.assert_not_called()
 
         assert self.resource_manager.cleanup_done is True
 
@@ -114,6 +111,9 @@ class TestResourceManager:
         # Setup shutdown event
         self.resource_manager.shutdown_event = Mock()
         self.resource_manager.shutdown_event.is_set.return_value = False
+
+        # Mark as signal-based shutdown
+        self.resource_manager._signal_shutdown = True
 
         # Manually mock _async_cleanup to return a regular value, not a coroutine
         self.resource_manager._async_cleanup = Mock(return_value=None)
@@ -138,6 +138,9 @@ class TestResourceManager:
         self.resource_manager.shutdown_event.is_set.side_effect = Exception(
             "Test exception"
         )
+
+        # Mark as signal-based shutdown to trigger the exception path
+        self.resource_manager._signal_shutdown = True
 
         with patch(
             "qdrant_loader.core.pipeline.resource_manager.logger"
@@ -513,3 +516,58 @@ class TestResourceManager:
 
         # Verify task is removed from active tasks
         assert mock_task not in self.resource_manager.active_tasks
+
+    @patch("asyncio.get_running_loop")
+    def test_cleanup_with_signal_shutdown(self, mock_get_loop):
+        """Test cleanup when triggered by signal (should set shutdown event)."""
+        mock_loop = Mock()
+        mock_get_loop.return_value = mock_loop
+
+        # Setup shutdown event
+        self.resource_manager.shutdown_event = Mock()
+        self.resource_manager.shutdown_event.is_set.return_value = False
+
+        # Setup chunk executor
+        mock_executor = Mock(spec=concurrent.futures.ThreadPoolExecutor)
+        self.resource_manager.chunk_executor = mock_executor
+
+        # Mark as signal-based shutdown
+        self.resource_manager._signal_shutdown = True
+
+        self.resource_manager._cleanup()
+
+        # Verify shutdown event is set via loop during signal-based cleanup
+        mock_loop.call_soon_threadsafe.assert_called_once_with(
+            self.resource_manager.shutdown_event.set
+        )
+
+        # Verify executor shutdown
+        mock_executor.shutdown.assert_called_once_with(wait=True)
+
+        # Verify cleanup completion
+        assert self.resource_manager.cleanup_done is True
+
+    @patch("asyncio.get_running_loop")
+    @patch("asyncio.run")
+    def test_cleanup_no_running_loop_signal_shutdown(
+        self, mock_asyncio_run, mock_get_loop
+    ):
+        """Test cleanup without running event loop during signal shutdown."""
+        mock_get_loop.side_effect = RuntimeError("No running loop")
+
+        # Setup shutdown event
+        self.resource_manager.shutdown_event = Mock()
+        self.resource_manager.shutdown_event.is_set.return_value = False
+
+        # Mark as signal-based shutdown
+        self.resource_manager._signal_shutdown = True
+
+        self.resource_manager._cleanup()
+
+        # Verify async cleanup is called during signal-based cleanup
+        mock_asyncio_run.assert_called_once()
+        # Verify the call was made with a coroutine
+        call_args = mock_asyncio_run.call_args[0][0]
+        assert hasattr(call_args, "__await__")  # It's a coroutine
+
+        assert self.resource_manager.cleanup_done is True
