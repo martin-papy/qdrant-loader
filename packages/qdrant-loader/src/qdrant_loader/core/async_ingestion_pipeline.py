@@ -137,6 +137,11 @@ class AsyncIngestionPipeline:
         """Initialize the pipeline (maintained for compatibility)."""
         logger.debug("Pipeline initialization called")
 
+        # Initialize state manager first
+        if not self.state_manager._initialized:
+            logger.debug("Initializing state manager")
+            await self.state_manager.initialize()
+
         # Initialize project manager
         if not self.project_manager._initialized:
             logger.debug("Initializing project manager")
