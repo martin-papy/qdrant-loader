@@ -39,29 +39,17 @@ logger = LoggingConfig.get_logger(__name__)
 
 
 def _get_version() -> str:
-    """Get version from pyproject.toml."""
+    """Get version using importlib.metadata."""
     try:
-        # Try to find pyproject.toml in the package directory or parent directories
-        current_dir = Path(__file__).parent
-        for _ in range(5):  # Look up to 5 levels up
-            pyproject_path = current_dir / "pyproject.toml"
-            if pyproject_path.exists():
-                with open(pyproject_path, "rb") as f:
-                    pyproject = tomli.load(f)
-                    return pyproject["project"]["version"]
-            current_dir = current_dir.parent
+        from importlib.metadata import version
 
-        # If not found, try the workspace root
-        workspace_root = Path.cwd()
-        for package_dir in ["packages/qdrant-loader", "."]:
-            pyproject_path = workspace_root / package_dir / "pyproject.toml"
-            if pyproject_path.exists():
-                with open(pyproject_path, "rb") as f:
-                    pyproject = tomli.load(f)
-                    return pyproject["project"]["version"]
-    except Exception as e:
-        logger.warning("Failed to read version from pyproject.toml", error=str(e))
-    return "Unknown"  # Fallback version
+        return version("qdrant-loader")
+    except ImportError:
+        # Fallback for older Python versions
+        return "unknown"
+    except Exception:
+        # Fallback if package not found or other error
+        return "unknown"
 
 
 @group(name="qdrant-loader")
