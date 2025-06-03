@@ -130,7 +130,9 @@ class VersionChecker:
         print(f"\n🆕 A new version of qdrant-loader is available!")
         print(f"   Current: {self.current_version}")
         print(f"   Latest:  {latest_version}")
-        print(f"   Update:  pip install --upgrade qdrant-loader")
+        print(
+            f"   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
+        )
         print()
 
 

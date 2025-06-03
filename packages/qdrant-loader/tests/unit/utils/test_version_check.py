@@ -237,7 +237,10 @@ class TestVersionChecker:
         assert "🆕 A new version of qdrant-loader is available!" in captured.out
         assert "Current: 1.0.0" in captured.out
         assert "Latest:  1.2.0" in captured.out
-        assert "pip install --upgrade qdrant-loader" in captured.out
+        assert (
+            "pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
+            in captured.out
+        )
 
 
 class TestVersionCheckAsync:
