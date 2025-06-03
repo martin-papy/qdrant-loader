@@ -71,7 +71,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
     # Define workspace file paths
     config_path = workspace_path / "config.yaml"
     env_path = workspace_path / ".env"
-    logs_path = workspace_path / "qdrant-loader.log"
+    logs_path = workspace_path / "logs" / "qdrant-loader.log"
     metrics_path = workspace_path / "metrics"
     data_path = workspace_path / "data"
     database_path = data_path / "qdrant-loader.db"
@@ -127,6 +127,9 @@ def create_workspace_structure(workspace_path: Path) -> None:
     workspace_path.mkdir(parents=True, exist_ok=True)
 
     # Create subdirectories
+    logs_dir = workspace_path / "logs"
+    logs_dir.mkdir(exist_ok=True)
+
     metrics_dir = workspace_path / "metrics"
     metrics_dir.mkdir(exist_ok=True)
 

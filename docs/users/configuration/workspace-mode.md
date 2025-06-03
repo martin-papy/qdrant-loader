@@ -13,8 +13,10 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 ├── config.yaml          # Main configuration file
 ├── .env                 # Environment variables (optional)
 ├── logs/                # Application logs
+│   └── qdrant-loader.log
 ├── metrics/             # Performance metrics
-└── state.db             # Processing state database
+└── data/                # State database
+    └── state.db
 ```
 
 ### Benefits of Workspace Mode
@@ -323,7 +325,7 @@ my-qdrant-workspace/
 │   └── qdrant-loader.log
 ├── metrics/                 # Performance metrics
 │   └── ingestion_metrics.json
-└── data
+└── data/
     └── state.db             # Processing state database
 ```
 
