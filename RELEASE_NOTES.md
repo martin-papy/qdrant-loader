@@ -1,5 +1,25 @@
 # Release Notes
 
+## Version 0.4.5 - June 3, 2025
+
+### 🚀 Performance Improvements
+
+#### CLI Startup Optimization
+
+- **CLI startup performance**: Reduced startup time by 60-67% for basic commands ([#24](https://github.com/martin-papy/qdrant-loader/issues/24))
+  - `--help`: ~6.8s → 2.33s (**66% improvement**)
+  - `--version`: ~6.3s → 2.57s (**59% improvement**)
+- **Lazy loading implementation**: Heavy modules now load only when needed (96-97% import time reduction)
+- **Fixed version detection**: Replaced custom parsing with `importlib.metadata.version()` - works in all environments
+- **Resolved circular imports**: Eliminated `config` → `connectors` → `config` dependency cycle
+
+### 🐛 Bug Fixes
+
+- **CLI startup delay**: Fixed 6+ second delay for basic commands ([#24](https://github.com/martin-papy/qdrant-loader/issues/24))
+- **Version detection failure**: Fixed "Unknown" version when installed globally
+- **Excel warning noise**: Eliminated raw openpyxl warnings cluttering console output
+- **Circular import issues**: Resolved config system dependencies
+
 ## Version 0.4.4 - June 3, 2025
 
 ### 🎉 Major Improvements
