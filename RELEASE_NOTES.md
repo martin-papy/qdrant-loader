@@ -13,12 +13,14 @@
 - **Fixed version detection**: Replaced custom parsing with `importlib.metadata.version()` - works in all environments
 - **Resolved circular imports**: Eliminated `config` → `connectors` → `config` dependency cycle
 
-### 🐛 Bug Fixes
+### 🎨 User Experience Enhancements
 
-- **CLI startup delay**: Fixed 6+ second delay for basic commands ([#24](https://github.com/martin-papy/qdrant-loader/issues/24))
-- **Version detection failure**: Fixed "Unknown" version when installed globally
-- **Excel warning noise**: Eliminated raw openpyxl warnings cluttering console output
-- **Circular import issues**: Resolved config system dependencies
+#### Excel File Processing
+
+- **Warning capture system**: Intercepts openpyxl warnings during Excel conversion
+- **Structured logging**: Routes warnings through qdrant-loader logging system for visual consistency
+- **Smart detection**: Captures "Data Validation" and "Conditional Formatting" warnings with context
+- **Summary reporting**: Provides comprehensive summary of unsupported Excel features
 
 ## Version 0.4.4 - June 3, 2025
 
