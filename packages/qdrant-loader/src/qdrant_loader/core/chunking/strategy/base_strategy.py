@@ -366,6 +366,13 @@ class BaseChunkingStrategy(ABC):
         content_type = original_doc.content_type or ""
         element_type = metadata.get("element_type", "")
 
+        # For converted files, use the converted content type instead of original file extension
+        conversion_method = metadata.get("conversion_method")
+        if conversion_method == "markitdown":
+            # File was converted to markdown, so treat it as markdown for NLP purposes
+            file_path = "converted.md"  # Use .md extension for NLP decision
+            content_type = "md"
+
         should_apply_nlp = (
             not skip_nlp
             and len(chunk_content) <= 10000  # Size limit
