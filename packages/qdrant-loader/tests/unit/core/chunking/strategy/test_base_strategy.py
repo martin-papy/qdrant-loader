@@ -540,3 +540,64 @@ def function():
         abstract_methods = BaseChunkingStrategy.__abstractmethods__
         assert "chunk_document" in abstract_methods
         assert "_split_text" in abstract_methods
+
+    def test_create_chunk_document_converted_file_enables_nlp(self, mock_settings):
+        """Test chunk document creation enables NLP for converted files."""
+        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
+            strategy = ConcreteChunkingStrategy(mock_settings)
+
+            original_doc = Document(
+                content="Original content",
+                metadata={
+                    "file_name": "test.docx",  # Original binary file
+                    "conversion_method": "markitdown",  # File was converted
+                    "conversion_failed": False,
+                    "original_file_type": "docx",
+                },
+                source="test_source",
+                source_type="test",
+                url="http://test.com",
+                title="Test Title",
+                content_type="md",  # Converted to markdown
+            )
+
+            chunk_doc = strategy._create_chunk_document(
+                original_doc, "This is converted markdown content.", 0, 2
+            )
+
+            # Should NOT skip NLP for converted files
+            assert chunk_doc.metadata["nlp_skipped"] is False
+            assert "skip_reason" not in chunk_doc.metadata
+            # Should have NLP processing results
+            assert "entities" in chunk_doc.metadata
+            assert "pos_tags" in chunk_doc.metadata
+            assert "nlp_content_extracted" in chunk_doc.metadata
+            assert "nlp_content_ratio" in chunk_doc.metadata
+
+    def test_create_chunk_document_non_converted_binary_file_skips_nlp(
+        self, mock_settings
+    ):
+        """Test chunk document creation skips NLP for non-converted binary files."""
+        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
+            strategy = ConcreteChunkingStrategy(mock_settings)
+
+            original_doc = Document(
+                content="Original content",
+                metadata={
+                    "file_name": "test.docx",  # Original binary file
+                    # No conversion_method - file was not converted
+                },
+                source="test_source",
+                source_type="test",
+                url="http://test.com",
+                title="Test Title",
+                content_type="docx",  # Still binary
+            )
+
+            chunk_doc = strategy._create_chunk_document(
+                original_doc, "Raw binary content", 0, 2
+            )
+
+            # Should skip NLP for non-converted binary files
+            assert chunk_doc.metadata["nlp_skipped"] is True
+            assert chunk_doc.metadata["skip_reason"] == "content_type_inappropriate"
