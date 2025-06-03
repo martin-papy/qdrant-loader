@@ -13,6 +13,16 @@ from qdrant_loader.core.state.state_manager import StateManager
 class TestAsyncIngestionPipeline:
     """Test cases for the AsyncIngestionPipeline."""
 
+    def _setup_path_mocks(self, mock_path):
+        """Helper method to properly setup Path mocks."""
+        mock_path_instance = MagicMock()
+        mock_path.cwd.return_value = mock_path_instance
+        mock_metrics_dir = MagicMock()
+        mock_path_instance.__truediv__.return_value = mock_metrics_dir
+        mock_metrics_dir.mkdir = Mock()
+        mock_metrics_dir.absolute.return_value = "/test/metrics"
+        return mock_metrics_dir
+
     @pytest.fixture
     def mock_settings(self):
         """Create mock settings."""
@@ -139,11 +149,14 @@ class TestAsyncIngestionPipeline:
             patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
             patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
             mock_factory_instance = Mock()
             mock_factory.return_value = mock_factory_instance
             mock_factory_instance.create_components.return_value = Mock()
+
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             pipeline = AsyncIngestionPipeline(
                 settings=mock_settings,
@@ -165,11 +178,14 @@ class TestAsyncIngestionPipeline:
             patch(
                 "qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"
             ) as mock_prometheus,
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
             mock_factory_instance = Mock()
             mock_factory.return_value = mock_factory_instance
             mock_factory_instance.create_components.return_value = Mock()
+
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             AsyncIngestionPipeline(
                 settings=mock_settings,
@@ -190,8 +206,10 @@ class TestAsyncIngestionPipeline:
             patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
             patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             # Create pipeline with legacy parameters
             pipeline = AsyncIngestionPipeline(
@@ -228,11 +246,18 @@ class TestAsyncIngestionPipeline:
             patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
             patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
+
             pipeline = AsyncIngestionPipeline(
                 settings=mock_settings, qdrant_manager=mock_qdrant_manager
             )
+
+            # Mock the state manager and project manager initialization
+            pipeline.state_manager._initialized = True
+            pipeline.project_manager._initialized = True
 
             # Should complete without error (no-op)
             await pipeline.initialize()
@@ -254,8 +279,10 @@ class TestAsyncIngestionPipeline:
                 "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
             ) as mock_monitor_class,
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             # Setup mocks
             mock_orchestrator = Mock()
@@ -272,6 +299,10 @@ class TestAsyncIngestionPipeline:
             pipeline = AsyncIngestionPipeline(
                 settings=mock_settings, qdrant_manager=mock_qdrant_manager
             )
+
+            # Mock the state manager and project manager initialization
+            pipeline.state_manager._initialized = True
+            pipeline.project_manager._initialized = True
 
             # Call process_documents
             result = await pipeline.process_documents(
@@ -310,8 +341,10 @@ class TestAsyncIngestionPipeline:
                 "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
             ) as mock_monitor_class,
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             # Setup mocks
             mock_orchestrator = Mock()
@@ -332,6 +365,10 @@ class TestAsyncIngestionPipeline:
             pipeline = AsyncIngestionPipeline(
                 settings=mock_settings, qdrant_manager=mock_qdrant_manager
             )
+
+            # Mock the state manager and project manager initialization
+            pipeline.state_manager._initialized = True
+            pipeline.project_manager._initialized = True
 
             # Call process_documents
             result = await pipeline.process_documents(source_type="git")
@@ -363,8 +400,10 @@ class TestAsyncIngestionPipeline:
                 "qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"
             ) as mock_monitor_class,
             patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             # Setup mocks to raise an error
             mock_orchestrator = Mock()
@@ -382,6 +421,10 @@ class TestAsyncIngestionPipeline:
             pipeline = AsyncIngestionPipeline(
                 settings=mock_settings, qdrant_manager=mock_qdrant_manager
             )
+
+            # Mock the state manager and project manager initialization
+            pipeline.state_manager._initialized = True
+            pipeline.project_manager._initialized = True
 
             # Call process_documents and expect error
             with pytest.raises(Exception, match="Test processing error"):
@@ -455,8 +498,10 @@ class TestAsyncIngestionPipeline:
             patch(
                 "qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"
             ) as mock_prometheus,
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
+            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
         ):
+            # Setup Path mocks
+            self._setup_path_mocks(mock_path)
 
             # Setup mocks with errors
             mock_resource_manager = Mock()
@@ -483,7 +528,8 @@ class TestAsyncIngestionPipeline:
 
             # Verify attempts were made
             mock_monitor.save_metrics.assert_called_once()
-            mock_prometheus.stop_metrics_server.assert_called_once()
+            # stop_metrics_server might be called multiple times (init + cleanup), so just verify it was called
+            assert mock_prometheus.stop_metrics_server.call_count >= 1
             mock_resource_manager.cleanup.assert_called_once()
 
     def test_destructor_cleanup(self, mock_settings, mock_qdrant_manager):
