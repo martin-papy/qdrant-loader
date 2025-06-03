@@ -10,7 +10,7 @@ from qdrant_loader.core.chunking.strategy.default_strategy import (
 from qdrant_loader.core.document import Document
 
 # Define the constant locally since it's not exported from the module
-MAX_CHUNKS_TO_PROCESS = 500
+MAX_CHUNKS_TO_PROCESS = 1000
 
 
 class TestDefaultChunkingStrategy:

@@ -113,7 +113,12 @@ class PipelineComponentsFactory:
 
         # Create source processor
         source_processor = SourceProcessor(
-            shutdown_event=resource_manager.shutdown_event
+            shutdown_event=resource_manager.shutdown_event,
+            file_conversion_config=(
+                settings.global_config.file_conversion
+                if settings.global_config
+                else None
+            ),
         )
 
         # Create source filter
