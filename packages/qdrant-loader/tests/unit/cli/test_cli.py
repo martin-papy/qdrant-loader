@@ -23,82 +23,33 @@ class TestGetVersion:
     """Test version retrieval functionality."""
 
     def test_get_version_success(self):
-        """Test successful version retrieval."""
-        # Mock the file reading process
-        mock_pyproject_content = {"project": {"version": "1.2.3"}}
-
-        # Create a mock pyproject.toml path that exists
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = True
-
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
-
-        # Mock the nested path operations: workspace_root / "packages/qdrant-loader" / "pyproject.toml"
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
-
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
-
-            with patch("builtins.open", mock_open()):
-                with patch("tomli.load", return_value=mock_pyproject_content):
-                    version = _get_version()
-                    assert version == "1.2.3"
+        """Test successful version retrieval using importlib.metadata."""
+        with patch("importlib.metadata.version", return_value="1.2.3"):
+            version = _get_version()
+            assert version == "1.2.3"
 
     def test_get_version_fallback(self):
-        """Test version fallback when pyproject.toml not found."""
-        # Create a mock pyproject.toml path that doesn't exist
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = False
-
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
-
-        # Mock the nested path operations to return non-existent files
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
-
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
-
+        """Test version fallback when importlib.metadata fails."""
+        with patch(
+            "importlib.metadata.version", side_effect=Exception("Package not found")
+        ):
             version = _get_version()
-            assert version == "Unknown"
+            assert version == "unknown"
 
     def test_get_version_exception_handling(self):
-        """Test version retrieval with file read exception."""
-        # Create a mock pyproject.toml path that exists
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = True
-
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
-
-        # Mock the nested path operations
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
-
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
-
-            # Mock open to raise an exception
-            with patch("builtins.open", side_effect=OSError("File read error")):
-                with patch("qdrant_loader.cli.cli.logger") as mock_logger:
-                    version = _get_version()
-                    assert version == "Unknown"
-                    mock_logger.warning.assert_called_once()
+        """Test version retrieval with ImportError."""
+        with patch(
+            "importlib.metadata.version",
+            side_effect=ImportError("importlib.metadata not available"),
+        ):
+            version = _get_version()
+            assert version == "unknown"
 
 
 class TestSetupLogging:
     """Test logging setup functionality."""
 
-    @patch("qdrant_loader.cli.cli.LoggingConfig")
+    @patch("qdrant_loader.utils.logging.LoggingConfig")
     def test_setup_logging_success(self, mock_logging_config):
         """Test successful logging setup."""
         mock_logger = Mock()
@@ -111,7 +62,7 @@ class TestSetupLogging:
         )
         mock_logging_config.get_logger.assert_called()
 
-    @patch("qdrant_loader.cli.cli.LoggingConfig")
+    @patch("qdrant_loader.utils.logging.LoggingConfig")
     def test_setup_logging_exception(self, mock_logging_config):
         """Test logging setup with exception."""
         mock_logging_config.setup.side_effect = Exception("Logging setup failed")
@@ -166,7 +117,7 @@ class TestLoadConfig:
             config_path = Path(temp_file.name)
 
             try:
-                with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+                with patch("qdrant_loader.config.initialize_config") as mock_init:
                     _load_config(config_path=config_path)
                     mock_init.assert_called_once_with(
                         config_path, None, skip_validation=False
@@ -198,7 +149,7 @@ class TestLoadConfig:
 
                 mock_path_class.side_effect = path_side_effect
 
-                with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+                with patch("qdrant_loader.config.initialize_config") as mock_init:
                     _load_config()
                     mock_init.assert_called_once()
         finally:
@@ -221,7 +172,7 @@ class TestLoadConfig:
             config_path = Path(temp_file.name)
 
         try:
-            with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+            with patch("qdrant_loader.config.initialize_config") as mock_init:
                 # First call raises DatabaseDirectoryError, second succeeds
                 mock_init.side_effect = [
                     DatabaseDirectoryError(path=Path("/tmp/test_db")),
@@ -244,7 +195,7 @@ class TestLoadConfig:
             config_path = Path(temp_file.name)
 
         try:
-            with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+            with patch("qdrant_loader.config.initialize_config") as mock_init:
                 mock_init.side_effect = DatabaseDirectoryError(
                     path=Path("/tmp/test_db")
                 )
@@ -262,7 +213,7 @@ class TestLoadConfig:
 
     def test_load_config_skip_validation(self):
         """Test loading config with skip_validation=True."""
-        with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+        with patch("qdrant_loader.config.initialize_config") as mock_init:
             mock_init.side_effect = DatabaseDirectoryError(path=Path("/tmp/test_db"))
 
             # Mock the Path.exists() method to simulate config.yaml exists
@@ -272,7 +223,7 @@ class TestLoadConfig:
 
     def test_load_config_generic_exception(self):
         """Test loading config with generic exception."""
-        with patch("qdrant_loader.cli.cli.initialize_config") as mock_init:
+        with patch("qdrant_loader.config.initialize_config") as mock_init:
             mock_init.side_effect = Exception("Generic error")
 
             # Mock the Path.exists() method to simulate config.yaml exists
@@ -286,7 +237,7 @@ class TestLoadConfig:
 class TestCheckSettings:
     """Test settings checking functionality."""
 
-    @patch("qdrant_loader.cli.cli.get_settings")
+    @patch("qdrant_loader.config.get_settings")
     def test_check_settings_success(self, mock_get_settings):
         """Test successful settings check."""
         mock_settings = Mock()
@@ -295,7 +246,7 @@ class TestCheckSettings:
         result = _check_settings()
         assert result == mock_settings
 
-    @patch("qdrant_loader.cli.cli.get_settings")
+    @patch("qdrant_loader.config.get_settings")
     def test_check_settings_none(self, mock_get_settings):
         """Test settings check when settings are None."""
         mock_get_settings.return_value = None
@@ -474,8 +425,8 @@ class TestIngestCommand:
     @patch("qdrant_loader.cli.cli._setup_logging")
     @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
-    @patch("qdrant_loader.cli.cli.QdrantManager")
-    @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
+    @patch("qdrant_loader.core.qdrant_manager.QdrantManager")
+    @patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline")
     def test_ingest_command_success(
         self,
         mock_pipeline_class,
@@ -502,8 +453,8 @@ class TestIngestCommand:
     @patch("qdrant_loader.cli.cli._setup_logging")
     @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
-    @patch("qdrant_loader.cli.cli.QdrantManager")
-    @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
+    @patch("qdrant_loader.core.qdrant_manager.QdrantManager")
+    @patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline")
     def test_ingest_command_with_source_filters(
         self,
         mock_pipeline_class,
@@ -532,8 +483,8 @@ class TestIngestCommand:
     @patch("qdrant_loader.cli.cli._setup_logging")
     @patch("qdrant_loader.cli.cli._load_config_with_workspace")
     @patch("qdrant_loader.cli.cli._check_settings")
-    @patch("qdrant_loader.cli.cli.QdrantManager")
-    @patch("qdrant_loader.cli.cli.AsyncIngestionPipeline")
+    @patch("qdrant_loader.core.qdrant_manager.QdrantManager")
+    @patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline")
     def test_ingest_command_with_profiling(
         self,
         mock_pipeline_class,
@@ -577,7 +528,7 @@ class TestRunInit:
     """Test async init functionality."""
 
     @pytest.mark.asyncio
-    @patch("qdrant_loader.cli.cli.init_collection")
+    @patch("qdrant_loader.core.init_collection.init_collection")
     async def test_run_init_success(self, mock_init_collection):
         """Test successful async init."""
         mock_settings = Mock()
@@ -588,7 +539,7 @@ class TestRunInit:
         mock_init_collection.assert_called_once_with(mock_settings, False)
 
     @pytest.mark.asyncio
-    @patch("qdrant_loader.cli.cli.init_collection")
+    @patch("qdrant_loader.core.init_collection.init_collection")
     async def test_run_init_failure(self, mock_init_collection):
         """Test async init failure."""
         mock_settings = Mock()
@@ -598,7 +549,7 @@ class TestRunInit:
             await _run_init(mock_settings, force=False)
 
     @pytest.mark.asyncio
-    @patch("qdrant_loader.cli.cli.init_collection")
+    @patch("qdrant_loader.core.init_collection.init_collection")
     async def test_run_init_exception(self, mock_init_collection):
         """Test async init with exception."""
         mock_settings = Mock()
