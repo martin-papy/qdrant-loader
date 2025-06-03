@@ -62,6 +62,7 @@ dependencies = [
     "tree-sitter<0.21",
     "markitdown[all]>=0.1.2",
     "rich>=13.0.0",
+    "packaging>=21.0",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

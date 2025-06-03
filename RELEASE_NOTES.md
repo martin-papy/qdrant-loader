@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 0.4.6 - June 3, 2025
+
+### 🔔 User Experience Enhancements
+
+#### Version Notifications
+
+- **Automatic update notifications**: CLI now checks for new package versions and notifies users when updates are available
+- **Non-intrusive background checks**: Version checking runs in background without affecting CLI performance
+
 ## Version 0.4.5 - June 3, 2025
 
 ### 🚀 Performance Improvements
