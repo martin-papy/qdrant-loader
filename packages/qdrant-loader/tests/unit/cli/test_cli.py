@@ -22,25 +22,41 @@ from qdrant_loader.config.state import DatabaseDirectoryError
 class TestGetVersion:
     """Test version retrieval functionality."""
 
-    def test_get_version_success(self):
-        """Test successful version retrieval using importlib.metadata."""
-        with patch("importlib.metadata.version", return_value="1.2.3"):
-            version = _get_version()
-            assert version == "1.2.3"
+    @patch("importlib.metadata.version")
+    def test_get_version_success(self, mock_version):
+        """Test successful version retrieval."""
+        mock_version.return_value = "1.2.3"
 
-    def test_get_version_fallback(self):
-        """Test version fallback when importlib.metadata fails."""
-        with patch(
-            "importlib.metadata.version", side_effect=Exception("Package not found")
-        ):
-            version = _get_version()
-            assert version == "unknown"
+        version = _get_version()
+        assert version == "1.2.3"
+        mock_version.assert_called_once_with("qdrant-loader")
 
-    def test_get_version_exception_handling(self):
-        """Test version retrieval with ImportError."""
+    @patch("importlib.metadata.version")
+    def test_get_version_fallback(self, mock_version):
+        """Test version fallback when package not found."""
+        from importlib.metadata import PackageNotFoundError
+
+        mock_version.side_effect = PackageNotFoundError("qdrant-loader")
+
+        version = _get_version()
+        assert version == "unknown"
+        mock_version.assert_called_once_with("qdrant-loader")
+
+    @patch("importlib.metadata.version")
+    def test_get_version_exception_handling(self, mock_version):
+        """Test version retrieval with generic exception."""
+        mock_version.side_effect = Exception("Some error")
+
+        version = _get_version()
+        assert version == "unknown"
+        mock_version.assert_called_once_with("qdrant-loader")
+
+    def test_get_version_import_error(self):
+        """Test version retrieval when importlib.metadata is not available."""
+        # Mock the import to fail by making the import statement raise ImportError
         with patch(
-            "importlib.metadata.version",
-            side_effect=ImportError("importlib.metadata not available"),
+            "builtins.__import__",
+            side_effect=ImportError("No module named 'importlib.metadata'"),
         ):
             version = _get_version()
             assert version == "unknown"
