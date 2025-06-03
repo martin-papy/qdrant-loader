@@ -37,18 +37,9 @@ class ResourceManager:
         try:
             logger.info("Cleaning up resources...")
 
-            # Set shutdown event
-            if hasattr(self, "shutdown_event") and not self.shutdown_event.is_set():
-                # We can't await in a sync function, so we'll use a different approach
-                try:
-                    loop = asyncio.get_running_loop()
-                    loop.call_soon_threadsafe(self.shutdown_event.set)
-                except RuntimeError:
-                    # No running loop, create one briefly
-                    try:
-                        asyncio.run(self._async_cleanup())
-                    except Exception as e:
-                        logger.error(f"Error in async cleanup: {e}")
+            # Don't set shutdown event during normal cleanup - only during signal-based shutdown
+            # The shutdown event should only be set when we receive SIGINT/SIGTERM
+            # Setting it during normal cleanup interferes with the pipeline processing
 
             # Shutdown thread pool executor
             if self.chunk_executor:
