@@ -360,10 +360,21 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         chunks = []
         current_chunk = ""
 
+        # Safety limit to prevent infinite loops
+        MAX_CHUNKS_PER_SECTION = 100
+
         # Split by paragraphs first
         paragraphs = re.split(r"\n\s*\n", content)
 
         for para in paragraphs:
+            # Safety check
+            if len(chunks) >= MAX_CHUNKS_PER_SECTION:
+                logger.warning(
+                    f"Reached maximum chunks per section limit ({MAX_CHUNKS_PER_SECTION}). "
+                    f"Section may be truncated."
+                )
+                break
+
             # If adding this paragraph would exceed max_size
             if len(current_chunk) + len(para) + 2 > max_size:  # +2 for newlines
                 # If current chunk is not empty, save it
@@ -376,18 +387,39 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     current_chunk = ""
 
                     for sentence in sentences:
+                        # Safety check
+                        if len(chunks) >= MAX_CHUNKS_PER_SECTION:
+                            break
+
                         # If sentence itself is too large, split by words
                         if len(sentence) > max_size:
                             words = sentence.split()
                             for word in words:
+                                # Safety check
+                                if len(chunks) >= MAX_CHUNKS_PER_SECTION:
+                                    break
+
+                                # Handle extremely long words by truncating them
+                                if len(word) > max_size:
+                                    logger.warning(
+                                        f"Word longer than max_size ({len(word)} > {max_size}), truncating: {word[:50]}..."
+                                    )
+                                    word = (
+                                        word[: max_size - 10] + "..."
+                                    )  # Truncate with ellipsis
+
                                 if len(current_chunk) + len(word) + 1 > max_size:
-                                    chunks.append(current_chunk.strip())
+                                    if (
+                                        current_chunk.strip()
+                                    ):  # Only add non-empty chunks
+                                        chunks.append(current_chunk.strip())
                                     current_chunk = word + " "
                                 else:
                                     current_chunk += word + " "
                         # Normal sentence handling
                         elif len(current_chunk) + len(sentence) + 1 > max_size:
-                            chunks.append(current_chunk.strip())
+                            if current_chunk.strip():  # Only add non-empty chunks
+                                chunks.append(current_chunk.strip())
                             current_chunk = sentence + " "
                         else:
                             current_chunk += sentence + " "
@@ -399,6 +431,13 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Add the last chunk if not empty
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
+
+        # Final safety check
+        if len(chunks) > MAX_CHUNKS_PER_SECTION:
+            logger.warning(
+                f"Generated {len(chunks)} chunks for section, limiting to {MAX_CHUNKS_PER_SECTION}"
+            )
+            chunks = chunks[:MAX_CHUNKS_PER_SECTION]
 
         return chunks
 
@@ -511,6 +550,15 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 self.progress_tracker.finish_chunking(document.id, 0, "markdown")
                 return []
 
+            # Safety limit to prevent excessive chunking
+            MAX_CHUNKS_PER_DOCUMENT = 500
+            if len(chunks_metadata) > MAX_CHUNKS_PER_DOCUMENT:
+                logger.warning(
+                    f"Document generated {len(chunks_metadata)} chunks, limiting to {MAX_CHUNKS_PER_DOCUMENT}. "
+                    f"Document may be truncated. Document: {document.title}"
+                )
+                chunks_metadata = chunks_metadata[:MAX_CHUNKS_PER_DOCUMENT]
+
             # Create chunk documents
             chunked_docs = []
             for i, chunk_meta in enumerate(chunks_metadata):
@@ -570,6 +618,21 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.finish_chunking(
                 document.id, len(chunked_docs), "markdown"
             )
+
+            logger.info(
+                f"Markdown chunking completed for document: {document.title}",
+                extra={
+                    "document_id": document.id,
+                    "total_chunks": len(chunked_docs),
+                    "document_size": len(document.content),
+                    "avg_chunk_size": (
+                        sum(len(d.content) for d in chunked_docs) // len(chunked_docs)
+                        if chunked_docs
+                        else 0
+                    ),
+                },
+            )
+
             return chunked_docs
 
         except Exception as e:

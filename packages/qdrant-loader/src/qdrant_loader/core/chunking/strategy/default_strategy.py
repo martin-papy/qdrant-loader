@@ -13,7 +13,7 @@ from qdrant_loader.config import Settings
 logger = structlog.get_logger(__name__)
 
 # Maximum number of chunks to process to prevent performance issues
-MAX_CHUNKS_TO_PROCESS = 500
+MAX_CHUNKS_TO_PROCESS = 1000
 
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
@@ -22,6 +22,23 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
     def __init__(self, settings: Settings):
         super().__init__(settings)
         self.progress_tracker = ChunkingProgressTracker(logger)
+
+        # Log configuration for debugging
+        logger.info(
+            "DefaultChunkingStrategy initialized",
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            tokenizer=self.tokenizer,
+            has_encoding=self.encoding is not None,
+        )
+
+        # Warn about suspiciously small chunk sizes
+        if self.chunk_size < 100:
+            logger.warning(
+                f"Very small chunk_size detected: {self.chunk_size}. "
+                f"This may cause performance issues and excessive chunking. "
+                f"Consider using a larger value (e.g., 1000-1500 characters)."
+            )
 
     def _split_text(self, text: str) -> list[str]:
         """Split text into chunks using sentence boundaries and size limits.
@@ -63,26 +80,29 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         start = 0
 
         while start < len(tokens) and len(chunks) < MAX_CHUNKS_TO_PROCESS:
-            # Calculate end position considering overlap
-            end = start + self.chunk_size
+            # Calculate end position
+            end = min(start + self.chunk_size, len(tokens))
 
-            # If this is not the first chunk, include overlap
-            if start > 0:
-                overlap_start = max(0, start - self.chunk_overlap)
-                chunk_tokens = tokens[overlap_start:end]
-            else:
-                chunk_tokens = tokens[start:end]
+            # Extract chunk tokens
+            chunk_tokens = tokens[start:end]
 
             # Decode tokens back to text
             chunk_text = self.encoding.decode(chunk_tokens)
             chunks.append(chunk_text)
 
             # Move start position forward, accounting for overlap
-            start = end - self.chunk_overlap
+            # Ensure we always make progress by advancing at least 1 token
+            advance = max(1, self.chunk_size - self.chunk_overlap)
+            start += advance
 
-            # Prevent infinite loop if overlap is too large
-            if start <= 0 or self.chunk_overlap >= self.chunk_size:
-                start = end
+            # If we're near the end and the remaining tokens are small, include them in the last chunk
+            if start < len(tokens) and (len(tokens) - start) <= self.chunk_overlap:
+                # Create final chunk with remaining tokens
+                final_chunk_tokens = tokens[start:]
+                if final_chunk_tokens:  # Only add if there are tokens
+                    final_chunk_text = self.encoding.decode(final_chunk_tokens)
+                    chunks.append(final_chunk_text)
+                break
 
         # Log warning if we hit the chunk limit
         if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start < len(tokens):
@@ -102,7 +122,14 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of text chunks
         """
-        if len(text) <= self.chunk_size:
+        # Safety check: if chunk_size is invalid, use a reasonable default
+        if self.chunk_size <= 0:
+            logger.warning(f"Invalid chunk_size {self.chunk_size}, using default 1000")
+            effective_chunk_size = 1000
+        else:
+            effective_chunk_size = self.chunk_size
+
+        if len(text) <= effective_chunk_size:
             return [text]
 
         # First, try to split by paragraphs (double newlines)
@@ -118,7 +145,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             # If adding this paragraph would exceed chunk size, finalize current chunk
             if (
                 current_chunk
-                and len(current_chunk) + len(paragraph) + 2 > self.chunk_size
+                and len(current_chunk) + len(paragraph) + 2 > effective_chunk_size
             ):
                 chunks.append(current_chunk.strip())
                 current_chunk = paragraph
@@ -135,7 +162,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # If we still have chunks that are too large, split them further
         final_chunks = []
         for chunk in chunks:
-            if len(chunk) <= self.chunk_size:
+            if len(chunk) <= effective_chunk_size:
                 final_chunks.append(chunk)
             else:
                 # Split large chunks by sentences
@@ -145,7 +172,8 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 for sentence in sentences:
                     if (
                         current_subchunk
-                        and len(current_subchunk) + len(sentence) + 1 > self.chunk_size
+                        and len(current_subchunk) + len(sentence) + 1
+                        > effective_chunk_size
                     ):
                         if current_subchunk.strip():
                             final_chunks.append(current_subchunk.strip())
@@ -162,7 +190,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # Final fallback: if chunks are still too large, split by character count
         result_chunks = []
         for chunk in final_chunks:
-            if len(chunk) <= self.chunk_size:
+            if len(chunk) <= effective_chunk_size:
                 result_chunks.append(chunk)
             else:
                 # Split by character count with word boundaries
@@ -172,7 +200,8 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 for word in words:
                     if (
                         current_word_chunk
-                        and len(current_word_chunk) + len(word) + 1 > self.chunk_size
+                        and len(current_word_chunk) + len(word) + 1
+                        > effective_chunk_size
                     ):
                         if current_word_chunk.strip():
                             result_chunks.append(current_word_chunk.strip())
@@ -189,20 +218,28 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # Ultimate fallback: if chunks are still too large (no word boundaries), split by character count
         final_result_chunks = []
         for chunk in result_chunks:
-            if len(chunk) <= self.chunk_size:
+            if len(chunk) <= effective_chunk_size:
                 final_result_chunks.append(chunk)
             else:
                 # Split by pure character count as last resort
-                for i in range(0, len(chunk), self.chunk_size):
-                    char_chunk = chunk[i : i + self.chunk_size]
+                for i in range(0, len(chunk), effective_chunk_size):
+                    char_chunk = chunk[i : i + effective_chunk_size]
                     if char_chunk.strip():
                         final_result_chunks.append(char_chunk)
+
+        # Safety check: if we somehow generated too many chunks from a small document, something is wrong
+        if len(text) < 1000 and len(final_result_chunks) > 100:
+            logger.error(
+                f"Suspicious chunking result: {len(text)} chars generated {len(final_result_chunks)} chunks. "
+                f"Chunk size: {effective_chunk_size}. Returning single chunk as fallback."
+            )
+            return [text]
 
         # Apply chunk limit
         if len(final_result_chunks) > MAX_CHUNKS_TO_PROCESS:
             logger.warning(
                 f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
-                f"Document may be truncated."
+                f"Document may be truncated. Text length: {len(text)}, Chunk size: {effective_chunk_size}"
             )
             final_result_chunks = final_result_chunks[:MAX_CHUNKS_TO_PROCESS]
 
