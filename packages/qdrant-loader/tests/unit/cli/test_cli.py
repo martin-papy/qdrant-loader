@@ -22,77 +22,44 @@ from qdrant_loader.config.state import DatabaseDirectoryError
 class TestGetVersion:
     """Test version retrieval functionality."""
 
-    def test_get_version_success(self):
+    @patch("importlib.metadata.version")
+    def test_get_version_success(self, mock_version):
         """Test successful version retrieval."""
-        # Mock the file reading process
-        mock_pyproject_content = {"project": {"version": "1.2.3"}}
+        mock_version.return_value = "1.2.3"
 
-        # Create a mock pyproject.toml path that exists
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = True
+        version = _get_version()
+        assert version == "1.2.3"
+        mock_version.assert_called_once_with("qdrant-loader")
 
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
+    @patch("importlib.metadata.version")
+    def test_get_version_fallback(self, mock_version):
+        """Test version fallback when package not found."""
+        from importlib.metadata import PackageNotFoundError
 
-        # Mock the nested path operations: workspace_root / "packages/qdrant-loader" / "pyproject.toml"
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
+        mock_version.side_effect = PackageNotFoundError("qdrant-loader")
 
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
+        version = _get_version()
+        assert version == "unknown"
+        mock_version.assert_called_once_with("qdrant-loader")
 
-            with patch("builtins.open", mock_open()):
-                with patch("tomli.load", return_value=mock_pyproject_content):
-                    version = _get_version()
-                    assert version == "1.2.3"
+    @patch("importlib.metadata.version")
+    def test_get_version_exception_handling(self, mock_version):
+        """Test version retrieval with generic exception."""
+        mock_version.side_effect = Exception("Some error")
 
-    def test_get_version_fallback(self):
-        """Test version fallback when pyproject.toml not found."""
-        # Create a mock pyproject.toml path that doesn't exist
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = False
+        version = _get_version()
+        assert version == "unknown"
+        mock_version.assert_called_once_with("qdrant-loader")
 
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
-
-        # Mock the nested path operations to return non-existent files
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
-
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
-
+    def test_get_version_import_error(self):
+        """Test version retrieval when importlib.metadata is not available."""
+        # Mock the import to fail by making the import statement raise ImportError
+        with patch(
+            "builtins.__import__",
+            side_effect=ImportError("No module named 'importlib.metadata'"),
+        ):
             version = _get_version()
-            assert version == "Unknown"
-
-    def test_get_version_exception_handling(self):
-        """Test version retrieval with file read exception."""
-        # Create a mock pyproject.toml path that exists
-        mock_pyproject_path = Mock()
-        mock_pyproject_path.exists.return_value = True
-
-        # Create a mock workspace root that supports path operations
-        mock_workspace_root = Mock()
-
-        # Mock the nested path operations
-        mock_package_dir = Mock()
-        mock_package_dir.__truediv__ = Mock(return_value=mock_pyproject_path)
-        mock_workspace_root.__truediv__ = Mock(return_value=mock_package_dir)
-
-        with patch("qdrant_loader.cli.cli.Path") as mock_path_class:
-            # Mock Path.cwd() to return our mock workspace root
-            mock_path_class.cwd.return_value = mock_workspace_root
-
-            # Mock open to raise an exception
-            with patch("builtins.open", side_effect=OSError("File read error")):
-                with patch("qdrant_loader.cli.cli.logger") as mock_logger:
-                    version = _get_version()
-                    assert version == "Unknown"
-                    mock_logger.warning.assert_called_once()
+            assert version == "unknown"
 
 
 class TestSetupLogging:
