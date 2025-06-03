@@ -44,6 +44,19 @@ def _get_version() -> str:
         return "unknown"
 
 
+def _check_for_updates():
+    """Check for version updates in the background."""
+    try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.utils.version_check import check_version_async
+
+        current_version = _get_version()
+        check_version_async(current_version, silent=False)
+    except Exception:
+        # Silently fail if version check doesn't work
+        pass
+
+
 @group(name="qdrant-loader")
 @option(
     "--log-level",
@@ -61,6 +74,9 @@ def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI."""
     # Initialize basic logging first
     _setup_logging(log_level)
+
+    # Check for updates in background (non-blocking)
+    _check_for_updates()
 
 
 def _setup_logging(log_level: str, workspace_config=None) -> None:
