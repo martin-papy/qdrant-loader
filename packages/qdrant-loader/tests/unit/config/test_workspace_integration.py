@@ -71,7 +71,7 @@ test_key_for_workspace=workspace_value
         assert workspace_config.env_path == (temp_workspace / ".env").resolve()
         assert (
             workspace_config.logs_path
-            == (temp_workspace / "qdrant-loader.log").resolve()
+            == (temp_workspace / "logs" / "qdrant-loader.log").resolve()
         )
         assert workspace_config.metrics_path == (temp_workspace / "metrics").resolve()
         assert (
