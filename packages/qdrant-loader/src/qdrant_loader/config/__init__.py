@@ -19,10 +19,6 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from ..connectors.confluence.config import ConfluenceSpaceConfig
-from ..connectors.git.config import GitAuthConfig, GitRepoConfig
-from ..connectors.jira.config import JiraProjectConfig
-from ..connectors.publicdocs.config import PublicDocsSourceConfig, SelectorsConfig
 from ..utils.logging import LoggingConfig
 from .chunking import ChunkingConfig
 
@@ -50,6 +46,25 @@ load_dotenv(override=False)
 
 # Get logger without initializing it
 logger = LoggingConfig.get_logger(__name__)
+
+
+# Lazy import function for connector configs
+def _get_connector_configs():
+    """Lazy import connector configs to avoid circular dependencies."""
+    from ..connectors.confluence.config import ConfluenceSpaceConfig
+    from ..connectors.git.config import GitAuthConfig, GitRepoConfig
+    from ..connectors.jira.config import JiraProjectConfig
+    from ..connectors.publicdocs.config import PublicDocsSourceConfig, SelectorsConfig
+
+    return {
+        "ConfluenceSpaceConfig": ConfluenceSpaceConfig,
+        "GitAuthConfig": GitAuthConfig,
+        "GitRepoConfig": GitRepoConfig,
+        "JiraProjectConfig": JiraProjectConfig,
+        "PublicDocsSourceConfig": PublicDocsSourceConfig,
+        "SelectorsConfig": SelectorsConfig,
+    }
+
 
 __all__ = [
     "ChunkingConfig",
@@ -80,6 +95,16 @@ __all__ = [
     "initialize_config",
     "initialize_config_with_workspace",
 ]
+
+
+# Add lazy loading for connector configs
+def __getattr__(name):
+    """Lazy import connector configs to avoid circular dependencies."""
+    connector_configs = _get_connector_configs()
+    if name in connector_configs:
+        return connector_configs[name]
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 _global_settings: Optional["Settings"] = None
 

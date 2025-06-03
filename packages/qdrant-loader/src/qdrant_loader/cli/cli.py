@@ -15,27 +15,19 @@ from click.types import Path as ClickPath
 from click.utils import echo
 
 from qdrant_loader.cli.asyncio import async_command
-from qdrant_loader.cli.project_commands import project_cli
-from qdrant_loader.config import (
-    Settings,
-    get_settings,
-    initialize_config,
-    initialize_config_with_workspace,
-)
-from qdrant_loader.config.state import DatabaseDirectoryError
-from qdrant_loader.config.workspace import (
-    WorkspaceConfig,
-    setup_workspace,
-    validate_workspace_flags,
-    create_workspace_structure,
-)
-from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
-from qdrant_loader.core.init_collection import init_collection
-from qdrant_loader.core.qdrant_manager import QdrantManager
-from qdrant_loader.utils.logging import LoggingConfig
 
-# Get logger without initializing it
-logger = LoggingConfig.get_logger(__name__)
+# Minimal imports at startup - everything else is lazy loaded
+logger = None  # Will be initialized when needed
+
+
+def _get_logger():
+    """Get logger with lazy import."""
+    global logger
+    if logger is None:
+        from qdrant_loader.utils.logging import LoggingConfig
+
+        logger = LoggingConfig.get_logger(__name__)
+    return logger
 
 
 def _get_version() -> str:
@@ -70,14 +62,8 @@ def cli(log_level: str = "INFO") -> None:
     # Initialize basic logging first
     _setup_logging(log_level)
 
-    # Update the global logger variable
-    global logger
-    logger = LoggingConfig.get_logger(__name__)
 
-
-def _setup_logging(
-    log_level: str, workspace_config: WorkspaceConfig | None = None
-) -> None:
+def _setup_logging(log_level: str, workspace_config=None) -> None:
     """Setup logging configuration with workspace support.
 
     Args:
@@ -85,6 +71,9 @@ def _setup_logging(
         workspace_config: Optional workspace configuration for custom log path
     """
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.utils.logging import LoggingConfig
+
         # Get logging configuration from settings if available
         log_format = "console"
 
@@ -109,7 +98,7 @@ def _setup_logging(
         raise ClickException(f"Failed to setup logging: {str(e)!s}") from e
 
 
-def _setup_workspace(workspace_path: Path) -> WorkspaceConfig:
+def _setup_workspace(workspace_path: Path):
     """Setup and validate workspace configuration.
 
     Args:
@@ -122,6 +111,13 @@ def _setup_workspace(workspace_path: Path) -> WorkspaceConfig:
         ClickException: If workspace setup fails
     """
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config.workspace import (
+            WorkspaceConfig,
+            setup_workspace,
+            create_workspace_structure,
+        )
+
         # Create workspace structure if needed
         create_workspace_structure(workspace_path)
 
@@ -129,6 +125,7 @@ def _setup_workspace(workspace_path: Path) -> WorkspaceConfig:
         workspace_config = setup_workspace(workspace_path)
 
         # Use the global logger (now properly initialized)
+        logger = _get_logger()
         logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
         if workspace_config.env_path:
             logger.info(
@@ -149,7 +146,7 @@ def _setup_workspace(workspace_path: Path) -> WorkspaceConfig:
 
 
 def _load_config_with_workspace(
-    workspace_config: WorkspaceConfig | None = None,
+    workspace_config=None,
     config_path: Path | None = None,
     env_path: Path | None = None,
     skip_validation: bool = False,
@@ -163,19 +160,25 @@ def _load_config_with_workspace(
         skip_validation: If True, skip directory validation and creation
     """
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config import (
+            initialize_config,
+            initialize_config_with_workspace,
+        )
+
         if workspace_config:
             # Workspace mode
-            logger.debug("Loading configuration in workspace mode")
+            _get_logger().debug("Loading configuration in workspace mode")
             initialize_config_with_workspace(
                 workspace_config, skip_validation=skip_validation
             )
         else:
             # Traditional mode
-            logger.debug("Loading configuration in traditional mode")
+            _get_logger().debug("Loading configuration in traditional mode")
             _load_config(config_path, env_path, skip_validation)
 
     except Exception as e:
-        logger.error("config_load_failed", error=str(e))
+        _get_logger().error("config_load_failed", error=str(e))
         raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
 
@@ -189,10 +192,12 @@ def _create_database_directory(path: Path) -> bool:
         bool: True if directory was created, False if user declined
     """
     try:
-        logger.info("The database directory does not exist", path=str(path.absolute()))
+        _get_logger().info(
+            "The database directory does not exist", path=str(path.absolute())
+        )
         if click.confirm("Would you like to create this directory?", default=True):
             path.mkdir(parents=True, mode=0o755)
-            logger.info(f"Created directory: {path.absolute()}")
+            _get_logger().info(f"Created directory: {path.absolute()}")
             return True
         return False
     except Exception as e:
@@ -212,10 +217,13 @@ def _load_config(
         skip_validation: If True, skip directory validation and creation
     """
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config import initialize_config
+
         # Step 1: If config path is provided, use it
         if config_path is not None:
             if not config_path.exists():
-                logger.error("config_not_found", path=str(config_path))
+                _get_logger().error("config_not_found", path=str(config_path))
                 raise ClickException(f"Config file not found: {str(config_path)!s}")
             initialize_config(config_path, env_path, skip_validation=skip_validation)
             return
@@ -231,64 +239,75 @@ def _load_config(
             f"No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
         )
 
-    except DatabaseDirectoryError as e:
-        if skip_validation:
-            # For config display, we don't need to create the directory
-            return
-
-        # Get the path from the error and expand it properly
-        path = Path(os.path.expanduser(str(e.path)))
-        if not _create_database_directory(path):
-            raise ClickException(
-                "Database directory creation declined. Exiting."
-            ) from e
-
-        # No need to retry _load_config since the directory is now created
-        # Just initialize the config with the expanded path
-        if config_path is not None:
-            initialize_config(config_path, env_path, skip_validation=skip_validation)
-        else:
-            initialize_config(
-                Path("config.yaml"), env_path, skip_validation=skip_validation
-            )
-
-    except ClickException as e:
-        raise e from None
     except Exception as e:
-        logger.error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        # Handle DatabaseDirectoryError and other exceptions
+        from qdrant_loader.config.state import DatabaseDirectoryError
+
+        if isinstance(e, DatabaseDirectoryError):
+            if skip_validation:
+                # For config display, we don't need to create the directory
+                return
+
+            # Get the path from the error and expand it properly
+            path = Path(os.path.expanduser(str(e.path)))
+            if not _create_database_directory(path):
+                raise ClickException(
+                    "Database directory creation declined. Exiting."
+                ) from e
+
+            # No need to retry _load_config since the directory is now created
+            # Just initialize the config with the expanded path
+            if config_path is not None:
+                initialize_config(
+                    config_path, env_path, skip_validation=skip_validation
+                )
+            else:
+                initialize_config(
+                    Path("config.yaml"), env_path, skip_validation=skip_validation
+                )
+        elif isinstance(e, ClickException):
+            raise e from None
+        else:
+            _get_logger().error("config_load_failed", error=str(e))
+            raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
 
 def _check_settings():
     """Check if settings are available."""
+    # Lazy import to avoid slow startup
+    from qdrant_loader.config import get_settings
+
     settings = get_settings()
     if settings is None:
-        logger.error("settings_not_available")
+        _get_logger().error("settings_not_available")
         raise ClickException("Settings not available")
     return settings
 
 
-async def _run_init(settings: Settings, force: bool) -> None:
+async def _run_init(settings, force: bool) -> None:
     """Run initialization process."""
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.core.init_collection import init_collection
+
         result = await init_collection(settings, force)
         if not result:
             raise ClickException("Failed to initialize collection")
 
         # Provide user-friendly feedback
         if force:
-            logger.info(
+            _get_logger().info(
                 "Collection recreated successfully",
                 collection=settings.qdrant_collection_name,
             )
         else:
-            logger.info(
+            _get_logger().info(
                 "Collection initialized successfully",
                 collection=settings.qdrant_collection_name,
             )
 
     except Exception as e:
-        logger.error("init_failed", error=str(e))
+        _get_logger().error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
 
 
@@ -321,6 +340,9 @@ async def init(
 ):
     """Initialize QDrant collection."""
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config.workspace import validate_workspace_flags
+
         # Validate flag combinations
         validate_workspace_flags(workspace, config, env)
 
@@ -349,11 +371,13 @@ async def init(
 
             # Delete the database file if it exists and force is True
             if os.path.exists(db_path) and force:
-                logger.info("Resetting state database", database_path=db_path)
+                _get_logger().info("Resetting state database", database_path=db_path)
                 os.remove(db_path)
-                logger.info("State database reset completed", database_path=db_path)
+                _get_logger().info(
+                    "State database reset completed", database_path=db_path
+                )
             elif force:
-                logger.info(
+                _get_logger().info(
                     "State database reset skipped (no existing database)",
                     database_path=db_path,
                 )
@@ -361,9 +385,13 @@ async def init(
         await _run_init(settings, force)
 
     except ClickException as e:
+        from qdrant_loader.utils.logging import LoggingConfig
+
         LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
         raise e from None
     except Exception as e:
+        from qdrant_loader.utils.logging import LoggingConfig
+
         LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
 
@@ -443,6 +471,10 @@ async def ingest(
       qdrant-loader ingest --project my-project --source-type git --source my-repo
     """
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config.workspace import validate_workspace_flags
+        from qdrant_loader.utils.logging import LoggingConfig
+
         # Validate flag combinations
         validate_workspace_flags(workspace, config, env)
 
@@ -457,9 +489,18 @@ async def ingest(
         # Load configuration
         _load_config_with_workspace(workspace_config, config, env)
         settings = _check_settings()
+
+        # Lazy import to avoid slow startup
+        from qdrant_loader.core.qdrant_manager import QdrantManager
+
         qdrant_manager = QdrantManager(settings)
 
         async def run_ingest():
+            # Lazy import to avoid slow startup
+            from qdrant_loader.core.async_ingestion_pipeline import (
+                AsyncIngestionPipeline,
+            )
+
             # Create pipeline with workspace-aware metrics path
             if workspace_config:
                 pipeline = AsyncIngestionPipeline(
@@ -557,6 +598,10 @@ def config(
 ):
     """Display current configuration."""
     try:
+        # Lazy import to avoid slow startup
+        from qdrant_loader.config.workspace import validate_workspace_flags
+        from qdrant_loader.utils.logging import LoggingConfig
+
         # Validate flag combinations
         validate_workspace_flags(workspace, config, env)
 
@@ -581,9 +626,20 @@ def config(
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
 
 
-# Add project management commands
-cli.add_command(project_cli)
+# Add project management commands with lazy import
+def _add_project_commands():
+    """Lazily add project commands to avoid slow startup."""
+    from qdrant_loader.cli.project_commands import project_cli
+
+    cli.add_command(project_cli)
 
 
+# Only add project commands when CLI is actually used
 if __name__ == "__main__":
+    _add_project_commands()
     cli()
+else:
+    # For when imported as a module, add commands on first access
+    import atexit
+
+    atexit.register(_add_project_commands)

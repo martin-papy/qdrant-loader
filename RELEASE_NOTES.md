@@ -6,8 +6,6 @@
 
 #### CLI Startup Optimization
 
-**Speed Improvements**
-
 - **CLI startup performance**: Reduced startup time by 60-67% for basic commands ([#24](https://github.com/martin-papy/qdrant-loader/issues/24))
   - `--help`: ~6.8s → 2.33s (**66% improvement**)
   - `--version`: ~6.3s → 2.57s (**59% improvement**)
@@ -15,9 +13,9 @@
 - **Fixed version detection**: Replaced custom parsing with `importlib.metadata.version()` - works in all environments
 - **Resolved circular imports**: Eliminated `config` → `connectors` → `config` dependency cycle
 
-#### Excel File Processing
+### 🎨 User Experience Enhancements
 
-**Warning Management**
+#### Excel File Processing
 
 - **Warning capture system**: Intercepts openpyxl warnings during Excel conversion
 - **Structured logging**: Routes warnings through qdrant-loader logging system for visual consistency

@@ -4,6 +4,8 @@ import logging
 import os
 import signal
 import tempfile
+import warnings
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +22,67 @@ from qdrant_loader.core.file_conversion.file_detector import FileDetector
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
+
+
+@contextmanager
+def capture_openpyxl_warnings(logger_instance, file_path: str):
+    """Context manager to capture openpyxl warnings and route them through our logging system."""
+    captured_warnings = []
+
+    # Custom warning handler
+    def warning_handler(message, category, filename, lineno, file=None, line=None):
+        # Check if this is an openpyxl warning we want to capture
+        if (
+            category == UserWarning
+            and filename
+            and "openpyxl" in filename
+            and (
+                "Data Validation extension" in str(message)
+                or "Conditional Formatting extension" in str(message)
+            )
+        ):
+
+            # Extract the specific warning type
+            warning_type = "Unknown Excel feature"
+            if "Data Validation extension" in str(message):
+                warning_type = "Data Validation"
+            elif "Conditional Formatting extension" in str(message):
+                warning_type = "Conditional Formatting"
+
+            # Track captured warning
+            captured_warnings.append(warning_type)
+
+            # Log through our system instead of showing the raw warning
+            logger_instance.info(
+                "Excel feature not fully supported during conversion",
+                file_path=file_path,
+                feature_type=warning_type,
+                source="openpyxl",
+            )
+        else:
+            # For non-openpyxl warnings, use the default behavior
+            original_showwarning(message, category, filename, lineno, file, line)
+
+    # Store original warning handler
+    original_showwarning = warnings.showwarning
+
+    try:
+        # Install our custom warning handler
+        warnings.showwarning = warning_handler
+        yield
+
+        # Log summary if any warnings were captured
+        if captured_warnings:
+            logger_instance.info(
+                "Excel conversion completed with unsupported features",
+                file_path=file_path,
+                total_warnings=len(captured_warnings),
+                warning_types=list(set(captured_warnings)),
+                source="openpyxl",
+            )
+    finally:
+        # Restore original warning handler
+        warnings.showwarning = original_showwarning
 
 
 class TimeoutHandler:
@@ -135,9 +198,10 @@ class FileConverter:
             self._validate_file(file_path)
             markitdown = self._get_markitdown()
 
-            # Apply timeout wrapper for conversion
+            # Apply timeout wrapper and warning capture for conversion
             with TimeoutHandler(self.config.conversion_timeout, file_path):
-                result = markitdown.convert(file_path)
+                with capture_openpyxl_warnings(self.logger, file_path):
+                    result = markitdown.convert(file_path)
 
             if hasattr(result, "text_content"):
                 markdown_content = result.text_content
