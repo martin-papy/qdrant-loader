@@ -13,7 +13,7 @@ from qdrant_loader.config import Settings
 logger = structlog.get_logger(__name__)
 
 # Maximum number of chunks to process to prevent performance issues
-MAX_CHUNKS_TO_PROCESS = 100
+MAX_CHUNKS_TO_PROCESS = 500
 
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
