@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.4.2 - June 3, 2025
+## Version 0.4.4 - June 3, 2025
 
 ### 🎉 Major Improvements
 
@@ -109,7 +109,3 @@
 - Improved processing speed for converted files
 - Better memory usage with enhanced chunking limits
 - More stable pipeline execution with proper resource management
-
----
-
-**Full Changelog**: [View all changes](https://github.com/martin-papy/qdrant-loader/compare/v0.4.1...v0.4.2)
