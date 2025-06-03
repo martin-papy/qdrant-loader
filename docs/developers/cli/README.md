@@ -295,7 +295,9 @@ my-workspace/
 ├── config.yaml          # Main configuration
 ├── .env                 # Environment variables
 ├── logs/                # Log files
-├── state/               # State database
+│   └── qdrant-loader.log
+├── data/                # State database
+│   └── state.db
 └── metrics/             # Performance metrics
 ```
 
