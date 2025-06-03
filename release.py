@@ -36,6 +36,24 @@ PACKAGES = {
 }
 
 
+def get_packages_for_release() -> list[str]:
+    """Get packages that need releases in the correct order.
+
+    Returns packages in order where qdrant-loader is LAST,
+    ensuring it appears as the latest release in GitHub.
+    """
+    packages_to_release = [
+        name for name, info in PACKAGES.items() if info.get("create_release", True)
+    ]
+
+    # Ensure qdrant-loader is last (will be the latest release)
+    if "qdrant-loader" in packages_to_release:
+        packages_to_release.remove("qdrant-loader")
+        packages_to_release.append("qdrant-loader")
+
+    return packages_to_release
+
+
 # Configure logging
 def setup_logging(verbose: bool = False):
     """Configure logging based on verbosity level."""
@@ -817,16 +835,14 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         print("─" * 50)
 
         print("\n1️⃣  Create and push tags:")
-        for package_name, package_info in PACKAGES.items():
-            if package_info.get("create_release", True):
-                tag_name = f"{package_name}-v{current_version}"
-                print(f"   • {tag_name}")
+        for package_name in get_packages_for_release():
+            tag_name = f"{package_name}-v{current_version}"
+            print(f"   • {tag_name}")
         print("   • Push all tags to GitHub")
 
         print("\n2️⃣  Create GitHub releases:")
-        for package_name, package_info in PACKAGES.items():
-            if package_info.get("create_release", True):
-                print(f"   • {package_name} v{current_version}")
+        for package_name in get_packages_for_release():
+            print(f"   • {package_name} v{current_version}")
 
         print("\n3️⃣  Update package versions and classifiers:")
         print(f"   • All packages: {current_version} → {new_version}")
@@ -877,23 +893,21 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     run_command("git push origin main", dry_run)
 
     # Create and push tags with NEW version (after version bump)
-    for package_name, package_info in PACKAGES.items():
-        if package_info.get("create_release", True):
-            tag_name = f"{package_name}-v{new_version}"  # Use new_version instead of current_version
-            run_command(
-                f'git tag -a {tag_name} -m "Release {package_name} v{new_version}"',
-                dry_run,
-            )
+    for package_name in get_packages_for_release():
+        tag_name = f"{package_name}-v{new_version}"  # Use new_version instead of current_version
+        run_command(
+            f'git tag -a {tag_name} -m "Release {package_name} v{new_version}"',
+            dry_run,
+        )
 
     run_command("git push origin main --tags", dry_run)
 
     # Create GitHub releases with NEW version
     token = get_github_token(dry_run)
-    for package_name, package_info in PACKAGES.items():
-        if package_info.get("create_release", True):
-            create_github_release(
-                package_name, new_version, token, dry_run
-            )  # Use new_version
+    for package_name in get_packages_for_release():
+        create_github_release(
+            package_name, new_version, token, dry_run
+        )  # Use new_version
 
     print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
     print("─" * 40)
