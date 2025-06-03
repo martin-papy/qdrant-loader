@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import FileConversionConfig
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
@@ -14,8 +15,13 @@ logger = LoggingConfig.get_logger(__name__)
 class SourceProcessor:
     """Handles processing of different source types."""
 
-    def __init__(self, shutdown_event: asyncio.Event | None = None):
+    def __init__(
+        self,
+        shutdown_event: asyncio.Event | None = None,
+        file_conversion_config: FileConversionConfig | None = None,
+    ):
         self.shutdown_event = shutdown_event or asyncio.Event()
+        self.file_conversion_config = file_conversion_config
 
     async def process_source_type(
         self,
@@ -49,6 +55,18 @@ class SourceProcessor:
 
                 # Create connector instance and use as async context manager
                 connector = connector_class(source_config)
+
+                # Set file conversion config if available and connector supports it
+                if (
+                    self.file_conversion_config
+                    and hasattr(connector, "set_file_conversion_config")
+                    and hasattr(source_config, "enable_file_conversion")
+                    and source_config.enable_file_conversion
+                ):
+                    logger.debug(
+                        f"Setting file conversion config for {source_type} source: {source_name}"
+                    )
+                    connector.set_file_conversion_config(self.file_conversion_config)
 
                 # Use the connector as an async context manager to ensure proper initialization
                 async with connector:
