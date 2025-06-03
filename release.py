@@ -861,24 +861,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
         return
 
-    # Create and push tags with current version
-    for package_name, package_info in PACKAGES.items():
-        if package_info.get("create_release", True):
-            tag_name = f"{package_name}-v{current_version}"
-            run_command(
-                f'git tag -a {tag_name} -m "Release {package_name} v{current_version}"',
-                dry_run,
-            )
-
-    run_command("git push origin main --tags", dry_run)
-
-    # Create GitHub releases with current version
-    token = get_github_token(dry_run)
-    for package_name, package_info in PACKAGES.items():
-        if package_info.get("create_release", True):
-            create_github_release(package_name, current_version, token, dry_run)
-
-    # Update versions for all packages
+    # Update versions for all packages FIRST
     update_all_package_versions(new_versions, dry_run)
 
     # Update Development Status classifiers for all packages
@@ -893,11 +876,30 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     # Push the new version commit to remote
     run_command("git push origin main", dry_run)
 
+    # Create and push tags with NEW version (after version bump)
+    for package_name, package_info in PACKAGES.items():
+        if package_info.get("create_release", True):
+            tag_name = f"{package_name}-v{new_version}"  # Use new_version instead of current_version
+            run_command(
+                f'git tag -a {tag_name} -m "Release {package_name} v{new_version}"',
+                dry_run,
+            )
+
+    run_command("git push origin main --tags", dry_run)
+
+    # Create GitHub releases with NEW version
+    token = get_github_token(dry_run)
+    for package_name, package_info in PACKAGES.items():
+        if package_info.get("create_release", True):
+            create_github_release(
+                package_name, new_version, token, dry_run
+            )  # Use new_version
+
     print("\n🎉 RELEASE COMPLETED SUCCESSFULLY!")
     print("─" * 40)
-    print(f"\n📦 Released version: v{current_version}")
+    print(f"\n📦 Released version: v{new_version}")  # Show new_version
     print("   All packages released with the same version")
-    print(f"\n🔄 Updated to: v{new_version}")
+    print(f"\n🔄 Updated from: v{current_version}")  # Show what we updated from
     print("   All packages now have the same new version")
     print("   Development Status classifiers updated automatically")
     print("   New version committed and pushed to remote repository")
