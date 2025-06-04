@@ -431,7 +431,9 @@
                             : 'Local build';
                     }
                     if (branchElement) {
-                        branchElement.textContent = 'feature/20-multi-project-support'; // Current branch
+                        branchElement.textContent = projectData.build && projectData.build.branch !== 'unknown'
+                            ? projectData.build.branch
+                            : 'main'; // Default to main branch
                     }
                     if (runIdElement) {
                         runIdElement.textContent = projectData.build && projectData.build.workflow_run_id !== 'local'
@@ -444,7 +446,7 @@
                         commitElement.textContent = 'Local build';
                     }
                     if (branchElement) {
-                        branchElement.textContent = 'feature/20-multi-project-support';
+                        branchElement.textContent = 'main'; // Default to main branch
                     }
                     if (runIdElement) {
                         runIdElement.textContent = 'Local development';
