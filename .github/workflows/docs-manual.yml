@@ -1,0 +1,211 @@
+name: Documentation Website (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to GitHub Pages'
+        required: false
+        default: false
+        type: boolean
+      force_deploy:
+        description: 'Force deployment even without recent test artifacts'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+
+concurrency:
+  group: "docs-manual-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build Documentation Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+
+      - name: Generate favicons
+        run: |
+          python website/assets/generate_favicons.py
+
+      - name: Get latest test workflow run ID
+        id: get-workflow-run
+        run: |
+          echo "🔍 Finding latest successful test workflow run on main branch..."
+          
+          # Get the latest successful workflow run for "Test and Coverage" on main branch
+          WORKFLOW_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r '.workflows[] | select(.name == "Test and Coverage") | .id')
+          
+          if [ "$WORKFLOW_RUN" = "null" ] || [ -z "$WORKFLOW_RUN" ]; then
+            echo "❌ Could not find 'Test and Coverage' workflow"
+            exit 1
+          fi
+          
+          LATEST_RUN=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_RUN/runs?branch=main&status=completed&conclusion=success&per_page=1" \
+            | jq -r '.workflow_runs[0].id')
+          
+          if [ "$LATEST_RUN" = "null" ] || [ -z "$LATEST_RUN" ]; then
+            echo "❌ No successful test runs found on main branch"
+            if [ "${{ inputs.force_deploy }}" = "true" ]; then
+              echo "⚠️  Force deploy enabled, continuing without test artifacts"
+              echo "workflow_run_id=" >> $GITHUB_OUTPUT
+            else
+              echo "💡 Use 'force_deploy' input to deploy without test artifacts"
+              exit 1
+            fi
+          else
+            echo "✅ Found latest successful test run: $LATEST_RUN"
+            echo "workflow_run_id=$LATEST_RUN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get latest test results
+        if: steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: test-results/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
+        continue-on-error: true
+
+      - name: Get latest coverage reports
+        if: steps.get-workflow-run.outputs.workflow_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
+          path: coverage-artifacts/
+          merge-multiple: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
+        continue-on-error: true
+
+      - name: Build website using templates
+        run: |
+          echo "🚀 Building website using template system"
+          python website/build.py \
+            --output site \
+            --templates website/templates \
+            --coverage-artifacts coverage-artifacts/ \
+            --test-results test-results/ \
+            --base-url ""
+
+      - name: Verify website build
+        run: |
+          echo "=== Website Build Verification ==="
+          echo "📁 Site directory contents:"
+          find site -type f -name "*.html" | head -10
+          echo ""
+          echo "📊 Total files built: $(find site -type f | wc -l)"
+          echo "📄 HTML pages: $(find site -name "*.html" | wc -l)"
+          echo "📁 Directories: $(find site -type d | wc -l)"
+          
+          # Check if main pages exist
+          if [ -f "site/index.html" ]; then
+            echo "✅ Homepage built successfully"
+          else
+            echo "❌ Homepage missing"
+            exit 1
+          fi
+          
+          if [ -f "site/docs/index.html" ]; then
+            echo "✅ Documentation index built successfully"
+          else
+            echo "❌ Documentation index missing"
+            exit 1
+          fi
+          
+          if [ -f "site/coverage/index.html" ]; then
+            echo "✅ Coverage index built successfully"
+          else
+            echo "❌ Coverage index missing"
+            exit 1
+          fi
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-manual-${{ github.run_id }}
+          path: site
+          retention-days: 30
+
+      - name: Setup Pages (for deployment)
+        if: inputs.deploy == true
+        uses: actions/configure-pages@v4
+
+      - name: Upload site artifact for Pages (for deployment)
+        if: inputs.deploy == true
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [build-docs]
+    if: needs.build-docs.result == 'success' && inputs.deploy == true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-docs]
+    if: always()
+    steps:
+      - name: Report build status
+        run: |
+          echo "=== Documentation Build Summary (Manual) ==="
+          echo "Build Status: ${{ needs.build-docs.result }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Deploy Requested: ${{ inputs.deploy }}"
+          echo "Force Deploy: ${{ inputs.force_deploy }}"
+          
+          if [ "${{ needs.build-docs.result }}" = "success" ]; then
+            echo "✅ Website built successfully"
+            echo "📦 Artifact: website-manual-${{ github.run_id }}"
+            
+            if [ "${{ inputs.deploy }}" = "true" ]; then
+              echo "🚀 Deployed manually to GitHub Pages"
+            else
+              echo "📋 Built but not deployed (deploy=false)"
+            fi
+          else
+            echo "❌ Website build failed"
+            exit 1
+          fi 
