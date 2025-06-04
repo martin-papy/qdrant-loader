@@ -20,9 +20,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 28 | 57 | 🔄 **33%** |
+| `./packages/qdrant-loader/tests/` | 85 | 32 | 53 | 🔄 **38%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 0 | 17 | ⏳ **0%** |
-| **TOTAL** | **110** | **36** | **74** | **33%** |
+| **TOTAL** | **110** | **40** | **70** | **36%** |
 
 ---
 
@@ -121,7 +121,7 @@
 
 ---
 
-## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (28/85)**
+## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (32/85)**
 
 **Purpose:** Core QDrant Loader package functionality tests  
 **Total Files:** 85  
@@ -172,19 +172,23 @@
 | `unit/core/test_project_manager.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid project management coverage |
 | `unit/core/test_embedding_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Good embedding service coverage |
 
-### Unit Tests - Connectors (3/12 completed)
+### Unit Tests - Connectors (7/12 completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
 | `unit/connectors/confluence/test_confluence_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite |
 | `unit/connectors/git/test_git_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Well-structured unit test suite with good coverage |
-| `unit/connectors/jira/test_jira_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage |
+| `unit/connectors/git/test_adapter.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good coverage of adapter layer |
+| `unit/connectors/git/test_file_processor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Exemplary test suite with outstanding fixture design |
+| `unit/connectors/git/test_git_operations.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite |
+| `unit/connectors/git/test_metadata_extractor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good metadata extraction coverage |
+| `unit/connectors/jira/test_jira_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage
 | **Git:**
 
-- `test_adapter.py` 🔄 (154 lines)
-- `test_file_processor.py` 🔄 (156 lines)
-- `test_git_operations.py` 🔄 (479 lines)
-- `test_metadata_extractor.py` 🔄 (196 lines)
+- `test_adapter.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good coverage of adapter layer
+- `test_file_processor.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Exemplary test suite with outstanding fixture design
+- `test_git_operations.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite
+- `test_metadata_extractor.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good metadata extraction coverage
 | **LocalFile:** `test_localfile_id_consistency.py` 🔄 (278 lines)
 | **PublicDocs:**
 - `test_publicdocs_connector.py` 🔄 (445 lines)
@@ -222,11 +226,11 @@
 
 - **Confluence:** `test_confluence_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite
 - **Git:**
-  - `test_adapter.py` 🔄 (154 lines)
-  - `test_file_processor.py` 🔄 (156 lines)
+  - `test_adapter.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good coverage of adapter layer
+  - `test_file_processor.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Exemplary test suite with outstanding fixture design
   - `test_git_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Well-structured unit test suite with good coverage
-  - `test_git_operations.py` 🔄 (479 lines)
-  - `test_metadata_extractor.py` 🔄 (196 lines)
+  - `test_git_operations.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite
+  - `test_metadata_extractor.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good metadata extraction coverage
 - **Jira:** `test_jira_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage
 - **LocalFile:** `test_localfile_id_consistency.py` 🔄 (278 lines)
 - **PublicDocs:**
@@ -239,184 +243,4 @@
 
 ##### Chunking Strategy Tests (`core/chunking/strategy/` - 6 files)
 
-- `test_base_strategy.py` 🔄 (603 lines)
-- `test_code_strategy.py` 🔄 (411 lines)
-- `test_default_strategy.py` 🔄 (452 lines)
-- `test_html_strategy.py` 🔄 (1,133 lines) ⚠️ **VERY LARGE**
-- `test_json_strategy.py` 🔄 (1,188 lines) ⚠️ **VERY LARGE**
-- `test_markdown_strategy.py` 🔄 (778 lines)
-
-##### Chunking Service Tests
-
-- `test_chunking_service.py` 🔄 (612 lines)
-
-##### Embedding Tests (`core/embedding/` - 1 file)
-
-- `test_embedding_service.py` ✅ (329 lines)
-
-##### File Conversion Tests (`core/file_conversion/` - 5 files)
-
-- `test_file_conversion.py` 🔄 (490 lines)
-- `test_file_converter.py` 🔄 (517 lines)
-- `test_file_detector.py` 🔄 (357 lines)
-- `test_markitdown_api_key.py` 🔄 (282 lines)
-- `test_warning_capture.py` 🔄 (151 lines)
-
-##### Monitoring Tests (`core/monitoring/` - 3 files)
-
-- `test_monitoring.py` 🔄 (548 lines)
-- `test_monitoring_2.py` 🔄 (555 lines)
-- `test_resource_monitor.py` 🔄 (370 lines)
-
-##### Pipeline Tests (`core/pipeline/` - 8 files)
-
-- `test_async_ingestion_pipeline.py` 🔄 (778 lines)
-- `test_config.py` 🔄 (37 lines)
-- `test_orchestrator.py` 🔄 (583 lines)
-- `test_resource_manager.py` 🔄 (573 lines)
-- `test_source_filter.py` 🔄 (54 lines)
-- **Workers:**
-  - `test_chunking_worker.py` 🔄 (481 lines)
-  - `test_embedding_worker.py` 🔄 (419 lines)
-  - `test_upsert_worker.py` 🔄 (587 lines)
-
-##### State Management Tests (`core/state/` - 3 files)
-
-- `test_document_state_manager.py` 🔄 (434 lines)
-- `test_state_manager.py` 🔄 (249 lines)
-- `test_state_manager_2.py` 🔄 (350 lines)
-
-##### Text Processing Tests (`core/text_processing/` - 3 files)
-
-- `test_semantic_analyzer.py` 🔄 (542 lines)
-- `test_text_processor.py` 🔄 (606 lines)
-- `test_topic_modeler.py` 🔄 (249 lines)
-
-##### Other Core Tests (8 files)
-
-- `test_attachment_downloader.py` 🔄 (624 lines)
-- `test_document_id.py` ✅ (130 lines)
-- `test_embedding_service.py` ✅ (285 lines)
-- `test_init_collection.py` ✅ (284 lines)
-- `test_project_manager.py` ✅ (186 lines)
-- `test_qdrant_manager.py` ✅ (579 lines)
-
-#### Integration Tests (`integration/` - 7 files)
-
-- `test_chunking_integration.py` 🔄
-- `test_file_conversion_integration.py` 🔄
-- `test_pipeline_integration.py` 🔄
-- `test_state_management.py` 🔄
-- **Connectors:**
-  - `test_publicdocs_integration.py` 🔄
-
-#### Utility Tests (`unit/utils/` - 2 files)
-
-- `test_release.py` 🔄 (950 lines)
-- `test_version_check.py` 🔄 (264 lines)
-
-#### Main Tests (`unit/` - 2 files)
-
-- `test_init.py` ✅ (226 lines)
-- `test_main.py` ✅ (104 lines)
-
-#### Test Scripts (`scripts/` - 3 files)
-
-- `check_metadata.py` 🔄
-- `check_nested_metadata.py` 🔄
-- `query_qdrant.py` 🔄
-
-#### Configuration Files
-
-- `conftest.py` 🔄
-- `config.test.template.yaml` 🔄
-- `utils.py` 🔄
-
----
-
-## 🔌 Test Directory 3: MCP Server Tests (`./packages/qdrant-loader-mcp-server/tests/`) - ⏳ **PENDING (0/17)**
-
-**Purpose:** Model Context Protocol server functionality tests  
-**Total Files:** 17  
-**Total Lines:** ~2,500+
-
-### Test Files Breakdown
-
-#### Unit Tests (`unit/` - 15 files)
-
-##### Search Tests (`unit/search/` - 5 files)
-
-- `test_hybrid_search.py` 🔄 (475+ lines)
-- `test_project_search.py` 🔄
-- `test_query_processor.py` 🔄
-- `test_search_engine.py` 🔄
-- `test_search_models.py` 🔄
-
-##### Core Unit Tests (10 files)
-
-- `test_cli.py` 🔄
-- `test_config.py` 🔄
-- `test_logging.py` 🔄
-- `test_main.py` 🔄 (217+ lines)
-- `test_mcp_handler.py` 🔄
-- `test_mcp_handler_filters.py` 🔄 (162+ lines)
-- `test_mcp_protocol.py` 🔄
-- `test_protocol.py` 🔄
-
-#### Integration Tests (`integration/` - 1 file)
-
-- `test_mcp_integration.py` 🔄
-
-#### Configuration
-
-- `conftest.py` 🔄
-
----
-
-## 📈 **Overall Audit Progress**
-
-### Completed Audits Summary
-
-**Total Completed:** 36/110 (33%)
-
-#### Root Tests: 8/8 (100%) ✅
-
-- All website build system tests audited
-- Excellent overall quality with comprehensive coverage
-- Minor optimization opportunities identified
-
-#### Core Package Tests: 28/85 (33%) 🔄
-
-- **Main Package:** 2/2 completed
-- **Configuration:** 15/15 completed  
-- **CLI:** 3/3 completed
-- **Core Functionality:** 5/30+ completed
-- **Connectors:** 3/12 completed
-- **Integration:** 0 completed
-
-#### MCP Server Tests: 0/17 (0%) ⏳
-
-- Not yet started
-
-### Next Priority Tests for Audit
-
-1. **High Priority:**
-   - `unit/config/test_source_config.py`
-   - `unit/config/test_template_config.py`
-   - `unit/connectors/git/test_git_operations.py`
-   - `unit/connectors/publicdocs/test_publicdocs_connector.py`
-
-2. **Medium Priority:**
-   - Remaining config tests
-   - Core chunking strategy tests
-   - Pipeline tests
-
-3. **Low Priority:**
-   - MCP server tests
-   - Utility tests
-   - Test scripts
-
----
-
-**Last Updated:** 2024-12-19  
-**Next Review:** Continue with remaining config tests and connector tests
+- `test_base_strategy.py`
