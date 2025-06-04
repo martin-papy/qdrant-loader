@@ -22,7 +22,7 @@ keywords = [
     "semantic-search",
 ]
 authors = [
-    { name = "Martin Papy", email = "martin.papy@gmail.com" },
+    { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
 ]
 dependencies = [
     "click>=8.1.7",

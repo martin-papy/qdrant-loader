@@ -11,7 +11,7 @@ version = "0.4.6"
 description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
 authors = [
-    { name = "Martin Papy", email = "martin.papy@gmail.com" },
+    { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

@@ -23,7 +23,7 @@ keywords = [
     "semantic-search",
 ]
 authors = [
-    { name = "Martin Papy", email = "martin.papy@gmail.com" },
+    { name = "Martin Papy", email = "martin.papy@cbtw.tech" },
 ]
 dependencies = [
     "fastapi>=0.104.0",
