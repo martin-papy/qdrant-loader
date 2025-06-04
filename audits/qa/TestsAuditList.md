@@ -20,9 +20,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 18 | 67 | 🔄 **21%** |
+| `./packages/qdrant-loader/tests/` | 85 | 22 | 63 | 🔄 **26%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 0 | 17 | ⏳ **0%** |
-| **TOTAL** | **110** | **26** | **84** | **24%** |
+| **TOTAL** | **110** | **30** | **80** | **27%** |
 
 ---
 
@@ -121,7 +121,7 @@
 
 ---
 
-## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (18/85)**
+## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (22/85)**
 
 **Purpose:** Core QDrant Loader package functionality tests  
 **Total Files:** 85  
@@ -134,7 +134,7 @@
 | `unit/test_main.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | High quality test suite |
 | `unit/test_init.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Minor optimization opportunities |
 
-### Unit Tests - Configuration (9/15 completed)
+### Unit Tests - Configuration (11/15 completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
@@ -147,12 +147,12 @@
 | `unit/config/test_parser.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Excellent configuration parser coverage |
 | `unit/config/test_workspace_integration.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | High quality integration test suite |
 | `unit/config/test_workspace.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | High quality unit test suite |
+| `unit/config/test_qdrant_config.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Well-structured unit test suite with good coverage |
+| `unit/config/test_settings_qdrant.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent integration test suite with comprehensive coverage |
 | `unit/config/test_traditional_config.py` | 🔄 **PENDING** | - | - | Medium | - | - |
 | `unit/config/test_test_template_config.py` | 🔄 **PENDING** | - | - | Medium | - | - |
 | `unit/config/test_template_config.py` | 🔄 **PENDING** | - | - | Medium | - | - |
-| `unit/config/test_settings_qdrant.py` | 🔄 **PENDING** | - | - | Medium | - | - |
 | `unit/config/test_source_config.py` | 🔄 **PENDING** | - | - | Medium | - | - |
-| `unit/config/test_qdrant_config.py` | 🔄 **PENDING** | - | - | Medium | - | - |
 
 ### Unit Tests - CLI (1/3 completed)
 
@@ -172,6 +172,26 @@
 | `unit/core/test_project_manager.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid project management coverage |
 | `unit/core/test_embedding_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Good embedding service coverage |
 
+### Unit Tests - Connectors (3/12 completed)
+
+| File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
+|------|--------|------------|---------|----------|------------|-------|
+| `unit/connectors/confluence/test_confluence_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite |
+| `unit/connectors/git/test_git_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Well-structured unit test suite with good coverage |
+| `unit/connectors/jira/test_jira_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage |
+| **Git:**
+
+- `test_adapter.py` 🔄 (154 lines)
+- `test_file_processor.py` 🔄 (156 lines)
+- `test_git_operations.py` 🔄 (479 lines)
+- `test_metadata_extractor.py` 🔄 (196 lines)
+| **LocalFile:** `test_localfile_id_consistency.py` 🔄 (278 lines)
+| **PublicDocs:**
+- `test_publicdocs_connector.py` 🔄 (445 lines)
+- `test_publicdocs_content_extraction.py` 🔄 (232 lines)
+- `test_publicdocs_title_extraction.py` 🔄 (146 lines)
+| **Base:** `test_base_connector.py` 🔄 (46 lines)
+
 ### Test Structure Overview
 
 #### Configuration Tests (`unit/config/` - 15 files)
@@ -183,8 +203,8 @@
 - `test_llm_descriptions_config.py` ✅ (294 lines)
 - `test_models.py` ✅ (271 lines)
 - `test_parser.py` ✅ (153 lines)
-- `test_qdrant_config.py` 🔄 (107 lines)
-- `test_settings_qdrant.py` 🔄 (184 lines)
+- `test_qdrant_config.py` ✅ (107 lines)
+- `test_settings_qdrant.py` ✅ (184 lines)
 - `test_source_config.py` 🔄 (100 lines)
 - `test_template_config.py` 🔄 (241 lines)
 - `test_test_template_config.py` 🔄 (413 lines)
@@ -204,10 +224,10 @@
 - **Git:**
   - `test_adapter.py` 🔄 (154 lines)
   - `test_file_processor.py` 🔄 (156 lines)
-  - `test_git_connector.py` 🔄 (152 lines)
+  - `test_git_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Well-structured unit test suite with good coverage
   - `test_git_operations.py` 🔄 (479 lines)
   - `test_metadata_extractor.py` 🔄 (196 lines)
-- **Jira:** `test_jira_connector.py` 🔄 (337 lines)
+- **Jira:** `test_jira_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage
 - **LocalFile:** `test_localfile_id_consistency.py` 🔄 (278 lines)
 - **PublicDocs:**
   - `test_publicdocs_connector.py` 🔄 (445 lines)
@@ -357,7 +377,7 @@
 
 ### Completed Audits Summary
 
-**Total Completed:** 26/110 (24%)
+**Total Completed:** 30/110 (27%)
 
 #### Root Tests: 8/8 (100%) ✅
 
@@ -365,13 +385,13 @@
 - Excellent overall quality with comprehensive coverage
 - Minor optimization opportunities identified
 
-#### Core Package Tests: 18/85 (21%) 🔄
+#### Core Package Tests: 22/85 (26%) 🔄
 
 - **Main Package:** 2/2 completed
-- **Configuration:** 9/15 completed  
+- **Configuration:** 11/15 completed  
 - **CLI:** 1/3 completed
 - **Core Functionality:** 5/30+ completed
-- **Connectors:** 1/12 completed
+- **Connectors:** 3/12 completed
 - **Integration:** 0 completed
 
 #### MCP Server Tests: 0/17 (0%) ⏳
@@ -381,10 +401,10 @@
 ### Next Priority Tests for Audit
 
 1. **High Priority:**
-   - `unit/config/test_qdrant_config.py`
-   - `unit/config/test_settings_qdrant.py`
-   - `unit/connectors/git/test_git_connector.py`
-   - `unit/connectors/jira/test_jira_connector.py`
+   - `unit/config/test_source_config.py`
+   - `unit/config/test_template_config.py`
+   - `unit/connectors/git/test_git_operations.py`
+   - `unit/connectors/publicdocs/test_publicdocs_connector.py`
 
 2. **Medium Priority:**
    - Remaining config tests
