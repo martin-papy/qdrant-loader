@@ -20,9 +20,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 48 | 37 | 🔄 **56%** |
+| `./packages/qdrant-loader/tests/` | 85 | 51 | 34 | 🔄 **60%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 0 | 17 | ⏳ **0%** |
-| **TOTAL** | **110** | **56** | **54** | **51%** |
+| **TOTAL** | **110** | **59** | **51** | **54%** |
 
 ---
 
@@ -127,6 +127,12 @@
 **Total Files:** 85  
 **Total Lines:** ~15,000+
 
+**Latest Updates (2024-12-19):**
+
+- Added 3 new completed audits: file_converter, state_manager, resource_monitor
+- Progress increased from 56% to 60%
+- All 3 files assessed as high value with specific improvement recommendations
+
 ### Unit Tests - Main Package Files
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
@@ -162,7 +168,7 @@
 | `unit/cli/test_asyncio.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | EXCELLENT | Exemplary async decorator testing with proper mocking |
 | `unit/cli/test_project_commands.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED WITH REFACTORING NEEDED | Comprehensive CLI coverage but needs simplification |
 
-### Unit Tests - Core Functionality (16/30+ completed)
+### Unit Tests - Core Functionality (19/30+ completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
@@ -174,6 +180,9 @@
 | `unit/core/test_attachment_downloader.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive attachment handling tests |
 | `unit/core/chunking/test_chunking_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | High-quality chunking service coverage |
 | `unit/core/file_conversion/test_warning_capture.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid warning capture functionality testing |
+| `unit/core/file_conversion/test_file_converter.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive file conversion functionality tests with excellent structure |
+| `unit/core/state/test_state_manager.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | High-quality async test suite with good database isolation |
+| `unit/core/monitoring/test_resource_monitor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED WITH REFACTORING NEEDED | High value but needs consolidation of repetitive mocking patterns |
 | `unit/core/text_processing/test_text_processor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive NLP processing coverage |
 | `unit/utils/test_version_check.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Good version checking and caching coverage |
 
