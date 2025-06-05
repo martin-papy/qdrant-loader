@@ -20,9 +20,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 32 | 53 | 🔄 **38%** |
+| `./packages/qdrant-loader/tests/` | 85 | 38 | 47 | 🔄 **45%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 0 | 17 | ⏳ **0%** |
-| **TOTAL** | **110** | **40** | **70** | **36%** |
+| **TOTAL** | **110** | **46** | **64** | **42%** |
 
 ---
 
@@ -162,7 +162,7 @@
 | `unit/cli/test_asyncio.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | EXCELLENT | Exemplary async decorator testing with proper mocking |
 | `unit/cli/test_project_commands.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED WITH REFACTORING NEEDED | Comprehensive CLI coverage but needs simplification |
 
-### Unit Tests - Core Functionality (5/30+ completed)
+### Unit Tests - Core Functionality (7/30+ completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
@@ -171,8 +171,10 @@
 | `unit/core/test_document_id.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Good document ID handling coverage |
 | `unit/core/test_project_manager.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid project management coverage |
 | `unit/core/test_embedding_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Good embedding service coverage |
+| `unit/core/test_attachment_downloader.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive attachment handling tests |
+| `unit/core/chunking/test_chunking_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | High-quality chunking service coverage |
 
-### Unit Tests - Connectors (7/12 completed)
+### Unit Tests - Connectors (11/12 completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
@@ -182,7 +184,11 @@
 | `unit/connectors/git/test_file_processor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Exemplary test suite with outstanding fixture design |
 | `unit/connectors/git/test_git_operations.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite |
 | `unit/connectors/git/test_metadata_extractor.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good metadata extraction coverage |
-| `unit/connectors/jira/test_jira_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage
+| `unit/connectors/jira/test_jira_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage |
+| `unit/connectors/test_base_connector.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | NEEDS IMPROVEMENT | Minimal coverage, needs expansion |
+| `unit/connectors/localfile/test_localfile_id_consistency.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Critical ID consistency functionality |
+| `unit/connectors/publicdocs/test_publicdocs_title_extraction.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Focused title extraction coverage |
+| `unit/connectors/publicdocs/test_publicdocs_content_extraction.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive content extraction coverage |
 | **Git:**
 
 - `test_adapter.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good coverage of adapter layer
@@ -232,12 +238,12 @@
   - `test_git_operations.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive and high-quality unit test suite
   - `test_metadata_extractor.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid test suite with good metadata extraction coverage
 - **Jira:** `test_jira_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Excellent unit test suite with comprehensive coverage
-- **LocalFile:** `test_localfile_id_consistency.py` 🔄 (278 lines)
+- **LocalFile:** `test_localfile_id_consistency.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Critical ID consistency functionality
 - **PublicDocs:**
   - `test_publicdocs_connector.py` 🔄 (445 lines)
-  - `test_publicdocs_content_extraction.py` 🔄 (232 lines)
-  - `test_publicdocs_title_extraction.py` 🔄 (146 lines)
-- **Base:** `test_base_connector.py` 🔄 (46 lines)
+  - `test_publicdocs_content_extraction.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive content extraction coverage
+  - `test_publicdocs_title_extraction.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Focused title extraction coverage
+- **Base:** `test_base_connector.py` ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | NEEDS IMPROVEMENT | Minimal coverage, needs expansion
 
 #### Core Functionality Tests (`unit/core/` - 30+ files)
 
