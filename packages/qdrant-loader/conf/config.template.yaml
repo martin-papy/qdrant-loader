@@ -105,9 +105,13 @@ projects:
       # Public documentation sources (websites, documentation)
       publicdocs:
         # Example configuration for a documentation source
+        # Note: Currently only crawls one level deep (links found on the base page)
+        # Recursive crawling is not yet implemented
         company-docs:
-          # Base URL of the documentation website
-          base_url: "https://docs.example.com"
+          # Base URL of the documentation website (should be a directory, not a specific file)
+          # Good: "https://docs.example.com/" or "https://docs.example.com/v1/"
+          # Bad: "https://docs.example.com/index.html" (specific file)
+          base_url: "https://docs.example.com/"
           
           # Specific version of the documentation to fetch
           version: "1.0"
@@ -117,7 +121,10 @@ projects:
           
           # Optional: Specific path pattern to match documentation pages
           # Uses glob syntax: ** matches any directory, * matches any file
-          path_pattern: "/docs/{version}/**"
+          # Pattern is matched against the path portion after base_url
+          # Example: if base_url is "https://docs.example.com/" and full URL is 
+          # "https://docs.example.com/guide/intro.html", then path is "guide/intro.html"
+          path_pattern: "*.html"  # Match all HTML files
           
           # Optional: List of paths to exclude from processing
           exclude_paths:
