@@ -318,7 +318,7 @@ class PublicDocsConnector(BaseConnector):
                 self.logger.debug("Extracting links from page", url=url)
                 html = await response.text()
                 links = self._extract_links(html, url)
-                self.logger.debug(
+                self.logger.info(
                     "Adding new links to queue", url=url, new_links=len(links)
                 )
                 for link in links:
@@ -330,7 +330,7 @@ class PublicDocsConnector(BaseConnector):
                 self.logger.debug("Extracted title", url=url, title=title)
 
                 if self.config.content_type == "html":
-                    self.logger.debug("Processing HTML content", url=url)
+                    self.logger.debug("Processing Page", url=url)
                     content = self._extract_content(html)
                     self.logger.debug(
                         "HTML content processed",
