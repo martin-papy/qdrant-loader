@@ -20,9 +20,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 76 | 9 | 🔄 **89%** |
+| `./packages/qdrant-loader/tests/` | 85 | 77 | 8 | 🔄 **91%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 14 | 3 | ✅ **82%** |
-| **TOTAL** | **110** | **98** | **12** | **89%** |
+| **TOTAL** | **110** | **99** | **11** | **90%** |
 
 ---
 
@@ -121,7 +121,7 @@
 
 ---
 
-## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (62/85)**
+## 📦 Test Directory 2: Core Package Tests (`./packages/qdrant-loader/tests/`) - 🔄 **IN PROGRESS (77/85)**
 
 **Purpose:** Core QDrant Loader package functionality tests  
 **Total Files:** 85  
@@ -170,7 +170,7 @@
 | `unit/cli/test_asyncio.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | EXCELLENT | Exemplary async decorator testing with proper mocking |
 | `unit/cli/test_project_commands.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED WITH REFACTORING NEEDED | Comprehensive CLI coverage but needs simplification |
 
-### Unit Tests - Core Functionality (20/30+ completed)
+### Unit Tests - Core Functionality (21/30+ completed)
 
 | File | Status | Audit Date | Auditor | Priority | Assessment | Notes |
 |------|--------|------------|---------|----------|------------|-------|
@@ -179,6 +179,7 @@
 | `unit/core/test_document_id.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Good document ID handling coverage |
 | `unit/core/test_project_manager.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid project management coverage |
 | `unit/core/test_embedding_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | APPROVED | Good embedding service coverage |
+| `unit/core/embedding/test_embedding_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive embedding service functionality with OpenAI and local service integration |
 | `unit/core/test_attachment_downloader.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | Comprehensive attachment handling tests |
 | `unit/core/chunking/test_chunking_service.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | High | EXCELLENT | High-quality chunking service coverage |
 | `unit/core/file_conversion/test_warning_capture.py` | ✅ **COMPLETED** | 2024-12-19 | AI Assistant | Medium | APPROVED | Solid warning capture functionality testing |
@@ -345,9 +346,9 @@
 | Directory | Total Files | Audited | Pending | Progress |
 |-----------|-------------|---------|---------|----------|
 | `./tests/` | 8 | 8 | 0 | ✅ **100%** |
-| `./packages/qdrant-loader/tests/` | 85 | 76 | 9 | 🔄 **89%** |
+| `./packages/qdrant-loader/tests/` | 85 | 77 | 8 | 🔄 **91%** |
 | `./packages/qdrant-loader-mcp-server/tests/` | 17 | 14 | 3 | ✅ **82%** |
-| **TOTAL** | **110** | **98** | **12** | **89%** |
+| **TOTAL** | **110** | **99** | **11** | **90%** |
 
 ### Quality Assessment Distribution
 
