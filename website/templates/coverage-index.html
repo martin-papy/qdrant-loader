@@ -431,9 +431,8 @@
                             : 'Local build';
                     }
                     if (branchElement) {
-                        branchElement.textContent = projectData.build && projectData.build.branch !== 'unknown'
-                            ? projectData.build.branch
-                            : 'main'; // Default to main branch
+                        // Use branch from test data if available, otherwise default to main
+                        branchElement.textContent = data.branch || 'main';
                     }
                     if (runIdElement) {
                         runIdElement.textContent = projectData.build && projectData.build.workflow_run_id !== 'local'
@@ -446,7 +445,8 @@
                         commitElement.textContent = 'Local build';
                     }
                     if (branchElement) {
-                        branchElement.textContent = 'main'; // Default to main branch
+                        // Use branch from test data if available, otherwise default to main
+                        branchElement.textContent = data.branch || 'main';
                     }
                     if (runIdElement) {
                         runIdElement.textContent = 'Local development';
