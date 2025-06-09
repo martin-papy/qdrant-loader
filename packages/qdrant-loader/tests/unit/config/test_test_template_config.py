@@ -3,6 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
+from contextlib import contextmanager
 
 import pytest
 
@@ -95,286 +96,9 @@ projects:
 """
 
     @pytest.fixture
-    def temp_config_file(self, test_template_config_content):
-        """Create a temporary config file for testing."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(test_template_config_content)
-            temp_path = Path(f.name)
-
-        yield temp_path
-
-        # Cleanup
-        if temp_path.exists():
-            temp_path.unlink()
-
-    def test_test_template_config_initialization(self, temp_config_file):
-        """Test test template configuration initialization."""
-        # Set required environment variables for the test template
-        env_vars = {
-            "QDRANT_URL": "http://localhost:6333",
-            "QDRANT_API_KEY": "",
-            "QDRANT_COLLECTION_NAME": "test_collection",
-            "OPENAI_API_KEY": "test_key",
-            "REPO_URL": "https://github.com/example/test-repo.git",
-            "REPO_TOKEN": "test_token",
-            "CONFLUENCE_URL": "https://test.atlassian.net/wiki",
-            "CONFLUENCE_SPACE_KEY": "TEST",
-            "CONFLUENCE_TOKEN": "test_token",
-            "CONFLUENCE_EMAIL": "test@example.com",
-            "JIRA_URL": "https://test.atlassian.net",
-            "JIRA_PROJECT_KEY": "TEST",
-            "JIRA_TOKEN": "test_token",
-            "JIRA_EMAIL": "test@example.com",
-        }
-
-        # Set environment variables
-        for key, value in env_vars.items():
-            os.environ[key] = value
-
-        try:
-            # Initialize configuration with test template
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test basic configuration access
-            assert settings.qdrant_url == "http://localhost:6333"
-            assert settings.qdrant_collection_name == "test_collection"
-            assert settings.state_db_path == ":memory:"
-
-        finally:
-            # Cleanup environment variables
-            for key in env_vars:
-                if key in os.environ:
-                    del os.environ[key]
-
-    def test_test_template_embedding_configuration(
-        self, simple_test_template_config_content
-    ):
-        """Test test template embedding configuration."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(simple_test_template_config_content)
-            temp_config_file = Path(f.name)
-
-        os.environ["OPENAI_API_KEY"] = "test_embedding_key"
-        os.environ["QDRANT_URL"] = "http://localhost:6333"
-        os.environ["QDRANT_COLLECTION_NAME"] = "test_embedding"
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test embedding configuration (smaller values for tests)
-            assert settings.global_config.embedding.model == "text-embedding-3-small"
-            assert (
-                settings.global_config.embedding.batch_size == 10
-            )  # Smaller for tests
-            assert settings.global_config.embedding.api_key == "test_embedding_key"
-
-        finally:
-            for key in ["OPENAI_API_KEY", "QDRANT_URL", "QDRANT_COLLECTION_NAME"]:
-                if key in os.environ:
-                    del os.environ[key]
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    def test_test_template_chunking_configuration(
-        self, simple_test_template_config_content
-    ):
-        """Test test template chunking configuration."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(simple_test_template_config_content)
-            temp_config_file = Path(f.name)
-
-        os.environ["OPENAI_API_KEY"] = "test_key"
-        os.environ["QDRANT_URL"] = "http://localhost:6333"
-        os.environ["QDRANT_COLLECTION_NAME"] = "test_chunking"
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test chunking configuration (smaller values for tests)
-            assert (
-                settings.global_config.chunking.chunk_size == 500
-            )  # Smaller for tests
-            assert (
-                settings.global_config.chunking.chunk_overlap == 50
-            )  # Smaller for tests
-
-        finally:
-            for key in ["OPENAI_API_KEY", "QDRANT_URL", "QDRANT_COLLECTION_NAME"]:
-                if key in os.environ:
-                    del os.environ[key]
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    def test_test_template_file_conversion_configuration(
-        self, simple_test_template_config_content
-    ):
-        """Test test template file conversion configuration."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(simple_test_template_config_content)
-            temp_config_file = Path(f.name)
-
-        os.environ["OPENAI_API_KEY"] = "test_conversion_key"
-        os.environ["QDRANT_URL"] = "http://localhost:6333"
-        os.environ["QDRANT_COLLECTION_NAME"] = "test_conversion"
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test file conversion configuration (smaller limits for tests)
-            assert (
-                settings.global_config.file_conversion.max_file_size == 10485760
-            )  # 10MB for tests
-            assert (
-                settings.global_config.file_conversion.conversion_timeout == 60
-            )  # Shorter for tests
-            assert (
-                settings.global_config.file_conversion.markitdown.enable_llm_descriptions
-                is False
-            )  # Disabled for tests
-            assert (
-                settings.global_config.file_conversion.markitdown.llm_api_key
-                == "test_conversion_key"
-            )
-
-        finally:
-            for key in ["OPENAI_API_KEY", "QDRANT_URL", "QDRANT_COLLECTION_NAME"]:
-                if key in os.environ:
-                    del os.environ[key]
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    def test_test_template_state_management_configuration(
-        self, simple_test_template_config_content
-    ):
-        """Test test template state management configuration."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(simple_test_template_config_content)
-            temp_config_file = Path(f.name)
-
-        os.environ["OPENAI_API_KEY"] = "test_key"
-        os.environ["QDRANT_URL"] = "http://localhost:6333"
-        os.environ["QDRANT_COLLECTION_NAME"] = "test_state"
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test state management configuration (test-specific values)
-            assert (
-                settings.global_config.state_management.database_path == ":memory:"
-            )  # In-memory for tests
-            assert (
-                settings.global_config.state_management.table_prefix
-                == "test_qdrant_loader_"
-            )  # Test prefix
-
-            # Test connection pool configuration (smaller values for tests)
-            connection_pool = settings.global_config.state_management.connection_pool
-            assert connection_pool["size"] == 1  # Single connection for tests
-            assert connection_pool["timeout"] == 5  # Shorter timeout for tests
-
-        finally:
-            for key in ["OPENAI_API_KEY", "QDRANT_URL", "QDRANT_COLLECTION_NAME"]:
-                if key in os.environ:
-                    del os.environ[key]
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    def test_test_template_sources_configuration(self, temp_config_file):
-        """Test test template sources configuration."""
-        # Set all required environment variables
-        env_vars = {
-            "QDRANT_URL": "http://localhost:6333",
-            "QDRANT_COLLECTION_NAME": "test_sources",
-            "OPENAI_API_KEY": "test_key",
-            "REPO_URL": "https://github.com/example/test-repo.git",
-            "REPO_TOKEN": "test_repo_token",
-            "CONFLUENCE_URL": "https://test.atlassian.net/wiki",
-            "CONFLUENCE_SPACE_KEY": "TEST",
-            "CONFLUENCE_TOKEN": "test_confluence_token",
-            "CONFLUENCE_EMAIL": "test@example.com",
-            "JIRA_URL": "https://test.atlassian.net",
-            "JIRA_PROJECT_KEY": "TEST",
-            "JIRA_TOKEN": "test_jira_token",
-            "JIRA_EMAIL": "test@example.com",
-        }
-
-        for key, value in env_vars.items():
-            os.environ[key] = value
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Test sources configuration
-            default_project = settings.projects_config.projects.get("default")
-            assert default_project is not None
-            sources = default_project.sources
-
-            # Test Git source
-            assert "git" in sources.to_dict()
-            git_sources = sources.to_dict()["git"]
-            assert "test-repo" in git_sources
-
-            # Test Confluence source
-            assert "confluence" in sources.to_dict()
-            confluence_sources = sources.to_dict()["confluence"]
-            assert "test-space" in confluence_sources
-
-            # Test Jira source
-            assert "jira" in sources.to_dict()
-            jira_sources = sources.to_dict()["jira"]
-            assert "test-project" in jira_sources
-
-        finally:
-            # Cleanup environment variables
-            for key in env_vars:
-                if key in os.environ:
-                    del os.environ[key]
-
-    def test_test_template_variable_substitution(
-        self, simple_test_template_config_content
-    ):
-        """Test that test template variables are properly substituted."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(simple_test_template_config_content)
-            temp_config_file = Path(f.name)
-
-        # Set environment variables with specific test values
-        test_env_vars = {
-            "QDRANT_URL": "http://test-qdrant:6333",
-            "QDRANT_COLLECTION_NAME": "custom_test_collection",
-            "OPENAI_API_KEY": "custom_test_api_key",
-        }
-
-        for key, value in test_env_vars.items():
-            os.environ[key] = value
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
-            settings = get_settings()
-
-            # Verify variable substitution worked
-            assert settings.qdrant_url == "http://test-qdrant:6333"
-            assert settings.qdrant_collection_name == "custom_test_collection"
-            assert settings.global_config.embedding.api_key == "custom_test_api_key"
-
-        finally:
-            for key in test_env_vars:
-                if key in os.environ:
-                    del os.environ[key]
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
-    @pytest.fixture
     def simple_test_template_config_content(self):
         """Simple test template configuration content without sources."""
-        return """
-global:
+        return """global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -411,3 +135,209 @@ projects:
     description: "Default project for simple test template configuration testing"
 sources: {}
 """
+
+    @pytest.fixture
+    def basic_env_vars(self):
+        """Basic environment variables for simple tests."""
+        return {
+            "QDRANT_URL": "http://localhost:6333",
+            "QDRANT_API_KEY": "",
+            "QDRANT_COLLECTION_NAME": "test_collection",
+            "OPENAI_API_KEY": "test_key",
+        }
+
+    @pytest.fixture
+    def full_env_vars(self, basic_env_vars):
+        """Full environment variables for complete tests."""
+        return {
+            **basic_env_vars,
+            "REPO_URL": "https://github.com/example/test-repo.git",
+            "REPO_TOKEN": "test_token",
+            "CONFLUENCE_URL": "https://test.atlassian.net/wiki",
+            "CONFLUENCE_SPACE_KEY": "TEST",
+            "CONFLUENCE_TOKEN": "test_token",
+            "CONFLUENCE_EMAIL": "test@example.com",
+            "JIRA_URL": "https://test.atlassian.net",
+            "JIRA_PROJECT_KEY": "TEST",
+            "JIRA_TOKEN": "test_token",
+            "JIRA_EMAIL": "test@example.com",
+        }
+
+    @contextmanager
+    def temp_config_file(self, content):
+        """Create a temporary config file with the given content."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write(content)
+            temp_path = Path(f.name)
+
+        try:
+            yield temp_path
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
+
+    @contextmanager
+    def env_vars_context(self, env_vars):
+        """Context manager for setting and cleaning up environment variables."""
+        # Set environment variables
+        for key, value in env_vars.items():
+            os.environ[key] = value
+
+        try:
+            yield
+        finally:
+            # Cleanup environment variables
+            for key in env_vars:
+                if key in os.environ:
+                    del os.environ[key]
+
+    def test_test_template_config_initialization(
+        self, test_template_config_content, full_env_vars
+    ):
+        """Test test template configuration initialization."""
+        with self.temp_config_file(test_template_config_content) as temp_path:
+            with self.env_vars_context(full_env_vars):
+                # Initialize configuration with test template
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test basic configuration access
+                assert settings.qdrant_url == "http://localhost:6333"
+                assert settings.qdrant_collection_name == "test_collection"
+                assert settings.state_db_path == ":memory:"
+
+    def test_test_template_embedding_configuration(
+        self, simple_test_template_config_content, basic_env_vars
+    ):
+        """Test test template embedding configuration."""
+        with self.temp_config_file(simple_test_template_config_content) as temp_path:
+            with self.env_vars_context(basic_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test embedding configuration (smaller values for tests)
+                assert (
+                    settings.global_config.embedding.model == "text-embedding-3-small"
+                )
+                assert (
+                    settings.global_config.embedding.batch_size == 10
+                )  # Smaller for tests
+                assert settings.global_config.embedding.api_key == "test_key"
+
+    def test_test_template_chunking_configuration(
+        self, simple_test_template_config_content, basic_env_vars
+    ):
+        """Test test template chunking configuration."""
+        with self.temp_config_file(simple_test_template_config_content) as temp_path:
+            with self.env_vars_context(basic_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test chunking configuration (smaller values for tests)
+                assert (
+                    settings.global_config.chunking.chunk_size == 500
+                )  # Smaller for tests
+                assert (
+                    settings.global_config.chunking.chunk_overlap == 50
+                )  # Smaller for tests
+
+    def test_test_template_file_conversion_configuration(
+        self, simple_test_template_config_content, basic_env_vars
+    ):
+        """Test test template file conversion configuration."""
+        with self.temp_config_file(simple_test_template_config_content) as temp_path:
+            with self.env_vars_context(basic_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test file conversion configuration (smaller limits for tests)
+                assert (
+                    settings.global_config.file_conversion.max_file_size == 10485760
+                )  # 10MB for tests
+                assert (
+                    settings.global_config.file_conversion.conversion_timeout == 60
+                )  # Shorter for tests
+                assert (
+                    settings.global_config.file_conversion.markitdown.enable_llm_descriptions
+                    is False
+                )  # Disabled for tests
+                assert (
+                    settings.global_config.file_conversion.markitdown.llm_api_key
+                    == "test_key"
+                )
+
+    def test_test_template_state_management_configuration(
+        self, simple_test_template_config_content, basic_env_vars
+    ):
+        """Test test template state management configuration."""
+        with self.temp_config_file(simple_test_template_config_content) as temp_path:
+            with self.env_vars_context(basic_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test state management configuration (test-specific values)
+                assert (
+                    settings.global_config.state_management.database_path == ":memory:"
+                )  # In-memory for tests
+                assert (
+                    settings.global_config.state_management.table_prefix
+                    == "test_qdrant_loader_"
+                )  # Test prefix
+
+                # Test connection pool configuration (smaller values for tests)
+                connection_pool = (
+                    settings.global_config.state_management.connection_pool
+                )
+                assert connection_pool["size"] == 1  # Single connection for tests
+                assert connection_pool["timeout"] == 5  # Shorter timeout for tests
+
+    def test_test_template_sources_configuration(
+        self, test_template_config_content, full_env_vars
+    ):
+        """Test test template sources configuration."""
+        with self.temp_config_file(test_template_config_content) as temp_path:
+            with self.env_vars_context(full_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Test sources configuration
+                default_project = settings.projects_config.projects.get("default")
+                assert default_project is not None
+                sources = default_project.sources
+
+                # Test Git source
+                assert "git" in sources.to_dict()
+                git_sources = sources.to_dict()["git"]
+                assert "test-repo" in git_sources
+
+                # Test Confluence source
+                assert "confluence" in sources.to_dict()
+                confluence_sources = sources.to_dict()["confluence"]
+                assert "test-space" in confluence_sources
+
+                # Test Jira source
+                assert "jira" in sources.to_dict()
+                jira_sources = sources.to_dict()["jira"]
+                assert "test-project" in jira_sources
+
+    def test_test_template_variable_substitution(
+        self, simple_test_template_config_content
+    ):
+        """Test that test template variables are properly substituted."""
+        # Set environment variables with specific test values
+        test_env_vars = {
+            "QDRANT_URL": "http://test-qdrant:6333",
+            "QDRANT_COLLECTION_NAME": "custom_test_collection",
+            "QDRANT_API_KEY": "",
+            "OPENAI_API_KEY": "custom_test_api_key",
+        }
+
+        with self.temp_config_file(simple_test_template_config_content) as temp_path:
+            with self.env_vars_context(test_env_vars):
+                initialize_config(temp_path, skip_validation=True)
+                settings = get_settings()
+
+                # Verify variable substitution worked
+                assert settings.qdrant_url == "http://test-qdrant:6333"
+                assert settings.qdrant_collection_name == "custom_test_collection"
+                assert settings.global_config.embedding.api_key == "custom_test_api_key"
