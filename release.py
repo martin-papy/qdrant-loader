@@ -374,6 +374,79 @@ def check_main_up_to_date(dry_run: bool = False) -> bool:
     return True
 
 
+def check_release_notes_updated(new_version: str, dry_run: bool = False) -> bool:
+    """Check if RELEASE_NOTES.md has been updated with the new version."""
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        f"Checking if RELEASE_NOTES.md has been updated for version {new_version}"
+    )
+
+    release_notes_path = Path("RELEASE_NOTES.md")
+    if not release_notes_path.exists():
+        logger.error("RELEASE_NOTES.md file not found in the repository root")
+        if not dry_run:
+            sys.exit(1)
+        return False
+
+    try:
+        with open(release_notes_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Look for the version section at the beginning of the file
+        # Expected format: ## Version X.Y.Z - Date
+        import re
+
+        # Extract the first version section after the title
+        lines = content.split("\n")
+        version_pattern = r"^## Version (\d+\.\d+\.\d+(?:b\d+)?)"
+
+        for line in lines:
+            if line.startswith("## Version"):
+                match = re.match(version_pattern, line)
+                if match:
+                    found_version = match.group(1)
+                    logger.debug(
+                        f"Found version section in RELEASE_NOTES.md: {found_version}"
+                    )
+
+                    if found_version == new_version:
+                        logger.debug(
+                            "Release notes are up to date with the new version"
+                        )
+                        return True
+                    else:
+                        logger.error(
+                            f"RELEASE_NOTES.md has not been updated for version {new_version}"
+                        )
+                        logger.error(
+                            f"Found version {found_version} but expected {new_version}"
+                        )
+                        logger.error(
+                            "Please add a release notes section for the new version at the top of RELEASE_NOTES.md"
+                        )
+                        logger.error(
+                            f"Expected format: ## Version {new_version} - <Date>"
+                        )
+                        if not dry_run:
+                            sys.exit(1)
+                        return False
+                break
+
+        # If we get here, no version section was found
+        logger.error("No version section found in RELEASE_NOTES.md")
+        logger.error(f"Please add a release notes section for version {new_version}")
+        logger.error(f"Expected format: ## Version {new_version} - <Date>")
+        if not dry_run:
+            sys.exit(1)
+        return False
+
+    except Exception as e:
+        logger.error(f"Error reading RELEASE_NOTES.md: {e}")
+        if not dry_run:
+            sys.exit(1)
+        return False
+
+
 def check_github_workflows(dry_run: bool = False) -> bool:
     """Check if all GitHub Actions workflows are passing."""
     logger = logging.getLogger(__name__)
@@ -717,38 +790,38 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
     if dry_run:
         print("🔍 DRY RUN MODE - No changes will be made\n")
 
-    # Run safety checks and collect results in dry run mode
-    check_results = {}
-    check_results["git_status"] = check_git_status(dry_run)
-    check_results["current_branch"] = check_current_branch(dry_run)
-    check_results["unpushed_commits"] = check_unpushed_commits(dry_run)
-    check_results["main_up_to_date"] = check_main_up_to_date(dry_run)
-    check_results["github_workflows"] = check_github_workflows(dry_run)
+    # Run initial safety checks (without release notes check)
+    initial_check_results = {}
+    initial_check_results["git_status"] = check_git_status(dry_run)
+    initial_check_results["current_branch"] = check_current_branch(dry_run)
+    initial_check_results["unpushed_commits"] = check_unpushed_commits(dry_run)
+    initial_check_results["main_up_to_date"] = check_main_up_to_date(dry_run)
+    initial_check_results["github_workflows"] = check_github_workflows(dry_run)
 
-    # In dry run mode, show summary of all checks
+    # In dry run mode, show summary of initial checks
     if dry_run:
-        print("📋 SAFETY CHECKS")
+        print("📋 INITIAL SAFETY CHECKS")
         print("─" * 50)
 
-        failed_checks = []
-        for check_name, passed in check_results.items():
+        failed_initial_checks = []
+        for check_name, passed in initial_check_results.items():
             status = "✅" if passed else "❌"
             check_display_name = check_name.replace("_", " ").title()
             print(f"{status} {check_display_name}")
             if not passed:
-                failed_checks.append(check_display_name)
+                failed_initial_checks.append(check_display_name)
 
-        if failed_checks:
-            print(f"\n⚠️  {len(failed_checks)} issue(s) need to be fixed:")
-            for check in failed_checks:
+        if failed_initial_checks:
+            print(f"\n⚠️  {len(failed_initial_checks)} issue(s) need to be fixed:")
+            for check in failed_initial_checks:
                 print(f"   • {check}")
             print("\n💡 Continuing to show what would happen after fixes...\n")
         else:
-            print("\n✅ All checks passed!\n")
+            print("\n✅ All initial checks passed!\n")
     else:
-        # In real mode, exit if any check failed
-        if not all(check_results.values()):
-            logger.error("One or more safety checks failed. Aborting release.")
+        # In real mode, exit if any initial check failed
+        if not all(initial_check_results.values()):
+            logger.error("One or more initial safety checks failed. Aborting release.")
             sys.exit(1)
 
     get_all_package_versions()
@@ -822,6 +895,13 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
         logger.error(f"Version calculation failed: {e}")
         sys.exit(1)
 
+    # Now check if release notes have been updated for the new version
+    release_notes_check = check_release_notes_updated(new_version, dry_run)
+
+    # Combine all check results
+    all_check_results = initial_check_results.copy()
+    all_check_results["release_notes_updated"] = release_notes_check
+
     # Apply the same version to all packages
     new_versions = {}
     for package_name in PACKAGES.keys():
@@ -829,6 +909,18 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
     # Display planned change
     print(f"All packages: {current_version} → {new_version}")
+
+    # Show release notes check result
+    if dry_run:
+        print("\n📋 RELEASE NOTES CHECK")
+        print("─" * 30)
+        status = "✅" if release_notes_check else "❌"
+        print(f"{status} Release Notes Updated")
+        if not release_notes_check:
+            print(
+                f"   ⚠️  RELEASE_NOTES.md needs to be updated for version {new_version}"
+            )
+        print()
 
     if dry_run:
         print("\n🚀 PLANNED RELEASE ACTIONS")
@@ -865,10 +957,19 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
         print("\n" + "─" * 50)
 
-        if failed_checks:
+        # Check all results including release notes
+        all_failed_checks = []
+        for check_name, passed in all_check_results.items():
+            if not passed:
+                check_display_name = check_name.replace("_", " ").title()
+                all_failed_checks.append(check_display_name)
+
+        if all_failed_checks:
             print("⚠️  NEXT STEPS")
-            print(f"   Fix {len(failed_checks)} issue(s) before running the release:")
-            for check in failed_checks:
+            print(
+                f"   Fix {len(all_failed_checks)} issue(s) before running the release:"
+            )
+            for check in all_failed_checks:
                 print(f"   • {check}")
             print("\n   Then run: python release.py")
         else:
@@ -876,6 +977,11 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
             print("   All checks passed! Run: python release.py")
 
         return
+
+    # In real mode, exit if any check failed (including release notes)
+    if not all(all_check_results.values()):
+        logger.error("One or more safety checks failed. Aborting release.")
+        sys.exit(1)
 
     # Update versions for all packages FIRST
     update_all_package_versions(new_versions, dry_run)
