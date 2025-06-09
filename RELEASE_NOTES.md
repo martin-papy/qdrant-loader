@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 0.4.7 - June 9, 2025
+
+### 🧹 Test Suite Improvements
+
+### 🐛 Bug Fixes
+
+#### CLI and User Experience
+
+- **Version check improvements**: Fixed upgrade instructions to include `qdrant-loader-mcp-server` package in version check output
+- **Branch display logic**: Fixed branch display logic to default to 'main' when branch is unknown in coverage reports
+- **Error handling**: Improved error handling in CLI for invalid input scenarios
+
+### 📚 Documentation
+
+- **Configuration template**: Enhanced configuration template with detailed comments for better user guidance
+- **PublicDocs connector**: Improved logging in PublicDocsConnector for better debugging
+
+### 🔧 Release Process Enhancement
+
+- **Release notes validation**: Updated release script to automatically check that `RELEASE_NOTES.md` has been updated for new versions before allowing releases
+- **Improved release safety**: Enhanced pre-release checks to ensure documentation consistency
+
 ## Version 0.4.6 - June 3, 2025
 
 ### 🔔 User Experience Enhancements
