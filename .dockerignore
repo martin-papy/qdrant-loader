@@ -1,16 +1,23 @@
-# ============================================================================
-# QDRANT-LOADER PACKAGE .dockerignore
-# Optimized for minimal build context and maximum caching efficiency
-# ============================================================================
+# Root-level .dockerignore for qdrant-loader workspace
+# This file optimizes build context for workspace-wide Docker builds
 
 # ============================================================================
-# PYTHON RUNTIME & BUILD ARTIFACTS
+# DEVELOPMENT ENVIRONMENTS & VIRTUAL ENVIRONMENTS
 # ============================================================================
+venv/
+env/
+ENV/
+.venv/
+.env/
+.conda/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
+
+# ============================================================================
+# PYTHON BUILD ARTIFACTS
+# ============================================================================
 build/
 develop-eggs/
 dist/
@@ -27,20 +34,10 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.Python
 
 # ============================================================================
-# VIRTUAL ENVIRONMENTS & DEPENDENCIES
-# ============================================================================
-venv/
-env/
-ENV/
-.venv/
-.env/
-.conda/
-site-packages/
-
-# ============================================================================
-# TESTING & QUALITY ASSURANCE
+# TESTING & COVERAGE
 # ============================================================================
 .pytest_cache/
 .coverage
@@ -55,12 +52,9 @@ coverage.xml
 .coverage.*
 pytest.ini
 tox.ini
-.mypy_cache/
-.dmypy.json
-dmypy.json
 
 # ============================================================================
-# IDE & EDITOR CONFIGURATIONS
+# IDE & EDITOR FILES
 # ============================================================================
 .vscode/
 .idea/
@@ -73,7 +67,7 @@ dmypy.json
 *.sublime-*
 
 # ============================================================================
-# OPERATING SYSTEM ARTIFACTS
+# OPERATING SYSTEM FILES
 # ============================================================================
 .DS_Store
 .DS_Store?
@@ -99,21 +93,22 @@ temp/
 *.pid.lock
 
 # ============================================================================
-# DATA & RUNTIME DIRECTORIES
+# DATA & CONFIGURATION DIRECTORIES
 # ============================================================================
 data/
 config/
 .taskmaster/
 metrics/
+htmlcov/
 
 # ============================================================================
-# JUPYTER & NOTEBOOK FILES
+# JUPYTER NOTEBOOKS
 # ============================================================================
 .ipynb_checkpoints
 *.ipynb
 
 # ============================================================================
-# DOCUMENTATION (selective inclusion)
+# DOCUMENTATION (keep essential README files)
 # ============================================================================
 docs/
 website/
@@ -123,37 +118,59 @@ website/
 !LICENSE.md
 
 # ============================================================================
-# DEVELOPMENT & BUILD TOOLS
-# ============================================================================
-tests/
-.github/
-Makefile
-docker-compose.yml
-docker-compose.*.yml
-.dockerignore
-Dockerfile*
-.pre-commit-config.yaml
-.editorconfig
-.flake8
-.pylintrc
-
-# ============================================================================
-# PACKAGE MANAGEMENT FILES
-# ============================================================================
-requirements*.txt
-setup.py
-setup.cfg
-poetry.lock
-Pipfile
-Pipfile.lock
-
-# ============================================================================
 # VERSION CONTROL
 # ============================================================================
 .git/
 .gitignore
 .gitattributes
 .gitmodules
+
+# ============================================================================
+# CI/CD & GITHUB
+# ============================================================================
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+.jenkins/
+Jenkinsfile
+
+# ============================================================================
+# DOCKER & CONTAINERIZATION
+# ============================================================================
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+Dockerfile*
+.docker/
+
+# ============================================================================
+# PACKAGE MANAGEMENT & BUILD TOOLS
+# ============================================================================
+requirements*.txt
+setup.py
+setup.cfg
+pyproject.toml
+poetry.lock
+Pipfile
+Pipfile.lock
+package.json
+package-lock.json
+yarn.lock
+node_modules/
+
+# ============================================================================
+# DEVELOPMENT TOOLS & CONFIGURATION
+# ============================================================================
+Makefile
+.pre-commit-config.yaml
+.editorconfig
+.flake8
+.pylintrc
+mypy.ini
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # ============================================================================
 # ENVIRONMENT & SECRETS
@@ -169,6 +186,25 @@ secrets/
 .secrets/
 
 # ============================================================================
+# RELEASE & DEPLOYMENT
+# ============================================================================
+release.py
+RELEASE_NOTES.md
+CHANGELOG.md
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# ============================================================================
+# WORKSPACE-SPECIFIC EXCLUSIONS
+# ============================================================================
+qdrant-loader.code-workspace
+*.code-workspace
+.cursor/
+.cursorignore
+
+# ============================================================================
 # PERFORMANCE & PROFILING
 # ============================================================================
 *.prof
@@ -178,7 +214,7 @@ profile.svg
 .prof/
 
 # ============================================================================
-# BACKUP & WORKSPACE FILES
+# BACKUP & TEMPORARY FILES
 # ============================================================================
 *.bak
 *.backup
@@ -187,19 +223,4 @@ profile.svg
 *.rej
 *~
 .#*
-#*#
-*.code-workspace
-.cursor/
-.cursorignore
-
-# ============================================================================
-# PACKAGE-SPECIFIC EXCLUSIONS
-# ============================================================================
-# Exclude other packages from this build context
-../qdrant-loader-mcp-server/
-../../tests/
-../../docs/
-../../website/
-../../.github/
-../../release.py
-../../RELEASE_NOTES.md 
+#*# 

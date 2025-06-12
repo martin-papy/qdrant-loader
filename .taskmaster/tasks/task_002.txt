@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Configure Neo4j Database Integration
-# Status: pending
+# Status: in-progress
 # Dependencies: 1
 # Priority: high
 # Description: Set up Neo4j database container with proper authentication, security, and data persistence for graph storage

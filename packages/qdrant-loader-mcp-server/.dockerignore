@@ -1,4 +1,11 @@
-# Python
+# ============================================================================
+# QDRANT-LOADER-MCP-SERVER PACKAGE .dockerignore
+# Optimized for minimal build context and maximum caching efficiency
+# ============================================================================
+
+# ============================================================================
+# PYTHON RUNTIME & BUILD ARTIFACTS
+# ============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,14 +28,20 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual environments
+# ============================================================================
+# VIRTUAL ENVIRONMENTS & DEPENDENCIES
+# ============================================================================
 venv/
 env/
 ENV/
 .venv/
 .env/
+.conda/
+site-packages/
 
-# Testing
+# ============================================================================
+# TESTING & QUALITY ASSURANCE
+# ============================================================================
 .pytest_cache/
 .coverage
 htmlcov/
@@ -38,15 +51,30 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.nox/
+.coverage.*
+pytest.ini
+tox.ini
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# IDE
+# ============================================================================
+# IDE & EDITOR CONFIGURATIONS
+# ============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.vim/
+.emacs.d/
+.sublime-*
+*.sublime-*
 
-# OS
+# ============================================================================
+# OPERATING SYSTEM ARTIFACTS
+# ============================================================================
 .DS_Store
 .DS_Store?
 ._*
@@ -54,42 +82,124 @@ coverage.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
 
-# Logs
+# ============================================================================
+# LOGS & TEMPORARY FILES
+# ============================================================================
 *.log
 logs/
-
-# Data and temporary files
-data/
 tmp/
 temp/
 *.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
 
-# Jupyter Notebooks
+# ============================================================================
+# DATA & RUNTIME DIRECTORIES
+# ============================================================================
+data/
+config/
+.taskmaster/
+metrics/
+
+# ============================================================================
+# JUPYTER & NOTEBOOK FILES
+# ============================================================================
 .ipynb_checkpoints
+*.ipynb
 
-# Documentation (keep README.md)
+# ============================================================================
+# DOCUMENTATION (selective inclusion)
+# ============================================================================
 docs/
+website/
 *.md
 !README.md
+!CONTRIBUTING.md
+!LICENSE.md
 
-# Development and build files
+# ============================================================================
+# DEVELOPMENT & BUILD TOOLS
+# ============================================================================
 tests/
 .github/
 Makefile
 docker-compose.yml
+docker-compose.*.yml
 .dockerignore
-Dockerfile
+Dockerfile*
+.pre-commit-config.yaml
+.editorconfig
+.flake8
+.pylintrc
 
-# Local development data
-config/
-.taskmaster/
-
-# Package-specific exclusions
+# ============================================================================
+# PACKAGE MANAGEMENT FILES
+# ============================================================================
 requirements*.txt
 setup.py
 setup.cfg
+poetry.lock
+Pipfile
+Pipfile.lock
 
-# Git
+# ============================================================================
+# VERSION CONTROL
+# ============================================================================
 .git/
-.gitignore 
+.gitignore
+.gitattributes
+.gitmodules
+
+# ============================================================================
+# ENVIRONMENT & SECRETS
+# ============================================================================
+.env*
+!.env.template
+!.env.example
+*.key
+*.pem
+*.crt
+*.csr
+secrets/
+.secrets/
+
+# ============================================================================
+# PERFORMANCE & PROFILING
+# ============================================================================
+*.prof
+*.profile
+profile.out
+profile.svg
+.prof/
+
+# ============================================================================
+# BACKUP & WORKSPACE FILES
+# ============================================================================
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*~
+.#*
+#*#
+*.code-workspace
+.cursor/
+.cursorignore
+
+# ============================================================================
+# PACKAGE-SPECIFIC EXCLUSIONS
+# ============================================================================
+# Exclude other packages from this build context
+../qdrant-loader/
+../../tests/
+../../docs/
+../../website/
+../../.github/
+../../release.py
+../../RELEASE_NOTES.md 
