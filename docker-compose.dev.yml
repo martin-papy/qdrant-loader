@@ -1,0 +1,80 @@
+# Development override for docker-compose.yml
+# This file provides development-specific configurations including:
+# - Source code volume mounts for live development (like pip install -e)
+# - Development environment variables
+# - Relaxed health checks for faster startup
+
+services:
+  # QDrant Loader Application - Development Configuration
+  qdrant-loader:
+    volumes:
+      # Mount source code for live development (like pip install -e)
+      - ./packages/qdrant-loader/src:/app/src:rw
+      - ./packages/qdrant-loader/pyproject.toml:/app/pyproject.toml:ro
+      # Keep existing data/logs/config mounts
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      # Development-specific environment variables
+      - PYTHONPATH=/app/src:/app
+      - QDRANT_LOADER_ENV=development
+      - QDRANT_LOADER_DEBUG=true
+      - QDRANT_LOADER_LOG_LEVEL=DEBUG
+      # Keep existing environment variables
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+    # Install package in development mode on startup
+    command: >
+      sh -c "
+        pip install -e . &&
+        qdrant-loader --help &&
+        tail -f /dev/null
+      "
+    # Relaxed health check for development
+    healthcheck:
+      test: ["CMD", "python", "-c", "import qdrant_loader; print('OK')"]
+      interval: 60s
+      timeout: 30s
+      retries: 2
+      start_period: 120s
+
+  # MCP Server - Development Configuration
+  mcp-server:
+    volumes:
+      # Mount source code for live development
+      - ./packages/qdrant-loader-mcp-server/src:/app/src:rw
+      - ./packages/qdrant-loader-mcp-server/pyproject.toml:/app/pyproject.toml:ro
+      # Keep existing data/logs/config mounts
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config
+    environment:
+      # Development-specific environment variables
+      - PYTHONPATH=/app/src:/app
+      - MCP_SERVER_ENV=development
+      - MCP_SERVER_DEBUG=true
+      - MCP_SERVER_LOG_LEVEL=DEBUG
+      # Keep existing environment variables
+      - QDRANT_URL=http://qdrant:6333
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+      - MCP_SERVER_PORT=${MCP_SERVER_PORT:-3000}
+    # Install package in development mode on startup
+    command: >
+      sh -c "
+        pip install -e . &&
+        mcp-qdrant-loader --help &&
+        tail -f /dev/null
+      "
+    # Relaxed health check for development
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import qdrant_loader_mcp_server; print('OK')"]
+      interval: 60s
+      timeout: 30s
+      retries: 2
+      start_period: 120s
