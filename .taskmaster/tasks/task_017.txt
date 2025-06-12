@@ -1,0 +1,43 @@
+# Task ID: 17
+# Title: Extend MCP Server Tools for Hybrid QDrant-Neo4j Search
+# Status: pending
+# Dependencies: 7, 8
+# Priority: high
+# Description: Modify the MCP server tools to support hybrid search queries that combine vector search results from QDrant with graph-based relationship queries from Neo4j, enhancing search capabilities in the existing search module without breaking current interfaces.
+# Details:
+Update the search logic in packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/ to orchestrate hybrid queries: first, perform a vector similarity search using QDrant's Query API to retrieve top-k candidates based on semantic relevance. Next, use Neo4j Cypher queries to fetch and score relationship-based context for these candidates (e.g., entity connections, graph distance, centrality). Implement a result fusion mechanism that combines QDrant's vector scores with Neo4j-derived relationship scores, allowing for configurable weighting (e.g., via query parameters or config). Ensure the hybrid search is exposed through the existing MCP tool interfaces, maintaining backward compatibility. Add robust error handling for both QDrant and Neo4j failures, and document the new query parameters and result schema. Reference best practices from GraphRAG and Qdrant hybrid search documentation for implementation patterns and scoring strategies.[1][2][3][4]
+
+# Test Strategy:
+1. Write unit and integration tests to verify that hybrid search queries return results that reflect both vector similarity and graph relationship relevance. 2. Test with mock and real data to ensure that the result fusion logic correctly combines QDrant and Neo4j scores according to configurable weights. 3. Validate that existing MCP tool interfaces and legacy search queries remain functional and unchanged. 4. Simulate QDrant and Neo4j outages to confirm robust error handling and fallback behavior. 5. Review documentation and ensure new query parameters and result formats are clearly described.
+
+# Subtasks:
+## 1. Implement QDrant Vector Search Integration [pending]
+### Dependencies: None
+### Description: Integrate QDrant's Query API into the MCP server tools to perform top-k vector similarity searches, retrieving semantically relevant candidates for a given query.
+### Details:
+Update the search logic to call QDrant's vector search endpoint, handle query parameters, and parse the returned results for downstream processing.
+
+## 2. Integrate Neo4j Graph-Based Relationship Queries [pending]
+### Dependencies: 17.1
+### Description: Add logic to perform Cypher queries in Neo4j for the candidates returned by QDrant, extracting relationship-based context and scoring information.
+### Details:
+For each candidate from QDrant, execute Neo4j Cypher queries to fetch graph features such as entity connections, graph distance, and centrality metrics.
+
+## 3. Develop Hybrid Result Fusion and Scoring Mechanism [pending]
+### Dependencies: 17.2
+### Description: Design and implement a mechanism to combine QDrant vector scores with Neo4j-derived relationship scores, supporting configurable weighting and result reranking.
+### Details:
+Implement a fusion strategy (e.g., weighted sum or configurable formula) to merge semantic and graph-based scores, referencing best practices from GraphRAG and QDrant hybrid search documentation.
+
+## 4. Expose Hybrid Search via Existing MCP Interfaces with Backward Compatibility [pending]
+### Dependencies: 17.3
+### Description: Update the MCP tool interfaces to support hybrid search queries and new parameters, ensuring existing search functionality remains unaffected.
+### Details:
+Modify API endpoints and internal interfaces to accept hybrid search options, defaulting to legacy behavior when new parameters are not provided.
+
+## 5. Implement Robust Error Handling and Documentation [pending]
+### Dependencies: 17.4
+### Description: Add comprehensive error handling for QDrant and Neo4j failures, and document new query parameters, result schema, and usage patterns.
+### Details:
+Ensure all failure modes are gracefully handled and clearly reported. Update documentation to cover hybrid search configuration, error cases, and result interpretation.
+

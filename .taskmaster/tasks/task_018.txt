@@ -1,0 +1,43 @@
+# Task ID: 18
+# Title: Implement Backward Compatibility Layer and Migration Utilities for QDrant Loader Users
+# Status: pending
+# Dependencies: 16, 17
+# Priority: high
+# Description: Create a backward compatibility layer to ensure all existing QDrant Loader functionality continues to work unchanged, with Graphiti features opt-in via configuration, and provide migration utilities for gradual adoption of graph features.
+# Details:
+Develop a compatibility module that intercepts and adapts calls to the QDrant Loader core, ensuring legacy APIs, configuration formats, and workflows remain fully functional. Introduce a configuration flag (e.g., `enable_graphiti`) that defaults to false, so Graphiti-based entity extraction and graph storage are only activated when explicitly enabled. Refactor initialization and processing logic to branch cleanly between legacy and hybrid modes, ensuring no changes to existing data models, endpoints, or user-facing behaviors unless the new features are opted in. Build migration utilities (CLI tools or scripts) to help users convert existing data and configurations to support graph features, including step-by-step guides and dry-run options. Maintain comprehensive documentation on compatibility guarantees and migration paths. Collaborate closely with the teams responsible for Tasks 16 and 17 to ensure seamless integration and no regressions in document processing or search workflows.
+
+# Test Strategy:
+Develop a comprehensive regression test suite that runs all existing QDrant Loader workflows (document ingestion, search, update, and deletion) with Graphiti features disabled, verifying identical behavior and outputs as before. Add integration tests that enable Graphiti features via configuration and validate hybrid operation. Test migration utilities on real and synthetic legacy datasets, ensuring data integrity and smooth transitions. Include negative tests to confirm that enabling Graphiti does not affect legacy users. Perform manual and automated user acceptance testing with representative legacy configurations.
+
+# Subtasks:
+## 1. Create Backward Compatibility Module with Configuration Flag System [pending]
+### Dependencies: None
+### Description: Develop a compatibility module that intercepts and adapts calls to the QDrant Loader core, implementing a configuration flag system with `enable_graphiti` defaulting to false to ensure legacy functionality remains unchanged.
+### Details:
+Create a compatibility wrapper class that sits between user code and the QDrant Loader core. Implement configuration management with `enable_graphiti` flag defaulting to false. Design clean branching logic in initialization and processing methods to route between legacy and hybrid modes. Ensure all existing APIs, method signatures, and return types remain identical when the flag is disabled. Create configuration validation to prevent invalid combinations of legacy and new settings.
+
+## 2. Refactor Core Processing Logic for Clean Mode Branching [pending]
+### Dependencies: 18.1
+### Description: Refactor the initialization and document processing logic to cleanly branch between legacy and hybrid modes without affecting existing data models, endpoints, or user-facing behaviors.
+### Details:
+Modify the core QDrant Loader initialization to check the `enable_graphiti` flag and instantiate appropriate processing pipelines. Create separate code paths for document ingestion, processing, and storage that maintain legacy behavior when Graphiti is disabled. Implement factory patterns or strategy patterns to cleanly separate legacy and hybrid processing logic. Ensure no changes to existing data schemas, API endpoints, or response formats in legacy mode.
+
+## 3. Develop Migration Utilities and CLI Tools [pending]
+### Dependencies: 18.2
+### Description: Build comprehensive migration utilities including CLI tools and scripts to help users convert existing data and configurations to support graph features, with dry-run capabilities and validation.
+### Details:
+Create CLI migration tool with commands for data conversion, configuration migration, and validation. Implement dry-run mode that shows what changes would be made without executing them. Build utilities to convert existing QDrant collections to support graph metadata, migrate configuration files to new format, and validate data integrity during migration. Include rollback capabilities and backup creation before migration. Provide progress tracking and detailed logging for migration operations.
+
+## 4. Create Comprehensive Documentation and Migration Guides [pending]
+### Dependencies: 18.3
+### Description: Develop detailed documentation covering compatibility guarantees, migration paths, step-by-step guides, and troubleshooting for users transitioning from legacy QDrant Loader to hybrid mode.
+### Details:
+Write comprehensive documentation including compatibility matrix showing which features work in each mode, step-by-step migration guide with examples, troubleshooting section for common migration issues, and API reference showing differences between modes. Create example configurations and code samples for both legacy and hybrid usage. Document performance implications and best practices for gradual adoption. Include FAQ section addressing common concerns about backward compatibility.
+
+## 5. Integration Testing and Collaboration Validation [pending]
+### Dependencies: 18.1, 18.2, 18.3, 18.4
+### Description: Conduct comprehensive integration testing with Tasks 16 and 17 components to ensure seamless integration and no regressions in document processing or search workflows, with full validation of the compatibility layer.
+### Details:
+Perform end-to-end integration testing with entity extraction (Task 16) and graph storage (Task 17) components. Validate that legacy mode shows no regressions in existing document processing and search workflows. Test hybrid mode activation and deactivation scenarios. Conduct performance testing to ensure compatibility layer doesn't introduce significant overhead. Validate error handling and edge cases across both modes. Coordinate with Task 16 and 17 teams for joint testing scenarios.
+

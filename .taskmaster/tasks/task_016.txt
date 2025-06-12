@@ -1,0 +1,43 @@
+# Task ID: 16
+# Title: Integrate Graphiti Entity Extraction into Document Processing Pipeline
+# Status: pending
+# Dependencies: 5
+# Priority: high
+# Description: Modify the document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to incorporate Graphiti-based entity extraction and graph storage alongside existing vector embedding processes, ensuring seamless integration and backward compatibility.
+# Details:
+Update the core document processing pipeline to invoke the entity extraction pipeline (from Task 5) after or in parallel with vector embedding generation. Use Graphiti's extract_entities method to identify and extract custom, domain-specific entities and relationships from each document, leveraging the configuration for entity and relationship types. After extraction, resolve entities and relationships, deduplicate as needed, and store them in the Neo4j-backed knowledge graph using Graphiti's Cypher-based integration. Ensure that the pipeline supports batch processing and can handle both vector and graph operations efficiently. Maintain backward compatibility by gating new functionality behind configuration flags and ensuring all existing document processing and embedding features remain unaffected. Update documentation and provide migration notes for any API or workflow changes.
+
+# Test Strategy:
+1. Process a representative set of documents and verify that entities and relationships are correctly extracted and stored in the Neo4j graph, matching the configured schema. 2. Confirm that vector embeddings are still generated and stored as before, with no regressions. 3. Test with the new functionality disabled to ensure legacy workflows are unaffected. 4. Validate batch processing and error handling for both embedding and entity extraction steps. 5. Review logs and outputs to confirm that entity deduplication and relationship resolution are functioning as intended. 6. Conduct integration tests to ensure the pipeline works end-to-end in Dockerized environments.
+
+# Subtasks:
+## 1. Refactor Document Processing Pipeline for Modular Integration [pending]
+### Dependencies: None
+### Description: Update the core document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to support modular invocation of both vector embedding and entity extraction processes, enabling sequential or parallel execution as required.
+### Details:
+Ensure the pipeline can invoke the entity extraction pipeline after or in parallel with vector embedding generation, and is structured to allow easy integration of additional processing steps in the future.
+
+## 2. Integrate Graphiti Entity Extraction [pending]
+### Dependencies: 16.1
+### Description: Incorporate Graphiti's extract_entities method into the pipeline to identify and extract custom, domain-specific entities and relationships from each document, using configuration for entity and relationship types.
+### Details:
+Leverage Graphiti's API to extract entities and relationships as specified in the configuration, ensuring compatibility with the document formats processed by the pipeline.
+
+## 3. Implement Entity and Relationship Resolution and Deduplication [pending]
+### Dependencies: 16.2
+### Description: Develop logic to resolve, deduplicate, and normalize extracted entities and relationships before storage, ensuring consistency and avoiding redundant nodes or edges in the knowledge graph.
+### Details:
+Apply deduplication strategies as recommended by Graphiti documentation and ensure that entities are uniquely identified across batches.
+
+## 4. Store Entities and Relationships in Neo4j via Graphiti [pending]
+### Dependencies: 16.3
+### Description: Integrate Graphiti's Cypher-based storage mechanism to persist resolved entities and relationships into the Neo4j-backed knowledge graph, supporting batch operations for efficiency.
+### Details:
+Ensure that the storage process is robust, handles failures gracefully, and is optimized for batch processing scenarios.
+
+## 5. Ensure Backward Compatibility and Update Documentation [pending]
+### Dependencies: 16.4
+### Description: Add configuration flags to gate new entity extraction and graph storage features, maintain all existing document processing and embedding functionality, and update documentation with migration notes.
+### Details:
+Document all API and workflow changes, provide clear migration instructions, and ensure that disabling the new features reverts the pipeline to its previous behavior.
+

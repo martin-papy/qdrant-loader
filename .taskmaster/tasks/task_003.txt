@@ -1,0 +1,43 @@
+# Task ID: 3
+# Title: Install and Configure Graphiti Core
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Integrate Graphiti 0.11.6+ into the QDrant Loader application with proper configuration and initialization
+# Details:
+Install graphiti-core==0.11.6 via pip. Create GraphitiClient initialization with Neo4j connection parameters. Set up configuration management in config.yaml for Graphiti settings including entity_types, relationship_types, and processing parameters. Initialize Graphiti with custom schema for Service, Database, Team entities and depends_on, implements, maintains, documents, calls, uses relationships. Configure LLM provider (OpenAI GPT-4 or local model) for entity extraction.
+
+# Test Strategy:
+Verify Graphiti installation, test Neo4j connection through Graphiti, validate schema creation, and confirm entity extraction pipeline initialization
+
+# Subtasks:
+## 1. Install the Graphiti Core Package [pending]
+### Dependencies: None
+### Description: Install the Graphiti core package with the necessary extras for LLM integration.
+### Details:
+Use a package manager such as poetry or uv to install 'graphiti-core[google-genai]' or the appropriate variant for your LLM provider.
+
+## 2. Initialize Graphiti Client with Neo4j [pending]
+### Dependencies: 3.1
+### Description: Set up the Graphiti client to connect to the Neo4j database.
+### Details:
+Import Graphiti and initialize it with the Neo4j connection string, username, and password.
+
+## 3. Configure Graphiti Settings in YAML [pending]
+### Dependencies: 3.2
+### Description: Create and edit the YAML configuration file for Graphiti.
+### Details:
+Define database connection parameters, LLM provider settings, and other core options in a YAML file as required by your deployment.
+
+## 4. Define Custom Schemas [pending]
+### Dependencies: 3.3
+### Description: Specify custom node and edge classes for your knowledge graph.
+### Details:
+Implement or configure custom schemas to tailor the graph structure to your application's needs, enabling flexible knowledge representation.
+
+## 5. Set Up LLM Provider for Entity Extraction [pending]
+### Dependencies: 3.4
+### Description: Integrate and configure the LLM provider for entity extraction within Graphiti.
+### Details:
+Initialize the LLM client (e.g., GeminiClient) with the appropriate API key and model, and ensure it is connected to Graphiti for entity extraction tasks.
+

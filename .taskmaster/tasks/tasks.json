@@ -1,0 +1,1314 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create Docker Infrastructure Setup",
+      "description": "Dockerize the QDrant Loader application and create container infrastructure for all services",
+      "details": "Create Dockerfile for QDrant Loader application using multi-stage build with Python 3.11-slim base image. Set up Docker Compose configuration with services for qdrant-loader, qdrant (qdrant/qdrant:v1.7.4), and neo4j (neo4j:5.26-community). Configure persistent volumes for data storage, environment variable management, and inter-service networking. Include health checks for all services and proper resource limits. Use BuildKit for optimized builds and implement .dockerignore for efficient context.",
+      "testStrategy": "Verify all containers start successfully, test inter-service communication, validate persistent data storage, and ensure environment variables are properly passed between services",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Write Multi-Stage Dockerfile",
+          "description": "Create a Dockerfile using multi-stage builds to separate build and runtime environments, minimizing final image size and improving security.",
+          "dependencies": [],
+          "details": "Use multiple FROM statements to define build and runtime stages. Copy only necessary artifacts from build to runtime stage. Ensure build tools and intermediate files are excluded from the final image.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Create Docker Compose Configuration",
+          "description": "Define a docker-compose.yml file to orchestrate multiple services, networks, and dependencies.",
+          "dependencies": [
+            1
+          ],
+          "details": "Specify service definitions, build contexts, ports, networks, and dependencies between services. Reference the multi-stage Dockerfile for relevant services.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Configure Persistent Volumes",
+          "description": "Set up Docker volumes in Compose to persist data across container restarts and upgrades.",
+          "dependencies": [
+            2
+          ],
+          "details": "Define named volumes in docker-compose.yml and mount them to appropriate service paths. Ensure data directories (e.g., databases, uploads) are mapped to persistent storage.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Set Up Environment Variable Management",
+          "description": "Implement a strategy for managing environment variables securely and consistently across services.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use .env files or Compose environment blocks to inject configuration. Document required variables and consider secrets management for sensitive data.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Health Checks",
+          "description": "Add health check configurations to Docker Compose and Dockerfiles to monitor service readiness and liveness.",
+          "dependencies": [
+            2
+          ],
+          "details": "Define healthcheck commands and intervals for each service. Use Docker's HEALTHCHECK instruction in Dockerfiles or the healthcheck section in Compose.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Configure Resource Limits",
+          "description": "Set CPU and memory limits for each service to prevent resource exhaustion and ensure fair allocation.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use Compose deploy.resources or container-level settings to specify limits and reservations for CPU and memory.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Optimize Build Context with BuildKit and .dockerignore",
+          "description": "Enable BuildKit and configure .dockerignore to exclude unnecessary files from the build context, improving build speed and security.",
+          "dependencies": [
+            1
+          ],
+          "details": "Create a .dockerignore file to exclude files like node_modules, logs, and local configs. Enable BuildKit for advanced build features and caching.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Configure Neo4j Database Integration",
+      "description": "Set up Neo4j database container with proper authentication, security, and data persistence for graph storage",
+      "details": "Configure Neo4j 5.26-community container with authentication (NEO4J_AUTH), APOC plugin enabled, and proper memory settings (NEO4J_dbms_memory_heap_initial_size=512m, NEO4J_dbms_memory_heap_max_size=2G). Set up persistent volume mounting to /data directory. Configure network security with bolt://neo4j:7687 internal URI. Install neo4j-driver Python package (v5.15.0) for application connectivity. Set up connection pooling and retry logic.",
+      "testStrategy": "Test Neo4j container startup, verify APOC plugin availability, validate authentication, test Python driver connectivity, and confirm data persistence across container restarts",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Configure Neo4j Container with Authentication and Plugins",
+          "description": "Set up the Neo4j Docker container with secure authentication and required plugins. Ensure credentials are managed securely and plugins are loaded as per project requirements.",
+          "dependencies": [],
+          "details": "Configure authentication using Neo4j's native auth provider and set up plugin installation by modifying the Docker image or mounting plugin jars. Use environment variables or configuration files to set admin credentials and plugin parameters.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Set Up Persistent Storage for Neo4j",
+          "description": "Configure persistent storage for the Neo4j container to ensure data durability across container restarts and upgrades.",
+          "dependencies": [
+            1
+          ],
+          "details": "Mount a host directory or use a Docker volume for Neo4j's data directory. Verify that the storage is correctly mapped and accessible by the container.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Configure Memory and Network Settings",
+          "description": "Adjust Neo4j's memory allocation and network configuration for optimal performance and accessibility.",
+          "dependencies": [
+            2
+          ],
+          "details": "Set environment variables or configuration files for heap size, page cache, and network ports. Ensure the container is reachable from required services and clients.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Install and Configure the Python Neo4j Driver",
+          "description": "Install the official Neo4j Python driver in the application environment and configure it to connect to the Neo4j instance.",
+          "dependencies": [
+            3
+          ],
+          "details": "Use pip to install the neo4j package. Set up connection parameters such as URI, authentication, and encryption settings in the application configuration.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Connection Pooling and Retry Logic",
+          "description": "Enhance the Python application's Neo4j connectivity by implementing connection pooling and robust retry logic for transient failures.",
+          "dependencies": [
+            4
+          ],
+          "details": "Configure the Neo4j driver with connection pool settings and implement retry mechanisms for failed transactions or connectivity issues.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Validate Data Persistence and Integration",
+          "description": "Test the end-to-end integration to ensure data is persisted in Neo4j and accessible after container restarts or failures.",
+          "dependencies": [
+            5
+          ],
+          "details": "Insert and query data through the Python application, restart the Neo4j container, and verify data integrity and availability.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Install and Configure Graphiti Core",
+      "description": "Integrate Graphiti 0.11.6+ into the QDrant Loader application with proper configuration and initialization",
+      "details": "Install graphiti-core==0.11.6 via pip. Create GraphitiClient initialization with Neo4j connection parameters. Set up configuration management in config.yaml for Graphiti settings including entity_types, relationship_types, and processing parameters. Initialize Graphiti with custom schema for Service, Database, Team entities and depends_on, implements, maintains, documents, calls, uses relationships. Configure LLM provider (OpenAI GPT-4 or local model) for entity extraction.",
+      "testStrategy": "Verify Graphiti installation, test Neo4j connection through Graphiti, validate schema creation, and confirm entity extraction pipeline initialization",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Install the Graphiti Core Package",
+          "description": "Install the Graphiti core package with the necessary extras for LLM integration.",
+          "dependencies": [],
+          "details": "Use a package manager such as poetry or uv to install 'graphiti-core[google-genai]' or the appropriate variant for your LLM provider.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Initialize Graphiti Client with Neo4j",
+          "description": "Set up the Graphiti client to connect to the Neo4j database.",
+          "dependencies": [
+            1
+          ],
+          "details": "Import Graphiti and initialize it with the Neo4j connection string, username, and password.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Configure Graphiti Settings in YAML",
+          "description": "Create and edit the YAML configuration file for Graphiti.",
+          "dependencies": [
+            2
+          ],
+          "details": "Define database connection parameters, LLM provider settings, and other core options in a YAML file as required by your deployment.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Define Custom Schemas",
+          "description": "Specify custom node and edge classes for your knowledge graph.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement or configure custom schemas to tailor the graph structure to your application's needs, enabling flexible knowledge representation.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Set Up LLM Provider for Entity Extraction",
+          "description": "Integrate and configure the LLM provider for entity extraction within Graphiti.",
+          "dependencies": [
+            4
+          ],
+          "details": "Initialize the LLM client (e.g., GeminiClient) with the appropriate API key and model, and ensure it is connected to Graphiti for entity extraction tasks.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Extend Configuration Management System",
+      "description": "Update the configuration system to support Docker environment variables and Graphiti-specific settings",
+      "details": "Extend existing YAML configuration to include graphiti section with neo4j connection settings, entity_types definitions, relationship_types, and processing parameters. Implement environment variable substitution using ${VAR:-default} syntax. Add validation using Pydantic models for GraphitiConfig class. Support .env file loading with python-dotenv. Maintain backward compatibility with existing configuration structure.",
+      "testStrategy": "Test configuration loading with environment variables, validate Pydantic schema validation, verify .env file processing, and ensure backward compatibility with existing configs",
+      "priority": "medium",
+      "dependencies": [
+        3
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update YAML Schema",
+          "description": "Revise the existing YAML schema to support new configuration options and ensure compatibility with planned features.",
+          "dependencies": [],
+          "details": "Analyze current schema, identify required changes, and update the schema definition to accommodate environment variable substitution, Pydantic validation, and .env file support.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Environment Variable Substitution",
+          "description": "Enable the configuration loader to substitute environment variables within YAML files.",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop logic to detect placeholders in the YAML and replace them with corresponding environment variable values at load time.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Add Pydantic Validation",
+          "description": "Integrate Pydantic models to validate the loaded configuration data.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Define Pydantic models that mirror the updated YAML schema and validate the configuration after environment variable substitution.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Support .env File Loading",
+          "description": "Add functionality to load environment variables from a .env file before parsing the YAML configuration.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement logic to read a .env file and populate environment variables, ensuring they are available for substitution during YAML parsing.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement Entity Extraction Pipeline",
+      "description": "Create the core entity and relationship extraction functionality integrated into the document processing pipeline",
+      "details": "Implement EntityExtractor class using Graphiti's extract_entities method. Create async processing pipeline that runs alongside existing vector embedding generation. Use LLM-based extraction with custom prompts for Service, Database, Team, and other domain-specific entities. Implement relationship detection between extracted entities. Add batch processing with configurable batch_size (default 10) and retry logic (max_retries=3). Cache extraction results with TTL of 3600 seconds using Redis or in-memory cache.",
+      "testStrategy": "Test entity extraction accuracy on sample documents, validate relationship detection, verify batch processing performance, test retry logic with failed extractions, and validate caching behavior",
+      "priority": "high",
+      "dependencies": [
+        4
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement the Extractor Class",
+          "description": "Develop a Python class responsible for extracting entities from text using an NLP model (e.g., spaCy or a custom-trained model). Ensure the class supports configurable entity types and can be easily extended.",
+          "dependencies": [],
+          "details": "The class should encapsulate model loading, text preprocessing, and entity extraction logic. It should expose methods for single and batch extraction, and be designed for integration with downstream components.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Integrate Extractor with Graphiti",
+          "description": "Connect the extractor class to the Graphiti platform, enabling extracted entities to be ingested and visualized as nodes within a knowledge graph.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement adapters or APIs to convert extracted entities into Graphiti-compatible formats. Ensure seamless data flow from extraction to graph ingestion.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Develop Asynchronous Processing",
+          "description": "Enable asynchronous processing for entity extraction to improve throughput and scalability, especially for large datasets or real-time applications.",
+          "dependencies": [
+            1
+          ],
+          "details": "Utilize async frameworks (e.g., asyncio, Celery) to process extraction tasks concurrently. Ensure thread safety and proper error handling in async contexts.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Design LLM Prompts for Entity Extraction",
+          "description": "Craft and iterate on prompt templates for large language models (LLMs) to maximize extraction accuracy and consistency across diverse text inputs.",
+          "dependencies": [],
+          "details": "Prompts should be tested for clarity, coverage of entity types, and adaptability to different domains. Include examples and edge cases in prompt design.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Relationship Detection",
+          "description": "Extend the pipeline to identify and extract relationships between entities, supporting richer knowledge graph construction.",
+          "dependencies": [
+            1,
+            2,
+            4
+          ],
+          "details": "Develop logic or models to detect relationships (e.g., using dependency parsing or LLM-based extraction). Integrate relationship data into the Graphiti ingestion process.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Add Batch and Retry Logic",
+          "description": "Implement batch processing and robust retry mechanisms to handle large volumes of data and transient extraction failures.",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Design batching strategies for efficient processing. Add retry logic with exponential backoff for failed extractions, and log errors for monitoring.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Set Up Caching for Extracted Entities",
+          "description": "Introduce caching to store and quickly retrieve previously extracted entities, reducing redundant computation and improving performance.",
+          "dependencies": [
+            1,
+            6
+          ],
+          "details": "Choose an appropriate caching backend (e.g., Redis, in-memory). Implement cache key strategies and expiration policies to balance freshness and efficiency.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Integrate Temporal Tracking System",
+      "description": "Implement temporal knowledge management to track when information was valid versus when it was recorded",
+      "details": "Implement temporal tracking using Graphiti's built-in temporal capabilities. Add valid_from and valid_to timestamps to all entities and relationships. Create conflict resolution logic for contradictory information using temporal invalidation. Implement versioning system for entities that change over time. Add historical query capabilities to retrieve information as it existed at specific points in time. Use ISO 8601 datetime format with timezone awareness.",
+      "testStrategy": "Test temporal data storage, verify conflict resolution with contradictory information, validate historical queries, and ensure proper timezone handling across different environments",
+      "priority": "medium",
+      "dependencies": [
+        5
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Add Temporal Fields to Data Model",
+          "description": "Introduce temporal fields (such as valid time, transaction time, or decision time) to the database schema to enable tracking of data changes over time.",
+          "dependencies": [],
+          "details": "Modify existing tables or create new ones with temporal attributes. Ensure the schema supports the required temporal dimensions (uni-temporal, bi-temporal, or tri-temporal) as needed for the application.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Conflict Resolution Logic",
+          "description": "Develop mechanisms to handle conflicts that arise from concurrent updates or overlapping temporal intervals in the data.",
+          "dependencies": [
+            1
+          ],
+          "details": "Design and implement logic to resolve conflicts, such as overlapping valid times or transaction times, ensuring data consistency and integrity.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Develop Versioning Mechanism",
+          "description": "Create a system to manage and store multiple versions of records, allowing for historical tracking and rollback if necessary.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement versioning by maintaining history tables or using temporal tables that automatically track changes and store previous states of records.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Enable Historical Queries",
+          "description": "Provide the ability to query data as it existed at any point in time, supporting both point-in-time and range queries.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement query logic and interfaces that allow users to retrieve historical data based on temporal fields, leveraging temporal predicates and period-based querying.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Ensure Timezone Handling",
+          "description": "Design and implement robust timezone management to ensure temporal data is accurately stored, queried, and displayed across different regions.",
+          "dependencies": [
+            1
+          ],
+          "details": "Standardize on a timezone (e.g., UTC) for storage, and provide conversion mechanisms for user-facing queries and displays. Address potential issues with daylight saving time and time zone changes.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Test Temporal Features",
+          "description": "Thoroughly test all temporal tracking features, including field accuracy, conflict resolution, versioning, historical queries, and timezone handling.",
+          "dependencies": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Develop and execute test cases to validate correctness, performance, and edge cases for all temporal functionalities. Include regression tests to ensure ongoing reliability.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Create Hybrid Search Engine",
+      "description": "Implement enhanced search capabilities that combine vector search from QDrant with graph search from Neo4j",
+      "details": "Create HybridSearchEngine class that combines QDrant vector search with Neo4j graph queries. Implement result fusion algorithm using weighted scoring (vector similarity + graph distance). Add query-time weighting parameters for vector vs graph results. Use Cypher queries for graph traversal and pattern matching. Implement result reranking based on entity relationships and graph centrality measures. Add caching layer for frequent queries using Redis with 300-second TTL.",
+      "testStrategy": "Test search result quality with A/B testing, validate result fusion accuracy, measure query performance (<2 seconds for complex queries), and verify caching effectiveness",
+      "priority": "high",
+      "dependencies": [
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design Search Engine Class Architecture",
+          "description": "Define the overall architecture and interfaces for the hybrid search engine, including how vector, graph, and fusion modules interact.",
+          "dependencies": [],
+          "details": "Specify class responsibilities, data flow, and extensibility points for future enhancements.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Vector Search Module",
+          "description": "Develop the component responsible for semantic search using dense vector representations and nearest neighbor algorithms.",
+          "dependencies": [
+            1
+          ],
+          "details": "Integrate embedding models and efficient vector retrieval (e.g., ANN/KNN) for semantic matching.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement Graph Search Module",
+          "description": "Create the module for graph-based search, enabling traversal and retrieval based on relationships between entities.",
+          "dependencies": [
+            1
+          ],
+          "details": "Support graph traversal algorithms and efficient indexing for relationship-based queries.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Develop Result Fusion Mechanism",
+          "description": "Build the logic to combine and rank results from both vector and graph search modules.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Implement score normalization, blending strategies, and conflict resolution for unified result sets.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add Query-Time Weighting Controls",
+          "description": "Enable dynamic adjustment of the importance of vector and graph search results at query time.",
+          "dependencies": [
+            4
+          ],
+          "details": "Expose weighting parameters in the query interface and ensure they influence the fusion process.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement Reranking Pipeline",
+          "description": "Develop a reranking stage that refines the fused results using additional features or machine learning models.",
+          "dependencies": [
+            5
+          ],
+          "details": "Integrate reranking logic that can leverage user feedback, contextual signals, or advanced ML models.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Integrate Caching Layer",
+          "description": "Add caching mechanisms to store and quickly retrieve frequent or computationally expensive query results.",
+          "dependencies": [],
+          "details": "Design cache invalidation strategies and ensure consistency with underlying data changes.",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Conduct Performance Testing and Optimization",
+          "description": "Test the hybrid search engine for latency, throughput, and scalability, and optimize bottlenecks.",
+          "dependencies": [],
+          "details": "Use benchmarking tools to measure performance and iteratively tune system components.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Develop Enhanced MCP Tools for Graph Operations",
+      "description": "Create new MCP server tools for relationship queries, dependency tracing, and impact analysis",
+      "details": "Extend existing MCP server with new tools: find_relationships (discover entity connections), trace_dependencies (follow dependency chains with max depth limit), analyze_impact (assess change impact using graph algorithms), get_temporal_context (retrieve historical information). Implement using mcp Python SDK with proper error handling and input validation. Add support for complex graph traversal patterns and multi-hop queries. Include result pagination for large result sets.",
+      "testStrategy": "Test each MCP tool individually, validate graph traversal accuracy, verify performance with large graphs, test error handling with invalid inputs, and confirm proper result pagination",
+      "priority": "medium",
+      "dependencies": [
+        7
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement find_relationships Functionality",
+          "description": "Develop the find_relationships feature to identify and return relationships between nodes/tools in the MCP graph database.",
+          "dependencies": [],
+          "details": "This subtask involves querying the graph database to discover direct and indirect relationships between tools or entities, leveraging relationship types such as overlaps_with, extends, and preferred_for_task.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement trace_dependencies Functionality",
+          "description": "Create the trace_dependencies feature to traverse and return dependency chains among tools or nodes in the MCP graph.",
+          "dependencies": [
+            1
+          ],
+          "details": "This subtask builds on relationship discovery to trace and output the full dependency path for a given node, supporting both direct and transitive dependencies.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement analyze_impact Functionality",
+          "description": "Develop the analyze_impact feature to assess the downstream impact of changes to a node/tool within the MCP graph.",
+          "dependencies": [
+            2
+          ],
+          "details": "This involves analyzing the dependency graph to determine which nodes or tools would be affected if a particular node is modified, removed, or updated.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement get_temporal_context Functionality",
+          "description": "Add the get_temporal_context feature to provide temporal metadata and context for nodes/tools in the MCP graph.",
+          "dependencies": [
+            3
+          ],
+          "details": "This subtask includes retrieving and presenting information such as creation date, last updated timestamp, and historical changes for each node/tool.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add Error Handling and Validation",
+          "description": "Integrate robust error handling and input validation across all MCP tool functionalities.",
+          "dependencies": [
+            4
+          ],
+          "details": "Ensure that all functions gracefully handle invalid inputs, missing data, and system errors, returning informative error messages and maintaining system stability.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement Pagination Support",
+          "description": "Add pagination support to MCP tool endpoints that return large result sets.",
+          "dependencies": [
+            5
+          ],
+          "details": "This subtask involves designing and implementing pagination mechanisms (e.g., limit/offset or cursor-based) to efficiently handle and return large lists of relationships, dependencies, or impact analyses.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Implement Graph Data Storage and Retrieval",
+      "description": "Create efficient storage and retrieval mechanisms for graph data with proper indexing and query optimization",
+      "details": "Implement GraphDataManager class for efficient Neo4j operations. Create indexes on frequently queried properties (entity names, types, timestamps). Implement connection pooling with neo4j-driver (pool_size=50, max_connection_lifetime=3600). Add query optimization for common patterns using parameterized Cypher queries. Implement data pruning strategies for old temporal data based on retention policies. Add monitoring for query performance and connection health.",
+      "testStrategy": "Test query performance with large datasets, validate index effectiveness, verify connection pooling behavior, test data pruning functionality, and monitor memory usage",
+      "priority": "medium",
+      "dependencies": [
+        8
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement the Data Manager Class",
+          "description": "Design and implement a class responsible for managing graph data, including CRUD operations for nodes and edges, and encapsulating access to the underlying storage.",
+          "dependencies": [],
+          "details": "Define clear interfaces for adding, updating, retrieving, and deleting nodes and edges. Ensure the class supports property management for both nodes and edges, and is structured for efficient traversal and querying.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Create Indexes",
+          "description": "Develop and apply indexing strategies to accelerate common queries and traversals within the graph database.",
+          "dependencies": [
+            1
+          ],
+          "details": "Identify frequently queried properties and relationships, and implement appropriate indexes to optimize lookup and traversal performance.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Set Up Connection Pooling",
+          "description": "Establish a connection pooling mechanism to efficiently manage database connections and improve throughput for concurrent operations.",
+          "dependencies": [
+            1
+          ],
+          "details": "Configure connection pools to balance resource usage and performance, ensuring thread-safe access and minimizing connection overhead.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Optimize Queries",
+          "description": "Analyze and refine query patterns to ensure efficient execution and minimal resource consumption.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Use query profiling tools to identify bottlenecks, rewrite queries for efficiency, and leverage indexes and graph structure for optimal performance.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement Data Pruning",
+          "description": "Develop mechanisms to remove obsolete or irrelevant nodes and edges from the graph to maintain data quality and performance.",
+          "dependencies": [
+            1
+          ],
+          "details": "Define criteria for pruning, automate the process where possible, and ensure that pruning does not compromise data integrity.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Add Monitoring",
+          "description": "Integrate monitoring tools to track performance, resource usage, and detect anomalies in the graph data management system.",
+          "dependencies": [
+            4,
+            5
+          ],
+          "details": "Set up dashboards and alerts for key metrics such as query latency, connection pool status, and data growth. Use monitoring insights to guide further optimization.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Create Architecture Visualization System",
+      "description": "Implement system architecture visualization capabilities using graph data to generate interactive diagrams",
+      "details": "Create ArchitectureVisualizer class using networkx for graph analysis and matplotlib/plotly for visualization. Generate architecture diagrams showing component relationships, dependency flows, and system boundaries. Implement interactive exploration with zoom, pan, and node selection. Export capabilities to SVG, PNG, and interactive HTML formats. Add layout algorithms (force-directed, hierarchical) for different visualization needs. Support filtering by entity types and relationship types.",
+      "testStrategy": "Test diagram generation with various graph sizes, validate interactive features, verify export functionality, and ensure proper layout algorithms for different graph structures",
+      "priority": "low",
+      "dependencies": [
+        9
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Visualizer Class",
+          "description": "Develop the core Visualizer class responsible for managing data input, rendering logic, and serving as the foundation for all visualization features.",
+          "dependencies": [],
+          "details": "This includes defining the class structure, methods for data ingestion, and hooks for rendering diagrams and handling user interactions.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Generate Diagrams",
+          "description": "Create functionality within the Visualizer class to generate various types of diagrams based on input data.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement support for multiple diagram types (e.g., bar charts, line graphs, scatter plots) and ensure the correct mapping of data to visual elements.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Enable Interactivity",
+          "description": "Add interactive features to the diagrams, such as tooltips, zooming, filtering, and selection.",
+          "dependencies": [
+            2
+          ],
+          "details": "Enhance user experience by allowing users to interact with the visualizations, explore data points, and dynamically adjust views.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Support Export Formats",
+          "description": "Implement export functionality to allow users to save visualizations in various formats (e.g., PNG, SVG, PDF).",
+          "dependencies": [
+            2
+          ],
+          "details": "Ensure that generated diagrams can be exported in high quality and that export options are accessible from the UI.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add Layout and Filtering Options",
+          "description": "Integrate layout algorithms and filtering controls to allow users to customize the arrangement and visibility of data within diagrams.",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Provide options for users to select different layout styles and apply filters to focus on relevant data subsets, improving clarity and usability.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Implement Change Impact Analysis",
+      "description": "Create advanced impact analysis capabilities to predict affected components and generate impact reports",
+      "details": "Implement ImpactAnalyzer class using graph algorithms (BFS, DFS) to trace change propagation. Create impact scoring based on relationship strength, dependency depth, and entity criticality. Generate detailed impact reports with affected components, risk levels, and recommended actions. Support 'what-if' scenario analysis for proposed changes. Implement change simulation using graph traversal with configurable propagation rules. Add integration with version control systems to track actual vs predicted impacts.",
+      "testStrategy": "Test impact analysis accuracy with historical changes, validate scoring algorithms, verify scenario analysis functionality, and measure prediction accuracy against actual change impacts",
+      "priority": "medium",
+      "dependencies": [
+        10
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Analyzer Class",
+          "description": "Design and implement the core analyzer class responsible for identifying affected components, dependencies, and stakeholders based on proposed changes.",
+          "dependencies": [],
+          "details": "This class should encapsulate logic for traversing system architecture, mapping dependencies, and providing a foundation for further analysis.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Develop Scoring Algorithms",
+          "description": "Create algorithms to assess and score the impact of changes, considering factors such as risk, likelihood, and potential consequences.",
+          "dependencies": [
+            1
+          ],
+          "details": "Algorithms should prioritize risks and quantify impact on system functionality and performance, supporting decision-making.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Generate Impact Reports",
+          "description": "Develop functionality to generate comprehensive reports summarizing analysis results, including affected components, risk scores, and recommendations.",
+          "dependencies": [
+            2
+          ],
+          "details": "Reports should be clear, actionable, and suitable for stakeholders, supporting both technical and non-technical audiences.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Support Scenario Analysis",
+          "description": "Enable the analyzer to handle multiple change scenarios, allowing users to compare and contrast the impact of different proposed changes.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "This includes scenario management, comparison tools, and visualization of differences in impact.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Simulate Change Effects",
+          "description": "Implement simulation capabilities to model the effects of proposed changes on system behavior, performance, and risk.",
+          "dependencies": [
+            1,
+            2,
+            4
+          ],
+          "details": "Simulations should help predict regressions, performance bottlenecks, and unintended consequences before actual implementation.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Integrate with Version Control",
+          "description": "Connect the analyzer with version control systems to automatically detect changes, trigger analyses, and maintain traceability.",
+          "dependencies": [
+            1,
+            3,
+            5
+          ],
+          "details": "Integration should support workflows such as pre-commit hooks, pull request analysis, and historical impact tracking.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Develop Knowledge Evolution Tracking",
+      "description": "Implement system to track how knowledge and system architecture evolve over time with timeline visualization",
+      "details": "Create KnowledgeEvolutionTracker class to monitor changes in entities and relationships over time. Implement timeline visualization showing system evolution, deprecated patterns, and architectural changes. Add change detection algorithms to identify significant modifications. Create evolution reports highlighting trends, patterns, and potential issues. Support comparison between different time periods. Integrate with Git history for correlation with code changes.",
+      "testStrategy": "Test evolution tracking with historical data, validate timeline accuracy, verify change detection algorithms, and ensure proper correlation with version control history",
+      "priority": "low",
+      "dependencies": [
+        11
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement the Knowledge Evolution Tracker Class",
+          "description": "Design and develop a tracker class to monitor and record changes in knowledge artifacts over time, supporting data collection for subsequent analysis and visualization.",
+          "dependencies": [],
+          "details": "Define the data structures and methods required to capture knowledge states, track modifications, and store historical records. Ensure extensibility for future integration with visualization and reporting modules.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Develop Timeline Visualization",
+          "description": "Create an interactive timeline visualization to display the evolution of knowledge artifacts, highlighting key changes and trends over time.",
+          "dependencies": [
+            1
+          ],
+          "details": "Utilize visualization libraries to represent tracked data from the tracker class. Implement features such as zoom, filtering, and annotation to enhance user understanding of knowledge evolution.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Add Change Detection Mechanism",
+          "description": "Implement algorithms to automatically detect and categorize significant changes in knowledge artifacts, such as additions, deletions, splits, and merges.",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop logic to compare sequential knowledge states, flagging and classifying changes. Integrate with the tracker class to update records and trigger visualization updates.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Generate Evolution Reports",
+          "description": "Design and implement a reporting system that summarizes the evolution of knowledge, including detected changes, trends, and key events.",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Automate the generation of textual and graphical reports based on tracked data and detected changes. Support export to common formats (e.g., PDF, HTML) for sharing and archival.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Integrate with Version Control Systems",
+          "description": "Enable seamless integration of the knowledge evolution tracker with version control systems (e.g., Git) to synchronize knowledge changes with code or document revisions.",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Develop connectors or hooks to monitor version control events, associate commits with knowledge changes, and maintain consistency between tracked knowledge evolution and repository history.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Create Team Knowledge Mapping System",
+      "description": "Implement functionality to identify subject matter experts and track team knowledge distribution",
+      "details": "Implement TeamKnowledgeMapper class to analyze contribution patterns and identify expertise areas. Create knowledge graphs linking team members to components, technologies, and domains. Implement expertise scoring based on contribution frequency, recency, and complexity. Generate knowledge transfer recommendations and identify potential knowledge gaps. Add visualization of team knowledge distribution and collaboration patterns. Support integration with HR systems and project management tools.",
+      "testStrategy": "Test expertise identification accuracy, validate knowledge gap detection, verify team collaboration analysis, and ensure privacy compliance for team data",
+      "priority": "low",
+      "dependencies": [
+        12
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement the Mapper Class",
+          "description": "Develop a core software component (the mapper class) responsible for extracting, structuring, and storing team knowledge data from various sources.",
+          "dependencies": [],
+          "details": "Define the data model, implement methods for data ingestion, and ensure compatibility with downstream analysis and visualization modules.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Analyze Contribution Patterns",
+          "description": "Process and analyze the structured knowledge data to identify patterns in team member contributions, expertise areas, and collaboration frequency.",
+          "dependencies": [
+            1
+          ],
+          "details": "Apply statistical and network analysis techniques to map out who contributes what knowledge, how often, and in which domains.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Generate Knowledge Graphs",
+          "description": "Create visual and data-driven knowledge graphs that represent relationships between team members, knowledge areas, and contribution flows.",
+          "dependencies": [
+            2
+          ],
+          "details": "Use graph generation libraries or custom visualization tools to produce interactive or static knowledge maps for further insights.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Create Recommendations",
+          "description": "Develop algorithms or rules to generate actionable recommendations based on the knowledge graphs and contribution analysis.",
+          "dependencies": [
+            3
+          ],
+          "details": "Recommend mentorships, training, or project assignments to address knowledge gaps and optimize team knowledge flow.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Integrate with HR/Project Tools",
+          "description": "Connect the knowledge mapping system with existing HR and project management tools to automate data flow and enable real-time updates.",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement APIs or data connectors to synchronize knowledge insights with HR databases, project tracking systems, and communication platforms.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Implement Performance Monitoring and Optimization",
+      "description": "Create comprehensive monitoring system for graph operations and implement performance optimizations",
+      "details": "Implement PerformanceMonitor class using Prometheus metrics and Grafana dashboards. Monitor query performance, entity extraction accuracy, graph size growth, and system resource usage. Add alerting for performance degradation and system issues. Implement query optimization strategies including query plan analysis and index recommendations. Add automated performance testing with synthetic workloads. Create performance benchmarking suite for regression testing.",
+      "testStrategy": "Test monitoring accuracy, validate alerting functionality, verify performance optimization effectiveness, and ensure benchmark suite reliability",
+      "priority": "medium",
+      "dependencies": [
+        13
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement the Monitor Class",
+          "description": "Design and develop a monitor class that can collect and expose relevant performance data from the application components.",
+          "dependencies": [],
+          "details": "This includes defining the interface, instrumentation points, and ensuring extensibility for future metrics.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Set Up Metrics and Dashboards",
+          "description": "Identify key performance metrics to track and configure dashboards for real-time visualization and analysis.",
+          "dependencies": [
+            1
+          ],
+          "details": "Select metrics aligned with business and technical goals, and use monitoring tools to create dashboards for stakeholders.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Add Alerting Mechanisms",
+          "description": "Configure alerting rules and notification channels to proactively inform teams of performance anomalies or threshold breaches.",
+          "dependencies": [
+            2
+          ],
+          "details": "Define actionable thresholds for each metric and integrate with communication tools for timely alerts.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Optimize Monitoring Queries",
+          "description": "Review and refine queries used for collecting and aggregating monitoring data to minimize overhead and maximize accuracy.",
+          "dependencies": [
+            2
+          ],
+          "details": "Analyze query performance, reduce unnecessary data collection, and ensure queries scale with system growth.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Develop Automated Testing for Monitoring",
+          "description": "Create automated tests to validate the correctness and reliability of monitoring instrumentation and alerting.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement tests that simulate various load and failure scenarios to ensure monitoring and alerting function as expected.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Create a Benchmarking Suite",
+          "description": "Develop a suite of benchmarking tools and scripts to measure and compare system performance under controlled conditions.",
+          "dependencies": [
+            5
+          ],
+          "details": "Design benchmarks that reflect real-world usage patterns and integrate results with dashboards for historical analysis.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Create Comprehensive Documentation and Testing Suite",
+      "description": "Develop complete documentation, integration tests, and deployment guides for the Graphiti integration",
+      "details": "Create comprehensive documentation including API documentation with Sphinx, deployment guides for Docker environments, configuration reference, and troubleshooting guides. Implement integration test suite using pytest with fixtures for Docker containers. Add end-to-end tests covering document ingestion, entity extraction, graph queries, and hybrid search. Create performance benchmarks and load testing scenarios. Add CI/CD pipeline configuration for automated testing and deployment. Include migration guides for existing QDrant Loader installations.",
+      "testStrategy": "Validate documentation completeness and accuracy, test all code examples, verify integration test coverage >90%, and ensure deployment guides work in clean environments",
+      "priority": "medium",
+      "dependencies": [
+        14
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Write API Documentation",
+          "description": "Create comprehensive and user-friendly API documentation, ensuring it is well-structured, up-to-date, and tailored for both technical and non-technical audiences. Use best practices such as clear sections, consistent terminology, and interactive examples.",
+          "dependencies": [],
+          "details": "Follow guidelines such as using OpenAPI specifications, including sections like Overview, Getting Started, API Endpoints, Code Examples, and Error Handling. Ensure documentation is kept current with API changes and includes a changelog.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Create Deployment Guides",
+          "description": "Develop step-by-step deployment guides to assist users in setting up and deploying the application or service in various environments.",
+          "dependencies": [
+            1
+          ],
+          "details": "Include prerequisites, environment setup, configuration steps, deployment commands, and troubleshooting tips. Ensure guides are clear and accessible for both new and experienced users.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Develop Integration Tests",
+          "description": "Design and implement integration tests to verify that different modules and services interact correctly within the system.",
+          "dependencies": [
+            1
+          ],
+          "details": "Focus on testing the interactions between components, covering typical workflows and edge cases. Ensure tests are automated and can be run as part of the development pipeline.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Add End-to-End Tests",
+          "description": "Create end-to-end (E2E) tests to validate the complete flow of the application from the user's perspective.",
+          "dependencies": [
+            3
+          ],
+          "details": "Simulate real user scenarios to ensure the system works as expected across all integrated components. Automate these tests for consistent regression coverage.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Set Up CI/CD",
+          "description": "Establish continuous integration and continuous deployment (CI/CD) pipelines to automate building, testing, and deploying the application.",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Integrate automated tests (unit, integration, E2E) into the pipeline. Ensure deployments are reliable, repeatable, and can be rolled back if necessary.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Prepare Migration Guides",
+          "description": "Develop migration guides to help users transition from previous versions or different systems to the current solution.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Document breaking changes, migration steps, data transformation requirements, and provide troubleshooting advice for common migration issues.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Integrate Graphiti Entity Extraction into Document Processing Pipeline",
+      "description": "Modify the document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to incorporate Graphiti-based entity extraction and graph storage alongside existing vector embedding processes, ensuring seamless integration and backward compatibility.",
+      "details": "Update the core document processing pipeline to invoke the entity extraction pipeline (from Task 5) after or in parallel with vector embedding generation. Use Graphiti's extract_entities method to identify and extract custom, domain-specific entities and relationships from each document, leveraging the configuration for entity and relationship types. After extraction, resolve entities and relationships, deduplicate as needed, and store them in the Neo4j-backed knowledge graph using Graphiti's Cypher-based integration. Ensure that the pipeline supports batch processing and can handle both vector and graph operations efficiently. Maintain backward compatibility by gating new functionality behind configuration flags and ensuring all existing document processing and embedding features remain unaffected. Update documentation and provide migration notes for any API or workflow changes.",
+      "testStrategy": "1. Process a representative set of documents and verify that entities and relationships are correctly extracted and stored in the Neo4j graph, matching the configured schema. 2. Confirm that vector embeddings are still generated and stored as before, with no regressions. 3. Test with the new functionality disabled to ensure legacy workflows are unaffected. 4. Validate batch processing and error handling for both embedding and entity extraction steps. 5. Review logs and outputs to confirm that entity deduplication and relationship resolution are functioning as intended. 6. Conduct integration tests to ensure the pipeline works end-to-end in Dockerized environments.",
+      "status": "pending",
+      "dependencies": [
+        5
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Refactor Document Processing Pipeline for Modular Integration",
+          "description": "Update the core document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to support modular invocation of both vector embedding and entity extraction processes, enabling sequential or parallel execution as required.",
+          "dependencies": [],
+          "details": "Ensure the pipeline can invoke the entity extraction pipeline after or in parallel with vector embedding generation, and is structured to allow easy integration of additional processing steps in the future.",
+          "status": "pending",
+          "testStrategy": "Verify that the refactored pipeline can execute both existing vector embedding and a mock entity extraction step without errors, maintaining current outputs."
+        },
+        {
+          "id": 2,
+          "title": "Integrate Graphiti Entity Extraction",
+          "description": "Incorporate Graphiti's extract_entities method into the pipeline to identify and extract custom, domain-specific entities and relationships from each document, using configuration for entity and relationship types.",
+          "dependencies": [
+            1
+          ],
+          "details": "Leverage Graphiti's API to extract entities and relationships as specified in the configuration, ensuring compatibility with the document formats processed by the pipeline.",
+          "status": "pending",
+          "testStrategy": "Test extraction on a sample batch of documents, confirming that entities and relationships are correctly identified and match expected types."
+        },
+        {
+          "id": 3,
+          "title": "Implement Entity and Relationship Resolution and Deduplication",
+          "description": "Develop logic to resolve, deduplicate, and normalize extracted entities and relationships before storage, ensuring consistency and avoiding redundant nodes or edges in the knowledge graph.",
+          "dependencies": [
+            2
+          ],
+          "details": "Apply deduplication strategies as recommended by Graphiti documentation and ensure that entities are uniquely identified across batches.",
+          "status": "pending",
+          "testStrategy": "Run tests with overlapping documents to confirm that duplicate entities and relationships are not created in the graph."
+        },
+        {
+          "id": 4,
+          "title": "Store Entities and Relationships in Neo4j via Graphiti",
+          "description": "Integrate Graphiti's Cypher-based storage mechanism to persist resolved entities and relationships into the Neo4j-backed knowledge graph, supporting batch operations for efficiency.",
+          "dependencies": [
+            3
+          ],
+          "details": "Ensure that the storage process is robust, handles failures gracefully, and is optimized for batch processing scenarios.",
+          "status": "pending",
+          "testStrategy": "Validate that all extracted and deduplicated entities and relationships are correctly stored in Neo4j and can be queried as expected."
+        },
+        {
+          "id": 5,
+          "title": "Ensure Backward Compatibility and Update Documentation",
+          "description": "Add configuration flags to gate new entity extraction and graph storage features, maintain all existing document processing and embedding functionality, and update documentation with migration notes.",
+          "dependencies": [
+            4
+          ],
+          "details": "Document all API and workflow changes, provide clear migration instructions, and ensure that disabling the new features reverts the pipeline to its previous behavior.",
+          "status": "pending",
+          "testStrategy": "Run regression tests with the new features both enabled and disabled, confirming that legacy workflows remain unaffected and documentation is accurate."
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Extend MCP Server Tools for Hybrid QDrant-Neo4j Search",
+      "description": "Modify the MCP server tools to support hybrid search queries that combine vector search results from QDrant with graph-based relationship queries from Neo4j, enhancing search capabilities in the existing search module without breaking current interfaces.",
+      "details": "Update the search logic in packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/ to orchestrate hybrid queries: first, perform a vector similarity search using QDrant's Query API to retrieve top-k candidates based on semantic relevance. Next, use Neo4j Cypher queries to fetch and score relationship-based context for these candidates (e.g., entity connections, graph distance, centrality). Implement a result fusion mechanism that combines QDrant's vector scores with Neo4j-derived relationship scores, allowing for configurable weighting (e.g., via query parameters or config). Ensure the hybrid search is exposed through the existing MCP tool interfaces, maintaining backward compatibility. Add robust error handling for both QDrant and Neo4j failures, and document the new query parameters and result schema. Reference best practices from GraphRAG and Qdrant hybrid search documentation for implementation patterns and scoring strategies.[1][2][3][4]",
+      "testStrategy": "1. Write unit and integration tests to verify that hybrid search queries return results that reflect both vector similarity and graph relationship relevance. 2. Test with mock and real data to ensure that the result fusion logic correctly combines QDrant and Neo4j scores according to configurable weights. 3. Validate that existing MCP tool interfaces and legacy search queries remain functional and unchanged. 4. Simulate QDrant and Neo4j outages to confirm robust error handling and fallback behavior. 5. Review documentation and ensure new query parameters and result formats are clearly described.",
+      "status": "pending",
+      "dependencies": [
+        7,
+        8
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement QDrant Vector Search Integration",
+          "description": "Integrate QDrant's Query API into the MCP server tools to perform top-k vector similarity searches, retrieving semantically relevant candidates for a given query.",
+          "dependencies": [],
+          "details": "Update the search logic to call QDrant's vector search endpoint, handle query parameters, and parse the returned results for downstream processing.",
+          "status": "pending",
+          "testStrategy": "Mock QDrant responses and verify that the correct candidates are retrieved and parsed for various query inputs."
+        },
+        {
+          "id": 2,
+          "title": "Integrate Neo4j Graph-Based Relationship Queries",
+          "description": "Add logic to perform Cypher queries in Neo4j for the candidates returned by QDrant, extracting relationship-based context and scoring information.",
+          "dependencies": [
+            1
+          ],
+          "details": "For each candidate from QDrant, execute Neo4j Cypher queries to fetch graph features such as entity connections, graph distance, and centrality metrics.",
+          "status": "pending",
+          "testStrategy": "Use a test Neo4j instance with sample data to validate that relationship queries return expected context and scores for given candidates."
+        },
+        {
+          "id": 3,
+          "title": "Develop Hybrid Result Fusion and Scoring Mechanism",
+          "description": "Design and implement a mechanism to combine QDrant vector scores with Neo4j-derived relationship scores, supporting configurable weighting and result reranking.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement a fusion strategy (e.g., weighted sum or configurable formula) to merge semantic and graph-based scores, referencing best practices from GraphRAG and QDrant hybrid search documentation.",
+          "status": "pending",
+          "testStrategy": "Unit test the fusion logic with various weighting parameters and input scenarios to ensure correct and tunable result ranking."
+        },
+        {
+          "id": 4,
+          "title": "Expose Hybrid Search via Existing MCP Interfaces with Backward Compatibility",
+          "description": "Update the MCP tool interfaces to support hybrid search queries and new parameters, ensuring existing search functionality remains unaffected.",
+          "dependencies": [
+            3
+          ],
+          "details": "Modify API endpoints and internal interfaces to accept hybrid search options, defaulting to legacy behavior when new parameters are not provided.",
+          "status": "pending",
+          "testStrategy": "Regression test all existing search endpoints and verify that hybrid search is accessible and does not break current integrations."
+        },
+        {
+          "id": 5,
+          "title": "Implement Robust Error Handling and Documentation",
+          "description": "Add comprehensive error handling for QDrant and Neo4j failures, and document new query parameters, result schema, and usage patterns.",
+          "dependencies": [
+            4
+          ],
+          "details": "Ensure all failure modes are gracefully handled and clearly reported. Update documentation to cover hybrid search configuration, error cases, and result interpretation.",
+          "status": "pending",
+          "testStrategy": "Simulate QDrant and Neo4j outages or malformed responses, and verify that errors are handled as documented. Review documentation for completeness and clarity."
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Implement Backward Compatibility Layer and Migration Utilities for QDrant Loader Users",
+      "description": "Create a backward compatibility layer to ensure all existing QDrant Loader functionality continues to work unchanged, with Graphiti features opt-in via configuration, and provide migration utilities for gradual adoption of graph features.",
+      "details": "Develop a compatibility module that intercepts and adapts calls to the QDrant Loader core, ensuring legacy APIs, configuration formats, and workflows remain fully functional. Introduce a configuration flag (e.g., `enable_graphiti`) that defaults to false, so Graphiti-based entity extraction and graph storage are only activated when explicitly enabled. Refactor initialization and processing logic to branch cleanly between legacy and hybrid modes, ensuring no changes to existing data models, endpoints, or user-facing behaviors unless the new features are opted in. Build migration utilities (CLI tools or scripts) to help users convert existing data and configurations to support graph features, including step-by-step guides and dry-run options. Maintain comprehensive documentation on compatibility guarantees and migration paths. Collaborate closely with the teams responsible for Tasks 16 and 17 to ensure seamless integration and no regressions in document processing or search workflows.",
+      "testStrategy": "Develop a comprehensive regression test suite that runs all existing QDrant Loader workflows (document ingestion, search, update, and deletion) with Graphiti features disabled, verifying identical behavior and outputs as before. Add integration tests that enable Graphiti features via configuration and validate hybrid operation. Test migration utilities on real and synthetic legacy datasets, ensuring data integrity and smooth transitions. Include negative tests to confirm that enabling Graphiti does not affect legacy users. Perform manual and automated user acceptance testing with representative legacy configurations.",
+      "status": "pending",
+      "dependencies": [
+        16,
+        17
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Backward Compatibility Module with Configuration Flag System",
+          "description": "Develop a compatibility module that intercepts and adapts calls to the QDrant Loader core, implementing a configuration flag system with `enable_graphiti` defaulting to false to ensure legacy functionality remains unchanged.",
+          "dependencies": [],
+          "details": "Create a compatibility wrapper class that sits between user code and the QDrant Loader core. Implement configuration management with `enable_graphiti` flag defaulting to false. Design clean branching logic in initialization and processing methods to route between legacy and hybrid modes. Ensure all existing APIs, method signatures, and return types remain identical when the flag is disabled. Create configuration validation to prevent invalid combinations of legacy and new settings.",
+          "status": "pending",
+          "testStrategy": "Unit tests for configuration flag behavior, integration tests ensuring all existing QDrant Loader functionality works unchanged with flag disabled, regression tests against existing test suites"
+        },
+        {
+          "id": 2,
+          "title": "Refactor Core Processing Logic for Clean Mode Branching",
+          "description": "Refactor the initialization and document processing logic to cleanly branch between legacy and hybrid modes without affecting existing data models, endpoints, or user-facing behaviors.",
+          "dependencies": [
+            1
+          ],
+          "details": "Modify the core QDrant Loader initialization to check the `enable_graphiti` flag and instantiate appropriate processing pipelines. Create separate code paths for document ingestion, processing, and storage that maintain legacy behavior when Graphiti is disabled. Implement factory patterns or strategy patterns to cleanly separate legacy and hybrid processing logic. Ensure no changes to existing data schemas, API endpoints, or response formats in legacy mode.",
+          "status": "pending",
+          "testStrategy": "Integration tests comparing legacy mode output with original QDrant Loader behavior, performance benchmarks to ensure no degradation in legacy mode, end-to-end tests for both processing paths"
+        },
+        {
+          "id": 3,
+          "title": "Develop Migration Utilities and CLI Tools",
+          "description": "Build comprehensive migration utilities including CLI tools and scripts to help users convert existing data and configurations to support graph features, with dry-run capabilities and validation.",
+          "dependencies": [
+            2
+          ],
+          "details": "Create CLI migration tool with commands for data conversion, configuration migration, and validation. Implement dry-run mode that shows what changes would be made without executing them. Build utilities to convert existing QDrant collections to support graph metadata, migrate configuration files to new format, and validate data integrity during migration. Include rollback capabilities and backup creation before migration. Provide progress tracking and detailed logging for migration operations.",
+          "status": "pending",
+          "testStrategy": "Test migration tools with various data sizes and configurations, validate dry-run accuracy against actual migrations, test rollback functionality, integration tests with sample legacy datasets"
+        },
+        {
+          "id": 4,
+          "title": "Create Comprehensive Documentation and Migration Guides",
+          "description": "Develop detailed documentation covering compatibility guarantees, migration paths, step-by-step guides, and troubleshooting for users transitioning from legacy QDrant Loader to hybrid mode.",
+          "dependencies": [
+            3
+          ],
+          "details": "Write comprehensive documentation including compatibility matrix showing which features work in each mode, step-by-step migration guide with examples, troubleshooting section for common migration issues, and API reference showing differences between modes. Create example configurations and code samples for both legacy and hybrid usage. Document performance implications and best practices for gradual adoption. Include FAQ section addressing common concerns about backward compatibility.",
+          "status": "pending",
+          "testStrategy": "Documentation review by technical writers, user testing with sample migration scenarios, validation of all code examples and configurations in documentation"
+        },
+        {
+          "id": 5,
+          "title": "Integration Testing and Collaboration Validation",
+          "description": "Conduct comprehensive integration testing with Tasks 16 and 17 components to ensure seamless integration and no regressions in document processing or search workflows, with full validation of the compatibility layer.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Perform end-to-end integration testing with entity extraction (Task 16) and graph storage (Task 17) components. Validate that legacy mode shows no regressions in existing document processing and search workflows. Test hybrid mode activation and deactivation scenarios. Conduct performance testing to ensure compatibility layer doesn't introduce significant overhead. Validate error handling and edge cases across both modes. Coordinate with Task 16 and 17 teams for joint testing scenarios.",
+          "status": "pending",
+          "testStrategy": "Cross-team integration testing, performance regression testing, user acceptance testing with existing QDrant Loader users, stress testing with large datasets in both modes, validation of all compatibility guarantees"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Enhance Data Source Connectors to Extract and Store Metadata for Graph Relationships",
+      "description": "Extend the Git, Confluence, and JIRA connectors to extract and persist metadata such as author information, timestamps, cross-references, project relationships, and contextual data to enrich the knowledge graph, without altering the core connector interfaces.",
+      "details": "Update each data source connector (Git, Confluence, JIRA) to extract relevant metadata during data ingestion. For Git, capture commit author, commit timestamp, file references, and branch/merge relationships. For Confluence, extract page authors, creation/modification timestamps, parent/child page links, and embedded cross-references. For JIRA, use the REST API to retrieve issue metadata including reporter, assignee, creation/update timestamps, project and epic links, and references to related issues (e.g., via 'relates to', 'blocks', or 'duplicates' fields)[1][5]. Design a metadata extraction layer within each connector that collects this information and serializes it into a structured format (e.g., JSON or dict) alongside the main content payload. Ensure this metadata is stored in a way that is accessible to downstream graph processing (e.g., as part of the document object or a dedicated metadata field). Do not modify the public connector interfaces; instead, use internal extension points or hooks. Update documentation to specify what metadata is extracted per source and how it is structured. Ensure compatibility with the configuration management system for enabling/disabling metadata extraction per source.",
+      "testStrategy": "1. For each connector, ingest a representative sample of data and verify that the extracted metadata (author, timestamps, cross-references, etc.) is present and correctly populated in the output objects. 2. For JIRA, use the REST API to fetch issues and confirm that metadata such as reporter, assignee, timestamps, and linked issues are captured[1][5]. 3. For Confluence, verify that page hierarchy and cross-references are extracted. 4. For Git, check that commit metadata and file relationships are included. 5. Confirm that the metadata is accessible to the graph processing pipeline and that no changes to the public connector interfaces have occurred. 6. Validate that metadata extraction can be toggled via configuration. 7. Review and test documentation updates for accuracy.",
+      "status": "pending",
+      "dependencies": [
+        4
+      ],
+      "priority": "medium",
+      "subtasks": []
+    },
+    {
+      "id": 20,
+      "title": "Implement Data Synchronization Mechanisms Between QDrant and Neo4j",
+      "description": "Develop robust synchronization strategies to ensure data consistency between QDrant vector database and Neo4j graph database, including handling updates, deletions, additions, conflict resolution, and validation tools.",
+      "details": "Design and implement a bi-directional synchronization service that monitors and propagates changes (add, update, delete) between QDrant and Neo4j. For each document or entity, maintain a mapping of unique IDs across both systems to ensure referential integrity. Implement event-driven listeners or polling mechanisms to detect changes in either database, triggering sync operations as needed. For updates, ensure that changes to embeddings in QDrant are reflected in Neo4j node properties and vice versa, using timestamps or versioning to resolve conflicts. For deletions, ensure that removal in one system cascades appropriately to the other, with safeguards against orphaned data. Develop a conflict resolution policy (e.g., last-write-wins, manual intervention for complex cases) and provide logging for all sync actions. Build validation and repair tools to scan for inconsistencies (e.g., missing nodes, mismatched vectors) and offer automated or guided repair workflows. Integrate with the existing document processing and entity extraction pipelines to ensure seamless operation within the broader system architecture. Consider scalability and performance, using batch operations and efficient queries where possible.",
+      "testStrategy": "1. Create and update documents in QDrant and verify corresponding nodes and relationships are created or updated in Neo4j, and vice versa. 2. Delete entities in either database and confirm proper cascading deletions or updates in the counterpart system. 3. Simulate conflicting updates and verify that the conflict resolution policy is correctly applied. 4. Intentionally introduce inconsistencies (e.g., missing vectors, orphaned nodes) and run validation/repair tools to confirm detection and correction. 5. Perform load testing with batch operations to ensure the synchronization mechanism scales and maintains performance. 6. Review logs to ensure all sync actions and conflicts are properly recorded.",
+      "status": "pending",
+      "dependencies": [
+        9,
+        16
+      ],
+      "priority": "high",
+      "subtasks": []
+    }
+  ]
+}

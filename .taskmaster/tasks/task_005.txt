@@ -1,0 +1,55 @@
+# Task ID: 5
+# Title: Implement Entity Extraction Pipeline
+# Status: pending
+# Dependencies: 4
+# Priority: high
+# Description: Create the core entity and relationship extraction functionality integrated into the document processing pipeline
+# Details:
+Implement EntityExtractor class using Graphiti's extract_entities method. Create async processing pipeline that runs alongside existing vector embedding generation. Use LLM-based extraction with custom prompts for Service, Database, Team, and other domain-specific entities. Implement relationship detection between extracted entities. Add batch processing with configurable batch_size (default 10) and retry logic (max_retries=3). Cache extraction results with TTL of 3600 seconds using Redis or in-memory cache.
+
+# Test Strategy:
+Test entity extraction accuracy on sample documents, validate relationship detection, verify batch processing performance, test retry logic with failed extractions, and validate caching behavior
+
+# Subtasks:
+## 1. Implement the Extractor Class [pending]
+### Dependencies: None
+### Description: Develop a Python class responsible for extracting entities from text using an NLP model (e.g., spaCy or a custom-trained model). Ensure the class supports configurable entity types and can be easily extended.
+### Details:
+The class should encapsulate model loading, text preprocessing, and entity extraction logic. It should expose methods for single and batch extraction, and be designed for integration with downstream components.
+
+## 2. Integrate Extractor with Graphiti [pending]
+### Dependencies: 5.1
+### Description: Connect the extractor class to the Graphiti platform, enabling extracted entities to be ingested and visualized as nodes within a knowledge graph.
+### Details:
+Implement adapters or APIs to convert extracted entities into Graphiti-compatible formats. Ensure seamless data flow from extraction to graph ingestion.
+
+## 3. Develop Asynchronous Processing [pending]
+### Dependencies: 5.1
+### Description: Enable asynchronous processing for entity extraction to improve throughput and scalability, especially for large datasets or real-time applications.
+### Details:
+Utilize async frameworks (e.g., asyncio, Celery) to process extraction tasks concurrently. Ensure thread safety and proper error handling in async contexts.
+
+## 4. Design LLM Prompts for Entity Extraction [pending]
+### Dependencies: None
+### Description: Craft and iterate on prompt templates for large language models (LLMs) to maximize extraction accuracy and consistency across diverse text inputs.
+### Details:
+Prompts should be tested for clarity, coverage of entity types, and adaptability to different domains. Include examples and edge cases in prompt design.
+
+## 5. Implement Relationship Detection [pending]
+### Dependencies: 5.1, 5.2, 5.4
+### Description: Extend the pipeline to identify and extract relationships between entities, supporting richer knowledge graph construction.
+### Details:
+Develop logic or models to detect relationships (e.g., using dependency parsing or LLM-based extraction). Integrate relationship data into the Graphiti ingestion process.
+
+## 6. Add Batch and Retry Logic [pending]
+### Dependencies: 5.1, 5.3
+### Description: Implement batch processing and robust retry mechanisms to handle large volumes of data and transient extraction failures.
+### Details:
+Design batching strategies for efficient processing. Add retry logic with exponential backoff for failed extractions, and log errors for monitoring.
+
+## 7. Set Up Caching for Extracted Entities [pending]
+### Dependencies: 5.1, 5.6
+### Description: Introduce caching to store and quickly retrieve previously extracted entities, reducing redundant computation and improving performance.
+### Details:
+Choose an appropriate caching backend (e.g., Redis, in-memory). Implement cache key strategies and expiration policies to balance freshness and efficiency.
+

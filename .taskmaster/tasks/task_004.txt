@@ -1,0 +1,37 @@
+# Task ID: 4
+# Title: Extend Configuration Management System
+# Status: pending
+# Dependencies: 3
+# Priority: medium
+# Description: Update the configuration system to support Docker environment variables and Graphiti-specific settings
+# Details:
+Extend existing YAML configuration to include graphiti section with neo4j connection settings, entity_types definitions, relationship_types, and processing parameters. Implement environment variable substitution using ${VAR:-default} syntax. Add validation using Pydantic models for GraphitiConfig class. Support .env file loading with python-dotenv. Maintain backward compatibility with existing configuration structure.
+
+# Test Strategy:
+Test configuration loading with environment variables, validate Pydantic schema validation, verify .env file processing, and ensure backward compatibility with existing configs
+
+# Subtasks:
+## 1. Update YAML Schema [pending]
+### Dependencies: None
+### Description: Revise the existing YAML schema to support new configuration options and ensure compatibility with planned features.
+### Details:
+Analyze current schema, identify required changes, and update the schema definition to accommodate environment variable substitution, Pydantic validation, and .env file support.
+
+## 2. Implement Environment Variable Substitution [pending]
+### Dependencies: 4.1
+### Description: Enable the configuration loader to substitute environment variables within YAML files.
+### Details:
+Develop logic to detect placeholders in the YAML and replace them with corresponding environment variable values at load time.
+
+## 3. Add Pydantic Validation [pending]
+### Dependencies: 4.1, 4.2
+### Description: Integrate Pydantic models to validate the loaded configuration data.
+### Details:
+Define Pydantic models that mirror the updated YAML schema and validate the configuration after environment variable substitution.
+
+## 4. Support .env File Loading [pending]
+### Dependencies: 4.2
+### Description: Add functionality to load environment variables from a .env file before parsing the YAML configuration.
+### Details:
+Implement logic to read a .env file and populate environment variables, ensuring they are available for substitution during YAML parsing.
+
