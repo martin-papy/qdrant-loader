@@ -3,54 +3,32 @@
 import asyncio
 import hashlib
 import time
-from typing import Dict, List, Optional, Any, Callable, AsyncGenerator
+from typing import Dict, List, Optional, Any, Callable, AsyncGenerator, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor
 import weakref
+import json
+import re
 
 from graphiti_core.nodes import EpisodeType
 
 from .graphiti_manager import GraphitiManager
 from .prompts import EntityPromptManager
 from .prompts.entity_prompts import PromptDomain
+from .types import EntityType, RelationshipType, ExtractedEntity, ExtractedRelationship
 from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
 
-class EntityType(Enum):
-    """Supported entity types for extraction."""
-
-    SERVICE = "Service"
-    DATABASE = "Database"
-    TEAM = "Team"
-    PERSON = "Person"
-    ORGANIZATION = "Organization"
-    PROJECT = "Project"
-    CONCEPT = "Concept"
-    TECHNOLOGY = "Technology"
-    API = "API"
-    ENDPOINT = "Endpoint"
-
-
-@dataclass
-class ExtractedEntity:
-    """Container for extracted entity information."""
-
-    name: str
-    entity_type: EntityType
-    confidence: float = 0.0
-    context: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
 @dataclass
 class ExtractionResult:
-    """Container for entity extraction results."""
+    """Container for entity and relationship extraction results."""
 
     entities: List[ExtractedEntity] = field(default_factory=list)
+    relationships: List[ExtractedRelationship] = field(default_factory=list)
     processing_time: float = 0.0
     source_text: str = ""
     episode_id: Optional[str] = None
@@ -581,8 +559,20 @@ class EntityExtractor:
 
         entities = self._convert_nodes_to_entities(nodes, text)
 
+        # Extract relationships between entities if we have enough entities
+        relationships = []
+        if len(entities) >= 2:
+            try:
+                relationships = await self.extract_relationships(
+                    entities, text, source_description
+                )
+                logger.debug(f"Extracted {len(relationships)} relationships")
+            except Exception as e:
+                logger.warning(f"Failed to extract relationships: {e}")
+
         return ExtractionResult(
             entities=entities,
+            relationships=relationships,
             source_text=text,
             episode_id=episode_id,
             metadata={
@@ -592,6 +582,7 @@ class EntityExtractor:
                 ),
                 "graphiti_episode_id": episode_id,
                 "extraction_method": "graphiti_episode",
+                "relationship_count": len(relationships),
             },
         )
 
@@ -606,8 +597,6 @@ class EntityExtractor:
             Space-separated search terms
         """
         # Simple keyword extraction - could be enhanced with NLP
-        import re
-
         # Remove common words and extract meaningful terms
         words = re.findall(r"\b[A-Za-z]{3,}\b", text.lower())
 
@@ -851,7 +840,7 @@ class EntityExtractor:
         if not self.graphiti_manager.llm_client:
             raise RuntimeError("LLM client not available in GraphitiManager")
 
-        # Call the LLM with custom prompts
+        # Call the LLM with custom prompts (messages are already in correct format)
         response = await self.graphiti_manager.llm_client.generate_response(messages)
 
         # Extract text content from response
@@ -861,6 +850,17 @@ class EntityExtractor:
 
         # Parse the response to extract entities
         entities = self._parse_llm_response_to_entities(response_text, text)
+
+        # Extract relationships between entities if we have enough entities
+        relationships = []
+        if len(entities) >= 2:
+            try:
+                relationships = await self.extract_relationships(
+                    entities, text, source_description
+                )
+                logger.debug(f"Extracted {len(relationships)} relationships")
+            except Exception as e:
+                logger.warning(f"Failed to extract relationships: {e}")
 
         # Create episode for tracking (optional)
         episode_id = None
@@ -878,6 +878,7 @@ class EntityExtractor:
 
         return ExtractionResult(
             entities=entities,
+            relationships=relationships,
             source_text=text,
             episode_id=episode_id,
             metadata={
@@ -888,6 +889,7 @@ class EntityExtractor:
                 "domain": extraction_domain.value,
                 "custom_prompt": custom_prompt,
                 "extraction_method": "custom_prompts",
+                "relationship_count": len(relationships),
             },
         )
 
@@ -907,8 +909,6 @@ class EntityExtractor:
 
         try:
             # Try to parse as JSON first
-            import json
-
             response_data = json.loads(response)
 
             if isinstance(response_data, dict) and "entities" in response_data:
@@ -981,8 +981,6 @@ class EntityExtractor:
                 continue
 
             # Look for patterns like "Entity: Name (Type)"
-            import re
-
             pattern = r"(?:Entity|Name):\s*([^(]+)\s*\(([^)]+)\)"
             match = re.search(pattern, line, re.IGNORECASE)
 
@@ -1536,3 +1534,289 @@ class EntityExtractor:
         except RuntimeError:
             # No event loop running, cleanup synchronously
             self._thread_pool.shutdown(wait=False)
+
+    async def extract_relationships(
+        self,
+        entities: List[ExtractedEntity],
+        text: str,
+        source_description: Optional[str] = None,
+    ) -> List[ExtractedRelationship]:
+        """Extract relationships between entities using LLM-based analysis.
+
+        Args:
+            entities: List of extracted entities to find relationships between
+            text: Source text containing the entities
+            source_description: Optional description of the text source
+
+        Returns:
+            List of ExtractedRelationship objects
+        """
+        if len(entities) < 2:
+            logger.debug("Need at least 2 entities to extract relationships")
+            return []
+
+        logger.debug(f"Extracting relationships between {len(entities)} entities")
+
+        try:
+            # Create relationship extraction prompt
+            relationship_prompt = self._create_relationship_prompt(entities, text)
+
+            # Use LLM to extract relationships
+            if self.graphiti_manager.llm_client:
+                from graphiti_core.prompts.models import Message
+
+                response = await self.graphiti_manager.llm_client.generate_response(
+                    messages=[Message(role="user", content=relationship_prompt)]
+                )
+
+                # Extract text content from response
+                response_text = (
+                    response.get("content", "")
+                    if isinstance(response, dict)
+                    else str(response)
+                )
+
+                # Parse the response to extract relationships
+                relationships = self._parse_relationship_response(
+                    response_text, entities, text
+                )
+
+                logger.info(f"Extracted {len(relationships)} relationships")
+                return relationships
+            else:
+                logger.warning("No LLM client available for relationship extraction")
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to extract relationships: {e}")
+            return []
+
+    def _create_relationship_prompt(
+        self, entities: List[ExtractedEntity], text: str
+    ) -> str:
+        """Create a prompt for relationship extraction.
+
+        Args:
+            entities: List of entities to find relationships between
+            text: Source text
+
+        Returns:
+            Formatted prompt string
+        """
+        entity_list = "\n".join(
+            [f"- {entity.name} ({entity.entity_type.value})" for entity in entities]
+        )
+
+        relationship_types = "\n".join(
+            [
+                f"- {rt.value}: {self._get_relationship_description(rt)}"
+                for rt in RelationshipType
+            ]
+        )
+
+        prompt = f"""
+Analyze the following text and identify relationships between the extracted entities.
+
+TEXT:
+{text}
+
+ENTITIES:
+{entity_list}
+
+RELATIONSHIP TYPES:
+{relationship_types}
+
+Please identify relationships between these entities based on the text. For each relationship, provide:
+1. Source entity name
+2. Target entity name  
+3. Relationship type (from the list above)
+4. Confidence score (0.0-1.0)
+5. Evidence from the text supporting this relationship
+
+Format your response as JSON:
+{{
+  "relationships": [
+    {{
+      "source": "entity_name",
+      "target": "entity_name", 
+      "type": "relationship_type",
+      "confidence": 0.8,
+      "evidence": "text evidence"
+    }}
+  ]
+}}
+
+Only include relationships that are clearly supported by the text. Be conservative with confidence scores.
+"""
+        return prompt
+
+    def _get_relationship_description(self, relationship_type: RelationshipType) -> str:
+        """Get a description for a relationship type.
+
+        Args:
+            relationship_type: The relationship type
+
+        Returns:
+            Description string
+        """
+        descriptions = {
+            RelationshipType.CONTAINS: "One entity contains or includes another",
+            RelationshipType.REFERENCES: "One entity references, mentions, or cites another",
+            RelationshipType.AUTHORED_BY: "Content is created or authored by an entity",
+            RelationshipType.BELONGS_TO: "Entity belongs to or is part of another entity",
+            RelationshipType.RELATED_TO: "Entities are semantically related",
+            RelationshipType.DERIVED_FROM: "Entity is derived or created from another",
+            RelationshipType.DEPENDS_ON: "Entity depends on or requires another",
+            RelationshipType.IMPLEMENTS: "Entity implements or realizes another",
+            RelationshipType.USES: "Entity uses or utilizes another",
+            RelationshipType.MANAGES: "Entity manages or controls another",
+        }
+        return descriptions.get(relationship_type, "General relationship")
+
+    def _parse_relationship_response(
+        self,
+        response: str,
+        entities: List[ExtractedEntity],
+        source_text: str,
+    ) -> List[ExtractedRelationship]:
+        """Parse LLM response to extract relationships.
+
+        Args:
+            response: LLM response text
+            entities: List of available entities
+            source_text: Original source text
+
+        Returns:
+            List of ExtractedRelationship objects
+        """
+        relationships = []
+        entity_names = {entity.name.lower() for entity in entities}
+
+        try:
+            # Try to parse as JSON first
+            response_data = json.loads(response)
+
+            if "relationships" in response_data:
+                for rel_data in response_data["relationships"]:
+                    try:
+                        source = rel_data.get("source", "").strip()
+                        target = rel_data.get("target", "").strip()
+                        rel_type_str = rel_data.get("type", "").strip()
+                        confidence = float(rel_data.get("confidence", 0.0))
+                        evidence = rel_data.get("evidence", "").strip()
+
+                        # Validate entities exist
+                        if (
+                            source.lower() not in entity_names
+                            or target.lower() not in entity_names
+                        ):
+                            continue
+
+                        # Validate relationship type
+                        try:
+                            rel_type = RelationshipType(rel_type_str)
+                        except ValueError:
+                            logger.warning(f"Unknown relationship type: {rel_type_str}")
+                            continue
+
+                        # Validate confidence
+                        if not (0.0 <= confidence <= 1.0):
+                            confidence = 0.5
+
+                        relationship = ExtractedRelationship(
+                            source_entity=source,
+                            target_entity=target,
+                            relationship_type=rel_type,
+                            confidence=confidence,
+                            context=(
+                                source_text[:200] + "..."
+                                if len(source_text) > 200
+                                else source_text
+                            ),
+                            evidence=evidence,
+                            metadata={
+                                "extraction_method": "llm_json_parsing",
+                                "extracted_at": datetime.now(timezone.utc).isoformat(),
+                            },
+                        )
+                        relationships.append(relationship)
+
+                    except Exception as e:
+                        logger.warning(f"Failed to parse relationship: {e}")
+                        continue
+
+        except json.JSONDecodeError:
+            # Fallback to text parsing
+            logger.debug("JSON parsing failed, falling back to text parsing")
+            relationships = self._extract_relationships_from_text_response(
+                response, entities, source_text
+            )
+
+        return relationships
+
+    def _extract_relationships_from_text_response(
+        self,
+        response: str,
+        entities: List[ExtractedEntity],
+        source_text: str,
+    ) -> List[ExtractedRelationship]:
+        """Extract relationships from text response as fallback.
+
+        Args:
+            response: LLM response text
+            entities: List of available entities
+            source_text: Original source text
+
+        Returns:
+            List of ExtractedRelationship objects
+        """
+        relationships = []
+        entity_names = {entity.name.lower() for entity in entities}
+        lines = response.split("\n")
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Look for patterns like "Entity1 -> Entity2 (relationship_type)"
+            pattern = r"([^-]+)\s*->\s*([^(]+)\s*\(([^)]+)\)"
+            match = re.search(pattern, line, re.IGNORECASE)
+
+            if match:
+                source = match.group(1).strip()
+                target = match.group(2).strip()
+                rel_type_str = match.group(3).strip()
+
+                # Validate entities exist
+                if (
+                    source.lower() not in entity_names
+                    or target.lower() not in entity_names
+                ):
+                    continue
+
+                # Try to map to RelationshipType
+                try:
+                    rel_type = RelationshipType(rel_type_str.lower())
+                except ValueError:
+                    continue
+
+                relationship = ExtractedRelationship(
+                    source_entity=source,
+                    target_entity=target,
+                    relationship_type=rel_type,
+                    confidence=0.6,  # Default confidence for text parsing
+                    context=(
+                        source_text[:200] + "..."
+                        if len(source_text) > 200
+                        else source_text
+                    ),
+                    evidence=line,
+                    metadata={
+                        "extraction_method": "text_parsing_fallback",
+                        "extracted_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+                relationships.append(relationship)
+
+        return relationships

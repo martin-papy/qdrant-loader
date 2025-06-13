@@ -13,7 +13,7 @@ from datetime import datetime
 
 from graphiti_core.prompts.models import Message
 
-from ..entity_extractor import EntityType
+from ..types import EntityType
 from ...utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)

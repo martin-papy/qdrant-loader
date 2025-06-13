@@ -7,12 +7,15 @@ extraction prompts to ensure high accuracy and consistency.
 import asyncio
 import json
 import time
-from typing import Dict, List, Any, Optional, Set, Tuple
+from typing import Dict, List, Any, Optional, Set, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
-from ..entity_extractor import EntityExtractor, EntityType, ExtractedEntity
+from ..types import EntityType, ExtractedEntity
+
+if TYPE_CHECKING:
+    from ..entity_extractor import EntityExtractor
 from .entity_prompts import EntityPromptManager, PromptDomain, PromptTemplate
 from ...utils.logging import LoggingConfig
 
@@ -110,7 +113,7 @@ class PromptTester:
     """System for testing and evaluating entity extraction prompts."""
 
     def __init__(
-        self, entity_extractor: EntityExtractor, prompt_manager: EntityPromptManager
+        self, entity_extractor: "EntityExtractor", prompt_manager: EntityPromptManager
     ):
         """Initialize the prompt tester.
 
