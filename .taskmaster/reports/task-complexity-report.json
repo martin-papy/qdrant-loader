@@ -1,12 +1,12 @@
 {
   "meta": {
-    "generatedAt": "2025-06-12T11:36:41.650Z",
-    "tasksAnalyzed": 20,
-    "totalTasks": 20,
-    "analysisCount": 20,
+    "generatedAt": "2025-06-13T23:28:29.028Z",
+    "tasksAnalyzed": 1,
+    "totalTasks": 21,
+    "analysisCount": 21,
     "thresholdScore": 5,
     "projectName": "Taskmaster",
-    "usedResearch": false
+    "usedResearch": true
   },
   "complexityAnalysis": [
     {
@@ -168,6 +168,14 @@
       "recommendedSubtasks": 5,
       "expansionPrompt": "Structure data synchronization as: cross-database ID mapping system design and implementation, change detection and event system development, bi-directional synchronization engine creation, conflict resolution and versioning system implementation, and validation and repair tools development.",
       "reasoning": "Very high complexity involving bi-directional synchronization, conflict resolution, and data consistency across heterogeneous databases. Current 5 subtasks appropriately cover the synchronization architecture."
+    },
+    {
+      "taskId": 21,
+      "taskTitle": "Split Configuration Files and Remove Hardcoded Settings",
+      "complexityScore": 9,
+      "recommendedSubtasks": 10,
+      "expansionPrompt": "Break down the task into subtasks covering: (1) splitting config files, (2) implementing configuration loading/merging logic, (3) creating Pydantic models for validation, (4) supporting environment variable overrides, (5) scanning and refactoring hardcoded settings, (6) ensuring backward compatibility and migration, (7) writing documentation, (8) implementing configuration validation and error handling, (9) adding hot-reload and export functionality, and (10) ensuring thread-safe access.",
+      "reasoning": "This task involves architectural changes across multiple layers: file structure, configuration management, code refactoring, validation, documentation, and runtime features like hot-reload and thread safety. It requires careful migration for backward compatibility and comprehensive testing. The breadth and depth of changes, as well as the need to coordinate codebase-wide refactoring and robust validation, make this a highly complex task, justifying a high score and a large number of subtasks."
     }
   ]
 }

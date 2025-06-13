@@ -304,8 +304,8 @@
           "dependencies": [
             1
           ],
-          "details": "Utilize async frameworks (e.g., asyncio, Celery) to process extraction tasks concurrently. Ensure thread safety and proper error handling in async contexts.",
-          "status": "pending"
+          "details": "Utilize async frameworks (e.g., asyncio, Celery) to process extraction tasks concurrently. Ensure thread safety and proper error handling in async contexts.\n<info added on 2025-06-13T23:16:35.371Z>\n**ANALYSIS COMPLETE ✅**\n\n**Current Async Implementation Assessment:**\nThe EntityExtractor already has some async capabilities, but there are several areas for improvement:\n\n**Existing Async Features:**\n1. ✅ Basic async methods (`extract_entities`, `extract_entities_batch`)\n2. ✅ Batch processing with `asyncio.gather()` for concurrent execution\n3. ✅ Retry logic with exponential backoff using `asyncio.sleep()`\n4. ✅ Async integration with GraphitiManager\n\n**Areas for Enhancement:**\n1. **Concurrency Control**: No semaphore/rate limiting for concurrent operations\n2. **Queue-based Processing**: No async queue system for handling large workloads\n3. **Background Processing**: No support for fire-and-forget async tasks\n4. **Resource Management**: No connection pooling or resource limits\n5. **Progress Tracking**: No async progress reporting for long-running operations\n6. **Cancellation Support**: No proper task cancellation mechanisms\n7. **Memory Management**: No streaming/chunked processing for very large datasets\n\n**Implementation Plan:**\n1. Add async queue-based processing system with worker pools\n2. Implement semaphore-based concurrency control\n3. Add background task processing capabilities\n4. Create async progress tracking and reporting\n5. Implement proper task cancellation and cleanup\n6. Add streaming/chunked processing for large datasets\n7. Enhance error handling and recovery in async contexts\n\nStarting implementation of enhanced async processing capabilities...\n</info added on 2025-06-13T23:16:35.371Z>\n<info added on 2025-06-13T23:19:33.127Z>\n**IMPLEMENTATION COMPLETE ✅**\n\n**Major Async Processing Enhancements Implemented:**\n\n1. **Advanced Concurrency Control:**\n   - ✅ Semaphore-based rate limiting (`max_concurrent_extractions`)\n   - ✅ Enhanced batch processing with semaphore control\n   - ✅ Thread pool for CPU-intensive operations\n   - ✅ Proper resource management and cleanup\n\n2. **Queue-Based Processing System:**\n   - ✅ Async task queue with configurable size limits\n   - ✅ Background worker pool for processing queued tasks\n   - ✅ Priority-based task scheduling\n   - ✅ Fire-and-forget async processing capabilities\n\n3. **Streaming & Large Dataset Support:**\n   - ✅ Async generator-based streaming processing\n   - ✅ Chunked processing for memory efficiency\n   - ✅ Real-time result yielding for large datasets\n\n4. **Progress Tracking & Monitoring:**\n   - ✅ Real-time progress callbacks with customizable intervals\n   - ✅ Comprehensive queue status monitoring\n   - ✅ Processing statistics and performance metrics\n   - ✅ Background progress reporter task\n\n5. **Enhanced Error Handling & Recovery:**\n   - ✅ Task timeout controls with configurable limits\n   - ✅ Graceful exception handling in async contexts\n   - ✅ Automatic retry mechanisms with exponential backoff\n   - ✅ Proper task cancellation and cleanup\n\n6. **Resource Management:**\n   - ✅ Graceful shutdown procedures\n   - ✅ Automatic cleanup of resources and tasks\n   - ✅ Weak reference tracking for memory management\n   - ✅ Thread pool management\n\n**New Configuration Options Added:**\n- `max_concurrent_extractions`: Semaphore limit (default: 5)\n- `queue_max_size`: Max queue items (default: 1000)\n- `worker_pool_size`: Background workers (default: 3)\n- `task_timeout`: Individual task timeout (default: 300s)\n- `progress_callback_interval`: Progress update frequency (default: 1.0s)\n\n**New Methods Available:**\n- `extract_entities_async_queue()`: Queue-based processing\n- `extract_entities_streaming()`: Streaming for large datasets\n- `add_progress_callback()` / `remove_progress_callback()`: Progress tracking\n- `wait_for_queue_completion()`: Wait for all queued tasks\n- `get_queue_status()`: Real-time queue monitoring\n- `shutdown()`: Graceful cleanup\n\n**Performance Improvements:**\n- Significantly improved throughput for large datasets\n- Better resource utilization with controlled concurrency\n- Reduced memory footprint with streaming processing\n- Enhanced scalability for real-time applications\n\nThe EntityExtractor now provides enterprise-grade async processing capabilities suitable for high-throughput production environments!\n</info added on 2025-06-13T23:19:33.127Z>",
+          "status": "done"
         },
         {
           "id": 4,
@@ -335,8 +335,8 @@
             1,
             3
           ],
-          "details": "Design batching strategies for efficient processing. Add retry logic with exponential backoff for failed extractions, and log errors for monitoring.",
-          "status": "pending"
+          "details": "Design batching strategies for efficient processing. Add retry logic with exponential backoff for failed extractions, and log errors for monitoring.\n<info added on 2025-06-13T23:31:37.265Z>\nImplementation completed successfully. The EntityExtractor now includes comprehensive batch processing with configurable batch sizes (default: 10), semaphore-controlled concurrency limiting up to 5 concurrent extractions, and queue-based background processing with 3 worker threads. Retry logic implemented with exponential backoff (2^attempt multiplier), maximum 3 retries per task, and 300-second timeout per individual extraction. Advanced features include streaming processing for large datasets, real-time progress tracking, comprehensive error logging, graceful resource cleanup, and detailed performance statistics. All configuration parameters are customizable through ExtractionConfig. System is production-ready and exceeds original requirements.\n</info added on 2025-06-13T23:31:37.265Z>",
+          "status": "done"
         },
         {
           "id": 7,
@@ -346,8 +346,8 @@
             1,
             6
           ],
-          "details": "Choose an appropriate caching backend (e.g., Redis, in-memory). Implement cache key strategies and expiration policies to balance freshness and efficiency.",
-          "status": "pending"
+          "details": "Choose an appropriate caching backend (e.g., Redis, in-memory). Implement cache key strategies and expiration policies to balance freshness and efficiency.\n<info added on 2025-06-13T23:32:31.845Z>\nIMPLEMENTATION COMPLETE - Comprehensive caching system has been successfully implemented and is production-ready.\n\nIMPLEMENTED FEATURES:\n- In-memory caching backend using Python dictionaries with configurable TTL (default: 1 hour)\n- MD5-based cache key strategy incorporating text content and source description for unique, content-based keys\n- Multi-layered expiration policies: TTL-based expiration, automatic size management (1000 entry limit), and LRU-style eviction\n- Seamless integration with extraction pipeline including cache hit/miss statistics and error-aware caching\n- Manual cache management with clear_cache() method and comprehensive performance monitoring\n- Configurable enable/disable functionality through ExtractionConfig.enable_caching flag\n\nPERFORMANCE CHARACTERISTICS:\n- O(1) cache lookups with lazy expiration checking\n- Automatic memory management preventing unbounded growth\n- Thread-safe operations supporting concurrent access\n- Cache hit rate tracking and detailed statistics integration\n\nThe current implementation provides excellent performance benefits while maintaining data freshness and exceeds the original requirements for cache backend selection, key strategies, and expiration policies.\n</info added on 2025-06-13T23:32:31.845Z>",
+          "status": "done"
         }
       ]
     },
@@ -1791,6 +1791,116 @@
             9
           ],
           "details": "Develop data integrity checkers, implement automated repair mechanisms, create manual intervention tools, design consistency reports, and establish monitoring dashboards for synchronization health.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Split Configuration Files and Remove Hardcoded Settings",
+      "description": "Split the large config.template.yaml into separate basic and advanced configuration files, implement robust configuration loading and merging logic, and eliminate all hardcoded settings throughout the codebase.",
+      "details": "Create two new configuration files: config.yaml (basic user settings like URLs, passwords, API keys, project definitions) and advanced.yaml (technical settings like rate limits, timeouts, batch sizes, worker pool sizes, retry counts with sensible defaults). Implement ConfigurationManager class that loads and merges both files at startup, with basic config taking precedence over advanced settings during conflicts. Add Pydantic models for validation of both BasicConfig and AdvancedConfig schemas. Support environment variable overrides using ${VAR:-default} syntax for both files. Scan entire codebase to identify hardcoded values (connection timeouts, retry counts, batch sizes, API endpoints, etc.) and move them to advanced.yaml with appropriate defaults. Implement backward compatibility by checking for existing config.template.yaml and migrating settings automatically. Add comprehensive configuration documentation with examples and explanations for each setting. Create configuration validation that checks for required fields, validates data types, and provides helpful error messages. Implement hot-reload capability for non-critical configuration changes. Add configuration export functionality to generate template files for new deployments. Ensure thread-safe configuration access using singleton pattern with proper locking.",
+      "testStrategy": "Create unit tests for ConfigurationManager class covering file loading, merging logic, environment variable substitution, and validation scenarios. Test backward compatibility by verifying existing config.template.yaml files are properly migrated. Create integration tests that verify all hardcoded values have been successfully moved to configuration files by running the application with different configuration combinations. Test configuration validation with invalid inputs to ensure proper error handling and user-friendly messages. Verify environment variable overrides work correctly for both basic and advanced settings. Test hot-reload functionality by modifying configuration files during runtime and verifying changes are applied. Create performance tests to ensure configuration loading doesn't impact application startup time. Test edge cases like missing files, corrupted YAML, circular dependencies, and conflicting settings between basic and advanced configurations.",
+      "status": "pending",
+      "dependencies": [
+        4
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Split Configuration Files",
+          "description": "Divide the existing monolithic configuration file into multiple logically grouped files (e.g., database, API, logging, etc.) to improve modularity and maintainability.",
+          "dependencies": [],
+          "details": "Identify configuration domains and create separate files for each. Ensure all settings are accounted for and no duplication occurs.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Configuration Loading and Merging Logic",
+          "description": "Develop logic to load and merge configuration files, supporting hierarchical overrides and layered configuration structures.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement a loader that reads all config files, merges them according to precedence (e.g., base, environment, local), and exposes a unified config object.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Create Pydantic Models for Configuration Validation",
+          "description": "Define Pydantic models representing the configuration schema to enable type-safe validation and parsing.",
+          "dependencies": [
+            2
+          ],
+          "details": "For each config domain, create a corresponding Pydantic model. Ensure nested models reflect the config file structure.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Support Environment Variable Overrides",
+          "description": "Add logic to allow environment variables to override configuration values, following best practices for decoupling environment-specific settings.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Implement a mechanism to map environment variables to config fields, with clear precedence rules.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Scan and Refactor Hardcoded Settings",
+          "description": "Identify and refactor all hardcoded configuration values in the codebase to use the new configuration system.",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Perform a codebase-wide search for hardcoded settings, replace them with config lookups, and update tests as needed.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Ensure Backward Compatibility and Migration",
+          "description": "Develop a migration strategy to support legacy configuration formats and ensure backward compatibility during rollout.",
+          "dependencies": [
+            5
+          ],
+          "details": "Implement migration scripts or adapters, provide fallback logic, and document migration steps for users.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Write Documentation",
+          "description": "Document the new configuration system, including file structure, override mechanisms, migration steps, and usage examples.",
+          "dependencies": [],
+          "details": "Update README, add detailed guides, and provide code samples for common scenarios.",
+          "status": "pending"
+        },
+        {
+          "id": 8,
+          "title": "Implement Configuration Validation and Error Handling",
+          "description": "Add robust validation and error handling for configuration loading, merging, and parsing using Pydantic models.",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "Ensure clear error messages, fail-fast behavior on invalid configs, and comprehensive test coverage for edge cases.",
+          "status": "pending"
+        },
+        {
+          "id": 9,
+          "title": "Add Hot-Reload and Export Functionality",
+          "description": "Implement hot-reload support for configuration changes at runtime and provide functionality to export the current effective configuration.",
+          "dependencies": [],
+          "details": "Monitor config files for changes, reload safely, and expose an API or CLI to export the merged config.",
+          "status": "pending"
+        },
+        {
+          "id": 10,
+          "title": "Ensure Thread-Safe Access to Configuration",
+          "description": "Guarantee that configuration access and updates are thread-safe to prevent race conditions and ensure consistency in concurrent environments.",
+          "dependencies": [],
+          "details": "Use appropriate synchronization primitives or immutable config objects, and add tests for concurrent access scenarios.",
           "status": "pending"
         }
       ]
