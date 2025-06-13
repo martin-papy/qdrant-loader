@@ -11,11 +11,17 @@ Configure Neo4j 5.26-community container with authentication (NEO4J_AUTH), APOC 
 Test Neo4j container startup, verify APOC plugin availability, validate authentication, test Python driver connectivity, and confirm data persistence across container restarts
 
 # Subtasks:
-## 1. Configure Neo4j Container with Authentication and Plugins [pending]
+## 1. Configure Neo4j Container with Authentication and Plugins [in-progress]
 ### Dependencies: None
 ### Description: Set up the Neo4j Docker container with secure authentication and required plugins. Ensure credentials are managed securely and plugins are loaded as per project requirements.
 ### Details:
 Configure authentication using Neo4j's native auth provider and set up plugin installation by modifying the Docker image or mounting plugin jars. Use environment variables or configuration files to set admin credentials and plugin parameters.
+<info added on 2025-06-13T04:04:01.590Z>
+Initial analysis confirms Neo4j persistent storage is already properly configured in docker-compose.yml with four named volumes: neo4j_data for database files, neo4j_logs for application logs, neo4j_import for data import operations, and neo4j_plugins for plugin storage. All volumes are correctly mounted to their respective container paths ensuring data persistence across container restarts. Memory settings are also configured with environment variable defaults for heap and page cache allocation.
+</info added on 2025-06-13T04:04:01.590Z>
+<info added on 2025-06-13T04:23:34.994Z>
+Neo4j container configuration issue has been resolved. The problem was caused by the env_file directive loading all environment variables from .env into the Neo4j container, causing Neo4j 5.x to misinterpret NEO4J_HEAP_INITIAL as an invalid configuration setting. Fixed by removing env_file from the Neo4j service and keeping only explicit environment variables. Neo4j 5.26.8 now starts successfully with APOC plugin installed, Bolt enabled on port 7687, and HTTP interface on port 7474. Container configuration is complete and ready for authentication testing.
+</info added on 2025-06-13T04:23:34.994Z>
 
 ## 2. Set Up Persistent Storage for Neo4j [pending]
 ### Dependencies: 2.1

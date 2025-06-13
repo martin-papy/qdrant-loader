@@ -47,10 +47,16 @@ format: ## Format code in all packages
 
 check: lint test ## Run all checks (lint + test)
 
-# Build and publish
+# Build
 build: ## Build both packages
-	cd packages/qdrant-loader && python -m build
-	cd packages/qdrant-loader-mcp-server && python -m build
+	pip install -e ".[docs]"
+	cd packages/qdrant-loader && pip install .
+	cd packages/qdrant-loader-mcp-server && pip install .
+
+build-dev: ## Build both packages with development dependencies
+	pip install -e ".[dev,docs]"
+	cd packages/qdrant-loader && pip install -e ".[dev]"
+	cd packages/qdrant-loader-mcp-server && pip install -e ".[dev]"
 
 build-loader: ## Build qdrant-loader package only
 	cd packages/qdrant-loader && python -m build
