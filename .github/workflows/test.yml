@@ -2,9 +2,9 @@ name: Test and Coverage
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [main, develop, feature/*, bugfix/*, release/*]
   pull_request:
-    branches: [ main, develop, feature/*, bugfix/*, release/* ]
+    branches: [main, develop, feature/*, bugfix/*, release/*]
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install system dependencies
         run: |
@@ -42,7 +42,7 @@ jobs:
         run: |
           cd packages/qdrant-loader
           cp tests/.env.test.template tests/.env.test
-          
+
           # Check if required secrets are set
           if [ -z "${{ secrets.QDRANT_URL }}" ]; then
             echo "Error: QDRANT_URL secret is not set"
@@ -60,14 +60,36 @@ jobs:
             echo "Error: OPENAI_API_KEY secret is not set"
             exit 1
           fi
-          
+          if [ -z "${{ secrets.NEO4J_URI }}" ]; then
+            echo "Error: NEO4J_URI secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.NEO4J_USER }}" ]; then
+            echo "Error: NEO4J_USER secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.NEO4J_PASSWORD }}" ]; then
+            echo "Error: NEO4J_PASSWORD secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.NEO4J_DATABASE }}" ]; then
+            echo "Error: NEO4J_DATABASE secret is not set"
+            exit 1
+          fi
+
           # Replace environment variables with proper escaping
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
           sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/.env.test
-          
+
+          # Neo4j configuration
+          sed -i "s|NEO4J_URI=.*|NEO4J_URI=${{ secrets.NEO4J_URI }}|g" tests/.env.test
+          sed -i "s|NEO4J_USER=.*|NEO4J_USER=${{ secrets.NEO4J_USER }}|g" tests/.env.test
+          sed -i "s|NEO4J_PASSWORD=.*|NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}|g" tests/.env.test
+          sed -i "s|NEO4J_DATABASE=.*|NEO4J_DATABASE=${{ secrets.NEO4J_DATABASE }}|g" tests/.env.test
+
           # Optional secrets - only replace if they exist
           if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
             sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
@@ -99,7 +121,7 @@ jobs:
           if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
             sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
           fi
-          
+
           echo "Created .env.test file successfully"
           echo "Contents (with secrets masked):"
           sed 's/=.*/=***/' tests/.env.test
@@ -108,12 +130,18 @@ jobs:
         run: |
           cd packages/qdrant-loader
           cp tests/config.test.template.yaml tests/config.test.yaml
-          
+
           # Replace environment variables in YAML config
           sed -i "s|\${QDRANT_URL}|${{ secrets.QDRANT_URL }}|g" tests/config.test.yaml
           sed -i "s|\${QDRANT_API_KEY}|${{ secrets.QDRANT_API_KEY }}|g" tests/config.test.yaml
           sed -i "s|\${QDRANT_COLLECTION_NAME}|${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config.test.yaml
-          
+
+          # Neo4j configuration
+          sed -i "s|\${NEO4J_URI}|${{ secrets.NEO4J_URI }}|g" tests/config.test.yaml
+          sed -i "s|\${NEO4J_USER}|${{ secrets.NEO4J_USER }}|g" tests/config.test.yaml
+          sed -i "s|\${NEO4J_PASSWORD}|${{ secrets.NEO4J_PASSWORD }}|g" tests/config.test.yaml
+          sed -i "s|\${NEO4J_DATABASE}|${{ secrets.NEO4J_DATABASE }}|g" tests/config.test.yaml
+
           # Optional environment variables - only replace if they exist
           if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
             sed -i "s|\${REPO_TOKEN}|${{ secrets.REPO_TOKEN }}|g" tests/config.test.yaml
@@ -145,7 +173,7 @@ jobs:
           if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
             sed -i "s|\${JIRA_PROJECT_KEY}|${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config.test.yaml
           fi
-          
+
           echo "Created config.test.yaml file successfully"
           echo "YAML config structure:"
           head -20 tests/config.test.yaml
@@ -173,7 +201,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -190,6 +218,10 @@ jobs:
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           QDRANT_COLLECTION_NAME: ${{ secrets.QDRANT_COLLECTION_NAME }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USER: ${{ secrets.NEO4J_USER }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_DATABASE: ${{ secrets.NEO4J_DATABASE }}
 
       - name: Upload MCP server coverage artifact
         uses: actions/upload-artifact@v4
@@ -209,7 +241,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install system dependencies for website testing
         run: |
@@ -253,7 +285,7 @@ jobs:
           echo "QDrant Loader Tests: ${{ needs.test-loader.result }}"
           echo "MCP Server Tests: ${{ needs.test-mcp-server.result }}"
           echo "Website Build Tests: ${{ needs.test-website.result }}"
-          
+
           if [ "${{ needs.test-loader.result }}" != "success" ] || [ "${{ needs.test-mcp-server.result }}" != "success" ] || [ "${{ needs.test-website.result }}" != "success" ]; then
             echo "❌ Some tests failed"
             exit 1
@@ -274,7 +306,7 @@ jobs:
             \"branch\": \"${{ github.ref_name }}\",
             \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
           }" > test-results/status.json
-          
+
           echo "Test run completed at $(date)" > test-results/summary.txt
           echo "Run ID: ${{ github.run_id }}" >> test-results/summary.txt
           echo "Commit: ${{ github.sha }}" >> test-results/summary.txt

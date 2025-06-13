@@ -11,6 +11,7 @@ import pytest
 import time
 import subprocess
 import json
+import os
 from datetime import datetime
 from typing import Dict, Any, List, Generator
 
@@ -25,11 +26,11 @@ class TestNeo4jPersistenceIntegration:
     def neo4j_config(self) -> Neo4jConfig:
         """Create Neo4j configuration for testing."""
         return Neo4jConfig(
-            uri="bolt://localhost:7687",
-            user="neo4j",
-            password="secure_password_2024",
-            database="neo4j",
-            encrypted=False,  # Disable encryption for local testing
+            uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+            user=os.getenv("NEO4J_USER", "neo4j"),
+            password=os.getenv("NEO4J_PASSWORD", "secure_password_2024"),
+            database=os.getenv("NEO4J_DATABASE", "neo4j"),
+            encrypted=True,  # Enable encryption for Aura compatibility
             max_retry_time=30,
             initial_retry_delay=1.0,
             retry_delay_multiplier=2.0,
@@ -424,11 +425,11 @@ class TestNeo4jPersistenceIntegration:
         try:
             # Create a temporary manager for cleanup
             config = Neo4jConfig(
-                uri="bolt://localhost:7687",
-                user="neo4j",
-                password="secure_password_2024",
-                database="neo4j",
-                encrypted=False,  # Disable encryption for local testing
+                uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
+                user=os.getenv("NEO4J_USER", "neo4j"),
+                password=os.getenv("NEO4J_PASSWORD", "secure_password_2024"),
+                database=os.getenv("NEO4J_DATABASE", "neo4j"),
+                encrypted=True,  # Disable encryption for local testing
             )
 
             with Neo4jManager(config) as manager:

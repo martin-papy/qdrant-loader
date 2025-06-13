@@ -10,6 +10,18 @@ global:
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
   
+  # Neo4j configuration for tests
+  neo4j:
+    uri: "${NEO4J_URI}"
+    user: "${NEO4J_USER}"
+    password: "${NEO4J_PASSWORD}"
+    database: "${NEO4J_DATABASE}"
+    encrypted: true  # Use encrypted connection for Aura
+    max_retry_time: 30
+    initial_retry_delay: 1.0
+    retry_delay_multiplier: 2.0
+    retry_delay_jitter_factor: 0.1
+  
   # Chunking configuration for tests
   chunking:
     chunk_size: 500
