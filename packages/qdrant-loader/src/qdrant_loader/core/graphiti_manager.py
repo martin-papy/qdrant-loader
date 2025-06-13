@@ -312,23 +312,38 @@ class GraphitiManager:
         Raises:
             RuntimeError: If client is not initialized
         """
-        if not self.is_initialized:
+        if not self.is_initialized or self._graphiti is None:
             raise RuntimeError("Graphiti client not initialized")
 
         try:
             if node_uuids:
                 logger.debug(f"Retrieving {len(node_uuids)} specific nodes")
-                # Note: This would need to be implemented based on Graphiti's API
-                # For now, we'll use a general approach
+                # Use search to find specific nodes by UUID
                 nodes = []
                 for uuid in node_uuids:
-                    # This is a placeholder - actual implementation would depend on Graphiti's node retrieval API
-                    pass
+                    try:
+                        # Search for nodes with specific UUID
+                        results = await self._graphiti.search(
+                            query=f"uuid:{uuid}",
+                            num_results=1,
+                        )
+                        if results:
+                            nodes.extend(results)
+                    except Exception as e:
+                        logger.warning(f"Failed to retrieve node {uuid}: {e}")
+                        continue
                 return nodes
             else:
-                logger.debug(f"Retrieving up to {limit} nodes")
-                # This would need to be implemented based on Graphiti's API for listing nodes
-                return []
+                logger.debug(f"Retrieving up to {limit} nodes via search")
+                # Use a broad search to get recent nodes
+                # This is a workaround since Graphiti doesn't have a direct "list all nodes" method
+                results = await self._graphiti.search(
+                    query="*",  # Broad search query
+                    num_results=min(
+                        limit, self.graphiti_config.operational.search_limit_max
+                    ),
+                )
+                return results
 
         except Exception as e:
             logger.error(f"Failed to retrieve nodes: {e}")
@@ -350,21 +365,112 @@ class GraphitiManager:
         Raises:
             RuntimeError: If client is not initialized
         """
-        if not self.is_initialized:
+        if not self.is_initialized or self._graphiti is None:
             raise RuntimeError("Graphiti client not initialized")
 
         try:
             if edge_uuids:
                 logger.debug(f"Retrieving {len(edge_uuids)} specific edges")
-                # This would need to be implemented based on Graphiti's API
+                # Note: Graphiti's search primarily returns nodes, not edges directly
+                # This is a limitation of the current Graphiti API
+                logger.warning(
+                    "Direct edge retrieval by UUID not fully supported by Graphiti API"
+                )
                 return []
             else:
-                logger.debug(f"Retrieving up to {limit} edges")
-                # This would need to be implemented based on Graphiti's API
+                logger.debug(f"Retrieving edges via relationship search")
+                # Use search to find relationship information
+                # This is limited by Graphiti's current API capabilities
+                logger.warning(
+                    "General edge listing not directly supported by Graphiti API"
+                )
                 return []
 
         except Exception as e:
             logger.error(f"Failed to retrieve edges: {e}")
+            raise
+
+    async def get_entities_from_episode(
+        self, episode_id: str, entity_types: Optional[List[str]] = None
+    ) -> List[Any]:
+        """Retrieve entities extracted from a specific episode.
+
+        Args:
+            episode_id: UUID of the episode
+            entity_types: Optional list of entity types to filter by
+
+        Returns:
+            List of entities related to the episode
+
+        Raises:
+            RuntimeError: If client is not initialized
+        """
+        if not self.is_initialized or self._graphiti is None:
+            raise RuntimeError("Graphiti client not initialized")
+
+        try:
+            logger.debug(f"Retrieving entities from episode: {episode_id}")
+
+            # Search for entities related to the episode
+            # Use the episode ID in the search query
+            search_query = f"episode:{episode_id}"
+            if entity_types:
+                # Add entity type filters to the search
+                type_filter = " OR ".join([f"type:{et}" for et in entity_types])
+                search_query = f"({search_query}) AND ({type_filter})"
+
+            results = await self._graphiti.search(
+                query=search_query,
+                num_results=100,  # Get more results for entity extraction
+            )
+
+            logger.info(f"Found {len(results)} entities for episode {episode_id}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve entities from episode {episode_id}: {e}")
+            raise
+
+    async def search_entities(
+        self, query: str, entity_types: Optional[List[str]] = None, limit: int = 50
+    ) -> List[Any]:
+        """Search for entities in the knowledge graph.
+
+        Args:
+            query: Search query string
+            entity_types: Optional list of entity types to filter by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of matching entities
+
+        Raises:
+            RuntimeError: If client is not initialized
+        """
+        if not self.is_initialized or self._graphiti is None:
+            raise RuntimeError("Graphiti client not initialized")
+
+        try:
+            # Build search query with entity type filters
+            search_query = query
+            if entity_types:
+                type_filter = " OR ".join([f"type:{et}" for et in entity_types])
+                search_query = f"({query}) AND ({type_filter})"
+
+            logger.debug(f"Searching entities with query: {search_query}")
+
+            results = await self._graphiti.search(
+                query=search_query,
+                num_results=min(
+                    limit, self.graphiti_config.operational.search_limit_max
+                ),
+            )
+
+            logger.info(f"Entity search returned {len(results)} results")
+            return results
+
+        except Exception as e:
+            logger.error(f"Entity search failed for query '{query}': {e}")
             raise
 
     async def health_check(self) -> Dict[str, Any]:

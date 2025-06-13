@@ -357,10 +357,33 @@ class EntityExtractor:
             reference_time=reference_time or datetime.now(timezone.utc),
         )
 
-        # Get nodes from Graphiti (simplified approach for now)
-        # In a more advanced implementation, we would use Graphiti's specific
-        # entity extraction methods when they become available
-        nodes = await self.graphiti_manager.get_nodes(limit=50)
+        # Wait a moment for Graphiti to process the episode and extract entities
+        await asyncio.sleep(0.5)
+
+        # Retrieve entities from the episode using the new search-based method
+        try:
+            # First try to get entities specifically from this episode
+            entity_type_strings = [et.value for et in self.config.enabled_entity_types]
+            nodes = await self.graphiti_manager.get_entities_from_episode(
+                episode_id, entity_type_strings
+            )
+
+            # If no entities found from episode search, try a broader search with the text content
+            if not nodes:
+                logger.debug(
+                    "No entities found from episode search, trying content-based search"
+                )
+                # Use key terms from the text for search
+                search_terms = self._extract_search_terms(text)
+                nodes = await self.graphiti_manager.search_entities(
+                    query=search_terms, entity_types=entity_type_strings, limit=50
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to retrieve entities from Graphiti: {e}")
+            # Fallback to general node search
+            nodes = await self.graphiti_manager.get_nodes(limit=50)
+
         entities = self._convert_nodes_to_entities(nodes, text)
 
         return ExtractionResult(
@@ -373,8 +396,100 @@ class EntityExtractor:
                     reference_time.isoformat() if reference_time else None
                 ),
                 "graphiti_episode_id": episode_id,
+                "extraction_method": "graphiti_episode",
             },
         )
+
+    def _extract_search_terms(self, text: str, max_terms: int = 5) -> str:
+        """Extract key search terms from text for entity search.
+
+        Args:
+            text: Input text to extract terms from
+            max_terms: Maximum number of terms to extract
+
+        Returns:
+            Space-separated search terms
+        """
+        # Simple keyword extraction - could be enhanced with NLP
+        import re
+
+        # Remove common words and extract meaningful terms
+        words = re.findall(r"\b[A-Za-z]{3,}\b", text.lower())
+
+        # Filter out common stop words
+        stop_words = {
+            "the",
+            "and",
+            "for",
+            "are",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "had",
+            "her",
+            "was",
+            "one",
+            "our",
+            "out",
+            "day",
+            "get",
+            "has",
+            "him",
+            "his",
+            "how",
+            "its",
+            "may",
+            "new",
+            "now",
+            "old",
+            "see",
+            "two",
+            "who",
+            "boy",
+            "did",
+            "she",
+            "use",
+            "way",
+            "will",
+            "with",
+            "this",
+            "that",
+            "have",
+            "from",
+            "they",
+            "know",
+            "want",
+            "been",
+            "good",
+            "much",
+            "some",
+            "time",
+            "very",
+            "when",
+            "come",
+            "here",
+            "just",
+            "like",
+            "long",
+            "make",
+            "many",
+            "over",
+            "such",
+            "take",
+            "than",
+            "them",
+            "well",
+            "were",
+        }
+
+        meaningful_words = [w for w in words if w not in stop_words and len(w) > 3]
+
+        # Take the first max_terms unique words
+        unique_terms = list(dict.fromkeys(meaningful_words))[:max_terms]
+
+        return " ".join(unique_terms) if unique_terms else text[:50]
 
     def _convert_nodes_to_entities(
         self, nodes: List[Any], source_text: str
@@ -392,41 +507,114 @@ class EntityExtractor:
 
         for node in nodes:
             try:
-                # Extract entity information from node
-                entity_name = getattr(node, "name", str(node))
-                entity_type_str = getattr(node, "entity_type", "CONCEPT")
+                # Handle different node types from Graphiti search results
+                # Graphiti search can return different types of objects
 
-                # Map to our EntityType enum
-                try:
-                    entity_type = EntityType(entity_type_str)
-                except ValueError:
-                    entity_type = EntityType.CONCEPT  # Default fallback
+                # Extract basic node information
+                if hasattr(node, "name"):
+                    entity_name = node.name
+                elif hasattr(node, "title"):
+                    entity_name = node.title
+                elif hasattr(node, "content"):
+                    # For episode nodes, extract a meaningful name from content
+                    entity_name = (
+                        str(node.content)[:50] + "..."
+                        if len(str(node.content)) > 50
+                        else str(node.content)
+                    )
+                else:
+                    entity_name = str(node)[:50]
+
+                # Determine entity type
+                entity_type = EntityType.CONCEPT  # Default fallback
+
+                # Try to extract entity type from various possible attributes
+                if hasattr(node, "entity_type"):
+                    try:
+                        entity_type = EntityType(node.entity_type)
+                    except ValueError:
+                        pass
+                elif hasattr(node, "type"):
+                    try:
+                        entity_type = EntityType(node.type)
+                    except ValueError:
+                        pass
+                elif hasattr(node, "labels") and node.labels:
+                    # Neo4j nodes have labels
+                    for label in node.labels:
+                        try:
+                            entity_type = EntityType(label)
+                            break
+                        except ValueError:
+                            continue
 
                 # Check if this entity type is enabled
                 if entity_type not in self.config.enabled_entity_types:
                     continue
 
+                # Extract confidence score
+                confidence = 0.8  # Default confidence
+                if hasattr(node, "confidence"):
+                    confidence = float(node.confidence)
+                elif hasattr(node, "score"):
+                    confidence = float(node.score)
+                elif hasattr(node, "relevance"):
+                    confidence = float(node.relevance)
+
+                # Extract context information
+                context = ""
+                if hasattr(node, "context"):
+                    context = str(node.context)
+                elif hasattr(node, "description"):
+                    context = str(node.description)
+                elif hasattr(node, "content"):
+                    context = str(node.content)[:200]  # Truncate long content
+
+                # Build metadata from available node attributes
+                metadata = {}
+
+                # Common attributes to extract
+                for attr in [
+                    "uuid",
+                    "id",
+                    "created_at",
+                    "updated_at",
+                    "source",
+                    "episode_id",
+                ]:
+                    if hasattr(node, attr):
+                        metadata[attr] = getattr(node, attr)
+
+                # Handle Neo4j specific attributes
+                if hasattr(node, "element_id"):
+                    metadata["neo4j_element_id"] = node.element_id
+                if hasattr(node, "labels"):
+                    metadata["neo4j_labels"] = list(node.labels)
+                if hasattr(node, "properties"):
+                    metadata["properties"] = dict(node.properties)
+
                 # Create ExtractedEntity
                 entity = ExtractedEntity(
                     name=entity_name,
                     entity_type=entity_type,
-                    confidence=getattr(node, "confidence", 0.8),  # Default confidence
-                    context=getattr(node, "context", ""),
-                    metadata={
-                        "node_id": getattr(node, "uuid", None),
-                        "created_at": getattr(node, "created_at", None),
-                        "updated_at": getattr(node, "updated_at", None),
-                    },
+                    confidence=confidence,
+                    context=context,
+                    metadata=metadata,
                 )
 
                 # Apply confidence threshold
                 if entity.confidence >= self.config.confidence_threshold:
                     entities.append(entity)
+                    logger.debug(
+                        f"Extracted entity: {entity.name} ({entity.entity_type.value}) with confidence {entity.confidence}"
+                    )
 
             except Exception as e:
                 logger.warning(f"Failed to convert node to entity: {e}")
+                logger.debug(f"Node attributes: {dir(node)}")
                 continue
 
+        logger.info(f"Successfully converted {len(entities)} nodes to entities")
         return entities
 
     async def _perform_custom_prompt_extraction(
@@ -731,3 +919,62 @@ class EntityExtractor:
             "total_entities_extracted": 0,
         }
         logger.info("Entity extraction statistics reset")
+
+    async def test_integration(self, test_text: Optional[str] = None) -> Dict[str, Any]:
+        """Test the Graphiti integration with a sample text.
+
+        Args:
+            test_text: Optional test text to use for extraction
+
+        Returns:
+            Dictionary containing test results and statistics
+        """
+        if test_text is None:
+            test_text = """
+            Our microservice architecture includes a user authentication service 
+            that connects to a PostgreSQL database. The API endpoints are documented 
+            in our Confluence wiki, and the development team led by John Smith 
+            maintains this critical component.
+            """
+
+        logger.info("Starting Graphiti integration test...")
+
+        try:
+            # Test the extraction process
+            result = await self.extract_entities(
+                text=test_text,
+                source_description="Integration test",
+                use_custom_prompts=False,  # Use default Graphiti extraction
+            )
+
+            test_results = {
+                "success": True,
+                "entities_extracted": len(result.entities),
+                "episode_id": result.episode_id,
+                "processing_time": result.processing_time,
+                "errors": result.errors,
+                "entity_details": [
+                    {
+                        "name": entity.name,
+                        "type": entity.entity_type.value,
+                        "confidence": entity.confidence,
+                    }
+                    for entity in result.entities
+                ],
+                "graphiti_manager_initialized": self.graphiti_manager.is_initialized,
+                "extraction_statistics": self.get_statistics(),
+            }
+
+            logger.info(
+                f"Integration test completed successfully. Extracted {len(result.entities)} entities."
+            )
+            return test_results
+
+        except Exception as e:
+            logger.error(f"Integration test failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "graphiti_manager_initialized": self.graphiti_manager.is_initialized,
+                "extraction_statistics": self.get_statistics(),
+            }
