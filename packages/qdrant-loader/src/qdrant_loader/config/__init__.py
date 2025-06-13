@@ -24,6 +24,7 @@ from .chunking import ChunkingConfig
 
 # Import consolidated configs
 from .global_config import GlobalConfig, SemanticAnalysisConfig
+from .neo4j import Neo4jConfig
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 from .workspace import WorkspaceConfig, get_workspace_env_override
@@ -73,6 +74,7 @@ __all__ = [
     "GitRepoConfig",
     "GlobalConfig",
     "JiraProjectConfig",
+    "Neo4jConfig",
     "PublicDocsSourceConfig",
     "SelectorsConfig",
     "SemanticAnalysisConfig",
@@ -291,6 +293,34 @@ class Settings(BaseSettings):
         if not self.global_config.qdrant:
             raise ValueError("Qdrant configuration is not available")
         return self.global_config.qdrant.collection_name
+
+    @property
+    def neo4j_uri(self) -> str:
+        """Get the Neo4j URI from global configuration."""
+        if not self.global_config.neo4j:
+            raise ValueError("Neo4j configuration is not available")
+        return self.global_config.neo4j.uri
+
+    @property
+    def neo4j_user(self) -> str:
+        """Get the Neo4j user from global configuration."""
+        if not self.global_config.neo4j:
+            raise ValueError("Neo4j configuration is not available")
+        return self.global_config.neo4j.user
+
+    @property
+    def neo4j_password(self) -> str:
+        """Get the Neo4j password from global configuration."""
+        if not self.global_config.neo4j:
+            raise ValueError("Neo4j configuration is not available")
+        return self.global_config.neo4j.password
+
+    @property
+    def neo4j_database(self) -> str:
+        """Get the Neo4j database name from global configuration."""
+        if not self.global_config.neo4j:
+            raise ValueError("Neo4j configuration is not available")
+        return self.global_config.neo4j.database
 
     @property
     def openai_api_key(self) -> str:
