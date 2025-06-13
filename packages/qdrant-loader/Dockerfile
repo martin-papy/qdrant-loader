@@ -24,23 +24,25 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Set working directory
 WORKDIR /app
 
-# Copy pyproject.toml first for dependency caching
+# Copy pyproject.toml and source files first for dependency caching and build
 COPY pyproject.toml ./
+COPY README.md ./
+COPY src/ ./src/
+COPY __init__.py ./
 
 # Install dependencies using local pip cache
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install --upgrade pip && \
     pip install -e .
 
-# Copy source code
-COPY src/ ./src/
-COPY README.md ./
-COPY __init__.py ./
-
 # Download spaCy models with error handling
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python -m spacy download en_core_web_sm || \
     echo "Warning: Could not download spaCy model. Install manually if needed."
+
+# Ensure git is in PATH and set GIT_PYTHON_GIT_EXECUTABLE
+ENV PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+ENV GIT_PYTHON_GIT_EXECUTABLE=/usr/bin/git
 
 # Create non-root user
 RUN groupadd -r qdrant --gid=1000 && \

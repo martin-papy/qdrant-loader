@@ -1,7 +1,7 @@
 # Development override for docker-compose.yml
 # This file provides development-specific configurations including:
-# - Mount entire project including venv for instant development
-# - Use existing local virtual environment inside Docker
+# - Mount source code for instant development
+# - Use container's optimized virtual environment
 # - Development environment variables
 # - Relaxed health checks for faster startup
 
@@ -12,44 +12,40 @@ services:
       context: ./packages/qdrant-loader
       dockerfile: Dockerfile.dev
     volumes:
-      # Mount entire project root (including venv)
-      - .:/workspace:rw
+      # Mount only source code for live editing
+      - ./packages/qdrant-loader/src:/workspace/src:rw
+      - ./packages/qdrant-loader/pyproject.toml:/workspace/pyproject.toml:ro
+      - ./packages/qdrant-loader/README.md:/workspace/README.md:ro
+      - ${USER_DATA_DIR}:/user_data:rw
     working_dir: /workspace
     environment:
-      - PYTHONPATH=/workspace
+      - PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      - PYTHONPATH=/workspace/src
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
       - LOG_LEVEL=DEBUG
-    # Override entrypoint to use local venv
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      "if [ -d venv ]; then 
-         source venv/bin/activate && 
-         cd packages/qdrant-loader && 
-         pip install -e . && 
-         echo 'QDrant Loader installed in development mode' &&
-         tail -f /dev/null
-       else 
-         echo 'No venv found. Run: make setup-dev && make install-dev first'
-         exit 1
-       fi"
+    # Simple command - dependencies already installed in image
+    command:
+      - bash
+      - -c
+      - |
+        echo "Container Python: $$(which python)"
+        echo "Python version: $$(python --version)"
+        echo "Installed packages:"
+        pip list | grep qdrant-loader
+        echo "Starting development mode..."
+        tail -f /dev/null
     depends_on:
       - qdrant
       - neo4j
     healthcheck:
-      test:
-        [
-          "CMD",
-          "bash",
-          "-c",
-          "source /workspace/venv/bin/activate && qdrant-loader --help",
-        ]
+      test: ["CMD", "python", "-c", "import qdrant_loader; print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   # MCP Server - Development Configuration
   mcp-server:
@@ -57,30 +53,32 @@ services:
       context: ./packages/qdrant-loader-mcp-server
       dockerfile: Dockerfile.dev
     volumes:
-      # Mount entire project root (including venv)
-      - .:/workspace:rw
+      # Mount only source code for live editing
+      - ./packages/qdrant-loader-mcp-server/src:/workspace/src:rw
+      - ./packages/qdrant-loader-mcp-server/pyproject.toml:/workspace/pyproject.toml:ro
+      - ./packages/qdrant-loader-mcp-server/README.md:/workspace/README.md:ro
+      - ${USER_DATA_DIR}:/user_data:rw
     working_dir: /workspace
     environment:
-      - PYTHONPATH=/workspace
+      - PATH=/opt/venv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      - PYTHONPATH=/workspace/src
       - QDRANT_URL=http://qdrant:6333
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
       - MCP_SERVER_PORT=${MCP_SERVER_PORT:-3000}
       - LOG_LEVEL=DEBUG
-    # Override entrypoint to use local venv
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      "if [ -d venv ]; then 
-         source venv/bin/activate && 
-         cd packages/qdrant-loader-mcp-server && 
-         pip install -e . && 
-         echo 'MCP Server installed in development mode' &&
-         tail -f /dev/null
-       else 
-         echo 'No venv found. Run: make setup-dev && make install-dev first'
-         exit 1
-       fi"
+    # Simple command - dependencies already installed in image
+    command:
+      - bash
+      - -c
+      - |
+        echo "Container Python: $$(which python)"
+        echo "Python version: $$(python --version)"
+        echo "Installed packages:"
+        pip list | grep qdrant-loader
+        echo "Starting MCP server development mode..."
+        tail -f /dev/null
     depends_on:
       - qdrant
       - neo4j
@@ -88,16 +86,11 @@ services:
       - "3000:3000"
     healthcheck:
       test:
-        [
-          "CMD",
-          "bash",
-          "-c",
-          "source /workspace/venv/bin/activate && mcp-qdrant-loader --help",
-        ]
+        ["CMD", "python", "-c", "import qdrant_loader_mcp_server; print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
 
   # QDrant Vector Database - Development Configuration
   qdrant:

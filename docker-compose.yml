@@ -82,6 +82,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./config:/app/config
+      - ${USER_DATA_DIR}:/user_data:rw
     env_file:
       - .env
     environment:
@@ -100,7 +101,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
     restart: unless-stopped
     networks:
       - qdrant-network
@@ -125,6 +126,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./config:/app/config
+      - ${USER_DATA_DIR}:/user_data:rw
     env_file:
       - .env
     environment:

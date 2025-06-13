@@ -1,5 +1,4 @@
-# Simple development Dockerfile
-# Just provides Python environment - project is mounted from host
+# Modern development Dockerfile with pip cache optimization
 FROM python:3.12-slim
 
 # Install system dependencies
@@ -14,10 +13,26 @@ RUN apt-get update && apt-get install -y \
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    VIRTUAL_ENV="/opt/venv"
+ENV GIT_PYTHON_GIT_EXECUTABLE=/usr/bin/git
+
+# Create virtual environment in container
+RUN python -m venv /opt/venv
 
 # Create working directory
 WORKDIR /workspace
 
-# Default command (will be overridden by docker-compose)
+# Copy all necessary files for editable install
+COPY pyproject.toml ./
+COPY README.md ./
+COPY src/ ./src/
+
+# Install dependencies using cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install -e .
+
+# Default command
 CMD ["/bin/bash"] 
