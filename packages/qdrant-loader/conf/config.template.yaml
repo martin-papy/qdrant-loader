@@ -90,6 +90,50 @@ global_config:
       # API key for LLM service (required when enable_llm_descriptions is True)
       llm_api_key: "${OPENAI_API_KEY}"
 
+  # Neo4j Configuration
+  # Required for Graphiti knowledge graph functionality
+  neo4j:
+    uri: "bolt://localhost:7687"
+    user: "neo4j"
+    password: "${NEO4J_PASSWORD}"
+    database: "neo4j"
+    max_connection_lifetime: 3600
+    max_connection_pool_size: 50
+    connection_acquisition_timeout: 60
+    trust: "TRUST_ALL_CERTIFICATES"
+    encrypted: false
+
+  # Graphiti Knowledge Graph Configuration
+  # Enables advanced knowledge graph capabilities for document relationships
+  graphiti:
+    enabled: true
+    debug_mode: false
+    
+    # LLM Configuration for Graphiti
+    llm:
+      provider: "openai"  # openai, anthropic, etc.
+      model: "gpt-4o-mini"
+      max_tokens: 4000
+      temperature: 0.1
+      # api_key: Set via environment variable GRAPHITI_LLM_API_KEY or OPENAI_API_KEY
+    
+    # Embedder Configuration
+    embedder:
+      provider: "openai"
+      model: "text-embedding-3-small"
+      dimensions: null  # Use model default
+      batch_size: 100
+      # api_key: Set via environment variable GRAPHITI_EMBEDDER_API_KEY or OPENAI_API_KEY
+    
+    # Operational Settings
+    operational:
+      max_episode_length: 10000
+      search_limit_default: 10
+      search_limit_max: 100
+      enable_auto_indexing: true
+      enable_constraints: true
+      timeout_seconds: 30
+
 # Multi-project configuration
 # Define multiple projects, each with their own sources and settings
 # All projects use the global collection_name defined above

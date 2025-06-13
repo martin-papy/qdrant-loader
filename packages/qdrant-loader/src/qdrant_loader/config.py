@@ -1,6 +1,8 @@
 """Configuration management for the application."""
 
 from pydantic import BaseModel, Field
+from .config.neo4j import Neo4jConfig
+from .config.graphiti import GraphitiConfig
 
 
 class SemanticAnalysisConfig(BaseModel):
@@ -35,6 +37,18 @@ class GlobalConfig(BaseModel):
     semantic_analysis: SemanticAnalysisConfig = Field(
         default_factory=SemanticAnalysisConfig,
         description="Semantic analysis configuration",
+    )
+
+    neo4j: Neo4jConfig = Field(
+        default_factory=lambda: Neo4jConfig(
+            uri="bolt://localhost:7687", user="neo4j", password="password"
+        ),
+        description="Neo4j database configuration",
+    )
+
+    graphiti: GraphitiConfig = Field(
+        default_factory=GraphitiConfig,
+        description="Graphiti knowledge graph configuration",
     )
 
 
