@@ -12,7 +12,13 @@ services:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test:
+        [
+          "CMD",
+          "perl",
+          "-e",
+          "use IO::Socket::INET; my $$sock = IO::Socket::INET->new(PeerAddr => 'localhost', PeerPort => 6333, Proto => 'tcp', Timeout => 5) or exit 1; print $$sock \"GET /healthz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\"; my $$response = <$$sock>; exit($$response =~ /200 OK/ ? 0 : 1);",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -97,11 +103,11 @@ services:
       neo4j:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "qdrant-loader", "--help"]
+      test: ["CMD", "python", "-c", "import qdrant_loader; print('OK')"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
     networks:
       - qdrant-network
@@ -119,7 +125,7 @@ services:
     build:
       context: ./packages/qdrant-loader-mcp-server
       dockerfile: Dockerfile
-    container_name: qdrant-loader-mcp
+    container_name: qdrant-loader-mcp-server
     ports:
       - "3000:3000"
     volumes:
@@ -140,7 +146,8 @@ services:
       qdrant-loader:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "mcp-qdrant-loader", "--help"]
+      test:
+        ["CMD", "python", "-c", "import qdrant_loader_mcp_server; print('OK')"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -54,13 +54,13 @@ RUN groupadd -r qdrant --gid=1000 && \
 # Switch to non-root user
 USER qdrant
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD qdrant-loader --help > /dev/null 2>&1 || exit 1
+# Health check - same as docker-compose.yml
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD python -c "import qdrant_loader; print('OK')" || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Set default command
-ENTRYPOINT ["qdrant-loader"]
-CMD ["--help"] 
+# Set default command - keep container running
+ENTRYPOINT ["tail"]
+CMD ["-f", "/dev/null"] 

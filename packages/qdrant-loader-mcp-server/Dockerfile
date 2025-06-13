@@ -24,17 +24,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Set working directory
 WORKDIR /app
 
-# Copy pyproject.toml first for dependency caching
+# Copy pyproject.toml and source files first for dependency caching and build
 COPY pyproject.toml ./
+COPY README.md ./
+COPY src/ ./src/
 
 # Install dependencies using local pip cache
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install --upgrade pip && \
     pip install -e .
 
-# Copy source code
-COPY src/ ./src/
-COPY README.md ./
+# Ensure git is in PATH and set GIT_PYTHON_GIT_EXECUTABLE
+ENV PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+ENV GIT_PYTHON_GIT_EXECUTABLE=/usr/bin/git
 
 # Create non-root user
 RUN groupadd -r mcpserver --gid=1001 && \
@@ -46,13 +48,13 @@ RUN groupadd -r mcpserver --gid=1001 && \
 # Switch to non-root user
 USER mcpserver
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD mcp-qdrant-loader --help > /dev/null 2>&1 || exit 1
+# Health check - same as docker-compose.yml
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import qdrant_loader_mcp_server; print('OK')" || exit 1
 
 # Expose port
 EXPOSE 3000
 
-# Set default command
-ENTRYPOINT ["mcp-qdrant-loader"]
-CMD ["--help"] 
+# Set default command - keep container running
+ENTRYPOINT ["tail"]
+CMD ["-f", "/dev/null"] 

@@ -103,7 +103,7 @@ docker-shell-loader: ## Open bash shell in qdrant-loader container
 	docker exec -it qdrant-loader /bin/bash
 
 docker-shell-mcp: ## Open bash shell in mcp-server container
-	docker exec -it qdrant-loader-mcp /bin/bash
+	docker exec -it qdrant-loader-mcp-server /bin/bash
 
 docker-shell-neo4j: ## Open bash shell in neo4j container
 	docker exec -it neo4j-db /bin/bash
@@ -115,13 +115,13 @@ docker-exec-loader: ## Execute command in qdrant-loader container (usage: make d
 	docker exec -it qdrant-loader $(CMD)
 
 docker-exec-mcp: ## Execute command in mcp-server container (usage: make docker-exec-mcp CMD="your command")
-	docker exec -it qdrant-loader-mcp $(CMD)
+	docker exec -it qdrant-loader-mcp-server $(CMD)
 
 docker-logs-loader: ## Show logs for qdrant-loader container only
 	docker-compose logs -f qdrant-loader
 
 docker-logs-mcp: ## Show logs for mcp-server container only
-	docker-compose logs -f mcp-server
+	docker-compose logs -f qdrant-loader-mcp-server
 
 docker-logs-neo4j: ## Show logs for neo4j container only
 	docker-compose logs -f neo4j

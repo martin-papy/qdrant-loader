@@ -95,7 +95,13 @@ services:
   # QDrant Vector Database - Development Configuration
   qdrant:
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test:
+        [
+          "CMD",
+          "perl",
+          "-e",
+          "use IO::Socket::INET; my $$sock = IO::Socket::INET->new(PeerAddr => 'localhost', PeerPort => 6333, Proto => 'tcp', Timeout => 5) or exit 1; print $$sock \"GET /healthz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\"; my $$response = <$$sock>; exit($$response =~ /200 OK/ ? 0 : 1);",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3
