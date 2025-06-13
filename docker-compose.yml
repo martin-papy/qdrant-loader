@@ -47,14 +47,16 @@ services:
       - neo4j_logs:/logs
       - neo4j_import:/var/lib/neo4j/import
       - neo4j_plugins:/plugins
+    env_file:
+      - .env
     environment:
-      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-secure_password_2024}
+      - NEO4J_AUTH=${DOCKER_NEO4J_USER:-neo4j}/${DOCKER_NEO4J_PASSWORD:-secure_password_2024}
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
       - NEO4J_dbms_security_procedures_allowlist=apoc.*
-      - NEO4J_server_memory_heap_initial__size=${NEO4J_HEAP_INITIAL:-512m}
-      - NEO4J_server_memory_heap_max__size=${NEO4J_HEAP_MAX:-2G}
-      - NEO4J_server_memory_pagecache_size=${NEO4J_PAGECACHE:-1G}
+      - NEO4J_server_memory_heap_initial__size=${DOCKER_NEO4J_HEAP_INITIAL:-512m}
+      - NEO4J_server_memory_heap_max__size=${DOCKER_NEO4J_HEAP_MAX:-2G}
+      - NEO4J_server_memory_pagecache_size=${DOCKER_NEO4J_PAGECACHE:-2G}
     healthcheck:
       test:
         [
@@ -99,7 +101,7 @@ services:
       - .env
     environment:
       - QDRANT_URL=http://qdrant:6333
-      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_URI=${DOCKER_NEO4J_URI:-bolt://neo4j:7687}
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-secure_password_2024}
       - PYTHONPATH=/app
@@ -143,7 +145,7 @@ services:
       - .env
     environment:
       - QDRANT_URL=http://qdrant:6333
-      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_URI=${DOCKER_NEO4J_URI:-bolt://neo4j:7687}
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-secure_password_2024}
       - MCP_SERVER_PORT=${MCP_SERVER_PORT:-3000}
