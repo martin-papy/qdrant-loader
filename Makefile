@@ -23,17 +23,24 @@ setup-dev: ## Set up development environment
 	@echo "Then run: make install-dev"
 
 # Testing
-test: ## Run all tests
-	pytest packages/
+test-all: ## Run all tests
+	pytest tests/ -v
+	cd packages/qdrant-loader && pytest tests/ -v
+	cd packages/qdrant-loader-mcp-server && pytest tests/ -v
 
 test-loader: ## Run tests for qdrant-loader package only
-	pytest packages/qdrant-loader/tests/
+	cd packages/qdrant-loader && pytest tests/ -v
 
 test-mcp: ## Run tests for mcp-server package only
-	pytest packages/qdrant-loader-mcp-server/tests/
+	cd packages/qdrant-loader-mcp-server && pytest tests/ -v
+
+test-web: ## Run tests for website only
+	pytest tests/ -v
 
 test-coverage: ## Run tests with coverage report
-	pytest packages/ --cov=packages --cov-report=html --cov-report=term-missing
+	pytest tests/ --cov=packages --cov-report=html --cov-report=term-missing
+	cd packages/qdrant-loader && pytest tests/ --cov=qdrant_loader --cov-report=html --cov-report=term-missing
+	cd packages/qdrant-loader-mcp-server && pytest tests/ --cov=qdrant_loader_mcp_server --cov-report=html --cov-report=term-missing
 
 # Code quality
 lint: ## Run linting on all packages

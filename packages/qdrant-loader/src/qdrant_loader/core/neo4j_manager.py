@@ -4,15 +4,234 @@ This module provides a manager class for Neo4j database operations,
 including connection management and basic graph operations.
 """
 
-from typing import Any, Dict, List, Optional, cast
+import time
+import random
+from functools import wraps
+from typing import Any, Dict, List, Optional, cast, Callable, TypeVar
 
 from neo4j import GraphDatabase, Driver, Session
-from neo4j.exceptions import ServiceUnavailable, AuthError, ConfigurationError
+from neo4j.exceptions import (
+    ServiceUnavailable,
+    AuthError,
+    ConfigurationError,
+    TransientError,
+    DatabaseError,
+    ClientError,
+    SessionExpired,
+    TransactionError,
+)
 
 from ..config import Neo4jConfig
 from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
+
+# Type variable for retry decorator
+T = TypeVar("T")
+
+
+def retry_on_transient_failure(
+    max_retries: Optional[int] = None,
+    initial_delay: Optional[float] = None,
+    max_delay: Optional[float] = None,
+    backoff_multiplier: Optional[float] = None,
+    jitter_factor: Optional[float] = None,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """Decorator to retry operations on transient failures with exponential backoff and jitter.
+
+    Args:
+        max_retries: Maximum number of retry attempts (uses config default if None)
+        initial_delay: Initial delay between retries in seconds (uses config default if None)
+        max_delay: Maximum delay between retries in seconds (uses config default if None)
+        backoff_multiplier: Multiplier for exponential backoff (uses config default if None)
+        jitter_factor: Jitter factor for randomizing delays (uses config default if None)
+
+    Returns:
+        Decorated function with retry logic
+    """
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(self, *args, **kwargs) -> T:
+            # Use instance config values as defaults
+            config = getattr(self, "config", None)
+            if config is None:
+                raise RuntimeError(
+                    "Retry decorator requires Neo4jManager instance with config"
+                )
+
+            # Calculate retry parameters from config
+            max_retry_time = config.max_retry_time
+            retry_initial_delay = initial_delay or config.initial_retry_delay
+            retry_max_delay = max_delay or min(
+                max_retry_time / 4, 30.0
+            )  # Cap at 30s or 1/4 of max time
+            retry_multiplier = backoff_multiplier or config.retry_delay_multiplier
+            retry_jitter = jitter_factor or config.retry_delay_jitter_factor
+
+            # Calculate max retries based on time budget if not specified
+            if max_retries is None:
+                # Estimate max retries based on time budget and delay progression
+                estimated_retries = 0
+                total_time = 0
+                delay = retry_initial_delay
+                while (
+                    total_time < max_retry_time and estimated_retries < 10
+                ):  # Cap at 10 retries
+                    total_time += delay
+                    delay = min(delay * retry_multiplier, retry_max_delay)
+                    estimated_retries += 1
+                retry_attempts = max(1, estimated_retries)
+            else:
+                retry_attempts = max_retries
+
+            last_exception: Optional[Exception] = None
+            start_time = time.time()
+
+            for attempt in range(retry_attempts + 1):  # +1 for initial attempt
+                try:
+                    return func(self, *args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+
+                    # Check if we should retry this exception
+                    if not _is_retryable_exception(e):
+                        logger.debug(
+                            f"Non-retryable exception in {func.__name__}",
+                            extra={"error": str(e), "exception_type": type(e).__name__},
+                        )
+                        raise
+
+                    # Check if we've exceeded time budget
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time >= max_retry_time:
+                        logger.warning(
+                            f"Retry time budget exceeded for {func.__name__}",
+                            extra={
+                                "elapsed_time": elapsed_time,
+                                "max_retry_time": max_retry_time,
+                                "attempts": attempt + 1,
+                            },
+                        )
+                        break
+
+                    # Don't sleep after the last attempt
+                    if attempt < retry_attempts:
+                        # Calculate delay with exponential backoff and jitter
+                        base_delay = retry_initial_delay * (retry_multiplier**attempt)
+                        capped_delay = min(base_delay, retry_max_delay)
+
+                        # Add jitter to prevent thundering herd
+                        jitter = (
+                            random.uniform(-retry_jitter, retry_jitter) * capped_delay
+                        )
+                        actual_delay = max(
+                            0.1, capped_delay + jitter
+                        )  # Minimum 100ms delay
+
+                        logger.warning(
+                            f"Transient failure in {func.__name__}, retrying",
+                            extra={
+                                "error": str(e),
+                                "exception_type": type(e).__name__,
+                                "attempt": attempt + 1,
+                                "max_attempts": retry_attempts + 1,
+                                "delay": actual_delay,
+                                "elapsed_time": elapsed_time,
+                            },
+                        )
+
+                        time.sleep(actual_delay)
+
+            # All retries exhausted - last_exception should never be None here
+            if last_exception is None:
+                raise RuntimeError(
+                    f"Unexpected error: no exception recorded in {func.__name__}"
+                )
+
+            logger.error(
+                f"All retry attempts exhausted for {func.__name__}",
+                extra={
+                    "final_error": str(last_exception),
+                    "exception_type": type(last_exception).__name__,
+                    "total_attempts": retry_attempts + 1,
+                    "total_time": time.time() - start_time,
+                },
+            )
+            raise last_exception
+
+        return wrapper
+
+    return decorator
+
+
+def _is_retryable_exception(exception: Exception) -> bool:
+    """Determine if an exception is retryable.
+
+    Args:
+        exception: The exception to check
+
+    Returns:
+        True if the exception is retryable, False otherwise
+    """
+    # Neo4j transient errors are always retryable
+    if isinstance(exception, TransientError):
+        return True
+
+    # Service unavailable is retryable
+    if isinstance(exception, ServiceUnavailable):
+        return True
+
+    # Session expired is retryable
+    if isinstance(exception, SessionExpired):
+        return True
+
+    # Some transaction errors are retryable
+    if isinstance(exception, TransactionError):
+        error_msg = str(exception).lower()
+        retryable_transaction_errors = [
+            "deadlock",
+            "lock",
+            "timeout",
+            "connection",
+            "network",
+            "temporary",
+        ]
+        return any(keyword in error_msg for keyword in retryable_transaction_errors)
+
+    # Some database errors are retryable
+    if isinstance(exception, DatabaseError):
+        error_msg = str(exception).lower()
+        retryable_db_errors = [
+            "deadlock",
+            "lock",
+            "timeout",
+            "connection",
+            "network",
+            "temporary",
+            "unavailable",
+        ]
+        return any(keyword in error_msg for keyword in retryable_db_errors)
+
+    # Authentication and configuration errors are not retryable
+    if isinstance(exception, (AuthError, ConfigurationError, ClientError)):
+        return False
+
+    # For generic exceptions, check the error message for network-related issues
+    error_msg = str(exception).lower()
+    retryable_keywords = [
+        "connection",
+        "network",
+        "timeout",
+        "temporary",
+        "unavailable",
+        "refused",
+        "reset",
+        "broken pipe",
+        "socket",
+    ]
+
+    return any(keyword in error_msg for keyword in retryable_keywords)
 
 
 class Neo4jManager:
@@ -37,6 +256,7 @@ class Neo4jManager:
         """Context manager exit."""
         self.close()
 
+    @retry_on_transient_failure()
     def connect(self) -> None:
         """Establish connection to Neo4j database."""
         if self._driver is not None:
@@ -75,17 +295,33 @@ class Neo4jManager:
 
         except AuthError as e:
             logger.error("Neo4j authentication failed", extra={"error": str(e)})
-            raise
-        except ServiceUnavailable as e:
-            logger.error("Neo4j service unavailable", extra={"error": str(e)})
+            # Clean up driver on auth failure
+            if self._driver is not None:
+                self._driver.close()
+                self._driver = None
             raise
         except ConfigurationError as e:
             logger.error("Neo4j configuration error", extra={"error": str(e)})
+            # Clean up driver on config failure
+            if self._driver is not None:
+                self._driver.close()
+                self._driver = None
+            raise
+        except ServiceUnavailable as e:
+            logger.error("Neo4j service unavailable", extra={"error": str(e)})
+            # Clean up driver on service unavailable (for retry)
+            if self._driver is not None:
+                self._driver.close()
+                self._driver = None
             raise
         except Exception as e:
             logger.error(
                 "Unexpected error connecting to Neo4j", extra={"error": str(e)}
             )
+            # Clean up driver on any other failure
+            if self._driver is not None:
+                self._driver.close()
+                self._driver = None
             raise
 
     def close(self) -> None:
@@ -146,6 +382,7 @@ class Neo4jManager:
 
         return self._driver.session(**session_config)  # type: ignore
 
+    @retry_on_transient_failure()
     def execute_query(
         self,
         query: str,
@@ -192,6 +429,7 @@ class Neo4jManager:
             )
             raise
 
+    @retry_on_transient_failure()
     def execute_write_transaction(
         self,
         query: str,
@@ -230,6 +468,7 @@ class Neo4jManager:
             )
             raise
 
+    @retry_on_transient_failure()
     def execute_read_transaction(
         self,
         query: str,
@@ -268,6 +507,7 @@ class Neo4jManager:
             )
             raise
 
+    @retry_on_transient_failure()
     def test_connection(self) -> bool:
         """Test the Neo4j connection.
 
