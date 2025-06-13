@@ -3,7 +3,7 @@
 This module defines the Neo4j-specific configuration settings.
 """
 
-from typing import Optional
+from typing import Optional, Union, Any
 from pydantic import Field
 
 from qdrant_loader.config.base import BaseConfig
@@ -17,8 +17,9 @@ class Neo4jConfig(BaseConfig):
     password: str = Field(..., description="Neo4j password")
     database: str = Field(default="neo4j", description="Neo4j database name")
     encrypted: bool = Field(default=True, description="Use encrypted connection")
-    trust: str = Field(
-        default="TRUST_SYSTEM_CA_SIGNED_CERTIFICATES", description="Trust strategy"
+    trusted_certificates: str = Field(
+        default="TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+        description="Trust strategy (replaces deprecated 'trust')",
     )
     max_connection_lifetime: int = Field(
         default=3600, description="Max connection lifetime in seconds"
@@ -65,7 +66,7 @@ class Neo4jConfig(BaseConfig):
             "password": self.password,
             "database": self.database,
             "encrypted": self.encrypted,
-            "trust": self.trust,
+            "trusted_certificates": self.trusted_certificates,
             "max_connection_lifetime": self.max_connection_lifetime,
             "max_connection_pool_size": self.max_connection_pool_size,
             "connection_acquisition_timeout": self.connection_acquisition_timeout,
@@ -96,7 +97,7 @@ class Neo4jConfig(BaseConfig):
         # encryption is handled by the URI scheme itself
         if self.uri.startswith(("bolt://", "neo4j://")):
             config["encrypted"] = self.encrypted
-            config["trust"] = self.trust
+            config["trusted_certificates"] = self.trusted_certificates
 
         # Add Enterprise-specific routing configuration
         if self.routing:

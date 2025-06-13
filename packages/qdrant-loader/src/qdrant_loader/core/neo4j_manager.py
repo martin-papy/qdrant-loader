@@ -269,16 +269,26 @@ class Neo4jManager:
             # Get driver configuration from config
             driver_config = self.config.get_driver_config()
 
-            # Validate trust parameter
-            trust_value = driver_config.get(
-                "trust", "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES"
-            )
-            if trust_value not in [
-                "TRUST_ALL_CERTIFICATES",
-                "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
-            ]:
-                trust_value = "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES"
-                driver_config["trust"] = trust_value
+            # Handle trusted_certificates parameter (replaces deprecated trust)
+            trusted_certs = driver_config.get("trusted_certificates")
+            if trusted_certs and isinstance(trusted_certs, str):
+                # Convert string values to proper Neo4j objects
+                if trusted_certs == "TRUST_ALL_CERTIFICATES":
+                    try:
+                        from neo4j import TrustAll
+
+                        driver_config["trusted_certificates"] = TrustAll()
+                    except ImportError:
+                        # Fallback for older driver versions
+                        driver_config["trust"] = trusted_certs
+                elif trusted_certs == "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES":
+                    try:
+                        from neo4j import TrustSystemCAs
+
+                        driver_config["trusted_certificates"] = TrustSystemCAs()
+                    except ImportError:
+                        # Fallback for older driver versions
+                        driver_config["trust"] = trusted_certs
 
             # Create driver with configuration
             self._driver = GraphDatabase.driver(
