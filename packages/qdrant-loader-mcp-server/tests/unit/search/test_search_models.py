@@ -229,13 +229,13 @@ class TestSearchResult:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="document.pd",
-            original_filename="requirements.pd",
+            source_title="document.pdf",
+            original_filename="requirements.pdf",
             mime_type=None,
         )
 
         file_type = result.get_file_type()
-        assert file_type == "pd"
+        assert file_type == "pdf"
 
     def test_get_file_type_from_filename_various_extensions(self):
         """Test file type extraction for various file extensions."""
@@ -319,7 +319,7 @@ class TestSearchResult:
         )
 
         file_type = result.get_file_type()
-        assert file_type == "pd"  # Should be lowercase
+        assert file_type == "pdf"  # Should be lowercase
 
     def test_get_file_type_no_filename_no_mime(self):
         """Test file type extraction when both filename and MIME type are None."""

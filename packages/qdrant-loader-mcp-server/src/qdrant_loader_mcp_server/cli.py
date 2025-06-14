@@ -62,8 +62,8 @@ def _setup_logging(log_level: str) -> None:
             LoggingConfig.setup(level=log_level.upper(), format="console")
         else:
             LoggingConfig.setup(level=log_level.upper(), format="json")
-    except Exception:
-        print("Failed to setup logging: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Failed to setup logging: {e}", file=sys.stderr)
 
 
 async def read_stdin():

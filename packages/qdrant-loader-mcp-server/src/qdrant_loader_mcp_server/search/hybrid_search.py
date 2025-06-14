@@ -121,7 +121,7 @@ class HybridSearchEngine:
         for key, expansions in self.query_expansions.items():
             if key.lower() in lower_query:
                 expansion_terms = " ".join(expansions)
-                expanded_query = "{query} {expansion_terms}"
+                expanded_query = f"{query} {expansion_terms}"
                 self.logger.debug(
                     "Expanded query",
                     original_query=query,
@@ -457,16 +457,16 @@ class HybridSearchEngine:
             context_parts = []
 
             if metadata.get("breadcrumb_text"):
-                context_parts.append("Path: {metadata.get('breadcrumb_text')}")
+                context_parts.append(f"Path: {metadata.get('breadcrumb_text')}")
 
             if metadata.get("depth") is not None:
-                context_parts.append("Depth: {metadata.get('depth')}")
+                context_parts.append(f"Depth: {metadata.get('depth')}")
 
             if (
                 hierarchy_info["children_count"] is not None
                 and hierarchy_info["children_count"] > 0
             ):
-                context_parts.append("Children: {hierarchy_info['children_count']}")
+                context_parts.append(f"Children: {hierarchy_info['children_count']}")
 
             if context_parts:
                 hierarchy_info["hierarchy_context"] = " | ".join(context_parts)
@@ -490,26 +490,26 @@ class HybridSearchEngine:
             context_parts = []
 
             if attachment_info["original_filename"]:
-                context_parts.append("File: {attachment_info['original_filename']}")
+                context_parts.append(f"File: {attachment_info['original_filename']}")
 
             if attachment_info["file_size"]:
                 # Convert bytes to human readable format
                 size = attachment_info["file_size"]
                 if size < 1024:
-                    size_str = "{size} B"
+                    size_str = f"{size} B"
                 elif size < 1024 * 1024:
-                    size_str = "{size / 1024:.1f} KB"
+                    size_str = f"{size / 1024:.1f} KB"
                 elif size < 1024 * 1024 * 1024:
-                    size_str = "{size / (1024 * 1024):.1f} MB"
+                    size_str = f"{size / (1024 * 1024):.1f} MB"
                 else:
-                    size_str = "{size / (1024 * 1024 * 1024):.1f} GB"
-                context_parts.append("Size: {size_str}")
+                    size_str = f"{size / (1024 * 1024 * 1024):.1f} GB"
+                context_parts.append(f"Size: {size_str}")
 
             if attachment_info["mime_type"]:
-                context_parts.append("Type: {attachment_info['mime_type']}")
+                context_parts.append(f"Type: {attachment_info['mime_type']}")
 
             if attachment_info["attachment_author"]:
-                context_parts.append("Author: {attachment_info['attachment_author']}")
+                context_parts.append(f"Author: {attachment_info['attachment_author']}")
 
             if context_parts:
                 attachment_info["attachment_context"] = " | ".join(context_parts)

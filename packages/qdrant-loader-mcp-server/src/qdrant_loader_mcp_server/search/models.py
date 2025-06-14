@@ -42,7 +42,7 @@ class SearchResult(BaseModel):
     def get_display_title(self) -> str:
         """Get the display title with hierarchy context if available."""
         if self.breadcrumb_text and self.source_type == "confluence":
-            return "{self.source_title} ({self.breadcrumb_text})"
+            return f"{self.source_title} ({self.breadcrumb_text})"
         return self.source_title
 
     def get_project_info(self) -> str | None:
@@ -50,11 +50,11 @@ class SearchResult(BaseModel):
         if not self.project_id:
             return None
 
-        project_info = "Project: {self.project_name or self.project_id}"
+        project_info = f"Project: {self.project_name or self.project_id}"
         if self.project_description:
-            project_info += " - {self.project_description}"
+            project_info += f" - {self.project_description}"
         if self.collection_name:
-            project_info += " (Collection: {self.collection_name})"
+            project_info += f" (Collection: {self.collection_name})"
         return project_info
 
     def get_hierarchy_info(self) -> str | None:

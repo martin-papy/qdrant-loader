@@ -79,16 +79,16 @@ def mock_search_results():
     result3.file_size = 2048000  # 2MB
     result3.attachment_author = "project.manager@company.com"
     result3.parent_document_title = "Project Planning"
-    result3.original_filename = "requirements.pd"
+    result3.original_filename = "requirements.pdf"
     result3.attachment_context = (
-        "File: requirements.pdf | Size: 2.0 MB | Type: application/pd"
+        "File: requirements.pdf | Size: 2.0 MB | Type: application/pdf"
     )
-    result3.source_url = "https://docs.company.com/attachments/req.pd"
+    result3.source_url = "https://docs.company.com/attachments/req.pdf"
     result3.file_path = None
     result3.repo_name = None
     result3.is_root_document.return_value = False
     result3.has_children.return_value = False
-    result3.get_file_type.return_value = "pd"
+    result3.get_file_type.return_value = "pdf"
     results.append(result3)
 
     # Git repository result (non-Confluence)
@@ -255,7 +255,7 @@ class TestAttachmentFilters:
         # Should only return attachment results
         assert len(filtered) == 1
         assert filtered[0].is_attachment
-        assert filtered[0].original_filename == "requirements.pd"
+        assert filtered[0].original_filename == "requirements.pdf"
 
     def test_apply_attachment_filters_parent_document_title(
         self, mcp_handler, mock_search_results
@@ -272,14 +272,14 @@ class TestAttachmentFilters:
 
     def test_apply_attachment_filters_file_type(self, mcp_handler, mock_search_results):
         """Test filtering by file type."""
-        attachment_filter = {"file_type": "pd"}
+        attachment_filter = {"file_type": "pdf"}
         filtered = mcp_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
 
         # Should only return PDF files
         assert len(filtered) == 1
-        assert filtered[0].get_file_type() == "pd"
+        assert filtered[0].get_file_type() == "pdf"
 
     def test_apply_attachment_filters_file_size_min(
         self, mcp_handler, mock_search_results
@@ -350,7 +350,7 @@ class TestAttachmentFilters:
 
         # Should contain attachment indicators and information
         assert "📎" in formatted
-        assert "requirements.pd" in formatted
+        assert "requirements.pdf" in formatted
         assert "Score:" in formatted
         assert "Project Planning" in formatted
         assert "📄 Attached to:" in formatted

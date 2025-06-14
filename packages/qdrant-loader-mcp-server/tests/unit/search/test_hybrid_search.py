@@ -493,15 +493,15 @@ def test_extract_metadata_info_attachment(hybrid_search):
     assert info["parent_document_id"] == "doc-456"
     assert info["parent_document_title"] == "Project Plan"
     assert info["attachment_id"] == "att-789"
-    assert info["original_filename"] == "requirements.pd"
+    assert info["original_filename"] == "requirements.pdf"
     assert info["file_size"] == 2048000
-    assert info["mime_type"] == "application/pd"
+    assert info["mime_type"] == "application/pdf"
     assert info["attachment_author"] == "john.doe@company.com"
 
     # Check attachment context formatting
-    assert "File: requirements.pd" in info["attachment_context"]
+    assert "File: requirements.pdf" in info["attachment_context"]
     assert "Size: 2.0 MB" in info["attachment_context"]
-    assert "Type: application/pd" in info["attachment_context"]
+    assert "Type: application/pdf" in info["attachment_context"]
     assert "Author: john.doe@company.com" in info["attachment_context"]
 
 
