@@ -913,16 +913,24 @@ class TemporalManager:
 
         current_entities = 0
         current_relationships = 0
+        entity_types = {}
+        relationship_types = {}
 
         for versions in self._entities.values():
             for entity in versions:
                 if entity.is_currently_valid():
                     current_entities += 1
+                    entity_type = entity.entity_type.value
+                    entity_types[entity_type] = entity_types.get(entity_type, 0) + 1
 
         for versions in self._relationships.values():
             for relationship in versions:
                 if relationship.is_currently_valid():
                     current_relationships += 1
+                    rel_type = relationship.relationship_type.value
+                    relationship_types[rel_type] = (
+                        relationship_types.get(rel_type, 0) + 1
+                    )
 
         return {
             "total_entities": total_entities,
@@ -938,6 +946,8 @@ class TemporalManager:
             ),
             "unique_entity_uuids": len(self._entities),
             "unique_relationship_uuids": len(self._relationships),
+            "entity_types": entity_types,
+            "relationship_types": relationship_types,
         }
 
     # Advanced Temporal Query Capabilities
@@ -1020,28 +1030,28 @@ class TemporalManager:
 
         # Calculate aggregates
         if aggregation_type == "count":
-            results["entities"]["count"] = entity_count
-            results["relationships"]["count"] = relationship_count
+            results["entity_count"] = entity_count
+            results["relationship_count"] = relationship_count
         elif aggregation_type == "avg_confidence":
-            results["entities"]["avg_confidence"] = (
+            results["entity_avg_confidence"] = (
                 entity_confidence_sum / entity_confidence_count
                 if entity_confidence_count > 0
                 else 0.0
             )
-            results["relationships"]["avg_confidence"] = (
+            results["relationship_avg_confidence"] = (
                 relationship_confidence_sum / relationship_confidence_count
                 if relationship_confidence_count > 0
                 else 0.0
             )
         elif aggregation_type == "all":
-            results["entities"]["count"] = entity_count
-            results["entities"]["avg_confidence"] = (
+            results["entity_count"] = entity_count
+            results["entity_avg_confidence"] = (
                 entity_confidence_sum / entity_confidence_count
                 if entity_confidence_count > 0
                 else 0.0
             )
-            results["relationships"]["count"] = relationship_count
-            results["relationships"]["avg_confidence"] = (
+            results["relationship_count"] = relationship_count
+            results["relationship_avg_confidence"] = (
                 relationship_confidence_sum / relationship_confidence_count
                 if relationship_confidence_count > 0
                 else 0.0
@@ -1104,8 +1114,9 @@ class TemporalManager:
             "query_time": query_time.isoformat(),
             "max_depth": max_depth,
             "paths": [],
-            "entities_found": set(),
+            "entities_found": [],
             "relationships_found": [],
+            "relationships_traversed": 0,
         }
 
         def _traverse_recursive(
@@ -1115,7 +1126,7 @@ class TemporalManager:
                 return
 
             visited.add(current_entity)
-            traversal_results["entities_found"].add(current_entity)
+            traversal_results["entities_found"].append(current_entity)
 
             # Find all relationships from current entity
             for rel_uuid, versions in self._relationships.items():
@@ -1146,15 +1157,19 @@ class TemporalManager:
                                 "path_depth": depth,
                             }
                         )
+                        traversal_results["relationships_traversed"] += 1
 
                         if depth < max_depth:
                             traversal_results["paths"].append(new_path)
                             _traverse_recursive(target, new_path, depth + 1)
 
+        # Start traversal
         _traverse_recursive(start_entity_name, [start_entity_name], 0)
 
-        # Convert set to list for JSON serialization
-        traversal_results["entities_found"] = list(traversal_results["entities_found"])
+        # Convert entities_found set to list and remove duplicates
+        traversal_results["entities_found"] = list(
+            set(traversal_results["entities_found"])
+        )
 
         return traversal_results
 
@@ -1243,25 +1258,25 @@ class TemporalManager:
 
     # Enhanced Versioning Capabilities
 
-    def validate_version_chains(self) -> dict[str, list[str]]:
+    def validate_version_chains(self) -> dict[str, dict[str, list[str]]]:
         """Validate version chains for all entities and relationships.
 
         Returns:
-            Dictionary with validation errors by UUID
+            Dictionary with validation errors by type and UUID
         """
-        errors = {}
+        errors = {"entities": {}, "relationships": {}}
 
         # Validate entity version chains
         for entity_uuid, versions in self._entities.items():
             chain_errors = self._validate_entity_version_chain(versions)
             if chain_errors:
-                errors[f"entity_{entity_uuid}"] = chain_errors
+                errors["entities"][entity_uuid] = chain_errors
 
         # Validate relationship version chains
         for rel_uuid, versions in self._relationships.items():
             chain_errors = self._validate_relationship_version_chain(versions)
             if chain_errors:
-                errors[f"relationship_{rel_uuid}"] = chain_errors
+                errors["relationships"][rel_uuid] = chain_errors
 
         return errors
 
@@ -1359,7 +1374,7 @@ class TemporalManager:
                 repairs["relationships"] += 1
 
         logger.info(
-            "Repaired {repairs['entities']} entity chains and {repairs['relationships']} relationship chains"
+            f"Repaired {repairs['entities']} entity chains and {repairs['relationships']} relationship chains"
         )
         return repairs
 
@@ -1622,34 +1637,34 @@ class TemporalManager:
             "entity_uuid": entity_uuid,
             "version1": version1,
             "version2": version2,
-            "differences": {
+            "fields": {
                 "name": {
                     "v1": entity1.name,
                     "v2": entity2.name,
                     "changed": entity1.name != entity2.name,
                 },
-                "entity_typef": {
+                "entity_type": {
                     "v1": entity1.entity_type.value,
                     "v2": entity2.entity_type.value,
                     "changed": entity1.entity_type != entity2.entity_type,
                 },
-                "confidencef": {
+                "confidence": {
                     "v1": entity1.confidence,
                     "v2": entity2.confidence,
                     "changed": abs(entity1.confidence - entity2.confidence) > 0.001,
                 },
-                "contextf": {
+                "context": {
                     "v1": entity1.context,
                     "v2": entity2.context,
                     "changed": entity1.context != entity2.context,
                 },
-                "metadataf": {
+                "metadata": {
                     "v1": entity1.metadata,
                     "v2": entity2.metadata,
                     "changed": entity1.metadata != entity2.metadata,
                 },
             },
-            "temporal_infof": {
+            "temporal_info": {
                 "v1": entity1.temporal_info.to_dict(),
                 "v2": entity2.temporal_info.to_dict(),
             },
@@ -1753,7 +1768,7 @@ class TemporalManager:
             target_version = operation.get("target_version")
 
             if not entity_uuid or target_version is None:
-                results["failedf"].append(
+                results["failed"].append(
                     {
                         "entity_uuid": entity_uuid,
                         "error": "Missing entity_uuid or target_version",
@@ -1766,7 +1781,7 @@ class TemporalManager:
                     entity_uuid, target_version
                 )
                 if rolled_back:
-                    results["successfulf"].append(
+                    results["successful"].append(
                         {
                             "entity_uuid": entity_uuid,
                             "target_version": target_version,
@@ -1774,14 +1789,14 @@ class TemporalManager:
                         }
                     )
                 else:
-                    results["failedf"].append(
+                    results["failed"].append(
                         {
                             "entity_uuid": entity_uuid,
                             "error": "Rollback failed - entity or version not found",
                         }
                     )
             except Exception as e:
-                results["failedf"].append(
+                results["failed"].append(
                     {
                         "entity_uuid": entity_uuid,
                         "error": str(e),
@@ -1789,7 +1804,7 @@ class TemporalManager:
                 )
 
         logger.info(
-            "Bulk rollback completed: {len(results['successful'])} successful, {len(results['failed'])} failed"
+            f"Bulk rollback completed: {len(results['successful'])} successful, {len(results['failed'])} failed"
         )
         return results
 
@@ -1807,7 +1822,7 @@ class TemporalManager:
         """
         max_versions = retention_policy.get("max_versions", 10)
         max_age_days = retention_policy.get("max_age_days", 365)
-        keep_milestones = retention_policy.get("keep_milestonesf", True)
+        keep_milestones = retention_policy.get("keep_milestones", True)
 
         cutoff_date = datetime.now(UTC) - timedelta(days=max_age_days)
         pruned = {"entities": 0, "relationships": 0}
@@ -1829,7 +1844,7 @@ class TemporalManager:
             pruned["relationships"] += original_count - len(versions)
 
         logger.info(
-            "Pruned {pruned['entities']} entity versions and {pruned['relationships']} relationship versions"
+            f"Pruned {pruned['entities']} entity versions and {pruned['relationships']} relationship versions"
         )
         return pruned
 
@@ -1851,7 +1866,7 @@ class TemporalManager:
         Returns:
             Pruned list of versions
         """
-        if len(versions) <= 1:
+        if len(versions) <= max_versions:
             return versions
 
         # Sort by version number (newest first)
@@ -1859,23 +1874,32 @@ class TemporalManager:
             versions, key=lambda v: v.temporal_info.version, reverse=True
         )
 
-        # Always keep the current version
-        kept_versions = [sorted_versions[0]]
+        kept_versions = []
 
-        # Apply retention rules to remaining versions
-        for version in sorted_versions[1:]:
-            # Check age limit
-            if version.temporal_info.transaction_time < cutoff_date:
-                continue
+        if keep_milestones:
+            # First, collect milestone versions that are within age limit
+            milestone_versions = []
+            regular_versions = []
 
-            # Check version count limit
-            if len(kept_versions) >= max_versions:
-                # If keeping milestones, check if this is a milestone version
-                if keep_milestones and self._is_milestone_version(version):
-                    kept_versions.append(version)
-                continue
+            for version in sorted_versions:
+                if (
+                    self._is_milestone_version(version)
+                    and version.temporal_info.transaction_time >= cutoff_date
+                ):
+                    milestone_versions.append(version)
+                else:
+                    regular_versions.append(version)
 
-            kept_versions.append(version)
+            # Keep milestone versions first (up to max_versions)
+            kept_versions.extend(milestone_versions[:max_versions])
+
+            # Fill remaining slots with most recent regular versions
+            remaining_slots = max_versions - len(kept_versions)
+            if remaining_slots > 0:
+                kept_versions.extend(regular_versions[:remaining_slots])
+        else:
+            # Just keep the most recent versions
+            kept_versions = sorted_versions[:max_versions]
 
         return kept_versions
 
