@@ -76,7 +76,7 @@ class GraphitiConfig(BaseSettings):
     """Main Graphiti configuration class."""
 
     enabled: bool = Field(
-        default=True, description="Enable Graphiti knowledge graph functionality"
+        default=False, description="Enable Graphiti knowledge graph functionality"
     )
 
     # LLM Configuration

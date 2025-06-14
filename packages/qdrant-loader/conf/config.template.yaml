@@ -91,7 +91,8 @@ global_config:
       llm_api_key: "${OPENAI_API_KEY}"
 
   # Neo4j Configuration
-  # Required for Graphiti knowledge graph functionality
+  # Required only when Graphiti is enabled (graphiti.enabled: true)
+  # Comment out this entire section if not using Graphiti features
   neo4j:
     uri: "bolt://localhost:7687"
     user: "neo4j"
@@ -105,8 +106,9 @@ global_config:
 
   # Graphiti Knowledge Graph Configuration
   # Enables advanced knowledge graph capabilities for document relationships
+  # Set enabled: true to activate Graphiti features (requires Neo4j configuration)
   graphiti:
-    enabled: true
+    enabled: false
     debug_mode: false
     
     # LLM Configuration for Graphiti
