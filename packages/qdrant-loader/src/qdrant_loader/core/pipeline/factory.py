@@ -6,6 +6,8 @@ from pathlib import Path
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
+from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionConfig
+from qdrant_loader.core.graphiti_manager import GraphitiManager
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
@@ -17,7 +19,12 @@ from .orchestrator import PipelineComponents
 from .resource_manager import ResourceManager
 from .source_filter import SourceFilter
 from .source_processor import SourceProcessor
-from .workers import ChunkingWorker, EmbeddingWorker, UpsertWorker
+from .workers import (
+    ChunkingWorker,
+    EmbeddingWorker,
+    EntityExtractionWorker,
+    UpsertWorker,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -104,11 +111,57 @@ class PipelineComponentsFactory:
             shutdown_event=resource_manager.shutdown_event,
         )
 
-        # Create document pipeline
+        # Conditionally create entity extraction worker if Graphiti is enabled
+        entity_extraction_worker: EntityExtractionWorker | None = None
+        if (
+            settings.global_config
+            and hasattr(settings.global_config, "graphiti")
+            and settings.global_config.graphiti
+            and settings.global_config.graphiti.enabled
+            and config.enable_entity_extraction
+        ):
+            logger.info("Creating entity extraction worker (Graphiti enabled)")
+
+            # Validate required configuration
+            if not settings.global_config.neo4j:
+                logger.error(
+                    "Neo4j configuration is required for entity extraction but not found"
+                )
+                raise ValueError(
+                    "Neo4j configuration is required for entity extraction"
+                )
+
+            # Create GraphitiManager
+            graphiti_manager = GraphitiManager(
+                neo4j_config=settings.global_config.neo4j,
+                graphiti_config=settings.global_config.graphiti,
+            )
+
+            # Create EntityExtractor with default configuration
+            extraction_config = ExtractionConfig()
+            entity_extractor = EntityExtractor(
+                graphiti_manager=graphiti_manager,
+                config=extraction_config,
+            )
+
+            # Create EntityExtractionWorker
+            entity_extraction_worker = EntityExtractionWorker(
+                entity_extractor=entity_extractor,
+                max_workers=config.max_entity_workers,
+                queue_size=config.queue_size,
+                shutdown_event=resource_manager.shutdown_event,
+            )
+        else:
+            logger.debug(
+                "Entity extraction worker not created (Graphiti disabled or not configured)"
+            )
+
+        # Create document pipeline with optional entity extraction
         document_pipeline = DocumentPipeline(
             chunking_worker=chunking_worker,
             embedding_worker=embedding_worker,
             upsert_worker=upsert_worker,
+            entity_extraction_worker=entity_extraction_worker,
         )
 
         # Create source processor

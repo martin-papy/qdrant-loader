@@ -10,6 +10,8 @@ class PipelineConfig:
     max_chunk_workers: int = 10
     max_embed_workers: int = 4
     max_upsert_workers: int = 4
+    max_entity_workers: int = 3
     queue_size: int = 1000
     upsert_batch_size: int | None = None
     enable_metrics: bool = False
+    enable_entity_extraction: bool = False

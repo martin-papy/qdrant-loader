@@ -1,6 +1,6 @@
 # Task ID: 5
 # Title: Implement Entity Extraction Pipeline
-# Status: in-progress
+# Status: done
 # Dependencies: 4
 # Priority: high
 # Description: Create the core entity and relationship extraction functionality integrated into the document processing pipeline

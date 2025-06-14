@@ -11,6 +11,7 @@ from pydantic import Field
 from qdrant_loader.config.base import BaseConfig
 from qdrant_loader.config.chunking import ChunkingConfig
 from qdrant_loader.config.embedding import EmbeddingConfig
+from qdrant_loader.config.graphiti import GraphitiConfig
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
@@ -51,6 +52,10 @@ class GlobalConfig(BaseConfig):
         default=None, description="Qdrant configuration"
     )
     neo4j: Neo4jConfig | None = Field(default=None, description="Neo4j configuration")
+    graphiti: GraphitiConfig = Field(
+        default_factory=GraphitiConfig,
+        description="Graphiti knowledge graph configuration",
+    )
 
     def __init__(self, **data):
         """Initialize global configuration."""
@@ -90,4 +95,5 @@ class GlobalConfig(BaseConfig):
             },
             "qdrant": self.qdrant.to_dict() if self.qdrant else None,
             "neo4j": self.neo4j.to_dict() if self.neo4j else None,
+            "graphiti": self.graphiti.to_dict() if self.graphiti else None,
         }

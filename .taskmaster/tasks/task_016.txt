@@ -1,6 +1,6 @@
 # Task ID: 16
 # Title: Integrate Graphiti Entity Extraction into Document Processing Pipeline
-# Status: pending
+# Status: in-progress
 # Dependencies: 5
 # Priority: high
 # Description: Modify the document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to incorporate Graphiti-based entity extraction and graph storage alongside existing vector embedding processes, ensuring seamless integration and backward compatibility.
@@ -11,13 +11,46 @@ Update the core document processing pipeline to invoke the entity extraction pip
 1. Process a representative set of documents and verify that entities and relationships are correctly extracted and stored in the Neo4j graph, matching the configured schema. 2. Confirm that vector embeddings are still generated and stored as before, with no regressions. 3. Test with the new functionality disabled to ensure legacy workflows are unaffected. 4. Validate batch processing and error handling for both embedding and entity extraction steps. 5. Review logs and outputs to confirm that entity deduplication and relationship resolution are functioning as intended. 6. Conduct integration tests to ensure the pipeline works end-to-end in Dockerized environments.
 
 # Subtasks:
-## 1. Refactor Document Processing Pipeline for Modular Integration [pending]
+## 1. Refactor Document Processing Pipeline for Modular Integration [done]
 ### Dependencies: None
 ### Description: Update the core document processing workflow in packages/qdrant-loader/src/qdrant_loader/core/ to support modular invocation of both vector embedding and entity extraction processes, enabling sequential or parallel execution as required.
 ### Details:
 Ensure the pipeline can invoke the entity extraction pipeline after or in parallel with vector embedding generation, and is structured to allow easy integration of additional processing steps in the future.
+<info added on 2025-06-13T23:52:27.315Z>
+Analysis completed with comprehensive understanding of current pipeline architecture. Integration strategy identified: create EntityExtractionWorker following existing worker patterns, modify DocumentPipeline to support conditional entity extraction using existing graphiti.enabled flag, and ensure backward compatibility. Implementation plan established covering worker creation, pipeline updates, factory modifications, configuration integration, and error handling. Ready to proceed with EntityExtractionWorker implementation and pipeline integration.
+</info added on 2025-06-13T23:52:27.315Z>
+<info added on 2025-06-14T00:14:26.755Z>
+COMPLETED: Successfully resolved configuration issues and completed modular integration of entity extraction into document processing pipeline.
 
-## 2. Integrate Graphiti Entity Extraction [pending]
+Implementation Summary:
+
+Configuration Fix:
+- Root Cause: The GlobalConfig class in config/global_config.py was missing the graphiti field, causing linter errors in the factory
+- Solution: Added GraphitiConfig import and graphiti field to the correct GlobalConfig class
+- Result: Factory can now access settings.global_config.graphiti.enabled without errors
+
+Integration Verification:
+- EntityExtractionWorker: Already implemented and properly exported from workers module
+- DocumentPipeline: Already updated to support optional entity extraction worker
+- PipelineConfig: Already includes max_entity_workers and enable_entity_extraction fields
+- Factory Integration: Successfully creates EntityExtractionWorker when Graphiti is enabled
+
+Testing Results:
+- Configuration loads successfully with graphiti field
+- Factory creates entity extraction worker when enabled
+- All linter errors resolved
+- Integration test confirms modular architecture works
+- Backward compatibility maintained (entity extraction only enabled when configured)
+
+Code Quality:
+- Fixed unused import (typing.Optional) 
+- Updated type annotation to use modern union syntax (EntityExtractionWorker | None)
+- All ruff linter checks pass
+
+The modular integration is complete and ready for the next subtask. The pipeline now supports conditional entity extraction based on configuration flags, parallel execution with embedding/upsert phases, proper error handling and timeouts, and backward compatibility with existing workflows.
+</info added on 2025-06-14T00:14:26.755Z>
+
+## 2. Integrate Graphiti Entity Extraction [in-progress]
 ### Dependencies: 16.1
 ### Description: Incorporate Graphiti's extract_entities method into the pipeline to identify and extract custom, domain-specific entities and relationships from each document, using configuration for entity and relationship types.
 ### Details:
