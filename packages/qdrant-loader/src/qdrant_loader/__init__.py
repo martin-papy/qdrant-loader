@@ -48,11 +48,11 @@ def __getattr__(name):
 
 __all__ = [
     "__version__",
-    "Document",
-    "EmbeddingService",
-    "QdrantManager",
-    "Settings",
-    "GlobalConfig",
-    "SemanticAnalysisConfig",
-    "ChunkingConfig",
+    "Document",  # type: ignore
+    "EmbeddingService",  # type: ignore
+    "QdrantManager",  # type: ignore
+    "Settings",  # type: ignore
+    "GlobalConfig",  # type: ignore
+    "SemanticAnalysisConfig",  # type: ignore
+    "ChunkingConfig",  # type: ignore
 ]

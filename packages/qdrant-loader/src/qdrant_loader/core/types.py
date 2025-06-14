@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
+from ..utils.timezone_utils import TimezoneUtils
+
 
 class EntityType(Enum):
     """Supported entity types for extraction."""
@@ -122,6 +124,107 @@ class TemporalInfo:
             superseded_by=data.get("superseded_by"),
             supersedes=data.get("supersedes"),
         )
+
+    def get_valid_from_in_timezone(self, timezone_str: str) -> datetime | None:
+        """Get valid_from time in a specific timezone.
+
+        Args:
+            timezone_str: Target timezone string
+
+        Returns:
+            valid_from datetime in target timezone, or None if conversion fails
+        """
+        return TimezoneUtils.convert_to_timezone(self.valid_from, timezone_str)
+
+    def get_valid_to_in_timezone(self, timezone_str: str) -> datetime | None:
+        """Get valid_to time in a specific timezone.
+
+        Args:
+            timezone_str: Target timezone string
+
+        Returns:
+            valid_to datetime in target timezone, or None if not set or conversion fails
+        """
+        if self.valid_to is None:
+            return None
+        return TimezoneUtils.convert_to_timezone(self.valid_to, timezone_str)
+
+    def get_transaction_time_in_timezone(self, timezone_str: str) -> datetime | None:
+        """Get transaction_time in a specific timezone.
+
+        Args:
+            timezone_str: Target timezone string
+
+        Returns:
+            transaction_time datetime in target timezone, or None if conversion fails
+        """
+        return TimezoneUtils.convert_to_timezone(self.transaction_time, timezone_str)
+
+    def format_for_timezone(
+        self, timezone_str: str, format_str: str = "%Y-%m-%d %H:%M:%S %Z"
+    ) -> dict[str, str]:
+        """Format all temporal fields for display in a specific timezone.
+
+        Args:
+            timezone_str: Target timezone for display
+            format_str: Format string for datetime
+
+        Returns:
+            Dictionary with formatted temporal fields
+        """
+        return {
+            "valid_from": TimezoneUtils.format_datetime_for_timezone(
+                self.valid_from, timezone_str, format_str
+            ),
+            "valid_to": (
+                TimezoneUtils.format_datetime_for_timezone(
+                    self.valid_to, timezone_str, format_str
+                )
+                if self.valid_to
+                else "None"
+            ),
+            "transaction_time": TimezoneUtils.format_datetime_for_timezone(
+                self.transaction_time, timezone_str, format_str
+            ),
+        }
+
+    def set_valid_from_from_timezone(
+        self,
+        datetime_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+    ) -> None:
+        """Set valid_from from a datetime string in a specific timezone.
+
+        Args:
+            datetime_str: Datetime string to parse
+            timezone_str: Timezone of the datetime string
+            format_str: Format string for parsing
+        """
+        utc_dt = TimezoneUtils.parse_datetime_with_timezone(
+            datetime_str, timezone_str, format_str
+        )
+        if utc_dt:
+            self.valid_from = utc_dt
+
+    def set_valid_to_from_timezone(
+        self,
+        datetime_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+    ) -> None:
+        """Set valid_to from a datetime string in a specific timezone.
+
+        Args:
+            datetime_str: Datetime string to parse
+            timezone_str: Timezone of the datetime string
+            format_str: Format string for parsing
+        """
+        utc_dt = TimezoneUtils.parse_datetime_with_timezone(
+            datetime_str, timezone_str, format_str
+        )
+        if utc_dt:
+            self.valid_to = utc_dt
 
 
 @dataclass

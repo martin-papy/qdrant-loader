@@ -40,9 +40,12 @@ def setup_test_environment():
     data_dir = Path("./data")
     data_dir.mkdir(parents=True, exist_ok=True)
 
+    # Get the tests directory path relative to this conftest.py file
+    tests_dir = Path(__file__).parent
+
     # Load test configuration
-    config_path = Path("tests/config.test.yaml")
-    env_path = Path("tests/.env.test")
+    config_path = tests_dir / "config.test.yaml"
+    env_path = tests_dir / ".env.test"
 
     # Load environment variables first
     load_dotenv(env_path, override=True)

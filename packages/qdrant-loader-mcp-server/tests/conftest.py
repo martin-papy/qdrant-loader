@@ -23,6 +23,7 @@ def pytest_configure(config):
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     """Setup test environment before running tests."""
+
     # Load test environment variables
     test_env_path = Path(__file__).parent / ".env.test"
     if test_env_path.exists():

@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Any
 
 from ..utils.logging import LoggingConfig
+from ..utils.timezone_utils import TimezoneUtils
 from .graphiti_manager import GraphitiManager
 from .types import ExtractedEntity, ExtractedRelationship, TemporalInfo
 
@@ -58,6 +59,22 @@ class TemporalQuery:
     version_filter: int | None = None  # Specific version filter
     entity_types: list[str] | None = None  # Filter by entity types
     relationship_types: list[str] | None = None  # Filter by relationship types
+
+    # Enhanced filtering capabilities
+    entity_names: list[str] | None = None  # Filter by entity names
+    relationship_names: list[str] | None = None  # Filter by relationship names
+    min_confidence: float | None = None  # Minimum confidence threshold
+    max_confidence: float | None = None  # Maximum confidence threshold
+    source_entity_filter: str | None = None  # Filter relationships by source entity
+    target_entity_filter: str | None = None  # Filter relationships by target entity
+
+    # Query result options
+    include_metadata: bool = True  # Include temporal metadata in results
+    sort_by: str = (
+        "valid_from"  # Sort results by field (valid_from, transaction_time, version)
+    )
+    sort_descending: bool = False  # Sort in descending order
+    limit: int | None = None  # Limit number of results
 
 
 class TemporalManager:
@@ -509,12 +526,124 @@ class TemporalManager:
                         and entity.temporal_info.version != query.version_filter
                     ):
                         continue
+                    if query.entity_names and entity.name not in query.entity_names:
+                        continue
+                    if (
+                        query.min_confidence
+                        and entity.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and entity.confidence > query.max_confidence
+                    ):
+                        continue
 
                     results.append(entity)
                 elif query.include_superseded:
+                    # Apply same filters for superseded entities
+                    if (
+                        query.entity_types
+                        and entity.entity_type.value not in query.entity_types
+                    ):
+                        continue
+                    if query.entity_names and entity.name not in query.entity_names:
+                        continue
+                    if (
+                        query.min_confidence
+                        and entity.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and entity.confidence > query.max_confidence
+                    ):
+                        continue
                     results.append(entity)
 
+        # Apply sorting and limiting
+        results = self._sort_and_limit_entities(results, query)
         return results
+
+    def _sort_and_limit_entities(
+        self, entities: list[ExtractedEntity], query: TemporalQuery
+    ) -> list[ExtractedEntity]:
+        """Sort and limit entity results based on query parameters.
+
+        Args:
+            entities: List of entities to sort and limit
+            query: Query parameters containing sort and limit options
+
+        Returns:
+            Sorted and limited list of entities
+        """
+        # Sort results
+        if query.sort_by == "valid_from":
+            entities.sort(
+                key=lambda e: e.temporal_info.valid_from,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "transaction_time":
+            entities.sort(
+                key=lambda e: e.temporal_info.transaction_time,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "version":
+            entities.sort(
+                key=lambda e: e.temporal_info.version,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "confidence":
+            entities.sort(
+                key=lambda e: e.confidence,
+                reverse=query.sort_descending,
+            )
+
+        # Apply limit
+        if query.limit:
+            entities = entities[: query.limit]
+
+        return entities
+
+    def _sort_and_limit_relationships(
+        self, relationships: list[ExtractedRelationship], query: TemporalQuery
+    ) -> list[ExtractedRelationship]:
+        """Sort and limit relationship results based on query parameters.
+
+        Args:
+            relationships: List of relationships to sort and limit
+            query: Query parameters containing sort and limit options
+
+        Returns:
+            Sorted and limited list of relationships
+        """
+        # Sort results
+        if query.sort_by == "valid_from":
+            relationships.sort(
+                key=lambda r: r.temporal_info.valid_from,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "transaction_time":
+            relationships.sort(
+                key=lambda r: r.temporal_info.transaction_time,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "version":
+            relationships.sort(
+                key=lambda r: r.temporal_info.version,
+                reverse=query.sort_descending,
+            )
+        elif query.sort_by == "confidence":
+            relationships.sort(
+                key=lambda r: r.confidence,
+                reverse=query.sort_descending,
+            )
+
+        # Apply limit
+        if query.limit:
+            relationships = relationships[: query.limit]
+
+        return relationships
 
     async def query_relationships_at_time(
         self, query: TemporalQuery
@@ -546,11 +675,60 @@ class TemporalManager:
                         and relationship.temporal_info.version != query.version_filter
                     ):
                         continue
+                    if (
+                        query.source_entity_filter
+                        and relationship.source_entity != query.source_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.target_entity_filter
+                        and relationship.target_entity != query.target_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.min_confidence
+                        and relationship.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and relationship.confidence > query.max_confidence
+                    ):
+                        continue
 
                     results.append(relationship)
                 elif query.include_superseded:
+                    # Apply same filters for superseded relationships
+                    if (
+                        query.relationship_types
+                        and relationship.relationship_type.value
+                        not in query.relationship_types
+                    ):
+                        continue
+                    if (
+                        query.source_entity_filter
+                        and relationship.source_entity != query.source_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.target_entity_filter
+                        and relationship.target_entity != query.target_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.min_confidence
+                        and relationship.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and relationship.confidence > query.max_confidence
+                    ):
+                        continue
                     results.append(relationship)
 
+        # Apply sorting and limiting
+        results = self._sort_and_limit_relationships(results, query)
         return results
 
     async def query_entities_in_range(
@@ -590,9 +768,88 @@ class TemporalManager:
                         and entity.temporal_info.version != query.version_filter
                     ):
                         continue
+                    if query.entity_names and entity.name not in query.entity_names:
+                        continue
+                    if (
+                        query.min_confidence
+                        and entity.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and entity.confidence > query.max_confidence
+                    ):
+                        continue
 
                     results.append(entity)
 
+        # Apply sorting and limiting
+        results = self._sort_and_limit_entities(results, query)
+        return results
+
+    async def query_relationships_in_range(
+        self, query: TemporalQuery
+    ) -> list[ExtractedRelationship]:
+        """Query relationships that were valid during a time range.
+
+        Args:
+            query: Temporal query parameters with time range
+
+        Returns:
+            List of relationships valid during the specified range
+        """
+        if not query.time_range_start or not query.time_range_end:
+            raise ValueError("Time range start and end must be specified")
+
+        results = []
+
+        for rel_uuid, versions in self._relationships.items():
+            for relationship in versions:
+                # Check if relationship's valid period overlaps with query range
+                rel_end = relationship.temporal_info.valid_to or datetime.now(UTC)
+
+                if (
+                    relationship.temporal_info.valid_from < query.time_range_end
+                    and rel_end > query.time_range_start
+                ):
+
+                    # Apply filters
+                    if (
+                        query.relationship_types
+                        and relationship.relationship_type.value
+                        not in query.relationship_types
+                    ):
+                        continue
+                    if (
+                        query.version_filter
+                        and relationship.temporal_info.version != query.version_filter
+                    ):
+                        continue
+                    if (
+                        query.source_entity_filter
+                        and relationship.source_entity != query.source_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.target_entity_filter
+                        and relationship.target_entity != query.target_entity_filter
+                    ):
+                        continue
+                    if (
+                        query.min_confidence
+                        and relationship.confidence < query.min_confidence
+                    ):
+                        continue
+                    if (
+                        query.max_confidence
+                        and relationship.confidence > query.max_confidence
+                    ):
+                        continue
+
+                    results.append(relationship)
+
+        # Apply sorting and limiting
+        results = self._sort_and_limit_relationships(results, query)
         return results
 
     def get_entity_history(self, entity_uuid: str) -> list[ExtractedEntity]:
@@ -682,6 +939,307 @@ class TemporalManager:
             "unique_entity_uuids": len(self._entities),
             "unique_relationship_uuids": len(self._relationships),
         }
+
+    # Advanced Temporal Query Capabilities
+
+    async def query_temporal_aggregates(
+        self, query: TemporalQuery, aggregation_type: str = "count"
+    ) -> dict[str, Any]:
+        """Query temporal aggregates over time periods.
+
+        Args:
+            query: Temporal query parameters
+            aggregation_type: Type of aggregation (count, avg_confidence, etc.)
+
+        Returns:
+            Dictionary containing aggregation results
+        """
+        if not query.time_range_start or not query.time_range_end:
+            raise ValueError(
+                "Time range start and end must be specified for aggregation"
+            )
+
+        results = {
+            "time_range": {
+                "start": query.time_range_start.isoformat(),
+                "end": query.time_range_end.isoformat(),
+            },
+            "aggregation_type": aggregation_type,
+            "entities": {},
+            "relationships": {},
+        }
+
+        # Aggregate entities
+        entity_count = 0
+        entity_confidence_sum = 0.0
+        entity_confidence_count = 0
+
+        for entity_uuid, versions in self._entities.items():
+            for entity in versions:
+                entity_end = entity.temporal_info.valid_to or datetime.now(UTC)
+                if (
+                    entity.temporal_info.valid_from < query.time_range_end
+                    and entity_end > query.time_range_start
+                ):
+                    # Apply filters
+                    if (
+                        query.entity_types
+                        and entity.entity_type.value not in query.entity_types
+                    ):
+                        continue
+                    if query.entity_names and entity.name not in query.entity_names:
+                        continue
+
+                    entity_count += 1
+                    entity_confidence_sum += entity.confidence
+                    entity_confidence_count += 1
+
+        # Aggregate relationships
+        relationship_count = 0
+        relationship_confidence_sum = 0.0
+        relationship_confidence_count = 0
+
+        for rel_uuid, versions in self._relationships.items():
+            for relationship in versions:
+                rel_end = relationship.temporal_info.valid_to or datetime.now(UTC)
+                if (
+                    relationship.temporal_info.valid_from < query.time_range_end
+                    and rel_end > query.time_range_start
+                ):
+                    # Apply filters
+                    if (
+                        query.relationship_types
+                        and relationship.relationship_type.value
+                        not in query.relationship_types
+                    ):
+                        continue
+
+                    relationship_count += 1
+                    relationship_confidence_sum += relationship.confidence
+                    relationship_confidence_count += 1
+
+        # Calculate aggregates
+        if aggregation_type == "count":
+            results["entities"]["count"] = entity_count
+            results["relationships"]["count"] = relationship_count
+        elif aggregation_type == "avg_confidence":
+            results["entities"]["avg_confidence"] = (
+                entity_confidence_sum / entity_confidence_count
+                if entity_confidence_count > 0
+                else 0.0
+            )
+            results["relationships"]["avg_confidence"] = (
+                relationship_confidence_sum / relationship_confidence_count
+                if relationship_confidence_count > 0
+                else 0.0
+            )
+        elif aggregation_type == "all":
+            results["entities"]["count"] = entity_count
+            results["entities"]["avg_confidence"] = (
+                entity_confidence_sum / entity_confidence_count
+                if entity_confidence_count > 0
+                else 0.0
+            )
+            results["relationships"]["count"] = relationship_count
+            results["relationships"]["avg_confidence"] = (
+                relationship_confidence_sum / relationship_confidence_count
+                if relationship_confidence_count > 0
+                else 0.0
+            )
+
+        return results
+
+    async def find_cross_temporal_relationships(
+        self,
+        source_entity_name: str,
+        target_entity_name: str,
+        query_time: datetime | None = None,
+    ) -> list[ExtractedRelationship]:
+        """Find relationships between specific entities at a given time.
+
+        Args:
+            source_entity_name: Name of the source entity
+            target_entity_name: Name of the target entity
+            query_time: Time to query (defaults to now)
+
+        Returns:
+            List of relationships between the entities at the specified time
+        """
+        query_time = query_time or datetime.now(UTC)
+        results = []
+
+        for rel_uuid, versions in self._relationships.items():
+            for relationship in versions:
+                if (
+                    relationship.source_entity == source_entity_name
+                    and relationship.target_entity == target_entity_name
+                    and relationship.is_valid_at(query_time)
+                ):
+                    results.append(relationship)
+
+        return results
+
+    async def traverse_temporal_graph(
+        self,
+        start_entity_name: str,
+        query_time: datetime | None = None,
+        max_depth: int = 3,
+        relationship_types: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Traverse the temporal graph from a starting entity.
+
+        Args:
+            start_entity_name: Name of the entity to start traversal from
+            query_time: Time to query (defaults to now)
+            max_depth: Maximum depth of traversal
+            relationship_types: Filter by relationship types
+
+        Returns:
+            Dictionary containing the traversal results
+        """
+        query_time = query_time or datetime.now(UTC)
+        visited = set()
+        traversal_results = {
+            "start_entity": start_entity_name,
+            "query_time": query_time.isoformat(),
+            "max_depth": max_depth,
+            "paths": [],
+            "entities_found": set(),
+            "relationships_found": [],
+        }
+
+        def _traverse_recursive(
+            current_entity: str, path: list[str], depth: int
+        ) -> None:
+            if depth > max_depth or current_entity in visited:
+                return
+
+            visited.add(current_entity)
+            traversal_results["entities_found"].add(current_entity)
+
+            # Find all relationships from current entity
+            for rel_uuid, versions in self._relationships.items():
+                for relationship in versions:
+                    if (
+                        relationship.source_entity == current_entity
+                        and relationship.is_valid_at(query_time)
+                    ):
+                        # Apply relationship type filter
+                        if (
+                            relationship_types
+                            and relationship.relationship_type.value
+                            not in relationship_types
+                        ):
+                            continue
+
+                        target = relationship.target_entity
+                        new_path = path + [
+                            f"{current_entity} --{relationship.relationship_type.value}--> {target}"
+                        ]
+
+                        traversal_results["relationships_found"].append(
+                            {
+                                "source": current_entity,
+                                "target": target,
+                                "type": relationship.relationship_type.value,
+                                "confidence": relationship.confidence,
+                                "path_depth": depth,
+                            }
+                        )
+
+                        if depth < max_depth:
+                            traversal_results["paths"].append(new_path)
+                            _traverse_recursive(target, new_path, depth + 1)
+
+        _traverse_recursive(start_entity_name, [start_entity_name], 0)
+
+        # Convert set to list for JSON serialization
+        traversal_results["entities_found"] = list(traversal_results["entities_found"])
+
+        return traversal_results
+
+    async def query_temporal_changes(
+        self,
+        entity_or_relationship_uuid: str,
+        time_range_start: datetime,
+        time_range_end: datetime,
+    ) -> dict[str, Any]:
+        """Query changes to an entity or relationship over time.
+
+        Args:
+            entity_or_relationship_uuid: UUID of the entity or relationship
+            time_range_start: Start of time range
+            time_range_end: End of time range
+
+        Returns:
+            Dictionary containing change information
+        """
+        changes = {
+            "uuid": entity_or_relationship_uuid,
+            "time_range": {
+                "start": time_range_start.isoformat(),
+                "end": time_range_end.isoformat(),
+            },
+            "changes": [],
+            "type": None,
+        }
+
+        # Check if it's an entity
+        if entity_or_relationship_uuid in self._entities:
+            changes["type"] = "entity"
+            versions = self._entities[entity_or_relationship_uuid]
+
+            for version in sorted(versions, key=lambda e: e.temporal_info.version):
+                if version.temporal_info.valid_from <= time_range_end and (
+                    version.temporal_info.valid_to is None
+                    or version.temporal_info.valid_to >= time_range_start
+                ):
+                    changes["changes"].append(
+                        {
+                            "version": version.temporal_info.version,
+                            "valid_from": version.temporal_info.valid_from.isoformat(),
+                            "valid_to": (
+                                version.temporal_info.valid_to.isoformat()
+                                if version.temporal_info.valid_to
+                                else None
+                            ),
+                            "transaction_time": version.temporal_info.transaction_time.isoformat(),
+                            "name": version.name,
+                            "entity_type": version.entity_type.value,
+                            "confidence": version.confidence,
+                            "context": version.context,
+                        }
+                    )
+
+        # Check if it's a relationship
+        elif entity_or_relationship_uuid in self._relationships:
+            changes["type"] = "relationship"
+            versions = self._relationships[entity_or_relationship_uuid]
+
+            for version in sorted(versions, key=lambda r: r.temporal_info.version):
+                if version.temporal_info.valid_from <= time_range_end and (
+                    version.temporal_info.valid_to is None
+                    or version.temporal_info.valid_to >= time_range_start
+                ):
+                    changes["changes"].append(
+                        {
+                            "version": version.temporal_info.version,
+                            "valid_from": version.temporal_info.valid_from.isoformat(),
+                            "valid_to": (
+                                version.temporal_info.valid_to.isoformat()
+                                if version.temporal_info.valid_to
+                                else None
+                            ),
+                            "transaction_time": version.temporal_info.transaction_time.isoformat(),
+                            "source_entity": version.source_entity,
+                            "target_entity": version.target_entity,
+                            "relationship_type": version.relationship_type.value,
+                            "confidence": version.confidence,
+                            "context": version.context,
+                        }
+                    )
+
+        return changes
 
     # Enhanced Versioning Capabilities
 
@@ -1335,3 +1893,277 @@ class TemporalManager:
             version.temporal_info.version == 1
             or version.temporal_info.version % 10 == 0
         )
+
+    # Timezone-aware query methods
+
+    async def query_entities_at_time_in_timezone(
+        self,
+        query_time_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+        **query_kwargs,
+    ) -> list[ExtractedEntity]:
+        """Query entities at a specific time provided in a timezone.
+
+        Args:
+            query_time_str: Time string in the specified timezone
+            timezone_str: Timezone of the query time
+            format_str: Format string for parsing the time
+            **query_kwargs: Additional query parameters
+
+        Returns:
+            List of entities valid at the specified time
+        """
+        # Convert timezone-specific time to UTC
+        utc_time = TimezoneUtils.parse_datetime_with_timezone(
+            query_time_str, timezone_str, format_str
+        )
+
+        if utc_time is None:
+            logger.error(
+                f"Failed to parse time {query_time_str} in timezone {timezone_str}"
+            )
+            return []
+
+        # Create temporal query with UTC time
+        query = TemporalQuery(query_time=utc_time, **query_kwargs)
+        return await self.query_entities_at_time(query)
+
+    async def query_relationships_at_time_in_timezone(
+        self,
+        query_time_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+        **query_kwargs,
+    ) -> list[ExtractedRelationship]:
+        """Query relationships at a specific time provided in a timezone.
+
+        Args:
+            query_time_str: Time string in the specified timezone
+            timezone_str: Timezone of the query time
+            format_str: Format string for parsing the time
+            **query_kwargs: Additional query parameters
+
+        Returns:
+            List of relationships valid at the specified time
+        """
+        # Convert timezone-specific time to UTC
+        utc_time = TimezoneUtils.parse_datetime_with_timezone(
+            query_time_str, timezone_str, format_str
+        )
+
+        if utc_time is None:
+            logger.error(
+                f"Failed to parse time {query_time_str} in timezone {timezone_str}"
+            )
+            return []
+
+        # Create temporal query with UTC time
+        query = TemporalQuery(query_time=utc_time, **query_kwargs)
+        return await self.query_relationships_at_time(query)
+
+    async def query_entities_in_range_in_timezone(
+        self,
+        start_time_str: str,
+        end_time_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+        **query_kwargs,
+    ) -> list[ExtractedEntity]:
+        """Query entities in a time range provided in a timezone.
+
+        Args:
+            start_time_str: Start time string in the specified timezone
+            end_time_str: End time string in the specified timezone
+            timezone_str: Timezone of the time strings
+            format_str: Format string for parsing the times
+            **query_kwargs: Additional query parameters
+
+        Returns:
+            List of entities valid in the specified time range
+        """
+        # Convert timezone-specific times to UTC
+        utc_start = TimezoneUtils.parse_datetime_with_timezone(
+            start_time_str, timezone_str, format_str
+        )
+        utc_end = TimezoneUtils.parse_datetime_with_timezone(
+            end_time_str, timezone_str, format_str
+        )
+
+        if utc_start is None or utc_end is None:
+            logger.error(f"Failed to parse time range in timezone {timezone_str}")
+            return []
+
+        # Create temporal query with UTC times
+        query = TemporalQuery(
+            time_range_start=utc_start, time_range_end=utc_end, **query_kwargs
+        )
+        return await self.query_entities_in_range(query)
+
+    async def query_relationships_in_range_in_timezone(
+        self,
+        start_time_str: str,
+        end_time_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+        **query_kwargs,
+    ) -> list[ExtractedRelationship]:
+        """Query relationships in a time range provided in a timezone.
+
+        Args:
+            start_time_str: Start time string in the specified timezone
+            end_time_str: End time string in the specified timezone
+            timezone_str: Timezone of the time strings
+            format_str: Format string for parsing the times
+            **query_kwargs: Additional query parameters
+
+        Returns:
+            List of relationships valid in the specified time range
+        """
+        # Convert timezone-specific times to UTC
+        utc_start = TimezoneUtils.parse_datetime_with_timezone(
+            start_time_str, timezone_str, format_str
+        )
+        utc_end = TimezoneUtils.parse_datetime_with_timezone(
+            end_time_str, timezone_str, format_str
+        )
+
+        if utc_start is None or utc_end is None:
+            logger.error(f"Failed to parse time range in timezone {timezone_str}")
+            return []
+
+        # Create temporal query with UTC times
+        query = TemporalQuery(
+            time_range_start=utc_start, time_range_end=utc_end, **query_kwargs
+        )
+        return await self.query_relationships_in_range(query)
+
+    def format_entities_for_timezone(
+        self, entities: list[ExtractedEntity], timezone_str: str
+    ) -> list[dict[str, Any]]:
+        """Format entities with temporal info displayed in a specific timezone.
+
+        Args:
+            entities: List of entities to format
+            timezone_str: Target timezone for display
+
+        Returns:
+            List of entity dictionaries with timezone-formatted temporal info
+        """
+        formatted_entities = []
+        for entity in entities:
+            entity_dict = entity.to_dict()
+            # Replace temporal_info with timezone-formatted version
+            entity_dict["temporal_info_formatted"] = (
+                entity.temporal_info.format_for_timezone(timezone_str)
+            )
+            formatted_entities.append(entity_dict)
+        return formatted_entities
+
+    def format_relationships_for_timezone(
+        self, relationships: list[ExtractedRelationship], timezone_str: str
+    ) -> list[dict[str, Any]]:
+        """Format relationships with temporal info displayed in a specific timezone.
+
+        Args:
+            relationships: List of relationships to format
+            timezone_str: Target timezone for display
+
+        Returns:
+            List of relationship dictionaries with timezone-formatted temporal info
+        """
+        formatted_relationships = []
+        for relationship in relationships:
+            rel_dict = relationship.to_dict()
+            # Replace temporal_info with timezone-formatted version
+            rel_dict["temporal_info_formatted"] = (
+                relationship.temporal_info.format_for_timezone(timezone_str)
+            )
+            formatted_relationships.append(rel_dict)
+        return formatted_relationships
+
+    def validate_timezone_input(
+        self, timezone_str: str, datetime_str: str | None = None
+    ) -> dict[str, Any]:
+        """Validate timezone and optionally a datetime string.
+
+        Args:
+            timezone_str: Timezone string to validate
+            datetime_str: Optional datetime string to validate
+
+        Returns:
+            Dictionary with validation results and timezone info
+        """
+        try:
+            # Validate timezone
+            normalized_tz = TimezoneUtils.validate_timezone(timezone_str)
+            tz_info = TimezoneUtils.get_timezone_info(normalized_tz)
+
+            result = {
+                "valid": True,
+                "normalized_timezone": normalized_tz,
+                "timezone_info": tz_info,
+                "error": None,
+            }
+
+            # Validate datetime string if provided
+            if datetime_str:
+                try:
+                    parsed_dt = TimezoneUtils.parse_datetime_with_timezone(
+                        datetime_str, normalized_tz
+                    )
+                    result["datetime_valid"] = parsed_dt is not None
+                    result["parsed_datetime_utc"] = (
+                        parsed_dt.isoformat() if parsed_dt else None
+                    )
+                except Exception as e:
+                    result["datetime_valid"] = False
+                    result["datetime_error"] = str(e)
+
+            return result
+
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": str(e),
+                "normalized_timezone": None,
+                "timezone_info": None,
+            }
+
+    def get_dst_transition_info(
+        self,
+        datetime_str: str,
+        timezone_str: str,
+        format_str: str = "%Y-%m-%d %H:%M:%S",
+    ) -> dict[str, Any]:
+        """Get DST transition information for a specific datetime and timezone.
+
+        Args:
+            datetime_str: Datetime string to check
+            timezone_str: Timezone to check in
+            format_str: Format string for parsing
+
+        Returns:
+            Dictionary with DST transition information
+        """
+        try:
+            # Parse the datetime
+            naive_dt = datetime.strptime(datetime_str, format_str)
+
+            # Get DST transition info
+            dst_info = TimezoneUtils.is_dst_transition(naive_dt, timezone_str)
+
+            # Add additional context
+            dst_info["input_datetime"] = datetime_str
+            dst_info["timezone"] = timezone_str
+            dst_info["parsed_datetime"] = naive_dt.isoformat()
+
+            return dst_info
+
+        except Exception as e:
+            return {
+                "is_transition": False,
+                "error": str(e),
+                "input_datetime": datetime_str,
+                "timezone": timezone_str,
+            }
