@@ -1,6 +1,5 @@
 """Tests for PipelineConfig."""
 
-
 from qdrant_loader.core.pipeline.config import PipelineConfig
 
 
@@ -34,4 +33,4 @@ class TestPipelineConfig:
         assert config.max_upsert_workers == 6
         assert config.queue_size == 2000
         assert config.upsert_batch_size == 100
-        assert config.enable_metrics is True
+        assert config.enable_metrics 

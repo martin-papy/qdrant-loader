@@ -36,7 +36,7 @@ class StateChangeDetector:
     def __init__(self, state_manager: StateManager):
         """Initialize the change detector."""
         self.logger = LoggingConfig.get_logger(
-            f"qdrant_loader.{self.__class__.__name__}"
+            "qdrant_loader.{self.__class__.__name__}"
         )
         self._initialized = False
         self.state_manager = state_manager
@@ -121,7 +121,7 @@ class StateChangeDetector:
                 updated_at=document.updated_at,
             )
         except Exception as e:
-            raise InvalidDocumentStateError(f"Failed to get document state: {e}") from e
+            raise InvalidDocumentStateError("Failed to get document state: {e}") from e
 
     def _is_document_updated(
         self, current_state: DocumentState, previous_state: DocumentState
@@ -201,4 +201,4 @@ class StateChangeDetector:
         self, url: str, source: str, source_type: str, document_id: str
     ) -> str:
         """Generate a URI from document components."""
-        return f"{source_type}:{source}:{self._normalize_url(url)}"
+        return "{source_type}:{source}:{self._normalize_url(url)}"

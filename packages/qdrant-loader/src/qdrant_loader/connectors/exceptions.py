@@ -19,4 +19,4 @@ class HTTPRequestError(ConnectorError):
         self.url = url
         self.status_code = status_code
         self.message = message
-        super().__init__(f"HTTP request failed for {url}: {message or 'Unknown error'}")
+        super().__init__("HTTP request failed for {url}: {message or 'Unknown error'}")

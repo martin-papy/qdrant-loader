@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.document import Document
@@ -117,7 +118,7 @@ class TestAsyncIngestionPipeline:
             assert pipeline.qdrant_manager == mock_qdrant_manager
             assert pipeline.pipeline_config.max_chunk_workers == 5
             assert pipeline.pipeline_config.max_embed_workers == 2
-            assert pipeline.pipeline_config.enable_metrics is True
+            assert pipeline.pipeline_config.enable_metrics 
 
             # Verify factory was called
             mock_factory_instance.create_components.assert_called_once()
@@ -749,7 +750,7 @@ class TestAsyncIngestionPipeline:
             assert config.max_upsert_workers == 6
             assert config.queue_size == 2000
             assert config.upsert_batch_size == 200
-            assert config.enable_metrics is True
+            assert config.enable_metrics 
 
     def test_pipeline_config_defaults(self, mock_settings, mock_qdrant_manager):
         """Test pipeline config with default values."""

@@ -35,7 +35,7 @@ class EmbeddingService:
             return embedding
         except Exception as e:
             self.logger.error(
-                f"Error generating embedding: {str(e)}",
+                "Error generating embedding: {str(e)}",
                 extra={
                     "text_length": len(text),
                     "error": str(e),
@@ -76,7 +76,7 @@ class EmbeddingService:
             return embeddings
         except Exception as e:
             self.logger.error(
-                f"Error generating embeddings: {str(e)}",
+                "Error generating embeddings: {str(e)}",
                 extra={
                     "text_count": len(texts),
                     "error": str(e),

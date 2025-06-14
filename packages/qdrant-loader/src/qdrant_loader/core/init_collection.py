@@ -7,7 +7,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 logger = LoggingConfig.get_logger()
 
 
-async def init_collection(settings=None, force=False):
+def init_collection(settings=None, force=False):
     """Initialize the qDrant collection with proper configuration.
 
     Args:
@@ -52,4 +52,4 @@ async def init_collection(settings=None, force=False):
 
 
 if __name__ == "__main__":
-    asyncio.run(init_collection())
+    init_collection()

@@ -16,7 +16,6 @@ from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
-from qdrant_loader.config.types import GlobalConfigDict
 from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
@@ -59,7 +58,7 @@ class GlobalConfig(BaseConfig):
 
     def __init__(self, **data):
         """Initialize global configuration."""
-        # If skip_validation is True and no state_management is provided, use in-memory database
+        # If skip_validation  and no state_management is provided, use in-memory database
         skip_validation = data.pop("skip_validation", False)
         if skip_validation and "state_management" not in data:
             data["state_management"] = {

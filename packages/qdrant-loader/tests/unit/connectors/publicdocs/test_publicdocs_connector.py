@@ -9,6 +9,7 @@ from aiohttp import (
     ClientResponseError,
 )
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.exceptions import (
     DocumentProcessingError,
@@ -193,7 +194,7 @@ class TestPublicDocsConnector:
         assert not any("/blog/" in link for link in filtered_links)
         # Test that we get only the docs link after filtering
         assert len(filtered_links) == 1
-        assert filtered_links[0] == f"{base_url}docs/page1"
+        assert filtered_links[0] == "{base_url}docs/page1"
 
     @pytest.mark.asyncio
     async def test_get_documents(
@@ -231,15 +232,15 @@ class TestPublicDocsConnector:
         async def mock_get(url: str, **kwargs) -> AsyncMock:
             if url == base_url:
                 return base_response
-            elif url == f"{base_url}docs/page1":
+            elif url == "{base_url}docs/page1":
                 return page_response
-            raise ValueError(f"Unexpected URL: {url}")
+            raise ValueError("Unexpected URL: {url}")
 
         mock_session.get = AsyncMock(side_effect=mock_get)
 
         # Mock _get_all_pages to return our test URLs
         async def mock_get_all_pages() -> list[str]:
-            return [base_url, f"{base_url}docs/page1"]
+            return [base_url, "{base_url}docs/page1"]
 
         # Initialize the connector with our mock session and mock _get_all_pages
         with (
@@ -263,14 +264,14 @@ class TestPublicDocsConnector:
 
         # Verify linked page document
         linked_doc = next(
-            doc for doc in documents if doc.url == f"{base_url}docs/page1"
+            doc for doc in documents if doc.url == "{base_url}docs/page1"
         )
         assert linked_doc.title == "Page 1"
         assert "Page 1 content" in linked_doc.content
         assert linked_doc.metadata["version"] == publicdocs_config.version
 
         # Verify that blog post was not included (due to exclude_paths)
-        assert not any(doc.url == f"{base_url}blog/post1" for doc in documents)
+        assert not any(doc.url == "{base_url}blog/post1" for doc in documents)
 
     @pytest.mark.asyncio
     async def test_get_documents_error_handling(
@@ -289,8 +290,8 @@ class TestPublicDocsConnector:
         # Test HTTP error in _process_page
         connector = PublicDocsConnector(publicdocs_config)
         base_url = str(publicdocs_config.base_url)
-        error_url = f"{base_url}error-page"
-        valid_url = f"{base_url}valid-page"
+        error_url = "{base_url}error-page"
+        valid_url = "{base_url}valid-page"
 
         # Create mixed responses - one that succeeds and one that fails with 404
         error_response = AsyncMock()
@@ -320,7 +321,7 @@ class TestPublicDocsConnector:
                 return error_response
             elif url == valid_url:
                 return valid_response
-            raise ValueError(f"Unexpected URL: {url}")
+            raise ValueError("Unexpected URL: {url}")
 
         session.get = AsyncMock(side_effect=mock_get)
         session.close = AsyncMock()
@@ -424,9 +425,9 @@ class TestPublicDocsConnector:
         async def mock_get(url: str, **kwargs) -> AsyncMock:
             if url == base_url:
                 return base_response
-            elif url == f"{base_url}docs/page1":
+            elif url == "{base_url}docs/page1":
                 return page_response
-            raise Exception(f"Unexpected URL: {url}")
+            raise Exception("Unexpected URL: {url}")
 
         session = AsyncMock()
         session.__aenter__.return_value = session

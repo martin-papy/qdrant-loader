@@ -2,6 +2,7 @@
 
 import logging
 from typing import Dict, Optional
+
 import structlog
 
 
@@ -45,7 +46,7 @@ class ChunkingProgressTracker:
             )
         else:
             # Concise logging for info mode
-            self.logger.info(f"Chunking {file_name} ({content_length:,} chars)")
+            self.logger.info("Chunking {file_name} ({content_length:,} chars)")
 
     def update_progress(self, document_id: str, chunks_created: int) -> None:
         """Update the number of chunks created for a document."""
@@ -76,9 +77,9 @@ class ChunkingProgressTracker:
             )
         else:
             # Concise logging for info mode
-            strategy_info = f" using {strategy_name}" if strategy_name else ""
+            strategy_info = " using {strategy_name}" if strategy_name else ""
             self.logger.debug(
-                f"✓ Created {total_chunks} chunks from {progress['file_name']}{strategy_info}"
+                "✓ Created {total_chunks} chunks from {progress['file_name']}{strategy_info}"
             )
 
         # Clean up
@@ -89,7 +90,7 @@ class ChunkingProgressTracker:
         if document_id in self._progress:
             progress = self._progress[document_id]
             self.logger.error(
-                f"Chunking failed for {progress['file_name']}: {error}",
+                "Chunking failed for {progress['file_name']}: {error}",
                 extra={
                     "source": progress["source"],
                     "source_type": progress["source_type"],
@@ -100,7 +101,7 @@ class ChunkingProgressTracker:
             # Clean up
             del self._progress[document_id]
         else:
-            self.logger.error(f"Chunking failed: {error}")
+            self.logger.error("Chunking failed: {error}")
 
     def log_fallback(self, document_id: str, reason: str) -> None:
         """Log when falling back to default chunking."""
@@ -118,5 +119,5 @@ class ChunkingProgressTracker:
                 )
             else:
                 self.logger.info(
-                    f"⚠ Falling back to default chunking for {progress['file_name']}: {reason}"
+                    "⚠ Falling back to default chunking for {progress['file_name']}: {reason}"
                 )

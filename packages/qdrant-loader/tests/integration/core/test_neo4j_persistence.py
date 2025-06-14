@@ -7,13 +7,13 @@ This module tests the complete Neo4j integration including:
 - Error handling and recovery
 """
 
-import pytest
-import time
-import subprocess
-import json
 import os
+import subprocess
+import time
 from datetime import datetime
-from typing import Dict, Any, List, Generator
+from typing import Generator
+
+import pytest
 
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.neo4j_manager import Neo4jManager
@@ -67,10 +67,10 @@ class TestNeo4jPersistenceIntegration:
         assert "available_databases" in db_info
 
         # Log info for debugging
-        print(f"Neo4j Version: {db_info['version']}")
-        print(f"Neo4j Edition: {db_info['edition']}")
-        print(f"APOC Version: {db_info['apoc_version']}")
-        print(f"Available Databases: {db_info['available_databases']}")
+        print("Neo4j Version: {db_info['version']}")
+        print("Neo4j Edition: {db_info['edition']}")
+        print("APOC Version: {db_info['apoc_version']}")
+        print("Available Databases: {db_info['available_databases']}")
 
     def test_data_insertion_and_retrieval(self, neo4j_manager: Neo4jManager):
         """Test data insertion and retrieval operations."""
@@ -183,7 +183,7 @@ class TestNeo4jPersistenceIntegration:
 
         # Look for our expected indexes
         index_names = [idx["name"] for idx in indexes]
-        print(f"Available indexes: {index_names}")
+        print("Available indexes: {index_names}")
 
     def test_transaction_rollback_and_consistency(self, neo4j_manager: Neo4jManager):
         """Test transaction rollback and data consistency."""
@@ -318,7 +318,7 @@ class TestNeo4jPersistenceIntegration:
                 pytest.skip("Neo4j container did not become ready after restart")
 
         except subprocess.CalledProcessError as e:
-            pytest.skip(f"Could not restart Neo4j container: {e}")
+            pytest.skip("Could not restart Neo4j container: {e}")
         except FileNotFoundError:
             pytest.skip("Docker not available for container restart test")
 
@@ -336,7 +336,7 @@ class TestNeo4jPersistenceIntegration:
         retrieved_node = query_result[0]["n"]
         assert retrieved_node["name"] == persistent_data["name"]
         assert retrieved_node["created_at"] == persistent_timestamp
-        assert retrieved_node["restart_test"] is True
+        assert retrieved_node["restart_test"] 
 
         print("✅ Data persistence verified after container restart")
 
@@ -405,7 +405,7 @@ class TestNeo4jPersistenceIntegration:
         assert result[0]["created_count"] == batch_size
 
         creation_time = end_time - start_time
-        print(f"Created {batch_size} nodes in {creation_time:.2f} seconds")
+        print("Created {batch_size} nodes in {creation_time:.2f} seconds")
 
         # Test batch query performance
         start_time = time.time()
@@ -418,7 +418,7 @@ class TestNeo4jPersistenceIntegration:
         assert query_result[0]["total_count"] == batch_size
 
         query_time = end_time - start_time
-        print(f"Queried {batch_size} nodes in {query_time:.2f} seconds")
+        print("Queried {batch_size} nodes in {query_time:.2f} seconds")
 
     def teardown_method(self):
         """Clean up test data after each test."""
@@ -450,7 +450,7 @@ class TestNeo4jPersistenceIntegration:
                     try:
                         manager.execute_query(query)
                     except Exception as e:
-                        print(f"Cleanup warning: {e}")
+                        print("Cleanup warning: {e}")
 
         except Exception as e:
-            print(f"Cleanup error: {e}")
+            print("Cleanup error: {e}")

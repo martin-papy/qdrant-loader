@@ -7,17 +7,18 @@ extraction prompts to ensure high accuracy and consistency.
 import asyncio
 import json
 import time
-from typing import Dict, List, Any, Optional, Set, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ..types import EntityType, ExtractedEntity
+from ..types import ExtractedEntity
 
 if TYPE_CHECKING:
     from ..entity_extractor import EntityExtractor
-from .entity_prompts import EntityPromptManager, PromptDomain, PromptTemplate
+
 from ...utils.logging import LoggingConfig
+from .entity_prompts import EntityPromptManager, PromptDomain
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -131,7 +132,7 @@ class PromptTester:
     def add_test_case(self, test_case: PromptTestCase) -> None:
         """Add a test case to the test suite."""
         self._test_cases[test_case.name] = test_case
-        logger.debug(f"Added test case: {test_case.name}")
+        logger.debug("Added test case: {test_case.name}")
 
     def load_test_cases_from_dict(self, test_cases_data: List[Dict[str, Any]]) -> None:
         """Load test cases from dictionary data."""
@@ -149,18 +150,18 @@ class PromptTester:
             )
             self.add_test_case(test_case)
 
-        logger.info(f"Loaded {len(test_cases_data)} test cases")
+        logger.info("Loaded {len(test_cases_data)} test cases")
 
     async def run_test_case(self, test_case: PromptTestCase) -> PromptTestResult:
         """Run a single test case and return the result."""
-        logger.debug(f"Running test case: {test_case.name}")
+        logger.debug("Running test case: {test_case.name}")
         start_time = time.time()
 
         try:
             # Extract entities using the entity extractor
             result = await self.entity_extractor.extract_entities(
                 text=test_case.input_text,
-                source_description=f"Test case: {test_case.name}",
+                source_description="Test case: {test_case.name}",
             )
 
             execution_time = time.time() - start_time
@@ -198,15 +199,15 @@ class PromptTester:
             )
 
             logger.debug(
-                f"Test case {test_case.name} completed: {status.value} "
-                f"(F1: {evaluation['f1_score']:.2f})"
+                "Test case {test_case.name} completed: {status.value} "
+                "(F1: {evaluation['f1_score']:.2f})"
             )
 
             return test_result
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error(f"Test case {test_case.name} failed with error: {e}")
+            logger.error("Test case {test_case.name} failed with error: {e}")
 
             return PromptTestResult(
                 test_case=test_case,
@@ -229,7 +230,7 @@ class PromptTester:
             logger.warning("No test cases to run")
             return []
 
-        logger.info(f"Running {len(test_cases_to_run)} test cases")
+        logger.info("Running {len(test_cases_to_run)} test cases")
 
         # Run test cases concurrently
         tasks = [self.run_test_case(test_case) for test_case in test_cases_to_run]
@@ -239,7 +240,7 @@ class PromptTester:
         test_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(f"Test case failed with exception: {result}")
+                logger.error("Test case failed with exception: {result}")
                 test_results.append(
                     PromptTestResult(
                         test_case=test_cases_to_run[i],
@@ -379,9 +380,9 @@ class PromptTester:
         )
 
         logger.info(
-            f"Test Summary: {total_tests} tests - "
-            f"Passed: {passed}, Partial: {partial}, Failed: {failed}, Errors: {errors} - "
-            f"Avg F1: {avg_f1:.3f}, Avg Time: {avg_time:.2f}s"
+            "Test Summary: {total_tests} tests - "
+            "Passed: {passed}, Partial: {partial}, Failed: {failed}, Errors: {errors} - "
+            "Avg F1: {avg_f1:.3f}, Avg Time: {avg_time:.2f}s"
         )
 
     def get_test_statistics(self) -> Dict[str, Any]:
@@ -422,7 +423,7 @@ class PromptTester:
         with open(filepath, "w") as f:
             json.dump(results_data, f, indent=2)
 
-        logger.info(f"Exported {len(results_data)} test results to {filepath}")
+        logger.info("Exported {len(results_data)} test results to {filepath}")
 
     def clear_results(self) -> None:
         """Clear all test results."""

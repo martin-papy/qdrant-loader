@@ -1,15 +1,11 @@
 """Main file conversion service using MarkItDown."""
 
-import logging
 import os
 import signal
-import tempfile
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
-from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.file_conversion.exceptions import (
     ConversionTimeoutError,
@@ -233,10 +229,10 @@ class FileConverter:
     def _validate_file(self, file_path: str) -> None:
         """Validate file for conversion."""
         if not os.path.exists(file_path):
-            raise FileAccessError(f"File does not exist: {file_path}")
+            raise FileAccessError("File does not exist: {file_path}")
 
         if not os.access(file_path, os.R_OK):
-            raise FileAccessError(f"File is not readable: {file_path}")
+            raise FileAccessError("File is not readable: {file_path}")
 
         file_size = os.path.getsize(file_path)
         if not self.config.is_file_size_allowed(file_size):
@@ -253,7 +249,7 @@ class FileConverter:
         filename = Path(file_path).name
         file_info = self.file_detector.get_file_type_info(file_path)
 
-        return f"""# {filename}
+        return """# {filename}
 
 **File Information:**
 - **Type**: {file_info.get("normalized_type", "unknown")}

@@ -18,7 +18,7 @@ class DatabaseDirectoryError(Exception):
 
     def __init__(self, path: Path):
         self.path = path
-        super().__init__(f"Database directory does not exist: {path}")
+        super().__init__("Database directory does not exist: {path}")
 
 
 class IngestionStatus:

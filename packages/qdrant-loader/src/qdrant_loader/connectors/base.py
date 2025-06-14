@@ -32,7 +32,6 @@ class BaseConnector(ABC):
         Args:
             file_conversion_config: Global file conversion configuration
         """
-        pass
 
     @abstractmethod
     async def get_documents(self) -> list[Document]:

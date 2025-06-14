@@ -7,7 +7,6 @@ import signal
 from pathlib import Path
 
 import click
-import tomli
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
@@ -111,7 +110,7 @@ def _setup_logging(log_level: str, workspace_config=None) -> None:
         logger = LoggingConfig.get_logger(__name__)
 
     except Exception as e:
-        raise ClickException(f"Failed to setup logging: {str(e)!s}") from e
+        raise ClickException("Failed to setup logging: {str(e)!s}") from e
 
 
 def _setup_workspace(workspace_path: Path):
@@ -129,9 +128,8 @@ def _setup_workspace(workspace_path: Path):
     try:
         # Lazy import to avoid slow startup
         from qdrant_loader.config.workspace import (
-            WorkspaceConfig,
-            setup_workspace,
             create_workspace_structure,
+            setup_workspace,
         )
 
         # Create workspace structure if needed
@@ -158,7 +156,7 @@ def _setup_workspace(workspace_path: Path):
     except ValueError as e:
         raise ClickException(str(e)) from e
     except Exception as e:
-        raise ClickException(f"Failed to setup workspace: {str(e)!s}") from e
+        raise ClickException("Failed to setup workspace: {str(e)!s}") from e
 
 
 def _load_config_with_workspace(
@@ -178,7 +176,6 @@ def _load_config_with_workspace(
     try:
         # Lazy import to avoid slow startup
         from qdrant_loader.config import (
-            initialize_config,
             initialize_config_with_workspace,
         )
 
@@ -195,7 +192,7 @@ def _load_config_with_workspace(
 
     except Exception as e:
         _get_logger().error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+        raise ClickException("Failed to load configuration: {str(e)!s}") from e
 
 
 def _create_database_directory(path: Path) -> bool:
@@ -213,11 +210,11 @@ def _create_database_directory(path: Path) -> bool:
         )
         if click.confirm("Would you like to create this directory?", default=True):
             path.mkdir(parents=True, mode=0o755)
-            _get_logger().info(f"Created directory: {path.absolute()}")
+            _get_logger().info("Created directory: {path.absolute()}")
             return True
         return False
     except Exception as e:
-        raise ClickException(f"Failed to create directory: {str(e)!s}") from e
+        raise ClickException("Failed to create directory: {str(e)!s}") from e
 
 
 def _load_config(
@@ -240,7 +237,7 @@ def _load_config(
         if config_path is not None:
             if not config_path.exists():
                 _get_logger().error("config_not_found", path=str(config_path))
-                raise ClickException(f"Config file not found: {str(config_path)!s}")
+                raise ClickException("Config file not found: {str(config_path)!s}")
             initialize_config(config_path, env_path, skip_validation=skip_validation)
             return
 
@@ -252,7 +249,7 @@ def _load_config(
 
         # Step 4: If no file is found, raise an error
         raise ClickException(
-            f"No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
+            "No config file found. Please specify a config file or create config.yaml in the current directory: {str(default_config)!s}"
         )
 
     except Exception as e:
@@ -285,7 +282,7 @@ def _load_config(
             raise e from None
         else:
             _get_logger().error("config_load_failed", error=str(e))
-            raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
+            raise ClickException("Failed to load configuration: {str(e)!s}") from e
 
 
 def _check_settings():
@@ -306,7 +303,7 @@ async def _run_init(settings, force: bool) -> None:
         # Lazy import to avoid slow startup
         from qdrant_loader.core.init_collection import init_collection
 
-        result = await init_collection(settings, force)
+        result = init_collection(settings, force)
         if not result:
             raise ClickException("Failed to initialize collection")
 
@@ -324,7 +321,7 @@ async def _run_init(settings, force: bool) -> None:
 
     except Exception as e:
         _get_logger().error("init_failed", error=str(e))
-        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+        raise ClickException("Failed to initialize collection: {str(e)!s}") from e
 
 
 @cli.command()
@@ -385,7 +382,7 @@ async def init(
                         "Database directory creation declined. Exiting."
                     )
 
-            # Delete the database file if it exists and force is True
+            # Delete the database file if it exists and force
             if os.path.exists(db_path) and force:
                 _get_logger().info("Resetting state database", database_path=db_path)
                 os.remove(db_path)
@@ -409,7 +406,7 @@ async def init(
         from qdrant_loader.utils.logging import LoggingConfig
 
         LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
-        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+        raise ClickException("Failed to initialize collection: {str(e)!s}") from e
 
 
 async def _cancel_all_tasks():
@@ -570,12 +567,12 @@ async def ingest(
                 if t is not asyncio.current_task() and not t.done()
             ]
             if pending:
-                logger.debug(f" Awaiting {len(pending)} pending tasks before exit...")
+                logger.debug(" Awaiting {len(pending)} pending tasks before exit...")
                 await asyncio.gather(*pending, return_exceptions=True)
             await asyncio.sleep(0.1)
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
-            logger.error(f" Exception in ingest: {e}")
+            logger.error(" Exception in ingest: {e}")
             raise
         finally:
             if stop_event.is_set():
@@ -588,7 +585,7 @@ async def ingest(
         raise e from None
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
-        raise ClickException(f"Failed to run ingestion: {str(e)!s}") from e
+        raise ClickException("Failed to run ingestion: {str(e)!s}") from e
 
 
 @cli.command()
@@ -639,7 +636,7 @@ def config(
 
     except Exception as e:
         LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
-        raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
+        raise ClickException("Failed to display configuration: {str(e)!s}") from e
 
 
 # Add project management commands with lazy import

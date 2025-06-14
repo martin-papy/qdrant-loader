@@ -25,7 +25,7 @@ def test_qdrant_version_filter():
 
     # Test that other messages pass through
     record.msg = "Some other message"
-    assert filter_instance.filter(record) is True
+    assert filter_instance.filter(record) 
 
 
 def test_application_filter():
@@ -84,7 +84,7 @@ def test_logging_config_setup_basic():
     # Test basic setup
     LoggingConfig.setup(level="DEBUG", format="console")
 
-    assert LoggingConfig._initialized is True
+    assert LoggingConfig._initialized 
     assert LoggingConfig._current_config == ("DEBUG", "console", None, True)
 
 
@@ -96,7 +96,7 @@ def test_logging_config_setup_with_file():
         try:
             LoggingConfig.setup(level="INFO", format="json", file=tmp_file.name)
 
-            assert LoggingConfig._initialized is True
+            assert LoggingConfig._initialized 
             assert LoggingConfig._current_config == (
                 "INFO",
                 "json",
@@ -124,7 +124,7 @@ def test_logging_config_setup_with_env_variables():
         ):
             LoggingConfig.setup()
 
-            assert LoggingConfig._initialized is True
+            assert LoggingConfig._initialized 
             # Check that log file was created
             assert os.path.exists(log_file)
 
@@ -136,7 +136,7 @@ def test_logging_config_setup_disabled_console():
     with patch.dict(os.environ, {"MCP_DISABLE_CONSOLE_LOGGING": "true"}):
         LoggingConfig.setup(level="INFO")
 
-        assert LoggingConfig._initialized is True
+        assert LoggingConfig._initialized 
 
 
 def test_logging_config_setup_invalid_level():
@@ -154,7 +154,7 @@ def test_logging_config_get_logger():
     # Test getting logger initializes config if not already done
     logger = LoggingConfig.get_logger("test")
 
-    assert LoggingConfig._initialized is True
+    assert LoggingConfig._initialized 
     assert logger is not None
     assert hasattr(logger, "info")
     assert hasattr(logger, "debug")

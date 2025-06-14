@@ -2,15 +2,13 @@
 Unit tests for GitOperations.
 """
 
-import pytest
 import os
-import tempfile
 import shutil
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch, Mock
-from pathlib import Path
+import tempfile
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
-import git
+import pytest
 from git.exc import GitCommandError
 
 from qdrant_loader.connectors.git.operations import GitOperations
@@ -135,7 +133,7 @@ class TestCloneOperations:
 
                     # Verify the URL was modified to include the token
                     call_args = mock_clone_from.call_args
-                    assert f"https://{auth_token}@github.com" in call_args[0][0]
+                    assert "https://{auth_token}@github.com" in call_args[0][0]
 
     def test_clone_with_retry_on_failure(self, git_operations, temp_dir):
         """Test cloning with retry on failure."""

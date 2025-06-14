@@ -2,8 +2,8 @@
 
 import os
 import tempfile
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
 
 import pytest
 
@@ -21,23 +21,23 @@ class TestTestTemplateConfiguration:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-    
+
   chunking:
     chunk_size: 500
     chunk_overlap: 50
-    
+
   embedding:
     model: text-embedding-3-small
     api_key: "${OPENAI_API_KEY}"
     batch_size: 10
-    
+
   state_management:
     database_path: ":memory:"
     table_prefix: "test_qdrant_loader_"
     connection_pool:
       size: 1
       timeout: 5
-  
+
   file_conversion:
     max_file_size: 10485760
     conversion_timeout: 60
@@ -103,23 +103,23 @@ projects:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-    
+
   chunking:
     chunk_size: 500
     chunk_overlap: 50
-    
+
   embedding:
     model: text-embedding-3-small
     api_key: "${OPENAI_API_KEY}"
     batch_size: 10
-    
+
   state_management:
     database_path: ":memory:"
     table_prefix: "test_qdrant_loader_"
     connection_pool:
       size: 1
       timeout: 5
-  
+
   file_conversion:
     max_file_size: 10485760
     conversion_timeout: 60

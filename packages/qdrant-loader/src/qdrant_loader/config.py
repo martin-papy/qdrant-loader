@@ -1,8 +1,9 @@
 """Configuration management for the application."""
 
 from pydantic import BaseModel, Field
-from .config.neo4j import Neo4jConfig
+
 from .config.graphiti import GraphitiConfig
+from .config.neo4j import Neo4jConfig
 
 
 class SemanticAnalysisConfig(BaseModel):

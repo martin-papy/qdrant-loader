@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import git
 import pytest
+
 from qdrant_loader.connectors.git.adapter import GitPythonAdapter
 
 
@@ -89,7 +90,7 @@ class TestGitPythonAdapter:
         mock_repo.git.show.return_value = expected_content
         content = adapter.get_file_content(file_path)
         assert content == expected_content
-        mock_repo.git.show.assert_called_once_with(f"HEAD:{file_path}")
+        mock_repo.git.show.assert_called_once_with("HEAD:{file_path}")
 
     def test_get_file_content_no_repo(self):
         """Test getting file content when repository is not initialized."""

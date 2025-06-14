@@ -3,6 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.code_strategy import (
@@ -59,13 +60,13 @@ class Calculator:
     def add(self, a: int, b: int) -> int:
         """Add two numbers."""
         result = a + b
-        self.history.append(f"{a} + {b} = {result}")
+        self.history.append("{a} + {b} = {result}")
         return result
 
     def multiply(self, a: int, b: int) -> int:
         """Multiply two numbers."""
         result = a * b
-        self.history.append(f"{a} * {b} = {result}")
+        self.history.append("{a} * {b} = {result}")
         return result
 
 def main():

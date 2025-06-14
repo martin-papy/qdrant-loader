@@ -1,9 +1,8 @@
 """Tests for openpyxl warning capture functionality."""
 
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-import pytest
 
 from qdrant_loader.core.file_conversion.file_converter import capture_openpyxl_warnings
 
@@ -113,7 +112,7 @@ class TestWarningCapture:
         mock_logger = Mock()
         file_path = "/test/file.xlsx"
 
-        original_handler = warnings.showwarning
+        warnings.showwarning
 
         with capture_openpyxl_warnings(mock_logger, file_path):
             # Simulate a non-openpyxl warning

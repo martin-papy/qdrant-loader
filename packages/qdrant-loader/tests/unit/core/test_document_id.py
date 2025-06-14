@@ -84,7 +84,7 @@ class TestDocumentIdGeneration(unittest.TestCase):
                 self.assertEqual(
                     base_id,
                     variation_id,
-                    f"IDs should be equal for variations of {test_case['url']}",
+                    "IDs should be equal for variations of {test_case['url']}",
                 )
 
     def test_id_uniqueness(self):
@@ -123,7 +123,7 @@ class TestDocumentIdGeneration(unittest.TestCase):
             try:
                 uuid.UUID(doc_id)
             except ValueError:
-                self.fail(f"Generated ID '{doc_id}' is not a valid UUID")
+                self.fail("Generated ID '{doc_id}' is not a valid UUID")
 
 
 if __name__ == "__main__":

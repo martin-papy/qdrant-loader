@@ -22,7 +22,7 @@ class MarkItDownConfig(BaseModel):
 
     llm_api_key: Optional[str] = Field(
         default=None,
-        description="API key for LLM service (required when enable_llm_descriptions is True)",
+        description="API key for LLM service (required when enable_llm_descriptions )",
     )
 
 
@@ -84,4 +84,4 @@ class ConnectorFileConversionConfig(BaseModel):
             True if attachments should be downloaded, False otherwise
         """
         # Default to False if not specified
-        return self.download_attachments is True
+        return self.download_attachments or False

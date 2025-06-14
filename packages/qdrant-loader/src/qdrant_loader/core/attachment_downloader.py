@@ -3,17 +3,16 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from typing import List, Optional
 
 import requests
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
-    FileConverter,
-    FileDetector,
     FileConversionConfig,
     FileConversionError,
+    FileConverter,
+    FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -215,7 +214,7 @@ class AttachmentDownloader:
             # Create temporary file with original extension
             file_ext = Path(attachment.filename).suffix
             temp_file = tempfile.NamedTemporaryFile(
-                delete=False, suffix=file_ext, prefix=f"attachment_{attachment.id}_"
+                delete=False, suffix=file_ext, prefix="attachment_{attachment.id}_"
             )
 
             # Write content to temporary file with progress tracking
@@ -340,7 +339,7 @@ class AttachmentDownloader:
                     conversion_failed = True
             else:
                 # For non-convertible files, create a minimal document
-                content = f"# {attachment.filename}\n\nFile type: {attachment.mime_type}\nSize: {attachment.size} bytes\n\nThis attachment could not be converted to text."
+                content = "# {attachment.filename}\n\nFile type: {attachment.mime_type}\nSize: {attachment.size} bytes\n\nThis attachment could not be converted to text."
                 content_type = "md"
                 conversion_method = None
                 conversion_failed = False
@@ -370,13 +369,13 @@ class AttachmentDownloader:
 
             # Create attachment document
             document = Document(
-                title=f"Attachment: {attachment.filename}",
+                title="Attachment: {attachment.filename}",
                 content=content,
                 content_type=content_type,
                 metadata=attachment_metadata,
                 source_type=parent_document.source_type,
                 source=parent_document.source,
-                url=f"{parent_document.url}#attachment-{attachment.id}",
+                url="{parent_document.url}#attachment-{attachment.id}",
                 is_deleted=False,
                 updated_at=parent_document.updated_at,
                 created_at=parent_document.created_at,

@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.text_processing.text_processor import (
     MAX_ENTITIES_TO_EXTRACT,
@@ -291,7 +292,7 @@ class TestTextProcessor:
         mock_entities = []
         for i in range(MAX_ENTITIES_TO_EXTRACT + 10):
             mock_entity = MagicMock()
-            mock_entity.text = f"Entity{i}"
+            mock_entity.text = "Entity{i}"
             mock_entity.label_ = "PERSON"
             mock_entities.append(mock_entity)
 
@@ -385,7 +386,7 @@ class TestTextProcessor:
         mock_tokens = []
         for i in range(MAX_POS_TAGS_TO_EXTRACT + 10):
             mock_token = MagicMock()
-            mock_token.text = f"word{i}"
+            mock_token.text = "word{i}"
             mock_token.pos_ = "NOUN"
             mock_tokens.append(mock_token)
 

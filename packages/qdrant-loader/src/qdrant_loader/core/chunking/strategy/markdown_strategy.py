@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, Optional
 import structlog
 
 from qdrant_loader.config import Settings
-from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
+from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.text_processing.semantic_analyzer import SemanticAnalyzer
 
@@ -370,8 +370,8 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             # Safety check
             if len(chunks) >= MAX_CHUNKS_PER_SECTION:
                 logger.warning(
-                    f"Reached maximum chunks per section limit ({MAX_CHUNKS_PER_SECTION}). "
-                    f"Section may be truncated."
+                    "Reached maximum chunks per section limit ({MAX_CHUNKS_PER_SECTION}). "
+                    "Section may be truncated."
                 )
                 break
 
@@ -402,7 +402,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                                 # Handle extremely long words by truncating them
                                 if len(word) > max_size:
                                     logger.warning(
-                                        f"Word longer than max_size ({len(word)} > {max_size}), truncating: {word[:50]}..."
+                                        "Word longer than max_size ({len(word)} > {max_size}), truncating: {word[:50]}..."
                                     )
                                     word = (
                                         word[: max_size - 10] + "..."
@@ -435,7 +435,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Final safety check
         if len(chunks) > MAX_CHUNKS_PER_SECTION:
             logger.warning(
-                f"Generated {len(chunks)} chunks for section, limiting to {MAX_CHUNKS_PER_SECTION}"
+                "Generated {len(chunks)} chunks for section, limiting to {MAX_CHUNKS_PER_SECTION}"
             )
             chunks = chunks[:MAX_CHUNKS_PER_SECTION]
 
@@ -468,7 +468,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Perform semantic analysis
         logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
         analysis_result = self.semantic_analyzer.analyze_text(
-            chunk, doc_id=f"chunk_{chunk_index}"
+            chunk, doc_id="chunk_{chunk_index}"
         )
 
         # Cache results
@@ -529,7 +529,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             document.metadata.get("file_name")
             or document.metadata.get("original_filename")
             or document.title
-            or f"{document.source_type}:{document.source}"
+            or "{document.source_type}:{document.source}"
         )
 
         # Start progress tracking
@@ -554,8 +554,8 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             MAX_CHUNKS_PER_DOCUMENT = 500
             if len(chunks_metadata) > MAX_CHUNKS_PER_DOCUMENT:
                 logger.warning(
-                    f"Document generated {len(chunks_metadata)} chunks, limiting to {MAX_CHUNKS_PER_DOCUMENT}. "
-                    f"Document may be truncated. Document: {document.title}"
+                    "Document generated {len(chunks_metadata)} chunks, limiting to {MAX_CHUNKS_PER_DOCUMENT}. "
+                    "Document may be truncated. Document: {document.title}"
                 )
                 chunks_metadata = chunks_metadata[:MAX_CHUNKS_PER_DOCUMENT]
 
@@ -564,7 +564,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             for i, chunk_meta in enumerate(chunks_metadata):
                 chunk_content = chunk_meta["content"]
                 logger.debug(
-                    f"Processing chunk {i+1}/{len(chunks_metadata)}",
+                    "Processing chunk {i+1}/{len(chunks_metadata)}",
                     extra={
                         "chunk_size": len(chunk_content),
                         "section_type": chunk_meta.get("section_type", "unknown"),
@@ -620,7 +620,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             )
 
             logger.info(
-                f"Markdown chunking completed for document: {document.title}",
+                "Markdown chunking completed for document: {document.title}",
                 extra={
                     "document_id": document.id,
                     "total_chunks": len(chunked_docs),
@@ -639,7 +639,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.log_error(document.id, str(e))
             # Fallback to default chunking
             self.progress_tracker.log_fallback(
-                document.id, f"Markdown parsing failed: {str(e)}"
+                document.id, "Markdown parsing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
 

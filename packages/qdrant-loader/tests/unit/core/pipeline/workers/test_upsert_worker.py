@@ -5,6 +5,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.core.pipeline.workers.upsert_worker import (
     PipelineResult,
     UpsertWorker,
@@ -330,8 +331,8 @@ class TestUpsertWorker:
         chunks = []
         for i in range(5):
             mock_chunk = Mock()
-            mock_chunk.id = f"chunk{i}"
-            mock_chunk.content = f"Test content {i}"
+            mock_chunk.id = "chunk{i}"
+            mock_chunk.content = "Test content {i}"
             mock_chunk.source = "test_source"
             mock_chunk.source_type = "test"
             mock_chunk.created_at = datetime(2023, 1, 1, 12, 0, 0)

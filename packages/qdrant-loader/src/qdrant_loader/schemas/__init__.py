@@ -4,24 +4,23 @@ This module provides custom node and edge schemas tailored for document processi
 knowledge management, and the QDrant Loader application's specific use cases.
 """
 
-from .nodes import (
-    DocumentNode,
-    SourceNode,
-    ConceptNode,
-    PersonNode,
-    OrganizationNode,
-    ProjectNode,
-    ChunkNode,
-)
-
 from .edges import (
-    DocumentRelationshipEdge,
-    ContainsEdge,
-    ReferencesEdge,
     AuthoredByEdge,
     BelongsToEdge,
-    RelatedToEdge,
+    ContainsEdge,
     DerivedFromEdge,
+    DocumentRelationshipEdge,
+    ReferencesEdge,
+    RelatedToEdge,
+)
+from .nodes import (
+    ChunkNode,
+    ConceptNode,
+    DocumentNode,
+    OrganizationNode,
+    PersonNode,
+    ProjectNode,
+    SourceNode,
 )
 
 __all__ = [

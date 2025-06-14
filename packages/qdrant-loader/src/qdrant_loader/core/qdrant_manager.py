@@ -105,7 +105,7 @@ class QdrantManager:
             # Check if collection already exists
             collections = client.get_collections()
             if any(c.name == self.collection_name for c in collections.collections):
-                self.logger.info(f"Collection {self.collection_name} already exists")
+                self.logger.info("Collection {self.collection_name} already exists")
                 return
 
             # Get vector size from configuration
@@ -129,7 +129,7 @@ class QdrantManager:
                 field_schema={"type": "keyword"},  # type: ignore
             )
 
-            self.logger.debug(f"Collection {self.collection_name} created successfully")
+            self.logger.debug("Collection {self.collection_name} created successfully")
         except Exception as e:
             self.logger.error("Failed to create collection", error=str(e))
             raise

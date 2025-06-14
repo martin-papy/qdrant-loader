@@ -57,35 +57,35 @@ class FileProcessor:
 
             # Check if file exists and is readable
             if not os.path.isfile(file_path):
-                self.logger.debug(f"Skipping {file_path}: file does not exist")
+                self.logger.debug("Skipping {file_path}: file does not exist")
                 return False
             if not os.access(file_path, os.R_OK):
-                self.logger.debug(f"Skipping {file_path}: file is not readable")
+                self.logger.debug("Skipping {file_path}: file is not readable")
                 return False
 
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
-            self.logger.debug(f"Relative path: {rel_path}")
+            self.logger.debug("Relative path: {rel_path}")
 
             # Skip files that are just extensions without names (e.g. ".md")
             file_basename = os.path.basename(rel_path)
             if file_basename.startswith("."):
                 self.logger.debug(
-                    f"Skipping {rel_path}: invalid filename (starts with dot)"
+                    "Skipping {rel_path}: invalid filename (starts with dot)"
                 )
                 return False
 
             # Check if file matches any exclude patterns first
             for pattern in self.config.exclude_paths:
                 pattern = pattern.lstrip("/")
-                self.logger.debug(f"Checking exclude pattern: {pattern}")
+                self.logger.debug("Checking exclude pattern: {pattern}")
                 if pattern.endswith("/**"):
                     dir_pattern = pattern[:-3]  # Remove /** suffix
                     if dir_pattern == os.path.dirname(rel_path) or os.path.dirname(
                         rel_path
                     ).startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
+                            "Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
                 elif pattern.endswith("/"):
@@ -94,12 +94,12 @@ class FileProcessor:
                         rel_path
                     ).startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
+                            "Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
                 elif fnmatch.fnmatch(rel_path, pattern):
                     self.logger.debug(
-                        f"Skipping {rel_path}: matches exclude pattern {pattern}"
+                        "Skipping {rel_path}: matches exclude pattern {pattern}"
                     )
                     return False
 
@@ -108,17 +108,17 @@ class FileProcessor:
             file_ext = os.path.splitext(file_basename)[
                 1
             ].lower()  # Get extension with dot
-            self.logger.debug(f"Checking file extension: {file_ext}")
+            self.logger.debug("Checking file extension: {file_ext}")
 
             # First check configured file types
             for pattern in self.config.file_types:
-                self.logger.debug(f"Checking file type pattern: {pattern}")
+                self.logger.debug("Checking file type pattern: {pattern}")
                 # Extract extension from pattern (e.g., "*.md" -> ".md")
                 pattern_ext = os.path.splitext(pattern)[1].lower()
                 if pattern_ext and file_ext == pattern_ext:
                     file_type_match = True
                     self.logger.debug(
-                        f"File {rel_path} matches file type pattern {pattern}"
+                        "File {rel_path} matches file type pattern {pattern}"
                     )
                     break
 
@@ -131,21 +131,21 @@ class FileProcessor:
             ):
                 if self.file_detector.is_supported_for_conversion(file_path):
                     file_type_match = True
-                    self.logger.debug(f"File {rel_path} supported for conversion")
+                    self.logger.debug("File {rel_path} supported for conversion")
 
             if not file_type_match:
                 self.logger.debug(
-                    f"Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
+                    "Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
                 )
                 return False
 
             # Check file size
             file_size = os.path.getsize(file_path)
             self.logger.debug(
-                f"File size: {file_size} bytes (max: {self.config.max_file_size})"
+                "File size: {file_size} bytes (max: {self.config.max_file_size})"
             )
             if file_size > self.config.max_file_size:
-                self.logger.debug(f"Skipping {rel_path}: exceeds max file size")
+                self.logger.debug("Skipping {rel_path}: exceeds max file size")
                 return False
 
             # Check if file matches any include patterns
@@ -156,26 +156,26 @@ class FileProcessor:
 
             # Get the file's directory relative to repo root
             rel_dir = os.path.dirname(rel_path)
-            self.logger.debug(f"Checking include patterns for directory: {rel_dir}")
+            self.logger.debug("Checking include patterns for directory: {rel_dir}")
 
             for pattern in self.config.include_paths:
                 pattern = pattern.lstrip("/")
-                self.logger.debug(f"Checking include pattern: {pattern}")
+                self.logger.debug("Checking include pattern: {pattern}")
                 if pattern == "" or pattern == "/":
                     # Root pattern means include only files in root directory
                     if rel_dir == "":
-                        self.logger.debug(f"Including {rel_path}: matches root pattern")
+                        self.logger.debug("Including {rel_path}: matches root pattern")
                         return True
                 if pattern.endswith("/**/*"):
                     dir_pattern = pattern[:-5]  # Remove /**/* suffix
                     if dir_pattern == "" or dir_pattern == "/":
                         self.logger.debug(
-                            f"Including {rel_path}: matches root /**/* pattern"
+                            "Including {rel_path}: matches root /**/* pattern"
                         )
                         return True  # Root pattern with /**/* means include everything
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Including {rel_path}: matches directory pattern {pattern}"
+                            "Including {rel_path}: matches directory pattern {pattern}"
                         )
                         return True
                 elif pattern.endswith("/"):
@@ -184,24 +184,24 @@ class FileProcessor:
                         # Root pattern with / means include only files in root directory
                         if rel_dir == "":
                             self.logger.debug(
-                                f"Including {rel_path}: matches root pattern"
+                                "Including {rel_path}: matches root pattern"
                             )
                             return True
                     if dir_pattern == rel_dir or rel_dir.startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Including {rel_path}: matches directory pattern {pattern}"
+                            "Including {rel_path}: matches directory pattern {pattern}"
                         )
                         return True
                 elif fnmatch.fnmatch(rel_path, pattern):
                     self.logger.debug(
-                        f"Including {rel_path}: matches exact pattern {pattern}"
+                        "Including {rel_path}: matches exact pattern {pattern}"
                     )
                     return True
 
             # If we have include patterns but none matched, exclude the file
-            self.logger.debug(f"Skipping {rel_path}: not in include paths")
+            self.logger.debug("Skipping {rel_path}: not in include paths")
             return False
 
         except Exception as e:
-            self.logger.error(f"Error checking if file should be processed: {e}")
+            self.logger.error("Error checking if file should be processed: {e}")
             return False

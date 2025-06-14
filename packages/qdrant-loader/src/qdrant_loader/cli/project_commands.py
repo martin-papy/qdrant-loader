@@ -1,26 +1,21 @@
 """Project management CLI commands for QDrant Loader."""
 
-import asyncio
 import json
 from pathlib import Path
-from typing import Optional
 
-import click
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
+from rich.table import Table
 
 from qdrant_loader.cli.asyncio import async_command
-from qdrant_loader.config import Settings, get_settings
-from qdrant_loader.config.workspace import WorkspaceConfig, validate_workspace_flags
+from qdrant_loader.config import Settings
+from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.core.project_manager import ProjectManager
-from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 # Rich console for better output formatting
@@ -30,7 +25,6 @@ console = Console()
 @group(name="project")
 def project_cli():
     """Project management commands."""
-    pass
 
 
 def _get_all_sources_from_config(sources_config):
@@ -129,7 +123,7 @@ async def list(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_list_failed", error=str(e))
-        raise ClickException(f"Failed to list projects: {str(e)!s}") from e
+        raise ClickException("Failed to list projects: {str(e)!s}") from e
 
 
 @project_cli.command()
@@ -173,7 +167,7 @@ async def status(
         if project_id:
             context = project_manager.get_project_context(project_id)
             if not context:
-                raise ClickException(f"Project '{project_id}' not found")
+                raise ClickException("Project '{project_id}' not found")
             project_contexts = {project_id: context}
         else:
             project_contexts = project_manager.get_all_project_contexts()
@@ -211,7 +205,7 @@ async def status(
                 )
 
                 # Create project panel
-                project_info = f"""[bold cyan]Project ID:[/bold cyan] {context.project_id}
+                project_info = """[bold cyan]Project ID:[/bold cyan] {context.project_id}
 [bold magenta]Display Name:[/bold magenta] {context.display_name or 'N/A'}
 [bold green]Description:[/bold green] {context.description or 'N/A'}
 [bold blue]Collection:[/bold blue] {context.collection_name or 'N/A'}
@@ -220,13 +214,13 @@ async def status(
 [bold red]Latest Ingestion:[/bold red] N/A (requires database)"""
 
                 console.print(
-                    Panel(project_info, title=f"Project: {context.project_id}")
+                    Panel(project_info, title="Project: {context.project_id}")
                 )
 
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_status_failed", error=str(e))
-        raise ClickException(f"Failed to get project status: {str(e)!s}") from e
+        raise ClickException("Failed to get project status: {str(e)!s}") from e
 
 
 @project_cli.command()
@@ -263,7 +257,7 @@ async def validate(
         if project_id:
             context = project_manager.get_project_context(project_id)
             if not context:
-                raise ClickException(f"Project '{project_id}' not found")
+                raise ClickException("Project '{project_id}' not found")
             project_contexts = {project_id: context}
         else:
             project_contexts = project_manager.get_all_project_contexts()
@@ -298,15 +292,15 @@ async def validate(
                             or not source_config.source_type
                         ):
                             source_errors.append(
-                                f"Missing source_type for {source_name}"
+                                "Missing source_type for {source_name}"
                             )
                         if (
                             not hasattr(source_config, "source")
                             or not source_config.source
                         ):
-                            source_errors.append(f"Missing source for {source_name}")
+                            source_errors.append("Missing source for {source_name}")
                     except Exception as e:
-                        source_errors.append(f"Error in {source_name}: {str(e)}")
+                        source_errors.append("Error in {source_name}: {str(e)}")
 
                 validation_results.append(
                     {
@@ -335,14 +329,14 @@ async def validate(
         for result in validation_results:
             if result["valid"]:
                 console.print(
-                    f"[green]✓[/green] Project '{result['project_id']}' is valid ({result['source_count']} sources)"
+                    "[green]✓[/green] Project '{result['project_id']}' is valid ({result['source_count']} sources)"
                 )
             else:
                 console.print(
-                    f"[red]✗[/red] Project '{result['project_id']}' has errors:"
+                    "[red]✗[/red] Project '{result['project_id']}' has errors:"
                 )
                 for error in result["errors"]:
-                    console.print(f"  [red]•[/red] {error}")
+                    console.print("  [red]•[/red] {error}")
 
         if all_valid:
             console.print("\n[green]All projects are valid![/green]")
@@ -353,7 +347,7 @@ async def validate(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_validate_failed", error=str(e))
-        raise ClickException(f"Failed to validate projects: {str(e)!s}") from e
+        raise ClickException("Failed to validate projects: {str(e)!s}") from e
 
 
 async def _setup_project_manager(
@@ -363,9 +357,9 @@ async def _setup_project_manager(
 ) -> tuple[Settings, ProjectManager]:
     """Setup project manager with configuration loading."""
     from qdrant_loader.cli.cli import (
-        _setup_workspace,
-        _load_config_with_workspace,
         _check_settings,
+        _load_config_with_workspace,
+        _setup_workspace,
     )
 
     # Setup workspace if provided
@@ -400,7 +394,7 @@ async def _initialize_project_contexts_from_config(
     logger.debug("Initializing project contexts from configuration")
 
     for project_id, project_config in project_manager.projects_config.projects.items():
-        logger.debug(f"Creating context for project: {project_id}")
+        logger.debug("Creating context for project: {project_id}")
 
         # Determine collection name using the project's method
         collection_name = project_config.get_effective_collection_name(
@@ -419,8 +413,8 @@ async def _initialize_project_contexts_from_config(
         )
 
         project_manager._project_contexts[project_id] = context
-        logger.debug(f"Created context for project: {project_id}")
+        logger.debug("Created context for project: {project_id}")
 
     logger.debug(
-        f"Initialized {len(project_manager._project_contexts)} project contexts"
+        "Initialized {len(project_manager._project_contexts)} project contexts"
     )

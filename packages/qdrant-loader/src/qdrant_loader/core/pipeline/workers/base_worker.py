@@ -27,7 +27,6 @@ class BaseWorker(ABC):
         Returns:
             Processed result
         """
-        pass
 
     async def process_with_semaphore(self, input_data: Any) -> Any:
         """Process input data with semaphore control.

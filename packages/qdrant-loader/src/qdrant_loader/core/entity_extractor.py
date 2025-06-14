@@ -2,23 +2,22 @@
 
 import asyncio
 import hashlib
-import time
-from typing import Dict, List, Optional, Any, Callable, AsyncGenerator, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from concurrent.futures import ThreadPoolExecutor
-import weakref
 import json
 import re
+import time
+import weakref
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 
 from graphiti_core.nodes import EpisodeType
 
+from ..utils.logging import LoggingConfig
 from .graphiti_manager import GraphitiManager
 from .prompts import EntityPromptManager
 from .prompts.entity_prompts import PromptDomain
-from .types import EntityType, RelationshipType, ExtractedEntity, ExtractedRelationship
-from ..utils.logging import LoggingConfig
+from .types import EntityType, ExtractedEntity, ExtractedRelationship, RelationshipType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -152,9 +151,9 @@ class EntityExtractor:
         }
 
         logger.info(
-            f"EntityExtractor initialized with {len(self.config.enabled_entity_types)} enabled entity types, "
-            f"max concurrent: {self.config.max_concurrent_extractions}, "
-            f"worker pool size: {self.config.worker_pool_size}"
+            "EntityExtractor initialized with {len(self.config.enabled_entity_types)} enabled entity types, "
+            "max concurrent: {self.config.max_concurrent_extractions}, "
+            "worker pool size: {self.config.worker_pool_size}"
         )
 
         # Start background workers if enabled
@@ -163,12 +162,12 @@ class EntityExtractor:
 
     def _start_background_workers(self) -> None:
         """Start background worker coroutines for processing queued tasks."""
-        logger.info(f"Starting {self.config.worker_pool_size} background workers")
+        logger.info("Starting {self.config.worker_pool_size} background workers")
 
         for i in range(self.config.worker_pool_size):
             worker_task = asyncio.create_task(
                 self._background_worker(worker_id=i),
-                name=f"entity_extractor_worker_{i}",
+                name="entity_extractor_worker_{i}",
             )
             self._background_workers.append(worker_task)
             self._active_tasks.add(worker_task)
@@ -179,14 +178,14 @@ class EntityExtractor:
         Args:
             worker_id: Unique identifier for this worker
         """
-        logger.debug(f"Background worker {worker_id} started")
+        logger.debug("Background worker {worker_id} started")
 
         while not self._worker_shutdown_event.is_set():
             try:
                 # Wait for a task with timeout to allow periodic shutdown checks
                 task = await asyncio.wait_for(self._task_queue.get(), timeout=1.0)
 
-                logger.debug(f"Worker {worker_id} processing task {task.task_id}")
+                logger.debug("Worker {worker_id} processing task {task.task_id}")
                 self._current_progress.in_progress_tasks += 1
                 self._stats["queue_size"] = self._task_queue.qsize()
 
@@ -206,7 +205,7 @@ class EntityExtractor:
 
                 except Exception as e:
                     logger.error(
-                        f"Worker {worker_id} failed to process task {task.task_id}: {e}"
+                        "Worker {worker_id} failed to process task {task.task_id}: {e}"
                     )
 
                     # Set exception on future if waiting
@@ -227,10 +226,10 @@ class EntityExtractor:
                 # Timeout waiting for task - continue to check shutdown
                 continue
             except Exception as e:
-                logger.error(f"Background worker {worker_id} encountered error: {e}")
+                logger.error("Background worker {worker_id} encountered error: {e}")
                 await asyncio.sleep(1.0)  # Brief pause before retrying
 
-        logger.debug(f"Background worker {worker_id} shutting down")
+        logger.debug("Background worker {worker_id} shutting down")
 
     async def _process_extraction_task(self, task: ExtractionTask) -> ExtractionResult:
         """Process a single extraction task with timeout and semaphore control.
@@ -262,7 +261,7 @@ class EntityExtractor:
 
             except asyncio.TimeoutError:
                 logger.error(
-                    f"Task {task.task_id} timed out after {self.config.task_timeout}s"
+                    "Task {task.task_id} timed out after {self.config.task_timeout}s"
                 )
                 raise
             finally:
@@ -304,7 +303,7 @@ class EntityExtractor:
         # Truncate text if too long
         if len(text) > self.config.max_text_length:
             logger.warning(
-                f"Text too long ({len(text)} chars), truncating to {self.config.max_text_length}"
+                "Text too long ({len(text)} chars), truncating to {self.config.max_text_length}"
             )
             text = text[: self.config.max_text_length]
 
@@ -314,7 +313,7 @@ class EntityExtractor:
             cached_result = self._get_from_cache(cache_key)
             if cached_result:
                 self._stats["cache_hits"] += 1
-                logger.debug(f"Cache hit for extraction: {cache_key[:16]}...")
+                logger.debug("Cache hit for extraction: {cache_key[:16]}...")
                 return cached_result
 
         self._stats["cache_misses"] += 1
@@ -339,7 +338,7 @@ class EntityExtractor:
 
         result.processing_time = time.time() - start_time
         logger.info(
-            f"Extracted {len(result.entities)} entities in {result.processing_time:.2f}s"
+            "Extracted {len(result.entities)} entities in {result.processing_time:.2f}s"
         )
 
         return result
@@ -363,7 +362,7 @@ class EntityExtractor:
         if not texts:
             return []
 
-        logger.info(f"Starting enhanced batch entity extraction for {len(texts)} texts")
+        logger.info("Starting enhanced batch entity extraction for {len(texts)} texts")
 
         # Prepare arguments - create proper lists with correct types
         actual_source_descriptions: List[Optional[str]] = []
@@ -388,8 +387,8 @@ class EntityExtractor:
             batch_times = actual_reference_times[i : i + batch_size]
 
             logger.debug(
-                f"Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size} "
-                f"with semaphore control (max concurrent: {self.config.max_concurrent_extractions})"
+                "Processing batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size} "
+                "with semaphore control (max concurrent: {self.config.max_concurrent_extractions})"
             )
 
             # Create semaphore-controlled extraction tasks
@@ -416,17 +415,17 @@ class EntityExtractor:
             # Handle exceptions
             for j, result in enumerate(batch_results):
                 if isinstance(result, Exception):
-                    logger.error(f"Batch extraction failed for text {i+j}: {result}")
+                    logger.error("Batch extraction failed for text {i+j}: {result}")
                     error_result = ExtractionResult(
                         source_text=batch_texts[j],
-                        errors=[f"Extraction failed: {str(result)}"],
+                        errors=["Extraction failed: {str(result)}"],
                     )
                     results.append(error_result)
                     self._stats["failed_extractions"] += 1
                 else:
                     results.append(result)
 
-        logger.info(f"Enhanced batch extraction completed: {len(results)} results")
+        logger.info("Enhanced batch extraction completed: {len(results)} results")
         return results
 
     async def _extract_with_retry(
@@ -467,13 +466,13 @@ class EntityExtractor:
                         2**attempt
                     )  # Exponential backoff
                     logger.warning(
-                        f"Extraction attempt {attempt + 1} failed: {e}. "
-                        f"Retrying in {delay:.1f}s..."
+                        "Extraction attempt {attempt + 1} failed: {e}. "
+                        "Retrying in {delay:.1f}s..."
                     )
                     await asyncio.sleep(delay)
                 else:
                     logger.error(
-                        f"All {self.config.max_retries + 1} extraction attempts failed"
+                        "All {self.config.max_retries + 1} extraction attempts failed"
                     )
 
         # All retries failed
@@ -481,7 +480,7 @@ class EntityExtractor:
         return ExtractionResult(
             source_text=text,
             errors=[
-                f"Extraction failed after {self.config.max_retries + 1} attempts: {str(last_exception)}"
+                "Extraction failed after {self.config.max_retries + 1} attempts: {str(last_exception)}"
             ],
         )
 
@@ -518,12 +517,12 @@ class EntityExtractor:
                 )
             except Exception as e:
                 logger.warning(
-                    f"Custom prompt extraction failed, falling back to default: {e}"
+                    "Custom prompt extraction failed, falling back to default: {e}"
                 )
 
         # Add episode to Graphiti for entity extraction
         episode_id = await self.graphiti_manager.add_episode(
-            name=f"Entity extraction - {datetime.now(timezone.utc).isoformat()}",
+            name="Entity extraction - {datetime.now(timezone.utc).isoformat()}",
             content=text,
             episode_type=EpisodeType.text,
             source_description=source_description or "Entity extraction source",
@@ -553,7 +552,7 @@ class EntityExtractor:
                 )
 
         except Exception as e:
-            logger.warning(f"Failed to retrieve entities from Graphiti: {e}")
+            logger.warning("Failed to retrieve entities from Graphiti: {e}")
             # Fallback to general node search
             nodes = await self.graphiti_manager.get_nodes(limit=50)
 
@@ -566,9 +565,9 @@ class EntityExtractor:
                 relationships = await self.extract_relationships(
                     entities, text, source_description
                 )
-                logger.debug(f"Extracted {len(relationships)} relationships")
+                logger.debug("Extracted {len(relationships)} relationships")
             except Exception as e:
-                logger.warning(f"Failed to extract relationships: {e}")
+                logger.warning("Failed to extract relationships: {e}")
 
         return ExtractionResult(
             entities=entities,
@@ -790,15 +789,15 @@ class EntityExtractor:
                 if entity.confidence >= self.config.confidence_threshold:
                     entities.append(entity)
                     logger.debug(
-                        f"Extracted entity: {entity.name} ({entity.entity_type.value}) with confidence {entity.confidence}"
+                        "Extracted entity: {entity.name} ({entity.entity_type.value}) with confidence {entity.confidence}"
                     )
 
             except Exception as e:
-                logger.warning(f"Failed to convert node to entity: {e}")
-                logger.debug(f"Node attributes: {dir(node)}")
+                logger.warning("Failed to convert node to entity: {e}")
+                logger.debug("Node attributes: {dir(node)}")
                 continue
 
-        logger.info(f"Successfully converted {len(entities)} nodes to entities")
+        logger.info("Successfully converted {len(entities)} nodes to entities")
         return entities
 
     async def _perform_custom_prompt_extraction(
@@ -858,15 +857,15 @@ class EntityExtractor:
                 relationships = await self.extract_relationships(
                     entities, text, source_description
                 )
-                logger.debug(f"Extracted {len(relationships)} relationships")
+                logger.debug("Extracted {len(relationships)} relationships")
             except Exception as e:
-                logger.warning(f"Failed to extract relationships: {e}")
+                logger.warning("Failed to extract relationships: {e}")
 
         # Create episode for tracking (optional)
         episode_id = None
         try:
             episode_id = await self.graphiti_manager.add_episode(
-                name=f"Custom prompt extraction - {datetime.now(timezone.utc).isoformat()}",
+                name="Custom prompt extraction - {datetime.now(timezone.utc).isoformat()}",
                 content=text,
                 episode_type=EpisodeType.text,
                 source_description=source_description
@@ -874,7 +873,7 @@ class EntityExtractor:
                 reference_time=reference_time or datetime.now(timezone.utc),
             )
         except Exception as e:
-            logger.warning(f"Failed to create episode for custom extraction: {e}")
+            logger.warning("Failed to create episode for custom extraction: {e}")
 
         return ExtractionResult(
             entities=entities,
@@ -953,7 +952,7 @@ class EntityExtractor:
             entities = self._extract_entities_from_text_response(response, source_text)
 
         except Exception as e:
-            logger.error(f"Error parsing LLM response: {e}")
+            logger.error("Error parsing LLM response: {e}")
 
         return entities
 
@@ -1020,7 +1019,7 @@ class EntityExtractor:
         Returns:
             Cache key string
         """
-        content = f"{text}|{source_description or ''}"
+        content = "{text}|{source_description or ''}"
         return hashlib.md5(content.encode("utf-8")).hexdigest()
 
     def _get_from_cache(self, cache_key: str) -> Optional[ExtractionResult]:
@@ -1127,9 +1126,9 @@ class EntityExtractor:
         """
         if test_text is None:
             test_text = """
-            Our microservice architecture includes a user authentication service 
-            that connects to a PostgreSQL database. The API endpoints are documented 
-            in our Confluence wiki, and the development team led by John Smith 
+            Our microservice architecture includes a user authentication service
+            that connects to a PostgreSQL database. The API endpoints are documented
+            in our Confluence wiki, and the development team led by John Smith
             maintains this critical component.
             """
 
@@ -1181,7 +1180,7 @@ class EntityExtractor:
 
             # Test 3: Async queue processing
             logger.info("Testing async queue processing...")
-            queue_texts = [f"{test_text} Queue test {i}" for i in range(5)]
+            queue_texts = ["{test_text} Queue test {i}" for i in range(5)]
 
             # Add progress callback for testing
             progress_updates = []
@@ -1218,7 +1217,7 @@ class EntityExtractor:
 
             async def text_generator():
                 for i in range(3):
-                    yield f"{test_text} Stream item {i}"
+                    yield "{test_text} Stream item {i}"
 
             streaming_results = []
             async for result in self.extract_entities_streaming(
@@ -1242,7 +1241,7 @@ class EntityExtractor:
             logger.info("All integration tests completed successfully")
 
         except Exception as e:
-            logger.error(f"Integration test failed: {e}")
+            logger.error("Integration test failed: {e}")
             test_results["errors"].append(str(e))
 
         return test_results
@@ -1270,14 +1269,14 @@ class EntityExtractor:
         if not texts:
             return []
 
-        logger.info(f"Queuing {len(texts)} texts for async extraction")
+        logger.info("Queuing {len(texts)} texts for async extraction")
 
         # Prepare task data
         tasks = []
         futures = []
 
         for i, text in enumerate(texts):
-            task_id = f"async_extract_{int(time.time() * 1000)}_{i}"
+            task_id = "async_extract_{int(time.time() * 1000)}_{i}"
 
             task = ExtractionTask(
                 task_id=task_id,
@@ -1310,7 +1309,7 @@ class EntityExtractor:
         if wait_for_completion:
             # Wait for all results
             logger.debug(
-                f"Waiting for {len(futures)} async extraction tasks to complete"
+                "Waiting for {len(futures)} async extraction tasks to complete"
             )
             results = await asyncio.gather(*futures, return_exceptions=True)
 
@@ -1318,10 +1317,10 @@ class EntityExtractor:
             final_results = []
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
-                    logger.error(f"Async extraction failed for text {i}: {result}")
+                    logger.error("Async extraction failed for text {i}: {result}")
                     error_result = ExtractionResult(
                         source_text=texts[i],
-                        errors=[f"Async extraction failed: {str(result)}"],
+                        errors=["Async extraction failed: {str(result)}"],
                     )
                     final_results.append(error_result)
                 else:
@@ -1329,7 +1328,7 @@ class EntityExtractor:
 
             return final_results
         else:
-            logger.info(f"Queued {len(tasks)} tasks for background processing")
+            logger.info("Queued {len(tasks)} tasks for background processing")
             return []
 
     async def extract_entities_streaming(
@@ -1369,7 +1368,7 @@ class EntityExtractor:
                         total_processed += 1
 
                     chunk = []
-                    logger.debug(f"Streaming: processed {total_processed} texts so far")
+                    logger.debug("Streaming: processed {total_processed} texts so far")
 
             # Process remaining texts in final chunk
             if chunk:
@@ -1383,7 +1382,7 @@ class EntityExtractor:
                 self.remove_progress_callback(progress_callback)
 
             logger.info(
-                f"Streaming extraction completed: {total_processed} texts processed"
+                "Streaming extraction completed: {total_processed} texts processed"
             )
 
     def add_progress_callback(
@@ -1425,7 +1424,7 @@ class EntityExtractor:
                     try:
                         callback(self._current_progress)
                     except Exception as e:
-                        logger.error(f"Progress callback failed: {e}")
+                        logger.error("Progress callback failed: {e}")
                         # Remove failed callback
                         if callback in self._progress_callbacks:
                             self._progress_callbacks.remove(callback)
@@ -1433,7 +1432,7 @@ class EntityExtractor:
                 await asyncio.sleep(self.config.progress_callback_interval)
 
             except Exception as e:
-                logger.error(f"Progress reporter error: {e}")
+                logger.error("Progress reporter error: {e}")
                 await asyncio.sleep(1.0)
 
         logger.debug("Progress reporter stopped - no more callbacks")
@@ -1452,7 +1451,7 @@ class EntityExtractor:
             logger.info("All queued extraction tasks completed")
             return True
         except asyncio.TimeoutError:
-            logger.warning(f"Queue completion timed out after {timeout}s")
+            logger.warning("Queue completion timed out after {timeout}s")
             return False
 
     def get_queue_status(self) -> Dict[str, Any]:
@@ -1555,7 +1554,7 @@ class EntityExtractor:
             logger.debug("Need at least 2 entities to extract relationships")
             return []
 
-        logger.debug(f"Extracting relationships between {len(entities)} entities")
+        logger.debug("Extracting relationships between {len(entities)} entities")
 
         try:
             # Create relationship extraction prompt
@@ -1581,14 +1580,14 @@ class EntityExtractor:
                     response_text, entities, text
                 )
 
-                logger.info(f"Extracted {len(relationships)} relationships")
+                logger.info("Extracted {len(relationships)} relationships")
                 return relationships
             else:
                 logger.warning("No LLM client available for relationship extraction")
                 return []
 
         except Exception as e:
-            logger.error(f"Failed to extract relationships: {e}")
+            logger.error("Failed to extract relationships: {e}")
             return []
 
     def _create_relationship_prompt(
@@ -1604,17 +1603,17 @@ class EntityExtractor:
             Formatted prompt string
         """
         entity_list = "\n".join(
-            [f"- {entity.name} ({entity.entity_type.value})" for entity in entities]
+            ["- {entity.name} ({entity.entity_type.value})" for entity in entities]
         )
 
         relationship_types = "\n".join(
             [
-                f"- {rt.value}: {self._get_relationship_description(rt)}"
+                "- {rt.value}: {self._get_relationship_description(rt)}"
                 for rt in RelationshipType
             ]
         )
 
-        prompt = f"""
+        prompt = """
 Analyze the following text and identify relationships between the extracted entities.
 
 TEXT:
@@ -1628,7 +1627,7 @@ RELATIONSHIP TYPES:
 
 Please identify relationships between these entities based on the text. For each relationship, provide:
 1. Source entity name
-2. Target entity name  
+2. Target entity name
 3. Relationship type (from the list above)
 4. Confidence score (0.0-1.0)
 5. Evidence from the text supporting this relationship
@@ -1638,7 +1637,7 @@ Format your response as JSON:
   "relationships": [
     {{
       "source": "entity_name",
-      "target": "entity_name", 
+      "target": "entity_name",
       "type": "relationship_type",
       "confidence": 0.8,
       "evidence": "text evidence"
@@ -1716,7 +1715,7 @@ Only include relationships that are clearly supported by the text. Be conservati
                         try:
                             rel_type = RelationshipType(rel_type_str)
                         except ValueError:
-                            logger.warning(f"Unknown relationship type: {rel_type_str}")
+                            logger.warning("Unknown relationship type: {rel_type_str}")
                             continue
 
                         # Validate confidence
@@ -1742,7 +1741,7 @@ Only include relationships that are clearly supported by the text. Be conservati
                         relationships.append(relationship)
 
                     except Exception as e:
-                        logger.warning(f"Failed to parse relationship: {e}")
+                        logger.warning("Failed to parse relationship: {e}")
                         continue
 
         except json.JSONDecodeError:

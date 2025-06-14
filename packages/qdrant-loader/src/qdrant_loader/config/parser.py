@@ -4,15 +4,15 @@ This module provides parsing functionality for multi-project configurations.
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from pydantic import ValidationError
 
+from ..utils.logging import LoggingConfig
 from .global_config import GlobalConfig
 from .models import ParsedConfig, ProjectConfig, ProjectsConfig
 from .sources import SourcesConfig
 from .validator import ConfigValidator
-from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -201,14 +201,14 @@ For more information, see the documentation on multi-project configuration.
         # Validate project ID
         if not self._is_valid_project_id(project_id):
             raise ValueError(
-                f"Invalid project ID '{project_id}'. "
+                "Invalid project ID '{project_id}'. "
                 "Project IDs must be valid Python identifiers (alphanumeric + underscores)."
             )
 
         # Extract basic project information
         display_name = project_data.get("display_name", project_id)
         description = project_data.get("description")
-        collection_name = project_data.get("collection_name")
+        project_data.get("collection_name")
 
         # Parse project-specific sources with automatic field injection
         sources_data = project_data.get("sources", {})

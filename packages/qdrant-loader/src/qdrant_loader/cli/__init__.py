@@ -23,7 +23,7 @@ def __getattr__(name):
 
         return LoggingConfig.get_logger(__name__)
     else:
-        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+        raise AttributeError("module '{__name__}' has no attribute '{name}'")
 
 
 __all__ = ["AsyncIngestionPipeline", "init_collection", "get_settings", "logger"]

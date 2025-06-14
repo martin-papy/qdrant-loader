@@ -22,7 +22,7 @@ async def monitor_resources(
         stop_event: Optional asyncio.Event to signal stopping
     """
     logger.info(
-        f"Starting resource monitor: CPU>{cpu_threshold}%, MEM>{mem_threshold}%, interval={interval}s"
+        "Starting resource monitor: CPU>{cpu_threshold}%, MEM>{mem_threshold}%, interval={interval}s"
     )
     while True:
         if stop_event and stop_event.is_set():
@@ -38,13 +38,13 @@ async def monitor_resources(
 
                 cpu = 0.0  # Not available
                 mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
-                logger.info(f"[ResourceMonitor] Process memory usage: {mem:.2f} MB")
+                logger.info("[ResourceMonitor] Process memory usage: {mem:.2f} MB")
             if psutil:
-                logger.debug(f"[ResourceMonitor] CPU: {cpu:.1f}%, MEM: {mem:.1f}%")
+                logger.debug("[ResourceMonitor] CPU: {cpu:.1f}%, MEM: {mem:.1f}%")
                 if cpu > cpu_threshold:
-                    logger.warning(f"[ResourceMonitor] High CPU usage: {cpu:.1f}%")
+                    logger.warning("[ResourceMonitor] High CPU usage: {cpu:.1f}%")
                 if mem > mem_threshold:
-                    logger.warning(f"[ResourceMonitor] High memory usage: {mem:.1f}%")
+                    logger.warning("[ResourceMonitor] High memory usage: {mem:.1f}%")
         except Exception as e:
-            logger.error(f"[ResourceMonitor] Error checking resources: {e}")
+            logger.error("[ResourceMonitor] Error checking resources: {e}")
         await asyncio.sleep(interval)

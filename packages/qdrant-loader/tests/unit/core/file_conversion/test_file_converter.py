@@ -2,17 +2,13 @@
 Unit tests for the file converter.
 """
 
-import pytest
-import tempfile
 import signal
-import time
+import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from qdrant_loader.core.file_conversion.file_converter import (
-    FileConverter,
-    TimeoutHandler,
-)
+import pytest
+
 from qdrant_loader.core.file_conversion.conversion_config import (
     FileConversionConfig,
     MarkItDownConfig,
@@ -23,6 +19,10 @@ from qdrant_loader.core.file_conversion.exceptions import (
     FileSizeExceededError,
     MarkItDownError,
     UnsupportedFileTypeError,
+)
+from qdrant_loader.core.file_conversion.file_converter import (
+    FileConverter,
+    TimeoutHandler,
 )
 
 
@@ -67,15 +67,15 @@ class TestTimeoutHandler:
 
     def test_timeout_handler_initialization(self):
         """Test timeout handler initialization."""
-        handler = TimeoutHandler(30, "/path/to/file.pdf")
+        handler = TimeoutHandler(30, "/path/to/file.pd")
         assert handler.timeout_seconds == 30
-        assert handler.file_path == "/path/to/file.pdf"
+        assert handler.file_path == "/path/to/file.pd"
         assert handler.old_handler is None
 
     def test_timeout_handler_context_manager(self):
         """Test timeout handler as context manager."""
         with patch("signal.signal") as mock_signal, patch("signal.alarm") as mock_alarm:
-            handler = TimeoutHandler(30, "/path/to/file.pdf")
+            handler = TimeoutHandler(30, "/path/to/file.pd")
 
             with handler:
                 # Verify signal handler was set up
@@ -87,14 +87,14 @@ class TestTimeoutHandler:
 
     def test_timeout_handler_raises_timeout_error(self):
         """Test that timeout handler raises ConversionTimeoutError."""
-        handler = TimeoutHandler(1, "/path/to/file.pdf")
+        handler = TimeoutHandler(1, "/path/to/file.pd")
 
         # Test the timeout handler function directly
         with pytest.raises(ConversionTimeoutError) as exc_info:
             handler._timeout_handler(signal.SIGALRM, None)
 
         assert exc_info.value.timeout == 1
-        assert exc_info.value.file_path == "/path/to/file.pdf"
+        assert exc_info.value.file_path == "/path/to/file.pd"
 
 
 class TestFileConverterBasics:
@@ -210,7 +210,7 @@ class TestFileValidation:
     def test_validate_nonexistent_file(self, file_converter):
         """Test validation of non-existent file."""
         with pytest.raises(FileAccessError) as exc_info:
-            file_converter._validate_file("/path/to/nonexistent/file.pdf")
+            file_converter._validate_file("/path/to/nonexistent/file.pd")
 
         assert "File does not exist" in str(exc_info.value)
 
@@ -271,7 +271,7 @@ class TestFileConversion:
 
     def test_convert_file_success(self, file_converter):
         """Test successful file conversion."""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -309,7 +309,7 @@ class TestFileConversion:
 
     def test_convert_file_with_timeout(self, file_converter):
         """Test file conversion with timeout."""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -340,14 +340,14 @@ class TestFileConversion:
     def test_convert_file_validation_error(self, file_converter):
         """Test file conversion with validation error."""
         with pytest.raises(MarkItDownError) as exc_info:
-            file_converter.convert_file("/path/to/nonexistent/file.pdf")
+            file_converter.convert_file("/path/to/nonexistent/file.pd")
 
         # The FileAccessError should be wrapped in MarkItDownError
         assert "Cannot access file" in str(exc_info.value)
 
     def test_convert_file_markitdown_error(self, file_converter):
         """Test file conversion with MarkItDown error."""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -378,7 +378,7 @@ class TestFileConversion:
 
     def test_convert_file_result_without_text_content(self, file_converter):
         """Test file conversion with result that doesn't have text_content attribute."""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -424,10 +424,10 @@ class TestFallbackDocument:
                 "file_size": 1024000,
             }
 
-            result = file_converter.create_fallback_document("document.pdf", error)
+            result = file_converter.create_fallback_document("document.pd", error)
 
-            assert "# document.pdf" in result
-            assert "application/pdf" in result
+            assert "# document.pd" in result
+            assert "application/pd" in result
             assert "1,024,000 bytes" in result
             assert "Conversion failed" in result
             assert "❌ Failed" in result
@@ -442,13 +442,13 @@ class TestFallbackDocument:
             mock_get_info.return_value = {"normalized_type": "unknown", "file_size": 0}
 
             result = file_converter.create_fallback_document(
-                "/path/to/document.pdf", error
+                "/path/to/document.pd", error
             )
 
             # Should extract just the filename
-            assert "# document.pdf" in result
+            assert "# document.pd" in result
             assert (
-                "/path/to/document.pdf" in result
+                "/path/to/document.pd" in result
             )  # Full path should be in the content
 
     def test_create_fallback_document_missing_file_info(self, file_converter):
@@ -460,9 +460,9 @@ class TestFallbackDocument:
         ) as mock_get_info:
             mock_get_info.return_value = {}  # Empty info
 
-            result = file_converter.create_fallback_document("document.pdf", error)
+            result = file_converter.create_fallback_document("document.pd", error)
 
-            assert "# document.pdf" in result
+            assert "# document.pd" in result
             assert "unknown" in result  # Should use default values
             assert "0 bytes" in result
 
@@ -488,7 +488,7 @@ class TestErrorHandling:
 
     def test_convert_file_with_permission_error(self, file_converter):
         """Test conversion with permission error."""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 

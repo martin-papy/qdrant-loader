@@ -84,9 +84,9 @@ class MCPHandler:
                 logger.info("Server initialized successfully")
                 return response
             elif method in ["listOfferings", "tools/list"]:
-                logger.info(f"Handling {method} request")
+                logger.info("Handling {method} request")
                 logger.debug(
-                    f"{method} request details",
+                    "{method} request details",
                     method=method,
                     params=params,
                     request_id=request_id,
@@ -101,7 +101,7 @@ class MCPHandler:
                         },
                     )
                 response = await self._handle_list_offerings(request_id, params, method)
-                logger.debug(f"{method} response", response=response)
+                logger.debug("{method} response", response=response)
                 return response
             elif method == "search":
                 logger.info("Handling search request")
@@ -455,52 +455,52 @@ class MCPHandler:
 
     def _format_search_result(self, result: SearchResult) -> str:
         """Format a search result for display."""
-        formatted_result = f"Score: {result.score}\n"
-        formatted_result += f"Text: {result.text}\n"
-        formatted_result += f"Source: {result.source_type}"
+        formatted_result = "Score: {result.score}\n"
+        formatted_result += "Text: {result.text}\n"
+        formatted_result += "Source: {result.source_type}"
 
         if result.source_title:
-            formatted_result += f" - {result.source_title}"
+            formatted_result += " - {result.source_title}"
 
         # Add project information if available
         project_info = result.get_project_info()
         if project_info:
-            formatted_result += f"\n🏗️ {project_info}"
+            formatted_result += "\n🏗️ {project_info}"
 
         # Add attachment information if this is a file attachment
         if result.is_attachment:
-            formatted_result += f"\n📎 Attachment"
+            formatted_result += "\n📎 Attachment"
             if result.original_filename:
-                formatted_result += f": {result.original_filename}"
+                formatted_result += ": {result.original_filename}"
             if result.attachment_context:
-                formatted_result += f"\n📋 {result.attachment_context}"
+                formatted_result += "\n📋 {result.attachment_context}"
             if result.parent_document_title:
-                formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
+                formatted_result += "\n📄 Attached to: {result.parent_document_title}"
 
         # Add hierarchy context for Confluence documents
         if result.source_type == "confluence" and result.breadcrumb_text:
-            formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
+            formatted_result += "\n📍 Path: {result.breadcrumb_text}"
 
         if result.source_url:
-            formatted_result += f" ({result.source_url})"
+            formatted_result += " ({result.source_url})"
 
         if result.file_path:
-            formatted_result += f"\nFile: {result.file_path}"
+            formatted_result += "\nFile: {result.file_path}"
 
         if result.repo_name:
-            formatted_result += f"\nRepo: {result.repo_name}"
+            formatted_result += "\nRepo: {result.repo_name}"
 
         # Add hierarchy information for Confluence documents
         if result.source_type == "confluence" and result.hierarchy_context:
-            formatted_result += f"\n🏗️ {result.hierarchy_context}"
+            formatted_result += "\n🏗️ {result.hierarchy_context}"
 
         # Add parent information if available (for hierarchy, not attachments)
         if result.parent_title and not result.is_attachment:
-            formatted_result += f"\n⬆️ Parent: {result.parent_title}"
+            formatted_result += "\n⬆️ Parent: {result.parent_title}"
 
         # Add children count if available
         if result.has_children():
-            formatted_result += f"\n⬇️ Children: {result.children_count}"
+            formatted_result += "\n⬇️ Children: {result.children_count}"
 
         return formatted_result
 
@@ -572,7 +572,7 @@ class MCPHandler:
                 response_text = self._format_hierarchical_results(organized_results)
             else:
                 response_text = (
-                    f"Found {len(filtered_results)} results:\n\n"
+                    "Found {len(filtered_results)} results:\n\n"
                     + "\n\n".join(
                         self._format_search_result(result)
                         for result in filtered_results
@@ -679,29 +679,29 @@ class MCPHandler:
         formatted_sections = []
 
         for root_title, results in organized_results.items():
-            section = f"📁 **{root_title}** ({len(results)} results)\n"
+            section = "📁 **{root_title}** ({len(results)} results)\n"
 
             for result in results:
                 indent = "  " * (result.depth or 0)
-                section += f"{indent}📄 {result.source_title}"
+                section += "{indent}📄 {result.source_title}"
                 if result.hierarchy_context:
-                    section += f" | {result.hierarchy_context}"
-                section += f" (Score: {result.score:.3f})\n"
+                    section += " | {result.hierarchy_context}"
+                section += " (Score: {result.score:.3f})\n"
 
                 # Add a snippet of the content
                 content_snippet = (
                     result.text[:150] + "..." if len(result.text) > 150 else result.text
                 )
-                section += f"{indent}   {content_snippet}\n"
+                section += "{indent}   {content_snippet}\n"
 
                 if result.source_url:
-                    section += f"{indent}   🔗 {result.source_url}\n"
+                    section += "{indent}   🔗 {result.source_url}\n"
                 section += "\n"
 
             formatted_sections.append(section)
 
         return (
-            f"Found {sum(len(results) for results in organized_results.values())} results organized by hierarchy:\n\n"
+            "Found {sum(len(results) for results in organized_results.values())} results organized by hierarchy:\n\n"
             + "\n".join(formatted_sections)
         )
 
@@ -778,7 +778,7 @@ class MCPHandler:
             )
 
             # Format the response
-            response_text = f"Found {len(filtered_results)} results:\n\n" + "\n\n".join(
+            response_text = "Found {len(filtered_results)} results:\n\n" + "\n\n".join(
                 self._format_attachment_search_result(result)
                 for result in filtered_results
             )
@@ -859,45 +859,45 @@ class MCPHandler:
 
     def _format_attachment_search_result(self, result: SearchResult) -> str:
         """Format an attachment search result for display."""
-        formatted_result = f"Score: {result.score}\n"
-        formatted_result += f"Text: {result.text}\n"
-        formatted_result += f"Source: {result.source_type}"
+        formatted_result = "Score: {result.score}\n"
+        formatted_result += "Text: {result.text}\n"
+        formatted_result += "Source: {result.source_type}"
 
         if result.source_title:
-            formatted_result += f" - {result.source_title}"
+            formatted_result += " - {result.source_title}"
 
         # Add attachment information
-        formatted_result += f"\n📎 Attachment"
+        formatted_result += "\n📎 Attachment"
         if result.original_filename:
-            formatted_result += f": {result.original_filename}"
+            formatted_result += ": {result.original_filename}"
         if result.attachment_context:
-            formatted_result += f"\n📋 {result.attachment_context}"
+            formatted_result += "\n📋 {result.attachment_context}"
         if result.parent_document_title:
-            formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
+            formatted_result += "\n📄 Attached to: {result.parent_document_title}"
 
         # Add hierarchy context for Confluence documents
         if result.source_type == "confluence" and result.breadcrumb_text:
-            formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
+            formatted_result += "\n📍 Path: {result.breadcrumb_text}"
 
         if result.source_url:
-            formatted_result += f" ({result.source_url})"
+            formatted_result += " ({result.source_url})"
 
         if result.file_path:
-            formatted_result += f"\nFile: {result.file_path}"
+            formatted_result += "\nFile: {result.file_path}"
 
         if result.repo_name:
-            formatted_result += f"\nRepo: {result.repo_name}"
+            formatted_result += "\nRepo: {result.repo_name}"
 
         # Add hierarchy information for Confluence documents
         if result.source_type == "confluence" and result.hierarchy_context:
-            formatted_result += f"\n🏗️ {result.hierarchy_context}"
+            formatted_result += "\n🏗️ {result.hierarchy_context}"
 
         # Add parent information if available (for hierarchy, not attachments)
         if result.parent_title and not result.is_attachment:
-            formatted_result += f"\n⬆️ Parent: {result.parent_title}"
+            formatted_result += "\n⬆️ Parent: {result.parent_title}"
 
         # Add children count if available
         if result.has_children():
-            formatted_result += f"\n⬇️ Children: {result.children_count}"
+            formatted_result += "\n⬇️ Children: {result.children_count}"
 
         return formatted_result

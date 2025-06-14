@@ -1,14 +1,11 @@
 """Version checking utility for QDrant Loader CLI."""
 
-import asyncio
 import json
-import os
 import time
 from pathlib import Path
 from typing import Optional, Tuple
-from urllib.parse import urljoin
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
 from packaging import version
 
@@ -127,11 +124,11 @@ class VersionChecker:
         Args:
             latest_version: Latest available version
         """
-        print(f"\n🆕 A new version of qdrant-loader is available!")
-        print(f"   Current: {self.current_version}")
-        print(f"   Latest:  {latest_version}")
+        print("\n🆕 A new version of qdrant-loader is available!")
+        print("   Current: {self.current_version}")
+        print("   Latest:  {latest_version}")
         print(
-            f"   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
+            "   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
         )
         print()
 

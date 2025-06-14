@@ -5,10 +5,10 @@ from urllib.parse import urlparse
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
-    FileConverter,
-    FileDetector,
     FileConversionConfig,
     FileConversionError,
+    FileConverter,
+    FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -130,7 +130,7 @@ class LocalFileConnector(BaseConnector):
                             }
                         )
 
-                    self.logger.debug(f"Processed local file: {rel_path}")
+                    self.logger.debug("Processed local file: {rel_path}")
 
                     doc = Document(
                         title=os.path.basename(file_path),
@@ -139,7 +139,7 @@ class LocalFileConnector(BaseConnector):
                         metadata=metadata,
                         source_type="localfile",
                         source=self.config.source,
-                        url=f"file://{os.path.realpath(file_path)}",
+                        url="file://{os.path.realpath(file_path)}",
                         is_deleted=False,
                         updated_at=updated_at,
                     )

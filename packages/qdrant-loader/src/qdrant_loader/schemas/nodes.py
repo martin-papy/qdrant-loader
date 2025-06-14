@@ -4,11 +4,11 @@ This module defines specialized node types that extend Graphiti's EntityNode
 to support document processing, source tracking, and knowledge management.
 """
 
-from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import Field, validator
+from typing import Any, Dict, List, Optional
 
 from graphiti_core.nodes import EntityNode
+from pydantic import Field, validator
 
 
 class DocumentNode(EntityNode):
@@ -51,7 +51,7 @@ class DocumentNode(EntityNode):
     def validate_status(cls, v):
         valid_statuses = ["pending", "processing", "completed", "failed", "skipped"]
         if v not in valid_statuses:
-            raise ValueError(f"Status must be one of {valid_statuses}")
+            raise ValueError("Status must be one of {valid_statuses}")
         return v
 
 
@@ -102,7 +102,7 @@ class SourceNode(EntityNode):
             "other",
         ]
         if v not in valid_types:
-            raise ValueError(f"Source type must be one of {valid_types}")
+            raise ValueError("Source type must be one of {valid_types}")
         return v
 
 
@@ -216,7 +216,7 @@ class OrganizationNode(EntityNode):
             "other",
         ]
         if v not in valid_types:
-            raise ValueError(f"Organization type must be one of {valid_types}")
+            raise ValueError("Organization type must be one of {valid_types}")
         return v
 
 
@@ -259,7 +259,7 @@ class ProjectNode(EntityNode):
     def validate_status(cls, v):
         valid_statuses = ["planning", "active", "on-hold", "completed", "cancelled"]
         if v not in valid_statuses:
-            raise ValueError(f"Project status must be one of {valid_statuses}")
+            raise ValueError("Project status must be one of {valid_statuses}")
         return v
 
     @validator("progress")

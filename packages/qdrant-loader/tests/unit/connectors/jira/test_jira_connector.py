@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import HttpUrl
+from requests.exceptions import HTTPError
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.jira.config import JiraDeploymentType, JiraProjectConfig
 from qdrant_loader.connectors.jira.connector import JiraConnector
@@ -12,7 +14,6 @@ from qdrant_loader.connectors.jira.models import (
     JiraIssue,
 )
 from qdrant_loader.core.document import Document
-from requests.exceptions import HTTPError
 
 
 @pytest.fixture
@@ -122,7 +123,7 @@ class TestJiraConnector:
         assert connector.session.auth is not None  # Basic auth should be set
 
         async with connector:
-            assert connector._initialized is True
+            assert connector._initialized 
 
     @pytest.mark.asyncio
     async def test_datacenter_initialization(self, jira_datacenter_config):
@@ -135,7 +136,7 @@ class TestJiraConnector:
         )  # Bearer token should be set
 
         async with connector:
-            assert connector._initialized is True
+            assert connector._initialized 
 
     def test_missing_cloud_credentials(self):
         """Test initialization with missing Cloud credentials."""

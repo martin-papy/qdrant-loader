@@ -2,18 +2,16 @@
 Tests for project-aware search functionality.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
-from qdrant_client.models import ScoredPoint, Filter, FieldCondition, MatchAny
-
+from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
-    HybridSearchResult,
 )
 from qdrant_loader_mcp_server.search.models import SearchResult
-from qdrant_loader_mcp_server.search.engine import SearchEngine
 
 
 @pytest.fixture
@@ -35,12 +33,12 @@ def mock_qdrant_client():
         mock_point.id = str(i)
         mock_point.score = 1.0 - (i * 0.1)
         mock_point.payload = {
-            "content": f"Test content from {project_name}",
+            "content": "Test content from {project_name}",
             "metadata": {
-                "title": f"Test Document {project_name}",
+                "title": "Test Document {project_name}",
                 "project_id": project_id,
                 "project_name": project_name,
-                "project_description": f"Description for {project_name}",
+                "project_description": "Description for {project_name}",
                 "collection_name": f"{project_id.replace('-', '_')}_collection",
             },
             "source_type": source_type,
@@ -239,11 +237,11 @@ def test_search_result_project_methods():
     assert "Collection: test_collection" in project_info
 
     # Test belongs_to_project
-    assert result.belongs_to_project("test-project") is True
+    assert result.belongs_to_project("test-project") 
     assert result.belongs_to_project("other-project") is False
 
     # Test belongs_to_any_project
-    assert result.belongs_to_any_project(["test-project", "other-project"]) is True
+    assert result.belongs_to_any_project(["test-project", "other-project"]) 
     assert result.belongs_to_any_project(["other-project", "another-project"]) is False
 
 

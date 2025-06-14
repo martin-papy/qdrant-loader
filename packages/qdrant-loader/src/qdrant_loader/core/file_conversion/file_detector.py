@@ -130,10 +130,10 @@ class FileDetector:
         try:
             # Check if file exists and is accessible
             if not os.path.exists(file_path):
-                raise FileAccessError(f"File does not exist: {file_path}")
+                raise FileAccessError("File does not exist: {file_path}")
 
             if not os.access(file_path, os.R_OK):
-                raise FileAccessError(f"File is not readable: {file_path}")
+                raise FileAccessError("File is not readable: {file_path}")
 
             # Use mimetypes module for MIME type detection
             mime_type, _ = mimetypes.guess_type(file_path)
@@ -245,7 +245,7 @@ class FileDetector:
         """
         extensions = set()
         for file_type in cls.SUPPORTED_MIME_TYPES.values():
-            extensions.add(f".{file_type}")
+            extensions.add(".{file_type}")
 
         # Add some common variations
         extensions.update({".jpeg", ".tif", ".wave"})

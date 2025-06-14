@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bs4 import BeautifulSoup
+
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.html_strategy import (
@@ -206,8 +207,8 @@ class TestHTMLChunkingStrategy:
     def test_identify_section_type_headers(self, html_strategy):
         """Test section type identification for headers."""
         for i in range(1, 7):
-            soup = BeautifulSoup(f"<h{i}>Heading</h{i}>", "html.parser")
-            tag = soup.find(f"h{i}")
+            soup = BeautifulSoup("<h{i}>Heading</h{i}>", "html.parser")
+            tag = soup.find("h{i}")
             assert html_strategy._identify_section_type(tag) == SectionType.HEADER
 
     def test_identify_section_type_semantic_elements(self, html_strategy):
@@ -221,7 +222,7 @@ class TestHTMLChunkingStrategy:
         ]
 
         for tag_name, expected_type in test_cases:
-            soup = BeautifulSoup(f"<{tag_name}>Content</{tag_name}>", "html.parser")
+            soup = BeautifulSoup("<{tag_name}>Content</{tag_name}>", "html.parser")
             tag = soup.find(tag_name)
             assert html_strategy._identify_section_type(tag) == expected_type
 
@@ -241,15 +242,15 @@ class TestHTMLChunkingStrategy:
         ]
 
         for tag_name, expected_type in test_cases:
-            soup = BeautifulSoup(f"<{tag_name}>Content</{tag_name}>", "html.parser")
+            soup = BeautifulSoup("<{tag_name}>Content</{tag_name}>", "html.parser")
             tag = soup.find(tag_name)
             assert html_strategy._identify_section_type(tag) == expected_type
 
     def test_get_heading_level(self, html_strategy):
         """Test heading level extraction."""
         for i in range(1, 7):
-            soup = BeautifulSoup(f"<h{i}>Heading</h{i}>", "html.parser")
-            tag = soup.find(f"h{i}")
+            soup = BeautifulSoup("<h{i}>Heading</h{i}>", "html.parser")
+            tag = soup.find("h{i}")
             assert html_strategy._get_heading_level(tag) == i
 
         # Test non-heading element
@@ -277,7 +278,7 @@ class TestHTMLChunkingStrategy:
         assert metadata["word_count"] == 4
         assert metadata["char_count"] == 22
         assert metadata["has_code"] is False
-        assert metadata["has_links"] is True
+        assert metadata["has_links"] 
         assert metadata["has_images"] is False
         assert metadata["is_semantic"] is False
         assert metadata["is_heading"] is False
@@ -322,7 +323,7 @@ class TestHTMLChunkingStrategy:
 
         metadata = html_strategy._extract_section_metadata(section)
 
-        assert metadata["has_code"] is True
+        assert metadata["has_code"] 
         assert metadata["type"] == "code_block"
 
     def test_extract_section_metadata_with_images(self, html_strategy):
@@ -337,7 +338,7 @@ class TestHTMLChunkingStrategy:
 
         metadata = html_strategy._extract_section_metadata(section)
 
-        assert metadata["has_images"] is True
+        assert metadata["has_images"] 
 
     def test_build_section_breadcrumb(self, html_strategy):
         """Test breadcrumb building for nested sections."""
@@ -431,11 +432,11 @@ class TestHTMLChunkingStrategy:
         # Create HTML with many sections
         sections = "".join(
             [
-                f"<p>Section {i} content that is long enough to be processed.</p>"
+                "<p>Section {i} content that is long enough to be processed.</p>"
                 for i in range(MAX_SECTIONS_TO_PROCESS + 10)
             ]
         )
-        html = f"<body>{sections}</body>"
+        html = "<body>{sections}</body>"
 
         structure = html_strategy._parse_html_structure(html)
 
@@ -489,9 +490,9 @@ class TestHTMLChunkingStrategy:
         """Test simple HTML parsing respects section limit."""
         # Create content that would generate many chunks
         large_content = "\n\n".join(
-            [f"Paragraph {i} content." for i in range(MAX_SECTIONS_TO_PROCESS + 10)]
+            ["Paragraph {i} content." for i in range(MAX_SECTIONS_TO_PROCESS + 10)]
         )
-        html = f"<body>{large_content}</body>"
+        html = "<body>{large_content}</body>"
 
         sections = html_strategy._simple_html_parse(html)
 
@@ -533,7 +534,7 @@ class TestHTMLChunkingStrategy:
         small_sections = []
         for i in range(3):
             section = {
-                "content": f"<p>Small content {i}</p>",
+                "content": "<p>Small content {i}</p>",
                 "text_content": f"Small content {i}",
                 "tag_name": "p",
             }
@@ -720,7 +721,7 @@ class TestHTMLChunkingStrategy:
     def test_extract_section_title_long_title(self, html_strategy):
         """Test section title extraction with long title."""
         long_title = "x" * 200
-        html = f"<h1>{long_title}</h1>"
+        html = "<h1>{long_title}</h1>"
         result = html_strategy._extract_section_title(html)
         assert len(result) <= 100
 
@@ -802,12 +803,12 @@ class TestHTMLChunkingStrategy:
         # Create document with many sections
         sections = "".join(
             [
-                f"<p>Section {i} content that is long enough to be processed.</p>"
+                "<p>Section {i} content that is long enough to be processed.</p>"
                 for i in range(MAX_SECTIONS_TO_PROCESS + 10)
             ]
         )
         large_doc = Document(
-            content=f"<body>{sections}</body>",
+            content="<body>{sections}</body>",
             metadata={"file_name": "many_sections.html"},
             source="test_source",
             source_type=SourceType.LOCALFILE,
@@ -871,12 +872,12 @@ class TestHTMLChunkingStrategy:
         # Create content that would generate many chunks
         large_content = "\n\n".join(
             [
-                f"Paragraph {i} content for testing."
+                "Paragraph {i} content for testing."
                 for i in range(MAX_SECTIONS_TO_PROCESS + 10)
             ]
         )
         doc = Document(
-            content=f"<body>{large_content}</body>",
+            content="<body>{large_content}</body>",
             metadata={"file_name": "large_fallback.html"},
             source="test_source",
             source_type=SourceType.LOCALFILE,
@@ -1101,7 +1102,7 @@ class TestHTMLStrategyIntegration:
         # Create a large HTML document
         large_sections = []
         for i in range(100):
-            section = f"""
+            section = """
             <section>
                 <h2>Section {i}</h2>
                 <p>This is paragraph {i} with sufficient content to be processed by the chunking strategy.</p>
@@ -1114,7 +1115,7 @@ class TestHTMLStrategyIntegration:
             """
             large_sections.append(section)
 
-        large_html = f"<body>{''.join(large_sections)}</body>"
+        large_html = "<body>{''.join(large_sections)}</body>"
 
         doc = Document(
             content=large_html,

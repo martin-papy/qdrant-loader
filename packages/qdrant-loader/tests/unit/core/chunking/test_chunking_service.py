@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.chunking.strategy import (
@@ -545,7 +546,7 @@ class TestChunkingService:
             for lang in programming_languages:
                 doc = Document(
                     content="test code",
-                    url=f"http://example.com/test.{lang}",
+                    url="http://example.com/test.{lang}",
                     content_type=lang,
                     source_type="test",
                     source="test_source",
@@ -556,7 +557,7 @@ class TestChunkingService:
                 strategy = service._get_strategy(doc)
                 assert isinstance(
                     strategy, CodeChunkingStrategy
-                ), f"Failed for language: {lang}"
+                ), "Failed for language: {lang}"
 
     def test_new_method_creates_instance(self, mock_global_config, mock_settings):
         """Test that __new__ method creates and initializes instance correctly."""

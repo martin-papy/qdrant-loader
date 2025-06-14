@@ -1,8 +1,8 @@
 """Tests for MCP handler filter and formatting methods."""
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
 from qdrant_loader_mcp_server.search.models import SearchResult
 
 
@@ -55,7 +55,7 @@ def mock_search_results():
     result2.parent_document_title = None
     result2.original_filename = None
     result2.attachment_context = None
-    result2.source_url = "https://docs.company.com/api-ref"
+    result2.source_url = "https://docs.company.com/api-re"
     result2.file_path = None
     result2.repo_name = None
     result2.is_root_document.return_value = False
@@ -66,7 +66,7 @@ def mock_search_results():
     # Confluence attachment (PDF)
     result3 = Mock(spec=SearchResult)
     result3.source_type = "confluence"
-    result3.source_title = "Attachment: requirements.pdf"
+    result3.source_title = "Attachment: requirements.pd"
     result3.text = "Project requirements specification"
     result3.score = 0.82
     result3.depth = None
@@ -79,16 +79,16 @@ def mock_search_results():
     result3.file_size = 2048000  # 2MB
     result3.attachment_author = "project.manager@company.com"
     result3.parent_document_title = "Project Planning"
-    result3.original_filename = "requirements.pdf"
+    result3.original_filename = "requirements.pd"
     result3.attachment_context = (
-        "File: requirements.pdf | Size: 2.0 MB | Type: application/pdf"
+        "File: requirements.pdf | Size: 2.0 MB | Type: application/pd"
     )
-    result3.source_url = "https://docs.company.com/attachments/req.pdf"
+    result3.source_url = "https://docs.company.com/attachments/req.pd"
     result3.file_path = None
     result3.repo_name = None
     result3.is_root_document.return_value = False
     result3.has_children.return_value = False
-    result3.get_file_type.return_value = "pdf"
+    result3.get_file_type.return_value = "pd"
     results.append(result3)
 
     # Git repository result (non-Confluence)
@@ -159,7 +159,7 @@ class TestHierarchyFilters:
         # Should only return root documents
         assert len(filtered) == 1
         assert filtered[0].source_title == "Developer Guide"
-        assert filtered[0].is_root_document() is True
+        assert filtered[0].is_root_document() 
 
     def test_apply_hierarchy_filters_has_children_true(
         self, mcp_handler, mock_search_results
@@ -173,7 +173,7 @@ class TestHierarchyFilters:
         # Should only return documents that have children
         assert len(filtered) == 1
         assert filtered[0].source_title == "Developer Guide"
-        assert filtered[0].has_children() is True
+        assert filtered[0].has_children() 
 
     def test_apply_hierarchy_filters_has_children_false(
         self, mcp_handler, mock_search_results
@@ -254,8 +254,8 @@ class TestAttachmentFilters:
 
         # Should only return attachment results
         assert len(filtered) == 1
-        assert filtered[0].is_attachment is True
-        assert filtered[0].original_filename == "requirements.pdf"
+        assert filtered[0].is_attachment 
+        assert filtered[0].original_filename == "requirements.pd"
 
     def test_apply_attachment_filters_parent_document_title(
         self, mcp_handler, mock_search_results
@@ -272,14 +272,14 @@ class TestAttachmentFilters:
 
     def test_apply_attachment_filters_file_type(self, mcp_handler, mock_search_results):
         """Test filtering by file type."""
-        attachment_filter = {"file_type": "pdf"}
+        attachment_filter = {"file_type": "pd"}
         filtered = mcp_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
 
         # Should only return PDF files
         assert len(filtered) == 1
-        assert filtered[0].get_file_type() == "pdf"
+        assert filtered[0].get_file_type() == "pd"
 
     def test_apply_attachment_filters_file_size_min(
         self, mcp_handler, mock_search_results
@@ -350,7 +350,7 @@ class TestAttachmentFilters:
 
         # Should contain attachment indicators and information
         assert "📎" in formatted
-        assert "requirements.pdf" in formatted
+        assert "requirements.pd" in formatted
         assert "Score:" in formatted
         assert "Project Planning" in formatted
         assert "📄 Attached to:" in formatted

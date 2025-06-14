@@ -5,6 +5,7 @@ import concurrent.futures
 from unittest.mock import Mock, call, patch
 
 import pytest
+
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.workers.chunking_worker import ChunkingWorker
@@ -32,13 +33,13 @@ class TestChunkingWorker:
     ):
         """Helper method to create test documents with all required fields."""
         if url is None:
-            url = f"https://example.com/{doc_id}.txt"
+            url = "https://example.com/{doc_id}.txt"
 
         return Document(
             url=url,
             content=content,
             content_type=content_type,
-            title=f"Test Document {doc_id}",
+            title="Test Document {doc_id}",
             source_type="test",
             source="test_source",
             metadata={},
@@ -466,9 +467,9 @@ class TestChunkingWorker:
 
         for size in sizes:
             document = self.create_test_document(
-                doc_id=f"test_doc_{size}",
+                doc_id="test_doc_{size}",
                 content="x" * size,
-                url=f"https://example.com/file_{size}.txt",
+                url="https://example.com/file_{size}.txt",
             )
             timeout = self.worker._calculate_adaptive_timeout(document)
             timeouts.append(timeout)

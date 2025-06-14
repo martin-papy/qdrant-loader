@@ -2,21 +2,18 @@
 Unit tests for the attachment downloader service.
 """
 
-import pytest
 import tempfile
-import json
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 from pathlib import Path
-from datetime import datetime, UTC
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
 )
-from qdrant_loader.core.file_conversion.file_converter import FileConverter
-from qdrant_loader.core.file_conversion.file_detector import FileDetector
-from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 
 
 @pytest.fixture
@@ -52,20 +49,20 @@ class TestAttachmentMetadata:
         """Test creating attachment metadata."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/download/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/download/document.pd",
             parent_document_id="doc_456",
             author="john.doe@example.com",
             created_at="2024-01-15T10:30:00Z",
         )
 
         assert metadata.id == "att_123"
-        assert metadata.filename == "document.pdf"
-        assert metadata.mime_type == "application/pdf"
+        assert metadata.filename == "document.pd"
+        assert metadata.mime_type == "application/pd"
         assert metadata.size == 1024000
-        assert metadata.download_url == "https://example.com/download/document.pdf"
+        assert metadata.download_url == "https://example.com/download/document.pd"
         assert metadata.parent_document_id == "doc_456"
         assert metadata.author == "john.doe@example.com"
         assert metadata.created_at == "2024-01-15T10:30:00Z"
@@ -102,7 +99,7 @@ class TestAttachmentDownloaderInitialization:
         )
 
         assert downloader.session == mock_session
-        assert downloader.enable_file_conversion is True
+        assert downloader.enable_file_conversion 
         assert downloader.file_converter is not None
         assert downloader.file_detector is not None
 
@@ -139,23 +136,23 @@ class TestShouldDownloadAttachment:
         """Test that small attachments should be downloaded."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,  # 1MB
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
-        assert attachment_downloader.should_download_attachment(metadata) is True
+        assert attachment_downloader.should_download_attachment(metadata) 
 
     def test_should_not_download_large_attachment(self, attachment_downloader):
         """Test that large attachments should not be downloaded."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="huge_file.pdf",
+            filename="huge_file.pd",
             size=100 * 1024 * 1024,  # 100MB (exceeds default 50MB limit)
-            mime_type="application/pdf",
-            download_url="https://example.com/huge_file.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/huge_file.pd",
             parent_document_id="doc_456",
         )
 
@@ -172,7 +169,7 @@ class TestShouldDownloadAttachment:
             parent_document_id="doc_456",
         )
 
-        assert attachment_downloader.should_download_attachment(metadata) is True
+        assert attachment_downloader.should_download_attachment(metadata) 
 
 
 class TestAttachmentDownload:
@@ -183,10 +180,10 @@ class TestAttachmentDownload:
         """Test successful attachment download."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -194,7 +191,7 @@ class TestAttachmentDownload:
         mock_response = MagicMock()
         mock_response.headers = {
             "content-length": "1024000",
-            "content-type": "application/pdf",
+            "content-type": "application/pd",
         }
         mock_response.raise_for_status.return_value = None
         mock_response.iter_content.return_value = [
@@ -210,7 +207,7 @@ class TestAttachmentDownload:
         ):
 
             mock_temp_file = MagicMock()
-            mock_temp_file.name = "/tmp/test_attachment.pdf"
+            mock_temp_file.name = "/tmp/test_attachment.pd"
             mock_temp_file.write = MagicMock()
             mock_temp_file.close = MagicMock()
             mock_temp_file_class.return_value = mock_temp_file
@@ -220,7 +217,7 @@ class TestAttachmentDownload:
 
             temp_file_path = await attachment_downloader.download_attachment(metadata)
 
-            assert temp_file_path == "/tmp/test_attachment.pdf"
+            assert temp_file_path == "/tmp/test_attachment.pd"
             attachment_downloader.session.get.assert_called_once()
             # Verify that content was written to the file
             assert mock_temp_file.write.call_count >= 1
@@ -230,10 +227,10 @@ class TestAttachmentDownload:
         """Test attachment download with HTTP error."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -249,10 +246,10 @@ class TestAttachmentDownload:
         """Test attachment download with size mismatch."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -270,10 +267,10 @@ class TestAttachmentDownload:
         """Test attachment download that returns HTML (auth error)."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -294,10 +291,10 @@ class TestProcessAttachment:
         """Test processing attachment with file conversion."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -311,7 +308,7 @@ class TestProcessAttachment:
             metadata={},
         )
 
-        temp_file_path = "/tmp/test_attachment.pdf"
+        temp_file_path = "/tmp/test_attachment.pd"
 
         # Mock file converter
         with patch.object(
@@ -327,11 +324,11 @@ class TestProcessAttachment:
 
             assert document is not None
             assert (
-                document.title == "Attachment: document.pdf"
+                document.title == "Attachment: document.pd"
             )  # Actual format includes "Attachment: "
             assert "# Converted PDF Content" in document.content
             assert document.content_type == "md"
-            assert document.metadata["is_attachment"] is True
+            assert document.metadata["is_attachment"] 
             assert (
                 document.metadata["parent_document_id"] == metadata.parent_document_id
             )
@@ -340,10 +337,10 @@ class TestProcessAttachment:
         """Test processing attachment with conversion failure."""
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="corrupted.pdf",
+            filename="corrupted.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/corrupted.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/corrupted.pd",
             parent_document_id="doc_456",
         )
 
@@ -357,7 +354,7 @@ class TestProcessAttachment:
             metadata={},
         )
 
-        temp_file_path = "/tmp/corrupted.pdf"
+        temp_file_path = "/tmp/corrupted.pd"
 
         # Mock file converter to raise FileConversionError (not generic Exception)
         from qdrant_loader.core.file_conversion.exceptions import FileConversionError
@@ -382,7 +379,7 @@ class TestProcessAttachment:
 
             assert document is not None
             assert "Failed to convert" in document.content
-            assert document.metadata["conversion_failed"] is True
+            assert document.metadata["conversion_failed"] 
 
     def test_process_attachment_no_conversion(self, mock_session):
         """Test processing attachment without file conversion."""
@@ -392,10 +389,10 @@ class TestProcessAttachment:
 
         metadata = AttachmentMetadata(
             id="att_123",
-            filename="document.pdf",
+            filename="document.pd",
             size=1024000,
-            mime_type="application/pdf",
-            download_url="https://example.com/document.pdf",
+            mime_type="application/pd",
+            download_url="https://example.com/document.pd",
             parent_document_id="doc_456",
         )
 
@@ -409,7 +406,7 @@ class TestProcessAttachment:
             metadata={},
         )
 
-        temp_file_path = "/tmp/document.pdf"
+        temp_file_path = "/tmp/document.pd"
 
         document = downloader.process_attachment(
             metadata, temp_file_path, parent_document
@@ -419,7 +416,7 @@ class TestProcessAttachment:
         assert (
             "This attachment could not be converted to text" in document.content
         )  # Actual message
-        # conversion_method is only added when needs_conversion is True, so it won't exist when file conversion is disabled
+        # conversion_method is only added when needs_conversion , so it won't exist when file conversion is disabled
         assert "conversion_method" not in document.metadata
 
 
@@ -444,10 +441,10 @@ class TestDownloadAndProcessAttachments:
         attachments = [
             AttachmentMetadata(
                 id="att_001",
-                filename="document.pdf",
+                filename="document.pd",
                 size=1024000,
-                mime_type="application/pdf",
-                download_url="https://example.com/document.pdf",
+                mime_type="application/pd",
+                download_url="https://example.com/document.pd",
                 parent_document_id="doc_456",
             ),
             AttachmentMetadata(
@@ -468,17 +465,17 @@ class TestDownloadAndProcessAttachments:
         ):
 
             # Mock download returns temp file paths
-            mock_download.side_effect = ["/tmp/temp1.pdf", "/tmp/temp2.xlsx"]
+            mock_download.side_effect = ["/tmp/temp1.pd", "/tmp/temp2.xlsx"]
 
             # Mock process returns documents
             mock_process.side_effect = [
                 Document(
-                    title="document.pdf",
+                    title="document.pd",
                     content="PDF content",
                     content_type="md",
                     source_type="confluence",
                     source="test_space",
-                    url="https://example.com/document.pdf",
+                    url="https://example.com/document.pd",
                     metadata={},
                 ),
                 Document(
@@ -497,7 +494,7 @@ class TestDownloadAndProcessAttachments:
             )
 
             assert len(documents) == 2
-            assert documents[0].title == "document.pdf"
+            assert documents[0].title == "document.pd"
             assert documents[1].title == "spreadsheet.xlsx"
 
             # Verify cleanup was called for each temp file
@@ -521,18 +518,18 @@ class TestDownloadAndProcessAttachments:
         attachments = [
             AttachmentMetadata(
                 id="att_001",
-                filename="good_document.pdf",
+                filename="good_document.pd",
                 size=1024000,
-                mime_type="application/pdf",
-                download_url="https://example.com/good_document.pdf",
+                mime_type="application/pd",
+                download_url="https://example.com/good_document.pd",
                 parent_document_id="doc_456",
             ),
             AttachmentMetadata(
                 id="att_002",
-                filename="bad_document.pdf",
+                filename="bad_document.pd",
                 size=1024000,
-                mime_type="application/pdf",
-                download_url="https://example.com/bad_document.pdf",
+                mime_type="application/pd",
+                download_url="https://example.com/bad_document.pd",
                 parent_document_id="doc_456",
             ),
         ]
@@ -545,15 +542,15 @@ class TestDownloadAndProcessAttachments:
         ):
 
             # First download succeeds, second fails
-            mock_download.side_effect = ["/tmp/temp1.pdf", None]
+            mock_download.side_effect = ["/tmp/temp1.pd", None]
 
             mock_process.return_value = Document(
-                title="good_document.pdf",
+                title="good_document.pd",
                 content="PDF content",
                 content_type="md",
                 source_type="jira",
                 source="test_project",
-                url="https://example.com/good_document.pdf",
+                url="https://example.com/good_document.pd",
                 metadata={},
             )
 
@@ -563,10 +560,10 @@ class TestDownloadAndProcessAttachments:
 
             # Should only get one document (the successful one)
             assert len(documents) == 1
-            assert documents[0].title == "good_document.pdf"
+            assert documents[0].title == "good_document.pd"
 
             # Cleanup should only be called once (for the successful download)
-            mock_cleanup.assert_called_once_with("/tmp/temp1.pdf")
+            mock_cleanup.assert_called_once_with("/tmp/temp1.pd")
 
     @pytest.mark.asyncio
     async def test_download_and_process_empty_attachments(self, attachment_downloader):

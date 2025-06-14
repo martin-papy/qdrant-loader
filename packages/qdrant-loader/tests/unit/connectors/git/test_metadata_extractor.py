@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import git
 import pytest
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
@@ -94,9 +95,9 @@ def test():
         assert metadata["line_count"] == 12
         assert metadata["word_count"] > 0
         assert metadata["file_size"] > 0
-        assert metadata["has_code_blocks"] is True
-        assert metadata["has_images"] is True
-        assert metadata["has_links"] is True
+        assert metadata["has_code_blocks"] 
+        assert metadata["has_images"] 
+        assert metadata["has_links"] 
 
     def test_extract_repo_metadata(self, base_config, mock_repo):
         """Test extraction of repository metadata."""
@@ -137,7 +138,7 @@ print("Hello")
             # Verify file metadata
             assert metadata["file_type"] == ".md"
             assert metadata["file_name"] == "test.md"
-            assert metadata["has_code_blocks"] is True
+            assert metadata["has_code_blocks"] 
 
             # Verify repo metadata
             assert metadata["repository_name"] == "repo"
@@ -190,7 +191,7 @@ def test():
 [Link](https://example.com)
 """
 
-        assert extractor._has_code_blocks(content) is True
-        assert extractor._has_images(content) is True
-        assert extractor._has_links(content) is True
+        assert extractor._has_code_blocks(content) 
+        assert extractor._has_images(content) 
+        assert extractor._has_links(content) 
         assert extractor._get_heading_levels(content) == [1, 2]

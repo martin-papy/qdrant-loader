@@ -5,7 +5,7 @@ configurations, ensuring data integrity and catching common configuration errors
 """
 
 import re
-from typing import Any, Dict, List, Set
+from typing import Any, Dict
 
 from ..utils.logging import LoggingConfig
 
@@ -17,7 +17,6 @@ class ConfigValidator:
 
     def __init__(self):
         """Initialize the validator."""
-        pass
 
     def validate_structure(self, config_data: Dict[str, Any]) -> None:
         """Validate the overall configuration structure.
@@ -80,7 +79,7 @@ class ConfigValidator:
             self._validate_project_id(project_id)
 
             if project_id in project_ids:
-                raise ValueError(f"Duplicate project ID: '{project_id}'")
+                raise ValueError("Duplicate project ID: '{project_id}'")
             project_ids.add(project_id)
 
             # Validate individual project configuration
@@ -91,8 +90,8 @@ class ConfigValidator:
                 collection_name = project_config["collection_name"]
                 if collection_name in collection_names:
                     raise ValueError(
-                        f"Duplicate collection name '{collection_name}' "
-                        f"found in project '{project_id}'"
+                        "Duplicate collection name '{collection_name}' "
+                        "found in project '{project_id}'"
                     )
                 collection_names.add(collection_name)
 
@@ -108,17 +107,17 @@ class ConfigValidator:
         """
         if not isinstance(project_config, dict):
             raise ValueError(
-                f"Project '{project_id}' configuration must be a dictionary"
+                "Project '{project_id}' configuration must be a dictionary"
             )
 
         # Validate required fields
         if "display_name" not in project_config:
-            raise ValueError(f"Project '{project_id}' must have a 'display_name'")
+            raise ValueError("Project '{project_id}' must have a 'display_name'")
 
         display_name = project_config["display_name"]
         if not isinstance(display_name, str) or not display_name.strip():
             raise ValueError(
-                f"Project '{project_id}' display_name must be a non-empty string"
+                "Project '{project_id}' display_name must be a non-empty string"
             )
 
         # Validate optional fields
@@ -126,14 +125,14 @@ class ConfigValidator:
             description = project_config["description"]
             if description is not None and not isinstance(description, str):
                 raise ValueError(
-                    f"Project '{project_id}' description must be a string or null"
+                    "Project '{project_id}' description must be a string or null"
                 )
 
         if "collection_name" in project_config:
             collection_name = project_config["collection_name"]
             if not isinstance(collection_name, str) or not collection_name.strip():
                 raise ValueError(
-                    f"Project '{project_id}' collection_name must be a non-empty string"
+                    "Project '{project_id}' collection_name must be a non-empty string"
                 )
             self._validate_collection_name(collection_name)
 
@@ -146,7 +145,7 @@ class ConfigValidator:
             overrides = project_config["overrides"]
             if not isinstance(overrides, dict):
                 raise ValueError(
-                    f"Project '{project_id}' overrides must be a dictionary"
+                    "Project '{project_id}' overrides must be a dictionary"
                 )
 
     def _validate_sources_section(self, sources_data: Any) -> None:
@@ -172,16 +171,16 @@ class ConfigValidator:
         # Validate each source type
         for source_type, source_configs in sources_data.items():
             if not isinstance(source_configs, dict):
-                raise ValueError(f"Source type '{source_type}' must be a dictionary")
+                raise ValueError("Source type '{source_type}' must be a dictionary")
 
             if not source_configs:
-                raise ValueError(f"Source type '{source_type}' cannot be empty")
+                raise ValueError("Source type '{source_type}' cannot be empty")
 
             # Validate each source configuration
             for source_name, source_config in source_configs.items():
                 if not isinstance(source_config, dict):
                     raise ValueError(
-                        f"Source '{source_name}' in '{source_type}' must be a dictionary"
+                        "Source '{source_name}' in '{source_type}' must be a dictionary"
                     )
 
                 # Note: source_type and source fields are automatically injected by the parser
@@ -235,7 +234,7 @@ class ConfigValidator:
         pattern = r"^[a-zA-Z][a-zA-Z0-9_-]*$"
         if not re.match(pattern, project_id):
             raise ValueError(
-                f"Invalid project ID '{project_id}'. "
+                "Invalid project ID '{project_id}'. "
                 "Project IDs must start with a letter and contain only "
                 "letters, numbers, underscores, and hyphens."
             )
@@ -244,7 +243,7 @@ class ConfigValidator:
         reserved_ids = {"default", "global", "admin", "system"}
         if project_id.lower() in reserved_ids:
             logger.warning(
-                f"Project ID '{project_id}' is reserved and may cause conflicts"
+                "Project ID '{project_id}' is reserved and may cause conflicts"
             )
 
     def _validate_source_name(self, source_name: str) -> None:
@@ -266,7 +265,7 @@ class ConfigValidator:
         pattern = r"^[a-zA-Z][a-zA-Z0-9_-]*$"
         if not re.match(pattern, source_name):
             raise ValueError(
-                f"Invalid source name '{source_name}'. "
+                "Invalid source name '{source_name}'. "
                 "Source names must start with a letter and contain only "
                 "letters, numbers, underscores, and hyphens."
             )
@@ -286,7 +285,7 @@ class ConfigValidator:
         """
         if not isinstance(source_config, dict):
             raise ValueError(
-                f"Source '{source_name}' of type '{source_type}' "
+                "Source '{source_name}' of type '{source_type}' "
                 "configuration must be a dictionary"
             )
 
@@ -294,7 +293,7 @@ class ConfigValidator:
         # by the individual source config classes
         if not source_config:
             raise ValueError(
-                f"Source '{source_name}' of type '{source_type}' "
+                "Source '{source_name}' of type '{source_type}' "
                 "configuration cannot be empty"
             )
 
@@ -311,14 +310,14 @@ class ConfigValidator:
         # They should be valid identifiers and not too long
         if len(collection_name) > 255:
             raise ValueError(
-                f"Collection name '{collection_name}' is too long (max 255 characters)"
+                "Collection name '{collection_name}' is too long (max 255 characters)"
             )
 
         # Collection names should be valid identifiers
         pattern = r"^[a-zA-Z][a-zA-Z0-9_-]*$"
         if not re.match(pattern, collection_name):
             raise ValueError(
-                f"Invalid collection name '{collection_name}'. "
+                "Invalid collection name '{collection_name}'. "
                 "Collection names must start with a letter and contain only "
                 "letters, numbers, underscores, and hyphens."
             )

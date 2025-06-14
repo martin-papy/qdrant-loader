@@ -77,7 +77,7 @@ class LoggingConfig:
             # Convert string level to logging level
             numeric_level = getattr(logging, level.upper())
         except AttributeError:
-            raise ValueError(f"Invalid log level: {level}") from None
+            raise ValueError("Invalid log level: {level}") from None
 
         # Reset logging configuration
         logging.getLogger().handlers = []

@@ -2,11 +2,11 @@
 Unit tests for the DocumentStateManager.
 """
 
-import pytest
 import sqlite3
-import time
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch, Mock
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from qdrant_loader.core.state.document_state_manager import DocumentStateManager
 from qdrant_loader.core.state.state_change_detector import DocumentState
@@ -51,7 +51,7 @@ class TestDocumentStateManagerInitialization:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         # Should be empty for a new in-memory database
-        tables = cursor.fetchall()
+        cursor.fetchall()
         conn.close()
 
 

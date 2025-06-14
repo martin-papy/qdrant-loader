@@ -1,16 +1,13 @@
 """Tests for CLI module."""
 
-import asyncio
 import json
 import os
-import signal
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, mock_open
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 from click.testing import CliRunner
-
 from qdrant_loader_mcp_server.cli import (
     _get_version,
     _setup_logging,
@@ -533,7 +530,7 @@ class TestCLICommand:
         mock_handle_stdio.return_value = AsyncMock()
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["--log-level", "DEBUG"])
+        runner.invoke(cli, ["--log-level", "DEBUG"])
 
         # Verify setup was called
         mock_setup_logging.assert_called_once_with("DEBUG")
@@ -565,7 +562,7 @@ class TestCLICommand:
         mock_new_event_loop.return_value = mock_loop
 
         runner = CliRunner()
-        result = runner.invoke(cli, [])
+        runner.invoke(cli, [])
 
         # Verify exit was called with error code
         mock_exit.assert_called_once_with(1)

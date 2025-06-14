@@ -42,13 +42,13 @@ def start_metrics_server(port: int = 8001):
         # Start the HTTP server - this creates non-daemon threads internally
         start_http_server(port)
         _metrics_server_started = True
-        logger.info(f"Prometheus metrics server started on port {port}")
+        logger.info("Prometheus metrics server started on port {port}")
 
         # Register cleanup function to be called on exit
         atexit.register(stop_metrics_server)
 
     except Exception as e:
-        logger.error(f"Failed to start metrics server: {e}")
+        logger.error("Failed to start metrics server: {e}")
         raise
 
 

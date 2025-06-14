@@ -1,15 +1,12 @@
 """Tests for version checking utility."""
 
 import json
-import os
-import tempfile
 import time
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
-from urllib.error import URLError, HTTPError
 from email.message import EmailMessage
+from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
+from urllib.error import HTTPError, URLError
 
-import pytest
 
 from qdrant_loader.utils.version_check import (
     VersionChecker,
@@ -164,7 +161,7 @@ class TestVersionChecker:
             checker, "_get_cache_data", return_value={"latest_version": "1.2.0"}
         ):
             has_update, latest_version = checker.check_for_updates()
-            assert has_update is True
+            assert has_update 
             assert latest_version == "1.2.0"
 
     def test_check_for_updates_no_cache_fetch_success(self):
@@ -178,7 +175,7 @@ class TestVersionChecker:
         ):
 
             has_update, latest_version = checker.check_for_updates()
-            assert has_update is True
+            assert has_update 
             assert latest_version == "1.2.0"
             mock_save.assert_called_once_with({"latest_version": "1.2.0"})
 

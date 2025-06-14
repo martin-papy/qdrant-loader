@@ -28,22 +28,22 @@ class WorkspaceConfig:
         # Validate workspace directory exists
         if not self.workspace_path.exists():
             raise ValueError(
-                f"Workspace directory does not exist: {self.workspace_path}"
+                "Workspace directory does not exist: {self.workspace_path}"
             )
 
         if not self.workspace_path.is_dir():
             raise ValueError(
-                f"Workspace path is not a directory: {self.workspace_path}"
+                "Workspace path is not a directory: {self.workspace_path}"
             )
 
         # Validate config.yaml exists
         if not self.config_path.exists():
-            raise ValueError(f"config.yaml not found in workspace: {self.config_path}")
+            raise ValueError("config.yaml not found in workspace: {self.config_path}")
 
         # Validate workspace is writable
         if not os.access(self.workspace_path, os.W_OK):
             raise ValueError(
-                f"Cannot write to workspace directory: {self.workspace_path}"
+                "Cannot write to workspace directory: {self.workspace_path}"
             )
 
         logger.debug(

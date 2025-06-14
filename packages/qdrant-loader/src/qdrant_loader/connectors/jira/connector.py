@@ -164,7 +164,7 @@ class JiraConnector(BaseConnector):
         Returns:
             str: Full API URL
         """
-        return f"{self.base_url}/rest/api/2/{endpoint}"
+        return "{self.base_url}/rest/api/2/{endpoint}"
 
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated request to the Jira API.
@@ -239,7 +239,7 @@ class JiraConnector(BaseConnector):
                     timeout=kwargs.get("timeout"),
                 )
                 raise requests.exceptions.Timeout(
-                    f"Request to {url} timed out after {kwargs.get('timeout')} seconds"
+                    "Request to {url} timed out after {kwargs.get('timeout')} seconds"
                 )
 
             except requests.exceptions.RequestException as e:
@@ -268,7 +268,7 @@ class JiraConnector(BaseConnector):
         for key, value in kwargs.items():
             if isinstance(value, datetime):
                 formatted_date = value.strftime("%Y-%m-%d %H:%M")
-                jql = jql.replace(f"{{{key}}}", f"'{formatted_date}'")
+                jql = jql.replace("{{{key}}}", "'{formatted_date}'")
 
         # Use the new _make_request method for consistency
         params = {
@@ -305,9 +305,9 @@ class JiraConnector(BaseConnector):
         )
 
         while True:
-            jql = f'project = "{self.config.project_key}"'
+            jql = 'project = "{self.config.project_key}"'
             if updated_after:
-                jql += f" AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+                jql += " AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
 
             params = {
                 "jql": jql,
@@ -349,7 +349,7 @@ class JiraConnector(BaseConnector):
             # Update total count if not set
             if total_issues == 0:
                 total_issues = response.get("total", 0)
-                logger.info(f"🎫 Found {total_issues} JIRA issues to process")
+                logger.info("🎫 Found {total_issues} JIRA issues to process")
 
             # Log progress every 100 issues instead of every 50
             progress_log_interval = 100
@@ -366,7 +366,7 @@ class JiraConnector(BaseConnector):
                             else 0
                         )
                         logger.info(
-                            f"🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
+                            "🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
                         )
 
                 except Exception as e:
@@ -384,7 +384,7 @@ class JiraConnector(BaseConnector):
             start_at += len(issues)
             if start_at >= total_issues:
                 logger.info(
-                    f"✅ Completed JIRA issue retrieval: {start_at} issues processed"
+                    "✅ Completed JIRA issue retrieval: {start_at} issues processed"
                 )
                 break
 
@@ -454,7 +454,7 @@ class JiraConnector(BaseConnector):
             Parsed JiraUser or None if raw_user is None and not required
 
         Raises:
-            ValueError: If raw_user is None and required is True
+            ValueError: If raw_user is None and required 
         """
         if not raw_user:
             if required:
@@ -587,7 +587,7 @@ class JiraConnector(BaseConnector):
             # Add comments to content
             for comment in issue.comments:
                 content_parts.append(
-                    f"\nComment by {comment.author.display_name} on {comment.created.strftime('%Y-%m-%d %H:%M')}:"
+                    "\nComment by {comment.author.display_name} on {comment.created.strftime('%Y-%m-%d %H:%M')}:"
                 )
                 content_parts.append(comment.body)
 
@@ -601,7 +601,7 @@ class JiraConnector(BaseConnector):
                 source=self.config.source,
                 source_type=SourceType.JIRA,
                 created_at=issue.created,
-                url=f"{base_url}/browse/{issue.key}",
+                url="{base_url}/browse/{issue.key}",
                 title=issue.summary,
                 updated_at=issue.updated,
                 is_deleted=False,

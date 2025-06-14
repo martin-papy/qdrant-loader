@@ -4,7 +4,8 @@ This module provides configuration classes for Graphiti knowledge graph operatio
 including LLM client settings, embedder configuration, and operational parameters.
 """
 
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, Field, validator
 from pydantic_settings import BaseSettings
 

@@ -33,7 +33,7 @@ class GitMetadataExtractor:
         Returns:
             dict[str, Any]: Dictionary containing all metadata.
         """
-        self.logger.debug(f"Starting metadata extraction for file: {file_path!s}")
+        self.logger.debug("Starting metadata extraction for file: {file_path!s}")
 
         file_metadata = self._extract_file_metadata(file_path, content)
         repo_metadata = self._extract_repo_metadata(file_path)
@@ -42,7 +42,7 @@ class GitMetadataExtractor:
         # Only extract structure metadata for markdown files
         structure_metadata = {}
         if file_path.lower().endswith(".md"):
-            self.logger.debug(f"Processing markdown file: {file_path!s}")
+            self.logger.debug("Processing markdown file: {file_path!s}")
             structure_metadata = self._extract_structure_metadata(content)
 
         metadata = {
@@ -52,8 +52,8 @@ class GitMetadataExtractor:
             **structure_metadata,
         }
 
-        self.logger.debug(f"Completed metadata extraction for {file_path!s}.")
-        self.logger.debug(f"Metadata: {metadata!s}")
+        self.logger.debug("Completed metadata extraction for {file_path!s}.")
+        self.logger.debug("Metadata: {metadata!s}")
         return metadata
 
     def _extract_file_metadata(self, file_path: str, content: str) -> dict[str, Any]:
@@ -133,13 +133,13 @@ class GitMetadataExtractor:
                         metadata["repository_description"] = str(
                             config.get_value("core", "description", "")
                         )
-                    self.logger.debug(f"Repository metadata extracted: {metadata!s}")
+                    self.logger.debug("Repository metadata extracted: {metadata!s}")
             except Exception as e:
-                self.logger.error(f"Failed to read Git config: {e}")
+                self.logger.error("Failed to read Git config: {e}")
 
             return metadata
         except Exception as e:
-            self.logger.error(f"Failed to extract repository metadata: {str(e)!s}")
+            self.logger.error("Failed to extract repository metadata: {str(e)!s}")
             return {}
 
     def _extract_git_metadata(self, file_path: str) -> dict[str, Any]:
@@ -186,7 +186,7 @@ class GitMetadataExtractor:
                             }
                         )
             except Exception as e:
-                self.logger.debug(f"Failed to get commits: {e}")
+                self.logger.debug("Failed to get commits: {e}")
                 # Try one last time with HEAD commit
                 try:
                     head_commit = repo.head.commit
@@ -198,17 +198,17 @@ class GitMetadataExtractor:
                         }
                     )
                 except Exception as e:
-                    self.logger.debug(f"Failed to get HEAD commit: {e}")
+                    self.logger.debug("Failed to get HEAD commit: {e}")
 
             return metadata
         except Exception as e:
-            self.logger.warning(f"Failed to extract Git metadata: {str(e)!s}")
+            self.logger.warning("Failed to extract Git metadata: {str(e)!s}")
             return {}
 
     def _extract_structure_metadata(self, content: str) -> dict[str, Any]:
         """Extract metadata about the document structure."""
         self.logger.debug("Starting structure metadata extraction")
-        self.logger.debug(f"Content to process:\n{content!s}")
+        self.logger.debug("Content to process:\n{content!s}")
 
         has_toc = False
         heading_levels = []
@@ -222,28 +222,28 @@ class GitMetadataExtractor:
         headings = re.findall(
             r"(?:^|\n)\s*(#{1,6})\s+(.+?)(?:\n|$)", content, re.MULTILINE
         )
-        self.logger.debug(f"Found {len(headings)!s} headers in content")
+        self.logger.debug("Found {len(headings)!s} headers in content")
 
         if headings:
-            self.logger.debug(f"Headers found: {headings!s}")
+            self.logger.debug("Headers found: {headings!s}")
             has_toc = "## Table of Contents" in content or "## Contents" in content
             heading_levels = [len(h[0]) for h in headings]
             sections_count = len(heading_levels)
             self.logger.debug(
-                f"Has TOC: {has_toc!s}, Heading levels: {heading_levels!s}, Sections count: {sections_count!s}"
+                "Has TOC: {has_toc!s}, Heading levels: {heading_levels!s}, Sections count: {sections_count!s}"
             )
         else:
             self.logger.warning("No headers found in content")
             # Log the first few lines of content for debugging
             first_lines = "\n".join(content.splitlines()[:5])
-            self.logger.debug(f"First few lines of content:\n{first_lines!s}")
+            self.logger.debug("First few lines of content:\n{first_lines!s}")
             # Try alternative header detection
             alt_headings = re.findall(r"^#{1,6}\s+.+$", content, re.MULTILINE)
             if alt_headings:
                 self.logger.debug(
-                    f"Found {len(alt_headings)!s} headers using alternative pattern"
+                    "Found {len(alt_headings)!s} headers using alternative pattern"
                 )
-                self.logger.debug(f"Alternative headers found: {alt_headings!s}")
+                self.logger.debug("Alternative headers found: {alt_headings!s}")
                 has_toc = "## Table of Contents" in content or "## Contents" in content
                 heading_levels = []
                 for h in alt_headings:
@@ -252,7 +252,7 @@ class GitMetadataExtractor:
                         heading_levels.append(len(match.group(1)))
                 sections_count = len(heading_levels)
                 self.logger.debug(
-                    f"Has TOC: {has_toc!s}, Heading levels: {heading_levels!s}, Sections count: {sections_count!s}"
+                    "Has TOC: {has_toc!s}, Heading levels: {heading_levels!s}, Sections count: {sections_count!s}"
                 )
 
         metadata = {
@@ -261,7 +261,7 @@ class GitMetadataExtractor:
             "sections_count": sections_count,
         }
 
-        self.logger.debug(f"Structure metadata extraction completed: {metadata!s}")
+        self.logger.debug("Structure metadata extraction completed: {metadata!s}")
         return metadata
 
     def _get_repo_description(self, repo: git.Repo, file_path: str) -> str:
@@ -282,7 +282,7 @@ class GitMetadataExtractor:
                     ):
                         return description.strip()
             except Exception as e:
-                self.logger.debug(f"Failed to read Git config: {e}")
+                self.logger.debug("Failed to read Git config: {e}")
 
             # Try to find description in README files
             readme_files = ["README.md", "README.txt", "README", "README.rst"]
@@ -353,11 +353,11 @@ class GitMetadataExtractor:
                                         description = paragraph
                                     return description
                     except Exception as e:
-                        self.logger.debug(f"Failed to read README {readme_file}: {e}")
+                        self.logger.debug("Failed to read README {readme_file}: {e}")
                         continue
 
         except Exception as e:
-            self.logger.debug(f"Failed to get repository description: {e}")
+            self.logger.debug("Failed to get repository description: {e}")
 
         return "No description available"
 

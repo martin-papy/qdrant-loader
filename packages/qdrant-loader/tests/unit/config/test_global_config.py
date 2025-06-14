@@ -1,10 +1,10 @@
 """Tests for global configuration with file conversion settings."""
 
 import pytest
+
 from qdrant_loader.config.global_config import GlobalConfig
-from qdrant_loader.core.file_conversion import FileConversionConfig, MarkItDownConfig
-from pydantic import ValidationError
 from qdrant_loader.config.qdrant import QdrantConfig
+from qdrant_loader.core.file_conversion import FileConversionConfig, MarkItDownConfig
 
 
 class TestGlobalConfigFileConversion:
@@ -41,7 +41,7 @@ class TestGlobalConfigFileConversion:
 
         assert config.file_conversion.max_file_size == 104857600
         assert config.file_conversion.conversion_timeout == 600
-        assert config.file_conversion.markitdown.enable_llm_descriptions is True
+        assert config.file_conversion.markitdown.enable_llm_descriptions 
         assert config.file_conversion.markitdown.llm_model == "gpt-4"
         assert (
             config.file_conversion.markitdown.llm_endpoint
@@ -66,7 +66,7 @@ class TestGlobalConfigFileConversion:
 
         assert config.file_conversion.max_file_size == 10485760
         assert config.file_conversion.conversion_timeout == 120
-        assert config.file_conversion.markitdown.enable_llm_descriptions is True
+        assert config.file_conversion.markitdown.enable_llm_descriptions 
         assert config.file_conversion.markitdown.llm_model == "gpt-3.5-turbo"
 
     def test_global_config_to_dict_includes_file_conversion(self):

@@ -4,6 +4,7 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.json_strategy import (
@@ -365,7 +366,7 @@ class TestJSONChunkingStrategy:
         """Test object processing limit."""
         # Create object with many keys
         data = {
-            f"key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)
+            "key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)
         }
 
         parent = JSONElement(
@@ -384,7 +385,7 @@ class TestJSONChunkingStrategy:
     def test_extract_json_elements_array_limit(self, json_strategy):
         """Test array processing limit."""
         # Create large array
-        data = [f"item_{i}" for i in range(MAX_ARRAY_ITEMS_TO_PROCESS + 10)]
+        data = ["item_{i}" for i in range(MAX_ARRAY_ITEMS_TO_PROCESS + 10)]
 
         parent = JSONElement(
             name="parent",
@@ -404,7 +405,7 @@ class TestJSONChunkingStrategy:
         # Create structure that would exceed global limit
         data = {}
         for i in range(MAX_OBJECTS_TO_PROCESS + 10):
-            data[f"key_{i}"] = {"nested": f"value_{i}"}
+            data["key_{i}"] = {"nested": f"value_{i}"}
 
         parent = JSONElement(
             name="parent",
@@ -448,11 +449,11 @@ class TestJSONChunkingStrategy:
         small_elements = []
         for i in range(3):
             element = JSONElement(
-                name=f"small_{i}",
+                name="small_{i}",
                 element_type=JSONElementType.PROPERTY,
-                content=f"value_{i}",
-                value=f"value_{i}",
-                path=f"root.small_{i}",
+                content="value_{i}",
+                value="value_{i}",
+                path="root.small_{i}",
                 size=10,
                 item_count=0,
             )
@@ -496,11 +497,11 @@ class TestJSONChunkingStrategy:
         elements = []
         for i in range(5):
             element = JSONElement(
-                name=f"element_{i}",
+                name="element_{i}",
                 element_type=JSONElementType.PROPERTY,
                 content="x" * 50,
-                value=f"value_{i}",
-                path=f"root.element_{i}",
+                value="value_{i}",
+                path="root.element_{i}",
                 size=50,
                 item_count=0,
             )
@@ -535,11 +536,11 @@ class TestJSONChunkingStrategy:
         elements = []
         for i in range(3):
             element = JSONElement(
-                name=f"item_{i}",
+                name="item_{i}",
                 element_type=JSONElementType.ARRAY_ITEM,
-                content=f'"value_{i}"',
-                value=f"value_{i}",
-                path=f"root[{i}]",
+                content='"value_{i}"',
+                value="value_{i}",
+                path="root[{i}]",
             )
             elements.append(element)
 
@@ -629,7 +630,7 @@ class TestJSONChunkingStrategy:
 
     def test_split_large_element_object(self, json_strategy):
         """Test splitting large object element."""
-        large_object = {f"key_{i}": f"value_{i}" for i in range(100)}
+        large_object = {"key_{i}": f"value_{i}" for i in range(100)}
         large_element = JSONElement(
             name="large_object",
             element_type=JSONElementType.OBJECT,
@@ -652,7 +653,7 @@ class TestJSONChunkingStrategy:
 
     def test_split_large_element_text_fallback(self, json_strategy):
         """Test splitting large element with text fallback."""
-        large_content = "\n".join([f"line_{i}" for i in range(100)])
+        large_content = "\n".join(["line_{i}" for i in range(100)])
         large_element = JSONElement(
             name="large_text",
             element_type=JSONElementType.VALUE,
@@ -693,7 +694,7 @@ class TestJSONChunkingStrategy:
         assert metadata["level"] == 1
         assert metadata["size"] == 50
         assert metadata["item_count"] == 2
-        assert metadata["has_nested_objects"] is True
+        assert metadata["has_nested_objects"] 
         assert "str" in metadata["data_types"]
 
     def test_extract_json_metadata_array(self, json_strategy):
@@ -712,7 +713,7 @@ class TestJSONChunkingStrategy:
         metadata = json_strategy._extract_json_metadata(element)
 
         assert metadata["element_type"] == "array"
-        assert metadata["has_nested_objects"] is True
+        assert metadata["has_nested_objects"] 
         assert metadata["has_arrays"] is False
         assert "int" in metadata["data_types"]
         assert "str" in metadata["data_types"]
@@ -902,7 +903,7 @@ class TestJSONChunkingStrategy:
         )
 
         assert chunk_doc.content == "test content"
-        assert chunk_doc.metadata["nlp_skipped"] is True
+        assert chunk_doc.metadata["nlp_skipped"] 
         assert chunk_doc.metadata["skip_reason"] == "chunk_too_large"
         assert chunk_doc.metadata["entities"] == []
 
@@ -921,7 +922,7 @@ class TestJSONChunkingStrategy:
                 skip_nlp=False,
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] is True
+            assert chunk_doc.metadata["nlp_skipped"] 
             assert chunk_doc.metadata["skip_reason"] == "nlp_error"
 
     def test_fallback_chunking(self, json_strategy, sample_json_document):
@@ -935,7 +936,7 @@ class TestJSONChunkingStrategy:
 
     def test_fallback_chunking_large_chunks(self, json_strategy):
         """Test fallback chunking with large chunks that skip NLP."""
-        large_content = "\n".join([f"line_{i}" for i in range(1000)])
+        large_content = "\n".join(["line_{i}" for i in range(1000)])
         doc = Document(
             content=large_content,
             metadata={"file_name": "large.json"},
@@ -962,7 +963,7 @@ class TestJSONChunkingStrategy:
         """Test fallback chunking respects object processing limit."""
         # Create content that would generate many chunks
         large_content = "\n".join(
-            [f"line_{i}" for i in range(MAX_OBJECTS_TO_PROCESS * 2)]
+            ["line_{i}" for i in range(MAX_OBJECTS_TO_PROCESS * 2)]
         )
         doc = Document(
             content=large_content,
@@ -1079,8 +1080,8 @@ class TestJSONStrategyIntegration:
         nested_data = {"level_0": {}}
         current = nested_data["level_0"]
         for i in range(10):
-            current[f"level_{i+1}"] = {}
-            current = current[f"level_{i+1}"]
+            current["level_{i+1}"] = {}
+            current = current["level_{i+1}"]
         current["final_value"] = "deep_value"
 
         doc = Document(
@@ -1166,7 +1167,7 @@ class TestJSONStrategyIntegration:
 
         # Add many top-level keys
         for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 50):
-            large_object[f"key_{i}"] = {
+            large_object["key_{i}"] = {
                 "nested": f"value_{i}",
                 "array": list(range(10)),
             }

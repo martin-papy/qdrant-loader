@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
+
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -23,10 +24,10 @@ def load_config(config_path: str, env_path: str | None = None):
     env_path_obj = Path(env_path) if env_path else None
 
     if not config_path_obj.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path_obj}")
+        raise FileNotFoundError("Configuration file not found: {config_path_obj}")
 
     if env_path_obj and not env_path_obj.exists():
-        raise FileNotFoundError(f"Environment file not found: {env_path_obj}")
+        raise FileNotFoundError("Environment file not found: {env_path_obj}")
 
     # Initialize configuration
     initialize_config(config_path_obj, env_path_obj, skip_validation=True)
@@ -47,7 +48,7 @@ def get_collection_info(client: QdrantClient, collection_name: str):
         info = client.get_collection(collection_name)
         return info
     except Exception as e:
-        print(f"Error getting collection info: {e}")
+        print("Error getting collection info: {e}")
         return None
 
 
@@ -76,7 +77,7 @@ def count_documents_by_source(client: QdrantClient, collection_name: str):
         return source_counts, source_type_counts, len(points)
 
     except Exception as e:
-        print(f"Error counting documents: {e}")
+        print("Error counting documents: {e}")
         return {}, {}, 0
 
 
@@ -92,7 +93,7 @@ def get_sample_documents(client: QdrantClient, collection_name: str, limit: int 
 
         return points
     except Exception as e:
-        print(f"Error getting sample documents: {e}")
+        print("Error getting sample documents: {e}")
         return []
 
 
@@ -124,27 +125,27 @@ def search_documents(
 
         return matching_points
     except Exception as e:
-        print(f"Error searching documents: {e}")
+        print("Error searching documents: {e}")
         return []
 
 
 def print_document_summary(point):
     """Print a summary of a document."""
     payload = point.payload or {}
-    print(f"  ID: {point.id}")
-    print(f"  Title: {payload.get('title', 'N/A')}")
-    print(f"  Source: {payload.get('source', 'N/A')}")
-    print(f"  Source Type: {payload.get('source_type', 'N/A')}")
-    print(f"  URL: {payload.get('url', 'N/A')}")
-    print(f"  Content Length: {len(payload.get('content', ''))}")
-    print(f"  Created: {payload.get('created_at', 'N/A')}")
-    print(f"  Updated: {payload.get('updated_at', 'N/A')}")
+    print("  ID: {point.id}")
+    print("  Title: {payload.get('title', 'N/A')}")
+    print("  Source: {payload.get('source', 'N/A')}")
+    print("  Source Type: {payload.get('source_type', 'N/A')}")
+    print("  URL: {payload.get('url', 'N/A')}")
+    print("  Content Length: {len(payload.get('content', ''))}")
+    print("  Created: {payload.get('created_at', 'N/A')}")
+    print("  Updated: {payload.get('updated_at', 'N/A')}")
 
     # Show first 200 characters of content
     content = payload.get("content", "")
     if content:
         preview = content[:200] + "..." if len(content) > 200 else content
-        print(f"  Content Preview: {preview}")
+        print("  Content Preview: {preview}")
     print("-" * 80)
 
 
@@ -164,8 +165,8 @@ def main():
         print("Loading configuration...")
         settings = load_config(args.config, args.env)
 
-        print(f"QDrant URL: {settings.qdrant_url}")
-        print(f"Collection: {settings.qdrant_collection_name}")
+        print("QDrant URL: {settings.qdrant_url}")
+        print("Collection: {settings.qdrant_collection_name}")
         print()
 
         # Create QDrant client
@@ -177,13 +178,13 @@ def main():
         collection_info = get_collection_info(client, settings.qdrant_collection_name)
 
         if collection_info:
-            print(f"Collection Status: {collection_info.status}")
-            print(f"Vector Count: {collection_info.points_count}")
+            print("Collection Status: {collection_info.status}")
+            print("Vector Count: {collection_info.points_count}")
             try:
                 vector_size = getattr(
                     collection_info.config.params.vectors, "size", "Unknown"
                 )
-                print(f"Vector Size: {vector_size}")
+                print("Vector Size: {vector_size}")
             except AttributeError:
                 print("Vector Size: Unknown")
             print()
@@ -197,42 +198,42 @@ def main():
             client, settings.qdrant_collection_name
         )
 
-        print(f"Total Documents: {total_docs}")
+        print("Total Documents: {total_docs}")
         print("\nDocuments by Source Type:")
         for source_type, count in source_type_counts.items():
-            print(f"  {source_type}: {count}")
+            print("  {source_type}: {count}")
 
         print("\nDocuments by Source:")
         for source, count in source_counts.items():
-            print(f"  {source}: {count}")
+            print("  {source}: {count}")
         print()
 
         # Get sample documents
-        print(f"Sample Documents (showing {args.limit}):")
+        print("Sample Documents (showing {args.limit}):")
         sample_docs = get_sample_documents(
             client, settings.qdrant_collection_name, args.limit
         )
 
         for i, point in enumerate(sample_docs, 1):
-            print(f"\n--- Document {i} ---")
+            print("\n--- Document {i} ---")
             print_document_summary(point)
 
         # Search if query provided
         if args.search:
-            print(f"\nSearch Results for '{args.search}':")
+            print("\nSearch Results for '{args.search}':")
             search_results = search_documents(
                 client, settings.qdrant_collection_name, args.search, args.limit
             )
 
             if search_results:
                 for i, point in enumerate(search_results, 1):
-                    print(f"\n--- Search Result {i} ---")
+                    print("\n--- Search Result {i} ---")
                     print_document_summary(point)
             else:
                 print("No matching documents found.")
 
     except Exception as e:
-        print(f"Error: {e}")
+        print("Error: {e}")
         return 1
 
     return 0

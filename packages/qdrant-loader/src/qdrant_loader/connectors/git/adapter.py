@@ -49,7 +49,7 @@ class GitPythonAdapter:
                         url, to_path, multi_options=clone_args
                     )
                     self.logger.info(
-                        f"Successfully cloned repository from {url} to {to_path}"
+                        "Successfully cloned repository from {url} to {to_path}"
                     )
                 finally:
                     # Restore original value
@@ -61,12 +61,12 @@ class GitPythonAdapter:
             except Exception as e:
                 if attempt < max_retries - 1:
                     self.logger.warning(
-                        f"Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds..."
+                        "Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds..."
                     )
                     time.sleep(retry_delay)
                 else:
                     self.logger.error(
-                        f"Failed to clone repository after {max_retries} attempts: {e}"
+                        "Failed to clone repository after {max_retries} attempts: {e}"
                     )
                     raise
 
@@ -82,9 +82,9 @@ class GitPythonAdapter:
         try:
             if not self.repo:
                 raise ValueError("Repository not initialized")
-            return self.repo.git.show(f"HEAD:{file_path}")
+            return self.repo.git.show("HEAD:{file_path}")
         except Exception as e:
-            self.logger.error(f"Failed to read file {file_path}: {e}")
+            self.logger.error("Failed to read file {file_path}: {e}")
             raise
 
     def get_last_commit_date(self, file_path: str) -> datetime | None:
@@ -104,7 +104,7 @@ class GitPythonAdapter:
                 return last_commit.committed_datetime
             return None
         except Exception as e:
-            self.logger.error(f"Failed to get last commit date for {file_path}: {e}")
+            self.logger.error("Failed to get last commit date for {file_path}: {e}")
             return None
 
     def list_files(self, path: str = ".") -> list[str]:
@@ -124,5 +124,5 @@ class GitPythonAdapter:
             output = self.repo.git.ls_tree("-r", "--name-only", "HEAD", path)
             return output.splitlines() if output else []
         except Exception as e:
-            self.logger.error(f"Failed to list files: {e}")
+            self.logger.error("Failed to list files: {e}")
             raise

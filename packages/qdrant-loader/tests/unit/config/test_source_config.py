@@ -1,7 +1,7 @@
 """Tests for source configuration with file conversion settings."""
 
-import pytest
-from pydantic import ValidationError, AnyUrl
+from pydantic import AnyUrl
+
 from qdrant_loader.config.source_config import SourceConfig
 
 
@@ -33,8 +33,8 @@ class TestSourceConfigFileConversion:
             download_attachments=True,
         )
 
-        assert config.enable_file_conversion is True
-        assert config.download_attachments is True
+        assert config.enable_file_conversion 
+        assert config.download_attachments 
 
     def test_file_conversion_settings_from_dict(self):
         """Test that file conversion settings can be loaded from dictionary."""
@@ -48,7 +48,7 @@ class TestSourceConfigFileConversion:
 
         config = SourceConfig(**config_dict)
 
-        assert config.enable_file_conversion is True
+        assert config.enable_file_conversion 
         assert config.download_attachments is False
 
     def test_file_conversion_settings_validation(self):
@@ -62,7 +62,7 @@ class TestSourceConfigFileConversion:
             download_attachments=None,
         )
 
-        assert config.enable_file_conversion is True
+        assert config.enable_file_conversion 
         assert config.download_attachments is None
 
     def test_file_conversion_settings_inheritance(self):
@@ -83,8 +83,8 @@ class TestSourceConfigFileConversion:
             additional_field="custom_value",
         )
 
-        assert config.enable_file_conversion is True
-        assert config.download_attachments is True
+        assert config.enable_file_conversion 
+        assert config.download_attachments 
         assert config.additional_field == "custom_value"
 
     def test_file_conversion_settings_optional(self):

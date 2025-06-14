@@ -112,7 +112,7 @@ def test_update_package_version():
         update_package_version("qdrant-loader", new_version)
         assert mock_handler.content["project"]["version"] == new_version
         mock_log.info.assert_called_with(
-            f"Updating version in packages/qdrant-loader/pyproject.toml to {new_version}"
+            "Updating version in packages/qdrant-loader/pyproject.toml to {new_version}"
         )
         mock_log.debug.assert_called_with(
             "Version updated successfully for qdrant-loader"
@@ -121,7 +121,7 @@ def test_update_package_version():
         # Test dry run
         update_package_version("qdrant-loader", new_version, dry_run=True)
         mock_log.info.assert_called_with(
-            f"[DRY RUN] Would update version in packages/qdrant-loader/pyproject.toml to {new_version}"
+            "[DRY RUN] Would update version in packages/qdrant-loader/pyproject.toml to {new_version}"
         )
 
 
@@ -726,7 +726,7 @@ def test_dry_run_mode():
 
             # In the new implementation, dry run mode performs actual checks
             result = check_github_workflows(dry_run=True)
-            assert result is True
+            assert result 
             # Should make HTTP requests even in dry run mode
             assert mock_get.call_count == 2
 

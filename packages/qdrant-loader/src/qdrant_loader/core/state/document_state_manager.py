@@ -65,7 +65,7 @@ class DocumentStateManager:
                 self.update_document_state(doc_id, state)
             else:
                 self.logger.error(
-                    f"Error updating document state: {str(e)}",
+                    "Error updating document state: {str(e)}",
                     extra={
                         "doc_id": doc_id,
                         "error": str(e),
@@ -75,7 +75,7 @@ class DocumentStateManager:
                 raise
         except Exception as e:
             self.logger.error(
-                f"Unexpected error updating document state: {str(e)}",
+                "Unexpected error updating document state: {str(e)}",
                 extra={
                     "doc_id": doc_id,
                     "error": str(e),
@@ -137,7 +137,7 @@ class DocumentStateManager:
                 return self.get_document_state(doc_id)
             else:
                 self.logger.error(
-                    f"Error getting document state: {str(e)}",
+                    "Error getting document state: {str(e)}",
                     extra={
                         "doc_id": doc_id,
                         "error": str(e),
@@ -147,7 +147,7 @@ class DocumentStateManager:
                 raise
         except Exception as e:
             self.logger.error(
-                f"Unexpected error getting document state: {str(e)}",
+                "Unexpected error getting document state: {str(e)}",
                 extra={
                     "doc_id": doc_id,
                     "error": str(e),

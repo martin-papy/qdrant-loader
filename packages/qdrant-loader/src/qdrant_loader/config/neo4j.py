@@ -3,7 +3,6 @@
 This module defines the Neo4j-specific configuration settings.
 """
 
-from typing import Optional, Union, Any
 from pydantic import Field
 
 from qdrant_loader.config.base import BaseConfig

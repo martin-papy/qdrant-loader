@@ -4,21 +4,21 @@ This module provides a manager class for Neo4j database operations,
 including connection management and basic graph operations.
 """
 
-import time
 import random
+import time
 from functools import wraps
-from typing import Any, Dict, List, Optional, cast, Callable, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
-from neo4j import GraphDatabase, Driver, Session
+from neo4j import Driver, GraphDatabase, Session
 from neo4j.exceptions import (
-    ServiceUnavailable,
     AuthError,
-    ConfigurationError,
-    TransientError,
-    DatabaseError,
     ClientError,
+    ConfigurationError,
+    DatabaseError,
+    ServiceUnavailable,
     SessionExpired,
     TransactionError,
+    TransientError,
 )
 
 from ..config import Neo4jConfig
@@ -97,7 +97,7 @@ def retry_on_transient_failure(
                     # Check if we should retry this exception
                     if not _is_retryable_exception(e):
                         logger.debug(
-                            f"Non-retryable exception in {func.__name__}",
+                            "Non-retryable exception in {func.__name__}",
                             extra={"error": str(e), "exception_type": type(e).__name__},
                         )
                         raise
@@ -106,7 +106,7 @@ def retry_on_transient_failure(
                     elapsed_time = time.time() - start_time
                     if elapsed_time >= max_retry_time:
                         logger.warning(
-                            f"Retry time budget exceeded for {func.__name__}",
+                            "Retry time budget exceeded for {func.__name__}",
                             extra={
                                 "elapsed_time": elapsed_time,
                                 "max_retry_time": max_retry_time,
@@ -130,7 +130,7 @@ def retry_on_transient_failure(
                         )  # Minimum 100ms delay
 
                         logger.warning(
-                            f"Transient failure in {func.__name__}, retrying",
+                            "Transient failure in {func.__name__}, retrying",
                             extra={
                                 "error": str(e),
                                 "exception_type": type(e).__name__,
@@ -146,11 +146,11 @@ def retry_on_transient_failure(
             # All retries exhausted - last_exception should never be None here
             if last_exception is None:
                 raise RuntimeError(
-                    f"Unexpected error: no exception recorded in {func.__name__}"
+                    "Unexpected error: no exception recorded in {func.__name__}"
                 )
 
             logger.error(
-                f"All retry attempts exhausted for {func.__name__}",
+                "All retry attempts exhausted for {func.__name__}",
                 extra={
                     "final_error": str(last_exception),
                     "exception_type": type(last_exception).__name__,
@@ -593,8 +593,8 @@ class Neo4jManager:
             try:
                 stats_result = self.execute_query(
                     """
-                    MATCH (n) 
-                    RETURN 
+                    MATCH (n)
+                    RETURN
                         count(n) as node_count,
                         count{(n)-[]->()} as relationship_count
                     LIMIT 1
@@ -618,9 +618,9 @@ class Neo4jManager:
                     try:
                         procedures_result = self.execute_query(
                             """
-                            CALL dbms.procedures() 
-                            YIELD name 
-                            WHERE name STARTS WITH 'apoc' 
+                            CALL dbms.procedures()
+                            YIELD name
+                            WHERE name STARTS WITH 'apoc'
                             RETURN count(name) as apoc_procedures
                         """,
                             database="system",

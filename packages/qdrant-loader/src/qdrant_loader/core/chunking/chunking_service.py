@@ -213,7 +213,7 @@ class ChunkingService:
             return chunked_docs
         except Exception as e:
             self.logger.error(
-                f"Error chunking document {document.id}: {str(e)}",
+                "Error chunking document {document.id}: {str(e)}",
                 extra={
                     "doc_id": document.id,
                     "error": str(e),

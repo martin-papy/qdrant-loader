@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import requests
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,
@@ -95,7 +96,7 @@ class TestConfluenceConnector:
     async def test_api_url_construction(self, connector):
         """Test API URL construction."""
         endpoint = "content/search"
-        expected_url = f"{connector.base_url}/rest/api/{endpoint}"
+        expected_url = "{connector.base_url}/rest/api/{endpoint}"
         assert connector._get_api_url(endpoint) == expected_url
 
     @pytest.mark.asyncio
@@ -147,7 +148,7 @@ class TestConfluenceConnector:
         content_with_include = {
             "metadata": {"labels": {"results": [{"name": "include-test"}]}}
         }
-        assert connector._should_process_content(content_with_include) is True
+        assert connector._should_process_content(content_with_include) 
 
         # Test with exclude labels
         content_with_exclude = {
@@ -158,7 +159,7 @@ class TestConfluenceConnector:
         # Test with no matching labels and no include labels specified
         connector.config.include_labels = []
         content_no_labels = {"metadata": {"labels": {"results": []}}}
-        assert connector._should_process_content(content_no_labels) is True
+        assert connector._should_process_content(content_no_labels) 
 
     def test_clean_html(self, connector):
         """Test HTML cleaning functionality."""

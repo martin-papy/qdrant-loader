@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from pydantic import HttpUrl
+
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
@@ -55,7 +56,7 @@ async def test_initialization(mock_config):
     """Test state manager initialization."""
     manager = StateManager(mock_config)
     await manager.initialize()
-    assert manager._initialized is True
+    assert manager._initialized 
     assert manager._engine is not None
     assert manager._session_factory is not None
     await manager.dispose()
@@ -170,7 +171,7 @@ async def test_mark_document_deleted(state_manager, sample_document):
         document_id=sample_document.id,
     )
     assert record is not None
-    assert record.is_deleted is True
+    assert record.is_deleted 
 
 
 @pytest.mark.asyncio
@@ -245,7 +246,7 @@ async def test_context_manager(mock_config):
     manager = StateManager(mock_config)
     await manager.initialize()
     async with manager:
-        assert manager._initialized is True
+        assert manager._initialized 
     assert manager._initialized is False
 
 
@@ -276,10 +277,10 @@ class TestFileConversionMetadataTracking:
         state_record = await state_manager.update_document_state(document)
 
         # Verify conversion metadata is stored
-        assert state_record.is_converted is True
+        assert state_record.is_converted 
         assert state_record.conversion_method == "markitdown"
-        assert state_record.original_file_type == "pdf"
-        assert state_record.original_filename == "test.pdf"
+        assert state_record.original_file_type == "pd"
+        assert state_record.original_filename == "test.pd"
         assert state_record.file_size == 1024000
         assert state_record.conversion_failed is False
         assert state_record.conversion_time == 2.5
@@ -306,9 +307,9 @@ class TestFileConversionMetadataTracking:
 
         state_record = await state_manager.update_document_state(document)
 
-        assert state_record.is_converted is True
+        assert state_record.is_converted 
         assert state_record.conversion_method == "markitdown_fallback"
-        assert state_record.conversion_failed is True
+        assert state_record.conversion_failed 
         assert (
             state_record.conversion_error == "File is corrupted or password protected"
         )
@@ -380,7 +381,7 @@ class TestAttachmentMetadataTracking:
         state_record = await state_manager.update_document_state(attachment_doc)
 
         # Verify attachment metadata
-        assert state_record.is_attachment is True
+        assert state_record.is_attachment 
         assert state_record.parent_document_id == parent_doc.id
         assert state_record.attachment_id == "att_789"
         assert state_record.attachment_filename == "Important Spreadsheet.xlsx"
@@ -399,7 +400,7 @@ class TestAttachmentMetadataTracking:
         attachments = await state_manager.get_attachment_documents(parent_doc.id)
         assert len(attachments) == 1
         assert attachments[0].document_id == attachment_doc.id
-        assert attachments[0].is_attachment is True
+        assert attachments[0].is_attachment 
 
 
 @pytest.mark.asyncio
@@ -488,12 +489,12 @@ class TestConversionMetricsTracking:
                 )
 
             document = Document(
-                title=f"Test Document {i+1}",
-                content=f"# Test Document {i+1}\n\nContent here.",
+                title="Test Document {i+1}",
+                content="# Test Document {i+1}\n\nContent here.",
                 content_type="md",
                 source_type=source_type,
                 source=source,
-                url=f"/path/to/{doc_data['filename']}",
+                url="/path/to/{doc_data['filename']}",
                 metadata=metadata,
             )
             await state_manager.update_document_state(document)

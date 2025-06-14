@@ -2,19 +2,20 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, mock_open, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
+
 from qdrant_loader.cli.cli import (
+    _check_for_updates,
     _check_settings,
     _create_database_directory,
     _get_version,
     _load_config,
     _run_init,
     _setup_logging,
-    _check_for_updates,
     cli,
 )
 from qdrant_loader.config.state import DatabaseDirectoryError
@@ -123,7 +124,7 @@ class TestCreateDatabaseDirectory:
             with patch("click.confirm", return_value=True):
                 result = _create_database_directory(test_path)
 
-            assert result is True
+            assert result 
             assert test_path.exists()
 
     def test_create_database_directory_declined(self):
@@ -300,7 +301,7 @@ class TestCLIIntegration:
         ):
             # Run the CLI with config command to trigger the main CLI function
             # This will fail due to missing config, but the CLI function will be called
-            result = runner.invoke(cli, ["config"])
+            runner.invoke(cli, ["config"])
 
             # Verify that version check was called
             mock_check_updates.assert_called_once()
@@ -319,7 +320,7 @@ class TestCLIIntegration:
             ) as mock_check_updates,
         ):
             # Should not raise exception even if version check fails
-            result = runner.invoke(cli, ["config"])
+            runner.invoke(cli, ["config"])
 
             # CLI should still work (even though config command will fail)
             # The important thing is that the version check exception doesn't break the CLI

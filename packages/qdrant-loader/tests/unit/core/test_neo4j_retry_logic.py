@@ -4,25 +4,25 @@ This module tests the retry decorator and connection pooling functionality
 in the Neo4j manager.
 """
 
-import pytest
 import time
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 from neo4j.exceptions import (
-    ServiceUnavailable,
-    TransientError,
-    SessionExpired,
-    TransactionError,
-    DatabaseError,
     AuthError,
-    ConfigurationError,
     ClientError,
+    ConfigurationError,
+    DatabaseError,
+    ServiceUnavailable,
+    SessionExpired,
+    TransientError,
 )
 
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.neo4j_manager import (
     Neo4jManager,
-    retry_on_transient_failure,
     _is_retryable_exception,
+    retry_on_transient_failure,
 )
 
 
@@ -32,17 +32,17 @@ class TestRetryableExceptions:
     def test_transient_error_is_retryable(self):
         """Test that TransientError is retryable."""
         exception = TransientError("Temporary issue")
-        assert _is_retryable_exception(exception) is True
+        assert _is_retryable_exception(exception) 
 
     def test_service_unavailable_is_retryable(self):
         """Test that ServiceUnavailable is retryable."""
         exception = ServiceUnavailable("Service down")
-        assert _is_retryable_exception(exception) is True
+        assert _is_retryable_exception(exception) 
 
     def test_session_expired_is_retryable(self):
         """Test that SessionExpired is retryable."""
         exception = SessionExpired("Session expired")
-        assert _is_retryable_exception(exception) is True
+        assert _is_retryable_exception(exception) 
 
     def test_transaction_error_with_retryable_keywords(self):
         """Test that DatabaseError with retryable keywords is retryable (TransactionError has complex constructor)."""
@@ -55,7 +55,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = DatabaseError(message)
-            assert _is_retryable_exception(exception) is True
+            assert _is_retryable_exception(exception) 
 
     def test_transaction_error_without_retryable_keywords(self):
         """Test that DatabaseError without retryable keywords is not retryable."""
@@ -72,7 +72,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = DatabaseError(message)
-            assert _is_retryable_exception(exception) is True
+            assert _is_retryable_exception(exception) 
 
     def test_database_error_without_retryable_keywords(self):
         """Test that DatabaseError without retryable keywords is not retryable."""
@@ -105,7 +105,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = Exception(message)
-            assert _is_retryable_exception(exception) is True
+            assert _is_retryable_exception(exception) 
 
     def test_generic_exception_without_network_keywords(self):
         """Test that generic exceptions without network keywords are not retryable."""
@@ -279,7 +279,7 @@ class TestRetryDecorator:
             max_delay = capped_delay + jitter_range
             assert (
                 min_delay <= actual_delay <= max_delay
-            ), f"Delay {actual_delay} not in range [{min_delay}, {max_delay}] for attempt {i} (base_delay={base_delay}, capped_delay={capped_delay})"
+            ), "Delay {actual_delay} not in range [{min_delay}, {max_delay}] for attempt {i} (base_delay={base_delay}, capped_delay={capped_delay})"
 
     def test_time_budget_exceeded(self):
         """Test that retries stop when time budget is exceeded."""
@@ -415,7 +415,7 @@ class TestNeo4jManagerRetryIntegration:
 
     def test_test_connection_with_retry(self, neo4j_manager):
         """Test that test_connection() retries on failures."""
-        # Mock the driver and ensure is_connected is True
+        # Mock the driver and ensure is_connected 
         mock_driver = Mock()
         neo4j_manager._driver = mock_driver
         neo4j_manager._is_connected = True
@@ -443,5 +443,5 @@ class TestNeo4jManagerRetryIntegration:
             with patch("time.sleep"):
                 result = neo4j_manager.test_connection()
 
-            assert result is True
+            assert result 
             assert mock_session.run.call_count == 2

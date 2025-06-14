@@ -12,10 +12,10 @@ from qdrant_loader.connectors.git.metadata_extractor import GitMetadataExtractor
 from qdrant_loader.connectors.git.operations import GitOperations
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
-    FileConverter,
-    FileDetector,
     FileConversionConfig,
     FileConversionError,
+    FileConverter,
+    FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -153,7 +153,7 @@ class GitConnector(BaseConnector):
             # Clean up if something goes wrong
             if self.temp_dir:
                 self._cleanup()
-            raise RuntimeError(f"Failed to set up Git repository: {e}") from e
+            raise RuntimeError("Failed to set up Git repository: {e}") from e
 
     def __enter__(self):
         """Synchronous context manager entry."""
@@ -248,7 +248,7 @@ class GitConnector(BaseConnector):
                 shutil.rmtree(self.temp_dir)
                 self.logger.debug("Cleaned up temporary directory")
             except Exception as e:
-                self.logger.error(f"Failed to clean up temporary directory: {e}")
+                self.logger.error("Failed to clean up temporary directory: {e}")
 
     def _process_file(self, file_path: str) -> Document:
         """Process a single file.
@@ -337,7 +337,7 @@ class GitConnector(BaseConnector):
                     }
                 )
 
-            self.logger.debug(f"Processed Git file: /{rel_path!s}")
+            self.logger.debug("Processed Git file: /{rel_path!s}")
 
             # Create document
             git_document = Document(
@@ -347,7 +347,7 @@ class GitConnector(BaseConnector):
                 metadata=metadata,
                 source_type=SourceType.GIT,
                 source=self.config.source,
-                url=f"{str(self.config.base_url).replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
+                url="{str(self.config.base_url).replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
                 is_deleted=False,
                 created_at=first_commit_date,
                 updated_at=last_commit_date,

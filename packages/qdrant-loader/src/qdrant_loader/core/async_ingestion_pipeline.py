@@ -6,9 +6,9 @@ from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
+from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .pipeline import (
@@ -121,7 +121,7 @@ class AsyncIngestionPipeline:
             final_metrics_dir = Path.cwd() / "metrics"
 
         final_metrics_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Initializing metrics directory at {final_metrics_dir}")
+        logger.info("Initializing metrics directory at {final_metrics_dir}")
         self.monitor = IngestionMonitor(str(final_metrics_dir.absolute()))
 
         # Start metrics server if enabled
@@ -210,12 +210,12 @@ class AsyncIngestionPipeline:
             self.monitor.end_operation("ingestion_process")
 
             logger.debug(
-                f"Document processing completed. Processed {len(documents)} documents"
+                "Document processing completed. Processed {len(documents)} documents"
             )
             return documents
 
         except Exception as e:
-            logger.error(f"Document processing failed: {e}", exc_info=True)
+            logger.error("Document processing failed: {e}", exc_info=True)
             self.monitor.end_operation("ingestion_process", error=str(e))
             raise
 
@@ -236,7 +236,7 @@ class AsyncIngestionPipeline:
             try:
                 prometheus_metrics.stop_metrics_server()
             except Exception as e:
-                logger.warning(f"Error stopping metrics server: {e}")
+                logger.warning("Error stopping metrics server: {e}")
 
             # Use resource manager for cleanup
             if hasattr(self, "resource_manager"):
@@ -244,7 +244,7 @@ class AsyncIngestionPipeline:
 
             logger.info("Pipeline cleanup completed")
         except Exception as e:
-            logger.error(f"Error during pipeline cleanup: {e}")
+            logger.error("Error during pipeline cleanup: {e}")
 
     def __del__(self):
         """Destructor to ensure cleanup."""
@@ -252,7 +252,7 @@ class AsyncIngestionPipeline:
             # Can't await in __del__, so use the sync cleanup method
             self._sync_cleanup()
         except Exception as e:
-            logger.error(f"Error in destructor cleanup: {e}")
+            logger.error("Error in destructor cleanup: {e}")
 
     def _sync_cleanup(self):
         """Synchronous cleanup for destructor and signal handlers."""
@@ -267,20 +267,20 @@ class AsyncIngestionPipeline:
             if hasattr(self, "monitor"):
                 self.monitor.save_metrics()
         except Exception as e:
-            logger.error(f"Error saving metrics: {e}")
+            logger.error("Error saving metrics: {e}")
 
         # Stop metrics server
         try:
             prometheus_metrics.stop_metrics_server()
         except Exception as e:
-            logger.error(f"Error stopping metrics server: {e}")
+            logger.error("Error stopping metrics server: {e}")
 
         # Use resource manager sync cleanup
         try:
             if hasattr(self, "resource_manager"):
                 self.resource_manager._cleanup()
         except Exception as e:
-            logger.error(f"Error in resource manager cleanup: {e}")
+            logger.error("Error in resource manager cleanup: {e}")
 
         logger.info("Pipeline cleanup completed (sync)")
 

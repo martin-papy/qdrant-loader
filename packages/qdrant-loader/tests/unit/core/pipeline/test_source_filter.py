@@ -1,7 +1,8 @@
 """Tests for SourceFilter."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from qdrant_loader.config import SourcesConfig
 from qdrant_loader.config.source_config import SourceConfig
@@ -276,7 +277,7 @@ class TestSourceFilter:
             actual_count = len(getattr(result, source_type))
             assert (
                 actual_count == expected_count
-            ), f"Failed for {source_type}: expected {expected_count}, got {actual_count}"
+            ), "Failed for {source_type}: expected {expected_count}, got {actual_count}"
 
     def test_filter_performance_with_large_config(self):
         """Test filtering performance with a large number of sources."""
@@ -288,9 +289,9 @@ class TestSourceFilter:
         for i in range(1000):
             source = MagicMock(spec=SourceConfig)
             source.source_type = "git"
-            source.source = f"repo{i}"
-            source.name = f"repo{i}"
-            git_sources[f"repo{i}"] = source
+            source.source = "repo{i}"
+            source.name = "repo{i}"
+            git_sources["repo{i}"] = source
 
         large_config.git = git_sources
 

@@ -47,17 +47,17 @@ class LocalFileFileProcessor:
             )
 
             if not os.path.isfile(file_path):
-                self.logger.debug(f"Skipping {file_path}: file does not exist")
+                self.logger.debug("Skipping {file_path}: file does not exist")
                 return False
             if not os.access(file_path, os.R_OK):
-                self.logger.debug(f"Skipping {file_path}: file is not readable")
+                self.logger.debug("Skipping {file_path}: file is not readable")
                 return False
 
             rel_path = os.path.relpath(file_path, self.base_path)
             file_basename = os.path.basename(rel_path)
             if file_basename.startswith("."):
                 self.logger.debug(
-                    f"Skipping {rel_path}: invalid filename (starts with dot)"
+                    "Skipping {rel_path}: invalid filename (starts with dot)"
                 )
                 return False
 
@@ -69,7 +69,7 @@ class LocalFileFileProcessor:
                         rel_path
                     ).startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
+                            "Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
                 elif pattern.endswith("/"):
@@ -78,27 +78,27 @@ class LocalFileFileProcessor:
                         rel_path
                     ).startswith(dir_pattern + "/"):
                         self.logger.debug(
-                            f"Skipping {rel_path}: matches exclude directory pattern {pattern}"
+                            "Skipping {rel_path}: matches exclude directory pattern {pattern}"
                         )
                         return False
                 elif fnmatch.fnmatch(rel_path, pattern):
                     self.logger.debug(
-                        f"Skipping {rel_path}: matches exclude pattern {pattern}"
+                        "Skipping {rel_path}: matches exclude pattern {pattern}"
                     )
                     return False
 
             file_type_match = False
             file_ext = os.path.splitext(file_basename)[1].lower()
-            self.logger.debug(f"Checking file extension: {file_ext}")
+            self.logger.debug("Checking file extension: {file_ext}")
 
             # First check configured file types
             for pattern in self.config.file_types:
-                self.logger.debug(f"Checking file type pattern: {pattern}")
+                self.logger.debug("Checking file type pattern: {pattern}")
                 pattern_ext = os.path.splitext(pattern)[1].lower()
                 if pattern_ext and file_ext == pattern_ext:
                     file_type_match = True
                     self.logger.debug(
-                        f"File {rel_path} matches file type pattern {pattern}"
+                        "File {rel_path} matches file type pattern {pattern}"
                     )
                     break
 
@@ -111,17 +111,17 @@ class LocalFileFileProcessor:
             ):
                 if self.file_detector.is_supported_for_conversion(file_path):
                     file_type_match = True
-                    self.logger.debug(f"File {rel_path} supported for conversion")
+                    self.logger.debug("File {rel_path} supported for conversion")
 
             if not file_type_match:
                 self.logger.debug(
-                    f"Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
+                    "Skipping {rel_path}: does not match any file type patterns and not supported for conversion"
                 )
                 return False
 
             file_size = os.path.getsize(file_path)
             if file_size > self.config.max_file_size:
-                self.logger.debug(f"Skipping {rel_path}: exceeds max file size")
+                self.logger.debug("Skipping {rel_path}: exceeds max file size")
                 return False
 
             if not self.config.include_paths:
@@ -150,5 +150,5 @@ class LocalFileFileProcessor:
                     return True
             return False
         except Exception as e:
-            self.logger.error(f"Error checking if file should be processed: {e}")
+            self.logger.error("Error checking if file should be processed: {e}")
             return False

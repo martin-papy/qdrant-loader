@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 from bs4 import XMLParsedAsHTMLWarning
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector
@@ -141,7 +142,7 @@ class TestPublicDocsIntegration:
         should_process = connector._should_process_url(base_url)
 
         # The base URL should always be processed
-        assert should_process is True
+        assert should_process 
 
         # Test URLs that should be excluded based on exclude_paths
         for exclude_path in publicdocs_config.exclude_paths:
@@ -152,7 +153,7 @@ class TestPublicDocsIntegration:
             else:
                 test_path = exclude_path
 
-            test_url = f"{base_url}{test_path}"
+            test_url = "{base_url}{test_path}"
             should_process = connector._should_process_url(test_url)
 
             # This URL should be excluded

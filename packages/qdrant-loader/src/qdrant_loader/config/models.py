@@ -5,8 +5,8 @@ including project contexts, project configurations, and related models.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -95,7 +95,7 @@ class ProjectsConfig(BaseModel):
             ValueError: If project ID already exists
         """
         if project_config.project_id in self.projects:
-            raise ValueError(f"Project '{project_config.project_id}' already exists")
+            raise ValueError("Project '{project_config.project_id}' already exists")
 
         self.projects[project_config.project_id] = project_config
 

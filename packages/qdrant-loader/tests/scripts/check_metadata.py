@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
+
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -23,10 +24,10 @@ def load_config(config_path: str, env_path: str | None = None):
     env_path_obj = Path(env_path) if env_path else None
 
     if not config_path_obj.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path_obj}")
+        raise FileNotFoundError("Configuration file not found: {config_path_obj}")
 
     if env_path_obj and not env_path_obj.exists():
-        raise FileNotFoundError(f"Environment file not found: {env_path_obj}")
+        raise FileNotFoundError("Environment file not found: {env_path_obj}")
 
     # Initialize configuration
     initialize_config(config_path_obj, env_path_obj, skip_validation=True)
@@ -51,7 +52,7 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
             with_vectors=False,
         )[0]
 
-        print(f"Analyzing metadata from {len(points)} documents...\n")
+        print("Analyzing metadata from {len(points)} documents...\n")
 
         # Collect all unique metadata keys
         all_keys = set()
@@ -60,8 +61,8 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
         for i, point in enumerate(points):
             payload = point.payload or {}
 
-            print(f"=== Document {i+1} (ID: {point.id}) ===")
-            print(f"Payload keys: {list(payload.keys())}")
+            print("=== Document {i+1} (ID: {point.id}) ===")
+            print("Payload keys: {list(payload.keys())}")
 
             # Add keys to our collection
             all_keys.update(payload.keys())
@@ -93,9 +94,9 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
                 print("Full payload:")
                 for key, value in payload.items():
                     if isinstance(value, str) and len(value) > 200:
-                        print(f"  {key}: {value[:200]}...")
+                        print("  {key}: {value[:200]}...")
                     else:
-                        print(f"  {key}: {value}")
+                        print("  {key}: {value}")
                 print("-" * 80)
             else:
                 print("(Payload details truncated for brevity)")
@@ -103,19 +104,19 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
 
         # Summary analysis
         print("\n=== METADATA ANALYSIS SUMMARY ===")
-        print(f"Total documents analyzed: {len(points)}")
-        print(f"Unique metadata fields found: {len(all_keys)}")
-        print(f"All fields: {sorted(all_keys)}")
+        print("Total documents analyzed: {len(points)}")
+        print("Unique metadata fields found: {len(all_keys)}")
+        print("All fields: {sorted(all_keys)}")
 
         print("\n=== FIELD ANALYSIS ===")
         for field in sorted(all_keys):
             analysis = metadata_analysis[field]
-            print(f"\nField: {field}")
-            print(f"  Present in: {analysis['count']}/{len(points)} documents")
-            print(f"  Data types: {', '.join(analysis['types'])}")
-            print(f"  Null/empty values: {analysis['null_count']}")
+            print("\nField: {field}")
+            print("  Present in: {analysis['count']}/{len(points)} documents")
+            print("  Data types: {', '.join(analysis['types'])}")
+            print("  Null/empty values: {analysis['null_count']}")
             if analysis["sample_values"]:
-                print(f"  Sample values: {analysis['sample_values']}")
+                print("  Sample values: {analysis['sample_values']}")
 
         # Check for missing expected fields
         expected_fields = [
@@ -136,16 +137,16 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
                 status = (
                     "✅"
                     if analysis["null_count"] == 0
-                    else f"⚠️ ({analysis['null_count']} null)"
+                    else "⚠️ ({analysis['null_count']} null)"
                 )
-                print(f"{status} {field}")
+                print("{status} {field}")
             else:
-                print(f"❌ {field} - MISSING")
+                print("❌ {field} - MISSING")
 
         return points
 
     except Exception as e:
-        print(f"Error analyzing metadata: {e}")
+        print("Error analyzing metadata: {e}")
         return []
 
 
@@ -164,8 +165,8 @@ def main():
         print("Loading configuration...")
         settings = load_config(args.config, args.env)
 
-        print(f"QDrant URL: {settings.qdrant_url}")
-        print(f"Collection: {settings.qdrant_collection_name}")
+        print("QDrant URL: {settings.qdrant_url}")
+        print("Collection: {settings.qdrant_collection_name}")
         print()
 
         # Create QDrant client
@@ -175,7 +176,7 @@ def main():
         analyze_metadata(client, settings.qdrant_collection_name, args.limit)
 
     except Exception as e:
-        print(f"Error: {e}")
+        print("Error: {e}")
         return 1
 
     return 0

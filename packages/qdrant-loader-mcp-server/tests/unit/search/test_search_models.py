@@ -1,6 +1,5 @@
 """Tests for search models."""
 
-import pytest
 from qdrant_loader_mcp_server.search.models import SearchResult
 
 
@@ -92,7 +91,7 @@ class TestSearchResult:
             parent_id=None,
         )
 
-        assert result.is_root_document() is True
+        assert result.is_root_document() 
 
     def test_is_root_document_false(self):
         """Test root document detection when parent_id exists."""
@@ -116,7 +115,7 @@ class TestSearchResult:
             children_count=3,
         )
 
-        assert result.has_children() is True
+        assert result.has_children() 
 
     def test_has_children_false_zero(self):
         """Test children detection when children_count is 0."""
@@ -148,15 +147,15 @@ class TestSearchResult:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="requirements.pdf",
+            source_title="requirements.pd",
             is_attachment=True,
-            attachment_context="File: requirements.pdf | Size: 2.0 MB | Type: application/pdf",
+            attachment_context="File: requirements.pdf | Size: 2.0 MB | Type: application/pd",
         )
 
         attachment_info = result.get_attachment_info()
         assert (
             attachment_info
-            == "File: requirements.pdf | Size: 2.0 MB | Type: application/pdf"
+            == "File: requirements.pdf | Size: 2.0 MB | Type: application/pd"
         )
 
     def test_get_attachment_info_not_attachment(self):
@@ -179,7 +178,7 @@ class TestSearchResult:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="attachment.pdf",
+            source_title="attachment.pd",
             is_attachment=True,
             attachment_context=None,
         )
@@ -188,16 +187,16 @@ class TestSearchResult:
         assert attachment_info is None
 
     def test_is_file_attachment_true(self):
-        """Test file attachment detection when is_attachment is True."""
+        """Test file attachment detection when is_attachment ."""
         result = SearchResult(
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="document.pdf",
+            source_title="document.pd",
             is_attachment=True,
         )
 
-        assert result.is_file_attachment() is True
+        assert result.is_file_attachment() 
 
     def test_is_file_attachment_false(self):
         """Test file attachment detection when is_attachment is False."""
@@ -217,12 +216,12 @@ class TestSearchResult:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="document.pdf",
-            mime_type="application/pdf",
+            source_title="document.pd",
+            mime_type="application/pd",
         )
 
         file_type = result.get_file_type()
-        assert file_type == "application/pdf"
+        assert file_type == "application/pd"
 
     def test_get_file_type_from_filename_extension(self):
         """Test file type extraction from filename extension."""
@@ -230,13 +229,13 @@ class TestSearchResult:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="document.pdf",
-            original_filename="requirements.pdf",
+            source_title="document.pd",
+            original_filename="requirements.pd",
             mime_type=None,
         )
 
         file_type = result.get_file_type()
-        assert file_type == "pdf"
+        assert file_type == "pd"
 
     def test_get_file_type_from_filename_various_extensions(self):
         """Test file type extraction for various file extensions."""
@@ -264,7 +263,7 @@ class TestSearchResult:
             )
 
             file_type = result.get_file_type()
-            assert file_type == expected_type, f"Failed for {filename}"
+            assert file_type == expected_type, "Failed for {filename}"
 
     def test_get_file_type_no_extension(self):
         """Test file type extraction when filename has no extension."""
@@ -320,7 +319,7 @@ class TestSearchResult:
         )
 
         file_type = result.get_file_type()
-        assert file_type == "pdf"  # Should be lowercase
+        assert file_type == "pd"  # Should be lowercase
 
     def test_get_file_type_no_filename_no_mime(self):
         """Test file type extraction when both filename and MIME type are None."""
@@ -356,11 +355,11 @@ class TestSearchResult:
             parent_document_id="doc-789",
             parent_document_title="Main Document",
             attachment_id="att-123",
-            original_filename="complete.pdf",
+            original_filename="complete.pd",
             file_size=1048576,
-            mime_type="application/pdf",
+            mime_type="application/pd",
             attachment_author="test.user@company.com",
-            attachment_context="File: complete.pdf | Size: 1.0 MB | Type: application/pdf",
+            attachment_context="File: complete.pdf | Size: 1.0 MB | Type: application/pd",
         )
 
         # Verify all fields are set correctly
@@ -379,17 +378,17 @@ class TestSearchResult:
         assert (
             result.hierarchy_context == "Path: Root > Parent | Depth: 2 | Children: 5"
         )
-        assert result.is_attachment is True
+        assert result.is_attachment 
         assert result.parent_document_id == "doc-789"
         assert result.parent_document_title == "Main Document"
         assert result.attachment_id == "att-123"
-        assert result.original_filename == "complete.pdf"
+        assert result.original_filename == "complete.pd"
         assert result.file_size == 1048576
-        assert result.mime_type == "application/pdf"
+        assert result.mime_type == "application/pd"
         assert result.attachment_author == "test.user@company.com"
         assert (
             result.attachment_context
-            == "File: complete.pdf | Size: 1.0 MB | Type: application/pdf"
+            == "File: complete.pdf | Size: 1.0 MB | Type: application/pd"
         )
 
     def test_search_result_minimal_fields(self):

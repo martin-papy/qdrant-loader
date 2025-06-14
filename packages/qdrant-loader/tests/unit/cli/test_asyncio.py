@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.cli.asyncio import async_command
 
 
@@ -33,7 +34,7 @@ class TestAsyncCommand:
             async def test_function(value: str) -> str:
                 """Test async function."""
                 await asyncio.sleep(0.01)  # Small delay to ensure it's actually async
-                return f"processed_{value}"
+                return "processed_{value}"
 
             # Call the decorated function
             result = test_function("test")
@@ -65,7 +66,7 @@ class TestAsyncCommand:
             @async_command
             async def test_function(value: str) -> str:
                 """Test async function."""
-                return f"processed_{value}"
+                return "processed_{value}"
 
             # Call the decorated function
             result = test_function("test")

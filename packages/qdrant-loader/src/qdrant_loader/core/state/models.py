@@ -7,16 +7,18 @@ from datetime import UTC
 from sqlalchemy import (
     Boolean,
     Column,
+)
+from sqlalchemy import DateTime as SQLDateTime
+from sqlalchemy import (
+    Float,
+    ForeignKey,
     Index,
     Integer,
     String,
+    Text,
     TypeDecorator,
     UniqueConstraint,
-    Text,
-    Float,
-    ForeignKey,
 )
-from sqlalchemy import DateTime as SQLDateTime
 from sqlalchemy.orm import declarative_base, relationship
 
 from qdrant_loader.utils.logging import LoggingConfig

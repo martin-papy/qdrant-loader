@@ -6,15 +6,15 @@ development, documentation, and system architecture.
 """
 
 import json
-from typing import Dict, List, Any, Optional, Union
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from graphiti_core.prompts.models import Message
 
-from ..types import EntityType
 from ...utils.logging import LoggingConfig
+from ..types import EntityType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -77,7 +77,7 @@ class PromptTemplate:
 
         formatted = []
         for entity_type, hint_list in hints.items():
-            formatted.append(f"- {entity_type}: {', '.join(hint_list)}")
+            formatted.append("- {entity_type}: {', '.join(hint_list)}")
 
         return "\n".join(formatted)
 
@@ -303,7 +303,7 @@ class EntityPromptManager:
         self._load_default_prompts()
 
         logger.info(
-            f"EntityPromptManager initialized with {len(self._prompts)} prompts"
+            "EntityPromptManager initialized with {len(self._prompts)} prompts"
         )
 
     def _load_default_prompts(self) -> None:
@@ -320,7 +320,7 @@ class EntityPromptManager:
     def register_prompt(self, prompt: PromptTemplate) -> None:
         """Register a new prompt template."""
         self._prompts[prompt.name] = prompt
-        logger.debug(f"Registered prompt template: {prompt.name}")
+        logger.debug("Registered prompt template: {prompt.name}")
 
     def get_prompt(self, name: str) -> Optional[PromptTemplate]:
         """Get a prompt template by name."""
@@ -381,7 +381,7 @@ class EntityPromptManager:
         prompt = self.get_prompt(prompt_name)
 
         if not prompt:
-            logger.warning(f"No prompt found for domain {domain}, using default")
+            logger.warning("No prompt found for domain {domain}, using default")
             prompt = self.get_prompt("software_entity_extraction")
 
         if not prompt:
@@ -463,14 +463,14 @@ class EntityPromptManager:
             if hasattr(prompt, key):
                 setattr(prompt, key, value)
 
-        logger.info(f"Updated prompt template: {name}")
+        logger.info("Updated prompt template: {name}")
         return True
 
     def remove_prompt(self, name: str) -> bool:
         """Remove a prompt template."""
         if name in self._prompts:
             del self._prompts[name]
-            logger.info(f"Removed prompt template: {name}")
+            logger.info("Removed prompt template: {name}")
             return True
         return False
 

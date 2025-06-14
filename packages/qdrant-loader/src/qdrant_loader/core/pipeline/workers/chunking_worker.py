@@ -41,12 +41,12 @@ class ChunkingWorker(BaseWorker):
         Returns:
             List of chunks
         """
-        logger.debug(f"Chunker_worker started for doc {document.id}")
+        logger.debug("Chunker_worker started for doc {document.id}")
 
         try:
             # Check for shutdown signal
             if self.shutdown_event.is_set():
-                logger.debug(f"Chunker_worker {document.id} exiting due to shutdown")
+                logger.debug("Chunker_worker {document.id} exiting due to shutdown")
                 return []
 
             # Update metrics
@@ -60,8 +60,8 @@ class ChunkingWorker(BaseWorker):
 
                 # Log timeout decision for debugging
                 logger.debug(
-                    f"Adaptive timeout for {document.url}: {adaptive_timeout:.1f}s "
-                    f"(size: {len(document.content)} bytes)"
+                    "Adaptive timeout for {document.url}: {adaptive_timeout:.1f}s "
+                    "(size: {len(document.content)} bytes)"
                 )
 
                 # Add timeout to prevent hanging on chunking
@@ -77,7 +77,7 @@ class ChunkingWorker(BaseWorker):
                 # Check for shutdown before returning chunks
                 if self.shutdown_event.is_set():
                     logger.debug(
-                        f"Chunker_worker {document.id} exiting due to shutdown after chunking"
+                        "Chunker_worker {document.id} exiting due to shutdown after chunking"
                     )
                     return []
 
@@ -85,17 +85,17 @@ class ChunkingWorker(BaseWorker):
                 for chunk in chunks:
                     chunk.metadata["parent_document"] = document
 
-                logger.debug(f"Chunked doc {document.id} into {len(chunks)} chunks")
+                logger.debug("Chunked doc {document.id} into {len(chunks)} chunks")
                 return chunks
 
         except asyncio.CancelledError:
-            logger.debug(f"Chunker_worker {document.id} cancelled")
+            logger.debug("Chunker_worker {document.id} cancelled")
             raise
         except TimeoutError:
-            logger.error(f"Chunking timed out for doc {document.url}")
+            logger.error("Chunking timed out for doc {document.url}")
             raise
         except Exception as e:
-            logger.error(f"Chunking failed for doc {document.url}: {e}")
+            logger.error("Chunking failed for doc {document.url}: {e}")
             raise
 
     async def process_documents(self, documents: list[Document]) -> AsyncIterator:
@@ -108,7 +108,7 @@ class ChunkingWorker(BaseWorker):
             Chunks from processed documents
         """
         logger.debug("ChunkingWorker started")
-        logger.info(f"🔄 Processing {len(documents)} documents for chunking...")
+        logger.info("🔄 Processing {len(documents)} documents for chunking...")
 
         try:
             # Process documents with controlled concurrency but stream results
@@ -120,29 +120,29 @@ class ChunkingWorker(BaseWorker):
                     async with semaphore:
                         if self.shutdown_event.is_set():
                             logger.debug(
-                                f"ChunkingWorker exiting due to shutdown (doc {doc_index})"
+                                "ChunkingWorker exiting due to shutdown (doc {doc_index})"
                             )
                             return
 
                         logger.debug(
-                            f"🔄 Processing document {doc_index + 1}/{len(documents)}: {doc.id}"
+                            "🔄 Processing document {doc_index + 1}/{len(documents)}: {doc.id}"
                         )
                         chunks = await self.process(doc)
 
                         if chunks:
                             logger.debug(
-                                f"✓ Document {doc_index + 1}/{len(documents)} produced {len(chunks)} chunks"
+                                "✓ Document {doc_index + 1}/{len(documents)} produced {len(chunks)} chunks"
                             )
                             return chunks
                         else:
                             logger.debug(
-                                f"⚠️ Document {doc_index + 1}/{len(documents)} produced no chunks"
+                                "⚠️ Document {doc_index + 1}/{len(documents)} produced no chunks"
                             )
                             return []
 
                 except Exception as e:
                     logger.error(
-                        f"❌ Chunking failed for document {doc_index + 1}/{len(documents)} ({doc.id}): {e}"
+                        "❌ Chunking failed for document {doc_index + 1}/{len(documents)} ({doc.id}): {e}"
                     )
                     return []
 
@@ -174,15 +174,15 @@ class ChunkingWorker(BaseWorker):
                     # Log progress every 10 documents or at completion
                     if completed_docs % 10 == 0 or completed_docs == len(documents):
                         logger.info(
-                            f"🔄 Chunking progress: {completed_docs}/{len(documents)} documents, {chunk_count} chunks generated"
+                            "🔄 Chunking progress: {completed_docs}/{len(documents)} documents, {chunk_count} chunks generated"
                         )
 
                 except Exception as e:
-                    logger.error(f"❌ Error processing chunking task: {e}")
+                    logger.error("❌ Error processing chunking task: {e}")
                     completed_docs += 1
 
             logger.info(
-                f"✅ Chunking completed: {completed_docs}/{len(documents)} documents processed, {chunk_count} total chunks"
+                "✅ Chunking completed: {completed_docs}/{len(documents)} documents processed, {chunk_count} total chunks"
             )
 
         except asyncio.CancelledError:

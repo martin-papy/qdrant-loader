@@ -105,7 +105,7 @@ class BaseChunkingStrategy(ABC):
         # Get file extension
         ext = ""
         if file_path and "." in file_path:
-            ext = f".{file_path.lower().split('.')[-1]}"
+            ext = ".{file_path.lower().split('.')[-1]}"
 
         # Skip NLP for code files (except comments/docstrings)
         code_extensions = {
@@ -434,7 +434,7 @@ class BaseChunkingStrategy(ABC):
                     )
             except Exception as e:
                 self.logger.warning(
-                    f"NLP processing failed for chunk {chunk_index}: {e}"
+                    "NLP processing failed for chunk {chunk_index}: {e}"
                 )
                 metadata.update(
                     {

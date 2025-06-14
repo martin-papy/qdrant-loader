@@ -2,9 +2,10 @@
 Tests for the base connector interface and functionality.
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock
 from abc import ABC
+from unittest.mock import MagicMock
+
+import pytest
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector
@@ -68,8 +69,6 @@ class TestBaseConnector:
 
         class IncompleteConnector(BaseConnector):
             """Incomplete connector missing abstract method implementation."""
-
-            pass
 
         mock_config = MagicMock(spec=SourceConfig)
 
@@ -206,16 +205,16 @@ class TestBaseConnector:
         configs = []
         for i in range(5):
             config = MagicMock(spec=SourceConfig)
-            config.source_id = f"source-{i}"
-            config.name = f"Source {i}"
+            config.source_id = "source-{i}"
+            config.name = "Source {i}"
             configs.append(config)
 
         connectors = [concrete_connector_class(config) for config in configs]
 
         assert len(connectors) == 5
         for i, connector in enumerate(connectors):
-            assert connector.config.source_id == f"source-{i}"
-            assert connector.config.name == f"Source {i}"
+            assert connector.config.source_id == "source-{i}"
+            assert connector.config.name == "Source {i}"
 
     @pytest.mark.asyncio
     async def test_concurrent_document_retrieval(self, concrete_connector_class):
@@ -223,7 +222,7 @@ class TestBaseConnector:
         import asyncio
 
         configs = [
-            MagicMock(spec=SourceConfig, source_id=f"source-{i}", name=f"Source {i}")
+            MagicMock(spec=SourceConfig, source_id="source-{i}", name="Source {i}")
             for i in range(3)
         ]
 
@@ -233,12 +232,12 @@ class TestBaseConnector:
         for i, connector in enumerate(connectors):
             test_docs = [
                 Document(
-                    title=f"Doc {j} from Source {i}",
-                    content=f"Content {j}",
+                    title="Doc {j} from Source {i}",
+                    content="Content {j}",
                     content_type="text/plain",
                     source_type="test",
-                    source=f"source-{i}",
-                    url=f"http://test.com/source{i}/doc{j}",
+                    source="source-{i}",
+                    url="http://test.com/source{i}/doc{j}",
                     metadata={},
                 )
                 for j in range(2)
@@ -252,7 +251,7 @@ class TestBaseConnector:
         assert len(results) == 3
         for i, documents in enumerate(results):
             assert len(documents) == 2
-            assert all(f"Source {i}" in doc.title for doc in documents)
+            assert all("Source {i}" in doc.title for doc in documents)
 
     def test_connector_string_representation(self, connector):
         """Test string representation of connector."""

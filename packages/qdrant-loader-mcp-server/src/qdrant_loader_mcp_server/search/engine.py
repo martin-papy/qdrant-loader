@@ -1,17 +1,13 @@
 """Search engine implementation for the MCP server."""
 
-from typing import Any, Dict, List, Optional
-
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.models import Filter
 
-from .hybrid_search import HybridSearchEngine
-from .models import SearchResult
-from .processor import QueryProcessor
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
+from .hybrid_search import HybridSearchEngine
+from .models import SearchResult
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -67,7 +63,7 @@ class SearchEngine:
                 hint="Make sure Qdrant is running and accessible at the configured URL",
             )
             raise RuntimeError(
-                f"Failed to connect to Qdrant server at {config.url}. "
+                "Failed to connect to Qdrant server at {config.url}. "
                 "Please ensure Qdrant is running and accessible."
             ) from None  # Suppress the original exception
 

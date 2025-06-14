@@ -2,17 +2,17 @@
 Tests for monitoring extensions - file conversion metrics tracking.
 """
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
+
+import pytest
 
 from qdrant_loader.core.monitoring.ingestion_metrics import (
-    IngestionMonitor,
-    IngestionMetrics,
     BatchMetrics,
     ConversionMetrics,
+    IngestionMetrics,
+    IngestionMonitor,
 )
 
 
@@ -43,15 +43,15 @@ class TestConversionMetricsDataClasses:
             conversion_success=True,
             conversion_time=2.5,
             conversion_method="markitdown",
-            original_file_type="pdf",
+            original_file_type="pd",
             file_size=1024000,
         )
 
-        assert metrics.conversion_attempted is True
-        assert metrics.conversion_success is True
+        assert metrics.conversion_attempted 
+        assert metrics.conversion_success 
         assert metrics.conversion_time == 2.5
         assert metrics.conversion_method == "markitdown"
-        assert metrics.original_file_type == "pdf"
+        assert metrics.original_file_type == "pd"
         assert metrics.file_size == 1024000
 
     def test_batch_metrics_with_conversion_fields(self):
@@ -91,16 +91,16 @@ class TestConversionTracking:
     def test_start_conversion_tracking(self, monitor):
         """Test starting conversion tracking for a file."""
         operation_id = "conv_test_001"
-        file_path = "/path/to/document.pdf"
-        file_type = "pdf"
+        file_path = "/path/to/document.pd"
+        file_type = "pd"
         file_size = 2048000
 
         monitor.start_conversion(operation_id, file_path, file_type, file_size)
 
         assert operation_id in monitor.ingestion_metrics
         metrics = monitor.ingestion_metrics[operation_id]
-        assert metrics.conversion_attempted is True
-        assert metrics.original_file_type == "pdf"
+        assert metrics.conversion_attempted 
+        assert metrics.original_file_type == "pd"
         assert metrics.file_size == 2048000
         assert metrics.metadata["file_path"] == file_path
         assert metrics.metadata["file_type"] == file_type
@@ -120,7 +120,7 @@ class TestConversionTracking:
         )
 
         metrics = monitor.ingestion_metrics[operation_id]
-        assert metrics.conversion_success is True
+        assert metrics.conversion_success 
         assert metrics.conversion_method == "markitdown"
         assert metrics.conversion_time is not None
         assert metrics.conversion_time > 0
@@ -195,7 +195,7 @@ class TestConversionTracking:
 
         for conv in conversions:
             monitor.start_conversion(
-                conv["id"], f"/path/to/file.{conv['file_type']}", conv["file_type"]
+                conv["id"], "/path/to/file.{conv['file_type']}", conv["file_type"]
             )
             monitor.end_conversion(
                 conv["id"],
@@ -211,7 +211,7 @@ class TestConversionTracking:
         assert conv_metrics.failed_conversions == 1
         assert conv_metrics.conversion_methods["markitdown"] == 3
         assert conv_metrics.conversion_methods["markitdown_fallback"] == 1
-        assert conv_metrics.file_types_processed["pdf"] == 2
+        assert conv_metrics.file_types_processed["pd"] == 2
         assert conv_metrics.file_types_processed["docx"] == 1
         assert conv_metrics.file_types_processed["pptx"] == 1
 
@@ -236,7 +236,7 @@ class TestConversionTracking:
 
         for conv in conversions:
             # Start conversion
-            monitor.start_conversion(conv["id"], "/path/to/file.pdf", "pdf")
+            monitor.start_conversion(conv["id"], "/path/to/file.pd", "pd")
 
             # Manually set start time to control duration
             metrics = monitor.ingestion_metrics[conv["id"]]
@@ -346,7 +346,7 @@ class TestConversionSummary:
         assert summary["average_conversion_time"] == 4.5
         assert summary["attachments_processed"] == 5
         assert summary["conversion_methods"]["markitdown"] == 8
-        assert summary["file_types_processed"]["pdf"] == 4
+        assert summary["file_types_processed"]["pd"] == 4
         assert summary["error_types"]["PasswordProtectedError"] == 1
 
     def test_conversion_summary_with_no_data(self, monitor):
@@ -375,7 +375,7 @@ class TestMetricsPersistence:
         batch_id = "test_batch_001"
 
         # Add conversion operation
-        monitor.start_conversion(operation_id, "/path/to/test.pdf", "pdf", 1024000)
+        monitor.start_conversion(operation_id, "/path/to/test.pd", "pd", 1024000)
         monitor.end_conversion(
             operation_id, success=True, conversion_method="markitdown"
         )
@@ -404,10 +404,10 @@ class TestMetricsPersistence:
         # Check ingestion metrics include conversion fields
         assert operation_id in saved_data["ingestion_metrics"]
         op_data = saved_data["ingestion_metrics"][operation_id]
-        assert op_data["conversion_attempted"] is True
-        assert op_data["conversion_success"] is True
+        assert op_data["conversion_attempted"] 
+        assert op_data["conversion_success"] 
         assert op_data["conversion_method"] == "markitdown"
-        assert op_data["original_file_type"] == "pdf"
+        assert op_data["original_file_type"] == "pd"
         assert op_data["file_size"] == 1024000
 
         # Check batch metrics include conversion fields
@@ -428,7 +428,7 @@ class TestMetricsPersistence:
     def test_clear_metrics_includes_conversion_data(self, monitor):
         """Test that clearing metrics also clears conversion data."""
         # Add some conversion data
-        monitor.start_conversion("test_op", "/path/to/file.pdf", "pdf")
+        monitor.start_conversion("test_op", "/path/to/file.pd", "pd")
         monitor.end_conversion("test_op", success=True, conversion_method="markitdown")
         monitor.record_attachment_processed()
 
@@ -480,7 +480,7 @@ class TestIntegratedConversionWorkflow:
             # Start conversion
             monitor.start_conversion(
                 file_data["id"],
-                f"/path/to/{file_data['id']}.{file_data['type']}",
+                "/path/to/{file_data['id']}.{file_data['type']}",
                 file_data["type"],
                 1024000,
             )

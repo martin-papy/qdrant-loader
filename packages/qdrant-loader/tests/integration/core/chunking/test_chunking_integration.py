@@ -1,8 +1,9 @@
 """Tests for chunking service integration with file conversion."""
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
+
+import pytest
 
 from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
@@ -59,7 +60,7 @@ class TestChunkingIntegration:
             },
             source_type="git",
             source="test-repo",
-            url="https://example.com/document.pdf",
+            url="https://example.com/document.pd",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -206,8 +207,8 @@ Even more content to guarantee multiple chunks. Et harum quidem rerum facilis es
         assert "# Converted Document" in chunks[0].content
 
         # Log the actual chunk count for debugging
-        print(f"Document content length: {len(content)} characters")
-        print(f"Number of chunks created: {len(chunks)}")
+        print("Document content length: {len(content)} characters")
+        print("Number of chunks created: {len(chunks)}")
         if len(chunks) > 1:
             print("✅ Multiple chunks created as expected")
         else:

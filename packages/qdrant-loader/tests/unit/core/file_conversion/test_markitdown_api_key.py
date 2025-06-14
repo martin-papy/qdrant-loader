@@ -77,7 +77,7 @@ projects:
 
                 # This should trigger the creation of the LLM client
                 try:
-                    llm_client = file_converter._create_llm_client()
+                    file_converter._create_llm_client()
 
                     # Verify that OpenAI was called with our configured API key
                     mock_openai.assert_called_once()
@@ -141,7 +141,7 @@ projects:
                 mock_openai.return_value = mock_client
 
                 try:
-                    llm_client = file_converter._create_llm_client()
+                    file_converter._create_llm_client()
 
                     call_args = mock_openai.call_args
                     if "api_key" in call_args.kwargs:
@@ -221,7 +221,7 @@ projects:
                 mock_openai.return_value = mock_client
 
                 try:
-                    llm_client = file_converter._create_llm_client()
+                    file_converter._create_llm_client()
 
                     # Verify that OpenAI was called with our configured endpoint
                     mock_openai.assert_called_once()
@@ -268,7 +268,7 @@ projects:
             settings = get_settings()
 
             # Create FileConverter
-            file_converter = FileConverter(settings.global_config.file_conversion)
+            FileConverter(settings.global_config.file_conversion)
 
             # Test that LLM descriptions are disabled
             markitdown_config = settings.global_config.file_conversion.markitdown

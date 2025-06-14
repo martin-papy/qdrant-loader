@@ -2,21 +2,21 @@
 Tests for pipeline integration with multi-project support.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession
+
+import pytest
 from pydantic import AnyUrl
 
 from qdrant_loader.config import Settings
-from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
-from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.global_config import GlobalConfig
+from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.qdrant import QdrantConfig
+from qdrant_loader.config.sources import SourcesConfig
+from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+from qdrant_loader.core.document import Document
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.document import Document
-from qdrant_loader.connectors.git.config import GitRepoConfig
 
 
 @pytest.fixture
@@ -248,7 +248,7 @@ async def test_pipeline_all_projects_processing(
         pipeline.orchestrator, "process_documents", side_effect=mock_process_documents
     ) as mock_process:
         # Process documents for all projects (no project_id specified)
-        result = await pipeline.process_documents()
+        await pipeline.process_documents()
 
         # Verify the orchestrator was called multiple times (once for each project)
         assert mock_process.call_count >= 1
@@ -326,8 +326,8 @@ async def test_pipeline_project_validation(
     await pipeline.initialize()
 
     # Test project validation
-    assert pipeline.project_manager.validate_project_exists("project-1") is True
-    assert pipeline.project_manager.validate_project_exists("project-2") is True
+    assert pipeline.project_manager.validate_project_exists("project-1") 
+    assert pipeline.project_manager.validate_project_exists("project-2") 
     assert pipeline.project_manager.validate_project_exists("non-existent") is False
 
 
