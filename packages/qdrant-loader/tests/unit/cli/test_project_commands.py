@@ -57,19 +57,20 @@ class TestSetupProjectManager:
     async def test_setup_project_manager_with_workspace(self):
         """Test setup with workspace parameter."""
         with (
-            patch("qdrant_loader.cli.core.setup_workspace") as mock_setup_workspace,
             patch(
-                "qdrant_loader.cli.core.load_config_with_workspace"
+                "qdrant_loader.cli.project_commands.load_config_with_workspace"
             ) as mock_load_config,
-            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
-            patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
+            patch(
+                "qdrant_loader.cli.project_commands.check_settings"
+            ) as mock_check_settings,
+            patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
         ):
-            # Mock workspace config
+            # Mock workspace config with proper structure
             mock_workspace_config = Mock()
-            mock_setup_workspace.return_value = mock_workspace_config
+            mock_workspace_config.workspace_path = Path("/test/workspace")
 
             # Mock settings with proper structure
             mock_settings = Mock()
@@ -83,26 +84,39 @@ class TestSetupProjectManager:
             mock_project_manager = Mock()
             mock_pm.return_value = mock_project_manager
 
-            workspace_path = Path("/test/workspace")
-            result = await _setup_project_manager(workspace_path, None, None)
+            result = await _setup_project_manager(mock_workspace_config, None, None)
 
-            mock_setup_workspace.assert_called_once_with(workspace_path)
-            mock_load_config.assert_called_once_with(mock_workspace_config, None, None)
+            # Verify calls
+            mock_load_config.assert_called_once_with(
+                mock_workspace_config,
+                None,
+                None,
+                domains=None,
+                preset=None,
+                use_case=None,
+                measure_performance=False,
+            )
             mock_check_settings.assert_called_once()
-            mock_pm.assert_called_once()
+            mock_pm.assert_called_once_with(
+                projects_config=mock_settings.projects_config,
+                global_collection_name="test_collection",
+            )
             mock_init.assert_called_once_with(mock_project_manager)
+
+            # Verify return value
             assert result == (mock_settings, mock_project_manager)
 
     @pytest.mark.asyncio
     async def test_setup_project_manager_with_config_and_env(self):
         """Test setup with config and env parameters."""
         with (
-            patch("qdrant_loader.cli.core.setup_workspace") as mock_setup_workspace,
             patch(
-                "qdrant_loader.cli.core.load_config_with_workspace"
+                "qdrant_loader.cli.project_commands.load_config_with_workspace"
             ) as mock_load_config,
-            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
-            patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
+            patch(
+                "qdrant_loader.cli.project_commands.check_settings"
+            ) as mock_check_settings,
+            patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -123,20 +137,34 @@ class TestSetupProjectManager:
             env_path = Path("/test/.env")
             result = await _setup_project_manager(None, config_path, env_path)
 
-            mock_setup_workspace.assert_not_called()
-            mock_load_config.assert_called_once_with(None, config_path, env_path)
+            # Verify calls
+            mock_load_config.assert_called_once_with(
+                None,
+                config_path,
+                env_path,
+                domains=None,
+                preset=None,
+                use_case=None,
+                measure_performance=False,
+            )
             mock_check_settings.assert_called_once()
-            mock_pm.assert_called_once()
+            mock_pm.assert_called_once_with(
+                projects_config=mock_settings.projects_config,
+                global_collection_name="test_collection",
+            )
             mock_init.assert_called_once_with(mock_project_manager)
+
+            # Verify return value
             assert result == (mock_settings, mock_project_manager)
 
     @pytest.mark.asyncio
     async def test_setup_project_manager_no_qdrant_config(self):
         """Test setup when Qdrant configuration is missing."""
         with (
-            patch("qdrant_loader.cli.core.setup_workspace"),
-            patch("qdrant_loader.cli.core.load_config_with_workspace"),
-            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
+            patch("qdrant_loader.cli.project_commands.load_config_with_workspace"),
+            patch(
+                "qdrant_loader.cli.project_commands.check_settings"
+            ) as mock_check_settings,
         ):
             # Mock settings without Qdrant config
             mock_settings = Mock()
@@ -197,7 +225,7 @@ class TestProjectListCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -220,7 +248,7 @@ class TestProjectListCommand:
             result = runner.invoke(project_group, ["list", "--format", "table"])
 
             assert result.exit_code == 0
-            mock_console.print.assert_called()
+            mock_console_class.return_value.print.assert_called()
 
     def test_project_list_json_format(self):
         """Test project list with JSON format."""
@@ -267,7 +295,7 @@ class TestProjectListCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -279,7 +307,7 @@ class TestProjectListCommand:
             result = runner.invoke(project_group, ["list"])
 
             assert result.exit_code == 0
-            mock_console.print.assert_called_with(
+            mock_console_class.return_value.print.assert_called_with(
                 "[yellow]No projects configured.[/yellow]"
             )
 
@@ -314,7 +342,7 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -345,7 +373,7 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -408,6 +436,7 @@ class TestProjectStatusCommand:
             mock_context = Mock()
             mock_context.project_id = "test-project"
             mock_context.display_name = "Test Project"
+            mock_context.description = "A test project"
             mock_context.collection_name = "test_collection"
             mock_context.config = Mock()
             mock_context.config.sources = SourcesConfig()
@@ -425,6 +454,8 @@ class TestProjectStatusCommand:
             output_data = json.loads(result.output)
             assert len(output_data) == 1
             assert output_data[0]["project_id"] == "test-project"
+            assert output_data[0]["display_name"] == "Test Project"
+            assert output_data[0]["description"] == "A test project"
 
 
 class TestProjectValidateCommand:
@@ -438,7 +469,7 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -469,7 +500,7 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,
@@ -498,7 +529,7 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
+            patch("rich.console.Console") as mock_console_class,
             patch(
                 "qdrant_loader.cli.project_commands.validate_workspace_flags"
             ) as mock_validate,

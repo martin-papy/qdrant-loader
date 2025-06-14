@@ -32,7 +32,12 @@ def temp_config_dir():
                 "url": "http://localhost:6333",
                 "collection_name": "test_collection",
             },
-            "embedding": {"model": "test-model", "api_key": "test-key"},
+            "embedding": {
+                "provider": "openai",
+                "model": "test-model",
+                "api_key": "test-key",
+            },
+            "state_management": {"database_path": "/tmp/test.db"},
         }
 
         with open(config_dir / "connectivity.yaml", "w") as f:
@@ -45,6 +50,7 @@ def temp_config_dir():
                     "project_id": "test-project",
                     "display_name": "Test Project",
                     "description": "A test project",
+                    "sources": {},
                 }
             }
         }
@@ -118,7 +124,9 @@ class TestThreadSafeSettingsManager:
 
         def initialize_config():
             try:
-                manager.initialize_multi_file_config(temp_config_dir)
+                manager.initialize_multi_file_config(
+                    temp_config_dir, enhanced_validation=False
+                )
                 results.append("success")
             except Exception as e:
                 errors.append(str(e))
@@ -141,7 +149,7 @@ class TestThreadSafeSettingsManager:
     def test_concurrent_settings_access(self, temp_config_dir, reset_settings_manager):
         """Test that settings access is thread-safe."""
         # Initialize configuration
-        initialize_multi_file_config(temp_config_dir)
+        initialize_multi_file_config(temp_config_dir, enhanced_validation=False)
 
         results = []
         errors = []
@@ -190,7 +198,7 @@ class TestHotReloadThreadSafety:
         # Initialize hot-reload loader
         loader = HotReloadConfigLoader(update_global_settings=True)
         loader.load_config(
-            temp_config_dir, enable_hot_reload=False
+            temp_config_dir, enable_hot_reload=False, skip_validation=True
         )  # Disable file watching for test
 
         # Track configuration values seen by different threads
@@ -230,14 +238,21 @@ class TestHotReloadThreadSafety:
                     "url": "http://localhost:6333",
                     "collection_name": "updated_collection",
                 },
-                "embedding": {"model": "test-model", "api_key": "test-key"},
+                "embedding": {
+                    "provider": "openai",
+                    "model": "test-model",
+                    "api_key": "test-key",
+                },
+                "state_management": {"database_path": "/tmp/test.db"},
             }
 
             with open(connectivity_file, "w") as f:
                 yaml.dump(updated_connectivity_config, f)
 
             # Load and update settings
-            parsed_config = load_multi_file_config(temp_config_dir)
+            parsed_config = load_multi_file_config(
+                temp_config_dir, enhanced_validation=False
+            )
             new_settings = Settings(
                 global_config=parsed_config.global_config,
                 projects_config=parsed_config.projects_config,
@@ -269,15 +284,29 @@ class TestSettingsPropertyThreadSafety:
             # Create configuration with Neo4j settings
             connectivity_config = {
                 "qdrant": {"url": "http://localhost:6333", "collection_name": "test"},
-                "embedding": {"api_key": "test-key", "model": "text-embedding-ada-002"},
+                "embedding": {
+                    "provider": "openai",
+                    "api_key": "test-key",
+                    "model": "text-embedding-ada-002",
+                },
                 "neo4j": {
                     "uri": "bolt://localhost:7687",
                     "user": "neo4j",
                     "password": "password",
                     "database": "neo4j",
                 },
+                "state_management": {"database_path": "/tmp/test.db"},
             }
-            projects_config = {"projects": []}
+            projects_config = {
+                "projects": {
+                    "test-project": {
+                        "project_id": "test-project",
+                        "display_name": "Test Project",
+                        "description": "A test project",
+                        "sources": {},
+                    }
+                }
+            }
             fine_tuning_config = {"text_chunking": {"chunk_size": 1000}}
 
             (config_dir / "connectivity.yaml").write_text(
@@ -287,7 +316,7 @@ class TestSettingsPropertyThreadSafety:
             (config_dir / "fine-tuning.yaml").write_text(yaml.dump(fine_tuning_config))
 
             # Initialize configuration
-            initialize_multi_file_config(config_dir)
+            initialize_multi_file_config(config_dir, enhanced_validation=False)
             settings = get_settings()
 
             results = []
@@ -331,7 +360,9 @@ def test_hot_reload_loader_basic_functionality(temp_config_dir):
     loader = HotReloadConfigLoader()
 
     # Load configuration without hot-reload
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     assert config is not None
     assert loader.get_version() == 1
@@ -350,7 +381,9 @@ def test_hot_reload_loader_with_watching(temp_config_dir):
 
     try:
         # Load configuration with hot-reload
-        config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=True)
+        config = loader.load_config(
+            config_dir=temp_config_dir, enable_hot_reload=True, skip_validation=True
+        )
 
         assert config is not None
         assert loader.get_version() == 1
@@ -365,7 +398,9 @@ def test_export_functionality(temp_config_dir):
     loader = HotReloadConfigLoader()
 
     # Load configuration
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     # Test YAML export
     yaml_export = loader.export_config_with_sources(format="yaml")
@@ -392,7 +427,9 @@ def test_export_without_metadata(temp_config_dir):
     loader = HotReloadConfigLoader()
 
     # Load configuration
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     # Export without metadata
     export_data = loader.export_config_with_sources(
@@ -407,7 +444,9 @@ def test_export_without_metadata(temp_config_dir):
 def test_context_manager(temp_config_dir):
     """Test using the loader as a context manager."""
     with HotReloadConfigLoader() as loader:
-        config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+        config = loader.load_config(
+            config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+        )
         assert config is not None
 
     # After context exit, watching should be stopped
@@ -428,7 +467,9 @@ def test_callback_system(temp_config_dir):
     loader.add_reload_callback(test_callback)
 
     # Load initial configuration
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     # Simulate a reload (since we can't easily trigger file changes in tests)
     with patch.object(loader.loader, "load_config") as mock_load:
@@ -458,7 +499,9 @@ def test_version_tracking(temp_config_dir):
     assert loader.get_version() == 0
 
     # Load configuration
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     # Version should increment
     assert loader.get_version() == 1
@@ -481,7 +524,9 @@ def test_error_handling(temp_config_dir):
         loader.export_config_with_sources()
 
     # Test invalid export format
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     with pytest.raises(ValueError, match="Unsupported export format"):
         loader.export_config_with_sources(format="invalid")
@@ -492,7 +537,9 @@ def test_thread_safety(temp_config_dir):
     import threading
 
     loader = HotReloadConfigLoader()
-    config = loader.load_config(config_dir=temp_config_dir, enable_hot_reload=False)
+    config = loader.load_config(
+        config_dir=temp_config_dir, enable_hot_reload=False, skip_validation=True
+    )
 
     results = []
     errors = []

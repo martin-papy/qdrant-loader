@@ -524,6 +524,10 @@ async def _setup_project_manager(
     workspace_config,
     config: Path | None,
     env: Path | None,
+    domains: str | None = None,
+    preset: str | None = None,
+    use_case: str | None = None,
+    measure_performance: bool = False,
 ):
     """Setup project manager with configuration loading.
 
@@ -531,12 +535,24 @@ async def _setup_project_manager(
         workspace_config: Workspace configuration object
         config: Path to config file
         env: Path to env file
+        domains: Comma-separated list of domains to load
+        preset: Predefined domain combination
+        use_case: Use case identifier for automatic domain selection
+        measure_performance: If True, log performance metrics
 
     Returns:
         tuple: (settings, project_manager)
     """
     # Load configuration
-    load_config_with_workspace(workspace_config, config, env)
+    load_config_with_workspace(
+        workspace_config,
+        config,
+        env,
+        domains=domains,
+        preset=preset,
+        use_case=use_case,
+        measure_performance=measure_performance,
+    )
     settings = check_settings()
 
     # Create project manager

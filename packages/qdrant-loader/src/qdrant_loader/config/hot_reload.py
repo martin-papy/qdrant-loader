@@ -143,6 +143,13 @@ class HotReloadConfigLoader:
             self._env_path = env_path
             self._skip_validation = skip_validation
 
+            # Recreate loader with appropriate validation settings if needed
+            if skip_validation and self.loader.enhanced_validation:
+                self.loader = MultiFileConfigLoader(
+                    validator=self.loader.validator,
+                    enhanced_validation=False,
+                )
+
             # Load initial configuration
             self._config = self.loader.load_config(
                 config_dir=config_dir,
