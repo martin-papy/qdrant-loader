@@ -7,7 +7,7 @@ It combines global settings with source-specific configurations.
 import os
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Set
 
 import yaml
 from dotenv import load_dotenv
@@ -40,6 +40,11 @@ from .sources import SourcesConfig
 from .state import StateManagementConfig
 from .validator import ConfigValidator
 from .workspace import WorkspaceConfig
+from .multi_file_loader import (
+    MultiFileConfigLoader,
+    ConfigDomain,
+    load_multi_file_config,
+)
 
 # Load environment variables from .env file
 load_dotenv(override=False)
@@ -84,11 +89,17 @@ __all__ = [
     "ProjectDetail",
     "MultiProjectConfigParser",
     "ConfigValidator",
+    # Multi-file configuration
+    "MultiFileConfigLoader",
+    "ConfigDomain",
+    "load_multi_file_config",
     # Functions
     "get_global_config",
     "get_settings",
     "initialize_config",
     "initialize_config_with_workspace",
+    "initialize_multi_file_config",
+    "initialize_multi_file_config_with_workspace",
 ]
 
 
@@ -126,99 +137,94 @@ def get_global_config() -> GlobalConfig:
     return get_settings().global_config
 
 
-def initialize_config(
-    yaml_path: Path, env_path: Path | None = None, skip_validation: bool = False
+def initialize_multi_file_config(
+    config_dir: Path,
+    domains: Optional[Set[str]] = None,
+    env_path: Path | None = None,
+    skip_validation: bool = False,
 ) -> None:
-    """Initialize the global configuration.
+    """Initialize global configuration from multiple domain-specific files.
 
     Args:
-        yaml_path: Path to the YAML configuration file.
+        config_dir: Directory containing configuration files.
+        domains: Set of domains to load (defaults to all domains).
         env_path: Optional path to the .env file.
         skip_validation: If True, skip directory validation and creation.
+
+    Raises:
+        FileNotFoundError: If configuration files are not found.
+        ValidationError: If configuration validation fails.
     """
     global _global_settings
+
+    logger.debug(
+        "Initializing multi-file configuration",
+        config_dir=str(config_dir),
+        domains=list(domains) if domains else "all",
+    )
+
     try:
-        # Proceed with initialization
-        logger.debug(
-            "Initializing configuration",
-            yaml_path=str(yaml_path),
-            env_path=str(env_path) if env_path else None,
+        _global_settings = Settings.from_multi_file(
+            config_dir=config_dir,
+            domains=domains,
+            env_path=env_path,
+            skip_validation=skip_validation,
         )
-        _global_settings = Settings.from_yaml(
-            yaml_path, env_path=env_path, skip_validation=skip_validation
-        )
-        logger.debug("Successfully initialized configuration")
+        logger.info("Multi-file configuration initialized successfully")
 
     except Exception as e:
-        logger.error(
-            "Failed to initialize configuration", error=str(e), yaml_path=str(yaml_path)
-        )
+        logger.error("Failed to initialize multi-file configuration", error=str(e))
         raise
 
 
-def initialize_config_with_workspace(
-    workspace_config: WorkspaceConfig, skip_validation: bool = False
+def initialize_multi_file_config_with_workspace(
+    workspace_config: WorkspaceConfig,
+    domains: Optional[Set[str]] = None,
+    skip_validation: bool = False,
 ) -> None:
-    """Initialize configuration using workspace settings.
+    """Initialize global configuration from multiple domain-specific files with workspace support.
 
     Args:
-        workspace_config: Workspace configuration with paths and settings
-        skip_validation: If True, skip directory validation and creation
+        workspace_config: Workspace configuration containing paths and overrides.
+        domains: Set of domains to load (defaults to all domains).
+        skip_validation: If True, skip directory validation and creation.
+
+    Raises:
+        FileNotFoundError: If configuration files are not found.
+        ValidationError: If configuration validation fails.
     """
     global _global_settings
-    try:
-        logger.debug(
-            "Initializing configuration with workspace",
-            workspace=str(workspace_config.workspace_path),
-            config_path=str(workspace_config.config_path),
-            env_path=(
-                str(workspace_config.env_path) if workspace_config.env_path else None
-            ),
-        )
 
-        # Load configuration using workspace paths
-        _global_settings = Settings.from_yaml(
-            workspace_config.config_path,
+    logger.debug(
+        "Initializing multi-file configuration with workspace",
+        workspace_path=str(workspace_config.workspace_path),
+        domains=list(domains) if domains else "all",
+    )
+
+    try:
+        # Load configuration from workspace directory
+        _global_settings = Settings.from_multi_file(
+            config_dir=workspace_config.workspace_path,
+            domains=domains,
             env_path=workspace_config.env_path,
             skip_validation=skip_validation,
         )
 
-        # Check if database_path was specified in config.yaml and warn user
-        original_db_path = _global_settings.global_config.state_management.database_path
-        workspace_db_path = str(workspace_config.database_path)
-
-        # Only warn if the original path is different from the workspace path and not empty/default
-        if (
-            original_db_path
-            and original_db_path != ":memory:"
-            and original_db_path != workspace_db_path
-        ):
-            logger.warning(
-                "Database path in config.yaml is ignored in workspace mode",
-                config_database_path=original_db_path,
-                workspace_database_path=workspace_db_path,
-            )
-
-        # Override the database path with workspace-specific path
-        _global_settings.global_config.state_management.database_path = (
-            workspace_db_path
-        )
-
+        # Override state database path from workspace config
         logger.debug(
-            "Set workspace database path",
-            database_path=workspace_db_path,
+            "Overriding state database path from workspace config",
+            path=str(workspace_config.database_path),
+        )
+        _global_settings.global_config.state_management.database_path = str(
+            workspace_config.database_path
         )
 
-        logger.debug(
-            "Successfully initialized configuration with workspace",
-            workspace=str(workspace_config.workspace_path),
-        )
+        logger.info("Multi-file configuration with workspace initialized successfully")
 
     except Exception as e:
         logger.error(
-            "Failed to initialize configuration with workspace",
+            "Failed to initialize multi-file configuration with workspace",
             error=str(e),
-            workspace=str(workspace_config.workspace_path),
         )
         raise
 
@@ -373,66 +379,52 @@ class Settings(BaseSettings):
         return data
 
     @classmethod
-    def from_yaml(
+    def from_multi_file(
         cls,
-        config_path: Path,
+        config_dir: Path,
+        domains: Optional[Set[str]] = None,
         env_path: Path | None = None,
         skip_validation: bool = False,
     ) -> "Settings":
-        """Load configuration from a YAML file.
+        """Load configuration from multiple domain-specific files.
 
         Args:
-            config_path: Path to the YAML configuration file.
-            env_path: Optional path to the .env file. If provided, only this file is loaded.
+            config_dir: Directory containing configuration files.
+            domains: Set of domains to load (defaults to all domains).
+            env_path: Optional path to the .env file.
             skip_validation: If True, skip directory validation and creation.
 
         Returns:
             Settings: Loaded configuration.
         """
-        logger.debug("Loading configuration from YAML", path=str(config_path))
+        logger.debug(
+            "Loading multi-file configuration",
+            config_dir=str(config_dir),
+            domains=list(domains) if domains else "all",
+        )
+
         try:
-            # Step 1: Load environment variables first
-            if env_path is not None:
-                # Custom env file specified - load only this file
-                logger.debug("Loading custom environment file", path=str(env_path))
-                if not env_path.exists():
-                    raise FileNotFoundError(f"Environment file not found: {env_path}")
-                load_dotenv(env_path, override=True)
-            else:
-                # Load default .env file if it exists
-                logger.debug("Loading default environment variables")
-                load_dotenv(override=False)
+            # Use the multi-file loader to load and merge configurations
+            parsed_config = load_multi_file_config(
+                config_dir=config_dir,
+                domains=domains,
+                env_path=env_path,
+                skip_validation=skip_validation,
+            )
 
-            # Step 2: Load YAML config
-            with open(config_path) as f:
-                config_data = yaml.safe_load(f)
-
-            # Step 3: Process all environment variables in config using substitution
-            logger.debug("Processing environment variables in configuration")
-            config_data = cls._substitute_env_vars(config_data)
-
-            # Step 4: Use multi-project parser to parse configuration
-            validator = ConfigValidator()
-            parser = MultiProjectConfigParser(validator)
-            parsed_config = parser.parse(config_data, skip_validation=skip_validation)
-
-            # Step 5: Create settings instance with parsed configuration
+            # Create settings instance with parsed configuration
             settings = cls(
                 global_config=parsed_config.global_config,
                 projects_config=parsed_config.projects_config,
             )
 
-            logger.debug("Successfully created Settings instance")
+            logger.debug(
+                "Successfully created Settings instance from multi-file configuration"
+            )
             return settings
 
-        except yaml.YAMLError as e:
-            logger.error("Failed to parse YAML configuration", error=str(e))
-            raise
-        except ValidationError as e:
-            logger.error("Configuration validation failed", error=str(e))
-            raise
         except Exception as e:
-            logger.error("Unexpected error loading configuration", error=str(e))
+            logger.error("Failed to load multi-file configuration", error=str(e))
             raise
 
     def to_dict(self) -> dict:

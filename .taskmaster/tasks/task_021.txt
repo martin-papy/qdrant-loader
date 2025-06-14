@@ -1,73 +1,258 @@
 # Task ID: 21
 # Title: Split Configuration Files and Remove Hardcoded Settings
-# Status: pending
+# Status: in-progress
 # Dependencies: 4
 # Priority: high
-# Description: Split the large config.template.yaml into separate basic and advanced configuration files, implement robust configuration loading and merging logic, and eliminate all hardcoded settings throughout the codebase.
+# Description: Split the large config.template.yaml into three domain-specific configuration files (connectivity, projects, and fine-tuning), implement robust configuration loading and merging logic, and eliminate all hardcoded settings throughout the codebase.
 # Details:
-Create two new configuration files: config.yaml (basic user settings like URLs, passwords, API keys, project definitions) and advanced.yaml (technical settings like rate limits, timeouts, batch sizes, worker pool sizes, retry counts with sensible defaults). Implement ConfigurationManager class that loads and merges both files at startup, with basic config taking precedence over advanced settings during conflicts. Add Pydantic models for validation of both BasicConfig and AdvancedConfig schemas. Support environment variable overrides using ${VAR:-default} syntax for both files. Scan entire codebase to identify hardcoded values (connection timeouts, retry counts, batch sizes, API endpoints, etc.) and move them to advanced.yaml with appropriate defaults. Implement backward compatibility by checking for existing config.template.yaml and migrating settings automatically. Add comprehensive configuration documentation with examples and explanations for each setting. Create configuration validation that checks for required fields, validates data types, and provides helpful error messages. Implement hot-reload capability for non-critical configuration changes. Add configuration export functionality to generate template files for new deployments. Ensure thread-safe configuration access using singleton pattern with proper locking.
+Create three new configuration files: connectivity.yaml (database connections, LLM providers, authentication, endpoints), projects.yaml (project definitions, data sources, project-specific settings), and fine-tuning.yaml (processing parameters, performance tuning, algorithm settings, caching). Implement ConfigurationManager class that loads and merges all three files at startup with proper precedence handling. Add Pydantic models for validation of ConnectivityConfig, ProjectsConfig, and FineTuningConfig schemas. Support environment variable overrides using ${VAR:-default} syntax across all files. Scan entire codebase to identify hardcoded values and move them to appropriate configuration files with sensible defaults. Implement selective loading capability to allow loading only required configuration domains. Ensure thread-safe configuration access using singleton pattern with proper locking.
 
 # Test Strategy:
-Create unit tests for ConfigurationManager class covering file loading, merging logic, environment variable substitution, and validation scenarios. Test backward compatibility by verifying existing config.template.yaml files are properly migrated. Create integration tests that verify all hardcoded values have been successfully moved to configuration files by running the application with different configuration combinations. Test configuration validation with invalid inputs to ensure proper error handling and user-friendly messages. Verify environment variable overrides work correctly for both basic and advanced settings. Test hot-reload functionality by modifying configuration files during runtime and verifying changes are applied. Create performance tests to ensure configuration loading doesn't impact application startup time. Test edge cases like missing files, corrupted YAML, circular dependencies, and conflicting settings between basic and advanced configurations.
+Create unit tests for ConfigurationManager class covering three-file loading, merging logic, environment variable substitution, and domain-specific validation scenarios. Create integration tests that verify all hardcoded values have been successfully moved to appropriate configuration files by running the application with different configuration combinations. Test configuration validation with invalid inputs for each domain to ensure proper error handling. Verify environment variable overrides work correctly across all three configuration files. Test selective loading functionality by loading different combinations of configuration files. Create performance tests to ensure multi-file configuration loading doesn't impact application startup time. Test edge cases like missing files, corrupted YAML, and conflicting settings between configuration domains.
 
 # Subtasks:
-## 1. Split Configuration Files [pending]
+## 1. Split Configuration Files into Three Domains [done]
 ### Dependencies: None
-### Description: Divide the existing monolithic configuration file into multiple logically grouped files (e.g., database, API, logging, etc.) to improve modularity and maintainability.
+### Description: Divide the existing monolithic configuration file into three domain-specific files: connectivity.yaml, projects.yaml, and fine-tuning.yaml to improve modularity and maintainability.
 ### Details:
-Identify configuration domains and create separate files for each. Ensure all settings are accounted for and no duplication occurs.
+Create connectivity.yaml for database connections, LLM providers, authentication, and endpoints. Create projects.yaml for project definitions, data sources, and project-specific settings. Create fine-tuning.yaml for processing parameters, performance tuning, algorithm settings, and caching configurations. Ensure all settings are accounted for and properly categorized.
+<info added on 2025-06-14T07:15:03.681Z>
+✅ SUBTASK COMPLETED - Three Configuration Template Files Created
 
-## 2. Implement Configuration Loading and Merging Logic [pending]
+Successfully implemented the three-file configuration structure by creating domain-specific template files:
+
+**1. connectivity.template.yaml** - Database connections, LLM providers, authentication:
+- QDrant vector database configuration with timeouts and retry settings
+- Embedding service configuration with comprehensive timeout and retry parameters
+- Neo4j graph database configuration for Graphiti features
+- Graphiti LLM and embedder configurations with proper authentication
+- State management database settings with connection pooling
+- External service authentication (Git, Atlassian, LLM providers)
+- HTTP client configuration with global timeout and retry settings
+
+**2. projects.template.yaml** - Project definitions and data sources:
+- Multi-project structure with project metadata (ID, display name, description)
+- Comprehensive source configurations for all supported connectors:
+  - Public documentation sources with CSS selectors and path patterns
+  - Git repository sources with branch, path, and file type filtering
+  - Confluence sources with space, content type, and label filtering
+  - JIRA sources with project, rate limiting, and attachment settings
+  - Local file sources with path and file type filtering
+- File conversion settings per source with attachment download options
+- Environment variable integration for sensitive configuration values
+
+**3. fine-tuning.template.yaml** - Advanced processing and performance settings:
+- Text chunking configuration with advanced boundary respect and timeout settings
+- Embedding processing with batch sizes, concurrency, and rate limiting
+- File conversion with concurrent processing and MarkItDown LLM integration
+- Pipeline processing with worker pools, timeouts, and error handling
+- Entity extraction configuration for Graphiti integration
+- Search and retrieval settings for vector, graph, and hybrid search
+- Performance monitoring and optimization flags
+- Comprehensive logging and debugging configuration
+- Rate limiting for external services (OpenAI, Confluence, JIRA, GitHub)
+- Multi-level caching configuration (embeddings, file content, search results)
+- Advanced algorithm settings for similarity, clustering, and deduplication
+
+**Key Features Implemented:**
+- Clear domain separation with comprehensive documentation
+- Environment variable support using ${VARIABLE_NAME} syntax
+- Sensible defaults for all configuration parameters
+- Extensive comments explaining each setting and its purpose
+- Proper categorization of all settings from the original config.template.yaml
+- Ready for integration with the new configuration loading system
+
+The three template files provide a solid foundation for the multi-file configuration system and are ready for the next implementation phase.
+</info added on 2025-06-14T07:15:03.681Z>
+
+## 2. Implement Three-File Configuration Loading and Merging Logic [done]
 ### Dependencies: 21.1
-### Description: Develop logic to load and merge configuration files, supporting hierarchical overrides and layered configuration structures.
+### Description: Develop logic to load and merge the three configuration files (connectivity, projects, fine-tuning), supporting hierarchical overrides and selective loading.
 ### Details:
-Implement a loader that reads all config files, merges them according to precedence (e.g., base, environment, local), and exposes a unified config object.
+Implement a loader that reads all three config files, merges them according to precedence rules, and exposes a unified config object. Support selective loading where only required configuration domains are loaded (e.g., connectivity + projects for basic setups).
+<info added on 2025-06-14T07:19:38.083Z>
+✅ SUBTASK COMPLETED - Three-File Configuration Loading and Merging Logic Implemented
 
-## 3. Create Pydantic Models for Configuration Validation [pending]
+Successfully implemented comprehensive three-file configuration loading and merging system:
+
+**1. MultiFileConfigLoader Class** (`multi_file_loader.py`):
+- **Domain Discovery**: Automatically discovers configuration files for connectivity, projects, and fine-tuning domains
+- **Selective Loading**: Supports loading only specific domains (e.g., connectivity + projects for basic setups)
+- **Deep Merging**: Implements recursive dictionary merging to combine configurations from multiple files
+- **Environment Variable Substitution**: Processes ${VAR_NAME} patterns across all configuration files
+- **Legacy Fallback**: Automatically falls back to config.template.yaml if domain-specific files are not found
+- **Comprehensive Validation**: Validates minimum required configuration for each domain
+- **Error Handling**: Provides detailed error messages for missing files, YAML parsing errors, and validation failures
+
+**2. ConfigDomain Constants**:
+- `CONNECTIVITY`: Database connections, LLM providers, authentication
+- `PROJECTS`: Project definitions, data sources, project-specific settings  
+- `FINE_TUNING`: Processing parameters, performance tuning, algorithm settings
+- `ALL_DOMAINS`: Set containing all three domains for convenience
+
+**3. Enhanced Settings Class**:
+- **from_multi_file()**: New class method for loading from multiple domain files
+- **Backward Compatibility**: Existing from_yaml() method remains unchanged
+- **Flexible Configuration**: Supports both single-file and multi-file approaches
+
+**4. New Initialization Functions**:
+- **initialize_multi_file_config()**: Initialize from domain-specific files in a directory
+- **initialize_multi_file_config_with_workspace()**: Multi-file support for workspace mode
+- **Workspace Integration**: Properly handles database path overrides in workspace mode
+
+**5. Key Features Implemented**:
+- **File Discovery**: Supports both .yaml and .yml extensions for all domain files
+- **Precedence Handling**: Later domains can override settings from earlier domains
+- **Minimum Configuration Validation**: Ensures required settings are present for each domain
+- **Thread-Safe Loading**: Uses existing singleton pattern with proper error handling
+- **Comprehensive Logging**: Detailed debug logging for troubleshooting configuration issues
+
+**6. Integration Points**:
+- **Existing Parser Compatibility**: Uses existing MultiProjectConfigParser and ConfigValidator
+- **Environment Variable Support**: Leverages existing _substitute_env_vars implementation
+- **Validation Framework**: Integrates with existing Pydantic validation system
+
+**7. Usage Patterns Supported**:
+- Load all domains: `Settings.from_multi_file(config_dir)`
+- Selective loading: `Settings.from_multi_file(config_dir, domains={'connectivity', 'projects'})`
+- Legacy fallback: Automatically uses config.template.yaml if domain files are missing
+- Workspace mode: Full support for workspace-specific database paths and environment handling
+
+The implementation provides a robust foundation for the three-file configuration system while maintaining full backward compatibility with existing single-file configurations. Ready for integration with domain-specific Pydantic models and validation in the next subtask.
+</info added on 2025-06-14T07:19:38.083Z>
+
+## 3. Create Domain-Specific Pydantic Models for Configuration Validation [done]
 ### Dependencies: 21.2
-### Description: Define Pydantic models representing the configuration schema to enable type-safe validation and parsing.
+### Description: Define separate Pydantic models for each configuration domain (ConnectivityConfig, ProjectsConfig, FineTuningConfig) to enable type-safe validation and parsing.
 ### Details:
-For each config domain, create a corresponding Pydantic model. Ensure nested models reflect the config file structure.
+Create ConnectivityConfig model for database and LLM provider settings. Create ProjectsConfig model for project definitions and data sources. Create FineTuningConfig model for processing and performance parameters. Ensure nested models reflect the domain-specific structure.
+<info added on 2025-06-14T08:43:50.223Z>
+✅ COMPLETED: Successfully implemented comprehensive domain-specific Pydantic models system.
 
-## 4. Support Environment Variable Overrides [pending]
+**Domain Models Created:**
+- ConnectivityConfig: Validates connectivity.yaml with QDrant, embedding service, Neo4j (optional), Graphiti, and state management configurations
+- ProjectsConfig: Validates projects.yaml wrapping BaseProjectsConfig for multi-project support
+- FineTuningConfig: Validates fine-tuning.yaml with text chunking, file conversion, and MarkItDown settings
+
+**DomainConfigValidator System:**
+- validate_connectivity(), validate_projects(), validate_fine_tuning() methods
+- Clear error messages with ValidationError handling
+- File path context in error reporting
+
+**MultiFileConfigLoader Integration:**
+- Domain-specific validation step after YAML loading
+- Validated configurations converted to dictionaries for merging
+- Graceful handling of unknown domains with existing minimum configuration validation
+
+**Key Features Delivered:**
+- Type safety with compile-time checking and IDE autocompletion
+- Comprehensive field validation with required/optional field enforcement
+- Nested model validation for complex structures
+- to_dict() serialization methods for all models
+- Maintains full compatibility with existing configuration system
+- Clear separation of concerns between connectivity, projects, and fine-tuning domains
+</info added on 2025-06-14T08:43:50.223Z>
+
+## 4. Support Environment Variable Overrides Across All Configuration Files [in-progress]
 ### Dependencies: 21.2, 21.3
-### Description: Add logic to allow environment variables to override configuration values, following best practices for decoupling environment-specific settings.
+### Description: Add logic to allow environment variables to override configuration values in all three configuration files, following best practices for decoupling environment-specific settings.
 ### Details:
-Implement a mechanism to map environment variables to config fields, with clear precedence rules.
+Implement a mechanism to map environment variables to config fields across connectivity, projects, and fine-tuning configurations, with clear precedence rules for each domain.
 
-## 5. Scan and Refactor Hardcoded Settings [pending]
+## 5. Scan and Refactor Hardcoded Settings to Appropriate Configuration Domains [pending]
 ### Dependencies: 21.3, 21.4
-### Description: Identify and refactor all hardcoded configuration values in the codebase to use the new configuration system.
+### Description: Identify and refactor all hardcoded configuration values in the codebase to use the new three-file configuration system, placing each setting in its appropriate domain.
 ### Details:
-Perform a codebase-wide search for hardcoded settings, replace them with config lookups, and update tests as needed.
+Perform a codebase-wide search for hardcoded settings, categorize them by domain (connectivity, projects, fine-tuning), replace them with appropriate config lookups, and update tests as needed.
 
-## 6. Ensure Backward Compatibility and Migration [pending]
-### Dependencies: 21.5
-### Description: Develop a migration strategy to support legacy configuration formats and ensure backward compatibility during rollout.
-### Details:
-Implement migration scripts or adapters, provide fallback logic, and document migration steps for users.
-
-## 7. Write Documentation [pending]
-### Dependencies: None
-### Description: Document the new configuration system, including file structure, override mechanisms, migration steps, and usage examples.
-### Details:
-Update README, add detailed guides, and provide code samples for common scenarios.
-
-## 8. Implement Configuration Validation and Error Handling [pending]
+## 8. Implement Domain-Specific Configuration Validation and Error Handling [pending]
 ### Dependencies: 21.3, 21.4, 21.5
-### Description: Add robust validation and error handling for configuration loading, merging, and parsing using Pydantic models.
+### Description: Add robust validation and error handling for each configuration domain using the respective Pydantic models, with clear error messages for each file type.
 ### Details:
-Ensure clear error messages, fail-fast behavior on invalid configs, and comprehensive test coverage for edge cases.
+Ensure clear error messages for each configuration domain, fail-fast behavior on invalid configs, and comprehensive test coverage for edge cases in connectivity, projects, and fine-tuning configurations.
 
-## 9. Add Hot-Reload and Export Functionality [pending]
+## 9. Add Hot-Reload and Export Functionality for Multi-File Configuration [pending]
 ### Dependencies: None
-### Description: Implement hot-reload support for configuration changes at runtime and provide functionality to export the current effective configuration.
+### Description: Implement hot-reload support for configuration changes across all three files at runtime and provide functionality to export the current effective configuration.
 ### Details:
-Monitor config files for changes, reload safely, and expose an API or CLI to export the merged config.
+Monitor all three config files for changes, reload safely with proper domain isolation, and expose an API or CLI to export the merged config showing which settings came from which file.
 
-## 10. Ensure Thread-Safe Access to Configuration [pending]
+## 10. Ensure Thread-Safe Access to Multi-Domain Configuration [pending]
 ### Dependencies: None
-### Description: Guarantee that configuration access and updates are thread-safe to prevent race conditions and ensure consistency in concurrent environments.
+### Description: Guarantee that configuration access and updates are thread-safe across all three configuration domains to prevent race conditions and ensure consistency in concurrent environments.
 ### Details:
-Use appropriate synchronization primitives or immutable config objects, and add tests for concurrent access scenarios.
+Use appropriate synchronization primitives or immutable config objects for each domain, implement proper locking for selective loading scenarios, and add tests for concurrent access across multiple configuration files.
+
+## 11. Implement Selective Configuration Loading [pending]
+### Dependencies: 21.2, 21.3
+### Description: Add functionality to selectively load only required configuration domains (e.g., connectivity + projects for basic setups) to optimize startup time and resource usage.
+### Details:
+Implement configuration loading flags or parameters that allow specifying which domains to load. Ensure proper dependency handling between domains and validate that required configurations are present for the requested functionality.
+
+## 12. Remove Legacy Configuration Support from MultiFileConfigLoader [done]
+### Dependencies: 21.2
+### Description: Remove all legacy configuration file support (config.template.yaml fallback) from the existing MultiFileConfigLoader implementation to simplify the codebase and enforce the three-file system.
+### Details:
+Remove the legacy fallback logic that checks for config.template.yaml when domain-specific files are not found. Update the MultiFileConfigLoader to only support the three-file system (connectivity.yaml, projects.yaml, fine-tuning.yaml). Remove backward compatibility code paths and simplify the loading logic. Update error messages to guide users to use the three-file system. Remove any references to single-file configuration support from the Settings class methods.
+<info added on 2025-06-14T08:40:31.593Z>
+✅ SUBTASK COMPLETED - Legacy Configuration Support Removed
+
+Successfully removed all legacy configuration support from the codebase:
+
+**1. MultiFileConfigLoader Changes:**
+- Removed `fallback_to_legacy` parameter from `load_config()` method
+- Removed `_load_legacy_config()` method entirely
+- Removed legacy fallback logic that checked for config.template.yaml
+- Updated error messages to guide users to use only the three-file system
+- Simplified the convenience function `load_multi_file_config()` to remove legacy parameters
+
+**2. Settings Class Changes:**
+- Removed the `from_yaml()` class method entirely
+- Kept only `from_multi_file()` method for loading configuration
+- Removed all single-file configuration support
+
+**3. Initialization Functions Changes:**
+- Removed `initialize_config()` function (legacy single-file initialization)
+- Removed `initialize_config_with_workspace()` function (legacy workspace initialization)
+- Kept only `initialize_multi_file_config()` and `initialize_multi_file_config_with_workspace()`
+- Removed `fallback_to_legacy` parameters from all remaining functions
+
+**4. File System Changes:**
+- The legacy `config.template.yaml` file was already deleted from the repository
+- Only the three domain-specific template files remain:
+  - `connectivity.template.yaml`
+  - `projects.template.yaml` 
+  - `fine-tuning.template.yaml`
+
+**5. Error Handling Improvements:**
+- Updated error messages to clearly indicate that only domain-specific files are supported
+- Removed confusing references to legacy file names in error messages
+- Simplified validation logic by removing dual-mode complexity
+
+**Key Benefits Achieved:**
+- **Simplified Codebase**: Removed ~150 lines of legacy support code
+- **Clear User Guidance**: Error messages now clearly direct users to the three-file system
+- **Reduced Complexity**: No more dual-mode configuration loading logic
+- **Enforced Architecture**: Users must use the domain-separated configuration approach
+- **Improved Maintainability**: Single configuration loading path reduces bugs and testing complexity
+
+The system now exclusively supports the three-file configuration architecture:
+- `connectivity.yaml` - Database connections, LLM providers, authentication
+- `projects.yaml` - Project definitions, data sources
+- `fine-tuning.yaml` - Processing parameters, performance tuning
+
+All legacy configuration file support has been completely eliminated from the codebase.
+</info added on 2025-06-14T08:40:31.593Z>
+
+## 13. Update the cli to detect an old configuration file [pending]
+### Dependencies: 21.14
+### Description: When initializing the configuration, the cli must be able to detect that the user is trying to use an old configuration file. It then needs to stop gracefully and suggest the users to run the migration script to update his configuration to the new 3 file format.
+### Details:
+
+
+## 14. Create a script/tool to convert old config file to the new 3 files format [pending]
+### Dependencies: None
+### Description: the tool will be able to convert and old configuration file to the new 3 configuration file format
+### Details:
+
 

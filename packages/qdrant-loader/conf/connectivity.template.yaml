@@ -1,0 +1,98 @@
+# Connectivity Configuration Template
+# Copy this file to connectivity.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+# Configuration Notes:
+# 
+# 1. Database Connections:
+#    - QDrant vector database configuration
+#    - Neo4j graph database configuration (optional, for Graphiti features)
+#    - Connection pooling and timeout settings
+#
+# 2. LLM Provider Connections:
+#    - OpenAI, Anthropic, and other LLM providers
+#    - API keys and endpoint configurations
+#    - Model-specific settings and limits
+#
+# 3. Authentication Settings:
+#    - API keys for all external services
+#    - Database credentials
+#    - Service-specific authentication tokens
+#
+# 4. Environment Variables:
+#    - Use ${VARIABLE_NAME} syntax for sensitive information
+#    - Recommended for tokens, passwords, and URLs
+#    - Set environment variables before running the application
+
+# QDrant vector database configuration
+qdrant:
+  url: "http://localhost:6333"
+  api_key: null  # Optional API key for QDrant Cloud
+  collection_name: "default_collection"  # Collection name used by all projects
+
+# Embedding service configuration
+# Controls how text is converted to vectors
+embedding:
+  endpoint: "http://localhost:8080/v1" # Optional. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
+  model: "BAAI/bge-small-en-v1.5"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (example for local use) or text-embedding-3-small (for OpenAI use)
+  api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
+  vector_size: 384                # Optional. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI models)
+  tokenizer: "none"         # Optional. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
+  # Token limits (adjust based on your embedding model):
+  # - OpenAI text-embedding-3-small/large: 8192 tokens max
+  # - OpenAI text-embedding-ada-002: 8192 tokens max  
+  # - BAAI/bge-small-en-v1.5: 512 tokens max
+  # - sentence-transformers models: varies (typically 256-512)
+  max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
+  max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
+
+# Neo4j Configuration
+# Required only when Graphiti is enabled (graphiti.enabled: true)
+# Comment out this entire section if not using Graphiti features
+neo4j:
+  uri: "bolt://localhost:7687"
+  user: "neo4j"
+  password: "${NEO4J_PASSWORD}"
+  database: "neo4j"
+  max_connection_lifetime: 3600
+  max_connection_pool_size: 50
+  connection_acquisition_timeout: 60
+  trusted_certificates: "TRUST_ALL_CERTIFICATES"
+  encrypted: false
+
+# Graphiti Knowledge Graph Configuration
+# Enables advanced knowledge graph capabilities for document relationships
+# Set enabled: true to activate Graphiti features (requires Neo4j configuration)
+graphiti:
+  enabled: false
+  debug_mode: false
+  
+  # LLM Configuration for Graphiti
+  llm:
+    provider: "openai"  # openai, anthropic, etc.
+    model: "gpt-4o-mini"
+    max_tokens: 4000
+    temperature: 0.1
+    api_key: "${GRAPHITI_LLM_API_KEY}"  # Set via environment variable
+    endpoint: "https://api.openai.com/v1"  # LLM endpoint
+  
+  # Embedder Configuration
+  embedder:
+    provider: "openai"
+    model: "text-embedding-3-small"
+    dimensions: null  # Use model default
+    api_key: "${GRAPHITI_EMBEDDER_API_KEY}"  # Set via environment variable
+    endpoint: "https://api.openai.com/v1"  # Embedder endpoint
+  
+  # Operational Settings
+  operational:
+    timeout_seconds: 30
+
+# State management configuration
+# Controls how document ingestion state is tracked
+state_management:
+  database_path: "${STATE_DB_PATH}"  # Path to SQLite database file, ignored in workspace mode
+  table_prefix: "qdrant_loader_"     # Prefix for database tables
+  connection_pool:                   # Connection pool settings
+    size: 5                         # Maximum number of connections
+    timeout: 30                  # Connection timeout in seconds

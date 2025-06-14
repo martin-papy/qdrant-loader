@@ -1,0 +1,56 @@
+# Fine-Tuning Configuration Template
+# Copy this file to fine-tuning.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+# Configuration Notes:
+# 
+# 1. Processing Parameters:
+#    - Text chunking and overlap settings
+#    - Batch sizes for various operations
+#    - File size limits and processing timeouts
+#
+# 2. Performance Tuning:
+#    - Worker pool sizes and concurrency settings
+#    - Rate limiting and throttling parameters
+#    - Memory and resource management
+#
+# 3. Algorithm Settings:
+#    - Search and retrieval parameters
+#    - Embedding and vector processing settings
+#    - Graph traversal and analysis parameters
+#
+# 4. Caching and Optimization:
+#    - Cache sizes and TTL settings
+#    - Optimization flags and strategies
+#    - Debug and monitoring configurations
+#
+# 5. Environment Variables:
+#    - Use ${VARIABLE_NAME} syntax for environment-specific values
+#    - Recommended for paths, limits, and tuning parameters
+#    - Set environment variables before running the application
+
+# Text chunking configuration
+# Controls how documents are split into chunks for processing
+chunking:
+  chunk_size: 1500       # Maximum number of characters per chunk. Be careful not to set it too high to prevent token limits.
+  chunk_overlap: 200      # Number of characters to overlap between chunks
+
+# File conversion configuration
+# Controls how non-text files (PDF, Office docs, etc.) are converted to text
+file_conversion:
+  # Maximum file size for conversion (in bytes)
+  max_file_size: 52428800  # 50MB
+  
+  # Timeout for conversion operations (in seconds)
+  conversion_timeout: 300  # 5 minutes
+  
+  # MarkItDown specific settings
+  markitdown:
+    # Enable LLM integration for image descriptions
+    enable_llm_descriptions: false
+    # LLM model for image descriptions (when enabled)
+    llm_model: "gpt-4o"
+    # LLM endpoint (when enabled)
+    llm_endpoint: "https://api.openai.com/v1"
+    # API key for LLM service (required when enable_llm_descriptions is True)
+    llm_api_key: "${OPENAI_API_KEY}" 
