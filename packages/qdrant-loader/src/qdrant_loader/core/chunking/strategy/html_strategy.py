@@ -338,7 +338,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return sections[:MAX_SECTIONS_TO_PROCESS]  # Ensure we don't exceed limit
 
-        except Exception as e:
+        except Exception:
             self.logger.warning("HTML parsing failed: {e}")
             return self._simple_html_parse(html)
 
@@ -401,7 +401,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return sections
 
-        except Exception as e:
+        except Exception:
             self.logger.error("Simple HTML parsing failed: {e}")
             # Ultimate fallback: return the entire content as one section
             return [
@@ -796,7 +796,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return chunked_docs
 
-        except Exception as e:
+        except Exception:
             self.logger.error("Fallback chunking failed: {e}")
             # Ultimate fallback: return original document as single chunk
             chunk_doc = Document(

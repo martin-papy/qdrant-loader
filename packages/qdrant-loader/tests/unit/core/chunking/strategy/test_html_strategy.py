@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bs4 import BeautifulSoup
-
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.html_strategy import (
@@ -278,7 +277,7 @@ class TestHTMLChunkingStrategy:
         assert metadata["word_count"] == 4
         assert metadata["char_count"] == 22
         assert metadata["has_code"] is False
-        assert metadata["has_links"] 
+        assert metadata["has_links"]
         assert metadata["has_images"] is False
         assert metadata["is_semantic"] is False
         assert metadata["is_heading"] is False
@@ -323,7 +322,7 @@ class TestHTMLChunkingStrategy:
 
         metadata = html_strategy._extract_section_metadata(section)
 
-        assert metadata["has_code"] 
+        assert metadata["has_code"]
         assert metadata["type"] == "code_block"
 
     def test_extract_section_metadata_with_images(self, html_strategy):
@@ -338,7 +337,7 @@ class TestHTMLChunkingStrategy:
 
         metadata = html_strategy._extract_section_metadata(section)
 
-        assert metadata["has_images"] 
+        assert metadata["has_images"]
 
     def test_build_section_breadcrumb(self, html_strategy):
         """Test breadcrumb building for nested sections."""

@@ -6,12 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pydantic import AnyUrl
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.project_manager import ProjectContext, ProjectManager
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.fixture
@@ -69,7 +68,7 @@ async def test_project_manager_initialization(project_manager):
     await project_manager.initialize(mock_session)
 
     # Verify initialization
-    assert project_manager._initialized 
+    assert project_manager._initialized
     assert len(project_manager._project_contexts) == 1
     assert "test-project" in project_manager._project_contexts
 
@@ -134,7 +133,7 @@ def test_project_validation(project_manager):
     project_manager._project_contexts["test-project"] = context
 
     # Test validation
-    assert project_manager.validate_project_exists("test-project") 
+    assert project_manager.validate_project_exists("test-project")
     assert project_manager.validate_project_exists("non-existent") is False
 
 

@@ -231,7 +231,7 @@ class JiraConnector(BaseConnector):
 
                 return response.json()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(
                     "JIRA API request timed out",
                     method=method,
@@ -454,7 +454,7 @@ class JiraConnector(BaseConnector):
             Parsed JiraUser or None if raw_user is None and not required
 
         Raises:
-            ValueError: If raw_user is None and required 
+            ValueError: If raw_user is None and required
         """
         if not raw_user:
             if required:

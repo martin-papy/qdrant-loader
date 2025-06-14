@@ -7,7 +7,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from qdrant_loader.core.monitoring.ingestion_metrics import (
     BatchMetrics,
     ConversionMetrics,
@@ -47,8 +46,8 @@ class TestConversionMetricsDataClasses:
             file_size=1024000,
         )
 
-        assert metrics.conversion_attempted 
-        assert metrics.conversion_success 
+        assert metrics.conversion_attempted
+        assert metrics.conversion_success
         assert metrics.conversion_time == 2.5
         assert metrics.conversion_method == "markitdown"
         assert metrics.original_file_type == "pd"
@@ -99,7 +98,7 @@ class TestConversionTracking:
 
         assert operation_id in monitor.ingestion_metrics
         metrics = monitor.ingestion_metrics[operation_id]
-        assert metrics.conversion_attempted 
+        assert metrics.conversion_attempted
         assert metrics.original_file_type == "pd"
         assert metrics.file_size == 2048000
         assert metrics.metadata["file_path"] == file_path
@@ -120,7 +119,7 @@ class TestConversionTracking:
         )
 
         metrics = monitor.ingestion_metrics[operation_id]
-        assert metrics.conversion_success 
+        assert metrics.conversion_success
         assert metrics.conversion_method == "markitdown"
         assert metrics.conversion_time is not None
         assert metrics.conversion_time > 0
@@ -398,14 +397,14 @@ class TestMetricsPersistence:
         assert len(metrics_files) == 1
 
         # Load and verify the saved data
-        with open(metrics_files[0], "r", encoding="utf-8") as f:
+        with open(metrics_files[0], encoding="utf-8") as f:
             saved_data = json.load(f)
 
         # Check ingestion metrics include conversion fields
         assert operation_id in saved_data["ingestion_metrics"]
         op_data = saved_data["ingestion_metrics"][operation_id]
-        assert op_data["conversion_attempted"] 
-        assert op_data["conversion_success"] 
+        assert op_data["conversion_attempted"]
+        assert op_data["conversion_success"]
         assert op_data["conversion_method"] == "markitdown"
         assert op_data["original_file_type"] == "pd"
         assert op_data["file_size"] == 1024000

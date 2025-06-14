@@ -1,7 +1,6 @@
 """Unit tests for workspace configuration."""
 
 import pytest
-
 from qdrant_loader.config.workspace import (
     WorkspaceConfig,
     setup_workspace,

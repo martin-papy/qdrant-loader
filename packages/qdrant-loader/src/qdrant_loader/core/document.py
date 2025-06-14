@@ -202,7 +202,7 @@ class Document(BaseModel):
 
                 logger.debug("Normalized URL: {normalized}")
                 return normalized
-            except Exception as e:
+            except Exception:
                 logger.error("Error normalizing URL {url}: {str(e)}")
                 # If URL parsing fails, return the original URL in lowercase
                 return url.lower().strip()

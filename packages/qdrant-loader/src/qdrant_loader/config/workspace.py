@@ -32,9 +32,7 @@ class WorkspaceConfig:
             )
 
         if not self.workspace_path.is_dir():
-            raise ValueError(
-                "Workspace path is not a directory: {self.workspace_path}"
-            )
+            raise ValueError("Workspace path is not a directory: {self.workspace_path}")
 
         # Validate config.yaml exists
         if not self.config_path.exists():

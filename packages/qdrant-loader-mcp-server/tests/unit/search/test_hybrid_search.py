@@ -248,11 +248,11 @@ async def test_expand_query_case_insensitive(hybrid_search):
 def test_analyze_query_questions(hybrid_search):
     """Test query analysis for questions."""
     context = hybrid_search._analyze_query("What is the API documentation?")
-    assert context["is_question"] 
+    assert context["is_question"]
     assert "what" in context["keywords"]
 
     context = hybrid_search._analyze_query("How to implement authentication?")
-    assert context["is_question"] 
+    assert context["is_question"]
     assert context["probable_intent"] == "procedural"
 
 
@@ -260,7 +260,7 @@ def test_analyze_query_broad_vs_specific(hybrid_search):
     """Test query analysis for broad vs specific queries."""
     # Broad query (< 5 words)
     context = hybrid_search._analyze_query("API docs")
-    assert context["is_broad"] 
+    assert context["is_broad"]
     assert context["is_specific"] is False
 
     # Specific query (> 7 words)
@@ -268,7 +268,7 @@ def test_analyze_query_broad_vs_specific(hybrid_search):
         "How to implement OAuth2 authentication in the REST API endpoints"
     )
     assert context["is_broad"] is False
-    assert context["is_specific"] 
+    assert context["is_specific"]
 
 
 def test_analyze_query_intent_detection(hybrid_search):
@@ -489,7 +489,7 @@ def test_extract_metadata_info_attachment(hybrid_search):
 
     info = hybrid_search._extract_metadata_info(metadata)
 
-    assert info["is_attachment"] 
+    assert info["is_attachment"]
     assert info["parent_document_id"] == "doc-456"
     assert info["parent_document_title"] == "Project Plan"
     assert info["attachment_id"] == "att-789"

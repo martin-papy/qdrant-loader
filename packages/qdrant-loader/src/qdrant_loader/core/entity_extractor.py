@@ -6,10 +6,11 @@ import json
 import re
 import time
 import weakref
+from collections.abc import AsyncGenerator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from graphiti_core.nodes import EpisodeType
 
@@ -26,13 +27,13 @@ logger = LoggingConfig.get_logger(__name__)
 class ExtractionResult:
     """Container for entity and relationship extraction results."""
 
-    entities: List[ExtractedEntity] = field(default_factory=list)
-    relationships: List[ExtractedRelationship] = field(default_factory=list)
+    entities: list[ExtractedEntity] = field(default_factory=list)
+    relationships: list[ExtractedRelationship] = field(default_factory=list)
     processing_time: float = 0.0
     source_text: str = ""
-    episode_id: Optional[str] = None
-    errors: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    episode_id: str | None = None
+    errors: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -41,13 +42,13 @@ class ExtractionTask:
 
     task_id: str
     text: str
-    source_description: Optional[str] = None
-    reference_time: Optional[datetime] = None
-    domain: Optional[PromptDomain] = None
+    source_description: str | None = None
+    reference_time: datetime | None = None
+    domain: PromptDomain | None = None
     custom_prompt: str = ""
     use_custom_prompts: bool = True
     priority: int = 0  # Higher numbers = higher priority
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -58,7 +59,7 @@ class ProcessingProgress:
     completed_tasks: int = 0
     failed_tasks: int = 0
     in_progress_tasks: int = 0
-    start_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def completion_percentage(self) -> float:
@@ -70,14 +71,14 @@ class ProcessingProgress:
     @property
     def elapsed_time(self) -> float:
         """Calculate elapsed time in seconds."""
-        return (datetime.now(timezone.utc) - self.start_time).total_seconds()
+        return (datetime.now(UTC) - self.start_time).total_seconds()
 
 
 @dataclass
 class ExtractionConfig:
     """Configuration for entity extraction."""
 
-    enabled_entity_types: List[EntityType] = field(
+    enabled_entity_types: list[EntityType] = field(
         default_factory=lambda: list(EntityType)
     )
     batch_size: int = 10
@@ -104,8 +105,8 @@ class EntityExtractor:
     def __init__(
         self,
         graphiti_manager: GraphitiManager,
-        config: Optional[ExtractionConfig] = None,
-        prompt_manager: Optional[EntityPromptManager] = None,
+        config: ExtractionConfig | None = None,
+        prompt_manager: EntityPromptManager | None = None,
     ):
         """Initialize the entity extractor.
 
@@ -117,20 +118,20 @@ class EntityExtractor:
         self.graphiti_manager = graphiti_manager
         self.config = config or ExtractionConfig()
         self.prompt_manager = prompt_manager or EntityPromptManager()
-        self._cache: Dict[str, ExtractionResult] = {}
-        self._cache_timestamps: Dict[str, float] = {}
+        self._cache: dict[str, ExtractionResult] = {}
+        self._cache_timestamps: dict[str, float] = {}
 
         # Enhanced async processing components
         self._semaphore = asyncio.Semaphore(self.config.max_concurrent_extractions)
         self._task_queue: asyncio.Queue[ExtractionTask] = asyncio.Queue(
             maxsize=self.config.queue_max_size
         )
-        self._result_futures: Dict[str, asyncio.Future[ExtractionResult]] = {}
-        self._background_workers: List[asyncio.Task] = []
+        self._result_futures: dict[str, asyncio.Future[ExtractionResult]] = {}
+        self._background_workers: list[asyncio.Task] = []
         self._worker_shutdown_event = asyncio.Event()
-        self._progress_callbacks: List[Callable[[ProcessingProgress], None]] = []
+        self._progress_callbacks: list[Callable[[ProcessingProgress], None]] = []
         self._current_progress = ProcessingProgress()
-        self._progress_task: Optional[asyncio.Task] = None
+        self._progress_task: asyncio.Task | None = None
 
         # Thread pool for CPU-intensive operations
         self._thread_pool = ThreadPoolExecutor(max_workers=2)
@@ -222,10 +223,10 @@ class EntityExtractor:
                     self._current_progress.in_progress_tasks -= 1
                     self._task_queue.task_done()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Timeout waiting for task - continue to check shutdown
                 continue
-            except Exception as e:
+            except Exception:
                 logger.error("Background worker {worker_id} encountered error: {e}")
                 await asyncio.sleep(1.0)  # Brief pause before retrying
 
@@ -259,7 +260,7 @@ class EntityExtractor:
 
                 return result
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(
                     "Task {task.task_id} timed out after {self.config.task_timeout}s"
                 )
@@ -270,9 +271,9 @@ class EntityExtractor:
     async def extract_entities(
         self,
         text: str,
-        source_description: Optional[str] = None,
-        reference_time: Optional[datetime] = None,
-        domain: Optional[PromptDomain] = None,
+        source_description: str | None = None,
+        reference_time: datetime | None = None,
+        domain: PromptDomain | None = None,
         custom_prompt: str = "",
         use_custom_prompts: bool = True,
     ) -> ExtractionResult:
@@ -345,10 +346,10 @@ class EntityExtractor:
 
     async def extract_entities_batch(
         self,
-        texts: List[str],
-        source_descriptions: Optional[List[str]] = None,
-        reference_times: Optional[List[datetime]] = None,
-    ) -> List[ExtractionResult]:
+        texts: list[str],
+        source_descriptions: list[str] | None = None,
+        reference_times: list[datetime] | None = None,
+    ) -> list[ExtractionResult]:
         """Extract entities from multiple texts in batches with enhanced async processing.
 
         Args:
@@ -365,13 +366,13 @@ class EntityExtractor:
         logger.info("Starting enhanced batch entity extraction for {len(texts)} texts")
 
         # Prepare arguments - create proper lists with correct types
-        actual_source_descriptions: List[Optional[str]] = []
+        actual_source_descriptions: list[str | None] = []
         if source_descriptions is not None:
             actual_source_descriptions = [desc for desc in source_descriptions]
         else:
             actual_source_descriptions = [None] * len(texts)
 
-        actual_reference_times: List[Optional[datetime]] = []
+        actual_reference_times: list[datetime | None] = []
         if reference_times is not None:
             actual_reference_times = [time_ref for time_ref in reference_times]
         else:
@@ -393,7 +394,7 @@ class EntityExtractor:
 
             # Create semaphore-controlled extraction tasks
             async def extract_with_semaphore(
-                text: str, source: Optional[str], time_ref: Optional[datetime]
+                text: str, source: str | None, time_ref: datetime | None
             ) -> ExtractionResult:
                 async with self._semaphore:
                     self._stats["concurrent_extractions"] += 1
@@ -406,7 +407,7 @@ class EntityExtractor:
             batch_tasks = [
                 extract_with_semaphore(text, source, time_ref)
                 for text, source, time_ref in zip(
-                    batch_texts, batch_sources, batch_times
+                    batch_texts, batch_sources, batch_times, strict=False
                 )
             ]
 
@@ -431,9 +432,9 @@ class EntityExtractor:
     async def _extract_with_retry(
         self,
         text: str,
-        source_description: Optional[str] = None,
-        reference_time: Optional[datetime] = None,
-        domain: Optional[PromptDomain] = None,
+        source_description: str | None = None,
+        reference_time: datetime | None = None,
+        domain: PromptDomain | None = None,
         custom_prompt: str = "",
         use_custom_prompts: bool = True,
     ) -> ExtractionResult:
@@ -487,9 +488,9 @@ class EntityExtractor:
     async def _perform_extraction(
         self,
         text: str,
-        source_description: Optional[str] = None,
-        reference_time: Optional[datetime] = None,
-        domain: Optional[PromptDomain] = None,
+        source_description: str | None = None,
+        reference_time: datetime | None = None,
+        domain: PromptDomain | None = None,
         custom_prompt: str = "",
         use_custom_prompts: bool = True,
     ) -> ExtractionResult:
@@ -515,7 +516,7 @@ class EntityExtractor:
                 return await self._perform_custom_prompt_extraction(
                     text, source_description, reference_time, domain, custom_prompt
                 )
-            except Exception as e:
+            except Exception:
                 logger.warning(
                     "Custom prompt extraction failed, falling back to default: {e}"
                 )
@@ -526,7 +527,7 @@ class EntityExtractor:
             content=text,
             episode_type=EpisodeType.text,
             source_description=source_description or "Entity extraction source",
-            reference_time=reference_time or datetime.now(timezone.utc),
+            reference_time=reference_time or datetime.now(UTC),
         )
 
         # Wait a moment for Graphiti to process the episode and extract entities
@@ -551,7 +552,7 @@ class EntityExtractor:
                     query=search_terms, entity_types=entity_type_strings, limit=50
                 )
 
-        except Exception as e:
+        except Exception:
             logger.warning("Failed to retrieve entities from Graphiti: {e}")
             # Fallback to general node search
             nodes = await self.graphiti_manager.get_nodes(limit=50)
@@ -566,7 +567,7 @@ class EntityExtractor:
                     entities, text, source_description
                 )
                 logger.debug("Extracted {len(relationships)} relationships")
-            except Exception as e:
+            except Exception:
                 logger.warning("Failed to extract relationships: {e}")
 
         return ExtractionResult(
@@ -675,8 +676,8 @@ class EntityExtractor:
         return " ".join(unique_terms) if unique_terms else text[:50]
 
     def _convert_nodes_to_entities(
-        self, nodes: List[Any], source_text: str
-    ) -> List[ExtractedEntity]:
+        self, nodes: list[Any], source_text: str
+    ) -> list[ExtractedEntity]:
         """Convert Graphiti nodes to ExtractedEntity objects.
 
         Args:
@@ -792,7 +793,7 @@ class EntityExtractor:
                         "Extracted entity: {entity.name} ({entity.entity_type.value}) with confidence {entity.confidence}"
                     )
 
-            except Exception as e:
+            except Exception:
                 logger.warning("Failed to convert node to entity: {e}")
                 logger.debug("Node attributes: {dir(node)}")
                 continue
@@ -803,9 +804,9 @@ class EntityExtractor:
     async def _perform_custom_prompt_extraction(
         self,
         text: str,
-        source_description: Optional[str] = None,
-        reference_time: Optional[datetime] = None,
-        domain: Optional[PromptDomain] = None,
+        source_description: str | None = None,
+        reference_time: datetime | None = None,
+        domain: PromptDomain | None = None,
         custom_prompt: str = "",
     ) -> ExtractionResult:
         """Perform entity extraction using custom prompts.
@@ -832,7 +833,7 @@ class EntityExtractor:
             extraction_hints=self.prompt_manager.get_extraction_hints_for_domain(
                 extraction_domain
             ),
-            reference_time=(reference_time or datetime.now(timezone.utc)).isoformat(),
+            reference_time=(reference_time or datetime.now(UTC)).isoformat(),
         )
 
         # Use Graphiti's LLM client directly for extraction
@@ -858,7 +859,7 @@ class EntityExtractor:
                     entities, text, source_description
                 )
                 logger.debug("Extracted {len(relationships)} relationships")
-            except Exception as e:
+            except Exception:
                 logger.warning("Failed to extract relationships: {e}")
 
         # Create episode for tracking (optional)
@@ -870,9 +871,9 @@ class EntityExtractor:
                 episode_type=EpisodeType.text,
                 source_description=source_description
                 or "Custom prompt entity extraction",
-                reference_time=reference_time or datetime.now(timezone.utc),
+                reference_time=reference_time or datetime.now(UTC),
             )
-        except Exception as e:
+        except Exception:
             logger.warning("Failed to create episode for custom extraction: {e}")
 
         return ExtractionResult(
@@ -894,7 +895,7 @@ class EntityExtractor:
 
     def _parse_llm_response_to_entities(
         self, response: str, source_text: str
-    ) -> List[ExtractedEntity]:
+    ) -> list[ExtractedEntity]:
         """Parse LLM response to extract entities.
 
         Args:
@@ -951,14 +952,14 @@ class EntityExtractor:
             )
             entities = self._extract_entities_from_text_response(response, source_text)
 
-        except Exception as e:
+        except Exception:
             logger.error("Error parsing LLM response: {e}")
 
         return entities
 
     def _extract_entities_from_text_response(
         self, response: str, source_text: str
-    ) -> List[ExtractedEntity]:
+    ) -> list[ExtractedEntity]:
         """Extract entities from text-based LLM response.
 
         Args:
@@ -1008,7 +1009,7 @@ class EntityExtractor:
         return entities
 
     def _generate_cache_key(
-        self, text: str, source_description: Optional[str] = None
+        self, text: str, source_description: str | None = None
     ) -> str:
         """Generate a cache key for the given text and source description.
 
@@ -1022,7 +1023,7 @@ class EntityExtractor:
         content = "{text}|{source_description or ''}"
         return hashlib.md5(content.encode("utf-8")).hexdigest()
 
-    def _get_from_cache(self, cache_key: str) -> Optional[ExtractionResult]:
+    def _get_from_cache(self, cache_key: str) -> ExtractionResult | None:
         """Get extraction result from cache if not expired.
 
         Args:
@@ -1073,7 +1074,7 @@ class EntityExtractor:
         self._cache_timestamps.clear()
         logger.info("Entity extraction cache cleared")
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get extraction statistics.
 
         Returns:
@@ -1115,7 +1116,7 @@ class EntityExtractor:
         }
         logger.info("Entity extraction statistics reset")
 
-    async def test_integration(self, test_text: Optional[str] = None) -> Dict[str, Any]:
+    async def test_integration(self, test_text: str | None = None) -> dict[str, Any]:
         """Test the Graphiti integration and async processing capabilities with a sample text.
 
         Args:
@@ -1248,12 +1249,12 @@ class EntityExtractor:
 
     async def extract_entities_async_queue(
         self,
-        texts: List[str],
-        source_descriptions: Optional[List[str]] = None,
-        reference_times: Optional[List[datetime]] = None,
+        texts: list[str],
+        source_descriptions: list[str] | None = None,
+        reference_times: list[datetime] | None = None,
         priority: int = 0,
         wait_for_completion: bool = True,
-    ) -> List[ExtractionResult]:
+    ) -> list[ExtractionResult]:
         """Extract entities using the async queue system for better throughput.
 
         Args:
@@ -1335,7 +1336,7 @@ class EntityExtractor:
         self,
         texts: AsyncGenerator[str, None],
         chunk_size: int = 10,
-        progress_callback: Optional[Callable[[ProcessingProgress], None]] = None,
+        progress_callback: Callable[[ProcessingProgress], None] | None = None,
     ) -> AsyncGenerator[ExtractionResult, None]:
         """Stream entity extraction for large datasets.
 
@@ -1423,7 +1424,7 @@ class EntityExtractor:
                 ]:  # Copy to avoid modification during iteration
                     try:
                         callback(self._current_progress)
-                    except Exception as e:
+                    except Exception:
                         logger.error("Progress callback failed: {e}")
                         # Remove failed callback
                         if callback in self._progress_callbacks:
@@ -1431,13 +1432,13 @@ class EntityExtractor:
 
                 await asyncio.sleep(self.config.progress_callback_interval)
 
-            except Exception as e:
+            except Exception:
                 logger.error("Progress reporter error: {e}")
                 await asyncio.sleep(1.0)
 
         logger.debug("Progress reporter stopped - no more callbacks")
 
-    async def wait_for_queue_completion(self, timeout: Optional[float] = None) -> bool:
+    async def wait_for_queue_completion(self, timeout: float | None = None) -> bool:
         """Wait for all queued tasks to complete.
 
         Args:
@@ -1450,11 +1451,11 @@ class EntityExtractor:
             await asyncio.wait_for(self._task_queue.join(), timeout=timeout)
             logger.info("All queued extraction tasks completed")
             return True
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Queue completion timed out after {timeout}s")
             return False
 
-    def get_queue_status(self) -> Dict[str, Any]:
+    def get_queue_status(self) -> dict[str, Any]:
         """Get current queue and processing status.
 
         Returns:
@@ -1536,10 +1537,10 @@ class EntityExtractor:
 
     async def extract_relationships(
         self,
-        entities: List[ExtractedEntity],
+        entities: list[ExtractedEntity],
         text: str,
-        source_description: Optional[str] = None,
-    ) -> List[ExtractedRelationship]:
+        source_description: str | None = None,
+    ) -> list[ExtractedRelationship]:
         """Extract relationships between entities using LLM-based analysis.
 
         Args:
@@ -1586,12 +1587,12 @@ class EntityExtractor:
                 logger.warning("No LLM client available for relationship extraction")
                 return []
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to extract relationships: {e}")
             return []
 
     def _create_relationship_prompt(
-        self, entities: List[ExtractedEntity], text: str
+        self, entities: list[ExtractedEntity], text: str
     ) -> str:
         """Create a prompt for relationship extraction.
 
@@ -1675,9 +1676,9 @@ Only include relationships that are clearly supported by the text. Be conservati
     def _parse_relationship_response(
         self,
         response: str,
-        entities: List[ExtractedEntity],
+        entities: list[ExtractedEntity],
         source_text: str,
-    ) -> List[ExtractedRelationship]:
+    ) -> list[ExtractedRelationship]:
         """Parse LLM response to extract relationships.
 
         Args:
@@ -1735,12 +1736,12 @@ Only include relationships that are clearly supported by the text. Be conservati
                             evidence=evidence,
                             metadata={
                                 "extraction_method": "llm_json_parsing",
-                                "extracted_at": datetime.now(timezone.utc).isoformat(),
+                                "extracted_at": datetime.now(UTC).isoformat(),
                             },
                         )
                         relationships.append(relationship)
 
-                    except Exception as e:
+                    except Exception:
                         logger.warning("Failed to parse relationship: {e}")
                         continue
 
@@ -1756,9 +1757,9 @@ Only include relationships that are clearly supported by the text. Be conservati
     def _extract_relationships_from_text_response(
         self,
         response: str,
-        entities: List[ExtractedEntity],
+        entities: list[ExtractedEntity],
         source_text: str,
-    ) -> List[ExtractedRelationship]:
+    ) -> list[ExtractedRelationship]:
         """Extract relationships from text response as fallback.
 
         Args:
@@ -1813,7 +1814,7 @@ Only include relationships that are clearly supported by the text. Be conservati
                     evidence=line,
                     metadata={
                         "extraction_method": "text_parsing_fallback",
-                        "extracted_at": datetime.now(timezone.utc).isoformat(),
+                        "extracted_at": datetime.now(UTC).isoformat(),
                     },
                 )
                 relationships.append(relationship)

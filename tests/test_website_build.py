@@ -3,15 +3,14 @@
 Tests for the website build system.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
 import json
 import os
-import sys
+import shutil
 import subprocess
-import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
 
 
 class TestWebsiteBuildSystem:
@@ -28,7 +27,7 @@ class TestWebsiteBuildSystem:
         build_script = Path("website/build.py")
 
         # Try to compile the script to check syntax
-        with open(build_script, "r") as f:
+        with open(build_script) as f:
             source = f.read()
 
         try:
@@ -88,7 +87,7 @@ class TestWebsiteBuildSystem:
         """Test that the favicon generation script has valid syntax."""
         favicon_script = Path("website/assets/generate_favicons.py")
 
-        with open(favicon_script, "r") as f:
+        with open(favicon_script) as f:
             source = f.read()
 
         try:

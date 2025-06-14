@@ -6,8 +6,9 @@ including connection management and basic graph operations.
 
 import random
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from neo4j import Driver, GraphDatabase, Session
 from neo4j.exceptions import (
@@ -31,11 +32,11 @@ T = TypeVar("T")
 
 
 def retry_on_transient_failure(
-    max_retries: Optional[int] = None,
-    initial_delay: Optional[float] = None,
-    max_delay: Optional[float] = None,
-    backoff_multiplier: Optional[float] = None,
-    jitter_factor: Optional[float] = None,
+    max_retries: int | None = None,
+    initial_delay: float | None = None,
+    max_delay: float | None = None,
+    backoff_multiplier: float | None = None,
+    jitter_factor: float | None = None,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator to retry operations on transient failures with exponential backoff and jitter.
 
@@ -85,7 +86,7 @@ def retry_on_transient_failure(
             else:
                 retry_attempts = max_retries
 
-            last_exception: Optional[Exception] = None
+            last_exception: Exception | None = None
             start_time = time.time()
 
             for attempt in range(retry_attempts + 1):  # +1 for initial attempt
@@ -244,7 +245,7 @@ class Neo4jManager:
             config: Neo4j configuration settings
         """
         self.config = config
-        self._driver: Optional[Driver] = None
+        self._driver: Driver | None = None
         self._is_connected = False
 
     def __enter__(self):
@@ -348,7 +349,7 @@ class Neo4jManager:
         return self._is_connected and self._driver is not None
 
     def get_session(
-        self, database: Optional[str] = None, access_mode: Optional[str] = None
+        self, database: str | None = None, access_mode: str | None = None
     ) -> Session:
         """Get a Neo4j session.
 
@@ -396,10 +397,10 @@ class Neo4jManager:
     def execute_query(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-        database: Optional[str] = None,
-        access_mode: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+        database: str | None = None,
+        access_mode: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a Cypher query and return results.
 
         Args:
@@ -443,9 +444,9 @@ class Neo4jManager:
     def execute_write_transaction(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-        database: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+        database: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a write transaction.
 
         Args:
@@ -482,9 +483,9 @@ class Neo4jManager:
     def execute_read_transaction(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-        database: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+        database: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a read transaction.
 
         Args:
@@ -536,7 +537,7 @@ class Neo4jManager:
             logger.error("Neo4j connection test failed", extra={"error": str(e)})
             return False
 
-    def get_database_info(self) -> Dict[str, Any]:
+    def get_database_info(self) -> dict[str, Any]:
         """Get information about the Neo4j database.
 
         Returns:
@@ -721,9 +722,9 @@ class Neo4jManager:
     def execute_read_query(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-        database: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+        database: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a read-only query (Enterprise: routes to read replicas).
 
         Args:
@@ -739,9 +740,9 @@ class Neo4jManager:
     def execute_write_query(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-        database: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+        database: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a write query (Enterprise: routes to write instances).
 
         Args:

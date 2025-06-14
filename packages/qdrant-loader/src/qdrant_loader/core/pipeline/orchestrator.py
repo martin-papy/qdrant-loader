@@ -155,7 +155,7 @@ class PipelineOrchestrator:
             )
             return documents
 
-        except Exception as e:
+        except Exception:
             logger.error("❌ Pipeline orchestration failed: {e}", exc_info=True)
             raise
 
@@ -183,7 +183,7 @@ class PipelineOrchestrator:
                 logger.debug(
                     "Processed {len(project_documents)} documents from project: {project_id}"
                 )
-            except Exception as e:
+            except Exception:
                 logger.error(
                     "Failed to process project {project_id}: {e}", exc_info=True
                 )
@@ -280,7 +280,7 @@ class PipelineOrchestrator:
                 # Return new and updated documents
                 return changes["new"] + changes["updated"]
 
-        except Exception as e:
+        except Exception:
             logger.error("Error during change detection: {e}", exc_info=True)
             raise
 
@@ -310,5 +310,5 @@ class PipelineOrchestrator:
                     doc, project_id
                 )
                 logger.debug("Updated document state for {doc.id}")
-            except Exception as e:
+            except Exception:
                 logger.error("Failed to update document state for {doc.id}: {e}")

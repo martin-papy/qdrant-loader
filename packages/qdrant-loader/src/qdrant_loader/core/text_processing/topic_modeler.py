@@ -4,9 +4,8 @@ from typing import Any
 
 import spacy
 from gensim import corpora, models
-from spacy.cli.download import download
-
 from qdrant_loader.utils.logging import LoggingConfig
+from spacy.cli.download import download
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 from urllib.error import HTTPError, URLError
 
-
 from qdrant_loader.utils.version_check import (
     VersionChecker,
     check_version_async,
@@ -161,7 +160,7 @@ class TestVersionChecker:
             checker, "_get_cache_data", return_value={"latest_version": "1.2.0"}
         ):
             has_update, latest_version = checker.check_for_updates()
-            assert has_update 
+            assert has_update
             assert latest_version == "1.2.0"
 
     def test_check_for_updates_no_cache_fetch_success(self):
@@ -175,7 +174,7 @@ class TestVersionChecker:
         ):
 
             has_update, latest_version = checker.check_for_updates()
-            assert has_update 
+            assert has_update
             assert latest_version == "1.2.0"
             mock_save.assert_called_once_with({"latest_version": "1.2.0"})
 

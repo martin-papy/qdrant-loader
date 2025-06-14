@@ -94,7 +94,7 @@ class ChunkingWorker(BaseWorker):
         except TimeoutError:
             logger.error("Chunking timed out for doc {document.url}")
             raise
-        except Exception as e:
+        except Exception:
             logger.error("Chunking failed for doc {document.url}: {e}")
             raise
 
@@ -140,7 +140,7 @@ class ChunkingWorker(BaseWorker):
                             )
                             return []
 
-                except Exception as e:
+                except Exception:
                     logger.error(
                         "❌ Chunking failed for document {doc_index + 1}/{len(documents)} ({doc.id}): {e}"
                     )
@@ -177,7 +177,7 @@ class ChunkingWorker(BaseWorker):
                             "🔄 Chunking progress: {completed_docs}/{len(documents)} documents, {chunk_count} chunks generated"
                         )
 
-                except Exception as e:
+                except Exception:
                     logger.error("❌ Error processing chunking task: {e}")
                     completed_docs += 1
 

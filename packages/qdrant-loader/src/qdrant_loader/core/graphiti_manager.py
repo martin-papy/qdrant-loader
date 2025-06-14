@@ -4,8 +4,8 @@ This module provides a manager class for Graphiti operations,
 integrating with the existing Neo4j configuration and connection management.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from graphiti_core import Graphiti
 from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
@@ -25,8 +25,8 @@ class GraphitiManager:
     def __init__(
         self,
         neo4j_config: Neo4jConfig,
-        graphiti_config: Optional[GraphitiConfig] = None,
-        openai_api_key: Optional[str] = None,
+        graphiti_config: GraphitiConfig | None = None,
+        openai_api_key: str | None = None,
     ):
         """Initialize the Graphiti manager.
 
@@ -45,9 +45,9 @@ class GraphitiManager:
             or self.graphiti_config.embedder.api_key
         )
 
-        self._graphiti: Optional[Graphiti] = None
-        self._llm_client: Optional[OpenAIClient] = None
-        self._embedder: Optional[OpenAIEmbedder] = None
+        self._graphiti: Graphiti | None = None
+        self._llm_client: OpenAIClient | None = None
+        self._embedder: OpenAIEmbedder | None = None
         self._initialized = False
 
     async def __aenter__(self):
@@ -153,7 +153,7 @@ class GraphitiManager:
                 "Embedder model: {self.graphiti_config.embedder.model}"
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to initialize Graphiti client: {e}")
             raise
 
@@ -163,7 +163,7 @@ class GraphitiManager:
             try:
                 await self._graphiti.close()
                 logger.info("Graphiti client connection closed")
-            except Exception as e:
+            except Exception:
                 logger.error("Error closing Graphiti client: {e}")
             finally:
                 self._graphiti = None
@@ -186,12 +186,12 @@ class GraphitiManager:
         return self._graphiti
 
     @property
-    def llm_client(self) -> Optional[OpenAIClient]:
+    def llm_client(self) -> OpenAIClient | None:
         """Get the LLM client instance."""
         return self._llm_client
 
     @property
-    def embedder(self) -> Optional[OpenAIEmbedder]:
+    def embedder(self) -> OpenAIEmbedder | None:
         """Get the embedder instance."""
         return self._embedder
 
@@ -200,8 +200,8 @@ class GraphitiManager:
         name: str,
         content: str,
         episode_type: EpisodeType = EpisodeType.text,
-        source_description: Optional[str] = None,
-        reference_time: Optional[datetime] = None,
+        source_description: str | None = None,
+        reference_time: datetime | None = None,
         **kwargs,
     ) -> str:
         """Add an episode to the knowledge graph.
@@ -224,7 +224,7 @@ class GraphitiManager:
             raise RuntimeError("Graphiti client not initialized")
 
         try:
-            reference_time = reference_time or datetime.now(timezone.utc)
+            reference_time = reference_time or datetime.now(UTC)
 
             logger.debug("Adding episode: {name} (type: {episode_type.value})")
 
@@ -247,7 +247,7 @@ class GraphitiManager:
             logger.info("Successfully added episode: {name} with UUID: {episode_uuid}")
             return episode_uuid
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to add episode {name}: {e}")
             raise
 
@@ -255,9 +255,9 @@ class GraphitiManager:
         self,
         query: str,
         limit: int = 10,
-        center_node_uuid: Optional[str] = None,
+        center_node_uuid: str | None = None,
         **kwargs,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Search the knowledge graph.
 
         Args:
@@ -291,13 +291,13 @@ class GraphitiManager:
             logger.info("Search returned {len(results)} results for query: {query}")
             return results
 
-        except Exception as e:
+        except Exception:
             logger.error("Search failed for query '{query}': {e}")
             raise
 
     async def get_nodes(
-        self, node_uuids: Optional[List[str]] = None, limit: int = 100, **kwargs
-    ) -> List[Any]:
+        self, node_uuids: list[str] | None = None, limit: int = 100, **kwargs
+    ) -> list[Any]:
         """Retrieve nodes from the knowledge graph.
 
         Args:
@@ -328,7 +328,7 @@ class GraphitiManager:
                         )
                         if results:
                             nodes.extend(results)
-                    except Exception as e:
+                    except Exception:
                         logger.warning("Failed to retrieve node {uuid}: {e}")
                         continue
                 return nodes
@@ -344,13 +344,13 @@ class GraphitiManager:
                 )
                 return results
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to retrieve nodes: {e}")
             raise
 
     async def get_edges(
-        self, edge_uuids: Optional[List[str]] = None, limit: int = 100, **kwargs
-    ) -> List[Any]:
+        self, edge_uuids: list[str] | None = None, limit: int = 100, **kwargs
+    ) -> list[Any]:
         """Retrieve edges from the knowledge graph.
 
         Args:
@@ -385,13 +385,13 @@ class GraphitiManager:
                 )
                 return []
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to retrieve edges: {e}")
             raise
 
     async def get_entities_from_episode(
-        self, episode_id: str, entity_types: Optional[List[str]] = None
-    ) -> List[Any]:
+        self, episode_id: str, entity_types: list[str] | None = None
+    ) -> list[Any]:
         """Retrieve entities extracted from a specific episode.
 
         Args:
@@ -426,13 +426,13 @@ class GraphitiManager:
             logger.info("Found {len(results)} entities for episode {episode_id}")
             return results
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to retrieve entities from episode {episode_id}: {e}")
             raise
 
     async def search_entities(
-        self, query: str, entity_types: Optional[List[str]] = None, limit: int = 50
-    ) -> List[Any]:
+        self, query: str, entity_types: list[str] | None = None, limit: int = 50
+    ) -> list[Any]:
         """Search for entities in the knowledge graph.
 
         Args:
@@ -468,11 +468,11 @@ class GraphitiManager:
             logger.info("Entity search returned {len(results)} results")
             return results
 
-        except Exception as e:
+        except Exception:
             logger.error("Entity search failed for query '{query}': {e}")
             raise
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform a health check on the Graphiti connection.
 
         Returns:
@@ -485,7 +485,7 @@ class GraphitiManager:
                 "database": self.neo4j_config.database,
                 "user": self.neo4j_config.user,
             },
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         if self.is_initialized:

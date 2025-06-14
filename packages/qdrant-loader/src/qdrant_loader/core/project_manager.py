@@ -10,7 +10,7 @@ This module provides the core project management functionality including:
 
 import hashlib
 from datetime import UTC, datetime
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.core.state.models import Project, ProjectSource
 from qdrant_loader.utils.logging import LoggingConfig
+
+if TYPE_CHECKING:
+    # Import for type checking only to avoid circular imports
+    pass
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -29,9 +33,9 @@ class ProjectContext:
         self,
         project_id: str,
         display_name: str,
-        description: Optional[str] = None,
-        collection_name: Optional[str] = None,
-        config: Optional[ProjectConfig] = None,
+        description: str | None = None,
+        collection_name: str | None = None,
+        config: ProjectConfig | None = None,
     ):
         self.project_id = project_id
         self.display_name = display_name
@@ -40,7 +44,7 @@ class ProjectContext:
         self.config = config
         self.created_at = datetime.now(UTC)
 
-    def to_metadata(self) -> Dict[str, str]:
+    def to_metadata(self) -> dict[str, str]:
         """Convert project context to metadata dictionary for document injection."""
         metadata = {
             "project_id": self.project_id,
@@ -53,7 +57,7 @@ class ProjectContext:
         return metadata
 
     def __repr__(self) -> str:
-        return "ProjectContext(id='{self.project_id}', name='{self.display_name}')"
+        return f"ProjectContext(id='{self.project_id}', name='{self.display_name}')"
 
 
 class ProjectManager:
@@ -64,7 +68,7 @@ class ProjectManager:
         self.projects_config = projects_config
         self.global_collection_name = global_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
-        self._project_contexts: Dict[str, ProjectContext] = {}
+        self._project_contexts: dict[str, ProjectContext] = {}
         self._initialized = False
 
     async def initialize(self, session: AsyncSession) -> None:
@@ -79,7 +83,7 @@ class ProjectManager:
 
         self._initialized = True
         self.logger.info(
-            "Project Manager initialized with {len(self._project_contexts)} projects"
+            f"Project Manager initialized with {len(self._project_contexts)} projects"
         )
 
     async def _discover_projects(self, session: AsyncSession) -> None:
@@ -87,7 +91,7 @@ class ProjectManager:
         self.logger.debug("Discovering projects from configuration")
 
         for project_id, project_config in self.projects_config.projects.items():
-            self.logger.debug("Processing project: {project_id}")
+            self.logger.debug(f"Processing project: {project_id}")
 
             # Validate project configuration
             await self._validate_project_config(project_id, project_config)
@@ -112,18 +116,18 @@ class ProjectManager:
             await self._ensure_project_in_database(session, context, project_config)
 
             self.logger.info(
-                "Discovered project: {project_id} ({project_config.display_name})"
+                f"Discovered project: {project_id} ({project_config.display_name})"
             )
 
     async def _validate_project_config(
         self, project_id: str, config: ProjectConfig
     ) -> None:
         """Validate a project configuration."""
-        self.logger.debug("Validating project configuration for: {project_id}")
+        self.logger.debug(f"Validating project configuration for: {project_id}")
 
         # Check required fields
         if not config.display_name:
-            raise ValueError("Project '{project_id}' missing required display_name")
+            raise ValueError(f"Project '{project_id}' missing required display_name")
 
         # Validate sources exist - check if any source type has configurations
         has_sources = any(
@@ -137,16 +141,16 @@ class ProjectManager:
         )
 
         if not has_sources:
-            self.logger.warning("Project '{project_id}' has no configured sources")
+            self.logger.warning(f"Project '{project_id}' has no configured sources")
 
         # Additional validation can be added here
-        self.logger.debug("Project configuration valid for: {project_id}")
+        self.logger.debug(f"Project configuration valid for: {project_id}")
 
     async def _ensure_project_in_database(
         self, session: AsyncSession, context: ProjectContext, config: ProjectConfig
     ) -> None:
         """Ensure project exists in database with current configuration."""
-        self.logger.debug("Ensuring project exists in database: {context.project_id}")
+        self.logger.debug(f"Ensuring project exists in database: {context.project_id}")
 
         # Check if project exists
         result = await session.execute(select(Project).filter_by(id=context.project_id))
@@ -162,9 +166,9 @@ class ProjectManager:
             current_config_hash = getattr(project, "config_hash", None)
             if current_config_hash != config_hash:
                 self.logger.info(
-                    "Updating project configuration: {context.project_id}"
+                    f"Updating project configuration: {context.project_id}"
                 )
-                # Use setattr for SQLAlchemy model attribute assignment
+                # Use setattr for SQLAlchemy model attribute assignment to avoid type checker issues
                 setattr(project, "display_name", context.display_name)
                 setattr(project, "description", context.description)
                 setattr(project, "collection_name", context.collection_name)
@@ -172,7 +176,7 @@ class ProjectManager:
                 setattr(project, "updated_at", now)
         else:
             # Create new project
-            self.logger.info("Creating new project: {context.project_id}")
+            self.logger.info(f"Creating new project: {context.project_id}")
             project = Project(
                 id=context.project_id,
                 display_name=context.display_name,
@@ -193,7 +197,7 @@ class ProjectManager:
         self, session: AsyncSession, project_id: str, config: ProjectConfig
     ) -> None:
         """Update project sources in database."""
-        self.logger.debug("Updating project sources for: {project_id}")
+        self.logger.debug(f"Updating project sources for: {project_id}")
 
         # Get existing sources
         result = await session.execute(
@@ -235,14 +239,15 @@ class ProjectManager:
                     current_source_config_hash = getattr(source, "config_hash", None)
                     if current_source_config_hash != source_config_hash:
                         self.logger.debug(
-                            "Updating source configuration: {source_type}:{source_name}"
+                            f"Updating source configuration: {source_type}:{source_name}"
                         )
+                        # Use setattr for SQLAlchemy model attribute assignment to avoid type checker issues
                         setattr(source, "config_hash", source_config_hash)
                         setattr(source, "updated_at", now)
                 else:
                     # Create new source
                     self.logger.debug(
-                        "Creating new source: {source_type}:{source_name}"
+                        f"Creating new source: {source_type}:{source_name}"
                     )
                     source = ProjectSource(
                         project_id=project_id,
@@ -259,7 +264,7 @@ class ProjectManager:
             if source_key not in current_sources:
                 source_type, source_name = source_key
                 self.logger.info(
-                    "Removing obsolete source: {source_type}:{source_name}"
+                    f"Removing obsolete source: {source_type}:{source_name}"
                 )
                 await session.delete(source)
 
@@ -317,30 +322,30 @@ class ProjectManager:
             # Fallback to string representation
             return {"config": str(source_config)}
 
-    def get_project_context(self, project_id: str) -> Optional[ProjectContext]:
+    def get_project_context(self, project_id: str) -> ProjectContext | None:
         """Get project context by ID."""
         return self._project_contexts.get(project_id)
 
-    def get_all_project_contexts(self) -> Dict[str, ProjectContext]:
+    def get_all_project_contexts(self) -> dict[str, ProjectContext]:
         """Get all project contexts."""
         return self._project_contexts.copy()
 
-    def list_project_ids(self) -> List[str]:
+    def list_project_ids(self) -> list[str]:
         """Get list of all project IDs."""
         return list(self._project_contexts.keys())
 
-    def get_project_collection_name(self, project_id: str) -> Optional[str]:
+    def get_project_collection_name(self, project_id: str) -> str | None:
         """Get the collection name for a specific project."""
         context = self._project_contexts.get(project_id)
         return context.collection_name if context else None
 
     def inject_project_metadata(
-        self, project_id: str, metadata: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, project_id: str, metadata: dict[str, str]
+    ) -> dict[str, str]:
         """Inject project metadata into document metadata."""
         context = self._project_contexts.get(project_id)
         if not context:
-            self.logger.warning("Project context not found for ID: {project_id}")
+            self.logger.warning(f"Project context not found for ID: {project_id}")
             return metadata
 
         # Create new metadata dict with project information
@@ -355,7 +360,7 @@ class ProjectManager:
 
     async def get_project_stats(
         self, session: AsyncSession, project_id: str
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Get statistics for a specific project."""
         if not self.validate_project_exists(project_id):
             return None
@@ -385,4 +390,4 @@ class ProjectManager:
         return stats
 
     def __repr__(self) -> str:
-        return "ProjectManager(projects={len(self._project_contexts)})"
+        return f"ProjectManager(projects={len(self._project_contexts)})"

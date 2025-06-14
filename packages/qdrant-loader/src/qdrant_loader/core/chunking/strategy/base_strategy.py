@@ -432,7 +432,7 @@ class BaseChunkingStrategy(ABC):
                             "skip_reason": "no_nlp_worthy_content",
                         }
                     )
-            except Exception as e:
+            except Exception:
                 self.logger.warning(
                     "NLP processing failed for chunk {chunk_index}: {e}"
                 )

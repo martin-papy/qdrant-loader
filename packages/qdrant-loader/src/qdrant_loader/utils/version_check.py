@@ -3,7 +3,6 @@
 import json
 import time
 from pathlib import Path
-from typing import Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -26,7 +25,7 @@ class VersionChecker:
         self.current_version = current_version
         self.cache_path = Path.home() / self.CACHE_FILE
 
-    def _get_cache_data(self) -> Optional[dict]:
+    def _get_cache_data(self) -> dict | None:
         """Get cached version data if still valid.
 
         Returns:
@@ -36,7 +35,7 @@ class VersionChecker:
             if not self.cache_path.exists():
                 return None
 
-            with open(self.cache_path, "r") as f:
+            with open(self.cache_path) as f:
                 cache_data = json.load(f)
 
             # Check if cache is still valid
@@ -62,7 +61,7 @@ class VersionChecker:
             # Silently fail if we can't write cache
             pass
 
-    def _fetch_latest_version(self) -> Optional[str]:
+    def _fetch_latest_version(self) -> str | None:
         """Fetch latest version from PyPI.
 
         Returns:
@@ -82,7 +81,7 @@ class VersionChecker:
         except (URLError, HTTPError, json.JSONDecodeError, KeyError, OSError):
             return None
 
-    def check_for_updates(self, silent: bool = False) -> Tuple[bool, Optional[str]]:
+    def check_for_updates(self, silent: bool = False) -> tuple[bool, str | None]:
         """Check if a newer version is available.
 
         Args:

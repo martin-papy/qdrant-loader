@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.core.file_conversion import (
     ConnectorFileConversionConfig,
     ConversionTimeoutError,
@@ -113,7 +112,7 @@ class TestFileDetector:
                 assert info["mime_type"] == "application/pd"
                 assert info["file_extension"] == ".pd"
                 assert info["file_size"] > 0
-                assert info["is_supported"] 
+                assert info["is_supported"]
                 assert info["normalized_type"] == "pd"
                 assert info["is_excluded"] is False
             finally:
@@ -164,7 +163,7 @@ class TestFileConversionConfig:
 
         assert config.max_file_size == 104857600
         assert config.conversion_timeout == 600
-        assert config.markitdown.enable_llm_descriptions 
+        assert config.markitdown.enable_llm_descriptions
         assert config.markitdown.llm_model == "gpt-4"
 
     def test_get_max_file_size_mb(self):
@@ -176,8 +175,8 @@ class TestFileConversionConfig:
         """Test file size validation."""
         config = FileConversionConfig(max_file_size=1024)  # 1KB
 
-        assert config.is_file_size_allowed(512)   # 512 bytes
-        assert config.is_file_size_allowed(1024)   # Exactly 1KB
+        assert config.is_file_size_allowed(512)  # 512 bytes
+        assert config.is_file_size_allowed(1024)  # Exactly 1KB
         assert config.is_file_size_allowed(2048) is False  # 2KB
 
 
@@ -200,7 +199,7 @@ class TestMarkItDownConfig:
             llm_endpoint="https://custom.api.com/v1",
         )
 
-        assert config.enable_llm_descriptions 
+        assert config.enable_llm_descriptions
         assert config.llm_model == "gpt-4"
         assert config.llm_endpoint == "https://custom.api.com/v1"
 
@@ -221,8 +220,8 @@ class TestConnectorFileConversionConfig:
             enable_file_conversion=True, download_attachments=True
         )
 
-        assert config.enable_file_conversion 
-        assert config.download_attachments 
+        assert config.enable_file_conversion
+        assert config.download_attachments
 
     def test_should_download_attachments(self):
         """Test attachment download logic."""
@@ -232,7 +231,7 @@ class TestConnectorFileConversionConfig:
 
         # Explicitly enabled
         config = ConnectorFileConversionConfig(download_attachments=True)
-        assert config.should_download_attachments() 
+        assert config.should_download_attachments()
 
         # Explicitly disabled
         config = ConnectorFileConversionConfig(download_attachments=False)

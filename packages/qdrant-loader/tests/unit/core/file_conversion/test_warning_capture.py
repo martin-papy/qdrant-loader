@@ -3,7 +3,6 @@
 import warnings
 from unittest.mock import Mock
 
-
 from qdrant_loader.core.file_conversion.file_converter import capture_openpyxl_warnings
 
 

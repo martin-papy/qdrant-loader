@@ -3,7 +3,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
@@ -158,9 +157,9 @@ class TestBaseChunkingStrategy:
             strategy = ConcreteChunkingStrategy(mock_settings)
 
             # Text extensions should apply NLP
-            assert strategy._should_apply_nlp("content", "file.md") 
-            assert strategy._should_apply_nlp("content", "file.txt") 
-            assert strategy._should_apply_nlp("content", "file.rst") 
+            assert strategy._should_apply_nlp("content", "file.md")
+            assert strategy._should_apply_nlp("content", "file.txt")
+            assert strategy._should_apply_nlp("content", "file.rst")
 
     def test_should_apply_nlp_code_files(self, mock_settings):
         """Test NLP application decision for code files."""
@@ -198,8 +197,8 @@ class TestBaseChunkingStrategy:
             strategy = ConcreteChunkingStrategy(mock_settings)
 
             # HTML should apply NLP
-            assert strategy._should_apply_nlp("content", "file.html") 
-            assert strategy._should_apply_nlp("content", "", "html") 
+            assert strategy._should_apply_nlp("content", "file.html")
+            assert strategy._should_apply_nlp("content", "", "html")
 
     def test_should_apply_nlp_large_content(self, mock_settings):
         """Test NLP application decision for large content."""
@@ -235,7 +234,7 @@ class TestBaseChunkingStrategy:
 
             # Text-like content should apply NLP
             text_like = "This is a normal text document with sentences."
-            assert strategy._should_apply_nlp(text_like, "file") 
+            assert strategy._should_apply_nlp(text_like, "file")
 
     def test_extract_nlp_worthy_content_comment(self, mock_settings):
         """Test NLP content extraction for comments."""
@@ -376,7 +375,7 @@ def function():
             assert chunk_doc.content == "Chunk content"
             assert chunk_doc.metadata["chunk_index"] == 0
             assert chunk_doc.metadata["total_chunks"] == 2
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.source == "test_source"
             assert chunk_doc.url == "http://test.com"
 
@@ -432,7 +431,7 @@ def function():
                 original_doc, large_content, 0, 2
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "chunk_too_large"
 
     def test_create_chunk_document_skip_many_chunks(self, mock_settings):
@@ -454,7 +453,7 @@ def function():
                 original_doc, "Small content", 0, 60  # > 50 limit
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "too_many_chunks"
 
     def test_create_chunk_document_skip_inappropriate_content(self, mock_settings):
@@ -476,7 +475,7 @@ def function():
                 original_doc, "def function(): pass", 0, 2
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "content_type_inappropriate"
 
     def test_create_chunk_document_nlp_error(self, mock_settings):
@@ -504,7 +503,7 @@ def function():
                 original_doc, "Text content", 0, 2
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "nlp_error"
 
     def test_create_chunk_document_no_nlp_worthy_content(self, mock_settings):
@@ -527,7 +526,7 @@ def function():
                 original_doc, "def function(): pass", 0, 2
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "no_nlp_worthy_content"
 
     def test_abstract_methods_defined(self):
@@ -600,5 +599,5 @@ def function():
             )
 
             # Should skip NLP for non-converted binary files
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "content_type_inappropriate"

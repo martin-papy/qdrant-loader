@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import openai
 import pytest
 from openai.types.create_embedding_response import CreateEmbeddingResponse
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
@@ -96,7 +95,7 @@ def test_init_openai(mock_openai, mock_settings):
     service = EmbeddingService(mock_settings)
 
     # Verify OpenAI client initialization
-    assert service.use_openai 
+    assert service.use_openai
     assert service.client is not None
     mock_openai.assert_called_once_with(
         api_key="test-key", base_url="https://api.openai.com/v1"

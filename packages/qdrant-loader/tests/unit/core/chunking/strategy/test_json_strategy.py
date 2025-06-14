@@ -4,7 +4,6 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.json_strategy import (
@@ -365,9 +364,7 @@ class TestJSONChunkingStrategy:
     def test_extract_json_elements_object_limit(self, json_strategy):
         """Test object processing limit."""
         # Create object with many keys
-        data = {
-            "key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)
-        }
+        data = {"key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)}
 
         parent = JSONElement(
             name="parent",
@@ -694,7 +691,7 @@ class TestJSONChunkingStrategy:
         assert metadata["level"] == 1
         assert metadata["size"] == 50
         assert metadata["item_count"] == 2
-        assert metadata["has_nested_objects"] 
+        assert metadata["has_nested_objects"]
         assert "str" in metadata["data_types"]
 
     def test_extract_json_metadata_array(self, json_strategy):
@@ -713,7 +710,7 @@ class TestJSONChunkingStrategy:
         metadata = json_strategy._extract_json_metadata(element)
 
         assert metadata["element_type"] == "array"
-        assert metadata["has_nested_objects"] 
+        assert metadata["has_nested_objects"]
         assert metadata["has_arrays"] is False
         assert "int" in metadata["data_types"]
         assert "str" in metadata["data_types"]
@@ -903,7 +900,7 @@ class TestJSONChunkingStrategy:
         )
 
         assert chunk_doc.content == "test content"
-        assert chunk_doc.metadata["nlp_skipped"] 
+        assert chunk_doc.metadata["nlp_skipped"]
         assert chunk_doc.metadata["skip_reason"] == "chunk_too_large"
         assert chunk_doc.metadata["entities"] == []
 
@@ -922,7 +919,7 @@ class TestJSONChunkingStrategy:
                 skip_nlp=False,
             )
 
-            assert chunk_doc.metadata["nlp_skipped"] 
+            assert chunk_doc.metadata["nlp_skipped"]
             assert chunk_doc.metadata["skip_reason"] == "nlp_error"
 
     def test_fallback_chunking(self, json_strategy, sample_json_document):

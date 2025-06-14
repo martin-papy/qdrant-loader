@@ -45,6 +45,6 @@ async def monitor_resources(
                     logger.warning("[ResourceMonitor] High CPU usage: {cpu:.1f}%")
                 if mem > mem_threshold:
                     logger.warning("[ResourceMonitor] High memory usage: {mem:.1f}%")
-        except Exception as e:
+        except Exception:
             logger.error("[ResourceMonitor] Error checking resources: {e}")
         await asyncio.sleep(interval)

@@ -202,6 +202,6 @@ class FileProcessor:
             self.logger.debug("Skipping {rel_path}: not in include paths")
             return False
 
-        except Exception as e:
+        except Exception:
             self.logger.error("Error checking if file should be processed: {e}")
             return False

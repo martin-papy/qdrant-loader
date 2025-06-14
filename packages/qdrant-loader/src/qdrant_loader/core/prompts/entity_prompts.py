@@ -9,7 +9,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from graphiti_core.prompts.models import Message
 
@@ -35,12 +35,12 @@ class PromptContext:
     """Context information for prompt generation."""
 
     episode_content: str
-    entity_types: List[Dict[str, Any]]
+    entity_types: list[dict[str, Any]]
     domain: PromptDomain = PromptDomain.GENERAL
     custom_prompt: str = ""
-    reference_time: Optional[str] = None
-    previous_episodes: List[Dict[str, Any]] = field(default_factory=list)
-    extraction_hints: Dict[str, List[str]] = field(default_factory=dict)
+    reference_time: str | None = None
+    previous_episodes: list[dict[str, Any]] = field(default_factory=list)
+    extraction_hints: dict[str, list[str]] = field(default_factory=dict)
     confidence_threshold: float = 0.5
     max_entities: int = 50
 
@@ -53,8 +53,8 @@ class PromptTemplate:
     domain: PromptDomain
     system_prompt: str
     user_prompt_template: str
-    entity_guidelines: Dict[str, str] = field(default_factory=dict)
-    examples: List[Dict[str, Any]] = field(default_factory=list)
+    entity_guidelines: dict[str, str] = field(default_factory=dict)
+    examples: list[dict[str, Any]] = field(default_factory=list)
     version: str = "1.0"
 
     def format_user_prompt(self, context: PromptContext) -> str:
@@ -70,7 +70,7 @@ class PromptTemplate:
             domain_guidelines=self._get_domain_guidelines(),
         )
 
-    def _format_extraction_hints(self, hints: Dict[str, List[str]]) -> str:
+    def _format_extraction_hints(self, hints: dict[str, list[str]]) -> str:
         """Format extraction hints for the prompt."""
         if not hints:
             return ""
@@ -85,7 +85,7 @@ class PromptTemplate:
         """Get domain-specific guidelines."""
         return self.entity_guidelines.get(self.domain.value, "")
 
-    def generate_messages(self, context: PromptContext) -> List[Message]:
+    def generate_messages(self, context: PromptContext) -> list[Message]:
         """Generate prompt messages for LLM."""
         return [
             Message(role="system", content=self.system_prompt),
@@ -299,12 +299,10 @@ class EntityPromptManager:
 
     def __init__(self):
         """Initialize the prompt manager."""
-        self._prompts: Dict[str, PromptTemplate] = {}
+        self._prompts: dict[str, PromptTemplate] = {}
         self._load_default_prompts()
 
-        logger.info(
-            "EntityPromptManager initialized with {len(self._prompts)} prompts"
-        )
+        logger.info("EntityPromptManager initialized with {len(self._prompts)} prompts")
 
     def _load_default_prompts(self) -> None:
         """Load default prompt templates."""
@@ -322,27 +320,27 @@ class EntityPromptManager:
         self._prompts[prompt.name] = prompt
         logger.debug("Registered prompt template: {prompt.name}")
 
-    def get_prompt(self, name: str) -> Optional[PromptTemplate]:
+    def get_prompt(self, name: str) -> PromptTemplate | None:
         """Get a prompt template by name."""
         return self._prompts.get(name)
 
-    def list_prompts(self) -> List[str]:
+    def list_prompts(self) -> list[str]:
         """List all available prompt names."""
         return list(self._prompts.keys())
 
-    def get_prompts_by_domain(self, domain: PromptDomain) -> List[PromptTemplate]:
+    def get_prompts_by_domain(self, domain: PromptDomain) -> list[PromptTemplate]:
         """Get all prompts for a specific domain."""
         return [prompt for prompt in self._prompts.values() if prompt.domain == domain]
 
     def generate_entity_extraction_messages(
         self,
         content: str,
-        entity_types: List[EntityType],
+        entity_types: list[EntityType],
         domain: PromptDomain = PromptDomain.SOFTWARE_DEVELOPMENT,
         custom_prompt: str = "",
-        extraction_hints: Optional[Dict[str, List[str]]] = None,
+        extraction_hints: dict[str, list[str]] | None = None,
         **kwargs,
-    ) -> List[Message]:
+    ) -> list[Message]:
         """Generate messages for entity extraction.
 
         Args:
@@ -421,7 +419,7 @@ class EntityPromptManager:
 
     def get_extraction_hints_for_domain(
         self, domain: PromptDomain
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Get default extraction hints for a domain."""
         hints = {
             PromptDomain.SOFTWARE_DEVELOPMENT: {
@@ -474,7 +472,7 @@ class EntityPromptManager:
             return True
         return False
 
-    def get_prompt_statistics(self) -> Dict[str, Any]:
+    def get_prompt_statistics(self) -> dict[str, Any]:
         """Get statistics about registered prompts."""
         domain_counts = {}
         for prompt in self._prompts.values():

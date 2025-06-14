@@ -62,7 +62,7 @@ def _setup_logging(log_level: str) -> None:
             LoggingConfig.setup(level=log_level.upper(), format="console")
         else:
             LoggingConfig.setup(level=log_level.upper(), format="json")
-    except Exception as e:
+    except Exception:
         print("Failed to setup logging: {e}", file=sys.stderr)
 
 

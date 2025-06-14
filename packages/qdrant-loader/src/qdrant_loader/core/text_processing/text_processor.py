@@ -3,10 +3,9 @@
 import nltk
 import spacy
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from spacy.cli.download import download
-
 from qdrant_loader.config import Settings
 from qdrant_loader.utils.logging import LoggingConfig
+from spacy.cli.download import download
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -119,7 +118,7 @@ class TextProcessor:
                 "pos_tags": pos_tags,
                 "chunks": chunks,
             }
-        except Exception as e:
+        except Exception:
             logger.warning("Text processing failed: {e}")
             # Return minimal results on error
             return {
@@ -147,7 +146,7 @@ class TextProcessor:
             return [(ent.text, ent.label_) for ent in doc.ents][
                 :MAX_ENTITIES_TO_EXTRACT
             ]
-        except Exception as e:
+        except Exception:
             logger.warning("Entity extraction failed: {e}")
             return []
 
@@ -167,7 +166,7 @@ class TextProcessor:
         try:
             doc = self.nlp(text)
             return [(token.text, token.pos_) for token in doc][:MAX_POS_TAGS_TO_EXTRACT]
-        except Exception as e:
+        except Exception:
             logger.warning("POS tagging failed: {e}")
             return []
 
@@ -202,7 +201,7 @@ class TextProcessor:
                 )
                 return text_splitter.split_text(text)
             return self.text_splitter.split_text(text)
-        except Exception as e:
+        except Exception:
             logger.warning("Text splitting failed: {e}")
             # Return the original text as a single chunk on error
             return [text] if text else []

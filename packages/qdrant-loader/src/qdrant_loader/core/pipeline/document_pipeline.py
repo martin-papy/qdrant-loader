@@ -2,7 +2,6 @@
 
 import asyncio
 import time
-from typing import Optional
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
@@ -26,7 +25,7 @@ class DocumentPipeline:
         chunking_worker: ChunkingWorker,
         embedding_worker: EmbeddingWorker,
         upsert_worker: UpsertWorker,
-        entity_extraction_worker: Optional[EntityExtractionWorker] = None,
+        entity_extraction_worker: EntityExtractionWorker | None = None,
     ):
         self.chunking_worker = chunking_worker
         self.embedding_worker = embedding_worker
@@ -81,7 +80,7 @@ class DocumentPipeline:
                     self.upsert_worker.process_embedded_chunks(embedded_chunks_iter),
                     timeout=3600.0,  # 1 hour timeout for the entire pipeline
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("❌ Pipeline timed out after 1 hour")
                 result = PipelineResult()
                 result.error_count = len(documents)
@@ -98,10 +97,10 @@ class DocumentPipeline:
                     logger.info(
                         "⏱️ Entity extraction phase took {entity_extraction_duration:.2f} seconds"
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("⚠️ Entity extraction timed out after 5 minutes")
                     entity_extraction_task.cancel()
-                except Exception as e:
+                except Exception:
                     logger.error("❌ Entity extraction failed: {e}")
 
             total_duration = time.time() - start_time
@@ -118,7 +117,7 @@ class DocumentPipeline:
 
             return result
 
-        except Exception as e:
+        except Exception:
             total_duration = time.time() - start_time
             logger.error(
                 "❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
@@ -162,6 +161,6 @@ class DocumentPipeline:
                 "{relationship_count} total relationships extracted"
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("❌ Entity extraction processing failed: {e}", exc_info=True)
             raise

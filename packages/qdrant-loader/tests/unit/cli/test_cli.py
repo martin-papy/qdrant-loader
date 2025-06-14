@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli.cli import (
     _check_for_updates,
     _check_settings,
@@ -124,7 +123,7 @@ class TestCreateDatabaseDirectory:
             with patch("click.confirm", return_value=True):
                 result = _create_database_directory(test_path)
 
-            assert result 
+            assert result
             assert test_path.exists()
 
     def test_create_database_directory_declined(self):

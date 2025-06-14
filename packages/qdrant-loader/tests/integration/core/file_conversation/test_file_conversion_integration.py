@@ -5,7 +5,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from qdrant_loader.core.file_conversion import (
     FileConversionConfig,
     FileConverter,
@@ -61,7 +60,7 @@ class TestFileConversionIntegration:
                     assert isinstance(result, str)
                     assert len(result) > 0
 
-                except Exception as e:
+                except Exception:
                     # If MarkItDown is not available or fails, that's expected in test environment
                     pytest.skip(
                         "MarkItDown conversion failed (expected in test environment): {e}"
@@ -136,7 +135,7 @@ class TestFileConversionIntegration:
             assert isinstance(result, str)
             assert len(result) > 0
 
-        except Exception as e:
+        except Exception:
             # If MarkItDown is not available or fails, that's expected in test environment
             pytest.skip(
                 "MarkItDown conversion failed (expected in test environment): {e}"
@@ -202,7 +201,7 @@ class TestFileConversionIntegration:
                 assert info["file_extension"] == ".pd"
                 assert info["mime_type"] == "application/pd"
                 assert info["normalized_type"] == "pd"
-                assert info["is_supported"] 
+                assert info["is_supported"]
                 assert info["is_excluded"] is False
                 assert info["file_size"] > 0
 

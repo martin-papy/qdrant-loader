@@ -237,11 +237,11 @@ def test_search_result_project_methods():
     assert "Collection: test_collection" in project_info
 
     # Test belongs_to_project
-    assert result.belongs_to_project("test-project") 
+    assert result.belongs_to_project("test-project")
     assert result.belongs_to_project("other-project") is False
 
     # Test belongs_to_any_project
-    assert result.belongs_to_any_project(["test-project", "other-project"]) 
+    assert result.belongs_to_any_project(["test-project", "other-project"])
     assert result.belongs_to_any_project(["other-project", "another-project"]) is False
 
 

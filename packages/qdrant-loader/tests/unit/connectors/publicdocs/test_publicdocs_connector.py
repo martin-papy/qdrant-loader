@@ -9,7 +9,6 @@ from aiohttp import (
     ClientResponseError,
 )
 from pydantic import HttpUrl
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.exceptions import (
     DocumentProcessingError,
@@ -263,9 +262,7 @@ class TestPublicDocsConnector:
         assert base_doc.metadata["version"] == publicdocs_config.version
 
         # Verify linked page document
-        linked_doc = next(
-            doc for doc in documents if doc.url == "{base_url}docs/page1"
-        )
+        linked_doc = next(doc for doc in documents if doc.url == "{base_url}docs/page1")
         assert linked_doc.title == "Page 1"
         assert "Page 1 content" in linked_doc.content
         assert linked_doc.metadata["version"] == publicdocs_config.version

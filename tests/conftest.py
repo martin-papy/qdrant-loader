@@ -2,13 +2,14 @@
 Pytest configuration and shared fixtures for website build tests.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
-import os
-import sys
 import glob
+import os
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 # Add project paths to sys.path for imports
 project_root = Path(__file__).parent.parent

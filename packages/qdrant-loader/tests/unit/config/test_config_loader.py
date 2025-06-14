@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-
 from qdrant_loader.config import get_settings, initialize_config
 
 

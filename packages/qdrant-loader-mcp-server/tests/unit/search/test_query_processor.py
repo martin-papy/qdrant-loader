@@ -41,7 +41,7 @@ async def test_process_query_basic(query_processor, mock_openai_client):
         assert result["query"] == "test query"
         assert result["intent"] == "general"
         assert result["source_type"] is None
-        assert result["processed"] 
+        assert result["processed"]
 
 
 @pytest.mark.asyncio
@@ -62,7 +62,7 @@ async def test_process_query_with_source_detection(query_processor, mock_openai_
         assert result["query"] == "show me git commits"
         assert result["intent"] == "git"
         assert result["source_type"] == "git"
-        assert result["processed"] 
+        assert result["processed"]
 
 
 @pytest.mark.asyncio

@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -145,7 +144,7 @@ def analyze_metadata(client: QdrantClient, collection_name: str, limit: int = 10
 
         return points
 
-    except Exception as e:
+    except Exception:
         print("Error analyzing metadata: {e}")
         return []
 
@@ -175,7 +174,7 @@ def main():
         # Analyze metadata
         analyze_metadata(client, settings.qdrant_collection_name, args.limit)
 
-    except Exception as e:
+    except Exception:
         print("Error: {e}")
         return 1
 

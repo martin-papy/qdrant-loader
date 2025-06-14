@@ -247,7 +247,7 @@ class GitConnector(BaseConnector):
             try:
                 shutil.rmtree(self.temp_dir)
                 self.logger.debug("Cleaned up temporary directory")
-            except Exception as e:
+            except Exception:
                 self.logger.error("Failed to clean up temporary directory: {e}")
 
     def _process_file(self, file_path: str) -> Document:

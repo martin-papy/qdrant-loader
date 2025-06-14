@@ -117,10 +117,10 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             )
             return root_element
 
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             self.logger.warning("Failed to parse JSON: {e}")
             return None
-        except Exception as e:
+        except Exception:
             self.logger.warning("Error parsing JSON structure: {e}")
             return None
 
@@ -743,7 +743,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         "nlp_skipped": False,
                     }
                 )
-            except Exception as e:
+            except Exception:
                 self.logger.warning(
                     "NLP processing failed for chunk {chunk_index}: {e}"
                 )

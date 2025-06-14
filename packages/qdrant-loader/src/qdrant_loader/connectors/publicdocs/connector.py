@@ -259,7 +259,7 @@ class PublicDocsConnector(BaseConnector):
                                         page_url=page,
                                         processed_count=len(attachment_documents),
                                     )
-                            except Exception as e:
+                            except Exception:
                                 self.logger.error(
                                     "Failed to process attachments for page {page}: {e}"
                                 )
@@ -270,7 +270,7 @@ class PublicDocsConnector(BaseConnector):
                             url=page,
                             title=title,
                         )
-                except Exception as e:
+                except Exception:
                     self.logger.error("Failed to process page {page}: {e}")
                     continue
 
@@ -358,9 +358,7 @@ class PublicDocsConnector(BaseConnector):
         ):
             raise
         except Exception as e:
-            raise ConnectorError(
-                "Unexpected error processing page {url}: {e!s}"
-            ) from e
+            raise ConnectorError("Unexpected error processing page {url}: {e!s}") from e
 
     def _extract_links(self, html: str, current_url: str) -> list[str]:
         """Extract all links from the HTML content."""
@@ -406,9 +404,7 @@ class PublicDocsConnector(BaseConnector):
         for selector in self.config.selectors.remove:
             self.logger.debug("Processing selector: {selector}")
             elements = soup.select(selector)
-            self.logger.debug(
-                "Found {len(elements)} elements for selector: {selector}"
-            )
+            self.logger.debug("Found {len(elements)} elements for selector: {selector}")
             for element in elements:
                 element.decompose()
 
@@ -688,9 +684,7 @@ class PublicDocsConnector(BaseConnector):
                     )
                     return pages
                 except Exception as e:
-                    raise ConnectorError(
-                        "Failed to process page content: {e!s}"
-                    ) from e
+                    raise ConnectorError("Failed to process page content: {e!s}") from e
 
         except (ConnectorNotInitializedError, HTTPRequestError, ConnectorError):
             raise

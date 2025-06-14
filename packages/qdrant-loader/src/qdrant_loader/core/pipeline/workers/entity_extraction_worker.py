@@ -3,7 +3,6 @@
 import asyncio
 import time
 from collections.abc import AsyncIterator
-from typing import List, Optional
 
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionResult
@@ -22,7 +21,7 @@ class EntityExtractionWorker(BaseWorker):
         entity_extractor: EntityExtractor,
         max_workers: int = 5,
         queue_size: int = 1000,
-        shutdown_event: Optional[asyncio.Event] = None,
+        shutdown_event: asyncio.Event | None = None,
     ):
         """Initialize the entity extraction worker.
 
@@ -99,7 +98,7 @@ class EntityExtractionWorker(BaseWorker):
             )
 
     async def process_documents(
-        self, documents: List[Document]
+        self, documents: list[Document]
     ) -> AsyncIterator[ExtractionResult]:
         """Process documents for entity extraction.
 
@@ -110,9 +109,7 @@ class EntityExtractionWorker(BaseWorker):
             ExtractionResult objects from processed documents
         """
         logger.debug("EntityExtractionWorker started")
-        logger.info(
-            "🔄 Processing {len(documents)} documents for entity extraction..."
-        )
+        logger.info("🔄 Processing {len(documents)} documents for entity extraction...")
 
         try:
             # Process documents with controlled concurrency
@@ -192,7 +189,7 @@ class EntityExtractionWorker(BaseWorker):
                             "{entity_count} entities, {relationship_count} relationships extracted"
                         )
 
-                except Exception as e:
+                except Exception:
                     logger.error("❌ Error processing entity extraction task: {e}")
                     completed_docs += 1
 

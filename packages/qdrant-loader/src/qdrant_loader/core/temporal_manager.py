@@ -6,9 +6,9 @@ versus when it was recorded, with conflict resolution for contradictory informat
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from ..utils.logging import LoggingConfig
 from .graphiti_manager import GraphitiManager
@@ -35,29 +35,29 @@ class ConflictInfo:
     conflict_type: str = (
         ""  # "entity_overlap", "relationship_overlap", "attribute_conflict"
     )
-    entities_involved: List[str] = field(default_factory=list)  # UUIDs
-    relationships_involved: List[str] = field(default_factory=list)  # UUIDs
+    entities_involved: list[str] = field(default_factory=list)  # UUIDs
+    relationships_involved: list[str] = field(default_factory=list)  # UUIDs
     conflict_description: str = ""
     resolution_strategy: ConflictResolutionStrategy = (
         ConflictResolutionStrategy.TEMPORAL_INVALIDATION
     )
-    resolution_timestamp: Optional[datetime] = None
+    resolution_timestamp: datetime | None = None
     resolved: bool = False
     resolution_notes: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TemporalQuery:
     """Container for temporal query parameters."""
 
-    query_time: Optional[datetime] = None  # Point-in-time query
-    time_range_start: Optional[datetime] = None  # Range query start
-    time_range_end: Optional[datetime] = None  # Range query end
+    query_time: datetime | None = None  # Point-in-time query
+    time_range_start: datetime | None = None  # Range query start
+    time_range_end: datetime | None = None  # Range query end
     include_superseded: bool = False  # Include superseded versions
-    version_filter: Optional[int] = None  # Specific version filter
-    entity_types: Optional[List[str]] = None  # Filter by entity types
-    relationship_types: Optional[List[str]] = None  # Filter by relationship types
+    version_filter: int | None = None  # Specific version filter
+    entity_types: list[str] | None = None  # Filter by entity types
+    relationship_types: list[str] | None = None  # Filter by relationship types
 
 
 class TemporalManager:
@@ -79,15 +79,15 @@ class TemporalManager:
 
         # In-memory storage for temporal tracking
         # In a production system, this would be persisted to Neo4j
-        self._entities: Dict[str, List[ExtractedEntity]] = {}  # UUID -> versions
-        self._relationships: Dict[str, List[ExtractedRelationship]] = (
+        self._entities: dict[str, list[ExtractedEntity]] = {}  # UUID -> versions
+        self._relationships: dict[str, list[ExtractedRelationship]] = (
             {}
         )  # UUID -> versions
-        self._conflicts: Dict[str, ConflictInfo] = {}  # conflict_id -> conflict info
+        self._conflicts: dict[str, ConflictInfo] = {}  # conflict_id -> conflict info
 
         # Indexes for efficient querying
-        self._entity_name_index: Dict[str, Set[str]] = {}  # name -> set of UUIDs
-        self._relationship_index: Dict[Tuple[str, str], Set[str]] = (
+        self._entity_name_index: dict[str, set[str]] = {}  # name -> set of UUIDs
+        self._relationship_index: dict[tuple[str, str], set[str]] = (
             {}
         )  # (source, target) -> set of UUIDs
 
@@ -98,9 +98,9 @@ class TemporalManager:
     async def add_entity(
         self,
         entity: ExtractedEntity,
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
         resolve_conflicts: bool = True,
-    ) -> Tuple[str, List[ConflictInfo]]:
+    ) -> tuple[str, list[ConflictInfo]]:
         """Add an entity with temporal tracking and conflict resolution.
 
         Args:
@@ -146,9 +146,9 @@ class TemporalManager:
     async def add_relationship(
         self,
         relationship: ExtractedRelationship,
-        reference_time: Optional[datetime] = None,
+        reference_time: datetime | None = None,
         resolve_conflicts: bool = True,
-    ) -> Tuple[str, List[ConflictInfo]]:
+    ) -> tuple[str, list[ConflictInfo]]:
         """Add a relationship with temporal tracking and conflict resolution.
 
         Args:
@@ -196,7 +196,7 @@ class TemporalManager:
 
     async def _detect_entity_conflicts(
         self, new_entity: ExtractedEntity
-    ) -> List[ConflictInfo]:
+    ) -> list[ConflictInfo]:
         """Detect conflicts with existing entities.
 
         Args:
@@ -262,7 +262,7 @@ class TemporalManager:
 
     async def _detect_relationship_conflicts(
         self, new_relationship: ExtractedRelationship
-    ) -> List[ConflictInfo]:
+    ) -> list[ConflictInfo]:
         """Detect conflicts with existing relationships.
 
         Args:
@@ -324,8 +324,8 @@ class TemporalManager:
             True if there's temporal overlap, False otherwise
         """
         # Get end times (use current time if None)
-        end1 = temporal1.valid_to or datetime.now(timezone.utc)
-        end2 = temporal2.valid_to or datetime.now(timezone.utc)
+        end1 = temporal1.valid_to or datetime.now(UTC)
+        end2 = temporal2.valid_to or datetime.now(UTC)
 
         # Check for overlap: start1 < end2 and start2 < end1
         return temporal1.valid_from < end2 and temporal2.valid_from < end1
@@ -371,10 +371,10 @@ class TemporalManager:
                 conflict.resolution_notes = "Flagged for manual review"
 
             conflict.resolved = True
-            conflict.resolution_timestamp = datetime.now(timezone.utc)
+            conflict.resolution_timestamp = datetime.now(UTC)
             self._conflicts[conflict.conflict_id] = conflict
 
-        except Exception as e:
+        except Exception:
             logger.error("Failed to resolve conflict {conflict.conflict_id}: {e}")
             conflict.resolution_notes = "Resolution failed: {e}"
 
@@ -482,7 +482,7 @@ class TemporalManager:
 
     async def query_entities_at_time(
         self, query: TemporalQuery
-    ) -> List[ExtractedEntity]:
+    ) -> list[ExtractedEntity]:
         """Query entities as they existed at a specific point in time.
 
         Args:
@@ -492,7 +492,7 @@ class TemporalManager:
             List of entities valid at the specified time
         """
         results = []
-        query_time = query.query_time or datetime.now(timezone.utc)
+        query_time = query.query_time or datetime.now(UTC)
 
         for entity_uuid, versions in self._entities.items():
             for entity in versions:
@@ -518,7 +518,7 @@ class TemporalManager:
 
     async def query_relationships_at_time(
         self, query: TemporalQuery
-    ) -> List[ExtractedRelationship]:
+    ) -> list[ExtractedRelationship]:
         """Query relationships as they existed at a specific point in time.
 
         Args:
@@ -528,7 +528,7 @@ class TemporalManager:
             List of relationships valid at the specified time
         """
         results = []
-        query_time = query.query_time or datetime.now(timezone.utc)
+        query_time = query.query_time or datetime.now(UTC)
 
         for rel_uuid, versions in self._relationships.items():
             for relationship in versions:
@@ -555,7 +555,7 @@ class TemporalManager:
 
     async def query_entities_in_range(
         self, query: TemporalQuery
-    ) -> List[ExtractedEntity]:
+    ) -> list[ExtractedEntity]:
         """Query entities that were valid during a time range.
 
         Args:
@@ -572,7 +572,7 @@ class TemporalManager:
         for entity_uuid, versions in self._entities.items():
             for entity in versions:
                 # Check if entity's valid period overlaps with query range
-                entity_end = entity.temporal_info.valid_to or datetime.now(timezone.utc)
+                entity_end = entity.temporal_info.valid_to or datetime.now(UTC)
 
                 if (
                     entity.temporal_info.valid_from < query.time_range_end
@@ -595,7 +595,7 @@ class TemporalManager:
 
         return results
 
-    def get_entity_history(self, entity_uuid: str) -> List[ExtractedEntity]:
+    def get_entity_history(self, entity_uuid: str) -> list[ExtractedEntity]:
         """Get the complete history of an entity.
 
         Args:
@@ -612,7 +612,7 @@ class TemporalManager:
 
     def get_relationship_history(
         self, relationship_uuid: str
-    ) -> List[ExtractedRelationship]:
+    ) -> list[ExtractedRelationship]:
         """Get the complete history of a relationship.
 
         Args:
@@ -627,7 +627,7 @@ class TemporalManager:
         versions = self._relationships[relationship_uuid]
         return sorted(versions, key=lambda r: r.temporal_info.version)
 
-    def get_conflicts(self, resolved: Optional[bool] = None) -> List[ConflictInfo]:
+    def get_conflicts(self, resolved: bool | None = None) -> list[ConflictInfo]:
         """Get conflict information.
 
         Args:
@@ -643,7 +643,7 @@ class TemporalManager:
 
         return conflicts
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get temporal manager statistics.
 
         Returns:
@@ -685,7 +685,7 @@ class TemporalManager:
 
     # Enhanced Versioning Capabilities
 
-    def validate_version_chains(self) -> Dict[str, List[str]]:
+    def validate_version_chains(self) -> dict[str, list[str]]:
         """Validate version chains for all entities and relationships.
 
         Returns:
@@ -708,8 +708,8 @@ class TemporalManager:
         return errors
 
     def _validate_entity_version_chain(
-        self, versions: List[ExtractedEntity]
-    ) -> List[str]:
+        self, versions: list[ExtractedEntity]
+    ) -> list[str]:
         """Validate version chain for a single entity.
 
         Args:
@@ -744,8 +744,8 @@ class TemporalManager:
         return errors
 
     def _validate_relationship_version_chain(
-        self, versions: List[ExtractedRelationship]
-    ) -> List[str]:
+        self, versions: list[ExtractedRelationship]
+    ) -> list[str]:
         """Validate version chain for a single relationship.
 
         Args:
@@ -782,7 +782,7 @@ class TemporalManager:
 
         return errors
 
-    def repair_version_chains(self) -> Dict[str, int]:
+    def repair_version_chains(self) -> dict[str, int]:
         """Repair broken version chains.
 
         Returns:
@@ -805,7 +805,7 @@ class TemporalManager:
         )
         return repairs
 
-    def _repair_entity_version_chain(self, versions: List[ExtractedEntity]) -> bool:
+    def _repair_entity_version_chain(self, versions: list[ExtractedEntity]) -> bool:
         """Repair version chain for a single entity.
 
         Args:
@@ -851,7 +851,7 @@ class TemporalManager:
         return repaired
 
     def _repair_relationship_version_chain(
-        self, versions: List[ExtractedRelationship]
+        self, versions: list[ExtractedRelationship]
     ) -> bool:
         """Repair version chain for a single relationship.
 
@@ -904,7 +904,7 @@ class TemporalManager:
 
     async def rollback_entity_to_version(
         self, entity_uuid: str, target_version: int
-    ) -> Optional[ExtractedEntity]:
+    ) -> ExtractedEntity | None:
         """Rollback an entity to a specific version.
 
         Args:
@@ -934,7 +934,7 @@ class TemporalManager:
             return None
 
         # Invalidate all versions after target version
-        rollback_time = datetime.now(timezone.utc)
+        rollback_time = datetime.now(UTC)
         for entity in versions:
             if entity.temporal_info.version > target_version:
                 entity.temporal_info.invalidate_at(rollback_time)
@@ -966,7 +966,7 @@ class TemporalManager:
 
     async def rollback_relationship_to_version(
         self, relationship_uuid: str, target_version: int
-    ) -> Optional[ExtractedRelationship]:
+    ) -> ExtractedRelationship | None:
         """Rollback a relationship to a specific version.
 
         Args:
@@ -996,7 +996,7 @@ class TemporalManager:
             return None
 
         # Invalidate all versions after target version
-        rollback_time = datetime.now(timezone.utc)
+        rollback_time = datetime.now(UTC)
         for relationship in versions:
             if relationship.temporal_info.version > target_version:
                 relationship.temporal_info.invalidate_at(rollback_time)
@@ -1034,7 +1034,7 @@ class TemporalManager:
 
     def compare_entity_versions(
         self, entity_uuid: str, version1: int, version2: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Compare two versions of an entity.
 
         Args:
@@ -1099,7 +1099,7 @@ class TemporalManager:
 
     def compare_relationship_versions(
         self, relationship_uuid: str, version1: int, version2: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Compare two versions of a relationship.
 
         Args:
@@ -1173,8 +1173,8 @@ class TemporalManager:
         }
 
     async def bulk_rollback_entities(
-        self, rollback_operations: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, rollback_operations: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Perform bulk rollback operations on multiple entities.
 
         Args:
@@ -1235,7 +1235,7 @@ class TemporalManager:
         )
         return results
 
-    def prune_old_versions(self, retention_policy: Dict[str, Any]) -> Dict[str, int]:
+    def prune_old_versions(self, retention_policy: dict[str, Any]) -> dict[str, int]:
         """Prune old versions based on retention policy.
 
         Args:
@@ -1251,7 +1251,7 @@ class TemporalManager:
         max_age_days = retention_policy.get("max_age_days", 365)
         keep_milestones = retention_policy.get("keep_milestones", True)
 
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=max_age_days)
         pruned = {"entities": 0, "relationships": 0}
 
         # Prune entity versions
@@ -1277,11 +1277,11 @@ class TemporalManager:
 
     def _prune_versions(
         self,
-        versions: List[Any],
+        versions: list[Any],
         max_versions: int,
         cutoff_date: datetime,
         keep_milestones: bool,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Prune versions based on retention policy.
 
         Args:

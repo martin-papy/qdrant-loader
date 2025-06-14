@@ -726,7 +726,7 @@ def test_dry_run_mode():
 
             # In the new implementation, dry run mode performs actual checks
             result = check_github_workflows(dry_run=True)
-            assert result 
+            assert result
             # Should make HTTP requests even in dry run mode
             assert mock_get.call_count == 2
 

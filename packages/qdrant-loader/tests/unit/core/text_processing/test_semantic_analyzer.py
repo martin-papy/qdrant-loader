@@ -4,7 +4,6 @@ import logging
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.core.text_processing.semantic_analyzer import (
     SemanticAnalysisResult,
     SemanticAnalyzer,
@@ -253,7 +252,7 @@ class TestSemanticAnalyzer:
             tag2 = pos_tags[1]
             assert tag2["text"] == "is"
             assert tag2["pos"] == "VERB"
-            assert tag2["is_stop"] 
+            assert tag2["is_stop"]
 
     def test_get_dependencies(self, mock_nlp, mock_doc):
         """Test dependency parsing."""

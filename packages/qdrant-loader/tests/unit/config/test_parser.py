@@ -1,7 +1,6 @@
 """Tests for configuration parser."""
 
 import pytest
-
 from qdrant_loader.config.parser import MultiProjectConfigParser
 from qdrant_loader.config.validator import ConfigValidator
 
@@ -25,7 +24,7 @@ class TestMultiProjectConfigParser:
             },
         }
 
-        assert self.parser._is_legacy_config(legacy_config) 
+        assert self.parser._is_legacy_config(legacy_config)
 
     def test_multi_project_format_detection(self):
         """Test that multi-project format is correctly detected."""

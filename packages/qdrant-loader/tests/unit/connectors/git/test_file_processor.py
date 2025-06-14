@@ -5,7 +5,6 @@ import tempfile
 
 import pytest
 from pydantic import HttpUrl
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.file_processor import FileProcessor
@@ -69,8 +68,8 @@ class TestFileProcessor:
         processor = FileProcessor(base_config, temp_dir)
 
         # Test file type matching
-        assert processor.should_process_file(md_file) 
-        assert processor.should_process_file(txt_file) 
+        assert processor.should_process_file(md_file)
+        assert processor.should_process_file(txt_file)
         assert processor.should_process_file(py_file) is False
         assert processor.should_process_file(hidden_file) is False
 
@@ -84,7 +83,7 @@ class TestFileProcessor:
         # Test root directory only
         config = base_config.model_copy(update={"include_paths": ["/"]})
         processor = FileProcessor(config, temp_dir)
-        assert processor.should_process_file(root_file) 
+        assert processor.should_process_file(root_file)
         assert processor.should_process_file(docs_file) is False
         assert processor.should_process_file(nested_file) is False
 
@@ -92,17 +91,15 @@ class TestFileProcessor:
         config = base_config.model_copy(update={"include_paths": ["docs/"]})
         processor = FileProcessor(config, temp_dir)
         assert processor.should_process_file(root_file) is False
-        assert processor.should_process_file(docs_file) 
-        assert (
-            processor.should_process_file(nested_file) 
-        )  # Subdirectories are included
+        assert processor.should_process_file(docs_file)
+        assert processor.should_process_file(nested_file)  # Subdirectories are included
 
         # Test recursive directory (explicit)
         config = base_config.model_copy(update={"include_paths": ["docs/**/*"]})
         processor = FileProcessor(config, temp_dir)
         assert processor.should_process_file(root_file) is False
-        assert processor.should_process_file(docs_file) 
-        assert processor.should_process_file(nested_file) 
+        assert processor.should_process_file(docs_file)
+        assert processor.should_process_file(nested_file)
 
     def test_exclude_paths(self, temp_dir, create_test_file, base_config):
         """Test exclude paths filtering."""
@@ -114,7 +111,7 @@ class TestFileProcessor:
         # Test excluding specific directories
         config = base_config.model_copy(update={"exclude_paths": ["tests/", "vendor/"]})
         processor = FileProcessor(config, temp_dir)
-        assert processor.should_process_file(root_file) 
+        assert processor.should_process_file(root_file)
         assert processor.should_process_file(test_file) is False
         assert processor.should_process_file(vendor_file) is False
 
@@ -122,7 +119,7 @@ class TestFileProcessor:
         config = base_config.model_copy(update={"exclude_paths": ["**/test.md"]})
         processor = FileProcessor(config, temp_dir)
         assert processor.should_process_file(test_file) is False
-        assert processor.should_process_file(vendor_file) 
+        assert processor.should_process_file(vendor_file)
 
     def test_file_size_limit(self, temp_dir, create_test_file, base_config):
         """Test file size filtering."""
@@ -135,7 +132,7 @@ class TestFileProcessor:
         )  # 1MB limit
         processor = FileProcessor(config, temp_dir)
 
-        assert processor.should_process_file(small_file) 
+        assert processor.should_process_file(small_file)
         assert processor.should_process_file(large_file) is False
 
     def test_error_handling(self, temp_dir, base_config):

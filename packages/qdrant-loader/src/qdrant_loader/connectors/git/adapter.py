@@ -58,7 +58,7 @@ class GitPythonAdapter:
                     else:
                         del os.environ["GIT_TERMINAL_PROMPT"]
                 return
-            except Exception as e:
+            except Exception:
                 if attempt < max_retries - 1:
                     self.logger.warning(
                         "Clone attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds..."
@@ -83,7 +83,7 @@ class GitPythonAdapter:
             if not self.repo:
                 raise ValueError("Repository not initialized")
             return self.repo.git.show("HEAD:{file_path}")
-        except Exception as e:
+        except Exception:
             self.logger.error("Failed to read file {file_path}: {e}")
             raise
 
@@ -103,7 +103,7 @@ class GitPythonAdapter:
                 last_commit = commits[0]
                 return last_commit.committed_datetime
             return None
-        except Exception as e:
+        except Exception:
             self.logger.error("Failed to get last commit date for {file_path}: {e}")
             return None
 
@@ -123,6 +123,6 @@ class GitPythonAdapter:
             # Use git ls-tree to list all files
             output = self.repo.git.ls_tree("-r", "--name-only", "HEAD", path)
             return output.splitlines() if output else []
-        except Exception as e:
+        except Exception:
             self.logger.error("Failed to list files: {e}")
             raise

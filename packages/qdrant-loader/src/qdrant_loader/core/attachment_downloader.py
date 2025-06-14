@@ -3,7 +3,6 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Optional
 
 import requests
 
@@ -30,9 +29,9 @@ class AttachmentMetadata:
         mime_type: str,
         download_url: str,
         parent_document_id: str,
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None,
-        author: Optional[str] = None,
+        created_at: str | None = None,
+        updated_at: str | None = None,
+        author: str | None = None,
     ):
         """Initialize attachment metadata.
 
@@ -64,7 +63,7 @@ class AttachmentDownloader:
     def __init__(
         self,
         session: requests.Session,
-        file_conversion_config: Optional[FileConversionConfig] = None,
+        file_conversion_config: FileConversionConfig | None = None,
         enable_file_conversion: bool = False,
         max_attachment_size: int = 52428800,  # 50MB default
     ):
@@ -134,7 +133,7 @@ class AttachmentDownloader:
 
     async def download_attachment(
         self, attachment: AttachmentMetadata
-    ) -> Optional[str]:
+    ) -> str | None:
         """Download an attachment to a temporary file.
 
         Args:
@@ -289,7 +288,7 @@ class AttachmentDownloader:
         attachment: AttachmentMetadata,
         temp_file_path: str,
         parent_document: Document,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         """Process a downloaded attachment into a Document.
 
         Args:
@@ -414,9 +413,9 @@ class AttachmentDownloader:
 
     async def download_and_process_attachments(
         self,
-        attachments: List[AttachmentMetadata],
+        attachments: list[AttachmentMetadata],
         parent_document: Document,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """Download and process multiple attachments.
 
         Args:

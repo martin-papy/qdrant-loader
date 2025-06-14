@@ -17,7 +17,6 @@ from neo4j.exceptions import (
     SessionExpired,
     TransientError,
 )
-
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.neo4j_manager import (
     Neo4jManager,
@@ -32,17 +31,17 @@ class TestRetryableExceptions:
     def test_transient_error_is_retryable(self):
         """Test that TransientError is retryable."""
         exception = TransientError("Temporary issue")
-        assert _is_retryable_exception(exception) 
+        assert _is_retryable_exception(exception)
 
     def test_service_unavailable_is_retryable(self):
         """Test that ServiceUnavailable is retryable."""
         exception = ServiceUnavailable("Service down")
-        assert _is_retryable_exception(exception) 
+        assert _is_retryable_exception(exception)
 
     def test_session_expired_is_retryable(self):
         """Test that SessionExpired is retryable."""
         exception = SessionExpired("Session expired")
-        assert _is_retryable_exception(exception) 
+        assert _is_retryable_exception(exception)
 
     def test_transaction_error_with_retryable_keywords(self):
         """Test that DatabaseError with retryable keywords is retryable (TransactionError has complex constructor)."""
@@ -55,7 +54,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = DatabaseError(message)
-            assert _is_retryable_exception(exception) 
+            assert _is_retryable_exception(exception)
 
     def test_transaction_error_without_retryable_keywords(self):
         """Test that DatabaseError without retryable keywords is not retryable."""
@@ -72,7 +71,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = DatabaseError(message)
-            assert _is_retryable_exception(exception) 
+            assert _is_retryable_exception(exception)
 
     def test_database_error_without_retryable_keywords(self):
         """Test that DatabaseError without retryable keywords is not retryable."""
@@ -105,7 +104,7 @@ class TestRetryableExceptions:
         ]
         for message in retryable_messages:
             exception = Exception(message)
-            assert _is_retryable_exception(exception) 
+            assert _is_retryable_exception(exception)
 
     def test_generic_exception_without_network_keywords(self):
         """Test that generic exceptions without network keywords are not retryable."""
@@ -415,7 +414,7 @@ class TestNeo4jManagerRetryIntegration:
 
     def test_test_connection_with_retry(self, neo4j_manager):
         """Test that test_connection() retries on failures."""
-        # Mock the driver and ensure is_connected 
+        # Mock the driver and ensure is_connected
         mock_driver = Mock()
         neo4j_manager._driver = mock_driver
         neo4j_manager._is_connected = True
@@ -443,5 +442,5 @@ class TestNeo4jManagerRetryIntegration:
             with patch("time.sleep"):
                 result = neo4j_manager.test_connection()
 
-            assert result 
+            assert result
             assert mock_session.run.call_count == 2

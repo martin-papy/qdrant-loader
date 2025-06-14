@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from qdrant_loader.core.file_conversion.file_detector import FileDetector
 
 
@@ -149,7 +148,7 @@ class TestSupportedForConversion:
             temp_file.write(b"%PDF-1.4")
 
         try:
-            assert file_detector.is_supported_for_conversion(str(temp_path)) 
+            assert file_detector.is_supported_for_conversion(str(temp_path))
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -160,7 +159,7 @@ class TestSupportedForConversion:
             temp_file.write(b"PK\x03\x04")  # ZIP header
 
         try:
-            assert file_detector.is_supported_for_conversion(str(temp_path)) 
+            assert file_detector.is_supported_for_conversion(str(temp_path))
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -224,7 +223,7 @@ class TestSupportedForConversion:
 
                 result = file_detector.is_supported_for_conversion(str(temp_path))
                 # Should still be True due to extension fallback
-                assert result 
+                assert result
         finally:
             temp_path.unlink(missing_ok=True)
 

@@ -91,7 +91,7 @@ class TestSearchResult:
             parent_id=None,
         )
 
-        assert result.is_root_document() 
+        assert result.is_root_document()
 
     def test_is_root_document_false(self):
         """Test root document detection when parent_id exists."""
@@ -115,7 +115,7 @@ class TestSearchResult:
             children_count=3,
         )
 
-        assert result.has_children() 
+        assert result.has_children()
 
     def test_has_children_false_zero(self):
         """Test children detection when children_count is 0."""
@@ -196,7 +196,7 @@ class TestSearchResult:
             is_attachment=True,
         )
 
-        assert result.is_file_attachment() 
+        assert result.is_file_attachment()
 
     def test_is_file_attachment_false(self):
         """Test file attachment detection when is_attachment is False."""
@@ -378,7 +378,7 @@ class TestSearchResult:
         assert (
             result.hierarchy_context == "Path: Root > Parent | Depth: 2 | Children: 5"
         )
-        assert result.is_attachment 
+        assert result.is_attachment
         assert result.parent_document_id == "doc-789"
         assert result.parent_document_title == "Main Document"
         assert result.attachment_id == "att-123"

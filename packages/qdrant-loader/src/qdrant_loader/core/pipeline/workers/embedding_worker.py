@@ -79,7 +79,7 @@ class EmbeddingWorker(BaseWorker):
                 "EmbeddingWorker timed out processing batch of {len(chunks)} items"
             )
             raise
-        except Exception as e:
+        except Exception:
             logger.error("EmbeddingWorker error processing batch: {e}")
             raise
 
@@ -122,7 +122,7 @@ class EmbeddingWorker(BaseWorker):
 
                         for result in results:
                             yield result
-                    except Exception as e:
+                    except Exception:
                         logger.error("EmbeddingWorker batch processing failed: {e}")
                         # Mark chunks as failed but continue processing
                         for chunk in batch:
@@ -144,7 +144,7 @@ class EmbeddingWorker(BaseWorker):
 
                     for result in results:
                         yield result
-                except Exception as e:
+                except Exception:
                     logger.error("EmbeddingWorker final batch processing failed: {e}")
                     for chunk in batch:
                         logger.error("Embedding failed for chunk {chunk.id}: {e}")

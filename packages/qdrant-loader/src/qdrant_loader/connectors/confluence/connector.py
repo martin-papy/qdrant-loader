@@ -185,7 +185,7 @@ class ConfluenceConnector(BaseConnector):
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             logger.error("Failed to make request to {url}: {e}")
             # Log additional context for debugging
             logger.error(
@@ -898,7 +898,7 @@ class ConfluenceConnector(BaseConnector):
             else:
                 return datetime.fromisoformat(timestamp_str)
 
-        except (ValueError, TypeError, AttributeError) as e:
+        except (ValueError, TypeError, AttributeError):
             logger.debug("Failed to parse timestamp '{timestamp_str}': {e}")
             return None
 
@@ -984,7 +984,7 @@ class ConfluenceConnector(BaseConnector):
                                                 logger.debug(
                                                     "Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
                                                 )
-                                        except Exception as e:
+                                        except Exception:
                                             logger.error(
                                                 "Failed to process attachments for {content['type']} '{content['title']}' "
                                                 "(ID: {content['id']}): {e!s}"
@@ -994,7 +994,7 @@ class ConfluenceConnector(BaseConnector):
                                         "Processed {content['type']} '{content['title']}' "
                                         "(ID: {content['id']}) from space {self.config.space_key}"
                                     )
-                            except Exception as e:
+                            except Exception:
                                 logger.error(
                                     "Failed to process {content['type']} '{content['title']}' "
                                     "(ID: {content['id']}): {e!s}"
@@ -1019,11 +1019,11 @@ class ConfluenceConnector(BaseConnector):
                             )
                             break
                         logger.debug("Found next cursor: {cursor}")
-                    except Exception as e:
+                    except Exception:
                         logger.error("Failed to parse next URL: {e!s}")
                         break
 
-                except Exception as e:
+                except Exception:
                     logger.error(
                         "Failed to fetch content from space {self.config.space_key}: {e!s}"
                     )
@@ -1083,7 +1083,7 @@ class ConfluenceConnector(BaseConnector):
                                                 logger.debug(
                                                     "Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
                                                 )
-                                        except Exception as e:
+                                        except Exception:
                                             logger.error(
                                                 "Failed to process attachments for {content['type']} '{content['title']}' "
                                                 "(ID: {content['id']}): {e!s}"
@@ -1093,7 +1093,7 @@ class ConfluenceConnector(BaseConnector):
                                         "Processed {content['type']} '{content['title']}' "
                                         "(ID: {content['id']}) from space {self.config.space_key}"
                                     )
-                            except Exception as e:
+                            except Exception:
                                 logger.error(
                                     "Failed to process {content['type']} '{content['title']}' "
                                     "(ID: {content['id']}): {e!s}"
@@ -1111,7 +1111,7 @@ class ConfluenceConnector(BaseConnector):
                     start += limit
                     logger.debug("Moving to next page with start={start}")
 
-                except Exception as e:
+                except Exception:
                     logger.error(
                         "Failed to fetch content from space {self.config.space_key}: {e!s}"
                     )

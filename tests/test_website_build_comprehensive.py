@@ -4,18 +4,16 @@ Comprehensive tests for the website build system to achieve >90% coverage.
 Tests all aspects of the GitHub Actions docs workflow.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
+import importlib.util
 import json
 import os
-import sys
+import shutil
 import subprocess
-import importlib.util
-from unittest.mock import patch, MagicMock, mock_open, Mock
-import re
-from datetime import datetime
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 def import_website_builder():
@@ -1158,7 +1156,6 @@ if __name__ == "__main__":
         ).exists(), "Website status.json should exist"
 
         # Verify status.json files have proper structure
-        import json
 
         with open(coverage_dir / "loader" / "status.json") as f:
             loader_data = json.load(f)

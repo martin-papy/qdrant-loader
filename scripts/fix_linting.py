@@ -3,7 +3,6 @@
 Script to fix common linting errors in the codebase.
 """
 
-import os
 import re
 import subprocess
 import sys
@@ -47,7 +46,7 @@ def fix_line_length_issues(file_path):
 def fix_trailing_whitespace(file_path):
     """Remove trailing whitespace from a file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Remove trailing whitespace from each line
@@ -70,7 +69,7 @@ def fix_trailing_whitespace(file_path):
 def fix_comparison_issues(file_path):
     """Fix comparison to True/False issues."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Fix comparison to True
@@ -92,7 +91,7 @@ def fix_comparison_issues(file_path):
 def fix_f_string_issues(file_path):
     """Fix f-string missing placeholders."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Find f-strings without placeholders and convert to regular strings
@@ -110,7 +109,7 @@ def fix_f_string_issues(file_path):
 def fix_module_level_imports(file_path):
     """Fix module level imports not at top of file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             lines = f.readlines()
 
         # Separate imports and other code

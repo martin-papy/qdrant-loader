@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import AnyUrl
-
 from qdrant_loader.config import Settings
 from qdrant_loader.config.global_config import GlobalConfig
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
@@ -326,8 +325,8 @@ async def test_pipeline_project_validation(
     await pipeline.initialize()
 
     # Test project validation
-    assert pipeline.project_manager.validate_project_exists("project-1") 
-    assert pipeline.project_manager.validate_project_exists("project-2") 
+    assert pipeline.project_manager.validate_project_exists("project-1")
+    assert pipeline.project_manager.validate_project_exists("project-2")
     assert pipeline.project_manager.validate_project_exists("non-existent") is False
 
 

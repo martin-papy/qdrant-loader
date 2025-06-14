@@ -1,4 +1,3 @@
-import asyncio
 
 from qdrant_loader.config import get_settings
 from qdrant_loader.core.qdrant_manager import QdrantManager

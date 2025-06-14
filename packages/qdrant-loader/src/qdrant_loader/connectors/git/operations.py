@@ -175,7 +175,7 @@ class GitOperations:
                 else:
                     # Other git command errors
                     raise
-        except Exception as e:
+        except Exception:
             self.logger.error("Failed to read file {file_path}: {e}")
             raise
 

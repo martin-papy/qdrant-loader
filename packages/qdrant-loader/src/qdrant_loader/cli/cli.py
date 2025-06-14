@@ -570,7 +570,7 @@ async def ingest(
                 logger.debug(" Awaiting {len(pending)} pending tasks before exit...")
                 await asyncio.gather(*pending, return_exceptions=True)
             await asyncio.sleep(0.1)
-        except Exception as e:
+        except Exception:
             logger = LoggingConfig.get_logger(__name__)
             logger.error(" Exception in ingest: {e}")
             raise

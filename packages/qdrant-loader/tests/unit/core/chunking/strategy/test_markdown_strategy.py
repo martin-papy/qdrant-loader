@@ -3,7 +3,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.core.chunking.strategy.markdown_strategy import (
@@ -164,9 +163,9 @@ class TestSectionMetadataExtraction:
         assert metadata["level"] == 1
         assert metadata["word_count"] > 0
         assert metadata["char_count"] > 0
-        assert metadata["has_links"] 
-        assert metadata["has_images"] 
-        assert metadata["is_top_level"] 
+        assert metadata["has_links"]
+        assert metadata["has_images"]
+        assert metadata["is_top_level"]
 
     def test_extract_section_metadata_with_parent(self, markdown_strategy):
         """Test extracting metadata for section with parent."""
@@ -190,7 +189,7 @@ class TestSectionMetadataExtraction:
 
         metadata = markdown_strategy._extract_section_metadata(section)
 
-        assert metadata["has_code"] 
+        assert metadata["has_code"]
 
     def test_extract_section_metadata_no_special_content(self, markdown_strategy):
         """Test metadata for section without special content."""

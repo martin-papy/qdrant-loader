@@ -4,7 +4,7 @@ This module provides configuration classes for Graphiti knowledge graph operatio
 including LLM client settings, embedder configuration, and operational parameters.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, validator
 from pydantic_settings import BaseSettings
@@ -17,7 +17,7 @@ class GraphitiLLMConfig(BaseModel):
         default="openai", description="LLM provider (openai, anthropic, etc.)"
     )
     model: str = Field(default="gpt-4o-mini", description="Model name to use")
-    api_key: Optional[str] = Field(
+    api_key: str | None = Field(
         default=None, description="API key for the LLM provider"
     )
     max_tokens: int = Field(
@@ -39,10 +39,10 @@ class GraphitiEmbedderConfig(BaseModel):
     model: str = Field(
         default="text-embedding-3-small", description="Embedding model name"
     )
-    api_key: Optional[str] = Field(
+    api_key: str | None = Field(
         default=None, description="API key for the embedder provider"
     )
-    dimensions: Optional[int] = Field(
+    dimensions: int | None = Field(
         default=None, description="Embedding dimensions (if supported)"
     )
     batch_size: int = Field(
@@ -118,7 +118,7 @@ class GraphitiConfig(BaseSettings):
             return GraphitiOperationalConfig(**v)
         return v
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary format."""
         return {
             "enabled": self.enabled,

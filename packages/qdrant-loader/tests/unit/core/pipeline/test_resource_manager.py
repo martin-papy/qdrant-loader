@@ -6,7 +6,6 @@ import signal
 from unittest.mock import Mock, call, patch
 
 import pytest
-
 from qdrant_loader.core.pipeline.resource_manager import ResourceManager
 
 
@@ -82,7 +81,7 @@ class TestResourceManager:
         mock_executor.shutdown.assert_called_once_with(wait=True)
 
         # Verify cleanup completion
-        assert self.resource_manager.cleanup_done 
+        assert self.resource_manager.cleanup_done
 
     @patch("asyncio.get_running_loop")
     @patch("asyncio.run")
@@ -100,7 +99,7 @@ class TestResourceManager:
         # Verify async cleanup is NOT called during normal cleanup
         mock_asyncio_run.assert_not_called()
 
-        assert self.resource_manager.cleanup_done 
+        assert self.resource_manager.cleanup_done
 
     @patch("asyncio.get_running_loop")
     @patch("asyncio.run")
@@ -546,7 +545,7 @@ class TestResourceManager:
         mock_executor.shutdown.assert_called_once_with(wait=True)
 
         # Verify cleanup completion
-        assert self.resource_manager.cleanup_done 
+        assert self.resource_manager.cleanup_done
 
     @patch("asyncio.get_running_loop")
     @patch("asyncio.run")
@@ -571,4 +570,4 @@ class TestResourceManager:
         call_args = mock_asyncio_run.call_args[0][0]
         assert hasattr(call_args, "__await__")  # It's a coroutine
 
-        assert self.resource_manager.cleanup_done 
+        assert self.resource_manager.cleanup_done

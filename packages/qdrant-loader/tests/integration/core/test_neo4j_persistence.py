@@ -10,11 +10,10 @@ This module tests the complete Neo4j integration including:
 import os
 import subprocess
 import time
+from collections.abc import Generator
 from datetime import datetime
-from typing import Generator
 
 import pytest
-
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.neo4j_manager import Neo4jManager
 
@@ -317,7 +316,7 @@ class TestNeo4jPersistenceIntegration:
             if wait_time >= max_wait:
                 pytest.skip("Neo4j container did not become ready after restart")
 
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             pytest.skip("Could not restart Neo4j container: {e}")
         except FileNotFoundError:
             pytest.skip("Docker not available for container restart test")
@@ -336,7 +335,7 @@ class TestNeo4jPersistenceIntegration:
         retrieved_node = query_result[0]["n"]
         assert retrieved_node["name"] == persistent_data["name"]
         assert retrieved_node["created_at"] == persistent_timestamp
-        assert retrieved_node["restart_test"] 
+        assert retrieved_node["restart_test"]
 
         print("✅ Data persistence verified after container restart")
 
@@ -449,8 +448,8 @@ class TestNeo4jPersistenceIntegration:
                 for query in cleanup_queries:
                     try:
                         manager.execute_query(query)
-                    except Exception as e:
+                    except Exception:
                         print("Cleanup warning: {e}")
 
-        except Exception as e:
+        except Exception:
             print("Cleanup error: {e}")

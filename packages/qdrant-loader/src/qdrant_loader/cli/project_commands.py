@@ -299,7 +299,7 @@ async def validate(
                             or not source_config.source
                         ):
                             source_errors.append("Missing source for {source_name}")
-                    except Exception as e:
+                    except Exception:
                         source_errors.append("Error in {source_name}: {str(e)}")
 
                 validation_results.append(

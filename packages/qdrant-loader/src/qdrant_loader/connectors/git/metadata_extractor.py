@@ -134,11 +134,11 @@ class GitMetadataExtractor:
                             config.get_value("core", "description", "")
                         )
                     self.logger.debug("Repository metadata extracted: {metadata!s}")
-            except Exception as e:
+            except Exception:
                 self.logger.error("Failed to read Git config: {e}")
 
             return metadata
-        except Exception as e:
+        except Exception:
             self.logger.error("Failed to extract repository metadata: {str(e)!s}")
             return {}
 
@@ -185,7 +185,7 @@ class GitMetadataExtractor:
                                 "last_commit_message": head_commit.message.strip(),
                             }
                         )
-            except Exception as e:
+            except Exception:
                 self.logger.debug("Failed to get commits: {e}")
                 # Try one last time with HEAD commit
                 try:
@@ -197,11 +197,11 @@ class GitMetadataExtractor:
                             "last_commit_message": head_commit.message.strip(),
                         }
                     )
-                except Exception as e:
+                except Exception:
                     self.logger.debug("Failed to get HEAD commit: {e}")
 
             return metadata
-        except Exception as e:
+        except Exception:
             self.logger.warning("Failed to extract Git metadata: {str(e)!s}")
             return {}
 
@@ -281,7 +281,7 @@ class GitMetadataExtractor:
                         and "Unnamed repository;" not in description
                     ):
                         return description.strip()
-            except Exception as e:
+            except Exception:
                 self.logger.debug("Failed to read Git config: {e}")
 
             # Try to find description in README files
@@ -352,11 +352,11 @@ class GitMetadataExtractor:
                                     else:
                                         description = paragraph
                                     return description
-                    except Exception as e:
+                    except Exception:
                         self.logger.debug("Failed to read README {readme_file}: {e}")
                         continue
 
-        except Exception as e:
+        except Exception:
             self.logger.debug("Failed to get repository description: {e}")
 
         return "No description available"

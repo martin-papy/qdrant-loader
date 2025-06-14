@@ -199,7 +199,7 @@ class StateManager:
                         "document_count": ingestion.document_count,
                     },
                 )
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error updating last ingestion for {source_type}:{source}: {str(e)}",
                 exc_info=True,
@@ -237,7 +237,7 @@ class StateManager:
                     "Query result: {'Found' if ingestion else 'Not found'} last ingestion for {source_type}:{source}"
                 )
                 return ingestion
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting last ingestion for {source_type}:{source}: {str(e)}",
                 exc_info=True,
@@ -315,7 +315,7 @@ class StateManager:
                     self.logger.warning(
                         "Document not found: {source_type}:{source}:{document_id}"
                     )
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error marking document as deleted {source_type}:{source}:{document_id}: {str(e)}",
                 exc_info=True,
@@ -357,7 +357,7 @@ class StateManager:
                     "Query result: {'Found' if state else 'Not found'} document state for {source_type}:{source}:{document_id}"
                 )
                 return state
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting document state for {source_type}:{source}:{document_id}: {str(e)}",
                 exc_info=True,
@@ -394,7 +394,7 @@ class StateManager:
                     "Got {len(records)} records for {source_config.source_type}:{source_config.source}"
                 )
                 return records
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting document state records for {source_config.source_type}:{source_config.source}: {str(e)}",
                 exc_info=True,
@@ -485,7 +485,7 @@ class StateManager:
                                 document_state_record.attachment_created_at = datetime.fromisoformat(attachment_created_str.replace("Z", "+00:00"))  # type: ignore
                             elif isinstance(attachment_created_str, datetime):
                                 document_state_record.attachment_created_at = attachment_created_str  # type: ignore
-                        except (ValueError, TypeError) as e:
+                        except (ValueError, TypeError):
                             self.logger.warning(
                                 "Failed to parse attachment_created_at: {e}"
                             )
@@ -507,7 +507,7 @@ class StateManager:
                                 )
                             elif isinstance(attachment_created_str, datetime):
                                 attachment_created_at = attachment_created_str
-                        except (ValueError, TypeError) as e:
+                        except (ValueError, TypeError):
                             self.logger.warning(
                                 "Failed to parse attachment_created_at: {e}"
                             )
@@ -634,7 +634,7 @@ class StateManager:
                         "total_conversion_time": ingestion.total_conversion_time,
                     },
                 )
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error updating conversion metrics for {source_type}:{source}: {str(e)}",
                 exc_info=True,
@@ -687,7 +687,7 @@ class StateManager:
                         "attachments_processed_count": 0,
                         "total_conversion_time": 0.0,
                     }
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting conversion metrics for {source_type}:{source}: {str(e)}",
                 exc_info=True,
@@ -715,7 +715,7 @@ class StateManager:
                     "Found {len(attachments)} attachments for parent {parent_document_id}"
                 )
                 return attachments
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting attachment documents for {parent_document_id}: {str(e)}",
                 exc_info=True,
@@ -746,7 +746,7 @@ class StateManager:
                     "Found {len(documents)} converted documents for {source_type}:{source}"
                 )
                 return documents
-        except Exception as e:
+        except Exception:
             self.logger.error(
                 "Error getting converted documents for {source_type}:{source}: {str(e)}",
                 exc_info=True,

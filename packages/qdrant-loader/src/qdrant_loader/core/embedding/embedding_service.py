@@ -113,14 +113,7 @@ class EmbeddingService:
 
                 return result
 
-            except (
-                asyncio.TimeoutError,
-                requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.HTTPError,
-                ConnectionError,
-                OSError,
-            ) as e:
+            except (TimeoutError, requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError, ConnectionError, OSError) as e:
                 last_exception = e
 
                 if attempt == self.max_retries:
@@ -174,9 +167,7 @@ class EmbeddingService:
                 valid_contents.append(content.strip())
                 valid_indices.append(i)
             else:
-                logger.warning(
-                    "Skipping invalid content at index {i}: {repr(content)}"
-                )
+                logger.warning("Skipping invalid content at index {i}: {repr(content)}")
 
         if not valid_contents:
             logger.warning(
@@ -282,7 +273,7 @@ class EmbeddingService:
             return []
 
         batch_num = getattr(self, "_batch_counter", 0) + 1
-        setattr(self, "_batch_counter", batch_num)
+        self._batch_counter = batch_num
 
         logger.debug(
             "Processing embedding batch",

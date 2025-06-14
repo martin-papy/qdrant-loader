@@ -5,7 +5,7 @@ to support document processing, source tracking, and knowledge management.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from graphiti_core.nodes import EntityNode
 from pydantic import Field, validator
@@ -19,33 +19,33 @@ class DocumentNode(EntityNode):
     """
 
     # Document-specific fields
-    file_path: Optional[str] = Field(None, description="Original file path")
-    file_type: Optional[str] = Field(
+    file_path: str | None = Field(None, description="Original file path")
+    file_type: str | None = Field(
         None, description="Document file type (pdf, docx, txt, etc.)"
     )
-    file_size: Optional[int] = Field(None, description="File size in bytes")
-    mime_type: Optional[str] = Field(None, description="MIME type of the document")
+    file_size: int | None = Field(None, description="File size in bytes")
+    mime_type: str | None = Field(None, description="MIME type of the document")
 
     # Content metadata
-    title: Optional[str] = Field(None, description="Document title")
-    author: Optional[str] = Field(None, description="Document author")
-    language: Optional[str] = Field(None, description="Document language")
-    page_count: Optional[int] = Field(None, description="Number of pages")
-    word_count: Optional[int] = Field(None, description="Approximate word count")
+    title: str | None = Field(None, description="Document title")
+    author: str | None = Field(None, description="Document author")
+    language: str | None = Field(None, description="Document language")
+    page_count: int | None = Field(None, description="Number of pages")
+    word_count: int | None = Field(None, description="Approximate word count")
 
     # Processing metadata
     processing_status: str = Field(default="pending", description="Processing status")
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="When document was processed"
     )
-    chunk_count: Optional[int] = Field(None, description="Number of chunks created")
+    chunk_count: int | None = Field(None, description="Number of chunks created")
 
     # Content summary
-    content_summary: Optional[str] = Field(
+    content_summary: str | None = Field(
         None, description="AI-generated summary of document content"
     )
-    keywords: List[str] = Field(default_factory=list, description="Extracted keywords")
-    topics: List[str] = Field(default_factory=list, description="Identified topics")
+    keywords: list[str] = Field(default_factory=list, description="Extracted keywords")
+    topics: list[str] = Field(default_factory=list, description="Identified topics")
 
     @validator("processing_status")
     def validate_status(cls, v):
@@ -64,30 +64,30 @@ class SourceNode(EntityNode):
     source_type: str = Field(
         ..., description="Type of source (git, confluence, jira, etc.)"
     )
-    source_url: Optional[str] = Field(None, description="URL or connection string")
-    source_config: Dict[str, Any] = Field(
+    source_url: str | None = Field(None, description="URL or connection string")
+    source_config: dict[str, Any] = Field(
         default_factory=dict, description="Source-specific configuration"
     )
 
     # Access metadata
-    last_accessed: Optional[datetime] = Field(
+    last_accessed: datetime | None = Field(
         None, description="Last time source was accessed"
     )
-    access_method: Optional[str] = Field(
+    access_method: str | None = Field(
         None, description="How source was accessed (API, clone, etc.)"
     )
-    credentials_used: Optional[str] = Field(
+    credentials_used: str | None = Field(
         None, description="Type of credentials used"
     )
 
     # Source statistics
-    total_documents: Optional[int] = Field(
+    total_documents: int | None = Field(
         None, description="Total documents from this source"
     )
-    successful_imports: Optional[int] = Field(
+    successful_imports: int | None = Field(
         None, description="Successfully imported documents"
     )
-    failed_imports: Optional[int] = Field(None, description="Failed import attempts")
+    failed_imports: int | None = Field(None, description="Failed import attempts")
 
     @validator("source_type")
     def validate_source_type(cls, v):
@@ -113,27 +113,27 @@ class ConceptNode(EntityNode):
     """
 
     concept_type: str = Field(default="general", description="Type of concept")
-    definition: Optional[str] = Field(
+    definition: str | None = Field(
         None, description="Definition or description of the concept"
     )
-    aliases: List[str] = Field(
+    aliases: list[str] = Field(
         default_factory=list, description="Alternative names for the concept"
     )
 
     # Semantic metadata
-    domain: Optional[str] = Field(
+    domain: str | None = Field(
         None, description="Domain or field this concept belongs to"
     )
-    confidence_score: Optional[float] = Field(
+    confidence_score: float | None = Field(
         None, description="Confidence in concept extraction"
     )
-    frequency: Optional[int] = Field(None, description="How often this concept appears")
+    frequency: int | None = Field(None, description="How often this concept appears")
 
     # Relationships
-    parent_concepts: List[str] = Field(
+    parent_concepts: list[str] = Field(
         default_factory=list, description="Broader concepts"
     )
-    child_concepts: List[str] = Field(
+    child_concepts: list[str] = Field(
         default_factory=list, description="More specific concepts"
     )
 
@@ -150,26 +150,26 @@ class PersonNode(EntityNode):
     Tracks individuals, their roles, and their relationships to documents and projects.
     """
 
-    full_name: Optional[str] = Field(None, description="Full name of the person")
-    email: Optional[str] = Field(None, description="Email address")
-    role: Optional[str] = Field(None, description="Role or job title")
-    department: Optional[str] = Field(None, description="Department or team")
+    full_name: str | None = Field(None, description="Full name of the person")
+    email: str | None = Field(None, description="Email address")
+    role: str | None = Field(None, description="Role or job title")
+    department: str | None = Field(None, description="Department or team")
 
     # Contact information
-    phone: Optional[str] = Field(None, description="Phone number")
-    location: Optional[str] = Field(None, description="Office location or city")
+    phone: str | None = Field(None, description="Phone number")
+    location: str | None = Field(None, description="Office location or city")
 
     # Professional metadata
-    expertise_areas: List[str] = Field(
+    expertise_areas: list[str] = Field(
         default_factory=list, description="Areas of expertise"
     )
-    projects: List[str] = Field(default_factory=list, description="Associated projects")
+    projects: list[str] = Field(default_factory=list, description="Associated projects")
 
     # Activity tracking
-    last_mentioned: Optional[datetime] = Field(
+    last_mentioned: datetime | None = Field(
         None, description="Last time mentioned in documents"
     )
-    mention_count: Optional[int] = Field(None, description="Number of times mentioned")
+    mention_count: int | None = Field(None, description="Number of times mentioned")
 
 
 class OrganizationNode(EntityNode):
@@ -181,28 +181,28 @@ class OrganizationNode(EntityNode):
     organization_type: str = Field(
         default="company", description="Type of organization"
     )
-    industry: Optional[str] = Field(None, description="Industry or sector")
-    size: Optional[str] = Field(
+    industry: str | None = Field(None, description="Industry or sector")
+    size: str | None = Field(
         None, description="Organization size (startup, small, medium, large)"
     )
 
     # Contact information
-    website: Optional[str] = Field(None, description="Organization website")
-    headquarters: Optional[str] = Field(None, description="Headquarters location")
+    website: str | None = Field(None, description="Organization website")
+    headquarters: str | None = Field(None, description="Headquarters location")
 
     # Relationship metadata
-    parent_organization: Optional[str] = Field(
+    parent_organization: str | None = Field(
         None, description="Parent company or organization"
     )
-    subsidiaries: List[str] = Field(
+    subsidiaries: list[str] = Field(
         default_factory=list, description="Subsidiary organizations"
     )
 
     # Activity tracking
-    first_mentioned: Optional[datetime] = Field(
+    first_mentioned: datetime | None = Field(
         None, description="First time mentioned"
     )
-    last_mentioned: Optional[datetime] = Field(None, description="Last time mentioned")
+    last_mentioned: datetime | None = Field(None, description="Last time mentioned")
 
     @validator("organization_type")
     def validate_org_type(cls, v):
@@ -227,31 +227,31 @@ class ProjectNode(EntityNode):
     """
 
     project_status: str = Field(default="active", description="Current project status")
-    start_date: Optional[datetime] = Field(None, description="Project start date")
-    end_date: Optional[datetime] = Field(None, description="Project end date")
-    deadline: Optional[datetime] = Field(None, description="Project deadline")
+    start_date: datetime | None = Field(None, description="Project start date")
+    end_date: datetime | None = Field(None, description="Project end date")
+    deadline: datetime | None = Field(None, description="Project deadline")
 
     # Project metadata
-    priority: Optional[str] = Field(None, description="Project priority level")
-    budget: Optional[float] = Field(None, description="Project budget")
-    progress: Optional[float] = Field(
+    priority: str | None = Field(None, description="Project priority level")
+    budget: float | None = Field(None, description="Project budget")
+    progress: float | None = Field(
         None, description="Completion percentage (0.0-1.0)"
     )
 
     # Relationships
-    project_manager: Optional[str] = Field(None, description="Project manager name")
-    team_members: List[str] = Field(
+    project_manager: str | None = Field(None, description="Project manager name")
+    team_members: list[str] = Field(
         default_factory=list, description="Team member names"
     )
-    stakeholders: List[str] = Field(
+    stakeholders: list[str] = Field(
         default_factory=list, description="Project stakeholders"
     )
 
     # Documentation
-    requirements: List[str] = Field(
+    requirements: list[str] = Field(
         default_factory=list, description="Project requirements"
     )
-    deliverables: List[str] = Field(
+    deliverables: list[str] = Field(
         default_factory=list, description="Project deliverables"
     )
 
@@ -278,7 +278,7 @@ class ChunkNode(EntityNode):
     # Chunk identification
     document_id: str = Field(..., description="ID of the parent document")
     chunk_index: int = Field(..., description="Index of this chunk within the document")
-    chunk_id: Optional[str] = Field(
+    chunk_id: str | None = Field(
         None, description="Unique identifier for this chunk"
     )
 
@@ -288,31 +288,31 @@ class ChunkNode(EntityNode):
     word_count: int = Field(..., description="Number of words in the chunk")
 
     # Position metadata
-    start_position: Optional[int] = Field(
+    start_position: int | None = Field(
         None, description="Start position in original document"
     )
-    end_position: Optional[int] = Field(
+    end_position: int | None = Field(
         None, description="End position in original document"
     )
-    page_number: Optional[int] = Field(None, description="Page number if applicable")
+    page_number: int | None = Field(None, description="Page number if applicable")
 
     # Processing metadata
-    embedding_model: Optional[str] = Field(None, description="Model used for embedding")
-    embedding_dimension: Optional[int] = Field(
+    embedding_model: str | None = Field(None, description="Model used for embedding")
+    embedding_dimension: int | None = Field(
         None, description="Dimension of the embedding vector"
     )
-    processed_at: Optional[datetime] = Field(
+    processed_at: datetime | None = Field(
         None, description="When chunk was processed"
     )
 
     # Semantic metadata
-    topics: List[str] = Field(
+    topics: list[str] = Field(
         default_factory=list, description="Topics identified in this chunk"
     )
-    entities: List[str] = Field(
+    entities: list[str] = Field(
         default_factory=list, description="Named entities in this chunk"
     )
-    sentiment: Optional[str] = Field(None, description="Sentiment analysis result")
+    sentiment: str | None = Field(None, description="Sentiment analysis result")
 
     @validator("chunk_index")
     def validate_chunk_index(cls, v):

@@ -1,9 +1,9 @@
 """Core types for entity extraction and relationship detection."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class EntityType(Enum):
@@ -41,20 +41,20 @@ class TemporalInfo:
     """Container for temporal information used in entities and relationships."""
 
     # Valid time - when the information was true in the real world
-    valid_from: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    valid_to: Optional[datetime] = None  # None means currently valid
+    valid_from: datetime = field(default_factory=lambda: datetime.now(UTC))
+    valid_to: datetime | None = None  # None means currently valid
 
     # Transaction time - when the information was recorded in the system
     transaction_time: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     # Version information for tracking changes
     version: int = 1
-    superseded_by: Optional[str] = (
+    superseded_by: str | None = (
         None  # UUID of the entity/relationship that supersedes this one
     )
-    supersedes: Optional[str] = (
+    supersedes: str | None = (
         None  # UUID of the entity/relationship this one supersedes
     )
 
@@ -79,7 +79,7 @@ class TemporalInfo:
         Returns:
             True if currently valid, False otherwise
         """
-        return self.is_valid_at(datetime.now(timezone.utc))
+        return self.is_valid_at(datetime.now(UTC))
 
     def invalidate_at(self, timestamp: datetime) -> None:
         """Mark this temporal info as invalid starting from the given timestamp.
@@ -89,7 +89,7 @@ class TemporalInfo:
         """
         self.valid_to = timestamp
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert temporal info to dictionary format.
 
         Returns:
@@ -105,7 +105,7 @@ class TemporalInfo:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TemporalInfo":
+    def from_dict(cls, data: dict[str, Any]) -> "TemporalInfo":
         """Create TemporalInfo from dictionary.
 
         Args:
@@ -136,13 +136,13 @@ class ExtractedEntity:
     entity_type: EntityType
     confidence: float = 0.0
     context: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Temporal information
     temporal_info: TemporalInfo = field(default_factory=TemporalInfo)
 
     # Unique identifier for tracking across versions
-    entity_uuid: Optional[str] = None
+    entity_uuid: str | None = None
 
     def is_valid_at(self, timestamp: datetime) -> bool:
         """Check if this entity is valid at a given timestamp.
@@ -164,7 +164,7 @@ class ExtractedEntity:
         return self.temporal_info.is_currently_valid()
 
     def create_new_version(
-        self, updated_fields: Dict[str, Any], valid_from: Optional[datetime] = None
+        self, updated_fields: dict[str, Any], valid_from: datetime | None = None
     ) -> "ExtractedEntity":
         """Create a new version of this entity with updated information.
 
@@ -176,7 +176,7 @@ class ExtractedEntity:
             New ExtractedEntity instance representing the updated version
         """
         # Invalidate current version
-        invalidation_time = valid_from or datetime.now(timezone.utc)
+        invalidation_time = valid_from or datetime.now(UTC)
         self.temporal_info.invalidate_at(invalidation_time)
 
         # Create new version
@@ -192,7 +192,7 @@ class ExtractedEntity:
         # Set up temporal info for new version
         new_entity.temporal_info = TemporalInfo(
             valid_from=invalidation_time,
-            transaction_time=datetime.now(timezone.utc),
+            transaction_time=datetime.now(UTC),
             version=self.temporal_info.version + 1,
             supersedes=self.entity_uuid,
         )
@@ -202,7 +202,7 @@ class ExtractedEntity:
 
         return new_entity
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert entity to dictionary format.
 
         Returns:
@@ -229,17 +229,17 @@ class ExtractedRelationship:
     confidence: float = 0.0
     context: str = ""
     evidence: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Temporal information
     temporal_info: TemporalInfo = field(default_factory=TemporalInfo)
 
     # Unique identifier for tracking across versions
-    relationship_uuid: Optional[str] = None
+    relationship_uuid: str | None = None
 
     # Entity UUIDs for better tracking
-    source_entity_uuid: Optional[str] = None
-    target_entity_uuid: Optional[str] = None
+    source_entity_uuid: str | None = None
+    target_entity_uuid: str | None = None
 
     def is_valid_at(self, timestamp: datetime) -> bool:
         """Check if this relationship is valid at a given timestamp.
@@ -261,7 +261,7 @@ class ExtractedRelationship:
         return self.temporal_info.is_currently_valid()
 
     def create_new_version(
-        self, updated_fields: Dict[str, Any], valid_from: Optional[datetime] = None
+        self, updated_fields: dict[str, Any], valid_from: datetime | None = None
     ) -> "ExtractedRelationship":
         """Create a new version of this relationship with updated information.
 
@@ -273,7 +273,7 @@ class ExtractedRelationship:
             New ExtractedRelationship instance representing the updated version
         """
         # Invalidate current version
-        invalidation_time = valid_from or datetime.now(timezone.utc)
+        invalidation_time = valid_from or datetime.now(UTC)
         self.temporal_info.invalidate_at(invalidation_time)
 
         # Create new version
@@ -299,7 +299,7 @@ class ExtractedRelationship:
         # Set up temporal info for new version
         new_relationship.temporal_info = TemporalInfo(
             valid_from=invalidation_time,
-            transaction_time=datetime.now(timezone.utc),
+            transaction_time=datetime.now(UTC),
             version=self.temporal_info.version + 1,
             supersedes=self.relationship_uuid,
         )
@@ -309,7 +309,7 @@ class ExtractedRelationship:
 
         return new_relationship
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert relationship to dictionary format.
 
         Returns:

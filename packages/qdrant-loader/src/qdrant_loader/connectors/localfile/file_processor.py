@@ -149,6 +149,6 @@ class LocalFileFileProcessor:
                 elif fnmatch.fnmatch(rel_path, pattern):
                     return True
             return False
-        except Exception as e:
+        except Exception:
             self.logger.error("Error checking if file should be processed: {e}")
             return False

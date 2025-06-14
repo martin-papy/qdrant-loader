@@ -106,7 +106,7 @@ class UpsertWorker(BaseWorker):
                     if parent_doc:
                         successful_doc_ids.add(parent_doc.id)
 
-        except Exception as e:
+        except Exception:
             for chunk, _ in batch:
                 logger.error("Upsert failed for chunk {chunk.id}: {e}")
                 # Mark parent document as failed

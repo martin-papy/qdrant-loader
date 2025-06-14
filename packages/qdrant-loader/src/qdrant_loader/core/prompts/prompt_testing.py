@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from ..types import ExtractedEntity
 
@@ -38,15 +38,15 @@ class PromptTestCase:
 
     name: str
     input_text: str
-    expected_entities: List[Dict[str, Any]]
+    expected_entities: list[dict[str, Any]]
     domain: PromptDomain = PromptDomain.SOFTWARE_DEVELOPMENT
     custom_prompt: str = ""
-    extraction_hints: Dict[str, List[str]] = field(default_factory=dict)
+    extraction_hints: dict[str, list[str]] = field(default_factory=dict)
     confidence_threshold: float = 0.5
     description: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert test case to dictionary."""
         return {
             "name": self.name,
@@ -66,19 +66,19 @@ class PromptTestResult:
     """Result of a prompt test execution."""
 
     test_case: PromptTestCase
-    extracted_entities: List[ExtractedEntity]
+    extracted_entities: list[ExtractedEntity]
     status: TestResultStatus
     accuracy_score: float = 0.0
     precision: float = 0.0
     recall: float = 0.0
     f1_score: float = 0.0
     execution_time: float = 0.0
-    errors: List[str] = field(default_factory=list)
-    missing_entities: List[Dict[str, Any]] = field(default_factory=list)
-    unexpected_entities: List[ExtractedEntity] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    missing_entities: list[dict[str, Any]] = field(default_factory=list)
+    unexpected_entities: list[ExtractedEntity] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert test result to dictionary."""
         return {
             "test_case": self.test_case.to_dict(),
@@ -124,8 +124,8 @@ class PromptTester:
         """
         self.entity_extractor = entity_extractor
         self.prompt_manager = prompt_manager
-        self._test_cases: Dict[str, PromptTestCase] = {}
-        self._test_results: List[PromptTestResult] = []
+        self._test_cases: dict[str, PromptTestCase] = {}
+        self._test_results: list[PromptTestResult] = []
 
         logger.info("PromptTester initialized")
 
@@ -134,7 +134,7 @@ class PromptTester:
         self._test_cases[test_case.name] = test_case
         logger.debug("Added test case: {test_case.name}")
 
-    def load_test_cases_from_dict(self, test_cases_data: List[Dict[str, Any]]) -> None:
+    def load_test_cases_from_dict(self, test_cases_data: list[dict[str, Any]]) -> None:
         """Load test cases from dictionary data."""
         for case_data in test_cases_data:
             test_case = PromptTestCase(
@@ -219,9 +219,9 @@ class PromptTester:
 
     async def run_test_suite(
         self,
-        test_case_names: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> List[PromptTestResult]:
+        test_case_names: list[str] | None = None,
+        tags: list[str] | None = None,
+    ) -> list[PromptTestResult]:
         """Run multiple test cases and return results."""
         # Filter test cases
         test_cases_to_run = self._filter_test_cases(test_case_names, tags)
@@ -262,9 +262,9 @@ class PromptTester:
 
     def _filter_test_cases(
         self,
-        test_case_names: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
-    ) -> List[PromptTestCase]:
+        test_case_names: list[str] | None = None,
+        tags: list[str] | None = None,
+    ) -> list[PromptTestCase]:
         """Filter test cases based on names and tags."""
         test_cases = list(self._test_cases.values())
 
@@ -280,10 +280,10 @@ class PromptTester:
 
     def _evaluate_extraction_result(
         self,
-        expected_entities: List[Dict[str, Any]],
-        extracted_entities: List[ExtractedEntity],
+        expected_entities: list[dict[str, Any]],
+        extracted_entities: list[ExtractedEntity],
         confidence_threshold: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate extraction results against expected entities."""
         # Filter extracted entities by confidence
         filtered_entities = [
@@ -351,7 +351,7 @@ class PromptTester:
             "unexpected_entities": unexpected_entities,
         }
 
-    def _determine_test_status(self, evaluation: Dict[str, Any]) -> TestResultStatus:
+    def _determine_test_status(self, evaluation: dict[str, Any]) -> TestResultStatus:
         """Determine test status based on evaluation metrics."""
         f1_score = evaluation["f1_score"]
 
@@ -362,7 +362,7 @@ class PromptTester:
         else:
             return TestResultStatus.FAILED
 
-    def _log_test_summary(self, results: List[PromptTestResult]) -> None:
+    def _log_test_summary(self, results: list[PromptTestResult]) -> None:
         """Log a summary of test results."""
         total_tests = len(results)
         passed = sum(1 for r in results if r.status == TestResultStatus.PASSED)
@@ -385,7 +385,7 @@ class PromptTester:
             "Avg F1: {avg_f1:.3f}, Avg Time: {avg_time:.2f}s"
         )
 
-    def get_test_statistics(self) -> Dict[str, Any]:
+    def get_test_statistics(self) -> dict[str, Any]:
         """Get statistics about test cases and results."""
         if not self._test_results:
             return {"message": "No test results available"}
@@ -431,7 +431,7 @@ class PromptTester:
         logger.info("Cleared all test results")
 
 
-def create_default_test_cases() -> List[PromptTestCase]:
+def create_default_test_cases() -> list[PromptTestCase]:
     """Create a set of default test cases for software development entity extraction."""
 
     test_cases = [

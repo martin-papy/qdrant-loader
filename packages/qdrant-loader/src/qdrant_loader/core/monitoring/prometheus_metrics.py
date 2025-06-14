@@ -47,7 +47,7 @@ def start_metrics_server(port: int = 8001):
         # Register cleanup function to be called on exit
         atexit.register(stop_metrics_server)
 
-    except Exception as e:
+    except Exception:
         logger.error("Failed to start metrics server: {e}")
         raise
 

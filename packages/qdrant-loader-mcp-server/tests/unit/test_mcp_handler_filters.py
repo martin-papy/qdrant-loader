@@ -159,7 +159,7 @@ class TestHierarchyFilters:
         # Should only return root documents
         assert len(filtered) == 1
         assert filtered[0].source_title == "Developer Guide"
-        assert filtered[0].is_root_document() 
+        assert filtered[0].is_root_document()
 
     def test_apply_hierarchy_filters_has_children_true(
         self, mcp_handler, mock_search_results
@@ -173,7 +173,7 @@ class TestHierarchyFilters:
         # Should only return documents that have children
         assert len(filtered) == 1
         assert filtered[0].source_title == "Developer Guide"
-        assert filtered[0].has_children() 
+        assert filtered[0].has_children()
 
     def test_apply_hierarchy_filters_has_children_false(
         self, mcp_handler, mock_search_results
@@ -254,7 +254,7 @@ class TestAttachmentFilters:
 
         # Should only return attachment results
         assert len(filtered) == 1
-        assert filtered[0].is_attachment 
+        assert filtered[0].is_attachment
         assert filtered[0].original_filename == "requirements.pd"
 
     def test_apply_attachment_filters_parent_document_title(

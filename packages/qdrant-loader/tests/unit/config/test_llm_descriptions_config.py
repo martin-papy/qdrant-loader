@@ -5,7 +5,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -140,7 +139,7 @@ projects:
             # Test LLM descriptions configuration
             markitdown_config = settings.global_config.file_conversion.markitdown
 
-            assert markitdown_config.enable_llm_descriptions 
+            assert markitdown_config.enable_llm_descriptions
             assert markitdown_config.llm_model == "gpt-4o"
             assert markitdown_config.llm_endpoint == "https://api.openai.com/v1"
             assert markitdown_config.llm_api_key == "test_api_key_for_llm"
@@ -284,7 +283,7 @@ projects:
 
             # Test MarkItDown configuration
             markitdown = file_conv.markitdown
-            assert markitdown.enable_llm_descriptions 
+            assert markitdown.enable_llm_descriptions
             assert markitdown.llm_model == "gpt-4o"
             assert markitdown.llm_endpoint == "https://api.openai.com/v1"
             assert markitdown.llm_api_key == "comprehensive_test_key"

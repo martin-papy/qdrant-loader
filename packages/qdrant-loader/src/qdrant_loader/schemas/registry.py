@@ -5,7 +5,6 @@ including validation, registration, and schema discovery functionality.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Type, Union
 
 from graphiti_core.edges import EntityEdge
 from graphiti_core.nodes import EntityNode
@@ -42,9 +41,9 @@ class SchemaRegistry:
 
     def __init__(self):
         """Initialize the schema registry."""
-        self._node_schemas: Dict[str, Type[EntityNode]] = {}
-        self._edge_schemas: Dict[str, Type[EntityEdge]] = {}
-        self._schema_metadata: Dict[str, Dict] = {}
+        self._node_schemas: dict[str, type[EntityNode]] = {}
+        self._edge_schemas: dict[str, type[EntityEdge]] = {}
+        self._schema_metadata: dict[str, dict] = {}
         self._initialized = False
 
     def initialize(self) -> None:
@@ -81,9 +80,9 @@ class SchemaRegistry:
     def register_node_schema(
         self,
         schema_name: str,
-        schema_class: Type[EntityNode],
-        description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        schema_class: type[EntityNode],
+        description: str | None = None,
+        tags: list[str] | None = None,
     ) -> None:
         """Register a node schema.
 
@@ -94,9 +93,7 @@ class SchemaRegistry:
             tags: Optional tags for categorization
         """
         if not issubclass(schema_class, EntityNode):
-            raise ValueError(
-                "Schema class {schema_class} must inherit from EntityNode"
-            )
+            raise ValueError("Schema class {schema_class} must inherit from EntityNode")
 
         if schema_name in self._node_schemas:
             logger.warning("Overriding existing node schema: {schema_name}")
@@ -115,9 +112,9 @@ class SchemaRegistry:
     def register_edge_schema(
         self,
         schema_name: str,
-        schema_class: Type[EntityEdge],
-        description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        schema_class: type[EntityEdge],
+        description: str | None = None,
+        tags: list[str] | None = None,
     ) -> None:
         """Register an edge schema.
 
@@ -128,9 +125,7 @@ class SchemaRegistry:
             tags: Optional tags for categorization
         """
         if not issubclass(schema_class, EntityEdge):
-            raise ValueError(
-                "Schema class {schema_class} must inherit from EntityEdge"
-            )
+            raise ValueError("Schema class {schema_class} must inherit from EntityEdge")
 
         if schema_name in self._edge_schemas:
             logger.warning("Overriding existing edge schema: {schema_name}")
@@ -146,7 +141,7 @@ class SchemaRegistry:
 
         logger.debug("Registered edge schema: {schema_name}")
 
-    def get_node_schema(self, schema_name: str) -> Optional[Type[EntityNode]]:
+    def get_node_schema(self, schema_name: str) -> type[EntityNode] | None:
         """Get a registered node schema by name.
 
         Args:
@@ -157,7 +152,7 @@ class SchemaRegistry:
         """
         return self._node_schemas.get(schema_name)
 
-    def get_edge_schema(self, schema_name: str) -> Optional[Type[EntityEdge]]:
+    def get_edge_schema(self, schema_name: str) -> type[EntityEdge] | None:
         """Get a registered edge schema by name.
 
         Args:
@@ -168,7 +163,7 @@ class SchemaRegistry:
         """
         return self._edge_schemas.get(schema_name)
 
-    def list_node_schemas(self) -> List[str]:
+    def list_node_schemas(self) -> list[str]:
         """List all registered node schema names.
 
         Returns:
@@ -176,7 +171,7 @@ class SchemaRegistry:
         """
         return list(self._node_schemas.keys())
 
-    def list_edge_schemas(self) -> List[str]:
+    def list_edge_schemas(self) -> list[str]:
         """List all registered edge schema names.
 
         Returns:
@@ -184,7 +179,7 @@ class SchemaRegistry:
         """
         return list(self._edge_schemas.keys())
 
-    def get_schema_info(self, schema_name: str, schema_type: str) -> Optional[Dict]:
+    def get_schema_info(self, schema_name: str, schema_type: str) -> dict | None:
         """Get metadata about a schema.
 
         Args:
@@ -198,7 +193,7 @@ class SchemaRegistry:
         return self._schema_metadata.get(key)
 
     def validate_schema_compatibility(
-        self, schema_class: Type[Union[EntityNode, EntityEdge]]
+        self, schema_class: type[EntityNode | EntityEdge]
     ) -> bool:
         """Validate that a schema class is compatible with Graphiti.
 
@@ -237,13 +232,13 @@ class SchemaRegistry:
 
             return True
 
-        except Exception as e:
+        except Exception:
             logger.error("Schema validation failed for {schema_class}: {e}")
             return False
 
     def create_node_instance(
         self, schema_name: str, name: str, group_id: str, **kwargs
-    ) -> Optional[EntityNode]:
+    ) -> EntityNode | None:
         """Create an instance of a registered node schema.
 
         Args:
@@ -262,7 +257,7 @@ class SchemaRegistry:
 
         try:
             return schema_class(name=name, group_id=group_id, **kwargs)
-        except Exception as e:
+        except Exception:
             logger.error("Failed to create node instance for {schema_name}: {e}")
             return None
 
@@ -275,7 +270,7 @@ class SchemaRegistry:
         name: str,
         fact: str,
         **kwargs,
-    ) -> Optional[EntityEdge]:
+    ) -> EntityEdge | None:
         """Create an instance of a registered edge schema.
 
         Args:
@@ -304,11 +299,11 @@ class SchemaRegistry:
                 fact=fact,
                 **kwargs,
             )
-        except Exception as e:
+        except Exception:
             logger.error("Failed to create edge instance for {schema_name}: {e}")
             return None
 
-    def get_schema_summary(self) -> Dict:
+    def get_schema_summary(self) -> dict:
         """Get a summary of all registered schemas.
 
         Returns:
@@ -345,10 +340,10 @@ def get_schema_registry() -> SchemaRegistry:
 
 def register_custom_schema(
     schema_name: str,
-    schema_class: Type[Union[EntityNode, EntityEdge]],
+    schema_class: type[EntityNode | EntityEdge],
     schema_type: str,
-    description: Optional[str] = None,
-    tags: Optional[List[str]] = None,
+    description: str | None = None,
+    tags: list[str] | None = None,
 ) -> None:
     """Register a custom schema with the global registry.
 
@@ -370,13 +365,11 @@ def register_custom_schema(
             raise ValueError("Schema class must inherit from EntityEdge for edge type")
         registry.register_edge_schema(schema_name, schema_class, description, tags)
     else:
-        raise ValueError(
-            "Invalid schema type: {schema_type}. Must be 'node' or 'edge'"
-        )
+        raise ValueError("Invalid schema type: {schema_type}. Must be 'node' or 'edge'")
 
 
 # Convenience functions for common operations
-def create_document_node(name: str, group_id: str, **kwargs) -> Optional[DocumentNode]:
+def create_document_node(name: str, group_id: str, **kwargs) -> DocumentNode | None:
     """Create a DocumentNode instance."""
     registry = get_schema_registry()
     result = registry.create_node_instance("document", name, group_id, **kwargs)
@@ -385,7 +378,7 @@ def create_document_node(name: str, group_id: str, **kwargs) -> Optional[Documen
 
 def create_contains_edge(
     group_id: str, source_uuid: str, target_uuid: str, name: str, fact: str, **kwargs
-) -> Optional[ContainsEdge]:
+) -> ContainsEdge | None:
     """Create a ContainsEdge instance."""
     registry = get_schema_registry()
     result = registry.create_edge_instance(

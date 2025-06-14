@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -47,7 +46,7 @@ def get_collection_info(client: QdrantClient, collection_name: str):
     try:
         info = client.get_collection(collection_name)
         return info
-    except Exception as e:
+    except Exception:
         print("Error getting collection info: {e}")
         return None
 
@@ -76,7 +75,7 @@ def count_documents_by_source(client: QdrantClient, collection_name: str):
 
         return source_counts, source_type_counts, len(points)
 
-    except Exception as e:
+    except Exception:
         print("Error counting documents: {e}")
         return {}, {}, 0
 
@@ -92,7 +91,7 @@ def get_sample_documents(client: QdrantClient, collection_name: str, limit: int 
         )[0]
 
         return points
-    except Exception as e:
+    except Exception:
         print("Error getting sample documents: {e}")
         return []
 
@@ -124,7 +123,7 @@ def search_documents(
                     break
 
         return matching_points
-    except Exception as e:
+    except Exception:
         print("Error searching documents: {e}")
         return []
 
@@ -232,7 +231,7 @@ def main():
             else:
                 print("No matching documents found.")
 
-    except Exception as e:
+    except Exception:
         print("Error: {e}")
         return 1
 

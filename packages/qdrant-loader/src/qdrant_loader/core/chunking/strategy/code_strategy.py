@@ -169,7 +169,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             parser = get_parser(language)
             self._parsers[language] = parser
             return parser
-        except Exception as e:
+        except Exception:
             self.logger.warning("Failed to get Tree-sitter parser for {language}: {e}")
             return None
 
@@ -210,7 +210,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
             return elements
 
-        except Exception as e:
+        except Exception:
             self.logger.warning("Failed to parse with Tree-sitter for {language}: {e}")
             return []
 
@@ -425,7 +425,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
         try:
             tree = ast.parse(content)
-        except SyntaxError as e:
+        except SyntaxError:
             self.logger.warning("Failed to parse Python AST: {e}")
             return []
 

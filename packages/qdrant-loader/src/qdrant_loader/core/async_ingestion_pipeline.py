@@ -235,7 +235,7 @@ class AsyncIngestionPipeline:
             # Stop metrics server
             try:
                 prometheus_metrics.stop_metrics_server()
-            except Exception as e:
+            except Exception:
                 logger.warning("Error stopping metrics server: {e}")
 
             # Use resource manager for cleanup
@@ -243,7 +243,7 @@ class AsyncIngestionPipeline:
                 await self.resource_manager.cleanup()
 
             logger.info("Pipeline cleanup completed")
-        except Exception as e:
+        except Exception:
             logger.error("Error during pipeline cleanup: {e}")
 
     def __del__(self):
@@ -251,7 +251,7 @@ class AsyncIngestionPipeline:
         try:
             # Can't await in __del__, so use the sync cleanup method
             self._sync_cleanup()
-        except Exception as e:
+        except Exception:
             logger.error("Error in destructor cleanup: {e}")
 
     def _sync_cleanup(self):
@@ -266,20 +266,20 @@ class AsyncIngestionPipeline:
         try:
             if hasattr(self, "monitor"):
                 self.monitor.save_metrics()
-        except Exception as e:
+        except Exception:
             logger.error("Error saving metrics: {e}")
 
         # Stop metrics server
         try:
             prometheus_metrics.stop_metrics_server()
-        except Exception as e:
+        except Exception:
             logger.error("Error stopping metrics server: {e}")
 
         # Use resource manager sync cleanup
         try:
             if hasattr(self, "resource_manager"):
                 self.resource_manager._cleanup()
-        except Exception as e:
+        except Exception:
             logger.error("Error in resource manager cleanup: {e}")
 
         logger.info("Pipeline cleanup completed (sync)")

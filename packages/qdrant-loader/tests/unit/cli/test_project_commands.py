@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli.project_commands import (
     _get_all_sources_from_config,
     _initialize_project_contexts_from_config,

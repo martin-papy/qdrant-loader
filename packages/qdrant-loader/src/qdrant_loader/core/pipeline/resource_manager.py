@@ -55,7 +55,7 @@ class ResourceManager:
                     # No running loop, run async cleanup directly
                     try:
                         asyncio.run(self._async_cleanup())
-                    except Exception as e:
+                    except Exception:
                         logger.error("Error in async cleanup: {e}")
 
             # Shutdown thread pool executor
@@ -65,7 +65,7 @@ class ResourceManager:
 
             self.cleanup_done = True
             logger.info("Cleanup completed")
-        except Exception as e:
+        except Exception:
             logger.error("Error during cleanup: {str(e)}")
 
     async def _async_cleanup(self):
@@ -149,7 +149,7 @@ class ResourceManager:
         try:
             # Try to cleanup first
             self._cleanup()
-        except Exception as e:
+        except Exception:
             logger.error("Error during forced cleanup: {e}")
         finally:
             # Force exit

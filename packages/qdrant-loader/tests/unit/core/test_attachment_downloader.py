@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
@@ -99,7 +98,7 @@ class TestAttachmentDownloaderInitialization:
         )
 
         assert downloader.session == mock_session
-        assert downloader.enable_file_conversion 
+        assert downloader.enable_file_conversion
         assert downloader.file_converter is not None
         assert downloader.file_detector is not None
 
@@ -143,7 +142,7 @@ class TestShouldDownloadAttachment:
             parent_document_id="doc_456",
         )
 
-        assert attachment_downloader.should_download_attachment(metadata) 
+        assert attachment_downloader.should_download_attachment(metadata)
 
     def test_should_not_download_large_attachment(self, attachment_downloader):
         """Test that large attachments should not be downloaded."""
@@ -169,7 +168,7 @@ class TestShouldDownloadAttachment:
             parent_document_id="doc_456",
         )
 
-        assert attachment_downloader.should_download_attachment(metadata) 
+        assert attachment_downloader.should_download_attachment(metadata)
 
 
 class TestAttachmentDownload:
@@ -328,7 +327,7 @@ class TestProcessAttachment:
             )  # Actual format includes "Attachment: "
             assert "# Converted PDF Content" in document.content
             assert document.content_type == "md"
-            assert document.metadata["is_attachment"] 
+            assert document.metadata["is_attachment"]
             assert (
                 document.metadata["parent_document_id"] == metadata.parent_document_id
             )
@@ -379,7 +378,7 @@ class TestProcessAttachment:
 
             assert document is not None
             assert "Failed to convert" in document.content
-            assert document.metadata["conversion_failed"] 
+            assert document.metadata["conversion_failed"]
 
     def test_process_attachment_no_conversion(self, mock_session):
         """Test processing attachment without file conversion."""

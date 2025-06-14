@@ -14,7 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages" / "qdrant-loader" / "src"))
 
 from qdrant_client import QdrantClient
-
 from qdrant_loader.config import get_settings, initialize_config
 
 
@@ -160,7 +159,7 @@ def analyze_nested_metadata(client: QdrantClient, collection_name: str, limit: i
 
         return points
 
-    except Exception as e:
+    except Exception:
         print("Error analyzing nested metadata: {e}")
         return []
 
@@ -192,7 +191,7 @@ def main():
         # Analyze nested metadata
         analyze_nested_metadata(client, settings.qdrant_collection_name, args.limit)
 
-    except Exception as e:
+    except Exception:
         print("Error: {e}")
         return 1
 

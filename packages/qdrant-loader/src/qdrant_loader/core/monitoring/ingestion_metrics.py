@@ -464,7 +464,7 @@ class IngestionMonitor:
             with open(metrics_file, "w", encoding="utf-8") as f:
                 json.dump(metrics_data, f, indent=2, default=str)
             logger.info("Metrics saved to {metrics_file}")
-        except (OSError, json.JSONDecodeError) as e:
+        except (OSError, json.JSONDecodeError):
             logger.error("Failed to save metrics: {str(e)}")
 
     def clear_metrics(self) -> None:

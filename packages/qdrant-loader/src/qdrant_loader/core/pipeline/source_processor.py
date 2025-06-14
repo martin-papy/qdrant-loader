@@ -78,7 +78,7 @@ class SourceProcessor:
                     )
                     all_documents.extend(documents)
 
-            except Exception as e:
+            except Exception:
                 logger.error(
                     "Failed to process {source_type} source {source_name}: {e}",
                     exc_info=True,
