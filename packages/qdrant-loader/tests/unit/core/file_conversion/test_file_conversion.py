@@ -30,7 +30,7 @@ class TestFileDetector:
 
     def test_is_supported_for_conversion_pdf(self):
         """Test PDF file detection."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 
@@ -88,20 +88,20 @@ class TestFileDetector:
 
     def test_detect_file_type(self):
         """Test file type detection."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 
             try:
                 mime_type, extension = self.detector.detect_file_type(tmp_file.name)
-                assert mime_type == "application/pd"
-                assert extension == ".pd"
+                assert mime_type == "application/pdf"
+                assert extension == ".pdf"
             finally:
                 os.unlink(tmp_file.name)
 
     def test_get_file_type_info(self):
         """Test comprehensive file type information."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 
@@ -109,11 +109,11 @@ class TestFileDetector:
                 info = self.detector.get_file_type_info(tmp_file.name)
 
                 assert info["file_path"] == tmp_file.name
-                assert info["mime_type"] == "application/pd"
-                assert info["file_extension"] == ".pd"
+                assert info["mime_type"] == "application/pdf"
+                assert info["file_extension"] == ".pdf"
                 assert info["file_size"] > 0
                 assert info["is_supported"]
-                assert info["normalized_type"] == "pd"
+                assert info["normalized_type"] == "pdf"
                 assert info["is_excluded"] is False
             finally:
                 os.unlink(tmp_file.name)
@@ -121,7 +121,7 @@ class TestFileDetector:
     @patch("mimetypes.guess_type")
     def test_detect_file_type_mime_fallback(self, mock_guess_type):
         """Test MIME type detection fallback."""
-        mock_guess_type.return_value = ("application/pd", None)
+        mock_guess_type.return_value = ("application/pdf", None)
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             tmp_file.write(b"fake content")
@@ -129,7 +129,7 @@ class TestFileDetector:
 
             try:
                 mime_type, extension = self.detector.detect_file_type(tmp_file.name)
-                assert mime_type == "application/pd"
+                assert mime_type == "application/pdf"
                 mock_guess_type.assert_called_once_with(tmp_file.name)
             finally:
                 os.unlink(tmp_file.name)
@@ -269,7 +269,7 @@ class TestFileConverter:
 
     def test_validate_file_size_valid(self):
         """Test file size validation with valid file."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             # Write small amount of data
             tmp_file.write(b"x" * 1024)  # 1KB
             tmp_file.flush()
@@ -286,7 +286,7 @@ class TestFileConverter:
         config = FileConversionConfig(max_file_size=1024)  # 1KB
         converter = FileConverter(config)
 
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             # Write 2KB of data
             tmp_file.write(b"x" * 2048)
             tmp_file.flush()
@@ -304,14 +304,14 @@ class TestFileConverter:
     def test_validate_file_not_found(self):
         """Test file validation with non-existent file."""
         with pytest.raises(FileAccessError) as exc_info:
-            self.converter._validate_file("/non/existent/file.pd")
+            self.converter._validate_file("/non/existent/file.pdf")
 
         assert "Cannot access file" in str(exc_info.value)
         assert "File does not exist" in str(exc_info.value)
 
     def test_validate_file_not_readable(self):
         """Test file validation with unreadable file."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"test content")
             tmp_file.flush()
 
@@ -356,7 +356,7 @@ class TestFileConverter:
             mock_instance.convert.return_value = mock_result
 
             # Create test file
-            with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
                 tmp_file.write(b"fake pdf content")
                 tmp_file.flush()
 
@@ -381,7 +381,7 @@ class TestFileConverter:
             )
 
             # Create test file
-            with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
                 tmp_file.write(b"fake pdf content")
                 tmp_file.flush()
 
@@ -397,14 +397,14 @@ class TestFileConverter:
     def test_convert_file_not_found(self):
         """Test file conversion with non-existent file."""
         with pytest.raises(MarkItDownError) as exc_info:
-            self.converter.convert_file("/non/existent/file.pd")
+            self.converter.convert_file("/non/existent/file.pdf")
 
         # The FileAccessError gets wrapped in MarkItDownError
         assert "MarkItDown conversion failed" in str(exc_info.value)
 
     def test_create_fallback_document(self):
         """Test fallback document creation."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 
@@ -428,11 +428,11 @@ class TestFileConversionExceptions:
 
     def test_file_conversion_error_base(self):
         """Test base FileConversionError exception."""
-        error = FileConversionError("Test error", "/path/to/file.pd", "pd")
+        error = FileConversionError("Test error", "/path/to/file.pdf", "pdf")
 
         assert str(error) == "Test error"
-        assert error.file_path == "/path/to/file.pd"
-        assert error.file_type == "pd"
+        assert error.file_path == "/path/to/file.pdf"
+        assert error.file_type == "pdf"
 
     def test_unsupported_file_type_error(self):
         """Test UnsupportedFileTypeError exception."""
@@ -444,46 +444,46 @@ class TestFileConversionExceptions:
 
     def test_file_size_exceeded_error(self):
         """Test FileSizeExceededError exception."""
-        error = FileSizeExceededError(2048, 1024, "/path/to/file.pd")
+        error = FileSizeExceededError(2048, 1024, "/path/to/file.pdf")
 
         assert "exceeds maximum allowed size" in str(error)
         assert "2048 bytes" in str(error)
         assert "1024 bytes" in str(error)
-        assert error.file_path == "/path/to/file.pd"
+        assert error.file_path == "/path/to/file.pdf"
         assert error.file_size == 2048
         assert error.max_size == 1024
 
     def test_conversion_timeout_error(self):
         """Test ConversionTimeoutError exception."""
-        error = ConversionTimeoutError(300, "/path/to/file.pd")
+        error = ConversionTimeoutError(300, "/path/to/file.pdf")
 
         assert "timed out after 300 seconds" in str(error)
-        assert error.file_path == "/path/to/file.pd"
+        assert error.file_path == "/path/to/file.pdf"
         assert error.timeout == 300
 
     def test_markitdown_error(self):
         """Test MarkItDownError exception."""
         original_error = Exception("Original error")
-        error = MarkItDownError(original_error, "/path/to/file.pd", "pd")
+        error = MarkItDownError(original_error, "/path/to/file.pdf", "pdf")
 
         assert "MarkItDown conversion failed" in str(error)
         assert "Original error" in str(error)
-        assert error.file_path == "/path/to/file.pd"
-        assert error.file_type == "pd"
+        assert error.file_path == "/path/to/file.pdf"
+        assert error.file_type == "pdf"
         assert error.original_error == original_error
 
     def test_file_access_error(self):
         """Test FileAccessError exception."""
-        error = FileAccessError("/path/to/file.pd")
+        error = FileAccessError("/path/to/file.pdf")
 
-        assert "Cannot access file: /path/to/file.pd" in str(error)
-        assert error.file_path == "/path/to/file.pd"
+        assert "Cannot access file: /path/to/file.pdf" in str(error)
+        assert error.file_path == "/path/to/file.pdf"
 
     def test_file_access_error_with_original(self):
         """Test FileAccessError with original exception."""
         original_error = OSError("Permission denied")
-        error = FileAccessError("/path/to/file.pd", original_error)
+        error = FileAccessError("/path/to/file.pdf", original_error)
 
-        assert "Cannot access file: /path/to/file.pd" in str(error)
+        assert "Cannot access file: /path/to/file.pdf" in str(error)
         assert "Permission denied" in str(error)
         assert error.original_error == original_error

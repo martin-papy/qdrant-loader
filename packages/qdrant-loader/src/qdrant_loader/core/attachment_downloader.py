@@ -131,9 +131,7 @@ class AttachmentDownloader:
         # In the future, this could be configurable by file type
         return True
 
-    async def download_attachment(
-        self, attachment: AttachmentMetadata
-    ) -> str | None:
+    async def download_attachment(self, attachment: AttachmentMetadata) -> str | None:
         """Download an attachment to a temporary file.
 
         Args:
@@ -338,8 +336,8 @@ class AttachmentDownloader:
                     conversion_failed = True
             else:
                 # For non-convertible files, create a minimal document
-                content = "# {attachment.filename}\n\nFile type: {attachment.mime_type}\nSize: {attachment.size} bytes\n\nThis attachment could not be converted to text."
-                content_type = "mdf"
+                content = f"# {attachment.filename}\n\nFile type: {attachment.mime_type}\nSize: {attachment.size} bytes\n\nThis attachment could not be converted to text."
+                content_type = "md"
                 conversion_method = None
                 conversion_failed = False
 

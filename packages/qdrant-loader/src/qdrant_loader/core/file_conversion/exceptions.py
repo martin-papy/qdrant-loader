@@ -1,7 +1,6 @@
 """Custom exceptions for file conversion operations."""
 
 
-
 class FileConversionError(Exception):
     """Base exception for file conversion errors."""
 
@@ -33,7 +32,7 @@ class UnsupportedFileTypeError(FileConversionError):
             file_type: The unsupported file type
             file_path: Path to the unsupported file
         """
-        message = "File type f'{file_type}' is not supported for conversion"
+        message = f"File type '{file_type}' is not supported for conversion"
         super().__init__(message, file_path, file_type)
 
 

@@ -278,8 +278,8 @@ class TestFileConversionMetadataTracking:
         # Verify conversion metadata is stored
         assert state_record.is_converted
         assert state_record.conversion_method == "markitdown"
-        assert state_record.original_file_type == "pd"
-        assert state_record.original_filename == "test.pd"
+        assert state_record.original_file_type == "pdf"
+        assert state_record.original_filename == "test.pdf"
         assert state_record.file_size == 1024000
         assert state_record.conversion_failed is False
         assert state_record.conversion_time == 2.5
@@ -488,12 +488,12 @@ class TestConversionMetricsTracking:
                 )
 
             document = Document(
-                title="Test Document {i+1}",
-                content="# Test Document {i+1}\n\nContent here.",
+                title=f"Test Document {i+1}",
+                content=f"# Test Document {i+1}\n\nContent here.",
                 content_type="md",
                 source_type=source_type,
                 source=source,
-                url="/path/to/{doc_data['filename']}",
+                url=f"/path/to/{doc_data['filename']}",
                 metadata=metadata,
             )
             await state_manager.update_document_state(document)

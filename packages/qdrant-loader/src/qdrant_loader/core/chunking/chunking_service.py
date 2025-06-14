@@ -43,7 +43,7 @@ class ChunkingService:
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize metrics directory
-        metrics_dir = Path.cwd() / "metricsf"
+        metrics_dir = Path.cwd() / "metrics"
         metrics_dir.mkdir(parents=True, exist_ok=True)
         self.monitor = IngestionMonitor(str(metrics_dir.absolute()))
 
@@ -164,7 +164,7 @@ class ChunkingService:
             List of chunked documents
         """
         self.logger.debug(
-            "Starting document chunkingf",
+            "Starting document chunking",
             extra={
                 "doc_id": document.id,
                 "source": document.source,
@@ -179,7 +179,7 @@ class ChunkingService:
             empty_doc = document.model_copy()
             empty_doc.metadata.update({"chunk_index": 0, "total_chunks": 1})
             self.logger.debug(
-                "Empty document, returning single empty chunkf",
+                "Empty document, returning single empty chunk",
                 extra={"doc_id": document.id, "chunk_id": empty_doc.id},
             )
             return [empty_doc]
@@ -187,7 +187,7 @@ class ChunkingService:
         # Get the appropriate strategy for the document type
         strategy = self._get_strategy(document)
         self.logger.debug(
-            "Selected chunking strategyf",
+            "Selected chunking strategy",
             extra={
                 "doc_id": document.id,
                 "strategy": strategy.__class__.__name__,
@@ -199,7 +199,7 @@ class ChunkingService:
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
             self.logger.debug(
-                "Document chunking completedf",
+                "Document chunking completed",
                 extra={
                     "doc_id": document.id,
                     "chunk_count": len(chunked_docs),

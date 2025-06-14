@@ -206,8 +206,8 @@ class TestHTMLChunkingStrategy:
     def test_identify_section_type_headers(self, html_strategy):
         """Test section type identification for headers."""
         for i in range(1, 7):
-            soup = BeautifulSoup("<h{i}>Heading</h{i}>", "html.parser")
-            tag = soup.find("h{i}")
+            soup = BeautifulSoup(f"<h{i}>Heading</h{i}>", "html.parser")
+            tag = soup.find(f"h{i}")
             assert html_strategy._identify_section_type(tag) == SectionType.HEADER
 
     def test_identify_section_type_semantic_elements(self, html_strategy):
@@ -221,7 +221,7 @@ class TestHTMLChunkingStrategy:
         ]
 
         for tag_name, expected_type in test_cases:
-            soup = BeautifulSoup("<{tag_name}>Content</{tag_name}>", "html.parser")
+            soup = BeautifulSoup(f"<{tag_name}>Content</{tag_name}>", "html.parser")
             tag = soup.find(tag_name)
             assert html_strategy._identify_section_type(tag) == expected_type
 
@@ -241,15 +241,15 @@ class TestHTMLChunkingStrategy:
         ]
 
         for tag_name, expected_type in test_cases:
-            soup = BeautifulSoup("<{tag_name}>Content</{tag_name}>", "html.parser")
+            soup = BeautifulSoup(f"<{tag_name}>Content</{tag_name}>", "html.parser")
             tag = soup.find(tag_name)
             assert html_strategy._identify_section_type(tag) == expected_type
 
     def test_get_heading_level(self, html_strategy):
         """Test heading level extraction."""
         for i in range(1, 7):
-            soup = BeautifulSoup("<h{i}>Heading</h{i}>", "html.parser")
-            tag = soup.find("h{i}")
+            soup = BeautifulSoup(f"<h{i}>Heading</h{i}>", "html.parser")
+            tag = soup.find(f"h{i}")
             assert html_strategy._get_heading_level(tag) == i
 
         # Test non-heading element

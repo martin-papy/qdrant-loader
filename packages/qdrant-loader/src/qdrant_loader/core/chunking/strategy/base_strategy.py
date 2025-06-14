@@ -388,7 +388,7 @@ class BaseChunkingStrategy(ABC):
             elif total_chunks > 50:
                 skip_reason = "too_many_chunks"
             elif not self._should_apply_nlp(chunk_content, file_path, content_type):
-                skip_reason = "content_type_inappropriatef"
+                skip_reason = "content_type_inappropriate"
 
             metadata.update(
                 {
@@ -415,7 +415,7 @@ class BaseChunkingStrategy(ABC):
                             "nlp_skipped": False,
                             "nlp_content_extracted": len(nlp_content)
                             < len(chunk_content),
-                            "nlp_content_ratiof": (
+                            "nlp_content_ratio": (
                                 len(nlp_content) / len(chunk_content)
                                 if chunk_content
                                 else 0
@@ -432,9 +432,9 @@ class BaseChunkingStrategy(ABC):
                             "skip_reason": "no_nlp_worthy_content",
                         }
                     )
-            except Exception:
+            except Exception as e:
                 self.logger.warning(
-                    "NLP processing failed for chunk {chunk_index}: {e}f"
+                    f"NLP processing failed for chunk {chunk_index}: {e}"
                 )
                 metadata.update(
                     {

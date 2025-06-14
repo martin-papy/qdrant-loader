@@ -269,14 +269,16 @@ class TestSourceFilter:
         source_types = ["git", "confluence", "jira", "localfile", "publicdocs"]
         expected_counts = [2, 1, 1, 1, 0]  # Expected count for each type
 
-        for source_type, expected_count in zip(source_types, expected_counts, strict=False):
+        for source_type, expected_count in zip(
+            source_types, expected_counts, strict=False
+        ):
             result = filter_obj.filter_sources(
                 sample_sources_config, source_type=source_type
             )
             actual_count = len(getattr(result, source_type))
             assert (
                 actual_count == expected_count
-            ), "Failed for {source_type}: expected {expected_count}, got {actual_count}"
+            ), f"Failed for {source_type}: expected {expected_count}, got {actual_count}"
 
     def test_filter_performance_with_large_config(self):
         """Test filtering performance with a large number of sources."""
@@ -288,9 +290,9 @@ class TestSourceFilter:
         for i in range(1000):
             source = MagicMock(spec=SourceConfig)
             source.source_type = "git"
-            source.source = "repo{i}"
-            source.name = "repo{i}"
-            git_sources["repo{i}"] = source
+            source.source = f"repo{i}"
+            source.name = f"repo{i}"
+            git_sources[f"repo{i}"] = source
 
         large_config.git = git_sources
 

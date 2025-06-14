@@ -364,7 +364,9 @@ class TestJSONChunkingStrategy:
     def test_extract_json_elements_object_limit(self, json_strategy):
         """Test object processing limit."""
         # Create object with many keys
-        data = {"key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)}
+        data = {
+            f"key_{i}": f"value_{i}" for i in range(MAX_OBJECT_KEYS_TO_PROCESS + 10)
+        }
 
         parent = JSONElement(
             name="parent",
@@ -382,7 +384,7 @@ class TestJSONChunkingStrategy:
     def test_extract_json_elements_array_limit(self, json_strategy):
         """Test array processing limit."""
         # Create large array
-        data = ["item_{i}" for i in range(MAX_ARRAY_ITEMS_TO_PROCESS + 10)]
+        data = [f"item_{i}" for i in range(MAX_ARRAY_ITEMS_TO_PROCESS + 10)]
 
         parent = JSONElement(
             name="parent",
@@ -533,11 +535,11 @@ class TestJSONChunkingStrategy:
         elements = []
         for i in range(3):
             element = JSONElement(
-                name="item_{i}",
+                name=f"item_{i}",
                 element_type=JSONElementType.ARRAY_ITEM,
-                content='"value_{i}"',
-                value="value_{i}",
-                path="root[{i}]",
+                content=f'"value_{i}"',
+                value=f"value_{i}",
+                path=f"root[{i}]",
             )
             elements.append(element)
 
@@ -627,7 +629,7 @@ class TestJSONChunkingStrategy:
 
     def test_split_large_element_object(self, json_strategy):
         """Test splitting large object element."""
-        large_object = {"key_{i}": f"value_{i}" for i in range(100)}
+        large_object = {f"key_{i}": f"value_{i}" for i in range(100)}
         large_element = JSONElement(
             name="large_object",
             element_type=JSONElementType.OBJECT,
@@ -650,7 +652,7 @@ class TestJSONChunkingStrategy:
 
     def test_split_large_element_text_fallback(self, json_strategy):
         """Test splitting large element with text fallback."""
-        large_content = "\n".join(["line_{i}" for i in range(100)])
+        large_content = "\n".join([f"line_{i}" for i in range(100)])
         large_element = JSONElement(
             name="large_text",
             element_type=JSONElementType.VALUE,

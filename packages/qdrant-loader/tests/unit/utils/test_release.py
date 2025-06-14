@@ -112,7 +112,7 @@ def test_update_package_version():
         update_package_version("qdrant-loader", new_version)
         assert mock_handler.content["project"]["version"] == new_version
         mock_log.info.assert_called_with(
-            "Updating version in packages/qdrant-loader/pyproject.toml to {new_version}"
+            f"Updating version in packages/qdrant-loader/pyproject.toml to {new_version}"
         )
         mock_log.debug.assert_called_with(
             "Version updated successfully for qdrant-loader"
@@ -121,7 +121,7 @@ def test_update_package_version():
         # Test dry run
         update_package_version("qdrant-loader", new_version, dry_run=True)
         mock_log.info.assert_called_with(
-            "[DRY RUN] Would update version in packages/qdrant-loader/pyproject.toml to {new_version}"
+            f"[DRY RUN] Would update version in packages/qdrant-loader/pyproject.toml to {new_version}"
         )
 
 

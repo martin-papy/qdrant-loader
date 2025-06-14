@@ -45,14 +45,14 @@ class TestFileTypeDetection:
 
     def test_detect_file_type_pdf(self, file_detector):
         """Test file type detection for PDF files."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"%PDF-1.4")  # PDF header
 
         try:
             mime_type, extension = file_detector.detect_file_type(str(temp_path))
-            assert mime_type == "application/pd"
-            assert extension == ".pd"
+            assert mime_type == "application/pdf"
+            assert extension == ".pdf"
         finally:
             temp_path.unlink(missing_ok=True)
 
@@ -77,11 +77,11 @@ class TestFileTypeDetection:
     def test_detect_file_type_nonexistent_file(self, file_detector):
         """Test file type detection for nonexistent file."""
         mime_type, extension = file_detector.detect_file_type(
-            "/path/to/nonexistent/file.pd"
+            "/path/to/nonexistent/file.pdf"
         )
         # Should return None for MIME type but still extract extension
         assert mime_type is None
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
     def test_detect_file_type_no_extension(self, file_detector):
         """Test file type detection for file without extension."""
@@ -116,7 +116,7 @@ class TestMimeTypeDetection:
 
     def test_detect_mime_type_nonexistent_file(self, file_detector):
         """Test MIME type detection for nonexistent file."""
-        mime_type = file_detector._detect_mime_type("/path/to/nonexistent/file.pd")
+        mime_type = file_detector._detect_mime_type("/path/to/nonexistent/file.pdf")
         assert mime_type is None
 
     def test_detect_mime_type_permission_error(self, file_detector):
@@ -126,7 +126,7 @@ class TestMimeTypeDetection:
             mock_exists.return_value = True
             mock_access.return_value = False  # No read permission
 
-            mime_type = file_detector._detect_mime_type("/path/to/restricted/file.pd")
+            mime_type = file_detector._detect_mime_type("/path/to/restricted/file.pdf")
             assert mime_type is None
 
     def test_detect_mime_type_os_error(self, file_detector):
@@ -134,7 +134,7 @@ class TestMimeTypeDetection:
         with patch("os.path.exists") as mock_exists:
             mock_exists.side_effect = OSError("OS error")
 
-            mime_type = file_detector._detect_mime_type("/path/to/file.pd")
+            mime_type = file_detector._detect_mime_type("/path/to/file.pdf")
             assert mime_type is None
 
 
@@ -143,7 +143,7 @@ class TestSupportedForConversion:
 
     def test_is_supported_for_conversion_pdf(self, file_detector):
         """Test checking if PDF file is supported for conversion."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"%PDF-1.4")
 
@@ -212,7 +212,7 @@ class TestSupportedForConversion:
     def test_is_supported_for_conversion_by_extension_fallback(self, file_detector):
         """Test that files are supported by extension fallback when MIME detection fails."""
         # Create a file with supported extension but no MIME type detection
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"Not a real PDF")  # Invalid PDF content
 
@@ -242,7 +242,7 @@ class TestSupportedFormats:
     def test_supported_mime_types_include_common_formats(self, file_detector):
         """Test that supported MIME types include common formats."""
         common_types = [
-            "application/pd",
+            "application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -263,7 +263,7 @@ class TestSupportedFormats:
         extensions = FileDetector.get_supported_extensions()
         assert isinstance(extensions, set)
         assert len(extensions) > 0
-        assert ".pd" in extensions  # Extensions include the dot
+        assert ".pdf" in extensions  # Extensions include the dot
         assert ".docx" in extensions
 
     def test_get_supported_mime_types_class_method(self, file_detector):
@@ -271,7 +271,7 @@ class TestSupportedFormats:
         mime_types = FileDetector.get_supported_mime_types()
         assert isinstance(mime_types, set)
         assert len(mime_types) > 0
-        assert "application/pd" in mime_types
+        assert "application/pdf" in mime_types
 
 
 class TestErrorHandling:
@@ -284,7 +284,7 @@ class TestErrorHandling:
             mock_detect.side_effect = Exception("Detection error")
 
             # This should trigger the exception handling in detect_file_type
-            mime_type, extension = file_detector.detect_file_type("/some/path.pd")
+            mime_type, extension = file_detector.detect_file_type("/some/path.pdf")
             # When any exception occurs, the method returns (None, None)
             assert mime_type is None
             assert extension is None
@@ -296,7 +296,7 @@ class TestErrorHandling:
             mock_detect.return_value = (None, None)  # Simulate complete failure
 
             # Should return False when detection completely fails
-            result = file_detector.is_supported_for_conversion("/path/to/document.pd")
+            result = file_detector.is_supported_for_conversion("/path/to/document.pdf")
             assert result is False
 
 
@@ -312,24 +312,24 @@ class TestEdgeCases:
 
     def test_very_long_file_path(self, file_detector):
         """Test handling of very long file path."""
-        long_path = "/very/long/path/" + "a" * 1000 + ".pd"
+        long_path = "/very/long/path/" + "a" * 1000 + ".pdf"
         mime_type, extension = file_detector.detect_file_type(long_path)
         # Should handle gracefully and detect extension
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
     def test_file_path_with_special_characters(self, file_detector):
         """Test handling of file path with special characters."""
-        special_path = "/path/with spaces/and-dashes/file (1).pd"
+        special_path = "/path/with spaces/and-dashes/file (1).pdf"
         mime_type, extension = file_detector.detect_file_type(special_path)
         # Should detect extension correctly
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
     def test_file_path_with_unicode(self, file_detector):
         """Test handling of file path with Unicode characters."""
-        unicode_path = "/path/with/unicode/文档.pd"
+        unicode_path = "/path/with/unicode/文档.pdf"
         mime_type, extension = file_detector.detect_file_type(unicode_path)
         # Should detect extension correctly
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
     def test_file_with_multiple_extensions(self, file_detector):
         """Test handling of file with multiple extensions."""
@@ -340,17 +340,17 @@ class TestEdgeCases:
 
     def test_hidden_file_with_extension(self, file_detector):
         """Test handling of hidden file with extension."""
-        hidden_path = "/path/to/.hidden.pd"
+        hidden_path = "/path/to/.hidden.pdf"
         mime_type, extension = file_detector.detect_file_type(hidden_path)
         # Should detect extension correctly
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
     def test_case_insensitive_extension(self, file_detector):
         """Test that extension detection is case insensitive."""
         upper_path = "/path/to/document.PDF"
         mime_type, extension = file_detector.detect_file_type(upper_path)
         # Should normalize to lowercase
-        assert extension == ".pd"
+        assert extension == ".pdf"
 
 
 if __name__ == "__main__":

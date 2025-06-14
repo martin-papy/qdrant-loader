@@ -91,7 +91,7 @@ class PipelineOrchestrator:
                     or not project_context.config.sources
                 ):
                     raise ValueError(
-                        "Project f'{project_id}' not found or has no configuration"
+                        f"Project '{project_id}' not found or has no configuration"
                     )
 
                 logger.debug(f"Using project configuration for project: {project_id}")
@@ -120,7 +120,7 @@ class PipelineOrchestrator:
                     filtered_config.localfile,
                 ]
             ):
-                raise ValueError("No sources found for type f'{source_type}'")
+                raise ValueError(f"No sources found for type '{source_type}'")
 
             # Collect documents from all sources
             documents = await self._collect_documents_from_sources(
@@ -274,7 +274,7 @@ class PipelineOrchestrator:
 
                 logger.info(
                     f"🔍 Change detection: {len(changes['new'])} new, "
-                    "{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
+                    f"{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
                 )
 
                 # Return new and updated documents

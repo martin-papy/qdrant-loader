@@ -125,11 +125,11 @@ class QdrantManager:
             # Create index for document_id field
             client.create_payload_index(
                 collection_name=self.collection_name,
-                field_name="document_idf",
+                field_name="document_id",
                 field_schema={"type": "keyword"},  # type: ignore
             )
 
-            self.logger.debug("Collection {self.collection_name} created successfully")
+            self.logger.debug(f"Collection {self.collection_name} created successfully")
         except Exception as e:
             self.logger.error("Failed to create collection", error=str(e))
             raise
@@ -141,7 +141,7 @@ class QdrantManager:
             points: List of points to upsert
         """
         self.logger.debug(
-            "Upserting pointsf",
+            "Upserting points",
             extra={"point_count": len(points), "collection": self.collection_name},
         )
 
@@ -151,12 +151,12 @@ class QdrantManager:
                 client.upsert, collection_name=self.collection_name, points=points
             )
             self.logger.debug(
-                "Successfully upserted pointsf",
+                "Successfully upserted points",
                 extra={"point_count": len(points), "collection": self.collection_name},
             )
         except Exception as e:
             self.logger.error(
-                "Failed to upsert pointsf",
+                "Failed to upsert points",
                 extra={
                     "error": str(e),
                     "point_count": len(points),
@@ -268,7 +268,7 @@ class QdrantManager:
             document_ids: List of document IDs to delete
         """
         self.logger.debug(
-            "Deleting points by document IDf",
+            "Deleting points by document ID",
             extra={
                 "document_count": len(document_ids),
                 "collection": self.collection_name,
@@ -289,7 +289,7 @@ class QdrantManager:
                 ),
             )
             self.logger.debug(
-                "Successfully deleted pointsf",
+                "Successfully deleted points",
                 extra={
                     "document_count": len(document_ids),
                     "collection": self.collection_name,

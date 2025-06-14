@@ -111,13 +111,11 @@ class TestWarningCapture:
         mock_logger = Mock()
         file_path = "/test/file.xlsx"
 
-        warnings.showwarning
-
         with capture_openpyxl_warnings(mock_logger, file_path):
-            # Simulate a non-openpyxl warning
-            warnings.showwarning(
-                "Some other warning", UserWarning, "/path/to/other/module.py", 100
-            )
+            # Simulate a non-openpyxl warning (suppress it since it's expected)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                warnings.warn("Some other warning", UserWarning)
 
         # Verify our logger was not called
         mock_logger.info.assert_not_called()

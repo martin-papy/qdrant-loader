@@ -339,14 +339,14 @@ class TestFileConversion:
     def test_convert_file_validation_error(self, file_converter):
         """Test file conversion with validation error."""
         with pytest.raises(MarkItDownError) as exc_info:
-            file_converter.convert_file("/path/to/nonexistent/file.pd")
+            file_converter.convert_file("/path/to/nonexistent/file.pdf")
 
         # The FileAccessError should be wrapped in MarkItDownError
         assert "Cannot access file" in str(exc_info.value)
 
     def test_convert_file_markitdown_error(self, file_converter):
         """Test file conversion with MarkItDown error."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -377,7 +377,7 @@ class TestFileConversion:
 
     def test_convert_file_result_without_text_content(self, file_converter):
         """Test file conversion with result that doesn't have text_content attribute."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 
@@ -423,10 +423,10 @@ class TestFallbackDocument:
                 "file_size": 1024000,
             }
 
-            result = file_converter.create_fallback_document("document.pd", error)
+            result = file_converter.create_fallback_document("document.pdf", error)
 
-            assert "# document.pd" in result
-            assert "application/pd" in result
+            assert "# document.pdf" in result
+            assert "application/pdf" in result
             assert "1,024,000 bytes" in result
             assert "Conversion failed" in result
             assert "❌ Failed" in result
@@ -441,13 +441,13 @@ class TestFallbackDocument:
             mock_get_info.return_value = {"normalized_type": "unknown", "file_size": 0}
 
             result = file_converter.create_fallback_document(
-                "/path/to/document.pd", error
+                "/path/to/document.pdf", error
             )
 
             # Should extract just the filename
-            assert "# document.pd" in result
+            assert "# document.pdf" in result
             assert (
-                "/path/to/document.pd" in result
+                "/path/to/document.pdf" in result
             )  # Full path should be in the content
 
     def test_create_fallback_document_missing_file_info(self, file_converter):
@@ -459,9 +459,9 @@ class TestFallbackDocument:
         ) as mock_get_info:
             mock_get_info.return_value = {}  # Empty info
 
-            result = file_converter.create_fallback_document("document.pd", error)
+            result = file_converter.create_fallback_document("document.pdf", error)
 
-            assert "# document.pd" in result
+            assert "# document.pdf" in result
             assert "unknown" in result  # Should use default values
             assert "0 bytes" in result
 
@@ -487,7 +487,7 @@ class TestErrorHandling:
 
     def test_convert_file_with_permission_error(self, file_converter):
         """Test conversion with permission error."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"PDF content")
 

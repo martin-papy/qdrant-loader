@@ -58,7 +58,7 @@ class StateManager:
             # Check if the database file exists and is writable
             if os.path.exists(db_file) and not os.access(db_file, os.W_OK):
                 raise DatabaseError(
-                    "Database file f'{db_file}' exists but is not writable. "
+                    f"Database file '{db_file}' exists but is not writable. "
                     "Please check file permissions."
                 )
             # If file doesn't exist, check if directory is writable
@@ -66,13 +66,13 @@ class StateManager:
                 db_dir = os.path.dirname(db_file) or "."
                 if not os.access(db_dir, os.W_OK):
                     raise DatabaseError(
-                        "Cannot create database file in f'{db_dir}'. "
+                        f"Cannot create database file in '{db_dir}'. "
                         "Directory is not writable. Please check directory permissions."
                     )
 
         # Create async engine for async operations
         engine_args = {}
-        if not db_url == "sqlite:///:memory:f":
+        if not db_url == "sqlite:///:memory:":
             engine_args.update(
                 {
                     "pool_size": self.config.connection_pool["size"],
@@ -83,7 +83,7 @@ class StateManager:
             )
 
         try:
-            self.logger.debug("Creating async engine for database: {db_file}")
+            self.logger.debug(f"Creating async engine for database: {db_file}")
             self._engine = create_async_engine(
                 f"sqlite+aiosqlite:///{db_file}", **engine_args
             )
@@ -107,7 +107,7 @@ class StateManager:
             # Handle specific SQLite errors
             if "readonly database" in str(e).lower():
                 raise DatabaseError(
-                    "Cannot write to database f'{db_file}'. Database is read-only."
+                    f"Cannot write to database '{db_file}'. Database is read-only."
                 ) from e
             raise DatabaseError(f"Failed to initialize database: {e}") from e
         except Exception as e:
@@ -192,7 +192,7 @@ class StateManager:
                 )
 
                 self.logger.debug(
-                    "Ingestion history updatedf",
+                    "Ingestion history updated",
                     extra={
                         "project_id": project_id,
                         "source_type": ingestion.source_type,
@@ -201,9 +201,9 @@ class StateManager:
                         "document_count": ingestion.document_count,
                     },
                 )
-        except Exception:
+        except Exception as e:
             self.logger.error(
-                "Error updating last ingestion for {source_type}:{source}: {str(e)}",
+                f"Error updating last ingestion for {source_type}:{source}: {str(e)}",
                 exc_info=True,
             )
             raise
@@ -266,7 +266,7 @@ class StateManager:
                 )
                 now = datetime.now(UTC)
                 self.logger.debug(
-                    "Searching for document to be deleted.f",
+                    "Searching for document to be deleted.",
                     extra={
                         "document_id": document_id,
                         "source_type": source_type,
@@ -275,7 +275,7 @@ class StateManager:
                     },
                 )
                 self.logger.debug(
-                    "Executing query to find document {source_type}:{source}:{document_id}"
+                    f"Executing query to find document {source_type}:{source}:{document_id}"
                 )
 
                 # Build query with optional project filter
@@ -307,7 +307,7 @@ class StateManager:
                         f"Successfully committed changes for {source_type}:{source}:{document_id}"
                     )
                     self.logger.debug(
-                        "Document marked as deletedf",
+                        "Document marked as deleted",
                         extra={
                             "document_id": document_id,
                             "source_type": source_type,
@@ -317,7 +317,7 @@ class StateManager:
                     )
                 else:
                     self.logger.warning(
-                        "Document not found: {source_type}:{source}:{document_id}"
+                        f"Document not found: {source_type}:{source}:{document_id}"
                     )
         except Exception as e:
             self.logger.error(
@@ -557,7 +557,7 @@ class StateManager:
                 )
 
                 self.logger.debug(
-                    "Document state updatedf",
+                    "Document state updated",
                     extra={
                         "project_id": project_id,
                         "document_id": document_state_record.document_id,
@@ -571,7 +571,7 @@ class StateManager:
                 return document_state_record
         except Exception as e:
             self.logger.error(
-                "Failed to update document statef",
+                "Failed to update document state",
                 extra={
                     "project_id": project_id,
                     "document_id": document.id,
@@ -628,7 +628,7 @@ class StateManager:
 
                 await session.commit()
                 self.logger.debug(
-                    "Conversion metrics updatedf",
+                    "Conversion metrics updated",
                     extra={
                         "source_type": source_type,
                         "source": source,
@@ -680,7 +680,7 @@ class StateManager:
                             if attachments_processed is not None
                             else 0
                         ),
-                        "total_conversion_timef": (
+                        "total_conversion_time": (
                             total_time if total_time is not None else 0.0
                         ),
                     }
@@ -691,9 +691,9 @@ class StateManager:
                         "attachments_processed_count": 0,
                         "total_conversion_time": 0.0,
                     }
-        except Exception:
+        except Exception as e:
             self.logger.error(
-                "Error getting conversion metrics for {source_type}:{source}: {str(e)}",
+                f"Error getting conversion metrics for {source_type}:{source}: {str(e)}",
                 exc_info=True,
             )
             raise

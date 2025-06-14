@@ -152,7 +152,7 @@ class TestPublicDocsIntegration:
             else:
                 test_path = exclude_path
 
-            test_url = "{base_url}{test_path}"
+            test_url = f"{base_url}{test_path}"
             should_process = connector._should_process_url(test_url)
 
             # This URL should be excluded

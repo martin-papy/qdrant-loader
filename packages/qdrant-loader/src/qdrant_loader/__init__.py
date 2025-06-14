@@ -43,7 +43,16 @@ def __getattr__(name):
 
         return QdrantManager
     else:
-        raise AttributeError("module f'{__name__}' has no attribute f'{name}'")
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
-__all__ = ["__version__"]
+__all__ = [
+    "__version__",
+    "Document",
+    "EmbeddingService",
+    "QdrantManager",
+    "Settings",
+    "GlobalConfig",
+    "SemanticAnalysisConfig",
+    "ChunkingConfig",
+]

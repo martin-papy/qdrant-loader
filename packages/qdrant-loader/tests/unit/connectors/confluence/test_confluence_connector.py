@@ -95,7 +95,7 @@ class TestConfluenceConnector:
     async def test_api_url_construction(self, connector):
         """Test API URL construction."""
         endpoint = "content/search"
-        expected_url = "{connector.base_url}/rest/api/{endpoint}"
+        expected_url = f"{connector.base_url}/rest/api/{endpoint}"
         assert connector._get_api_url(endpoint) == expected_url
 
     @pytest.mark.asyncio

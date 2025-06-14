@@ -187,7 +187,7 @@ class TestBaseChunkingStrategy:
             strategy = ConcreteChunkingStrategy(mock_settings)
 
             # Binary extensions should not apply NLP
-            assert strategy._should_apply_nlp("content", "file.pd") is False
+            assert strategy._should_apply_nlp("content", "file.pdf") is False
             assert strategy._should_apply_nlp("content", "file.jpg") is False
             assert strategy._should_apply_nlp("content", "file.zip") is False
 

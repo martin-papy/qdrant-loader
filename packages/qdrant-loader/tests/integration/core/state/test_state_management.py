@@ -59,8 +59,8 @@ class TestFileConversionStateTracking:
         # Verify conversion metadata is stored
         assert state_record.is_converted
         assert state_record.conversion_method == "markitdown"
-        assert state_record.original_file_type == "pd"
-        assert state_record.original_filename == "test.pd"
+        assert state_record.original_file_type == "pdf"
+        assert state_record.original_filename == "test.pdf"
         assert state_record.file_size == 1024000
         assert state_record.conversion_failed is False
         assert state_record.conversion_time == 2.5
@@ -229,11 +229,11 @@ class TestAttachmentStateTracking:
         for i, att_data in enumerate(attachments_data):
             attachment_doc = Document(
                 title=att_data["title"],
-                content="# {att_data['title']}\n\nProcessed attachment content.",
+                content=f"# {att_data['title']}\n\nProcessed attachment content.",
                 content_type="md",
                 source_type="jira",
                 source="test_project",
-                url="https://company.atlassian.net/secure/attachment/{att_data['attachment_id']}/{att_data['filename']}",
+                url=f"https://company.atlassian.net/secure/attachment/{att_data['attachment_id']}/{att_data['filename']}",
                 metadata={
                     "is_attachment": True,
                     "parent_document_id": parent_doc.id,
@@ -342,12 +342,12 @@ class TestConversionMetricsTracking:
                 )
 
             document = Document(
-                title="Test Document {i+1}",
-                content="# Test Document {i+1}\n\nContent here.",
+                title=f"Test Document {i+1}",
+                content=f"# Test Document {i+1}\n\nContent here.",
                 content_type="md",
                 source_type=source_type,
                 source=source,
-                url="/path/to/{doc_data['filename']}",
+                url=f"/path/to/{doc_data['filename']}",
                 metadata=metadata,
             )
             await state_manager.update_document_state(document)

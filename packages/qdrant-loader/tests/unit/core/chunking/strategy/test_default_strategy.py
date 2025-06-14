@@ -338,7 +338,7 @@ class TestDefaultChunkingStrategy:
             mock_encoding.encode.return_value = list(
                 range(200)
             )  # Enough for multiple chunks
-            mock_encoding.decode.side_effect = lambda tokens: "chunk_{len(tokens)}"
+            mock_encoding.decode.side_effect = lambda tokens: f"chunk_{len(tokens)}"
             mock_tiktoken.get_encoding.return_value = mock_encoding
 
             with patch(
@@ -358,7 +358,7 @@ class TestDefaultChunkingStrategy:
                         skip_nlp=False,
                     ):
                         mock_chunk_doc = Mock(spec=Document)
-                        mock_chunk_doc.id = "chunk_{chunk_index}"
+                        mock_chunk_doc.id = f"chunk_{chunk_index}"
                         mock_chunk_doc.metadata = {}
                         mock_chunk_doc.content = chunk_content
                         return mock_chunk_doc
@@ -369,7 +369,7 @@ class TestDefaultChunkingStrategy:
                         Document, "generate_chunk_id"
                     ) as mock_generate_id:
                         mock_generate_id.side_effect = (
-                            lambda doc_id, chunk_idx: "{doc_id}_chunk_{chunk_idx}"
+                            lambda doc_id, chunk_idx: f"{doc_id}_chunk_{chunk_idx}"
                         )
 
                         result = strategy.chunk_document(sample_document)
@@ -377,7 +377,7 @@ class TestDefaultChunkingStrategy:
                         # Verify unique IDs were generated
                         assert len(result) > 1
                         for i, chunk_doc in enumerate(result):
-                            expected_id = "{sample_document.id}_chunk_{i}"
+                            expected_id = f"{sample_document.id}_chunk_{i}"
                             assert chunk_doc.id == expected_id
 
     def test_chunk_document_preserves_metadata(self, mock_settings, sample_document):
@@ -400,7 +400,7 @@ class TestDefaultChunkingStrategy:
                         skip_nlp=False,
                     ):
                         mock_chunk_doc = Mock(spec=Document)
-                        mock_chunk_doc.id = "chunk_{chunk_index}"
+                        mock_chunk_doc.id = f"chunk_{chunk_index}"
                         mock_chunk_doc.metadata = original_doc.metadata.copy()
                         mock_chunk_doc.content = chunk_content
                         return mock_chunk_doc

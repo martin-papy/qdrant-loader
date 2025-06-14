@@ -132,7 +132,7 @@ class TestCloneOperations:
 
                     # Verify the URL was modified to include the token
                     call_args = mock_clone_from.call_args
-                    assert "https://{auth_token}@github.com" in call_args[0][0]
+                    assert f"https://{auth_token}@github.com" in call_args[0][0]
 
     def test_clone_with_retry_on_failure(self, git_operations, temp_dir):
         """Test cloning with retry on failure."""

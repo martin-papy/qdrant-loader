@@ -42,7 +42,7 @@ class TestConversionMetricsDataClasses:
             conversion_success=True,
             conversion_time=2.5,
             conversion_method="markitdown",
-            original_file_type="pd",
+            original_file_type="pdf",
             file_size=1024000,
         )
 
@@ -50,7 +50,7 @@ class TestConversionMetricsDataClasses:
         assert metrics.conversion_success
         assert metrics.conversion_time == 2.5
         assert metrics.conversion_method == "markitdown"
-        assert metrics.original_file_type == "pd"
+        assert metrics.original_file_type == "pdf"
         assert metrics.file_size == 1024000
 
     def test_batch_metrics_with_conversion_fields(self):
@@ -90,8 +90,8 @@ class TestConversionTracking:
     def test_start_conversion_tracking(self, monitor):
         """Test starting conversion tracking for a file."""
         operation_id = "conv_test_001"
-        file_path = "/path/to/document.pd"
-        file_type = "pd"
+        file_path = "/path/to/document.pdf"
+        file_type = "pdf"
         file_size = 2048000
 
         monitor.start_conversion(operation_id, file_path, file_type, file_size)
@@ -99,7 +99,7 @@ class TestConversionTracking:
         assert operation_id in monitor.ingestion_metrics
         metrics = monitor.ingestion_metrics[operation_id]
         assert metrics.conversion_attempted
-        assert metrics.original_file_type == "pd"
+        assert metrics.original_file_type == "pdf"
         assert metrics.file_size == 2048000
         assert metrics.metadata["file_path"] == file_path
         assert metrics.metadata["file_type"] == file_type
@@ -194,7 +194,7 @@ class TestConversionTracking:
 
         for conv in conversions:
             monitor.start_conversion(
-                conv["id"], "/path/to/file.{conv['file_type']}", conv["file_type"]
+                conv["id"], f"/path/to/file.{conv['file_type']}", conv["file_type"]
             )
             monitor.end_conversion(
                 conv["id"],
@@ -210,7 +210,7 @@ class TestConversionTracking:
         assert conv_metrics.failed_conversions == 1
         assert conv_metrics.conversion_methods["markitdown"] == 3
         assert conv_metrics.conversion_methods["markitdown_fallback"] == 1
-        assert conv_metrics.file_types_processed["pd"] == 2
+        assert conv_metrics.file_types_processed["pdf"] == 2
         assert conv_metrics.file_types_processed["docx"] == 1
         assert conv_metrics.file_types_processed["pptx"] == 1
 
@@ -235,7 +235,7 @@ class TestConversionTracking:
 
         for conv in conversions:
             # Start conversion
-            monitor.start_conversion(conv["id"], "/path/to/file.pd", "pd")
+            monitor.start_conversion(conv["id"], "/path/to/file.pdf", "pdf")
 
             # Manually set start time to control duration
             metrics = monitor.ingestion_metrics[conv["id"]]
@@ -345,7 +345,7 @@ class TestConversionSummary:
         assert summary["average_conversion_time"] == 4.5
         assert summary["attachments_processed"] == 5
         assert summary["conversion_methods"]["markitdown"] == 8
-        assert summary["file_types_processed"]["pd"] == 4
+        assert summary["file_types_processed"]["pdf"] == 4
         assert summary["error_types"]["PasswordProtectedError"] == 1
 
     def test_conversion_summary_with_no_data(self, monitor):
@@ -374,7 +374,7 @@ class TestMetricsPersistence:
         batch_id = "test_batch_001"
 
         # Add conversion operation
-        monitor.start_conversion(operation_id, "/path/to/test.pd", "pd", 1024000)
+        monitor.start_conversion(operation_id, "/path/to/test.pdf", "pdf", 1024000)
         monitor.end_conversion(
             operation_id, success=True, conversion_method="markitdown"
         )
@@ -406,7 +406,7 @@ class TestMetricsPersistence:
         assert op_data["conversion_attempted"]
         assert op_data["conversion_success"]
         assert op_data["conversion_method"] == "markitdown"
-        assert op_data["original_file_type"] == "pd"
+        assert op_data["original_file_type"] == "pdf"
         assert op_data["file_size"] == 1024000
 
         # Check batch metrics include conversion fields
@@ -427,7 +427,7 @@ class TestMetricsPersistence:
     def test_clear_metrics_includes_conversion_data(self, monitor):
         """Test that clearing metrics also clears conversion data."""
         # Add some conversion data
-        monitor.start_conversion("test_op", "/path/to/file.pd", "pd")
+        monitor.start_conversion("test_op", "/path/to/file.pdf", "pdf")
         monitor.end_conversion("test_op", success=True, conversion_method="markitdown")
         monitor.record_attachment_processed()
 

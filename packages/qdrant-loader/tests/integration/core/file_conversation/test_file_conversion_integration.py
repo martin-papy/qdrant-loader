@@ -23,17 +23,20 @@ class TestFileConversionIntegration:
         self.config = FileConversionConfig()
         self.converter = FileConverter(self.config)
         self.fixtures_dir = (
-            Path(__file__).parent.parent / "fixtures" / "unit" / "file_conversion"
+            Path(__file__).parent.parent.parent.parent
+            / "fixtures"
+            / "unit"
+            / "file_conversion"
         )
 
     def test_file_detector_with_real_files(self):
         """Test file detector with real test files."""
         # Test with PDF fixture
-        pdf_file = self.fixtures_dir / "sample.pd"
+        pdf_file = self.fixtures_dir / "sample.pdf"
         if pdf_file.exists():
             assert self.detector.is_supported_for_conversion(str(pdf_file))
             mime_type, extension = self.detector.detect_file_type(str(pdf_file))
-            assert extension == ".pd"
+            assert extension == ".pdf"
 
         # Test with text fixture (should not be convertible)
         txt_file = self.fixtures_dir / "sample.txt"
@@ -44,7 +47,7 @@ class TestFileConversionIntegration:
         """Test file converter with a PDF file."""
         # Create a temporary PDF file that should be convertible
         with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".pd", delete=False
+            mode="wb", suffix=".pdf", delete=False
         ) as tmp_file:
             # Write a minimal PDF content
             tmp_file.write(
@@ -60,10 +63,10 @@ class TestFileConversionIntegration:
                     assert isinstance(result, str)
                     assert len(result) > 0
 
-                except Exception:
+                except Exception as e:
                     # If MarkItDown is not available or fails, that's expected in test environment
                     pytest.skip(
-                        "MarkItDown conversion failed (expected in test environment): {e}"
+                        f"MarkItDown conversion failed (expected in test environment): {e}"
                     )
 
             finally:
@@ -75,7 +78,7 @@ class TestFileConversionIntegration:
         with pytest.raises(
             Exception
         ):  # Should raise MarkItDownError wrapping FileAccessError
-            self.converter.convert_file("/non/existent/file.pd")
+            self.converter.convert_file("/non/existent/file.pdf")
 
     def test_file_converter_with_large_file(self):
         """Test file converter with file size limits."""
@@ -85,7 +88,7 @@ class TestFileConversionIntegration:
 
         # Create a file larger than the limit
         with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".pd", delete=False
+            mode="wb", suffix=".pdf", delete=False
         ) as tmp_file:
             # Write more than 1KB of data
             tmp_file.write(b"x" * 2048)
@@ -124,7 +127,7 @@ class TestFileConversionIntegration:
     @pytest.mark.slow
     def test_file_converter_with_pdf_fixture(self):
         """Test file converter with PDF fixture (if available)."""
-        pdf_file = self.fixtures_dir / "sample.pd"
+        pdf_file = self.fixtures_dir / "sample.pdf"
 
         if not pdf_file.exists():
             pytest.skip("PDF fixture not available")
@@ -135,16 +138,16 @@ class TestFileConversionIntegration:
             assert isinstance(result, str)
             assert len(result) > 0
 
-        except Exception:
+        except Exception as e:
             # If MarkItDown is not available or fails, that's expected in test environment
             pytest.skip(
-                "MarkItDown conversion failed (expected in test environment): {e}"
+                f"MarkItDown conversion failed (expected in test environment): {e}"
             )
 
     def test_multiple_file_types_detection(self):
         """Test file type detection for various extensions."""
         test_cases = [
-            ("document.pd", True),
+            ("document.pdf", True),
             ("spreadsheet.xlsx", True),
             ("presentation.pptx", True),
             ("image.jpg", True),
@@ -170,13 +173,13 @@ class TestFileConversionIntegration:
                     )
                     assert (
                         is_convertible == should_be_convertible
-                    ), "Failed for {filename}"
+                    ), f"Failed for {filename}"
                 finally:
                     os.unlink(tmp_file.name)
 
     def test_file_type_info_comprehensive(self):
         """Test comprehensive file type information gathering."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 
@@ -195,12 +198,12 @@ class TestFileConversionIntegration:
                 ]
 
                 for field in expected_fields:
-                    assert field in info, "Missing field: {field}"
+                    assert field in info, f"Missing field: {field}"
 
                 # Verify specific values for PDF
-                assert info["file_extension"] == ".pd"
-                assert info["mime_type"] == "application/pd"
-                assert info["normalized_type"] == "pd"
+                assert info["file_extension"] == ".pdf"
+                assert info["mime_type"] == "application/pdf"
+                assert info["normalized_type"] == "pdf"
                 assert info["is_supported"]
                 assert info["is_excluded"] is False
                 assert info["file_size"] > 0
@@ -210,7 +213,7 @@ class TestFileConversionIntegration:
 
     def test_fallback_document_creation(self):
         """Test fallback document creation functionality."""
-        with tempfile.NamedTemporaryFile(suffix=".pd", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
             tmp_file.write(b"fake pdf content")
             tmp_file.flush()
 

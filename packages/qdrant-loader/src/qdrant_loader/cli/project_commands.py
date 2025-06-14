@@ -220,7 +220,7 @@ async def status(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_status_failed", error=str(e))
-        raise ClickException("Failed to get project status: {str(e)!s}") from e
+        raise ClickException(f"Failed to get project status: {str(e)!s}") from e
 
 
 @project_cli.command()
@@ -257,7 +257,7 @@ async def validate(
         if project_id:
             context = project_manager.get_project_context(project_id)
             if not context:
-                raise ClickException("Project '{project_id}' not found")
+                raise ClickException(f"Project '{project_id}' not found")
             project_contexts = {project_id: context}
         else:
             project_contexts = project_manager.get_all_project_contexts()
@@ -292,15 +292,15 @@ async def validate(
                             or not source_config.source_type
                         ):
                             source_errors.append(
-                                "Missing source_type for {source_name}"
+                                f"Missing source_type for {source_name}"
                             )
                         if (
                             not hasattr(source_config, "source")
                             or not source_config.source
                         ):
-                            source_errors.append("Missing source for {source_name}")
-                    except Exception:
-                        source_errors.append("Error in {source_name}: {str(e)}")
+                            source_errors.append(f"Missing source for {source_name}")
+                    except Exception as e:
+                        source_errors.append(f"Error in {source_name}: {str(e)}")
 
                 validation_results.append(
                     {
@@ -329,14 +329,14 @@ async def validate(
         for result in validation_results:
             if result["valid"]:
                 console.print(
-                    "[green]✓[/green] Project '{result['project_id']}' is valid ({result['source_count']} sources)"
+                    f"[green]✓[/green] Project '{result['project_id']}' is valid ({result['source_count']} sources)"
                 )
             else:
                 console.print(
-                    "[red]✗[/red] Project '{result['project_id']}' has errors:"
+                    f"[red]✗[/red] Project '{result['project_id']}' has errors:"
                 )
                 for error in result["errors"]:
-                    console.print("  [red]•[/red] {error}")
+                    console.print(f"  [red]•[/red] {error}")
 
         if all_valid:
             console.print("\n[green]All projects are valid![/green]")
@@ -347,7 +347,7 @@ async def validate(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_validate_failed", error=str(e))
-        raise ClickException("Failed to validate projects: {str(e)!s}") from e
+        raise ClickException(f"Failed to validate projects: {str(e)!s}") from e
 
 
 async def _setup_project_manager(
@@ -394,7 +394,7 @@ async def _initialize_project_contexts_from_config(
     logger.debug("Initializing project contexts from configuration")
 
     for project_id, project_config in project_manager.projects_config.projects.items():
-        logger.debug("Creating context for project: {project_id}")
+        logger.debug(f"Creating context for project: {project_id}")
 
         # Determine collection name using the project's method
         collection_name = project_config.get_effective_collection_name(
@@ -413,8 +413,8 @@ async def _initialize_project_contexts_from_config(
         )
 
         project_manager._project_contexts[project_id] = context
-        logger.debug("Created context for project: {project_id}")
+        logger.debug(f"Created context for project: {project_id}")
 
     logger.debug(
-        "Initialized {len(project_manager._project_contexts)} project contexts"
+        f"Initialized {len(project_manager._project_contexts)} project contexts"
     )
