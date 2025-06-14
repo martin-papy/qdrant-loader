@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from qdrant_loader.config import get_settings, initialize_config
+from qdrant_loader.config import get_settings, initialize_multi_file_config
 
 
 class TestAutomaticFieldInjection:
@@ -11,14 +11,39 @@ class TestAutomaticFieldInjection:
 
     def test_automatic_field_injection_publicdocs(self):
         """Test that source_type and source are automatically injected for PublicDocs sources."""
-        config_content = """
-global:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "test_injection"
+        # Create multi-file configuration structure
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_dir = Path(temp_dir)
 
+            # Create connectivity.yaml
+            connectivity_content = """
+qdrant:
+  url: "http://localhost:6333"
+  collection_name: "test_injection"
+
+embedding:
+  provider: "openai"
+  model: "text-embedding-3-small"
+  api_key: "test_key"
+
+state_management:
+  database_path: "/tmp/test.db"
+"""
+            (config_dir / "connectivity.yaml").write_text(connectivity_content)
+
+            # Create fine-tuning.yaml
+            fine_tuning_content = """
+chunking:
+  chunk_size: 1000
+  chunk_overlap: 200
+"""
+            (config_dir / "fine-tuning.yaml").write_text(fine_tuning_content)
+
+            # Create projects.yaml
+            projects_content = """
 projects:
   test-project:
+    project_id: "test-project"
     display_name: "Test Project"
     description: "Test project for field injection"
     sources:
@@ -27,13 +52,10 @@ projects:
           base_url: "https://example.com/docs"
           version: "1.0"
 """
+            (config_dir / "projects.yaml").write_text(projects_content)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(config_content)
-            temp_config_file = Path(f.name)
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
+            # Initialize configuration
+            initialize_multi_file_config(config_dir, enhanced_validation=False)
             settings = get_settings()
 
             # Get the project and its sources
@@ -52,20 +74,41 @@ projects:
             assert str(source_config.base_url) == "https://example.com/docs"
             assert source_config.version == "1.0"
 
-        finally:
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
     def test_automatic_field_injection_git(self):
         """Test that source_type and source are automatically injected for Git sources."""
-        config_content = """
-global:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "test_injection_git"
+        # Create multi-file configuration structure
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_dir = Path(temp_dir)
 
+            # Create connectivity.yaml
+            connectivity_content = """
+qdrant:
+  url: "http://localhost:6333"
+  collection_name: "test_injection_git"
+
+embedding:
+  provider: "openai"
+  model: "text-embedding-3-small"
+  api_key: "test_key"
+
+state_management:
+  database_path: "/tmp/test.db"
+"""
+            (config_dir / "connectivity.yaml").write_text(connectivity_content)
+
+            # Create fine-tuning.yaml
+            fine_tuning_content = """
+chunking:
+  chunk_size: 1000
+  chunk_overlap: 200
+"""
+            (config_dir / "fine-tuning.yaml").write_text(fine_tuning_content)
+
+            # Create projects.yaml
+            projects_content = """
 projects:
   test-project:
+    project_id: "test-project"
     display_name: "Test Project"
     description: "Test project for Git field injection"
     sources:
@@ -75,13 +118,10 @@ projects:
           branch: "main"
           token: "test_token"
 """
+            (config_dir / "projects.yaml").write_text(projects_content)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(config_content)
-            temp_config_file = Path(f.name)
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
+            # Initialize configuration
+            initialize_multi_file_config(config_dir, enhanced_validation=False)
             settings = get_settings()
 
             # Get the project and its sources
@@ -100,20 +140,41 @@ projects:
             assert str(source_config.base_url) == "https://github.com/example/repo.git"
             assert source_config.branch == "main"
 
-        finally:
-            if temp_config_file.exists():
-                temp_config_file.unlink()
-
     def test_multiple_source_types(self):
         """Test automatic field injection works for multiple source types."""
-        config_content = """
-global:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "test_multiple_sources"
+        # Create multi-file configuration structure
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_dir = Path(temp_dir)
 
+            # Create connectivity.yaml
+            connectivity_content = """
+qdrant:
+  url: "http://localhost:6333"
+  collection_name: "test_multiple_sources"
+
+embedding:
+  provider: "openai"
+  model: "text-embedding-3-small"
+  api_key: "test_key"
+
+state_management:
+  database_path: "/tmp/test.db"
+"""
+            (config_dir / "connectivity.yaml").write_text(connectivity_content)
+
+            # Create fine-tuning.yaml
+            fine_tuning_content = """
+chunking:
+  chunk_size: 1000
+  chunk_overlap: 200
+"""
+            (config_dir / "fine-tuning.yaml").write_text(fine_tuning_content)
+
+            # Create projects.yaml
+            projects_content = """
 projects:
   test-project:
+    project_id: "test-project"
     display_name: "Test Project"
     description: "Test project for multiple source types"
     sources:
@@ -134,13 +195,10 @@ projects:
           base_url: "https://example.com/docs2"
           version: "2.0"
 """
+            (config_dir / "projects.yaml").write_text(projects_content)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write(config_content)
-            temp_config_file = Path(f.name)
-
-        try:
-            initialize_config(temp_config_file, skip_validation=True)
+            # Initialize configuration
+            initialize_multi_file_config(config_dir, enhanced_validation=False)
             settings = get_settings()
 
             # Get the project and its sources
@@ -171,7 +229,3 @@ projects:
             docs2_config = publicdocs_sources["docs2"]
             assert docs2_config.source_type == "publicdocs"
             assert docs2_config.source == "docs2"
-
-        finally:
-            if temp_config_file.exists():
-                temp_config_file.unlink()

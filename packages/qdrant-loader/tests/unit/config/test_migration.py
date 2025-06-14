@@ -455,9 +455,18 @@ class TestEdgeCases:
         assert "${QDRANT_API_KEY:-default_key}" in connectivity["qdrant"]["api_key"]
 
     @patch("qdrant_loader.config.migration.yaml.dump")
-    def test_yaml_dump_error(self, mock_yaml_dump, sample_legacy_config):
+    def test_yaml_dump_error(self, mock_yaml_dump):
         """Test handling of YAML dump errors during migration."""
         mock_yaml_dump.side_effect = Exception("YAML dump failed")
+
+        # Create a sample legacy config for this test
+        sample_legacy_config = {
+            "global": {
+                "qdrant": {"url": "http://localhost:6333"},
+                "chunking": {"chunk_size": 1000},
+            },
+            "projects": {"test": {"project_id": "test"}},
+        }
 
         domain_configs = self.migrator._split_into_domains(sample_legacy_config)
 
