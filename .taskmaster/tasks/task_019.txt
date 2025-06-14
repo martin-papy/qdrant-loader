@@ -120,13 +120,13 @@ Define JIRA-specific metadata schemas, identify extractable elements (issues, pr
 Develop JIRA REST API integration, implement issue and project metadata parsing, create extraction workflows for custom fields, handle authentication, and integrate with core framework
 
 ## 19. Documentation Updates [pending]
-### Dependencies: 19.14, 19.16, 19.18
+### Dependencies: 19.14, 19.16
 ### Description: Create comprehensive documentation for the metadata extraction framework and all connector implementations
 ### Details:
 Document framework architecture, create connector usage guides, write API documentation, develop troubleshooting guides, and create integration examples
 
 ## 20. Configuration Management Updates [pending]
-### Dependencies: 19.14, 19.16, 19.18
+### Dependencies: 19.14, 19.16
 ### Description: Update configuration management systems to support metadata extraction framework and connector configurations
 ### Details:
 Create configuration schemas for each connector, implement configuration validation, update deployment scripts, create environment-specific configs, and establish configuration versioning

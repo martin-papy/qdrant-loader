@@ -1,0 +1,18 @@
+# Test fine-tuning configuration
+# Minimal configuration for unit and integration tests
+
+# Text chunking configuration for tests
+chunking:
+  chunk_size: 500   # Smaller for tests (was 1000)
+  chunk_overlap: 50 # Smaller for tests
+
+# File conversion configuration for tests
+file_conversion:
+  max_file_size: 5242880  # 5MB for tests
+  conversion_timeout: 30  # 30 seconds for tests
+  
+  markitdown:
+    enable_llm_descriptions: false  # Disabled for tests
+    llm_model: "gpt-4o-mini"
+    llm_endpoint: "https://api.openai.com/v1"
+    llm_api_key: "${OPENAI_API_KEY}"

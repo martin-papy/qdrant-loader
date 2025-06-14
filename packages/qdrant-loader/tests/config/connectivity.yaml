@@ -1,0 +1,41 @@
+# Test connectivity configuration
+# Minimal configuration for unit and integration tests
+
+# QDrant vector database configuration for tests
+qdrant:
+  url: "https://4f2a12b9-a595-491c-ba55-9ae23e21e02a.europe-west3-0.gcp.cloud.qdrant.io"
+  api_key: "${QDRANT_API_KEY}"
+  collection_name: "qdrant_loader_test"
+
+# Neo4j Configuration for tests (optional)
+# Only needed when testing Graphiti features
+neo4j:
+  uri: "neo4j+s://429298a1.databases.neo4j.io"
+  user: "neo4j"
+  password: "${NEO4J_PASSWORD:-test-password}"
+  database: "neo4j"
+  max_connection_lifetime: 300  # Shorter for tests
+  max_connection_pool_size: 5   # Smaller pool for tests
+  connection_acquisition_timeout: 10  # Shorter timeout for tests
+  trusted_certificates: "TRUST_ALL_CERTIFICATES"
+  encrypted: false
+
+# Embedding service configuration for tests
+embedding:
+  provider: "openai"  # Required field for validation
+  endpoint: "https://api.openai.com/v1"
+  model: "text-embedding-3-small"
+  api_key: "${OPENAI_API_KEY}"
+  batch_size: 100
+  vector_size: 1536  # Vector size for OpenAI models
+  tokenizer: "cl100k_base"  # Tokenizer for OpenAI models
+  max_tokens_per_request: 1000  # Reduced for tests
+  max_tokens_per_chunk: 1000    # Reduced for tests
+
+# State management configuration for tests
+state_management:
+  database_path: ${STATE_DB_PATH:-:memory:}
+  table_prefix: "test_qdrant_loader_"
+  connection_pool:
+    size: 1
+    timeout: 5

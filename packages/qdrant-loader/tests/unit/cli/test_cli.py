@@ -7,16 +7,16 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-from qdrant_loader.cli.cli import (
-    _check_for_updates,
-    _check_settings,
-    _create_database_directory,
-    _get_version,
-    _load_config,
-    _run_init,
-    _setup_logging,
-    cli,
+from qdrant_loader.cli.core import (
+    check_for_updates,
+    check_settings,
+    create_database_directory,
+    get_version,
+    load_config,
+    setup_logging,
 )
+from qdrant_loader.cli.ingest_commands import run_init
+from qdrant_loader.cli import cli
 from qdrant_loader.config.state import DatabaseDirectoryError
 
 
@@ -28,7 +28,7 @@ class TestGetVersion:
         """Test successful version retrieval."""
         mock_version.return_value = "1.2.3"
 
-        version = _get_version()
+        version = get_version()
         assert version == "1.2.3"
         mock_version.assert_called_once_with("qdrant-loader")
 
@@ -39,7 +39,7 @@ class TestGetVersion:
 
         mock_version.side_effect = PackageNotFoundError("qdrant-loader")
 
-        version = _get_version()
+        version = get_version()
         assert version == "unknown"
         mock_version.assert_called_once_with("qdrant-loader")
 
@@ -48,7 +48,7 @@ class TestGetVersion:
         """Test version retrieval with generic exception."""
         mock_version.side_effect = Exception("Some error")
 
-        version = _get_version()
+        version = get_version()
         assert version == "unknown"
         mock_version.assert_called_once_with("qdrant-loader")
 
@@ -59,7 +59,7 @@ class TestGetVersion:
             "builtins.__import__",
             side_effect=ImportError("No module named 'importlib.metadata'"),
         ):
-            version = _get_version()
+            version = get_version()
             assert version == "unknown"
 
 
@@ -67,12 +67,12 @@ class TestCheckForUpdates:
     """Test version update checking functionality."""
 
     @patch("qdrant_loader.utils.version_check.check_version_async")
-    @patch("qdrant_loader.cli.cli._get_version")
+    @patch("qdrant_loader.cli.core.get_version")
     def test_check_for_updates_enabled(self, mock_get_version, mock_check_async):
         """Test version check when enabled."""
         mock_get_version.return_value = "1.0.0"
 
-        _check_for_updates()
+        check_for_updates()
 
         mock_get_version.assert_called_once()
         mock_check_async.assert_called_once_with("1.0.0", silent=False)
@@ -84,7 +84,7 @@ class TestCheckForUpdates:
             side_effect=Exception("Import error"),
         ):
             # Should not raise exception
-            _check_for_updates()
+            check_for_updates()
 
 
 class TestSetupLogging:
@@ -96,7 +96,7 @@ class TestSetupLogging:
         mock_logger = Mock()
         mock_logging_config.get_logger.return_value = mock_logger
 
-        _setup_logging("DEBUG")
+        setup_logging("DEBUG")
 
         mock_logging_config.setup.assert_called_once_with(
             level="DEBUG", format="console", file="qdrant-loader.log"
@@ -109,7 +109,7 @@ class TestSetupLogging:
         mock_logging_config.setup.side_effect = Exception("Logging setup failed")
 
         with pytest.raises(ClickException, match="Failed to setup logging"):
-            _setup_logging("INFO")
+            setup_logging("INFO")
 
 
 class TestCreateDatabaseDirectory:
@@ -121,7 +121,7 @@ class TestCreateDatabaseDirectory:
             test_path = Path(temp_dir) / "test_db"
 
             with patch("click.confirm", return_value=True):
-                result = _create_database_directory(test_path)
+                result = create_database_directory(test_path)
 
             assert result
             assert test_path.exists()
@@ -132,7 +132,7 @@ class TestCreateDatabaseDirectory:
             test_path = Path(temp_dir) / "test_db"
 
             with patch("click.confirm", return_value=False):
-                result = _create_database_directory(test_path)
+                result = create_database_directory(test_path)
 
             assert result is False
             assert not test_path.exists()
@@ -143,7 +143,7 @@ class TestCreateDatabaseDirectory:
 
         with patch("click.confirm", return_value=True):
             with pytest.raises(ClickException, match="Failed to create directory"):
-                _create_database_directory(test_path)
+                create_database_directory(test_path)
 
 
 class TestLoadConfig:
@@ -157,7 +157,7 @@ class TestLoadConfig:
 
         try:
             with patch("qdrant_loader.config.initialize_config") as mock_init:
-                _load_config(config_path)
+                load_config(config_path)
                 mock_init.assert_called_once_with(
                     config_path, None, skip_validation=False
                 )
@@ -169,14 +169,14 @@ class TestLoadConfig:
         config_path = Path("/non/existent/config.yaml")
 
         with pytest.raises(ClickException, match="Config file not found"):
-            _load_config(config_path)
+            load_config(config_path)
 
     def test_load_config_default_file_exists(self):
         """Test loading config with default file existing."""
         with patch("pathlib.Path.exists") as mock_exists:
             mock_exists.return_value = True
             with patch("qdrant_loader.config.initialize_config") as mock_init:
-                _load_config()
+                load_config()
                 mock_init.assert_called_once_with(
                     Path("config.yaml"), None, skip_validation=False
                 )
@@ -185,7 +185,7 @@ class TestLoadConfig:
         """Test loading config when no file is found."""
         with patch("pathlib.Path.exists", return_value=False):
             with pytest.raises(ClickException, match="No config file found"):
-                _load_config()
+                load_config()
 
     def test_load_config_database_directory_error(self):
         """Test loading config with database directory error."""
@@ -206,7 +206,7 @@ class TestLoadConfig:
             patch("os.path.expanduser", return_value="/test/path"),
         ):
             # This should not raise an exception since we're creating the directory
-            _load_config(config_path)
+            load_config(config_path)
             mock_mkdir.assert_called_once()
             # Should be called twice - first fails, second succeeds
             assert mock_init.call_count == 2
@@ -226,7 +226,7 @@ class TestLoadConfig:
             with pytest.raises(
                 ClickException, match="Database directory creation declined"
             ):
-                _load_config(config_path)
+                load_config(config_path)
 
 
 class TestCheckSettings:
@@ -238,7 +238,7 @@ class TestCheckSettings:
         mock_settings = Mock()
         mock_get_settings.return_value = mock_settings
 
-        result = _check_settings()
+        result = check_settings()
         assert result == mock_settings
 
     @patch("qdrant_loader.config.get_settings")
@@ -247,7 +247,7 @@ class TestCheckSettings:
         mock_get_settings.return_value = None
 
         with pytest.raises(ClickException, match="Settings not available"):
-            _check_settings()
+            check_settings()
 
 
 class TestRunInit:
@@ -261,7 +261,7 @@ class TestRunInit:
 
         with patch("qdrant_loader.core.init_collection.init_collection") as mock_init:
             mock_init.return_value = True
-            await _run_init(mock_settings, False)
+            await run_init(mock_settings, False)
             mock_init.assert_called_once_with(mock_settings, False)
 
     @pytest.mark.asyncio
@@ -272,7 +272,7 @@ class TestRunInit:
         with patch("qdrant_loader.core.init_collection.init_collection") as mock_init:
             mock_init.return_value = False
             with pytest.raises(ClickException, match="Failed to initialize collection"):
-                await _run_init(mock_settings, False)
+                await run_init(mock_settings, False)
 
     @pytest.mark.asyncio
     async def test_run_init_exception(self):
@@ -284,7 +284,7 @@ class TestRunInit:
             side_effect=Exception("Init error"),
         ):
             with pytest.raises(ClickException, match="Failed to initialize collection"):
-                await _run_init(mock_settings, False)
+                await run_init(mock_settings, False)
 
 
 class TestCLIIntegration:
@@ -295,8 +295,8 @@ class TestCLIIntegration:
         runner = CliRunner()
 
         with (
-            patch("qdrant_loader.cli.cli._setup_logging") as mock_setup_logging,
-            patch("qdrant_loader.cli.cli._check_for_updates") as mock_check_updates,
+            patch("qdrant_loader.cli.core.setup_logging") as mock_setup_logging,
+            patch("qdrant_loader.cli.core.check_for_updates") as mock_check_updates,
         ):
             # Run the CLI with config command to trigger the main CLI function
             # This will fail due to missing config, but the CLI function will be called
@@ -312,9 +312,9 @@ class TestCLIIntegration:
         runner = CliRunner()
 
         with (
-            patch("qdrant_loader.cli.cli._setup_logging") as mock_setup_logging,
+            patch("qdrant_loader.cli.core.setup_logging") as mock_setup_logging,
             patch(
-                "qdrant_loader.cli.cli._check_for_updates",
+                "qdrant_loader.cli.core.check_for_updates",
                 side_effect=Exception("Version check error"),
             ) as mock_check_updates,
         ):

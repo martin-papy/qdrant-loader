@@ -1,0 +1,49 @@
+# Task ID: 23
+# Title: Fix and Update All Existing Tests After Configuration Refactoring
+# Status: in-progress
+# Dependencies: 21, 22
+# Priority: high
+# Description: Systematically review and update all existing tests to ensure compatibility with the new multi-file configuration system, including test fixtures, mocks, validation tests, CLI tests, and integration tests.
+# Details:
+Begin by running the full test suite to identify all failing tests and categorize failures by root cause (configuration loading, domain model changes, validation updates, CLI structure changes). Update test fixtures to use the new three-file configuration structure (connectivity.yaml, projects.yaml, fine-tuning.yaml) instead of the monolithic config.template.yaml. Modify configuration loading in tests to use the new ConfigurationManager class and its merging logic. Update all mocks and test doubles to reflect the new domain-specific configuration models (ConnectivityConfig, ProjectsConfig, FineTuningConfig) with proper Pydantic validation. Enhance configuration validation tests to cover the new enhanced validation system, including cross-domain validation rules and error handling. Update CLI tests to work with the refactored CLI module structure and new configuration loading patterns. Modify integration tests to properly initialize and use the multi-file configuration system, ensuring all database connections, LLM providers, and project settings are correctly loaded. Add performance benchmarks for the new configuration validation overhead and ensure test execution times remain acceptable. Update test documentation and README files to reflect the new configuration testing patterns. Implement helper functions for test configuration setup to reduce code duplication across test files.
+
+# Test Strategy:
+Execute the full test suite before and after updates to ensure all tests pass and no regressions are introduced. Run tests with different configuration combinations to verify the multi-file loading works correctly. Test configuration validation by providing invalid configurations and ensuring proper error messages. Verify CLI tests work with both valid and invalid configuration scenarios. Run integration tests against real database instances to ensure configuration loading works in realistic environments. Execute performance tests to confirm the new validation overhead is within acceptable limits. Use test coverage tools to ensure no test coverage is lost during the refactoring process. Validate that all test fixtures properly represent realistic configuration scenarios.
+
+# Subtasks:
+## 1. Analyze Test Failures and Create Configuration Test Strategy [pending]
+### Dependencies: None
+### Description: Run the full test suite to catalog all 1197 test failures, categorize them by root cause, and develop a systematic strategy for fixing configuration-related issues while preserving test integrity.
+### Details:
+Execute pytest with verbose output to capture all failure details. Group failures by: missing required fields, environment variable validation issues, enhanced validation strictness, and configuration loading patterns. Create a mapping of test files to failure types and document the scope of changes needed for each category. Establish testing patterns for different configuration scenarios (unit tests with minimal config, integration tests with full config, mock configurations).
+
+## 2. Update Test Configuration Fixtures and Templates [pending]
+### Dependencies: 23.1
+### Description: Replace all monolithic config.template.yaml usage in tests with the new three-file configuration structure and create reusable test fixtures that work with the enhanced validation system.
+### Details:
+Create test-specific versions of connectivity.yaml, projects.yaml, and fine-tuning.yaml with all required fields populated. Implement test fixture factories that generate valid configurations for different test scenarios. Add configuration templates for: minimal valid configs, full feature configs, and invalid configs for negative testing. Update conftest.py files to provide these fixtures across test modules. Handle environment variable placeholders in test configurations by providing test-safe default values.
+
+## 3. Refactor Configuration Loading in Test Setup [pending]
+### Dependencies: 23.2
+### Description: Update all test files to use the new ConfigurationManager class and implement proper configuration loading patterns that work with the multi-file system and enhanced validation.
+### Details:
+Replace direct YAML loading with ConfigurationManager.load_configuration() calls in test setup. Implement test-specific configuration loading helpers that can disable enhanced validation when appropriate for unit tests. Update test initialization to properly merge configurations from the three files. Create mock ConfigurationManager instances for isolated unit testing. Add configuration validation bypass mechanisms for tests that need to work with intentionally invalid configurations.
+
+## 4. Update Domain Model Mocks and Test Doubles [pending]
+### Dependencies: 23.3
+### Description: Modify all mocks, stubs, and test doubles to reflect the new domain-specific configuration models (ConnectivityConfig, ProjectsConfig, FineTuningConfig) with proper Pydantic validation support.
+### Details:
+Update mock objects to use the new Pydantic models instead of plain dictionaries. Implement mock factories for each configuration domain that generate valid model instances. Update test assertions to work with Pydantic model attributes and validation. Create test utilities for generating mock configurations that satisfy cross-domain validation rules. Ensure mock configurations include all required fields identified in the failure analysis.
+
+## 5. Enhance Configuration Validation and CLI Tests [pending]
+### Dependencies: 23.4
+### Description: Update configuration validation tests to cover the new enhanced validation system and modify CLI tests to work with the refactored CLI module structure and new configuration loading patterns.
+### Details:
+Expand validation test coverage to include cross-domain validation rules, enhanced validation scenarios, and proper error handling. Update CLI tests to use the new configuration loading patterns and handle the three-file structure. Test CLI commands with various configuration states (missing files, invalid configurations, partial configurations). Add tests for configuration validation bypass mechanisms and error reporting. Ensure CLI help text and error messages reflect the new configuration structure.
+
+## 6. Update Integration Tests and Add Performance Benchmarks [pending]
+### Dependencies: 23.5
+### Description: Modify integration tests to properly initialize the multi-file configuration system and add performance benchmarks to ensure the new validation system doesn't significantly impact test execution times.
+### Details:
+Update integration test setup to properly load and merge configurations from all three files. Ensure database connections, LLM providers, and project settings are correctly initialized from the new configuration structure. Add performance benchmarks measuring configuration loading and validation overhead. Implement test execution time monitoring to ensure acceptable performance. Create helper functions for integration test configuration setup to reduce code duplication. Update test documentation to reflect new configuration patterns and add troubleshooting guides for common configuration issues.
+

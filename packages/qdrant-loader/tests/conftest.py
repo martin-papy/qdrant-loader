@@ -17,7 +17,7 @@ src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from qdrant_loader.config import get_settings, initialize_config
+from qdrant_loader.config import get_settings, initialize_multi_file_config
 
 
 def pytest_configure(config):
@@ -43,15 +43,59 @@ def setup_test_environment():
     # Get the tests directory path relative to this conftest.py file
     tests_dir = Path(__file__).parent
 
-    # Load test configuration
-    config_path = tests_dir / "config.test.yaml"
-    env_path = tests_dir / ".env.test"
+    # Check if we have multi-file configuration
+    config_dir = tests_dir / "config"
+    if config_dir.exists() and (config_dir / "connectivity.yaml").exists():
+        # Use multi-file configuration
+        env_path = tests_dir / ".env.test"
+        load_dotenv(env_path, override=True)
+        initialize_multi_file_config(
+            config_dir,
+            env_path=env_path,
+            enhanced_validation=False,  # Disable enhanced validation for tests
+        )
+    else:
+        # Fallback: create minimal configuration for tests
+        config_dir.mkdir(exist_ok=True)
 
-    # Load environment variables first
-    load_dotenv(env_path, override=True)
+        # Create minimal connectivity.yaml
+        connectivity_config = {
+            "qdrant": {
+                "url": "${QDRANT_URL:-http://localhost:6333}",
+                "collection_name": "${QDRANT_COLLECTION_NAME:-test_collection}",
+                "api_key": "${QDRANT_API_KEY:-}",
+            },
+            "embedding": {
+                "api_key": "${OPENAI_API_KEY:-test-key}",
+                "model": "text-embedding-ada-002",
+            },
+        }
 
-    # Initialize config using the same function as CLI
-    initialize_config(config_path)
+        # Create minimal projects.yaml
+        projects_config = {"projects": {}}
+
+        # Create minimal fine-tuning.yaml
+        fine_tuning_config = {"text_chunking": {"chunk_size": 1000}}
+
+        import yaml
+
+        with open(config_dir / "connectivity.yaml", "w") as f:
+            yaml.dump(connectivity_config, f)
+
+        with open(config_dir / "projects.yaml", "w") as f:
+            yaml.dump(projects_config, f)
+
+        with open(config_dir / "fine-tuning.yaml", "w") as f:
+            yaml.dump(fine_tuning_config, f)
+
+        # Load environment variables and initialize
+        env_path = tests_dir / ".env.test"
+        load_dotenv(env_path, override=True)
+        initialize_multi_file_config(
+            config_dir,
+            env_path=env_path,
+            enhanced_validation=False,  # Disable enhanced validation for tests
+        )
 
     yield
 

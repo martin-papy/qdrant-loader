@@ -11,7 +11,7 @@ from qdrant_loader.cli.project_commands import (
     _get_all_sources_from_config,
     _initialize_project_contexts_from_config,
     _setup_project_manager,
-    project_cli,
+    project_group,
 )
 from qdrant_loader.config.sources import SourcesConfig
 
@@ -57,11 +57,11 @@ class TestSetupProjectManager:
     async def test_setup_project_manager_with_workspace(self):
         """Test setup with workspace parameter."""
         with (
-            patch("qdrant_loader.cli.cli._setup_workspace") as mock_setup_workspace,
+            patch("qdrant_loader.cli.core.setup_workspace") as mock_setup_workspace,
             patch(
-                "qdrant_loader.cli.cli._load_config_with_workspace"
+                "qdrant_loader.cli.core.load_config_with_workspace"
             ) as mock_load_config,
-            patch("qdrant_loader.cli.cli._check_settings") as mock_check_settings,
+            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
             patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
@@ -97,11 +97,11 @@ class TestSetupProjectManager:
     async def test_setup_project_manager_with_config_and_env(self):
         """Test setup with config and env parameters."""
         with (
-            patch("qdrant_loader.cli.cli._setup_workspace") as mock_setup_workspace,
+            patch("qdrant_loader.cli.core.setup_workspace") as mock_setup_workspace,
             patch(
-                "qdrant_loader.cli.cli._load_config_with_workspace"
+                "qdrant_loader.cli.core.load_config_with_workspace"
             ) as mock_load_config,
-            patch("qdrant_loader.cli.cli._check_settings") as mock_check_settings,
+            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
             patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
@@ -134,9 +134,9 @@ class TestSetupProjectManager:
     async def test_setup_project_manager_no_qdrant_config(self):
         """Test setup when Qdrant configuration is missing."""
         with (
-            patch("qdrant_loader.cli.cli._setup_workspace"),
-            patch("qdrant_loader.cli.cli._load_config_with_workspace"),
-            patch("qdrant_loader.cli.cli._check_settings") as mock_check_settings,
+            patch("qdrant_loader.cli.core.setup_workspace"),
+            patch("qdrant_loader.cli.core.load_config_with_workspace"),
+            patch("qdrant_loader.cli.core.check_settings") as mock_check_settings,
         ):
             # Mock settings without Qdrant config
             mock_settings = Mock()
@@ -217,7 +217,7 @@ class TestProjectListCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["list", "--format", "table"])
+            result = runner.invoke(project_group, ["list", "--format", "table"])
 
             assert result.exit_code == 0
             mock_console.print.assert_called()
@@ -249,7 +249,7 @@ class TestProjectListCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["list", "--format", "json"])
+            result = runner.invoke(project_group, ["list", "--format", "json"])
 
             assert result.exit_code == 0
             # Parse the JSON output
@@ -276,7 +276,7 @@ class TestProjectListCommand:
             mock_project_manager.get_all_project_contexts.return_value = {}
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["list"])
+            result = runner.invoke(project_group, ["list"])
 
             assert result.exit_code == 0
             mock_console.print.assert_called_with(
@@ -297,7 +297,7 @@ class TestProjectListCommand:
         ):
             mock_setup.side_effect = Exception("Setup failed")
 
-            result = runner.invoke(project_cli, ["list"])
+            result = runner.invoke(project_group, ["list"])
 
             assert result.exit_code != 0
             assert "Failed to list projects" in result.output
@@ -333,7 +333,7 @@ class TestProjectStatusCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["status"])
+            result = runner.invoke(project_group, ["status"])
 
             assert result.exit_code == 0
 
@@ -363,7 +363,7 @@ class TestProjectStatusCommand:
             mock_setup.return_value = (Mock(), mock_project_manager)
 
             result = runner.invoke(
-                project_cli, ["status", "--project-id", "test-project"]
+                project_group, ["status", "--project-id", "test-project"]
             )
 
             assert result.exit_code == 0
@@ -386,7 +386,7 @@ class TestProjectStatusCommand:
             mock_setup.return_value = (Mock(), mock_project_manager)
 
             result = runner.invoke(
-                project_cli, ["status", "--project-id", "nonexistent"]
+                project_group, ["status", "--project-id", "nonexistent"]
             )
 
             assert result.exit_code != 0
@@ -418,7 +418,7 @@ class TestProjectStatusCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["status", "--format", "json"])
+            result = runner.invoke(project_group, ["status", "--format", "json"])
 
             assert result.exit_code == 0
             # Parse the JSON output
@@ -457,7 +457,7 @@ class TestProjectValidateCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["validate"])
+            result = runner.invoke(project_group, ["validate"])
 
             assert result.exit_code == 0
 
@@ -485,7 +485,7 @@ class TestProjectValidateCommand:
             mock_setup.return_value = (Mock(), mock_project_manager)
 
             result = runner.invoke(
-                project_cli, ["validate", "--project-id", "test-project"]
+                project_group, ["validate", "--project-id", "test-project"]
             )
 
             assert result.exit_code == 0
@@ -514,7 +514,7 @@ class TestProjectValidateCommand:
             }
             mock_setup.return_value = (Mock(), mock_project_manager)
 
-            result = runner.invoke(project_cli, ["validate"])
+            result = runner.invoke(project_group, ["validate"])
 
             assert result.exit_code != 0
             assert "Project validation failed" in result.output
@@ -533,7 +533,7 @@ class TestProjectValidateCommand:
         ):
             mock_setup.side_effect = Exception("Setup failed")
 
-            result = runner.invoke(project_cli, ["validate"])
+            result = runner.invoke(project_group, ["validate"])
 
             assert result.exit_code != 0
             assert "Failed to validate projects" in result.output

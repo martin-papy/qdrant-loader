@@ -173,8 +173,13 @@ class ConfigValidator:
             if not isinstance(source_configs, dict):
                 raise ValueError(f"Source type '{source_type}' must be a dictionary")
 
+            # Allow empty source type configurations since they may be added by default
+            # but not explicitly configured by the user
             if not source_configs:
-                raise ValueError(f"Source type '{source_type}' cannot be empty")
+                logger.debug(
+                    f"Source type '{source_type}' is empty - skipping validation"
+                )
+                continue
 
             # Validate each source configuration
             for source_name, source_config in source_configs.items():

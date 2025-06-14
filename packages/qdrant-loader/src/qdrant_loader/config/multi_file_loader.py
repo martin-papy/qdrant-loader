@@ -15,7 +15,13 @@ from pydantic import ValidationError
 
 from ..utils.logging import LoggingConfig
 from .domain_models import DomainConfigValidator
+from .enhanced_validator import EnhancedDomainValidator
 from .global_config import GlobalConfig
+from .validation_errors import (
+    ConfigValidationError,
+    ValidationErrorCollector,
+    ValidationSeverity,
+)
 from .models import ParsedConfig, ProjectsConfig
 from .parser import MultiProjectConfigParser
 from .validator import ConfigValidator
@@ -24,7 +30,7 @@ logger = LoggingConfig.get_logger(__name__)
 
 
 class ConfigDomain:
-    """Configuration domain constants."""
+    """Configuration domain constants and management."""
 
     CONNECTIVITY = "connectivity"
     PROJECTS = "projects"
@@ -32,19 +38,144 @@ class ConfigDomain:
 
     ALL_DOMAINS = {CONNECTIVITY, PROJECTS, FINE_TUNING}
 
+    # Predefined domain combinations for common use cases
+    MINIMAL = {CONNECTIVITY}  # Database connections only
+    BASIC = {CONNECTIVITY, PROJECTS}  # Basic operations without fine-tuning
+    FULL = ALL_DOMAINS  # All domains (default)
+
+    # Domain dependencies - which domains are required for specific operations
+    DOMAIN_DEPENDENCIES = {
+        PROJECTS: {CONNECTIVITY},  # Projects require connectivity
+        FINE_TUNING: set(),  # Fine-tuning is independent
+    }
+
+    @classmethod
+    def validate_domain_combination(cls, domains: set[str]) -> tuple[bool, list[str]]:
+        """Validate that a domain combination satisfies dependencies.
+
+        Args:
+            domains: Set of domains to validate
+
+        Returns:
+            Tuple of (is_valid, list_of_missing_dependencies)
+        """
+        missing_deps = []
+
+        for domain in domains:
+            if domain in cls.DOMAIN_DEPENDENCIES:
+                required_deps = cls.DOMAIN_DEPENDENCIES[domain]
+                missing = required_deps - domains
+                if missing:
+                    missing_deps.extend([f"{domain} requires {dep}" for dep in missing])
+
+        return len(missing_deps) == 0, missing_deps
+
+    @classmethod
+    def get_predefined_combination(cls, name: str) -> set[str]:
+        """Get a predefined domain combination by name.
+
+        Args:
+            name: Name of the predefined combination ('minimal', 'basic', 'full')
+
+        Returns:
+            Set of domain names
+
+        Raises:
+            ValueError: If the combination name is not recognized
+        """
+        combinations = {
+            "minimal": cls.MINIMAL,
+            "basic": cls.BASIC,
+            "full": cls.FULL,
+        }
+
+        if name.lower() not in combinations:
+            available = ", ".join(combinations.keys())
+            raise ValueError(
+                f"Unknown domain combination '{name}'. Available: {available}"
+            )
+
+        return combinations[name.lower()].copy()
+
+    @classmethod
+    def resolve_domains(
+        cls, domains: set[str] | None = None, preset: str | None = None
+    ) -> set[str]:
+        """Resolve domains from either explicit set or preset name.
+
+        Args:
+            domains: Explicit set of domains
+            preset: Preset name ('minimal', 'basic', 'full')
+
+        Returns:
+            Resolved set of domains
+
+        Raises:
+            ValueError: If both domains and preset are provided, or if preset is invalid
+        """
+        if domains is not None and preset is not None:
+            raise ValueError("Cannot specify both 'domains' and 'preset' parameters")
+
+        if preset is not None:
+            return cls.get_predefined_combination(preset)
+
+        if domains is not None:
+            return domains.copy()
+
+        # Default to full configuration
+        return cls.FULL.copy()
+
+    @classmethod
+    def get_use_case_domains(cls, use_case: str) -> set[str]:
+        """Get recommended domains for specific use cases.
+
+        Args:
+            use_case: Use case identifier
+
+        Returns:
+            Set of recommended domains
+        """
+        use_cases = {
+            "config_validation": cls.BASIC,  # Skip fine-tuning for faster validation
+            "config_export": {cls.PROJECTS},  # Only need projects for export
+            "basic_ingestion": cls.BASIC,  # Skip fine-tuning for basic ingestion
+            "full_processing": cls.FULL,  # All domains for complete processing
+            "migration": cls.FULL,  # All domains for migration
+            "status_check": cls.MINIMAL,  # Only connectivity for status
+        }
+
+        return use_cases.get(use_case, cls.FULL).copy()
+
 
 class MultiFileConfigLoader:
     """Loads and merges configuration from multiple domain-specific files."""
 
-    def __init__(self, validator: Optional[ConfigValidator] = None):
+    def __init__(
+        self,
+        validator: Optional[ConfigValidator] = None,
+        enhanced_validation: bool = True,
+        fail_fast: bool = False,
+        validate_connectivity: bool = False,
+    ):
         """Initialize the multi-file configuration loader.
 
         Args:
             validator: Optional configuration validator instance
+            enhanced_validation: If True, use enhanced domain validation
+            fail_fast: If True, stop validation on first critical error
+            validate_connectivity: If True, perform actual connectivity tests
         """
         self.validator = validator or ConfigValidator()
         self.parser = MultiProjectConfigParser(self.validator)
         self.domain_validator = DomainConfigValidator()
+
+        # Enhanced validation setup
+        self.enhanced_validation = enhanced_validation
+        if enhanced_validation:
+            self.enhanced_validator = EnhancedDomainValidator(
+                fail_fast=fail_fast,
+                validate_connectivity=validate_connectivity,
+            )
 
     def load_config(
         self,
@@ -52,6 +183,9 @@ class MultiFileConfigLoader:
         domains: Optional[Set[str]] = None,
         env_path: Optional[Path] = None,
         skip_validation: bool = False,
+        preset: Optional[str] = None,
+        use_case: Optional[str] = None,
+        measure_performance: bool = False,
     ) -> ParsedConfig:
         """Load and merge configuration from multiple domain files.
 
@@ -60,6 +194,9 @@ class MultiFileConfigLoader:
             domains: Set of domains to load (defaults to all domains)
             env_path: Optional path to .env file
             skip_validation: If True, skip directory validation
+            preset: Predefined domain combination ('minimal', 'basic', 'full')
+            use_case: Use case identifier for automatic domain selection
+            measure_performance: If True, log performance metrics
 
         Returns:
             ParsedConfig: Merged configuration
@@ -67,46 +204,132 @@ class MultiFileConfigLoader:
         Raises:
             FileNotFoundError: If required configuration files are missing
             ValidationError: If configuration validation fails
+            ValueError: If domain combination is invalid
         """
-        if domains is None:
-            domains = ConfigDomain.ALL_DOMAINS.copy()
+        import time
+
+        start_time = time.time() if measure_performance else None
+
+        # Step 1: Resolve domains from various sources
+        if use_case:
+            resolved_domains = ConfigDomain.get_use_case_domains(use_case)
+            logger.info(
+                "Using domains for use case",
+                use_case=use_case,
+                domains=list(resolved_domains),
+            )
+        else:
+            resolved_domains = ConfigDomain.resolve_domains(domains, preset)
+
+        # Step 2: Validate domain combination
+        is_valid, missing_deps = ConfigDomain.validate_domain_combination(
+            resolved_domains
+        )
+        if not is_valid:
+            raise ValueError(
+                f"Invalid domain combination. Missing dependencies: {'; '.join(missing_deps)}"
+            )
 
         logger.debug(
-            "Loading multi-file configuration",
+            "Loading multi-file configuration with selective domains",
             config_dir=str(config_dir),
-            domains=list(domains),
+            domains=list(resolved_domains),
+            total_available=len(ConfigDomain.ALL_DOMAINS),
+            loading_percentage=f"{len(resolved_domains)/len(ConfigDomain.ALL_DOMAINS)*100:.1f}%",
         )
 
-        # Step 1: Load environment variables
+        # Step 3: Load environment variables
+        env_start = time.time() if measure_performance else None
         self._load_environment_variables(env_path)
+        if measure_performance and env_start is not None:
+            logger.debug(
+                "Environment loading time",
+                duration_ms=f"{(time.time() - env_start) * 1000:.2f}",
+            )
 
-        # Step 2: Check for domain-specific files
-        domain_files = self._discover_config_files(config_dir, domains)
+        # Step 4: Check for domain-specific files
+        discovery_start = time.time() if measure_performance else None
+        domain_files = self._discover_config_files(config_dir, resolved_domains)
+        if measure_performance and discovery_start is not None:
+            logger.debug(
+                "File discovery time",
+                duration_ms=f"{(time.time() - discovery_start) * 1000:.2f}",
+            )
 
-        # Step 3: Ensure we have at least one domain file
+        # Step 5: Ensure we have at least one domain file
         if not domain_files:
             raise FileNotFoundError(
                 f"No configuration files found in {config_dir}. "
-                f"Expected domain-specific files: {', '.join(sorted(domains))}.yaml"
+                f"Expected domain-specific files: {', '.join(sorted(resolved_domains))}.yaml"
             )
 
-        # Step 4: Load and validate domain configurations
+        # Log selective loading benefits
+        skipped_domains = ConfigDomain.ALL_DOMAINS - resolved_domains
+        if skipped_domains:
+            logger.info(
+                "Selective loading enabled - skipping domains for faster startup",
+                loaded_domains=list(resolved_domains),
+                skipped_domains=list(skipped_domains),
+                files_loaded=len(domain_files),
+                files_skipped=len(skipped_domains),
+            )
+
+        # Step 6: Load and validate domain configurations
+        validation_start = time.time() if measure_performance else None
         validated_domains = self._load_and_validate_domains(
-            config_dir, domain_files, domains
+            config_dir, domain_files, resolved_domains
         )
+        if measure_performance and validation_start is not None:
+            logger.debug(
+                "Domain validation time",
+                duration_ms=f"{(time.time() - validation_start) * 1000:.2f}",
+            )
 
-        # Step 5: Merge validated domain configurations
-        merged_config = self._merge_validated_domains(validated_domains, domains)
+        # Step 7: Merge validated domain configurations
+        merge_start = time.time() if measure_performance else None
+        merged_config = self._merge_validated_domains(
+            validated_domains, resolved_domains
+        )
+        if measure_performance and merge_start is not None:
+            logger.debug(
+                "Configuration merging time",
+                duration_ms=f"{(time.time() - merge_start) * 1000:.2f}",
+            )
 
-        # Step 6: Process environment variables
+        # Step 8: Process environment variables
+        env_sub_start = time.time() if measure_performance else None
         merged_config = self._substitute_env_vars(merged_config)
+        if measure_performance and env_sub_start is not None:
+            logger.debug(
+                "Environment substitution time",
+                duration_ms=f"{(time.time() - env_sub_start) * 1000:.2f}",
+            )
 
-        # Step 7: Parse and validate merged configuration
+        # Step 9: Parse and validate merged configuration
+        parse_start = time.time() if measure_performance else None
         parsed_config = self.parser.parse(
             merged_config, skip_validation=skip_validation
         )
+        if measure_performance and parse_start is not None:
+            logger.debug(
+                "Configuration parsing time",
+                duration_ms=f"{(time.time() - parse_start) * 1000:.2f}",
+            )
 
-        logger.debug("Successfully loaded multi-file configuration")
+        # Log performance summary
+        if measure_performance and start_time is not None:
+            total_time = time.time() - start_time
+            logger.info(
+                "Configuration loading performance summary",
+                total_time_ms=f"{total_time * 1000:.2f}",
+                domains_loaded=len(resolved_domains),
+                domains_total=len(ConfigDomain.ALL_DOMAINS),
+                selective_loading=len(resolved_domains) < len(ConfigDomain.ALL_DOMAINS),
+            )
+
+        logger.debug(
+            "Successfully loaded multi-file configuration with selective domains"
+        )
         return parsed_config
 
     def _load_environment_variables(self, env_path: Optional[Path]) -> None:
@@ -173,7 +396,13 @@ class MultiFileConfigLoader:
         """
         validated_domains = {}
 
-        # Load and validate each domain file
+        # Use enhanced validation if enabled
+        if self.enhanced_validation:
+            return self._load_and_validate_domains_enhanced(
+                config_dir, domain_files, requested_domains
+            )
+
+        # Load and validate each domain file (legacy validation)
         for domain in requested_domains:
             if domain in domain_files:
                 # Load raw configuration data
@@ -212,6 +441,105 @@ class MultiFileConfigLoader:
 
         return validated_domains
 
+    def _load_and_validate_domains_enhanced(
+        self,
+        config_dir: Path,
+        domain_files: Dict[str, Path],
+        requested_domains: Set[str],
+    ) -> Dict[str, Any]:
+        """Load and validate configuration using enhanced validation.
+
+        Args:
+            config_dir: Directory containing configuration files
+            domain_files: Mapping of domain names to file paths
+            requested_domains: Set of domains that were requested
+
+        Returns:
+            Dict mapping domain names to validated configuration objects
+
+        Raises:
+            ConfigValidationError: If validation fails with enhanced error reporting
+        """
+        # Load raw configuration data for all domains
+        domain_configs = {}
+        for domain in requested_domains:
+            if domain in domain_files:
+                try:
+                    raw_config = self._load_domain_file(domain_files[domain])
+                    domain_configs[domain] = raw_config
+                    logger.debug(f"Loaded raw configuration for {domain}")
+                except Exception as e:
+                    logger.error(f"Failed to load {domain} configuration", error=str(e))
+                    # Create a validation error for file loading issues
+                    error_collector = ValidationErrorCollector()
+                    error_collector.add_error(
+                        ConfigValidationError(
+                            message=f"Failed to load {domain} configuration file: {str(e)}",
+                            domain=domain,
+                            file_path=domain_files[domain],
+                            severity=ValidationSeverity.CRITICAL,
+                            remediation=f"Check {domain}.yaml file format and accessibility",
+                        )
+                    )
+                    error_collector.raise_if_critical()
+            else:
+                logger.warning(f"Domain configuration not found: {domain}")
+
+        # Perform enhanced validation
+        error_collector = self.enhanced_validator.validate_all_domains(
+            domain_configs, domain_files
+        )
+
+        # Handle validation results
+        if error_collector.has_critical_errors():
+            # Log detailed error report
+            error_report = error_collector.format_errors_for_display(
+                include_warnings=True, include_info=False
+            )
+            logger.error("Configuration validation failed", error_report=error_report)
+
+            # Raise with comprehensive error information
+            error_collector.raise_if_critical()
+
+        elif error_collector.has_any_issues():
+            # Log warnings and info messages
+            warning_report = error_collector.format_errors_for_display(
+                include_warnings=True, include_info=True
+            )
+            logger.warning(
+                "Configuration validation completed with warnings",
+                warning_report=warning_report,
+            )
+
+        # Convert validated configurations back to the expected format
+        validated_domains = {}
+        for domain, raw_config in domain_configs.items():
+            try:
+                if domain == ConfigDomain.CONNECTIVITY:
+                    validated_config = self.domain_validator.validate_connectivity(
+                        raw_config
+                    )
+                elif domain == ConfigDomain.PROJECTS:
+                    validated_config = self.domain_validator.validate_projects(
+                        raw_config
+                    )
+                elif domain == ConfigDomain.FINE_TUNING:
+                    validated_config = self.domain_validator.validate_fine_tuning(
+                        raw_config
+                    )
+                else:
+                    validated_config = raw_config
+
+                validated_domains[domain] = validated_config
+                logger.debug(f"Successfully validated {domain} configuration")
+
+            except ValidationError as e:
+                # This should not happen if enhanced validation worked correctly
+                logger.error(f"Unexpected validation error for {domain}", error=str(e))
+                raise
+
+        return validated_domains
+
     def _merge_validated_domains(
         self, validated_domains: Dict[str, Any], requested_domains: Set[str]
     ) -> Dict[str, Any]:
@@ -236,8 +564,9 @@ class MultiFileConfigLoader:
             merged_config = self._deep_merge(merged_config, domain_dict)
             logger.debug(f"Merged {domain} configuration")
 
-        # Validate that we have minimum required configuration
-        self._validate_minimum_config(merged_config, requested_domains)
+        # Validate that we have minimum required configuration (only if enhanced validation is enabled)
+        if self.enhanced_validation:
+            self._validate_minimum_config(merged_config, requested_domains)
 
         return merged_config
 
@@ -333,13 +662,18 @@ class MultiFileConfigLoader:
                 )
 
         if errors:
-            raise ValidationError(
+            raise ValueError(
                 f"Minimum configuration validation failed: {'; '.join(errors)}"
             )
 
     @staticmethod
     def _substitute_env_vars(data: Any) -> Any:
         """Recursively substitute environment variables in configuration data.
+
+        Supports the following patterns:
+        - ${VAR_NAME}: Simple variable substitution
+        - ${VAR_NAME:-default_value}: Variable with default value
+        - $HOME: Home directory expansion
 
         Args:
             data: Configuration data to process
@@ -352,25 +686,52 @@ class MultiFileConfigLoader:
             if "$HOME" in data:
                 data = data.replace("$HOME", os.path.expanduser("~"))
 
-            # Then handle ${VAR_NAME} pattern
+            # Handle ${VAR_NAME} and ${VAR_NAME:-default} patterns
             pattern = r"\${([^}]+)}"
             matches = re.finditer(pattern, data)
             result = data
+
             for match in matches:
-                var_name = match.group(1)
-                env_value = os.getenv(var_name)
-                if env_value is None:
-                    # Only warn about missing variables that are commonly required
-                    # Skip STATE_DB_PATH as it's often overridden in workspace mode
-                    if var_name not in ["STATE_DB_PATH"]:
-                        logger.warning(
-                            "Environment variable not found", variable=var_name
-                        )
-                    continue
+                full_match = match.group(0)  # ${VAR_NAME} or ${VAR_NAME:-default}
+                var_expression = match.group(1)  # VAR_NAME or VAR_NAME:-default
+
+                # Check if there's a default value specified
+                if ":-" in var_expression:
+                    var_name, default_value = var_expression.split(":-", 1)
+                    env_value = os.getenv(var_name, default_value)
+                    logger.debug(
+                        "Environment variable substitution with default",
+                        variable=var_name,
+                        has_env_value=var_name in os.environ,
+                        using_default=var_name not in os.environ,
+                    )
+                else:
+                    var_name = var_expression
+                    env_value = os.getenv(var_name)
+
+                    if env_value is None:
+                        # Only warn about missing variables that are commonly required
+                        # Skip STATE_DB_PATH as it's often overridden in workspace mode
+                        if var_name not in ["STATE_DB_PATH"]:
+                            logger.warning(
+                                "Environment variable not found",
+                                variable=var_name,
+                                suggestion=f"Set {var_name} in your .env file or environment",
+                            )
+                        continue
+
+                    logger.debug(
+                        "Environment variable substitution",
+                        variable=var_name,
+                        value_length=len(env_value) if env_value else 0,
+                    )
+
                 # If the environment variable contains $HOME, expand it
-                if "$HOME" in env_value:
+                if env_value and "$HOME" in env_value:
                     env_value = env_value.replace("$HOME", os.path.expanduser("~"))
-                result = result.replace(f"${{{var_name}}}", env_value)
+
+                # Replace the full match with the resolved value
+                result = result.replace(full_match, env_value)
 
             return result
         elif isinstance(data, dict):
@@ -388,6 +749,12 @@ def load_multi_file_config(
     domains: Optional[Set[str]] = None,
     env_path: Optional[Path] = None,
     skip_validation: bool = False,
+    preset: Optional[str] = None,
+    use_case: Optional[str] = None,
+    measure_performance: bool = False,
+    enhanced_validation: bool = True,
+    fail_fast: bool = False,
+    validate_connectivity: bool = False,
 ) -> ParsedConfig:
     """Convenience function to load multi-file configuration.
 
@@ -396,14 +763,27 @@ def load_multi_file_config(
         domains: Set of domains to load (defaults to all domains)
         env_path: Optional path to .env file
         skip_validation: If True, skip directory validation
+        preset: Predefined domain combination ('minimal', 'basic', 'full')
+        use_case: Use case identifier for automatic domain selection
+        measure_performance: If True, log performance metrics
+        enhanced_validation: If True, use enhanced domain validation
+        fail_fast: If True, stop validation on first critical error
+        validate_connectivity: If True, perform actual connectivity tests
 
     Returns:
         ParsedConfig: Merged configuration
     """
-    loader = MultiFileConfigLoader()
+    loader = MultiFileConfigLoader(
+        enhanced_validation=enhanced_validation,
+        fail_fast=fail_fast,
+        validate_connectivity=validate_connectivity,
+    )
     return loader.load_config(
         config_dir=config_dir,
         domains=domains,
         env_path=env_path,
         skip_validation=skip_validation,
+        preset=preset,
+        use_case=use_case,
+        measure_performance=measure_performance,
     )
