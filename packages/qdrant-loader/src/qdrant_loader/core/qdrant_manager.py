@@ -105,7 +105,7 @@ class QdrantManager:
             # Check if collection already exists
             collections = client.get_collections()
             if any(c.name == self.collection_name for c in collections.collections):
-                self.logger.info("Collection {self.collection_name} already exists")
+                self.logger.info(f"Collection {self.collection_name} already exists")
                 return
 
             # Get vector size from configuration
@@ -125,7 +125,7 @@ class QdrantManager:
             # Create index for document_id field
             client.create_payload_index(
                 collection_name=self.collection_name,
-                field_name="document_id",
+                field_name="document_idf",
                 field_schema={"type": "keyword"},  # type: ignore
             )
 
@@ -141,7 +141,7 @@ class QdrantManager:
             points: List of points to upsert
         """
         self.logger.debug(
-            "Upserting points",
+            "Upserting pointsf",
             extra={"point_count": len(points), "collection": self.collection_name},
         )
 
@@ -151,12 +151,12 @@ class QdrantManager:
                 client.upsert, collection_name=self.collection_name, points=points
             )
             self.logger.debug(
-                "Successfully upserted points",
+                "Successfully upserted pointsf",
                 extra={"point_count": len(points), "collection": self.collection_name},
             )
         except Exception as e:
             self.logger.error(
-                "Failed to upsert points",
+                "Failed to upsert pointsf",
                 extra={
                     "error": str(e),
                     "point_count": len(points),
@@ -268,7 +268,7 @@ class QdrantManager:
             document_ids: List of document IDs to delete
         """
         self.logger.debug(
-            "Deleting points by document ID",
+            "Deleting points by document IDf",
             extra={
                 "document_count": len(document_ids),
                 "collection": self.collection_name,
@@ -289,7 +289,7 @@ class QdrantManager:
                 ),
             )
             self.logger.debug(
-                "Successfully deleted points",
+                "Successfully deleted pointsf",
                 extra={
                     "document_count": len(document_ids),
                     "collection": self.collection_name,

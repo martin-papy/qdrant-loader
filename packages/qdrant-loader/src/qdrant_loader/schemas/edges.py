@@ -107,7 +107,7 @@ class ReferencesEdge(DocumentRelationshipEdge):
             "other",
         ]
         if v not in valid_types:
-            raise ValueError("Reference type must be one of {valid_types}")
+            raise ValueError(f"Reference type must be one of {valid_types}")
         return v
 
 
@@ -150,7 +150,7 @@ class AuthoredByEdge(EntityEdge):
             "other",
         ]
         if v not in valid_roles:
-            raise ValueError("Author role must be one of {valid_roles}")
+            raise ValueError(f"Author role must be one of {valid_roles}")
         return v
 
     @validator("contribution_percentage")
@@ -195,14 +195,14 @@ class BelongsToEdge(EntityEdge):
             "other",
         ]
         if v not in valid_types:
-            raise ValueError("Membership type must be one of {valid_types}")
+            raise ValueError(f"Membership type must be one of {valid_types}")
         return v
 
     @validator("status")
     def validate_status(cls, v):
         valid_statuses = ["active", "inactive", "pending", "suspended", "terminated"]
         if v not in valid_statuses:
-            raise ValueError("Status must be one of {valid_statuses}")
+            raise ValueError(f"Status must be one of {valid_statuses}")
         return v
 
 
@@ -255,7 +255,7 @@ class RelatedToEdge(DocumentRelationshipEdge):
             valid_strengths = ["weak", "moderate", "strong", "very_strong"]
             if v not in valid_strengths:
                 raise ValueError(
-                    "Relationship strength must be one of {valid_strengths}"
+                    f"Relationship strength must be one of {valid_strengths}"
                 )
         return v
 
@@ -311,7 +311,7 @@ class DerivedFromEdge(DocumentRelationshipEdge):
             "other",
         ]
         if v not in valid_types:
-            raise ValueError("Derivation type must be one of {valid_types}")
+            raise ValueError(f"Derivation type must be one of {valid_types}")
         return v
 
     @validator("fidelity_score")

@@ -100,7 +100,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
         # Performance check: skip parsing for very large files
         if len(content) > MAX_JSON_SIZE_FOR_PARSING:
             self.logger.info(
-                "JSON too large for structured parsing ({len(content)} bytes)"
+                f"JSON too large for structured parsing ({len(content)} bytes)"
             )
             return None
 
@@ -113,15 +113,15 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             processed_count = [0]
             self._extract_json_elements(root_element, data, "root", 0, processed_count)
             self.logger.debug(
-                "Processed {processed_count[0]} JSON elements (limit: {MAX_OBJECTS_TO_PROCESS})"
+                f"Processed {processed_count[0]} JSON elements (limit: {MAX_OBJECTS_TO_PROCESS})"
             )
             return root_element
 
-        except json.JSONDecodeError:
-            self.logger.warning("Failed to parse JSON: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.warning(f"Failed to parse JSON: {e}")
             return None
-        except Exception:
-            self.logger.warning("Error parsing JSON structure: {e}")
+        except Exception as e:
+            self.logger.warning(f"Error parsing JSON structure: {e}")
             return None
 
     def _create_json_element(
@@ -206,7 +206,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                     break
 
                 processed_count[0] += 1
-                child_path = "{path}.{key}"
+                child_path = f"{path}.{key}"
 
                 if isinstance(value, dict | list):
                     # Create element for complex values
@@ -240,7 +240,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                     break
 
                 processed_count[0] += 1
-                child_path = "{path}[{i}]"
+                child_path = f"{path}[{i}]"
 
                 if isinstance(item, dict | list):
                     # Create element for complex array items
@@ -250,7 +250,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         else JSONElementType.ARRAY
                     )
                     child_element = self._create_json_element(
-                        "item_{i}", item, element_type, child_path, level + 1
+                        f"item_{i}", item, element_type, child_path, level + 1
                     )
                     parent_element.add_child(child_element)
 
@@ -262,7 +262,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                 else:
                     # Create element for simple array items
                     child_element = self._create_json_element(
-                        "item_{i}",
+                        f"item_{i}",
                         item,
                         JSONElementType.ARRAY_ITEM,
                         child_path,
@@ -347,23 +347,23 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             grouped_value = [elem.value for elem in elements]
             grouped_content = json.dumps(grouped_value, indent=2, ensure_ascii=False)
             element_type = JSONElementType.ARRAY
-            name = "grouped_items_{len(elements)}"
+            name = f"grouped_items_{len(elements)}"
         else:
             # Group mixed elements into an object
             grouped_value = {}
             for elem in elements:
-                key = elem.name if elem.name != "root" else "item_{len(grouped_value)}"
+                key = elem.name if elem.name != "root" else f"item_{len(grouped_value)}"
                 grouped_value[key] = elem.value
             grouped_content = json.dumps(grouped_value, indent=2, ensure_ascii=False)
             element_type = JSONElementType.OBJECT
-            name = "grouped_elements_{len(elements)}"
+            name = f"grouped_elements_{len(elements)}"
 
         # Use the first element's path as base
         base_path = elements[0].path
         parent_path = (
             ".".join(base_path.split(".")[:-1]) if "." in base_path else "root"
         )
-        grouped_path = "{parent_path}.{name}"
+        grouped_path = f"{parent_path}.{name}"
 
         grouped_element = JSONElement(
             name=name,
@@ -404,11 +404,11 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                 chunk_content = json.dumps(chunk_items, indent=2, ensure_ascii=False)
 
                 chunk_element = JSONElement(
-                    name="{element.name}_chunk_{i//chunk_size + 1}",
+                    name=f"{element.name}_chunk_{i//chunk_size + 1}",
                     element_type=JSONElementType.ARRAY,
                     content=chunk_content,
                     value=chunk_items,
-                    path="{element.path}_chunk_{i//chunk_size + 1}",
+                    path=f"{element.path}_chunk_{i//chunk_size + 1}",
                     level=element.level,
                     size=len(chunk_content),
                     item_count=len(chunk_items),
@@ -434,11 +434,11 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         current_chunk, indent=2, ensure_ascii=False
                     )
                     chunk_element = JSONElement(
-                        name="{element.name}_chunk_{chunk_index}",
+                        name=f"{element.name}_chunk_{chunk_index}",
                         element_type=JSONElementType.OBJECT,
                         content=chunk_content,
                         value=current_chunk.copy(),
-                        path="{element.path}_chunk_{chunk_index}",
+                        path=f"{element.path}_chunk_{chunk_index}",
                         level=element.level,
                         size=len(chunk_content),
                         item_count=len(current_chunk),
@@ -457,11 +457,11 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             if current_chunk:
                 chunk_content = json.dumps(current_chunk, indent=2, ensure_ascii=False)
                 chunk_element = JSONElement(
-                    name="{element.name}_chunk_{chunk_index}",
+                    name=f"{element.name}_chunk_{chunk_index}",
                     element_type=JSONElementType.OBJECT,
                     content=chunk_content,
                     value=current_chunk,
-                    path="{element.path}_chunk_{chunk_index}",
+                    path=f"{element.path}_chunk_{chunk_index}",
                     level=element.level,
                     size=len(chunk_content),
                     item_count=len(current_chunk),
@@ -480,11 +480,11 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                 if current_size + line_size > self.chunk_size and current_chunk_lines:
                     chunk_content = "\n".join(current_chunk_lines)
                     chunk_element = JSONElement(
-                        name="{element.name}_chunk_{chunk_index}",
+                        name=f"{element.name}_chunk_{chunk_index}",
                         element_type=element.element_type,
                         content=chunk_content,
                         value=chunk_content,  # Use content as value for text chunks
-                        path="{element.path}_chunk_{chunk_index}",
+                        path=f"{element.path}_chunk_{chunk_index}",
                         level=element.level,
                         size=len(chunk_content),
                         item_count=len(current_chunk_lines),
@@ -502,11 +502,11 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             if current_chunk_lines:
                 chunk_content = "\n".join(current_chunk_lines)
                 chunk_element = JSONElement(
-                    name="{element.name}_chunk_{chunk_index}",
+                    name=f"{element.name}_chunk_{chunk_index}",
                     element_type=element.element_type,
                     content=chunk_content,
                     value=chunk_content,
-                    path="{element.path}_chunk_{chunk_index}",
+                    path=f"{element.path}_chunk_{chunk_index}",
                     level=element.level,
                     size=len(chunk_content),
                     item_count=len(current_chunk_lines),
@@ -581,7 +581,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             document.metadata.get("file_name")
             or document.metadata.get("original_filename")
             or document.title
-            or "{document.source_type}:{document.source}"
+            or f"{document.source_type}:{document.source}"
         )
 
         # Start progress tracking
@@ -597,7 +597,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             # Performance check: for very large files, use simple chunking
             if len(document.content) > SIMPLE_CHUNKING_THRESHOLD:
                 self.progress_tracker.log_fallback(
-                    document.id, "Large JSON file ({len(document.content)} bytes)"
+                    document.id, f"Large JSON file ({len(document.content)} bytes)"
                 )
                 return self._fallback_chunking(document)
 
@@ -641,7 +641,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             chunked_docs = []
             for i, element in enumerate(final_elements):
                 self.logger.debug(
-                    "Processing element {i+1}/{len(final_elements)}",
+                    f"Processing element {i+1}/{len(final_elements)}",
                     extra={
                         "element_name": element.name,
                         "element_type": element.element_type.value,
@@ -689,7 +689,7 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.log_error(document.id, str(e))
             # Fallback to default chunking
             self.progress_tracker.log_fallback(
-                document.id, "JSON processing failed: {str(e)}"
+                document.id, f"JSON processing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
 
@@ -743,9 +743,9 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
                         "nlp_skipped": False,
                     }
                 )
-            except Exception:
+            except Exception as e:
                 self.logger.warning(
-                    "NLP processing failed for chunk {chunk_index}: {e}"
+                    f"NLP processing failed for chunk {chunk_index}: {e}"
                 )
                 metadata.update(
                     {

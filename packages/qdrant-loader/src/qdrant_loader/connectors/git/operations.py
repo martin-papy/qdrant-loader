@@ -51,7 +51,7 @@ class GitOperations:
             # Ensure the source is a valid Git repository
             if not os.path.exists(os.path.join(url, ".git")):
                 self.logger.error("Invalid Git repository", path=url)
-                raise ValueError("Path {url} is not a valid Git repository")
+                raise ValueError(f"Path {url} is not a valid Git repository")
 
             # Copy the repository
             shutil.copytree(url, to_path, dirs_exist_ok=True)
@@ -68,14 +68,14 @@ class GitOperations:
                 original_prompt = os.environ.get("GIT_TERMINAL_PROMPT")
                 os.environ["GIT_TERMINAL_PROMPT"] = "0"
                 self.logger.info(
-                    "Cloning repository : {url} | branch: {branch} | depth: {depth}",
+                    f"Cloning repository : {url} | branch: {branch} | depth: {depth}",
                 )
                 try:
                     # If auth token is provided, modify the URL to include it
                     clone_url = url
                     if auth_token and url.startswith("https://"):
                         # Insert token into URL: https://token@github.com/...
-                        clone_url = url.replace("https://", "https://{auth_token}@")
+                        clone_url = url.replace("https://", f"https://{auth_token}@")
                         self.logger.debug("Using authenticated URL", url=clone_url)
 
                     self.logger.debug(
@@ -127,7 +127,7 @@ class GitOperations:
                 )
                 if attempt < max_retries - 1:
                     self.logger.warning(
-                        "Retrying in {retry_delay} seconds...",
+                        f"Retrying in {retry_delay} seconds...",
                         next_attempt=attempt + 2,
                     )
                     time.sleep(retry_delay)
@@ -159,24 +159,24 @@ class GitOperations:
             # Check if file exists in the repository
             try:
                 # First try to get the file content using git show
-                content = self.repo.git.show("HEAD:{rel_path}")
+                content = self.repo.git.show(f"HEAD:{rel_path}")
                 return content
             except GitCommandError as e:
                 if "exists on disk, but not in" in str(e):
                     # File exists on disk but not in the repository
                     raise FileNotFoundError(
-                        "File {rel_path} exists on disk but not in the repository"
+                        f"File {rel_path} exists on disk but not in the repository"
                     ) from e
                 elif "does not exist" in str(e):
                     # File does not exist in the repository
                     raise FileNotFoundError(
-                        "File {rel_path} does not exist in the repository"
+                        f"File {rel_path} does not exist in the repository"
                     ) from e
                 else:
                     # Other git command errors
                     raise
-        except Exception:
-            self.logger.error("Failed to read file {file_path}: {e}")
+        except Exception as e:
+            self.logger.error(f"Failed to read file {file_path}: {e}")
             raise
 
     def get_last_commit_date(self, file_path: str) -> datetime | None:

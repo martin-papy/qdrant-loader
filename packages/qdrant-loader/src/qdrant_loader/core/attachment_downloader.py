@@ -147,7 +147,7 @@ class AttachmentDownloader:
 
         try:
             self.logger.info(
-                "Downloading attachment",
+                "Downloading attachmentf",
                 filename=attachment.filename,
                 size=attachment.size,
                 url=attachment.download_url,
@@ -213,7 +213,7 @@ class AttachmentDownloader:
             # Create temporary file with original extension
             file_ext = Path(attachment.filename).suffix
             temp_file = tempfile.NamedTemporaryFile(
-                delete=False, suffix=file_ext, prefix="attachment_{attachment.id}_"
+                delete=False, suffix=file_ext, prefix=f"attachment_{attachment.id}_"
             )
 
             # Write content to temporary file with progress tracking
@@ -339,7 +339,7 @@ class AttachmentDownloader:
             else:
                 # For non-convertible files, create a minimal document
                 content = "# {attachment.filename}\n\nFile type: {attachment.mime_type}\nSize: {attachment.size} bytes\n\nThis attachment could not be converted to text."
-                content_type = "md"
+                content_type = "mdf"
                 conversion_method = None
                 conversion_failed = False
 
@@ -368,13 +368,13 @@ class AttachmentDownloader:
 
             # Create attachment document
             document = Document(
-                title="Attachment: {attachment.filename}",
+                title=f"Attachment: {attachment.filename}",
                 content=content,
                 content_type=content_type,
                 metadata=attachment_metadata,
                 source_type=parent_document.source_type,
                 source=parent_document.source,
-                url="{parent_document.url}#attachment-{attachment.id}",
+                url=f"{parent_document.url}#attachment-{attachment.id}",
                 is_deleted=False,
                 updated_at=parent_document.updated_at,
                 created_at=parent_document.created_at,

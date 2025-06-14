@@ -201,7 +201,7 @@ For more information, see the documentation on multi-project configuration.
         # Validate project ID
         if not self._is_valid_project_id(project_id):
             raise ValueError(
-                "Invalid project ID '{project_id}'. "
+                "Invalid project ID f'{project_id}'. "
                 "Project IDs must be valid Python identifiers (alphanumeric + underscores)."
             )
 

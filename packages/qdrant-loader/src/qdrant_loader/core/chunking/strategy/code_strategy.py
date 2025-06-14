@@ -146,7 +146,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             Detected language name or "unknown"
         """
         # Get file extension
-        ext = ".{file_path.lower().split('.')[-1]}" if "." in file_path else ""
+        ext = f".{file_path.lower().split('.')[-1]}" if "." in file_path else ""
 
         return self.language_patterns.get(ext, "unknown")
 
@@ -169,8 +169,8 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             parser = get_parser(language)
             self._parsers[language] = parser
             return parser
-        except Exception:
-            self.logger.warning("Failed to get Tree-sitter parser for {language}: {e}")
+        except Exception as e:
+            self.logger.warning(f"Failed to get Tree-sitter parser for {language}: {e}")
             return None
 
     def _parse_with_tree_sitter(self, content: str, language: str) -> list[CodeElement]:
@@ -186,7 +186,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         # Performance check: universal size limit for all languages
         if len(content) > MAX_FILE_SIZE_FOR_AST:
             self.logger.info(
-                "{language.title()} file too large for AST parsing ({len(content)} bytes), using fallback"
+                f"{language.title()} file too large for AST parsing ({len(content)} bytes), using fallback"
             )
             return []
 
@@ -204,14 +204,14 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             # Limit number of elements to prevent timeouts (universal limit)
             if len(elements) > MAX_ELEMENTS_TO_PROCESS:
                 self.logger.warning(
-                    "Too many {language} elements ({len(elements)}), truncating to {MAX_ELEMENTS_TO_PROCESS}"
+                    f"Too many {language} elements ({len(elements)}), truncating to {MAX_ELEMENTS_TO_PROCESS}"
                 )
                 elements = elements[:MAX_ELEMENTS_TO_PROCESS]
 
             return elements
 
-        except Exception:
-            self.logger.warning("Failed to parse with Tree-sitter for {language}: {e}")
+        except Exception as e:
+            self.logger.warning(f"Failed to parse with Tree-sitter for {language}: {e}")
             return []
 
     def _extract_ast_elements(
@@ -417,7 +417,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         # Performance check: skip AST parsing for very large files
         if len(content) > MAX_FILE_SIZE_FOR_AST:
             self.logger.info(
-                "Python file too large for AST parsing ({len(content)} bytes)"
+                f"Python file too large for AST parsing ({len(content)} bytes)"
             )
             return []
 
@@ -425,8 +425,8 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
         try:
             tree = ast.parse(content)
-        except SyntaxError:
-            self.logger.warning("Failed to parse Python AST: {e}")
+        except SyntaxError as e:
+            self.logger.warning(f"Failed to parse Python AST: {e}")
             return []
 
         def extract_docstring(node) -> str | None:
@@ -449,7 +449,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                     if isinstance(decorator, ast.Name):
                         decorators.append(decorator.id)
                     elif isinstance(decorator, ast.Attribute):
-                        decorators.append("{decorator.attr}")
+                        decorators.append(f"{decorator.attr}")
             return decorators
 
         def get_parameters(node) -> list[str]:
@@ -510,7 +510,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 else:
                     module = node.module or ""
                     import_names = [
-                        "{module}.{alias.name}" for alias in node.names[:10]
+                        f"{module}.{alias.name}" for alias in node.names[:10]
                     ]
 
                 element = CodeElement(
@@ -749,7 +749,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             document.metadata.get("file_name")
             or document.metadata.get("original_filename")
             or document.title
-            or "{document.source_type}:{document.source}"
+            or f"{document.source_type}:{document.source}"
         )
 
         # Start progress tracking
@@ -770,11 +770,11 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             if len(document.content) > CHUNK_SIZE_THRESHOLD:
                 self.progress_tracker.log_fallback(
                     document.id,
-                    "Large {language} file ({len(document.content)} bytes)",
+                    f"Large {language} file ({len(document.content)} bytes)",
                 )
                 return self._fallback_chunking(document)
 
-            self.logger.debug("Detected language: {language}")
+            self.logger.debug(f"Detected language: {language}")
 
             # Parse code structure using AST
             elements = []
@@ -793,13 +793,13 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                     parsing_method = "tree_sitter"
             elif language != "unknown" and TREE_SITTER_AVAILABLE:
                 # Use tree-sitter for other supported languages
-                self.logger.debug("Parsing {language} with Tree-sitter")
+                self.logger.debug(f"Parsing {language} with Tree-sitter")
                 elements = self._parse_with_tree_sitter(document.content, language)
                 parsing_method = "tree_sitter"
 
             if not elements:
                 self.progress_tracker.log_fallback(
-                    document.id, "No {language} elements found"
+                    document.id, f"No {language} elements found"
                 )
                 return self._fallback_chunking(document)
 
@@ -812,7 +812,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             chunked_docs = []
             for i, element in enumerate(final_elements):
                 self.logger.debug(
-                    "Processing element {i+1}/{len(final_elements)}",
+                    f"Processing element {i+1}/{len(final_elements)}",
                     extra={
                         "element_name": element.name,
                         "element_type": element.element_type.value,
@@ -840,7 +840,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
 
             # Finish progress tracking
             self.progress_tracker.finish_chunking(
-                document.id, len(chunked_docs), "code ({language})"
+                document.id, len(chunked_docs), f"code ({language})"
             )
             return chunked_docs
 
@@ -848,7 +848,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.log_error(document.id, str(e))
             # Fallback to default chunking
             self.progress_tracker.log_fallback(
-                document.id, "Code parsing failed: {str(e)}"
+                document.id, f"Code parsing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
 

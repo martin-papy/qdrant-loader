@@ -22,7 +22,7 @@ class DocumentStateManager:
             state: The new state to set
         """
         self.logger.debug(
-            "Updating document state",
+            "Updating document statef",
             extra={
                 "doc_id": doc_id,
                 "uri": state.uri,
@@ -48,7 +48,7 @@ class DocumentStateManager:
                 )
                 conn.commit()
                 self.logger.debug(
-                    "Document state updated successfully",
+                    "Document state updated successfullyf",
                     extra={
                         "doc_id": doc_id,
                         "uri": state.uri,
@@ -58,14 +58,14 @@ class DocumentStateManager:
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e):
                 self.logger.warning(
-                    "Database is locked, retrying in 1 second",
+                    "Database is locked, retrying in 1 secondf",
                     extra={"doc_id": doc_id, "error": str(e), "retry_count": 0},
                 )
                 time.sleep(1)
                 self.update_document_state(doc_id, state)
             else:
                 self.logger.error(
-                    "Error updating document state: {str(e)}",
+                    "Error updating document state: {str(e)}f",
                     extra={
                         "doc_id": doc_id,
                         "error": str(e),
@@ -75,7 +75,7 @@ class DocumentStateManager:
                 raise
         except Exception as e:
             self.logger.error(
-                "Unexpected error updating document state: {str(e)}",
+                "Unexpected error updating document state: {str(e)}f",
                 extra={
                     "doc_id": doc_id,
                     "error": str(e),
@@ -94,7 +94,7 @@ class DocumentStateManager:
             The current state of the document, or None if not found
         """
         self.logger.debug(
-            "Getting document state",
+            "Getting document statef",
             extra={"doc_id": doc_id, "timestamp": datetime.now().isoformat()},
         )
 
@@ -114,7 +114,7 @@ class DocumentStateManager:
                         updated_at=datetime.fromisoformat(result[2]),
                     )
                     self.logger.debug(
-                        "Document state retrieved",
+                        "Document state retrievedf",
                         extra={
                             "doc_id": doc_id,
                             "uri": state.uri,
@@ -124,20 +124,20 @@ class DocumentStateManager:
                     return state
                 else:
                     self.logger.debug(
-                        "No state found for document", extra={"doc_id": doc_id}
+                        "No state found for documentf", extra={"doc_id": doc_id}
                     )
                     return None
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e):
                 self.logger.warning(
-                    "Database is locked, retrying in 1 second",
+                    "Database is locked, retrying in 1 secondf",
                     extra={"doc_id": doc_id, "error": str(e), "retry_count": 0},
                 )
                 time.sleep(1)
                 return self.get_document_state(doc_id)
             else:
                 self.logger.error(
-                    "Error getting document state: {str(e)}",
+                    "Error getting document state: {str(e)}f",
                     extra={
                         "doc_id": doc_id,
                         "error": str(e),

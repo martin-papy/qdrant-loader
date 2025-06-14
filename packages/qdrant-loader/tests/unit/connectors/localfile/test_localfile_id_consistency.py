@@ -32,7 +32,7 @@ class TestLocalFileIdConsistency:
     def localfile_config(self, temp_dir):
         """Create LocalFile configuration."""
         return LocalFileConfig(
-            base_url=AnyUrl("file://{temp_dir}"),
+            base_url=AnyUrl(f"file://{temp_dir}"),
             source="test-localfile",
             source_type=SourceType.LOCALFILE,
             file_types=["*.txt", "*.md"],
@@ -63,12 +63,12 @@ class TestLocalFileIdConsistency:
 
         # Document IDs should be identical across runs
         for doc1, doc2 in zip(docs1_sorted, docs2_sorted, strict=False):
-            print("Doc1 ID: {doc1.id}, URL: {doc1.url}")
-            print("Doc2 ID: {doc2.id}, URL: {doc2.url}")
-            assert doc1.id == doc2.id, "Document IDs differ: {doc1.id} != {doc2.id}"
+            print(f"Doc1 ID: {doc1.id}, URL: {doc1.url}")
+            print(f"Doc2 ID: {doc2.id}, URL: {doc2.url}")
+            assert doc1.id == doc2.id, f"Document IDs differ: {doc1.id} != {doc2.id}"
             assert (
                 doc1.url == doc2.url
-            ), "Document URLs differ: {doc1.url} != {doc2.url}"
+            ), f"Document URLs differ: {doc1.url} != {doc2.url}"
 
     @pytest.mark.asyncio
     async def test_document_id_consistency_with_different_working_directories(
@@ -100,14 +100,14 @@ class TestLocalFileIdConsistency:
 
             # Document IDs should be identical across runs
             for doc1, doc2 in zip(docs1_sorted, docs2_sorted, strict=False):
-                print("Doc1 ID: {doc1.id}, URL: {doc1.url}")
-                print("Doc2 ID: {doc2.id}, URL: {doc2.url}")
+                print(f"Doc1 ID: {doc1.id}, URL: {doc1.url}")
+                print(f"Doc2 ID: {doc2.id}, URL: {doc2.url}")
                 assert (
                     doc1.id == doc2.id
-                ), "Document IDs differ when run from different directories: {doc1.id} != {doc2.id}"
+                ), f"Document IDs differ when run from different directories: {doc1.id} != {doc2.id}"
                 assert (
                     doc1.url == doc2.url
-                ), "Document URLs differ when run from different directories: {doc1.url} != {doc2.url}"
+                ), f"Document URLs differ when run from different directories: {doc1.url} != {doc2.url}"
 
         finally:
             # Restore original working directory
@@ -124,18 +124,18 @@ class TestLocalFileIdConsistency:
             # URL should start with file://
             assert doc.url.startswith(
                 "file://"
-            ), "URL should start with file://: {doc.url}"
+            ), f"URL should start with file://: {doc.url}"
 
             # URL should contain absolute path
             assert os.path.isabs(
                 doc.url[7:]
-            ), "URL should contain absolute path: {doc.url}"
+            ), f"URL should contain absolute path: {doc.url}"
 
             # File should exist at the URL path
             file_path = doc.url[7:]  # Remove file:// prefix
             assert os.path.exists(
                 file_path
-            ), "File should exist at URL path: {file_path}"
+            ), f"File should exist at URL path: {file_path}"
 
     @pytest.mark.asyncio
     async def test_document_id_consistency_with_symlinks(self, temp_dir):
@@ -152,16 +152,16 @@ class TestLocalFileIdConsistency:
             test_file = Path(temp_dir) / "test_symlink.txt"
             test_file.write_text("This is a test file for symlink testing")
 
-            print("Created test file: {test_file}")
-            print("File exists: {test_file.exists()}")
-            print("Symlink dir: {symlink_dir}")
-            print("Symlink exists: {symlink_dir.exists()}")
-            print("Symlink file: {symlink_dir / 'test_symlink.txt'}")
-            print("Symlink file exists: {(symlink_dir / 'test_symlink.txt').exists()}")
+            print(f"Created test file: {test_file}")
+            print(f"File exists: {test_file.exists()}")
+            print(f"Symlink dir: {symlink_dir}")
+            print(f"Symlink exists: {symlink_dir.exists()}")
+            print(f"Symlink file: {symlink_dir / 'test_symlink.txt'}")
+            print(f"Symlink file exists: {(symlink_dir / 'test_symlink.txt').exists()}")
 
             # Create configurations for both paths
             original_config = LocalFileConfig(
-                base_url=AnyUrl("file://{temp_dir}"),
+                base_url=AnyUrl(f"file://{temp_dir}"),
                 source="test-localfile",
                 source_type=SourceType.LOCALFILE,
                 file_types=["*.txt"],
@@ -170,7 +170,7 @@ class TestLocalFileIdConsistency:
             )
 
             symlink_config = LocalFileConfig(
-                base_url=AnyUrl("file://{symlink_dir}"),
+                base_url=AnyUrl(f"file://{symlink_dir}"),
                 source="test-localfile",
                 source_type=SourceType.LOCALFILE,
                 file_types=["*.txt"],
@@ -183,18 +183,18 @@ class TestLocalFileIdConsistency:
             async with connector1:
                 documents1 = await connector1.get_documents()
 
-            print("Documents from original path: {len(documents1)}")
+            print(f"Documents from original path: {len(documents1)}")
             for doc in documents1:
-                print("  - {doc.title}: {doc.url}")
+                print(f"  - {doc.title}: {doc.url}")
 
             # Get documents from symlink path
             connector2 = LocalFileConnector(symlink_config)
             async with connector2:
                 documents2 = await connector2.get_documents()
 
-            print("Documents from symlink path: {len(documents2)}")
+            print(f"Documents from symlink path: {len(documents2)}")
             for doc in documents2:
-                print("  - {doc.title}: {doc.url}")
+                print(f"  - {doc.title}: {doc.url}")
 
             # Should have same number of documents
             assert len(documents1) == len(documents2)
@@ -206,14 +206,14 @@ class TestLocalFileIdConsistency:
             assert doc1 is not None, "Document not found in original path"
             assert doc2 is not None, "Document not found in symlink path"
 
-            print("Original path doc ID: {doc1.id}, URL: {doc1.url}")
-            print("Symlink path doc ID: {doc2.id}, URL: {doc2.url}")
+            print(f"Original path doc ID: {doc1.id}, URL: {doc1.url}")
+            print(f"Symlink path doc ID: {doc2.id}, URL: {doc2.url}")
 
             # This is where the issue might manifest - IDs should be the same but URLs might differ
             # The test will fail if os.path.abspath() resolves symlinks differently
             assert (
                 doc1.id == doc2.id
-            ), "Document IDs differ for symlink access: {doc1.id} != {doc2.id}"
+            ), f"Document IDs differ for symlink access: {doc1.id} != {doc2.id}"
 
         finally:
             # Clean up symlink
@@ -230,7 +230,7 @@ class TestLocalFileIdConsistency:
         # Create configurations with different path representations
         # Use absolute path
         abs_config = LocalFileConfig(
-            base_url=AnyUrl("file://{temp_dir}"),
+            base_url=AnyUrl(f"file://{temp_dir}"),
             source="test-localfile",
             source_type=SourceType.LOCALFILE,
             file_types=["*.txt"],
@@ -241,7 +241,7 @@ class TestLocalFileIdConsistency:
         # Use path with redundant components (should normalize to same as absolute)
         redundant_path = str(Path(temp_dir) / "." / "subdir" / "..")
         redundant_config = LocalFileConfig(
-            base_url=AnyUrl("file://{redundant_path}"),
+            base_url=AnyUrl(f"file://{redundant_path}"),
             source="test-localfile",
             source_type=SourceType.LOCALFILE,
             file_types=["*.txt"],
@@ -269,10 +269,10 @@ class TestLocalFileIdConsistency:
         assert doc1 is not None, "Document not found with absolute path"
         assert doc2 is not None, "Document not found with redundant path"
 
-        print("Absolute path doc ID: {doc1.id}, URL: {doc1.url}")
-        print("Redundant path doc ID: {doc2.id}, URL: {doc2.url}")
+        print(f"Absolute path doc ID: {doc1.id}, URL: {doc1.url}")
+        print(f"Redundant path doc ID: {doc2.id}, URL: {doc2.url}")
 
         # Document IDs should be the same since both paths resolve to the same directory
         assert (
             doc1.id == doc2.id
-        ), "Document IDs differ for different path representations: {doc1.id} != {doc2.id}"
+        ), f"Document IDs differ for different path representations: {doc1.id} != {doc2.id}"

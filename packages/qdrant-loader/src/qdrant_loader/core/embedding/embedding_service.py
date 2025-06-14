@@ -93,7 +93,7 @@ class EmbeddingService:
                         self.max_retry_delay,
                     )
                     logger.warning(
-                        "Retrying {operation_name} after network error",
+                        f"Retrying {operation_name} after network error",
                         attempt=attempt,
                         max_retries=self.max_retries,
                         delay_seconds=delay,
@@ -106,7 +106,7 @@ class EmbeddingService:
 
                 if attempt > 0:
                     logger.info(
-                        "Successfully recovered {operation_name} after retries",
+                        f"Successfully recovered {operation_name} after retries",
                         successful_attempt=attempt + 1,
                         total_attempts=attempt + 1,
                     )
@@ -118,7 +118,7 @@ class EmbeddingService:
 
                 if attempt == self.max_retries:
                     logger.error(
-                        "All retry attempts failed for {operation_name}",
+                        f"All retry attempts failed for {operation_name}",
                         total_attempts=attempt + 1,
                         final_error=str(e),
                         error_type=type(e).__name__,
@@ -126,7 +126,7 @@ class EmbeddingService:
                     raise
 
                 logger.warning(
-                    "Network error in {operation_name}, will retry",
+                    f"Network error in {operation_name}, will retry",
                     attempt=attempt + 1,
                     max_retries=self.max_retries,
                     error=str(e),
@@ -136,7 +136,7 @@ class EmbeddingService:
             except Exception as e:
                 # For non-network errors, don't retry
                 logger.error(
-                    "Non-retryable error in {operation_name}",
+                    f"Non-retryable error in {operation_name}",
                     error=str(e),
                     error_type=type(e).__name__,
                 )
@@ -145,7 +145,7 @@ class EmbeddingService:
         # This should never be reached, but just in case
         if last_exception:
             raise last_exception
-        raise RuntimeError("Unexpected error in retry logic for {operation_name}")
+        raise RuntimeError(f"Unexpected error in retry logic for {operation_name}")
 
     async def get_embeddings(
         self, texts: Sequence[str | Document]
@@ -167,7 +167,7 @@ class EmbeddingService:
                 valid_contents.append(content.strip())
                 valid_indices.append(i)
             else:
-                logger.warning("Skipping invalid content at index {i}: {repr(content)}")
+                logger.warning(f"Skipping invalid content at index {i}: {repr(content)}")
 
         if not valid_contents:
             logger.warning(
@@ -220,7 +220,7 @@ class EmbeddingService:
 
         if truncated_count > 0:
             logger.info(
-                "⚠️ Truncated {truncated_count} content items due to token limits. You might want to adjust chunk size and/or max tokens settings in config.yaml"
+                f"⚠️ Truncated {truncated_count} content items due to token limits. You might want to adjust chunk size and/or max tokens settings in config.yaml"
             )
 
         # Create smart batches that respect token limits
@@ -256,7 +256,7 @@ class EmbeddingService:
             embeddings.extend(batch_embeddings)
 
         logger.info(
-            "🔗 Generated embeddings: {len(embeddings)} items in {batch_count} batches"
+            f"🔗 Generated embeddings: {len(embeddings)} items in {batch_count} batches"
         )
         return embeddings
 
@@ -287,7 +287,7 @@ class EmbeddingService:
         # Use retry logic for network resilience
         return await self._retry_with_backoff(
             self._execute_embedding_request,
-            "embedding batch {batch_num}",
+            f"embedding batch {batch_num}",
             batch=batch,
             batch_num=batch_num,
         )
@@ -333,8 +333,8 @@ class EmbeddingService:
                 response = await asyncio.wait_for(
                     asyncio.to_thread(
                         requests.post,
-                        "{self.endpoint}/embeddings",
-                        json={"input": batch, "model": self.model},
+                        f"{self.endpoint}/embeddings",
+                        json={"input": batch, "modelf": self.model},
                         headers={"Content-Type": "application/json"},
                         timeout=30,  # Reduced timeout for faster failure detection
                     ),
@@ -369,7 +369,7 @@ class EmbeddingService:
         """Get embedding for a single text."""
         # Validate input
         if not text or not isinstance(text, str) or not text.strip():
-            logger.warning("Invalid text for embedding: {repr(text)}")
+            logger.warning(f"Invalid text for embedding: {repr(text)}")
             raise ValueError(
                 "Invalid text for embedding: text must be a non-empty string"
             )
@@ -413,8 +413,8 @@ class EmbeddingService:
                 response = await asyncio.wait_for(
                     asyncio.to_thread(
                         requests.post,
-                        "{self.endpoint}/embeddings",
-                        json={"input": text, "model": self.model},
+                        f"{self.endpoint}/embeddings",
+                        json={"input": text, "modelf": self.model},
                         headers={"Content-Type": "application/json"},
                         timeout=15,  # Reduced timeout
                     ),

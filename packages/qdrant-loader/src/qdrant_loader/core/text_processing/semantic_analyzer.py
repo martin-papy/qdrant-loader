@@ -50,7 +50,7 @@ class SemanticAnalyzer:
         try:
             self.nlp = spacy.load(spacy_model)
         except OSError:
-            self.logger.info("Downloading spaCy model {spacy_model}...")
+            self.logger.info(f"Downloading spaCy model {spacy_model}...")
             spacy_download(spacy_model)
             self.nlp = spacy.load(spacy_model)
 

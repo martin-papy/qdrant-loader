@@ -41,7 +41,7 @@ class DocumentPipeline:
         Returns:
             PipelineResult with processing statistics
         """
-        logger.info("⚙️ Processing {len(documents)} documents through pipeline")
+        logger.info(f"⚙️ Processing {len(documents)} documents through pipeline")
         start_time = time.time()
 
         try:
@@ -53,7 +53,7 @@ class DocumentPipeline:
             # Step 2: Generate embeddings
             logger.info("🔄 Chunking completed, transitioning to embedding phase...")
             chunking_duration = time.time() - chunking_start
-            logger.info("⏱️ Chunking phase took {chunking_duration:.2f} seconds")
+            logger.info(f"⏱️ Chunking phase took {chunking_duration:.2f} seconds")
 
             embedding_start = time.time()
             embedded_chunks_iter = self.embedding_worker.process_chunks(chunks_iter)
@@ -95,24 +95,24 @@ class DocumentPipeline:
                     )  # 5 minute timeout for entity extraction
                     entity_extraction_duration = time.time() - entity_extraction_start
                     logger.info(
-                        "⏱️ Entity extraction phase took {entity_extraction_duration:.2f} seconds"
+                        f"⏱️ Entity extraction phase took {entity_extraction_duration:.2f} seconds"
                     )
                 except TimeoutError:
                     logger.warning("⚠️ Entity extraction timed out after 5 minutes")
                     entity_extraction_task.cancel()
-                except Exception:
-                    logger.error("❌ Entity extraction failed: {e}")
+                except Exception as e:
+                    logger.error(f"❌ Entity extraction failed: {e}")
 
             total_duration = time.time() - start_time
             embedding_duration = time.time() - embedding_start
 
             logger.info(
-                "⏱️ Embedding + Upsert phase took {embedding_duration:.2f} seconds"
+                f"⏱️ Embedding + Upsert phase took {embedding_duration:.2f} seconds"
             )
-            logger.info("⏱️ Total pipeline duration: {total_duration:.2f} seconds")
+            logger.info(f"⏱️ Total pipeline duration: {total_duration:.2f} seconds")
             logger.info(
-                "✅ Pipeline completed: {result.success_count} chunks processed, "
-                "{result.error_count} errors"
+                f"✅ Pipeline completed: {result.success_count} chunks processed, "
+                f"{result.error_count} errors"
             )
 
             return result
@@ -120,13 +120,13 @@ class DocumentPipeline:
         except Exception:
             total_duration = time.time() - start_time
             logger.error(
-                "❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
+                f"❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
                 exc_info=True,
             )
             # Return a result with error information
             result = PipelineResult()
             result.error_count = len(documents)
-            result.errors = ["Pipeline failed: {e}"]
+            result.errors = [f"Pipeline failed: {e}"]
             return result
 
     async def _process_entity_extraction(self, documents: list[Document]) -> None:
@@ -152,15 +152,15 @@ class DocumentPipeline:
                 # Log extraction results for debugging
                 if result.entities or result.relationships:
                     logger.debug(
-                        "Extracted {len(result.entities)} entities and "
-                        "{len(result.relationships)} relationships from document"
+                        f"Extracted {len(result.entities)} entities and "
+                        f"{len(result.relationships)} relationships from document"
                     )
 
             logger.info(
-                "✅ Entity extraction completed: {entity_count} total entities, "
-                "{relationship_count} total relationships extracted"
+                f"✅ Entity extraction completed: {entity_count} total entities, "
+                f"{relationship_count} total relationships extracted"
             )
 
-        except Exception:
-            logger.error("❌ Entity extraction processing failed: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"❌ Entity extraction processing failed: {e}", exc_info=True)
             raise

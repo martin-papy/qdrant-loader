@@ -157,7 +157,7 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             str: Full API URL
         """
-        return "{self.base_url}/rest/api/{endpoint}"
+        return f"{self.base_url}/rest/api/{endpoint}"
 
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated request to the Confluence API.
@@ -185,8 +185,8 @@ class ConfluenceConnector(BaseConnector):
             )
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.RequestException:
-            logger.error("Failed to make request to {url}: {e}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to make request to {url}: {e}")
             # Log additional context for debugging
             logger.error(
                 "Request details",
@@ -225,7 +225,7 @@ class ConfluenceConnector(BaseConnector):
 
         logger.debug(
             "Making Confluence Cloud API request",
-            url="{self.base_url}/rest/api/content/search",
+            url=f"{self.base_url}/rest/api/content/search",
             params=params,
         )
         response = await self._make_request("GET", "content/search", params=params)
@@ -233,7 +233,7 @@ class ConfluenceConnector(BaseConnector):
             # For Cloud, we can't easily calculate page numbers from cursor, so just log occasionally
             if len(response["results"]) > 0:
                 logger.debug(
-                    "Fetching Confluence Cloud documents: {len(response['results'])} found",
+                    f"Fetching Confluence Cloud documents: {len(response['results'])} found",
                     count=len(response["results"]),
                     total_size=response.get("totalSize", response.get("size", 0)),
                 )
@@ -265,7 +265,7 @@ class ConfluenceConnector(BaseConnector):
 
         logger.debug(
             "Making Confluence Data Center API request",
-            url="{self.base_url}/rest/api/content/search",
+            url=f"{self.base_url}/rest/api/content/search",
             params=params,
         )
         response = await self._make_request("GET", "content/search", params=params)
@@ -274,7 +274,7 @@ class ConfluenceConnector(BaseConnector):
             page_num = start // 25 + 1
             if page_num == 1 or page_num % 10 == 0:
                 logger.debug(
-                    "Fetching Confluence Data Center documents (page {page_num}): {len(response['results'])} found",
+                    f"Fetching Confluence Data Center documents (page {page_num}): {len(response['results'])} found",
                     count=len(response["results"]),
                     total_size=response.get("totalSize", response.get("size", 0)),
                     start=start,
@@ -313,7 +313,7 @@ class ConfluenceConnector(BaseConnector):
 
         try:
             # Fetch attachments using Confluence API
-            endpoint = "content/{content_id}/child/attachment"
+            endpoint = f"content/{content_id}/child/attachment"
             params = {
                 "expand": "metadata,version,history",  # Include history for better metadata
                 "limit": 50,  # Reasonable limit for attachments per page
@@ -379,19 +379,19 @@ class ConfluenceConnector(BaseConnector):
                         if download_link.startswith("http"):
                             download_url = download_link
                         elif download_link.startswith("/"):
-                            download_url = "{self.base_url}{download_link}"
+                            download_url = f"{self.base_url}{download_link}"
                         else:
                             # Relative path - construct full URL
-                            download_url = "{self.base_url}/rest/api/{download_link}"
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
                     else:
                         # Data Center URLs
                         if download_link.startswith("http"):
                             download_url = download_link
                         elif download_link.startswith("/"):
-                            download_url = "{self.base_url}{download_link}"
+                            download_url = f"{self.base_url}{download_link}"
                         else:
                             # Relative path - construct full URL
-                            download_url = "{self.base_url}/rest/api/{download_link}"
+                            download_url = f"{self.base_url}/rest/api/{download_link}"
 
                     # Get author and timestamps - structure can vary between versions
                     version = attachment_data.get("version", {})
@@ -661,7 +661,7 @@ class ConfluenceConnector(BaseConnector):
                     space=space,
                 )
                 # Use title as fallback content instead of failing
-                body = title or "[Empty page: {content_id}]"
+                body = title or f"[Empty page: {content_id}]"
 
             # Check for other missing required fields
             missing_fields = []
@@ -682,7 +682,7 @@ class ConfluenceConnector(BaseConnector):
                     space=space,
                 )
                 raise ValueError(
-                    "Content is missing required fields: {', '.join(missing_fields)}"
+                    f"Content is missing required fields: {', '.join(missing_fields)}"
                 )
 
             # Get version information
@@ -844,15 +844,15 @@ class ConfluenceConnector(BaseConnector):
         if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
             # Cloud URLs use a different format
             if content_type == "blogpost":
-                return "{self.base_url}/spaces/{space}/blog/{content_id}"
+                return f"{self.base_url}/spaces/{space}/blog/{content_id}"
             else:
-                return "{self.base_url}/spaces/{space}/pages/{content_id}"
+                return f"{self.base_url}/spaces/{space}/pages/{content_id}"
         else:
             # Data Center/Server URLs
             if content_type == "blogpost":
-                return "{self.base_url}/display/{space}/{content_id}"
+                return f"{self.base_url}/display/{space}/{content_id}"
             else:
-                return "{self.base_url}/display/{space}/{content_id}"
+                return f"{self.base_url}/display/{space}/{content_id}"
 
     def _parse_timestamp(self, timestamp_str: str | None) -> "datetime | None":
         """Parse a timestamp string into a datetime object.
@@ -898,8 +898,8 @@ class ConfluenceConnector(BaseConnector):
             else:
                 return datetime.fromisoformat(timestamp_str)
 
-        except (ValueError, TypeError, AttributeError):
-            logger.debug("Failed to parse timestamp '{timestamp_str}': {e}")
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.debug(f"Failed to parse timestamp '{timestamp_str}': {e}")
             return None
 
     def _clean_html(self, html: str) -> str:
@@ -938,7 +938,7 @@ class ConfluenceConnector(BaseConnector):
                 try:
                     page_count += 1
                     logger.debug(
-                        "Fetching page {page_count} of Confluence content (cursor={cursor})"
+                        f"Fetching page {page_count} of Confluence content (cursor={cursor})"
                     )
                     response = await self._get_space_content_cloud(cursor)
                     results = response.get("results", [])
@@ -949,7 +949,7 @@ class ConfluenceConnector(BaseConnector):
 
                     total_documents += len(results)
                     logger.debug(
-                        "Processing {len(results)} documents from page {page_count}"
+                        f"Processing {len(results)} documents from page {page_count}"
                     )
 
                     # Process each content item
@@ -982,22 +982,22 @@ class ConfluenceConnector(BaseConnector):
                                                 documents.extend(attachment_docs)
 
                                                 logger.debug(
-                                                    "Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
                                                 )
-                                        except Exception:
+                                        except Exception as e:
                                             logger.error(
-                                                "Failed to process attachments for {content['type']} '{content['title']}' "
-                                                "(ID: {content['id']}): {e!s}"
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
                                             )
 
                                     logger.debug(
-                                        "Processed {content['type']} '{content['title']}' "
-                                        "(ID: {content['id']}) from space {self.config.space_key}"
+                                        f"Processed {content['type']} '{content['title']}' "
+                                        f"(ID: {content['id']}) from space {self.config.space_key}"
                                     )
-                            except Exception:
+                            except Exception as e:
                                 logger.error(
-                                    "Failed to process {content['type']} '{content['title']}' "
-                                    "(ID: {content['id']}): {e!s}"
+                                    f"Failed to process {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}): {e!s}"
                                 )
 
                     # Get the next cursor from the response
@@ -1018,14 +1018,14 @@ class ConfluenceConnector(BaseConnector):
                                 "No cursor found in next URL, ending pagination"
                             )
                             break
-                        logger.debug("Found next cursor: {cursor}")
-                    except Exception:
-                        logger.error("Failed to parse next URL: {e!s}")
+                        logger.debug(f"Found next cursor: {cursor}")
+                    except Exception as e:
+                        logger.error(f"Failed to parse next URL: {e!s}")
                         break
 
-                except Exception:
+                except Exception as e:
                     logger.error(
-                        "Failed to fetch content from space {self.config.space_key}: {e!s}"
+                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
                     )
                     raise
         else:
@@ -1037,7 +1037,7 @@ class ConfluenceConnector(BaseConnector):
                 try:
                     page_count += 1
                     logger.debug(
-                        "Fetching page {page_count} of Confluence content (start={start})"
+                        f"Fetching page {page_count} of Confluence content (start={start})"
                     )
                     response = await self._get_space_content_datacenter(start)
                     results = response.get("results", [])
@@ -1048,7 +1048,7 @@ class ConfluenceConnector(BaseConnector):
 
                     total_documents += len(results)
                     logger.debug(
-                        "Processing {len(results)} documents from page {page_count}"
+                        f"Processing {len(results)} documents from page {page_count}"
                     )
 
                     # Process each content item
@@ -1081,43 +1081,43 @@ class ConfluenceConnector(BaseConnector):
                                                 documents.extend(attachment_docs)
 
                                                 logger.debug(
-                                                    "Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
+                                                    f"Processed {len(attachment_docs)} attachments for {content['type']} '{content['title']}'"
                                                 )
-                                        except Exception:
+                                        except Exception as e:
                                             logger.error(
-                                                "Failed to process attachments for {content['type']} '{content['title']}' "
-                                                "(ID: {content['id']}): {e!s}"
+                                                f"Failed to process attachments for {content['type']} '{content['title']}' "
+                                                f"(ID: {content['id']}): {e!s}"
                                             )
 
                                     logger.debug(
-                                        "Processed {content['type']} '{content['title']}' "
-                                        "(ID: {content['id']}) from space {self.config.space_key}"
+                                        f"Processed {content['type']} '{content['title']}' "
+                                        f"(ID: {content['id']}) from space {self.config.space_key}"
                                     )
-                            except Exception:
+                            except Exception as e:
                                 logger.error(
-                                    "Failed to process {content['type']} '{content['title']}' "
-                                    "(ID: {content['id']}): {e!s}"
+                                    f"Failed to process {content['type']} '{content['title']}' "
+                                    f"(ID: {content['id']}): {e!s}"
                                 )
 
                     # Check if there are more pages
                     total_size = response.get("totalSize", response.get("size", 0))
                     if start + limit >= total_size:
                         logger.debug(
-                            "Reached end of results: {start + limit} >= {total_size}"
+                            f"Reached end of results: {start + limit} >= {total_size}"
                         )
                         break
 
                     # Move to next page
                     start += limit
-                    logger.debug("Moving to next page with start={start}")
+                    logger.debug(f"Moving to next page with start={start}")
 
-                except Exception:
+                except Exception as e:
                     logger.error(
-                        "Failed to fetch content from space {self.config.space_key}: {e!s}"
+                        f"Failed to fetch content from space {self.config.space_key}: {e!s}"
                     )
                     raise
 
         logger.info(
-            "📄 Confluence: {len(documents)} documents from space {self.config.space_key}"
+            f"📄 Confluence: {len(documents)} documents from space {self.config.space_key}"
         )
         return documents

@@ -229,10 +229,10 @@ class FileConverter:
     def _validate_file(self, file_path: str) -> None:
         """Validate file for conversion."""
         if not os.path.exists(file_path):
-            raise FileAccessError("File does not exist: {file_path}")
+            raise FileAccessError(f"File does not exist: {file_path}")
 
         if not os.access(file_path, os.R_OK):
-            raise FileAccessError("File is not readable: {file_path}")
+            raise FileAccessError(f"File is not readable: {file_path}")
 
         file_size = os.path.getsize(file_path)
         if not self.config.is_file_size_allowed(file_size):
@@ -249,7 +249,7 @@ class FileConverter:
         filename = Path(file_path).name
         file_info = self.file_detector.get_file_type_info(file_path)
 
-        return """# {filename}
+        return f"""# {filename}
 
 **File Information:**
 - **Type**: {file_info.get("normalized_type", "unknown")}

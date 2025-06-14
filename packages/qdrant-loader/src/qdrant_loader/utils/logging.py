@@ -87,10 +87,10 @@ class CleanFormatter(logging.Formatter):
             if match:
                 timestamp = match.group(1)
                 rest_of_message = match.group(2)
-                return "{timestamp} [{record.levelname}] {rest_of_message}"
+                return f"{timestamp} [{record.levelname}] {rest_of_message}"
             else:
                 # No timestamp found, just add level name
-                return "[{record.levelname}] {message}"
+                return f"[{record.levelname}] {message}"
 
 
 class FileRenderer:
@@ -102,8 +102,8 @@ class FileRenderer:
 
         # Format additional key-value pairs
         if event_dict:
-            extras = " ".join("{k}={v}" for k, v in event_dict.items())
-            return "{event} {extras}".strip()
+            extras = " ".join(f"{k}={v}" for k, v in event_dict.items())
+            return f"{event} {extras}".strip()
         else:
             return event
 
@@ -137,10 +137,10 @@ class FileFormatter(logging.Formatter):
         # Format based on log level
         if record.levelno == logging.INFO:
             # For INFO level, use a clean format: timestamp | message
-            return "{timestamp} | {clean_message}"
+            return f"{timestamp} | {clean_message}"
         else:
             # For other levels, include the level: timestamp | [LEVEL] message
-            return "{timestamp} | [{level}] {clean_message}"
+            return f"{timestamp} | [{level}] {clean_message}"
 
 
 class CustomConsoleRenderer:
@@ -188,23 +188,23 @@ class CustomConsoleRenderer:
                 formatted = formatted[len(time_part) :].lstrip()
 
             # Add gray color to timestamp
-            colored_timestamp = "{self.gray}{time_part}{self.reset}"
+            colored_timestamp = f"{self.gray}{time_part}{self.reset}"
 
             # Get colored level for all levels including INFO
             level_color = self._get_level_color(level)
             colored_level = (
-                "{level_color}[{level}]{self.reset}" if level_color else "[{level}]"
+                f"{level_color}[{level}]{self.reset}" if level_color else f"[{level}]"
             )
 
             # Show timestamp, colored level, and message for all levels
-            return "{colored_timestamp} {colored_level} {formatted}"
+            return f"{colored_timestamp} {colored_level} {formatted}"
 
         # Fallback if no timestamp
         level_color = self._get_level_color(level)
         colored_level = (
-            "{level_color}[{level}]{self.reset}" if level_color else "[{level}]"
+            f"{level_color}[{level}]{self.reset}" if level_color else f"[{level}]"
         )
-        return "{colored_level} {formatted}"
+        return f"{colored_level} {formatted}"
 
 
 class LoggingConfig:
@@ -235,7 +235,7 @@ class LoggingConfig:
             # Convert string level to logging level
             numeric_level = getattr(logging, level.upper())
         except AttributeError:
-            raise ValueError("Invalid log level: {level}") from None
+            raise ValueError(f"Invalid log level: {level}") from None
 
         # Reset logging configuration
         logging.getLogger().handlers = []

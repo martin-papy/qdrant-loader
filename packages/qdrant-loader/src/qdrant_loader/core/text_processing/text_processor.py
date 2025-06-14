@@ -90,7 +90,7 @@ class TextProcessor:
         # Performance check: truncate very long text
         if len(text) > MAX_TEXT_LENGTH_FOR_SPACY:
             logger.debug(
-                "Text too long for spaCy processing ({len(text)} chars), truncating to {MAX_TEXT_LENGTH_FOR_SPACY}"
+                f"Text too long for spaCy processing ({len(text)} chars), truncating to {MAX_TEXT_LENGTH_FOR_SPACY}"
             )
             text = text[:MAX_TEXT_LENGTH_FOR_SPACY]
 
@@ -118,8 +118,8 @@ class TextProcessor:
                 "pos_tags": pos_tags,
                 "chunks": chunks,
             }
-        except Exception:
-            logger.warning("Text processing failed: {e}")
+        except Exception as e:
+            logger.warning(f"Text processing failed: {e}")
             # Return minimal results on error
             return {
                 "tokens": [],
@@ -146,8 +146,8 @@ class TextProcessor:
             return [(ent.text, ent.label_) for ent in doc.ents][
                 :MAX_ENTITIES_TO_EXTRACT
             ]
-        except Exception:
-            logger.warning("Entity extraction failed: {e}")
+        except Exception as e:
+            logger.warning(f"Entity extraction failed: {e}")
             return []
 
     def get_pos_tags(self, text: str) -> list[tuple]:
@@ -166,8 +166,8 @@ class TextProcessor:
         try:
             doc = self.nlp(text)
             return [(token.text, token.pos_) for token in doc][:MAX_POS_TAGS_TO_EXTRACT]
-        except Exception:
-            logger.warning("POS tagging failed: {e}")
+        except Exception as e:
+            logger.warning(f"POS tagging failed: {e}")
             return []
 
     def split_into_chunks(self, text: str, chunk_size: int | None = None) -> list[str]:
@@ -201,7 +201,7 @@ class TextProcessor:
                 )
                 return text_splitter.split_text(text)
             return self.text_splitter.split_text(text)
-        except Exception:
-            logger.warning("Text splitting failed: {e}")
+        except Exception as e:
+            logger.warning(f"Text splitting failed: {e}")
             # Return the original text as a single chunk on error
             return [text] if text else []

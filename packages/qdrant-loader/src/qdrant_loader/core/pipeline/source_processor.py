@@ -39,19 +39,19 @@ class SourceProcessor:
         Returns:
             List of documents from all sources of this type
         """
-        logger.debug("Processing {source_type} sources: {list(source_configs.keys())}")
+        logger.debug(f"Processing {source_type} sources: {list(source_configs.keys())}")
 
         all_documents = []
 
         for source_name, source_config in source_configs.items():
             if self.shutdown_event.is_set():
                 logger.info(
-                    "Shutdown requested, skipping {source_type} source: {source_name}"
+                    f"Shutdown requested, skipping {source_type} source: {source_name}"
                 )
                 break
 
             try:
-                logger.debug("Processing {source_type} source: {source_name}")
+                logger.debug(f"Processing {source_type} source: {source_name}")
 
                 # Create connector instance and use as async context manager
                 connector = connector_class(source_config)
@@ -64,7 +64,7 @@ class SourceProcessor:
                     and source_config.enable_file_conversion
                 ):
                     logger.debug(
-                        "Setting file conversion config for {source_type} source: {source_name}"
+                        f"Setting file conversion config for {source_type} source: {source_name}"
                     )
                     connector.set_file_conversion_config(self.file_conversion_config)
 
@@ -74,13 +74,13 @@ class SourceProcessor:
                     documents = await connector.get_documents()
 
                     logger.debug(
-                        "Retrieved {len(documents)} documents from {source_type} source: {source_name}"
+                        f"Retrieved {len(documents)} documents from {source_type} source: {source_name}"
                     )
                     all_documents.extend(documents)
 
-            except Exception:
+            except Exception as e:
                 logger.error(
-                    "Failed to process {source_type} source {source_name}: {e}",
+                    f"Failed to process {source_type} source {source_name}: {e}",
                     exc_info=True,
                 )
                 # Continue processing other sources even if one fails
@@ -88,6 +88,6 @@ class SourceProcessor:
 
         if all_documents:
             logger.info(
-                "📥 {source_type}: {len(all_documents)} documents from {len(source_configs)} sources"
+                f"📥 {source_type}: {len(all_documents)} documents from {len(source_configs)} sources"
             )
         return all_documents

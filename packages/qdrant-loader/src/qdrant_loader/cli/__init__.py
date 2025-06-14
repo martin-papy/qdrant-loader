@@ -23,7 +23,7 @@ def __getattr__(name):
 
         return LoggingConfig.get_logger(__name__)
     else:
-        raise AttributeError("module '{__name__}' has no attribute '{name}'")
+        raise AttributeError("module f'{__name__}' has no attribute f'{name}'")
 
 
 __all__ = []

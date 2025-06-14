@@ -98,7 +98,7 @@ def __getattr__(name):
     connector_configs = _get_connector_configs()
     if name in connector_configs:
         return connector_configs[name]
-    raise AttributeError("module '{__name__}' has no attribute '{name}'")
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 _global_settings: Optional["Settings"] = None
@@ -363,7 +363,7 @@ class Settings(BaseSettings):
                 # If the environment variable contains $HOME, expand it
                 if "$HOME" in env_value:
                     env_value = env_value.replace("$HOME", os.path.expanduser("~"))
-                result = result.replace("${{{var_name}}}", env_value)
+                result = result.replace(f"${{{var_name}}}", env_value)
 
             return result
         elif isinstance(data, dict):
@@ -396,7 +396,7 @@ class Settings(BaseSettings):
                 # Custom env file specified - load only this file
                 logger.debug("Loading custom environment file", path=str(env_path))
                 if not env_path.exists():
-                    raise FileNotFoundError("Environment file not found: {env_path}")
+                    raise FileNotFoundError(f"Environment file not found: {env_path}")
                 load_dotenv(env_path, override=True)
             else:
                 # Load default .env file if it exists

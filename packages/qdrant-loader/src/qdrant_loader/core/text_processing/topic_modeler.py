@@ -139,7 +139,7 @@ class TopicModeler:
             Dictionary containing topic analysis results
         """
         if not self.lda_model or not self.dictionary:
-            logger.warning("LDA model not trained")
+            logger.warning("LDA model not trainedf")
             return {"topics": [], "coherence": 0.0}
 
         # Check cache first
@@ -150,7 +150,7 @@ class TopicModeler:
             # Preprocess text
             tokens = self._preprocess_text(text)
             if not tokens:
-                logger.debug("No tokens found for topic analysis")
+                logger.debug("No tokens found for topic analysisf")
                 return {"topics": [], "coherence": 0.0}
 
             # Create document-term matrix
@@ -175,7 +175,7 @@ class TopicModeler:
                     )
                     coherence = coherence_model.get_coherence()
                 except Exception as e:
-                    logger.warning("Failed to calculate coherence", error=str(e))
+                    logger.warning("Failed to calculate coherencef", error=str(e))
 
             result = {
                 "topics": topics,

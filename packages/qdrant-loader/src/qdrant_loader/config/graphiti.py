@@ -6,7 +6,7 @@ including LLM client settings, embedder configuration, and operational parameter
 
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -25,7 +25,8 @@ class GraphitiLLMConfig(BaseModel):
     )
     temperature: float = Field(default=0.1, description="Temperature for LLM responses")
 
-    @validator("temperature")
+    @field_validator("temperature")
+    @classmethod
     def validate_temperature(cls, v):
         if not 0.0 <= v <= 2.0:
             raise ValueError("Temperature must be between 0.0 and 2.0")
@@ -100,19 +101,22 @@ class GraphitiConfig(BaseSettings):
         env_prefix = "GRAPHITI_"
         case_sensitive = False
 
-    @validator("llm", pre=True)
+    @field_validator("llm", mode="before")
+    @classmethod
     def validate_llm_config(cls, v):
         if isinstance(v, dict):
             return GraphitiLLMConfig(**v)
         return v
 
-    @validator("embedder", pre=True)
+    @field_validator("embedder", mode="before")
+    @classmethod
     def validate_embedder_config(cls, v):
         if isinstance(v, dict):
             return GraphitiEmbedderConfig(**v)
         return v
 
-    @validator("operational", pre=True)
+    @field_validator("operational", mode="before")
+    @classmethod
     def validate_operational_config(cls, v):
         if isinstance(v, dict):
             return GraphitiOperationalConfig(**v)

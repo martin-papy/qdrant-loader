@@ -45,7 +45,7 @@ class PublicDocsSourceConfig(SourceConfig):
     )
     attachment_selectors: list[str] = Field(
         default=[
-            "a[href$='.pd']",
+            "a[href$='.pdf']",
             "a[href$='.doc']",
             "a[href$='.docx']",
             "a[href$='.xls']",
@@ -62,5 +62,5 @@ class PublicDocsSourceConfig(SourceConfig):
         """Validate content type."""
         valid_types = ["html", "markdown", "rst"]
         if v.lower() not in valid_types:
-            raise ValueError("Content type must be one of {valid_types}")
+            raise ValueError(f"Content type must be one of {valid_types}")
         return v.lower()

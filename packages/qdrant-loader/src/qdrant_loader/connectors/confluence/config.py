@@ -53,7 +53,7 @@ class ConfluenceSpaceConfig(SourceConfig):
         valid_types = ["page", "blogpost", "comment"]
         for content_type in v:
             if content_type.lower() not in valid_types:
-                raise ValueError("Content type must be one of {valid_types}")
+                raise ValueError(f"Content type must be one of {valid_types}")
         return [t.lower() for t in v]
 
     @field_validator("deployment_type", mode="before")

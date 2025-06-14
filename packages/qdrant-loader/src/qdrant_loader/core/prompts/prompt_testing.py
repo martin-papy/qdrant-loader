@@ -132,7 +132,7 @@ class PromptTester:
     def add_test_case(self, test_case: PromptTestCase) -> None:
         """Add a test case to the test suite."""
         self._test_cases[test_case.name] = test_case
-        logger.debug("Added test case: {test_case.name}")
+        logger.debug(f"Added test case: {test_case.name}")
 
     def load_test_cases_from_dict(self, test_cases_data: list[dict[str, Any]]) -> None:
         """Load test cases from dictionary data."""
@@ -150,18 +150,18 @@ class PromptTester:
             )
             self.add_test_case(test_case)
 
-        logger.info("Loaded {len(test_cases_data)} test cases")
+        logger.info(f"Loaded {len(test_cases_data)} test cases")
 
     async def run_test_case(self, test_case: PromptTestCase) -> PromptTestResult:
         """Run a single test case and return the result."""
-        logger.debug("Running test case: {test_case.name}")
+        logger.debug(f"Running test case: {test_case.name}")
         start_time = time.time()
 
         try:
             # Extract entities using the entity extractor
             result = await self.entity_extractor.extract_entities(
                 text=test_case.input_text,
-                source_description="Test case: {test_case.name}",
+                source_description=f"Test case: {test_case.name}",
             )
 
             execution_time = time.time() - start_time
@@ -199,15 +199,15 @@ class PromptTester:
             )
 
             logger.debug(
-                "Test case {test_case.name} completed: {status.value} "
-                "(F1: {evaluation['f1_score']:.2f})"
+                f"Test case {test_case.name} completed: {status.value} "
+                f"(F1: {evaluation['f1_score']:.2f})"
             )
 
             return test_result
 
         except Exception as e:
             execution_time = time.time() - start_time
-            logger.error("Test case {test_case.name} failed with error: {e}")
+            logger.error(f"Test case {test_case.name} failed with error: {e}")
 
             return PromptTestResult(
                 test_case=test_case,
@@ -230,7 +230,7 @@ class PromptTester:
             logger.warning("No test cases to run")
             return []
 
-        logger.info("Running {len(test_cases_to_run)} test cases")
+        logger.info(f"Running {len(test_cases_to_run)} test cases")
 
         # Run test cases concurrently
         tasks = [self.run_test_case(test_case) for test_case in test_cases_to_run]
@@ -240,7 +240,7 @@ class PromptTester:
         test_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error("Test case failed with exception: {result}")
+                logger.error(f"Test case failed with exception: {result}")
                 test_results.append(
                     PromptTestResult(
                         test_case=test_cases_to_run[i],
@@ -329,7 +329,7 @@ class PromptTester:
         missing_entities = [
             entity
             for entity in expected_entities
-            if (entity["name"].lower(), entity["type"].upper()) not in extracted_set
+            if (entity["name"].lower(), entity["typef"].upper()) not in extracted_set
         ]
 
         unexpected_entities = [
@@ -380,9 +380,9 @@ class PromptTester:
         )
 
         logger.info(
-            "Test Summary: {total_tests} tests - "
-            "Passed: {passed}, Partial: {partial}, Failed: {failed}, Errors: {errors} - "
-            "Avg F1: {avg_f1:.3f}, Avg Time: {avg_time:.2f}s"
+            f"Test Summary: {total_tests} tests - "
+            f"Passed: {passed}, Partial: {partial}, Failed: {failed}, Errors: {errors} - "
+            f"Avg F1: {avg_f1:.3f}, Avg Time: {avg_time:.2f}s"
         )
 
     def get_test_statistics(self) -> dict[str, Any]:
@@ -404,7 +404,7 @@ class PromptTester:
             "precision": sum(r.precision for r in recent_results) / len(recent_results),
             "recall": sum(r.recall for r in recent_results) / len(recent_results),
             "f1_score": sum(r.f1_score for r in recent_results) / len(recent_results),
-            "execution_time": sum(r.execution_time for r in recent_results)
+            "execution_timef": sum(r.execution_time for r in recent_results)
             / len(recent_results),
         }
 
@@ -423,7 +423,7 @@ class PromptTester:
         with open(filepath, "w") as f:
             json.dump(results_data, f, indent=2)
 
-        logger.info("Exported {len(results_data)} test results to {filepath}")
+        logger.info(f"Exported {len(results_data)} test results to {filepath}")
 
     def clear_results(self) -> None:
         """Clear all test results."""
@@ -437,12 +437,12 @@ def create_default_test_cases() -> list[PromptTestCase]:
     test_cases = [
         PromptTestCase(
             name="basic_microservices",
-            input_text="The User Service connects to PostgreSQL database and exposes a REST API for user management. The Frontend Team uses React to consume this API.",
+            input_text="The User Service connects to PostgreSQL database and exposes a REST API for user management. The Frontend Team uses React to consume this API.f",
             expected_entities=[
                 {"name": "User Service", "type": "SERVICE"},
-                {"name": "PostgreSQL", "type": "DATABASE"},
+                {"name": "PostgreSQL", "type": "DATABASEf"},
                 {"name": "REST API", "type": "API"},
-                {"name": "Frontend Team", "type": "TEAM"},
+                {"name": "Frontend Team", "type": "TEAMf"},
                 {"name": "React", "type": "TECHNOLOGY"},
             ],
             description="Basic microservices architecture with database and frontend",
@@ -450,14 +450,14 @@ def create_default_test_cases() -> list[PromptTestCase]:
         ),
         PromptTestCase(
             name="complex_architecture",
-            input_text="Our microservices architecture includes the Payment Gateway, Order Processing Service, and Notification Service. All services use Docker containers and are deployed on Kubernetes. The Backend Team maintains these services while the DevOps Team handles deployment.",
+            input_text="Our microservices architecture includes the Payment Gateway, Order Processing Service, and Notification Service. All services use Docker containers and are deployed on Kubernetes. The Backend Team maintains these services while the DevOps Team handles deployment.f",
             expected_entities=[
                 {"name": "Payment Gateway", "type": "SERVICE"},
-                {"name": "Order Processing Service", "type": "SERVICE"},
+                {"name": "Order Processing Service", "type": "SERVICEf"},
                 {"name": "Notification Service", "type": "SERVICE"},
-                {"name": "Docker", "type": "TECHNOLOGY"},
+                {"name": "Docker", "type": "TECHNOLOGYf"},
                 {"name": "Kubernetes", "type": "TECHNOLOGY"},
-                {"name": "Backend Team", "type": "TEAM"},
+                {"name": "Backend Team", "type": "TEAMf"},
                 {"name": "DevOps Team", "type": "TEAM"},
                 {"name": "Microservices Architecture", "type": "CONCEPT"},
             ],
@@ -466,11 +466,11 @@ def create_default_test_cases() -> list[PromptTestCase]:
         ),
         PromptTestCase(
             name="api_endpoints",
-            input_text="The API exposes several endpoints: GET /api/v1/users for user listing, POST /api/v1/users for user creation, and DELETE /api/v1/users/{id} for user deletion. Authentication is handled via JWT tokens.",
+            input_text=f"The API exposes several endpoints: GET /api/v1/users for user listing, POST /api/v1/users for user creation, and DELETE /api/v1/users/{id} for user deletion. Authentication is handled via JWT tokens.",
             expected_entities=[
-                {"name": "GET /api/v1/users", "type": "ENDPOINT"},
+                {"name": "GET /api/v1/users", "type": "ENDPOINTf"},
                 {"name": "POST /api/v1/users", "type": "ENDPOINT"},
-                {"name": "DELETE /api/v1/users/{id}", "type": "ENDPOINT"},
+                {"name": f"DELETE /api/v1/users/{id}", "type": "ENDPOINTf"},
                 {"name": "JWT", "type": "TECHNOLOGY"},
                 {"name": "API", "type": "API"},
             ],
@@ -479,10 +479,10 @@ def create_default_test_cases() -> list[PromptTestCase]:
         ),
         PromptTestCase(
             name="database_technologies",
-            input_text="The system uses PostgreSQL for transactional data, Redis for caching, and Elasticsearch for search functionality. The Data Team manages all database operations.",
+            input_text="The system uses PostgreSQL for transactional data, Redis for caching, and Elasticsearch for search functionality. The Data Team manages all database operations.f",
             expected_entities=[
                 {"name": "PostgreSQL", "type": "DATABASE"},
-                {"name": "Redis", "type": "DATABASE"},
+                {"name": "Redis", "type": "DATABASEf"},
                 {"name": "Elasticsearch", "type": "DATABASE"},
                 {"name": "Data Team", "type": "TEAM"},
             ],
@@ -491,12 +491,12 @@ def create_default_test_cases() -> list[PromptTestCase]:
         ),
         PromptTestCase(
             name="project_and_features",
-            input_text="The Mobile App Redesign project includes the new Authentication Module and improved User Profile Feature. The Mobile Team is working with the Design Team to implement these changes.",
+            input_text="The Mobile App Redesign project includes the new Authentication Module and improved User Profile Feature. The Mobile Team is working with the Design Team to implement these changes.f",
             expected_entities=[
                 {"name": "Mobile App Redesign", "type": "PROJECT"},
-                {"name": "Authentication Module", "type": "PROJECT"},
+                {"name": "Authentication Module", "type": "PROJECTf"},
                 {"name": "User Profile Feature", "type": "PROJECT"},
-                {"name": "Mobile Team", "type": "TEAM"},
+                {"name": "Mobile Team", "type": "TEAMf"},
                 {"name": "Design Team", "type": "TEAM"},
             ],
             description="Projects, features, and team collaboration",

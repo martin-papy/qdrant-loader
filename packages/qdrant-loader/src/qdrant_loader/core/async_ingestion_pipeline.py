@@ -121,7 +121,7 @@ class AsyncIngestionPipeline:
             final_metrics_dir = Path.cwd() / "metrics"
 
         final_metrics_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Initializing metrics directory at {final_metrics_dir}")
+        logger.info(f"Initializing metrics directory at {final_metrics_dir}")
         self.monitor = IngestionMonitor(str(final_metrics_dir.absolute()))
 
         # Start metrics server if enabled
@@ -210,12 +210,12 @@ class AsyncIngestionPipeline:
             self.monitor.end_operation("ingestion_process")
 
             logger.debug(
-                "Document processing completed. Processed {len(documents)} documents"
+                f"Document processing completed. Processed {len(documents)} documents"
             )
             return documents
 
         except Exception as e:
-            logger.error("Document processing failed: {e}", exc_info=True)
+            logger.error(f"Document processing failed: {e}", exc_info=True)
             self.monitor.end_operation("ingestion_process", error=str(e))
             raise
 

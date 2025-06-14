@@ -55,8 +55,8 @@ class ResourceManager:
                     # No running loop, run async cleanup directly
                     try:
                         asyncio.run(self._async_cleanup())
-                    except Exception:
-                        logger.error("Error in async cleanup: {e}")
+                    except Exception as e:
+                        logger.error(f"Error in async cleanup: {e}")
 
             # Shutdown thread pool executor
             if self.chunk_executor:
@@ -65,8 +65,8 @@ class ResourceManager:
 
             self.cleanup_done = True
             logger.info("Cleanup completed")
-        except Exception:
-            logger.error("Error during cleanup: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {str(e)}")
 
     async def _async_cleanup(self):
         """Async cleanup helper."""
@@ -74,7 +74,7 @@ class ResourceManager:
 
         # Cancel all active tasks
         if self.active_tasks:
-            logger.info("Cancelling {len(self.active_tasks)} active tasks")
+            logger.info(f"Cancelling {len(self.active_tasks)} active tasks")
             for task in self.active_tasks:
                 if not task.done():
                     task.cancel()
@@ -136,7 +136,7 @@ class ResourceManager:
     def _cancel_all_tasks(self):
         """Cancel all active tasks."""
         if self.active_tasks:
-            logger.info("Cancelling {len(self.active_tasks)} active tasks")
+            logger.info(f"Cancelling {len(self.active_tasks)} active tasks")
             for task in self.active_tasks:
                 if not task.done():
                     task.cancel()
@@ -149,8 +149,8 @@ class ResourceManager:
         try:
             # Try to cleanup first
             self._cleanup()
-        except Exception:
-            logger.error("Error during forced cleanup: {e}")
+        except Exception as e:
+            logger.error(f"Error during forced cleanup: {e}")
         finally:
             # Force exit
             os._exit(1)

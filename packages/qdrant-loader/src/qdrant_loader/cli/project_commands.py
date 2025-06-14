@@ -123,7 +123,7 @@ async def list(
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("project_list_failed", error=str(e))
-        raise ClickException("Failed to list projects: {str(e)!s}") from e
+        raise ClickException(f"Failed to list projects: {str(e)!s}") from e
 
 
 @project_cli.command()
@@ -167,7 +167,7 @@ async def status(
         if project_id:
             context = project_manager.get_project_context(project_id)
             if not context:
-                raise ClickException("Project '{project_id}' not found")
+                raise ClickException(f"Project '{project_id}' not found")
             project_contexts = {project_id: context}
         else:
             project_contexts = project_manager.get_all_project_contexts()
@@ -205,7 +205,7 @@ async def status(
                 )
 
                 # Create project panel
-                project_info = """[bold cyan]Project ID:[/bold cyan] {context.project_id}
+                project_info = f"""[bold cyan]Project ID:[/bold cyan] {context.project_id}
 [bold magenta]Display Name:[/bold magenta] {context.display_name or 'N/A'}
 [bold green]Description:[/bold green] {context.description or 'N/A'}
 [bold blue]Collection:[/bold blue] {context.collection_name or 'N/A'}
@@ -214,7 +214,7 @@ async def status(
 [bold red]Latest Ingestion:[/bold red] N/A (requires database)"""
 
                 console.print(
-                    Panel(project_info, title="Project: {context.project_id}")
+                    Panel(project_info, title=f"Project: {context.project_id}")
                 )
 
     except Exception as e:

@@ -34,7 +34,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # Warn about suspiciously small chunk sizes
         if self.chunk_size < 100:
             logger.warning(
-                "Very small chunk_size detected: {self.chunk_size}. "
+                f"Very small chunk_size detected: {self.chunk_size}. "
                 "This may cause performance issues and excessive chunking. "
                 "Consider using a larger value (e.g., 1000-1500 characters)."
             )
@@ -106,7 +106,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # Log warning if we hit the chunk limit
         if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start < len(tokens):
             logger.warning(
-                "Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
                 "Document may be truncated."
             )
 
@@ -123,7 +123,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         """
         # Safety check: if chunk_size is invalid, use a reasonable default
         if self.chunk_size <= 0:
-            logger.warning("Invalid chunk_size {self.chunk_size}, using default 1000")
+            logger.warning(f"Invalid chunk_size {self.chunk_size}, using default 1000")
             effective_chunk_size = 1000
         else:
             effective_chunk_size = self.chunk_size
@@ -229,16 +229,16 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         # Safety check: if we somehow generated too many chunks from a small document, something is wrong
         if len(text) < 1000 and len(final_result_chunks) > 100:
             logger.error(
-                "Suspicious chunking result: {len(text)} chars generated {len(final_result_chunks)} chunks. "
-                "Chunk size: {effective_chunk_size}. Returning single chunk as fallback."
+                f"Suspicious chunking result: {len(text)} chars generated {len(final_result_chunks)} chunks. "
+                f"Chunk size: {effective_chunk_size}. Returning single chunk as fallback."
             )
             return [text]
 
         # Apply chunk limit
         if len(final_result_chunks) > MAX_CHUNKS_TO_PROCESS:
             logger.warning(
-                "Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
-                "Document may be truncated. Text length: {len(text)}, Chunk size: {effective_chunk_size}"
+                f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
+                f"Document may be truncated. Text length: {len(text)}, Chunk size: {effective_chunk_size}"
             )
             final_result_chunks = final_result_chunks[:MAX_CHUNKS_TO_PROCESS]
 
@@ -257,7 +257,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             document.metadata.get("file_name")
             or document.metadata.get("original_filename")
             or document.title
-            or "{document.source_type}:{document.source}"
+            or f"{document.source_type}:{document.source}"
         )
 
         # Start progress tracking
@@ -288,8 +288,8 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             # Apply chunk limit at document level too
             if len(text_chunks) > MAX_CHUNKS_TO_PROCESS:
                 logger.warning(
-                    "Document {document.id} generated {len(text_chunks)} chunks, "
-                    "limiting to {MAX_CHUNKS_TO_PROCESS}"
+                    f"Document {document.id} generated {len(text_chunks)} chunks, "
+                    f"limiting to {MAX_CHUNKS_TO_PROCESS}"
                 )
                 text_chunks = text_chunks[:MAX_CHUNKS_TO_PROCESS]
 

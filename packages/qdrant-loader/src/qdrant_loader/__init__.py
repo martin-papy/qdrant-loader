@@ -43,7 +43,7 @@ def __getattr__(name):
 
         return QdrantManager
     else:
-        raise AttributeError("module '{__name__}' has no attribute '{name}'")
+        raise AttributeError("module f'{__name__}' has no attribute f'{name}'")
 
 
 __all__ = ["__version__"]

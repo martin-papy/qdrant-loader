@@ -130,7 +130,7 @@ class LocalFileConnector(BaseConnector):
                             }
                         )
 
-                    self.logger.debug("Processed local file: {rel_path}")
+                    self.logger.debug(f"Processed local file: {rel_path}")
 
                     doc = Document(
                         title=os.path.basename(file_path),
@@ -139,7 +139,7 @@ class LocalFileConnector(BaseConnector):
                         metadata=metadata,
                         source_type="localfile",
                         source=self.config.source,
-                        url="file://{os.path.realpath(file_path)}",
+                        url=f"file://{os.path.realpath(file_path)}",
                         is_deleted=False,
                         updated_at=updated_at,
                     )

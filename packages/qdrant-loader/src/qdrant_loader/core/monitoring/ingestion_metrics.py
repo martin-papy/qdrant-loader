@@ -109,7 +109,7 @@ class IngestionMonitor:
             start_time=time.time(), metadata=metadata or {}
         )
         self.current_operation = operation_id
-        logger.debug("Started tracking operation {operation_id}")
+        logger.debug(f"Started tracking operation {operation_id}")
 
     def end_operation(
         self, operation_id: str, success: bool = True, error: str | None = None
@@ -122,7 +122,7 @@ class IngestionMonitor:
             error: Error message if operation failed
         """
         if operation_id not in self.ingestion_metrics:
-            logger.warning("Attempted to end untracked operation {operation_id}")
+            logger.warning(f"Attempted to end untracked operation {operation_id}")
             return
 
         metrics = self.ingestion_metrics[operation_id]
@@ -135,7 +135,7 @@ class IngestionMonitor:
         if self.current_operation == operation_id:
             self.current_operation = None
 
-        logger.debug("Ended tracking operation {operation_id}")
+        logger.debug(f"Ended tracking operation {operation_id}")
 
     def start_batch(
         self, batch_id: str, batch_size: int, metadata: dict | None = None
@@ -154,7 +154,7 @@ class IngestionMonitor:
             summary=BatchSummary(),
         )
         self.current_batch = batch_id
-        logger.debug("Started tracking batch {batch_id}")
+        logger.debug(f"Started tracking batch {batch_id}")
 
     def end_batch(
         self,
@@ -178,7 +178,7 @@ class IngestionMonitor:
             source: Source identifier for the batch
         """
         if batch_id not in self.batch_metrics:
-            logger.warning("Attempted to end untracked batch {batch_id}")
+            logger.warning(f"Attempted to end untracked batch {batch_id}")
             return
 
         metrics = self.batch_metrics[batch_id]
@@ -233,7 +233,7 @@ class IngestionMonitor:
         if self.current_batch == batch_id:
             self.current_batch = None
 
-        logger.debug("Ended tracking batch {batch_id}")
+        logger.debug(f"Ended tracking batch {batch_id}")
 
     def start_conversion(
         self,
@@ -283,7 +283,7 @@ class IngestionMonitor:
             error: Error message if conversion failed
         """
         if operation_id not in self.ingestion_metrics:
-            logger.warning("Attempted to end untracked conversion {operation_id}")
+            logger.warning(f"Attempted to end untracked conversion {operation_id}")
             return
 
         metrics = self.ingestion_metrics[operation_id]
@@ -334,7 +334,7 @@ class IngestionMonitor:
                 + 1
             )
 
-        logger.debug("Ended tracking conversion for {operation_id}: success={success}")
+        logger.debug(f"Ended tracking conversion for {operation_id}: success={success}")
 
     def record_attachment_processed(self) -> None:
         """Record that an attachment was processed."""
@@ -359,7 +359,7 @@ class IngestionMonitor:
         """
         if batch_id not in self.batch_metrics:
             logger.warning(
-                "Attempted to update conversion metrics for untracked batch {batch_id}"
+                f"Attempted to update conversion metrics for untracked batch {batch_id}"
             )
             return
 
@@ -369,7 +369,7 @@ class IngestionMonitor:
         metrics.attachments_processed_count += attachments_processed_count
         metrics.total_conversion_time += total_conversion_time
 
-        logger.debug("Updated conversion metrics for batch {batch_id}")
+        logger.debug(f"Updated conversion metrics for batch {batch_id}")
 
     def get_conversion_summary(self) -> dict:
         """Get a summary of all conversion metrics."""
@@ -393,7 +393,7 @@ class IngestionMonitor:
     def save_metrics(self) -> None:
         """Save all metrics to a JSON file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        metrics_file = self.metrics_dir / "ingestion_metrics_{timestamp}.json"
+        metrics_file = self.metrics_dir / f"ingestion_metrics_{timestamp}.json"
 
         metrics_data = {
             "ingestion_metrics": {
@@ -463,9 +463,9 @@ class IngestionMonitor:
         try:
             with open(metrics_file, "w", encoding="utf-8") as f:
                 json.dump(metrics_data, f, indent=2, default=str)
-            logger.info("Metrics saved to {metrics_file}")
-        except (OSError, json.JSONDecodeError):
-            logger.error("Failed to save metrics: {str(e)}")
+            logger.info(f"Metrics saved to {metrics_file}")
+        except (OSError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to save metrics: {str(e)}")
 
     def clear_metrics(self) -> None:
         """Clear all collected metrics."""

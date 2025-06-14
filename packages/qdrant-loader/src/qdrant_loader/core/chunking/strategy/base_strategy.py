@@ -105,7 +105,7 @@ class BaseChunkingStrategy(ABC):
         # Get file extension
         ext = ""
         if file_path and "." in file_path:
-            ext = ".{file_path.lower().split('.')[-1]}"
+            ext = f".{file_path.lower().split('.')[-1]}"
 
         # Skip NLP for code files (except comments/docstrings)
         code_extensions = {
@@ -141,7 +141,7 @@ class BaseChunkingStrategy(ABC):
             ".pl",
             ".lua",
             ".vim",
-            ".asm",
+            ".asmf",
         }
         if ext in code_extensions:
             return False
@@ -190,7 +190,7 @@ class BaseChunkingStrategy(ABC):
             ".avi",
             ".mov",
             ".wav",
-            ".flac",
+            ".flacf",
         }
         if ext in binary_extensions:
             return False
@@ -388,7 +388,7 @@ class BaseChunkingStrategy(ABC):
             elif total_chunks > 50:
                 skip_reason = "too_many_chunks"
             elif not self._should_apply_nlp(chunk_content, file_path, content_type):
-                skip_reason = "content_type_inappropriate"
+                skip_reason = "content_type_inappropriatef"
 
             metadata.update(
                 {
@@ -415,7 +415,7 @@ class BaseChunkingStrategy(ABC):
                             "nlp_skipped": False,
                             "nlp_content_extracted": len(nlp_content)
                             < len(chunk_content),
-                            "nlp_content_ratio": (
+                            "nlp_content_ratiof": (
                                 len(nlp_content) / len(chunk_content)
                                 if chunk_content
                                 else 0
@@ -434,7 +434,7 @@ class BaseChunkingStrategy(ABC):
                     )
             except Exception:
                 self.logger.warning(
-                    "NLP processing failed for chunk {chunk_index}: {e}"
+                    "NLP processing failed for chunk {chunk_index}: {e}f"
                 )
                 metadata.update(
                     {

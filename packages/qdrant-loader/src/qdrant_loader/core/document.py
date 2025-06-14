@@ -40,14 +40,14 @@ class Document(BaseModel):
         # Initialize with provided data
         super().__init__(**data)
 
-        logger.debug("Creating document with id: {self.id}")
+        logger.debug(f"Creating document with id: {self.id}")
         logger.debug(
-            "     Document content length: {len(self.content) if self.content else 0}"
+            f"     Document content length: {len(self.content) if self.content else 0}"
         )
-        logger.debug("     Document source: {self.source}")
-        logger.debug("     Document source_type: {self.source_type}")
-        logger.debug("     Document created_at: {self.created_at}")
-        logger.debug("     Document metadata: {self.metadata}")
+        logger.debug(f"     Document source: {self.source}")
+        logger.debug(f"     Document source_type: {self.source_type}")
+        logger.debug(f"     Document created_at: {self.created_at}")
+        logger.debug(f"     Document metadata: {self.metadata}")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert document to dictionary format for Qdrant."""
@@ -200,17 +200,17 @@ class Document(BaseModel):
                     (scheme, netloc, path, "", "", "")  # params  # query  # fragment
                 )
 
-                logger.debug("Normalized URL: {normalized}")
+                logger.debug(f"Normalized URL: {normalized}")
                 return normalized
-            except Exception:
-                logger.error("Error normalizing URL {url}: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error normalizing URL {url}: {str(e)}")
                 # If URL parsing fails, return the original URL in lowercase
                 return url.lower().strip()
 
         def normalize_string(s: str) -> str:
             """Normalize a string for consistent hashing."""
             normalized = s.strip().lower()
-            logger.debug("Normalized string '{s}' to '{normalized}'")
+            logger.debug(f"Normalized string '{s}' to '{normalized}'")
             return normalized
 
         # Normalize all inputs
@@ -219,8 +219,8 @@ class Document(BaseModel):
         normalized_url = normalize_url(url)
 
         # Create a consistent string combining all identifying elements
-        identifier = "{normalized_source_type}:{normalized_source}:{normalized_url}"
-        logger.debug("Generated identifier: {identifier}")
+        identifier = f"{normalized_source_type}:{normalized_source}:{normalized_url}"
+        logger.debug(f"Generated identifier: {identifier}")
 
         # Generate a SHA-256 hash of the identifier
         sha256_hash = hashlib.sha256(identifier.encode("utf-8")).digest()
@@ -228,7 +228,7 @@ class Document(BaseModel):
         # Convert the first 16 bytes to a UUID (UUID is 16 bytes)
         # This ensures a valid UUID that Qdrant will accept
         consistent_uuid = uuid.UUID(bytes=sha256_hash[:16])
-        logger.debug("Generated UUID: {consistent_uuid}")
+        logger.debug(f"Generated UUID: {consistent_uuid}")
 
         return str(consistent_uuid)
 
@@ -244,7 +244,7 @@ class Document(BaseModel):
             A unique chunk ID
         """
         # Create a string combining document ID and chunk index
-        chunk_string = "{document_id}_{chunk_index}"
+        chunk_string = f"{document_id}_{chunk_index}"
 
         # Hash the string to get a consistent length ID
         chunk_hash = hashlib.sha256(chunk_string.encode()).hexdigest()
@@ -340,11 +340,11 @@ class Document(BaseModel):
         context_parts = []
 
         if breadcrumb:
-            context_parts.append("Path: {breadcrumb}")
+            context_parts.append(f"Path: {breadcrumb}")
 
-        context_parts.append("Depth: {depth}")
+        context_parts.append(f"Depth: {depth}")
 
         if children_count > 0:
-            context_parts.append("Children: {children_count}")
+            context_parts.append(f"Children: {children_count}")
 
         return " | ".join(context_parts)

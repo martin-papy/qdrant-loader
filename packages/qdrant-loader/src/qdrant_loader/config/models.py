@@ -95,7 +95,7 @@ class ProjectsConfig(BaseModel):
             ValueError: If project ID already exists
         """
         if project_config.project_id in self.projects:
-            raise ValueError("Project '{project_config.project_id}' already exists")
+            raise ValueError(f"Project '{project_config.project_id}' already exists")
 
         self.projects[project_config.project_id] = project_config
 

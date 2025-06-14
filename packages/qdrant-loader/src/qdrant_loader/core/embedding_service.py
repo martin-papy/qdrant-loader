@@ -17,7 +17,7 @@ class EmbeddingService:
             List of floats representing the embedding vector
         """
         self.logger.debug(
-            "Getting embedding for text",
+            "Getting embedding for textf",
             extra={"text_length": len(text), "model": self.model_name},
         )
 
@@ -29,13 +29,13 @@ class EmbeddingService:
 
             embedding = response.data[0].embedding
             self.logger.debug(
-                "Successfully generated embedding",
+                "Successfully generated embeddingf",
                 extra={"text_length": len(text), "embedding_size": len(embedding)},
             )
             return embedding
         except Exception as e:
             self.logger.error(
-                "Error generating embedding: {str(e)}",
+                "Error generating embedding: {str(e)}f",
                 extra={
                     "text_length": len(text),
                     "error": str(e),
@@ -54,7 +54,7 @@ class EmbeddingService:
             List of embedding vectors
         """
         self.logger.debug(
-            "Getting embeddings for texts",
+            "Getting embeddings for textsf",
             extra={"text_count": len(texts), "model": self.model_name},
         )
 
@@ -66,7 +66,7 @@ class EmbeddingService:
 
             embeddings = [data.embedding for data in response.data]
             self.logger.debug(
-                "Successfully generated embeddings",
+                "Successfully generated embeddingsf",
                 extra={
                     "text_count": len(texts),
                     "embedding_count": len(embeddings),

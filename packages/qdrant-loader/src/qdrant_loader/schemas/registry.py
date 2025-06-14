@@ -74,7 +74,7 @@ class SchemaRegistry:
 
         self._initialized = True
         logger.info(
-            "Schema registry initialized with {len(self._node_schemas)} node schemas and {len(self._edge_schemas)} edge schemas"
+            f"Schema registry initialized with {len(self._node_schemas)} node schemas and {len(self._edge_schemas)} edge schemas"
         )
 
     def register_node_schema(
@@ -93,13 +93,15 @@ class SchemaRegistry:
             tags: Optional tags for categorization
         """
         if not issubclass(schema_class, EntityNode):
-            raise ValueError("Schema class {schema_class} must inherit from EntityNode")
+            raise ValueError(
+                f"Schema class {schema_class} must inherit from EntityNode"
+            )
 
         if schema_name in self._node_schemas:
-            logger.warning("Overriding existing node schema: {schema_name}")
+            logger.warning(f"Overriding existing node schema: {schema_name}")
 
         self._node_schemas[schema_name] = schema_class
-        self._schema_metadata["node:{schema_name}"] = {
+        self._schema_metadata[f"node:{schema_name}"] = {
             "type": "node",
             "class": schema_class,
             "description": description or schema_class.__doc__,
@@ -107,7 +109,7 @@ class SchemaRegistry:
             "registered_at": datetime.now(),
         }
 
-        logger.debug("Registered node schema: {schema_name}")
+        logger.debug(f"Registered node schema: {schema_name}")
 
     def register_edge_schema(
         self,
@@ -125,13 +127,15 @@ class SchemaRegistry:
             tags: Optional tags for categorization
         """
         if not issubclass(schema_class, EntityEdge):
-            raise ValueError("Schema class {schema_class} must inherit from EntityEdge")
+            raise ValueError(
+                f"Schema class {schema_class} must inherit from EntityEdge"
+            )
 
         if schema_name in self._edge_schemas:
-            logger.warning("Overriding existing edge schema: {schema_name}")
+            logger.warning(f"Overriding existing edge schema: {schema_name}")
 
         self._edge_schemas[schema_name] = schema_class
-        self._schema_metadata["edge:{schema_name}"] = {
+        self._schema_metadata[f"edge:{schema_name}"] = {
             "type": "edge",
             "class": schema_class,
             "description": description or schema_class.__doc__,
@@ -139,7 +143,7 @@ class SchemaRegistry:
             "registered_at": datetime.now(),
         }
 
-        logger.debug("Registered edge schema: {schema_name}")
+        logger.debug(f"Registered edge schema: {schema_name}")
 
     def get_node_schema(self, schema_name: str) -> type[EntityNode] | None:
         """Get a registered node schema by name.
@@ -189,7 +193,7 @@ class SchemaRegistry:
         Returns:
             Schema metadata dictionary or None if not found
         """
-        key = "{schema_type}:{schema_name}"
+        key = f"{schema_type}:{schema_name}"
         return self._schema_metadata.get(key)
 
     def validate_schema_compatibility(
@@ -232,8 +236,8 @@ class SchemaRegistry:
 
             return True
 
-        except Exception:
-            logger.error("Schema validation failed for {schema_class}: {e}")
+        except Exception as e:
+            logger.error(f"Schema validation failed for {schema_class}: {e}")
             return False
 
     def create_node_instance(
@@ -252,13 +256,13 @@ class SchemaRegistry:
         """
         schema_class = self.get_node_schema(schema_name)
         if not schema_class:
-            logger.error("Node schema not found: {schema_name}")
+            logger.error(f"Node schema not found: {schema_name}")
             return None
 
         try:
             return schema_class(name=name, group_id=group_id, **kwargs)
-        except Exception:
-            logger.error("Failed to create node instance for {schema_name}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to create node instance for {schema_name}: {e}")
             return None
 
     def create_edge_instance(
@@ -287,7 +291,7 @@ class SchemaRegistry:
         """
         schema_class = self.get_edge_schema(schema_name)
         if not schema_class:
-            logger.error("Edge schema not found: {schema_name}")
+            logger.error(f"Edge schema not found: {schema_name}")
             return None
 
         try:
@@ -299,8 +303,8 @@ class SchemaRegistry:
                 fact=fact,
                 **kwargs,
             )
-        except Exception:
-            logger.error("Failed to create edge instance for {schema_name}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to create edge instance for {schema_name}: {e}")
             return None
 
     def get_schema_summary(self) -> dict:

@@ -77,7 +77,7 @@ class PromptTemplate:
 
         formatted = []
         for entity_type, hint_list in hints.items():
-            formatted.append("- {entity_type}: {', '.join(hint_list)}")
+            formatted.append(f"- {entity_type}: {', '.join(hint_list)}")
 
         return "\n".join(formatted)
 
@@ -302,7 +302,9 @@ class EntityPromptManager:
         self._prompts: dict[str, PromptTemplate] = {}
         self._load_default_prompts()
 
-        logger.info("EntityPromptManager initialized with {len(self._prompts)} prompts")
+        logger.info(
+            f"EntityPromptManager initialized with {len(self._prompts)} prompts"
+        )
 
     def _load_default_prompts(self) -> None:
         """Load default prompt templates."""
@@ -318,7 +320,7 @@ class EntityPromptManager:
     def register_prompt(self, prompt: PromptTemplate) -> None:
         """Register a new prompt template."""
         self._prompts[prompt.name] = prompt
-        logger.debug("Registered prompt template: {prompt.name}")
+        logger.debug(f"Registered prompt template: {prompt.name}")
 
     def get_prompt(self, name: str) -> PromptTemplate | None:
         """Get a prompt template by name."""
@@ -440,7 +442,7 @@ class EntityPromptManager:
                 "API": ["REST", "GraphQL", "API", "service", "interface"],
                 "ENDPOINT": ["endpoint", "route", "path", "/api/", "GET", "POST"],
                 "SERVICE": ["service", "microservice", "backend"],
-                "TECHNOLOGY": ["HTTP", "JSON", "OAuth", "JWT", "OpenAPI"],
+                "TECHNOLOGY": ["HTTP", "JSON", "OAuth", "JWT", "OpenAPIf"],
             },
             PromptDomain.CODE_REVIEW: {
                 "TECHNOLOGY": ["library", "framework", "dependency", "package"],
@@ -461,14 +463,14 @@ class EntityPromptManager:
             if hasattr(prompt, key):
                 setattr(prompt, key, value)
 
-        logger.info("Updated prompt template: {name}")
+        logger.info(f"Updated prompt template: {name}")
         return True
 
     def remove_prompt(self, name: str) -> bool:
         """Remove a prompt template."""
         if name in self._prompts:
             del self._prompts[name]
-            logger.info("Removed prompt template: {name}")
+            logger.info(f"Removed prompt template: {name}")
             return True
         return False
 

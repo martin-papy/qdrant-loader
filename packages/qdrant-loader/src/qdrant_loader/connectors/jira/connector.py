@@ -90,7 +90,7 @@ class JiraConnector(BaseConnector):
             # Data Center/Server uses Personal Access Token with Bearer authentication
             if not self.config.token:
                 raise ValueError(
-                    "Personal Access Token is required for Jira Data Center/Server"
+                    "Personal Access Token is required for Jira Data Center/Serverf"
                 )
 
             self.session.headers.update(
@@ -164,7 +164,7 @@ class JiraConnector(BaseConnector):
         Returns:
             str: Full API URL
         """
-        return "{self.base_url}/rest/api/2/{endpoint}"
+        return f"{self.base_url}/rest/api/2/{endpoint}"
 
     async def _make_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated request to the Jira API.
@@ -239,7 +239,7 @@ class JiraConnector(BaseConnector):
                     timeout=kwargs.get("timeout"),
                 )
                 raise requests.exceptions.Timeout(
-                    "Request to {url} timed out after {kwargs.get('timeout')} seconds"
+                    f"Request to {url} timed out after {kwargs.get('timeout')} seconds"
                 )
 
             except requests.exceptions.RequestException as e:
@@ -268,7 +268,7 @@ class JiraConnector(BaseConnector):
         for key, value in kwargs.items():
             if isinstance(value, datetime):
                 formatted_date = value.strftime("%Y-%m-%d %H:%M")
-                jql = jql.replace("{{{key}}}", "'{formatted_date}'")
+                jql = jql.replace("{{{key}}}", "f'{formatted_date}'f")
 
         # Use the new _make_request method for consistency
         params = {
@@ -305,9 +305,9 @@ class JiraConnector(BaseConnector):
         )
 
         while True:
-            jql = 'project = "{self.config.project_key}"'
+            jql = 'project = f"{self.config.project_key}"'
             if updated_after:
-                jql += " AND updated >= '{updated_after.strftime('%Y-%m-%d %H:%M')}'"
+                jql += " AND updated >= f'{updated_after.strftime('%Y-%m-%d %H:%M')}'f"
 
             params = {
                 "jql": jql,
@@ -349,7 +349,7 @@ class JiraConnector(BaseConnector):
             # Update total count if not set
             if total_issues == 0:
                 total_issues = response.get("total", 0)
-                logger.info("🎫 Found {total_issues} JIRA issues to process")
+                logger.info(f"🎫 Found {total_issues} JIRA issues to process")
 
             # Log progress every 100 issues instead of every 50
             progress_log_interval = 100
@@ -366,7 +366,7 @@ class JiraConnector(BaseConnector):
                             else 0
                         )
                         logger.info(
-                            "🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
+                            f"🎫 Progress: {start_at + i + 1}/{total_issues} issues ({progress_percent}%)"
                         )
 
                 except Exception as e:
@@ -384,7 +384,7 @@ class JiraConnector(BaseConnector):
             start_at += len(issues)
             if start_at >= total_issues:
                 logger.info(
-                    "✅ Completed JIRA issue retrieval: {start_at} issues processed"
+                    f"✅ Completed JIRA issue retrieval: {start_at} issues processed"
                 )
                 break
 
@@ -601,7 +601,7 @@ class JiraConnector(BaseConnector):
                 source=self.config.source,
                 source_type=SourceType.JIRA,
                 created_at=issue.created,
-                url="{base_url}/browse/{issue.key}",
+                url=f"{base_url}/browse/{issue.key}",
                 title=issue.summary,
                 updated_at=issue.updated,
                 is_deleted=False,
@@ -619,7 +619,7 @@ class JiraConnector(BaseConnector):
                     "parent_key": issue.parent_key,
                     "subtasks": issue.subtasks,
                     "linked_issues": issue.linked_issues,
-                    "comments": [
+                    "commentsf": [
                         {
                             "id": comment.id,
                             "body": comment.body,
@@ -633,7 +633,7 @@ class JiraConnector(BaseConnector):
                         }
                         for comment in issue.comments
                     ],
-                    "attachments": (
+                    "attachmentsf": (
                         [
                             {
                                 "id": att.id,

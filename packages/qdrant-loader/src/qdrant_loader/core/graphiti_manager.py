@@ -82,7 +82,7 @@ class GraphitiManager:
         )
 
         logger.debug(
-            "Creating OpenAI LLM client with model: {self.graphiti_config.llm.model}"
+            f"Creating OpenAI LLM client with model: {self.graphiti_config.llm.model}"
         )
 
         return OpenAIClient(config=llm_config)
@@ -112,7 +112,7 @@ class GraphitiManager:
             embedder_config.embedding_dim = self.graphiti_config.embedder.dimensions
 
         logger.debug(
-            "Creating OpenAI embedder with model: {self.graphiti_config.embedder.model}"
+            f"Creating OpenAI embedder with model: {self.graphiti_config.embedder.model}"
         )
 
         return OpenAIEmbedder(config=embedder_config)
@@ -149,12 +149,12 @@ class GraphitiManager:
             self._initialized = True
             logger.info(
                 "Graphiti client initialized successfully with "
-                "LLM model: {self.graphiti_config.llm.model}, "
-                "Embedder model: {self.graphiti_config.embedder.model}"
+                f"LLM model: {self.graphiti_config.llm.model}, "
+                f"Embedder model: {self.graphiti_config.embedder.model}"
             )
 
-        except Exception:
-            logger.error("Failed to initialize Graphiti client: {e}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Graphiti client: {e}")
             raise
 
     async def close(self) -> None:
@@ -163,8 +163,8 @@ class GraphitiManager:
             try:
                 await self._graphiti.close()
                 logger.info("Graphiti client connection closed")
-            except Exception:
-                logger.error("Error closing Graphiti client: {e}")
+            except Exception as e:
+                logger.error(f"Error closing Graphiti client: {e}")
             finally:
                 self._graphiti = None
                 self._llm_client = None
@@ -226,7 +226,7 @@ class GraphitiManager:
         try:
             reference_time = reference_time or datetime.now(UTC)
 
-            logger.debug("Adding episode: {name} (type: {episode_type.value})")
+            logger.debug(f"Adding episode: {name} (type: {episode_type.value})")
 
             result = await self._graphiti.add_episode(
                 name=name,
@@ -244,11 +244,11 @@ class GraphitiManager:
                 else str(result)
             )
 
-            logger.info("Successfully added episode: {name} with UUID: {episode_uuid}")
+            logger.info(f"Successfully added episode: {name} with UUID: {episode_uuid}")
             return episode_uuid
 
-        except Exception:
-            logger.error("Failed to add episode {name}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to add episode {name}: {e}")
             raise
 
     async def search(
@@ -279,7 +279,7 @@ class GraphitiManager:
             # Respect configured limits
             limit = min(limit, self.graphiti_config.operational.search_limit_max)
 
-            logger.debug("Searching knowledge graph: {query}")
+            logger.debug(f"Searching knowledge graph: {query}")
 
             results = await self._graphiti.search(
                 query=query,
@@ -288,11 +288,11 @@ class GraphitiManager:
                 **kwargs,
             )
 
-            logger.info("Search returned {len(results)} results for query: {query}")
+            logger.info(f"Search returned {len(results)} results for query: {query}")
             return results
 
-        except Exception:
-            logger.error("Search failed for query '{query}': {e}")
+        except Exception as e:
+            logger.error("Search failed for query f'{query}': {e}")
             raise
 
     async def get_nodes(
@@ -316,24 +316,24 @@ class GraphitiManager:
 
         try:
             if node_uuids:
-                logger.debug("Retrieving {len(node_uuids)} specific nodes")
+                logger.debug(f"Retrieving {len(node_uuids)} specific nodes")
                 # Use search to find specific nodes by UUID
                 nodes = []
                 for uuid in node_uuids:
                     try:
                         # Search for nodes with specific UUID
                         results = await self._graphiti.search(
-                            query="uuid:{uuid}",
+                            query=f"uuid:{uuid}",
                             num_results=1,
                         )
                         if results:
                             nodes.extend(results)
-                    except Exception:
-                        logger.warning("Failed to retrieve node {uuid}: {e}")
+                    except Exception as e:
+                        logger.warning(f"Failed to retrieve node {uuid}: {e}")
                         continue
                 return nodes
             else:
-                logger.debug("Retrieving up to {limit} nodes via search")
+                logger.debug(f"Retrieving up to {limit} nodes via search")
                 # Use a broad search to get recent nodes
                 # This is a workaround since Graphiti doesn't have a direct "list all nodes" method
                 results = await self._graphiti.search(
@@ -344,8 +344,8 @@ class GraphitiManager:
                 )
                 return results
 
-        except Exception:
-            logger.error("Failed to retrieve nodes: {e}")
+        except Exception as e:
+            logger.error(f"Failed to retrieve nodes: {e}")
             raise
 
     async def get_edges(
@@ -369,7 +369,7 @@ class GraphitiManager:
 
         try:
             if edge_uuids:
-                logger.debug("Retrieving {len(edge_uuids)} specific edges")
+                logger.debug(f"Retrieving {len(edge_uuids)} specific edges")
                 # Note: Graphiti's search primarily returns nodes, not edges directly
                 # This is a limitation of the current Graphiti API
                 logger.warning(
@@ -385,8 +385,8 @@ class GraphitiManager:
                 )
                 return []
 
-        except Exception:
-            logger.error("Failed to retrieve edges: {e}")
+        except Exception as e:
+            logger.error(f"Failed to retrieve edges: {e}")
             raise
 
     async def get_entities_from_episode(
@@ -408,26 +408,26 @@ class GraphitiManager:
             raise RuntimeError("Graphiti client not initialized")
 
         try:
-            logger.debug("Retrieving entities from episode: {episode_id}")
+            logger.debug(f"Retrieving entities from episode: {episode_id}")
 
             # Search for entities related to the episode
             # Use the episode ID in the search query
-            search_query = "episode:{episode_id}"
+            search_query = f"episode:{episode_id}"
             if entity_types:
                 # Add entity type filters to the search
-                type_filter = " OR ".join(["type:{et}" for et in entity_types])
-                search_query = "({search_query}) AND ({type_filter})"
+                type_filter = " OR ".join([f"type:{et}" for et in entity_types])
+                search_query = f"({search_query}) AND ({type_filter})"
 
             results = await self._graphiti.search(
                 query=search_query,
                 num_results=100,  # Get more results for entity extraction
             )
 
-            logger.info("Found {len(results)} entities for episode {episode_id}")
+            logger.info(f"Found {len(results)} entities for episode {episode_id}")
             return results
 
-        except Exception:
-            logger.error("Failed to retrieve entities from episode {episode_id}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to retrieve entities from episode {episode_id}: {e}")
             raise
 
     async def search_entities(
@@ -453,10 +453,10 @@ class GraphitiManager:
             # Build search query with entity type filters
             search_query = query
             if entity_types:
-                type_filter = " OR ".join(["type:{et}" for et in entity_types])
-                search_query = "({query}) AND ({type_filter})"
+                type_filter = " OR ".join([f"type:{et}" for et in entity_types])
+                search_query = f"({query}) AND ({type_filter})"
 
-            logger.debug("Searching entities with query: {search_query}")
+            logger.debug(f"Searching entities with query: {search_query}")
 
             results = await self._graphiti.search(
                 query=search_query,
@@ -465,11 +465,11 @@ class GraphitiManager:
                 ),
             )
 
-            logger.info("Entity search returned {len(results)} results")
+            logger.info(f"Entity search returned {len(results)} results")
             return results
 
-        except Exception:
-            logger.error("Entity search failed for query '{query}': {e}")
+        except Exception as e:
+            logger.error(f"Entity search failed for query f'{query}': {e}")
             raise
 
     async def health_check(self) -> dict[str, Any]:

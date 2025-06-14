@@ -44,13 +44,13 @@ class EntityExtractionWorker(BaseWorker):
         Returns:
             ExtractionResult containing extracted entities and relationships
         """
-        logger.debug("Entity extraction worker started for doc {document.id}")
+        logger.debug(f"Entity extraction worker started for doc {document.id}")
 
         try:
             # Check for shutdown signal
             if self.shutdown_event.is_set():
                 logger.debug(
-                    "Entity extraction worker {document.id} exiting due to shutdown"
+                    f"Entity extraction worker {document.id} exiting due to shutdown"
                 )
                 return ExtractionResult(source_text=document.content)
 
@@ -58,7 +58,7 @@ class EntityExtractionWorker(BaseWorker):
             start_time = time.time()
 
             # Use the document URL as source description for better context
-            source_description = "Document: {document.url or document.id}"
+            source_description = f"Document: {document.url or document.id}"
 
             # Extract entities using the EntityExtractor
             result = await self.entity_extractor.extract_entities(
@@ -79,21 +79,21 @@ class EntityExtractionWorker(BaseWorker):
             )
 
             logger.debug(
-                "Entity extraction completed for doc {document.id}: "
-                "{len(result.entities)} entities, {len(result.relationships)} relationships"
+                f"Entity extraction completed for doc {document.id}: "
+                f"{len(result.entities)} entities, {len(result.relationships)} relationships"
             )
 
             return result
 
         except asyncio.CancelledError:
-            logger.debug("Entity extraction worker {document.id} cancelled")
+            logger.debug(f"Entity extraction worker {document.id} cancelled")
             raise
         except Exception as e:
-            logger.error("Entity extraction failed for doc {document.url}: {e}")
+            logger.error(f"Entity extraction failed for doc {document.url}: {e}")
             # Return empty result with error information
             return ExtractionResult(
                 source_text=document.content,
-                errors=["Entity extraction failed: {e}"],
+                errors=[f"Entity extraction failed: {e}"],
                 metadata={"document_id": document.id, "error": str(e)},
             )
 
@@ -109,7 +109,9 @@ class EntityExtractionWorker(BaseWorker):
             ExtractionResult objects from processed documents
         """
         logger.debug("EntityExtractionWorker started")
-        logger.info("🔄 Processing {len(documents)} documents for entity extraction...")
+        logger.info(
+            f"🔄 Processing {len(documents)} documents for entity extraction..."
+        )
 
         try:
             # Process documents with controlled concurrency
@@ -121,35 +123,35 @@ class EntityExtractionWorker(BaseWorker):
                     async with semaphore:
                         if self.shutdown_event.is_set():
                             logger.debug(
-                                "EntityExtractionWorker exiting due to shutdown (doc {doc_index})"
+                                f"EntityExtractionWorker exiting due to shutdown (doc {doc_index})"
                             )
                             return None
 
                         logger.debug(
-                            "🔄 Extracting entities from document {doc_index + 1}/{len(documents)}: {doc.id}"
+                            f"🔄 Extracting entities from document {doc_index + 1}/{len(documents)}: {doc.id}"
                         )
 
                         result = await self.process(doc)
 
                         if result.entities or result.relationships:
                             logger.debug(
-                                "✓ Document {doc_index + 1}/{len(documents)} extracted "
-                                "{len(result.entities)} entities, {len(result.relationships)} relationships"
+                                f"✓ Document {doc_index + 1}/{len(documents)} extracted "
+                                f"{len(result.entities)} entities, {len(result.relationships)} relationships"
                             )
                         else:
                             logger.debug(
-                                "⚠️ Document {doc_index + 1}/{len(documents)} extracted no entities"
+                                f"⚠️ Document {doc_index + 1}/{len(documents)} extracted no entities"
                             )
 
                         return result
 
                 except Exception as e:
                     logger.error(
-                        "❌ Entity extraction failed for document {doc_index + 1}/{len(documents)} ({doc.id}): {e}"
+                        f"❌ Entity extraction failed for document {doc_index + 1}/{len(documents)} ({doc.id}): {e}"
                     )
                     return ExtractionResult(
                         source_text=doc.content,
-                        errors=["Processing failed: {e}"],
+                        errors=[f"Processing failed: {e}"],
                         metadata={"document_id": doc.id, "error": str(e)},
                     )
 
@@ -185,17 +187,17 @@ class EntityExtractionWorker(BaseWorker):
                     # Log progress every 10 documents or at completion
                     if completed_docs % 10 == 0 or completed_docs == len(documents):
                         logger.info(
-                            "🔄 Entity extraction progress: {completed_docs}/{len(documents)} documents, "
-                            "{entity_count} entities, {relationship_count} relationships extracted"
+                            f"🔄 Entity extraction progress: {completed_docs}/{len(documents)} documents, "
+                            f"{entity_count} entities, {relationship_count} relationships extracted"
                         )
 
-                except Exception:
-                    logger.error("❌ Error processing entity extraction task: {e}")
+                except Exception as e:
+                    logger.error(f"❌ Error processing entity extraction task: {e}")
                     completed_docs += 1
 
             logger.info(
-                "✅ Entity extraction completed: {completed_docs}/{len(documents)} documents processed, "
-                "{entity_count} total entities, {relationship_count} total relationships"
+                f"✅ Entity extraction completed: {completed_docs}/{len(documents)} documents processed, "
+                f"{entity_count} total entities, {relationship_count} total relationships"
             )
 
         except asyncio.CancelledError:
@@ -228,7 +230,7 @@ class EntityExtractionWorker(BaseWorker):
             parent_doc = chunk.metadata.get("parent_document")
             if not parent_doc:
                 logger.warning(
-                    "Chunk {chunk.id} has no parent document, skipping entity extraction"
+                    f"Chunk {chunk.id} has no parent document, skipping entity extraction"
                 )
                 continue
 
@@ -238,7 +240,7 @@ class EntityExtractionWorker(BaseWorker):
             document_chunks[doc_id]["chunks"].append(chunk)
 
         logger.info(
-            "🔄 Processing {len(document_chunks)} documents from {chunk_count} chunks for entity extraction"
+            f"🔄 Processing {len(document_chunks)} documents from {chunk_count} chunks for entity extraction"
         )
 
         # Process documents for entity extraction

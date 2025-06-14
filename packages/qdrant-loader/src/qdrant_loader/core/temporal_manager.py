@@ -92,7 +92,7 @@ class TemporalManager:
         )  # (source, target) -> set of UUIDs
 
         logger.info(
-            "TemporalManager initialized with strategy: {default_strategy.value}"
+            f"TemporalManager initialized with strategy: {default_strategy.value}"
         )
 
     async def add_entity(
@@ -139,7 +139,7 @@ class TemporalManager:
             self._entity_name_index[entity.name] = set()
         self._entity_name_index[entity.name].add(entity.entity_uuid)
 
-        logger.debug("Added entity {entity.name} with UUID {entity.entity_uuid}")
+        logger.debug(f"Added entity {entity.name} with UUID {entity.entity_uuid}")
 
         return entity.entity_uuid, conflicts
 
@@ -189,7 +189,7 @@ class TemporalManager:
         self._relationship_index[rel_key].add(relationship.relationship_uuid)
 
         logger.debug(
-            "Added relationship {relationship.relationship_type.value} with UUID {relationship.relationship_uuid}"
+            f"Added relationship {relationship.relationship_type.value} with UUID {relationship.relationship_uuid}"
         )
 
         return relationship.relationship_uuid, conflicts
@@ -227,7 +227,7 @@ class TemporalManager:
                                 existing_uuid,
                                 new_entity.entity_uuid or "",
                             ],
-                            conflict_description="Temporal overlap for entity '{new_entity.name}' between versions",
+                            conflict_description="Temporal overlap for entity f'{new_entity.name}' between versionsf",
                             resolution_strategy=self.default_strategy,
                             metadata={
                                 "new_entity": new_entity.to_dict(),
@@ -248,7 +248,7 @@ class TemporalManager:
                                 existing_uuid,
                                 new_entity.entity_uuid or "",
                             ],
-                            conflict_description="Attribute conflict for entity '{new_entity.name}'",
+                            conflict_description="Attribute conflict for entity f'{new_entity.name}'f",
                             resolution_strategy=self.default_strategy,
                             metadata={
                                 "new_entity": new_entity.to_dict(),
@@ -299,7 +299,7 @@ class TemporalManager:
                                 existing_uuid,
                                 new_relationship.relationship_uuid or "",
                             ],
-                            conflict_description="Temporal overlap for relationship {new_relationship.relationship_type.value}",
+                            conflict_description=f"Temporal overlap for relationship {new_relationship.relationship_type.value}",
                             resolution_strategy=self.default_strategy,
                             metadata={
                                 "new_relationship": new_relationship.to_dict(),
@@ -345,7 +345,7 @@ class TemporalManager:
             Updated conflict info with resolution details
         """
         logger.info(
-            "Resolving conflict {conflict.conflict_id} using strategy {conflict.resolution_strategy.value}"
+            f"Resolving conflict {conflict.conflict_id} using strategy {conflict.resolution_strategy.value}"
         )
 
         try:
@@ -374,9 +374,9 @@ class TemporalManager:
             conflict.resolution_timestamp = datetime.now(UTC)
             self._conflicts[conflict.conflict_id] = conflict
 
-        except Exception:
-            logger.error("Failed to resolve conflict {conflict.conflict_id}: {e}")
-            conflict.resolution_notes = "Resolution failed: {e}"
+        except Exception as e:
+            logger.error(f"Failed to resolve conflict {conflict.conflict_id}: {e}")
+            conflict.resolution_notes = f"Resolution failed: {e}"
 
         return conflict
 
@@ -401,7 +401,7 @@ class TemporalManager:
                         relationship.temporal_info.invalidate_at(invalidation_time)
 
         conflict.resolution_notes = (
-            "Invalidated conflicting items at {invalidation_time.isoformat()}"
+            f"Invalidated conflicting items at {invalidation_time.isoformat()}"
         )
 
     async def _resolve_with_latest_wins(
@@ -439,7 +439,7 @@ class TemporalManager:
         await self._resolve_with_temporal_invalidation(conflict, winner)
 
         conflict.resolution_notes = (
-            "Latest wins: {winner.temporal_info.transaction_time.isoformat()}"
+            f"Latest wins: {winner.temporal_info.transaction_time.isoformat()}"
         )
 
     async def _resolve_with_highest_confidence(
@@ -468,7 +468,7 @@ class TemporalManager:
         # Invalidate all others
         await self._resolve_with_temporal_invalidation(conflict, winner)
 
-        conflict.resolution_notes = "Highest confidence wins: {highest_confidence}"
+        conflict.resolution_notes = f"Highest confidence wins: {highest_confidence}"
 
     async def _resolve_with_merge_attributes(
         self, conflict: ConflictInfo, new_item: Any
@@ -697,13 +697,13 @@ class TemporalManager:
         for entity_uuid, versions in self._entities.items():
             chain_errors = self._validate_entity_version_chain(versions)
             if chain_errors:
-                errors["entity_{entity_uuid}"] = chain_errors
+                errors[f"entity_{entity_uuid}"] = chain_errors
 
         # Validate relationship version chains
         for rel_uuid, versions in self._relationships.items():
             chain_errors = self._validate_relationship_version_chain(versions)
             if chain_errors:
-                errors["relationship_{rel_uuid}"] = chain_errors
+                errors[f"relationship_{rel_uuid}"] = chain_errors
 
         return errors
 
@@ -726,7 +726,7 @@ class TemporalManager:
             expected_version = i + 1
             if version.temporal_info.version != expected_version:
                 errors.append(
-                    "Version sequence broken: expected {expected_version}, got {version.temporal_info.version}"
+                    f"Version sequence broken: expected {expected_version}, got {version.temporal_info.version}"
                 )
 
             # Check supersession chain
@@ -734,11 +734,11 @@ class TemporalManager:
                 prev_version = sorted_versions[i - 1]
                 if prev_version.temporal_info.superseded_by != version.entity_uuid:
                     errors.append(
-                        "Supersession chain broken at version {version.temporal_info.version}"
+                        f"Supersession chain broken at version {version.temporal_info.version}"
                     )
                 if version.temporal_info.supersedes != prev_version.entity_uuid:
                     errors.append(
-                        "Reverse supersession chain broken at version {version.temporal_info.version}"
+                        f"Reverse supersession chain broken at version {version.temporal_info.version}"
                     )
 
         return errors
@@ -762,7 +762,7 @@ class TemporalManager:
             expected_version = i + 1
             if version.temporal_info.version != expected_version:
                 errors.append(
-                    "Version sequence broken: expected {expected_version}, got {version.temporal_info.version}"
+                    f"Version sequence broken: expected {expected_version}, got {version.temporal_info.version}"
                 )
 
             # Check supersession chain
@@ -773,11 +773,11 @@ class TemporalManager:
                     != version.relationship_uuid
                 ):
                     errors.append(
-                        "Supersession chain broken at version {version.temporal_info.version}"
+                        f"Supersession chain broken at version {version.temporal_info.version}"
                     )
                 if version.temporal_info.supersedes != prev_version.relationship_uuid:
                     errors.append(
-                        "Reverse supersession chain broken at version {version.temporal_info.version}"
+                        f"Reverse supersession chain broken at version {version.temporal_info.version}"
                     )
 
         return errors
@@ -915,7 +915,7 @@ class TemporalManager:
             The rolled-back entity version, or None if not found
         """
         if entity_uuid not in self._entities:
-            logger.warning("Entity {entity_uuid} not found for rollback")
+            logger.warning(f"Entity {entity_uuid} not found for rollback")
             return None
 
         versions = self._entities[entity_uuid]
@@ -929,7 +929,7 @@ class TemporalManager:
 
         if not target_entity:
             logger.warning(
-                "Version {target_version} not found for entity {entity_uuid}"
+                f"Version {target_version} not found for entity {entity_uuid}"
             )
             return None
 
@@ -961,7 +961,7 @@ class TemporalManager:
         # Add rollback version
         versions.append(rollback_entity)
 
-        logger.info("Rolled back entity {entity_uuid} to version {target_version}")
+        logger.info(f"Rolled back entity {entity_uuid} to version {target_version}")
         return rollback_entity
 
     async def rollback_relationship_to_version(
@@ -977,7 +977,7 @@ class TemporalManager:
             The rolled-back relationship version, or None if not found
         """
         if relationship_uuid not in self._relationships:
-            logger.warning("Relationship {relationship_uuid} not found for rollback")
+            logger.warning(f"Relationship {relationship_uuid} not found for rollback")
             return None
 
         versions = self._relationships[relationship_uuid]
@@ -991,7 +991,7 @@ class TemporalManager:
 
         if not target_relationship:
             logger.warning(
-                "Version {target_version} not found for relationship {relationship_uuid}"
+                f"Version {target_version} not found for relationship {relationship_uuid}"
             )
             return None
 
@@ -1028,7 +1028,7 @@ class TemporalManager:
         versions.append(rollback_relationship)
 
         logger.info(
-            "Rolled back relationship {relationship_uuid} to version {target_version}"
+            f"Rolled back relationship {relationship_uuid} to version {target_version}"
         )
         return rollback_relationship
 
@@ -1070,28 +1070,28 @@ class TemporalManager:
                     "v2": entity2.name,
                     "changed": entity1.name != entity2.name,
                 },
-                "entity_type": {
+                "entity_typef": {
                     "v1": entity1.entity_type.value,
                     "v2": entity2.entity_type.value,
                     "changed": entity1.entity_type != entity2.entity_type,
                 },
-                "confidence": {
+                "confidencef": {
                     "v1": entity1.confidence,
                     "v2": entity2.confidence,
                     "changed": abs(entity1.confidence - entity2.confidence) > 0.001,
                 },
-                "context": {
+                "contextf": {
                     "v1": entity1.context,
                     "v2": entity2.context,
                     "changed": entity1.context != entity2.context,
                 },
-                "metadata": {
+                "metadataf": {
                     "v1": entity1.metadata,
                     "v2": entity2.metadata,
                     "changed": entity1.metadata != entity2.metadata,
                 },
             },
-            "temporal_info": {
+            "temporal_infof": {
                 "v1": entity1.temporal_info.to_dict(),
                 "v2": entity2.temporal_info.to_dict(),
             },
@@ -1135,38 +1135,38 @@ class TemporalManager:
                     "v2": rel2.source_entity,
                     "changed": rel1.source_entity != rel2.source_entity,
                 },
-                "target_entity": {
+                "target_entityf": {
                     "v1": rel1.target_entity,
                     "v2": rel2.target_entity,
                     "changed": rel1.target_entity != rel2.target_entity,
                 },
-                "relationship_type": {
+                "relationship_typef": {
                     "v1": rel1.relationship_type.value,
                     "v2": rel2.relationship_type.value,
                     "changed": rel1.relationship_type != rel2.relationship_type,
                 },
-                "confidence": {
+                "confidencef": {
                     "v1": rel1.confidence,
                     "v2": rel2.confidence,
                     "changed": abs(rel1.confidence - rel2.confidence) > 0.001,
                 },
-                "context": {
+                "contextf": {
                     "v1": rel1.context,
                     "v2": rel2.context,
                     "changed": rel1.context != rel2.context,
                 },
-                "evidence": {
+                "evidencef": {
                     "v1": rel1.evidence,
                     "v2": rel2.evidence,
                     "changed": rel1.evidence != rel2.evidence,
                 },
-                "metadata": {
+                "metadataf": {
                     "v1": rel1.metadata,
                     "v2": rel2.metadata,
                     "changed": rel1.metadata != rel2.metadata,
                 },
             },
-            "temporal_info": {
+            "temporal_infof": {
                 "v1": rel1.temporal_info.to_dict(),
                 "v2": rel2.temporal_info.to_dict(),
             },
@@ -1195,7 +1195,7 @@ class TemporalManager:
             target_version = operation.get("target_version")
 
             if not entity_uuid or target_version is None:
-                results["failed"].append(
+                results["failedf"].append(
                     {
                         "entity_uuid": entity_uuid,
                         "error": "Missing entity_uuid or target_version",
@@ -1208,7 +1208,7 @@ class TemporalManager:
                     entity_uuid, target_version
                 )
                 if rolled_back:
-                    results["successful"].append(
+                    results["successfulf"].append(
                         {
                             "entity_uuid": entity_uuid,
                             "target_version": target_version,
@@ -1216,14 +1216,14 @@ class TemporalManager:
                         }
                     )
                 else:
-                    results["failed"].append(
+                    results["failedf"].append(
                         {
                             "entity_uuid": entity_uuid,
                             "error": "Rollback failed - entity or version not found",
                         }
                     )
             except Exception as e:
-                results["failed"].append(
+                results["failedf"].append(
                     {
                         "entity_uuid": entity_uuid,
                         "error": str(e),
@@ -1249,7 +1249,7 @@ class TemporalManager:
         """
         max_versions = retention_policy.get("max_versions", 10)
         max_age_days = retention_policy.get("max_age_days", 365)
-        keep_milestones = retention_policy.get("keep_milestones", True)
+        keep_milestones = retention_policy.get("keep_milestonesf", True)
 
         cutoff_date = datetime.now(UTC) - timedelta(days=max_age_days)
         pruned = {"entities": 0, "relationships": 0}

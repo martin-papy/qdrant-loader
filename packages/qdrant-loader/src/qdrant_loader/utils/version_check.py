@@ -124,8 +124,8 @@ class VersionChecker:
             latest_version: Latest available version
         """
         print("\n🆕 A new version of qdrant-loader is available!")
-        print("   Current: {self.current_version}")
-        print("   Latest:  {latest_version}")
+        print(f"   Current: {self.current_version}")
+        print(f"   Latest:  {latest_version}")
         print(
             "   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
         )

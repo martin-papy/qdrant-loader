@@ -33,7 +33,7 @@ class UnsupportedFileTypeError(FileConversionError):
             file_type: The unsupported file type
             file_path: Path to the unsupported file
         """
-        message = "File type '{file_type}' is not supported for conversion"
+        message = "File type f'{file_type}' is not supported for conversion"
         super().__init__(message, file_path, file_type)
 
 
@@ -49,7 +49,7 @@ class FileSizeExceededError(FileConversionError):
             file_path: Path to the oversized file
         """
         message = (
-            "File size {file_size} bytes exceeds maximum allowed size {max_size} bytes"
+            f"File size {file_size} bytes exceeds maximum allowed size {max_size} bytes"
         )
         super().__init__(message, file_path)
         self.file_size = file_size
@@ -66,7 +66,7 @@ class ConversionTimeoutError(FileConversionError):
             timeout: Timeout duration in seconds
             file_path: Path to the file that timed out
         """
-        message = "File conversion timed out after {timeout} seconds"
+        message = f"File conversion timed out after {timeout} seconds"
         super().__init__(message, file_path)
         self.timeout = timeout
 
@@ -87,7 +87,7 @@ class MarkItDownError(FileConversionError):
             file_path: Path to the file that failed conversion
             file_type: Type of file that failed conversion
         """
-        message = "MarkItDown conversion failed: {str(original_error)}"
+        message = f"MarkItDown conversion failed: {str(original_error)}"
         super().__init__(message, file_path, file_type)
         self.original_error = original_error
 
@@ -102,8 +102,8 @@ class FileAccessError(FileConversionError):
             file_path: Path to the inaccessible file
             original_error: The original exception that caused the access error
         """
-        message = "Cannot access file: {file_path}"
+        message = f"Cannot access file: {file_path}"
         if original_error:
-            message += " - {str(original_error)}"
+            message += f" - {str(original_error)}"
         super().__init__(message, file_path)
         self.original_error = original_error

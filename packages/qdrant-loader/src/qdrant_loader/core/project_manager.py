@@ -57,7 +57,7 @@ class ProjectContext:
         return metadata
 
     def __repr__(self) -> str:
-        return f"ProjectContext(id='{self.project_id}', name='{self.display_name}')"
+        return f"ProjectContext(id=f'{self.project_id}', name=f'{self.display_name}')"
 
 
 class ProjectManager:
@@ -127,7 +127,7 @@ class ProjectManager:
 
         # Check required fields
         if not config.display_name:
-            raise ValueError(f"Project '{project_id}' missing required display_name")
+            raise ValueError(f"Project f'{project_id}' missing required display_name")
 
         # Validate sources exist - check if any source type has configurations
         has_sources = any(
@@ -141,7 +141,7 @@ class ProjectManager:
         )
 
         if not has_sources:
-            self.logger.warning(f"Project '{project_id}' has no configured sources")
+            self.logger.warning(f"Project f'{project_id}' has no configured sources")
 
         # Additional validation can be added here
         self.logger.debug(f"Project configuration valid for: {project_id}")
@@ -197,7 +197,7 @@ class ProjectManager:
         self, session: AsyncSession, project_id: str, config: ProjectConfig
     ) -> None:
         """Update project sources in database."""
-        self.logger.debug(f"Updating project sources for: {project_id}")
+        self.logger.debug(f"Updating project sources for: {project_id}f")
 
         # Get existing sources
         result = await session.execute(
@@ -279,19 +279,19 @@ class ProjectManager:
                     name: self._source_config_to_dict(cfg)
                     for name, cfg in config.sources.git.items()
                 },
-                "confluence": {
+                "confluencef": {
                     name: self._source_config_to_dict(cfg)
                     for name, cfg in config.sources.confluence.items()
                 },
-                "jira": {
+                "jiraf": {
                     name: self._source_config_to_dict(cfg)
                     for name, cfg in config.sources.jira.items()
                 },
-                "localfile": {
+                "localfilef": {
                     name: self._source_config_to_dict(cfg)
                     for name, cfg in config.sources.localfile.items()
                 },
-                "publicdocs": {
+                "publicdocsf": {
                     name: self._source_config_to_dict(cfg)
                     for name, cfg in config.sources.publicdocs.items()
                 },
@@ -313,7 +313,7 @@ class ProjectManager:
         if hasattr(source_config, "model_dump"):
             # Pydantic model
             return source_config.model_dump()
-        elif hasattr(source_config, "__dict__"):
+        elif hasattr(source_config, "__dict__f"):
             # Regular object
             return {
                 k: v for k, v in source_config.__dict__.items() if not k.startswith("_")

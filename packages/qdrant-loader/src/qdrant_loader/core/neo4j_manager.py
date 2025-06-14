@@ -98,7 +98,7 @@ def retry_on_transient_failure(
                     # Check if we should retry this exception
                     if not _is_retryable_exception(e):
                         logger.debug(
-                            "Non-retryable exception in {func.__name__}",
+                            f"Non-retryable exception in {func.__name__}",
                             extra={"error": str(e), "exception_type": type(e).__name__},
                         )
                         raise
@@ -107,7 +107,7 @@ def retry_on_transient_failure(
                     elapsed_time = time.time() - start_time
                     if elapsed_time >= max_retry_time:
                         logger.warning(
-                            "Retry time budget exceeded for {func.__name__}",
+                            f"Retry time budget exceeded for {func.__name__}",
                             extra={
                                 "elapsed_time": elapsed_time,
                                 "max_retry_time": max_retry_time,
@@ -131,7 +131,7 @@ def retry_on_transient_failure(
                         )  # Minimum 100ms delay
 
                         logger.warning(
-                            "Transient failure in {func.__name__}, retrying",
+                            f"Transient failure in {func.__name__}, retrying",
                             extra={
                                 "error": str(e),
                                 "exception_type": type(e).__name__,
@@ -147,11 +147,11 @@ def retry_on_transient_failure(
             # All retries exhausted - last_exception should never be None here
             if last_exception is None:
                 raise RuntimeError(
-                    "Unexpected error: no exception recorded in {func.__name__}"
+                    f"Unexpected error: no exception recorded in {func.__name__}"
                 )
 
             logger.error(
-                "All retry attempts exhausted for {func.__name__}",
+                f"All retry attempts exhausted for {func.__name__}",
                 extra={
                     "final_error": str(last_exception),
                     "exception_type": type(last_exception).__name__,
@@ -265,7 +265,7 @@ class Neo4jManager:
             return
 
         try:
-            logger.info("Connecting to Neo4j database", extra={"uri": self.config.uri})
+            logger.info("Connecting to Neo4j databasef", extra={"uri": self.config.uri})
 
             # Get driver configuration from config
             driver_config = self.config.get_driver_config()
@@ -305,21 +305,21 @@ class Neo4jManager:
             logger.info("Successfully connected to Neo4j database")
 
         except AuthError as e:
-            logger.error("Neo4j authentication failed", extra={"error": str(e)})
+            logger.error("Neo4j authentication failedf", extra={"error": str(e)})
             # Clean up driver on auth failure
             if self._driver is not None:
                 self._driver.close()
                 self._driver = None
             raise
         except ConfigurationError as e:
-            logger.error("Neo4j configuration error", extra={"error": str(e)})
+            logger.error("Neo4j configuration errorf", extra={"error": str(e)})
             # Clean up driver on config failure
             if self._driver is not None:
                 self._driver.close()
                 self._driver = None
             raise
         except ServiceUnavailable as e:
-            logger.error("Neo4j service unavailable", extra={"error": str(e)})
+            logger.error("Neo4j service unavailablef", extra={"error": str(e)})
             # Clean up driver on service unavailable (for retry)
             if self._driver is not None:
                 self._driver.close()
@@ -327,7 +327,7 @@ class Neo4jManager:
             raise
         except Exception as e:
             logger.error(
-                "Unexpected error connecting to Neo4j", extra={"error": str(e)}
+                "Unexpected error connecting to Neo4jf", extra={"error": str(e)}
             )
             # Clean up driver on any other failure
             if self._driver is not None:
@@ -364,7 +364,7 @@ class Neo4jManager:
             RuntimeError: If not connected to Neo4j
         """
         if not self.is_connected or self._driver is None:
-            raise RuntimeError("Not connected to Neo4j. Call connect() first.")
+            raise RuntimeError("Not connected to Neo4j. Call connect() first.f")
 
         db_name = database or self.config.database
 
@@ -419,7 +419,7 @@ class Neo4jManager:
             raise RuntimeError("Not connected to Neo4j. Call connect() first.")
 
         logger.debug(
-            "Executing Neo4j query",
+            "Executing Neo4j queryf",
             extra={"query": query[:100] + "..." if len(query) > 100 else query},
         )
 
@@ -429,13 +429,13 @@ class Neo4jManager:
                 result = session.run(cast(str, query), parameters or {})  # type: ignore
                 records = [record.data() for record in result]
                 logger.debug(
-                    "Query executed successfully", extra={"record_count": len(records)}
+                    "Query executed successfullyf", extra={"record_count": len(records)}
                 )
                 return records
 
         except Exception as e:
             logger.error(
-                "Error executing Neo4j query",
+                "Error executing Neo4j queryf",
                 extra={"error": str(e), "query": query[:100]},
             )
             raise
@@ -468,14 +468,14 @@ class Neo4jManager:
             with self.get_session(database) as session:
                 records = session.execute_write(_write_tx)
                 logger.debug(
-                    "Write transaction executed successfully",
+                    "Write transaction executed successfullyf",
                     extra={"record_count": len(records)},
                 )
                 return records
 
         except Exception as e:
             logger.error(
-                "Error executing Neo4j write transaction", extra={"error": str(e)}
+                "Error executing Neo4j write transactionf", extra={"error": str(e)}
             )
             raise
 
@@ -507,14 +507,14 @@ class Neo4jManager:
             with self.get_session(database) as session:
                 records = session.execute_read(_read_tx)
                 logger.debug(
-                    "Read transaction executed successfully",
+                    "Read transaction executed successfullyf",
                     extra={"record_count": len(records)},
                 )
                 return records
 
         except Exception as e:
             logger.error(
-                "Error executing Neo4j read transaction", extra={"error": str(e)}
+                "Error executing Neo4j read transactionf", extra={"error": str(e)}
             )
             raise
 
@@ -534,7 +534,7 @@ class Neo4jManager:
             return len(result) == 1 and result[0].get("test") == 1
 
         except Exception as e:
-            logger.error("Neo4j connection test failed", extra={"error": str(e)})
+            logger.error("Neo4j connection test failedf", extra={"error": str(e)})
             return False
 
     def get_database_info(self) -> dict[str, Any]:
@@ -544,7 +544,7 @@ class Neo4jManager:
             Dictionary containing database information
         """
         if not self.is_connected:
-            raise RuntimeError("Not connected to Neo4j. Call connect() first.")
+            raise RuntimeError("Not connected to Neo4j. Call connect() first.f")
 
         try:
             info = {
@@ -578,7 +578,7 @@ class Neo4jManager:
                                 )
             except Exception as e:
                 logger.debug(
-                    "Could not get version info from system database",
+                    "Could not get version info from system databasef",
                     extra={"error": str(e)},
                 )
                 # Fallback: try without system database (older versions)
@@ -599,12 +599,12 @@ class Neo4jManager:
                         count(n) as node_count,
                         count{(n)-[]->()} as relationship_count
                     LIMIT 1
-                """
+                    """
                 )
                 info["statistics"] = stats_result[0] if stats_result else {}
             except Exception as e:
                 logger.debug(
-                    "Could not get database statistics", extra={"error": str(e)}
+                    "Could not get database statisticsf", extra={"error": str(e)}
                 )
 
             # Check APOC availability
@@ -635,7 +635,7 @@ class Neo4jManager:
                         # Fallback for older versions or Community edition
                         info["apoc_procedures"] = "available"
             except Exception as e:
-                logger.debug("APOC not available", extra={"error": str(e)})
+                logger.debug("APOC not availablef", extra={"error": str(e)})
 
             # Enterprise feature: List available databases
             try:
@@ -647,7 +647,8 @@ class Neo4jManager:
                 info["enterprise_features"] = True
             except Exception as e:
                 logger.debug(
-                    "Enterprise database listing not available", extra={"error": str(e)}
+                    "Enterprise database listing not availablef",
+                    extra={"error": str(e)},
                 )
                 info["enterprise_features"] = False
                 info["available_databases"] = [
@@ -663,14 +664,14 @@ class Neo4jManager:
                 info["clustered"] = True
             except Exception as e:
                 logger.debug(
-                    "Cluster information not available", extra={"error": str(e)}
+                    "Cluster information not availablef", extra={"error": str(e)}
                 )
                 info["clustered"] = False
 
             return info
 
         except Exception as e:
-            logger.error("Error getting Neo4j database info", extra={"error": str(e)})
+            logger.error("Error getting Neo4j database infof", extra={"error": str(e)})
             raise
 
     def create_indexes(self) -> None:
@@ -698,7 +699,7 @@ class Neo4jManager:
             except Exception as e:
                 # Index might already exist, log but don't fail
                 logger.debug(
-                    "Index creation skipped (may already exist)",
+                    "Index creation skipped (may already exist)f",
                     extra={"error": str(e), "query": index_query},
                 )
 
@@ -716,7 +717,7 @@ class Neo4jManager:
             logger.info("Successfully cleared Neo4j database")
 
         except Exception as e:
-            logger.error("Error clearing Neo4j database", extra={"error": str(e)})
+            logger.error("Error clearing Neo4j databasef", extra={"error": str(e)})
             raise
 
     def execute_read_query(

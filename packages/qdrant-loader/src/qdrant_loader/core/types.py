@@ -45,18 +45,14 @@ class TemporalInfo:
     valid_to: datetime | None = None  # None means currently valid
 
     # Transaction time - when the information was recorded in the system
-    transaction_time: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    transaction_time: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Version information for tracking changes
     version: int = 1
     superseded_by: str | None = (
         None  # UUID of the entity/relationship that supersedes this one
     )
-    supersedes: str | None = (
-        None  # UUID of the entity/relationship this one supersedes
-    )
+    supersedes: str | None = None  # UUID of the entity/relationship this one supersedes
 
     def is_valid_at(self, timestamp: datetime) -> bool:
         """Check if this temporal info is valid at a given timestamp.

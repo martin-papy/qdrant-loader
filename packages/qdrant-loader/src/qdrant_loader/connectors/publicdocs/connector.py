@@ -126,38 +126,38 @@ class PublicDocsConnector(BaseConnector):
 
     def _should_process_url(self, url: str) -> bool:
         """Check if a URL should be processed based on configuration."""
-        self.logger.debug("Checking if URL should be processed: {url}")
+        self.logger.debug(f"Checking if URL should be processed: {url}")
 
         # Check if URL matches base URL
         if not url.startswith(str(self.base_url)):
-            self.logger.debug("URL does not match base URL: {url}")
+            self.logger.debug(f"URL does not match base URL: {url}")
             return False
-        self.logger.debug("URL matches base URL: {url}")
+        self.logger.debug(f"URL matches base URL: {url}")
 
         # Extract path from URL
         path = url[len(str(self.base_url)) :]
-        self.logger.debug("Extracted path from URL: {path}")
+        self.logger.debug(f"Extracted path from URL: {path}")
 
         # Check exclude paths
         for exclude_path in self.config.exclude_paths:
-            self.logger.debug("Checking exclude path: {exclude_path} against {path}")
+            self.logger.debug(f"Checking exclude path: {exclude_path} against {path}")
             if fnmatch.fnmatch(path, exclude_path):
-                self.logger.debug("URL path matches exclude pattern: {path}")
+                self.logger.debug(f"URL path matches exclude pattern: {path}")
                 return False
-        self.logger.debug("URL path not in exclude paths: {path}")
+        self.logger.debug(f"URL path not in exclude paths: {path}")
 
         # Check path pattern
         if self.config.path_pattern is None:
             self.logger.debug("No path pattern specified, skipping pattern check")
             return True
 
-        self.logger.debug("Checking path pattern: {self.config.path_pattern}")
+        self.logger.debug(f"Checking path pattern: {self.config.path_pattern}")
         if not fnmatch.fnmatch(path, self.config.path_pattern):
-            self.logger.debug("URL path does not match pattern: {path}")
+            self.logger.debug(f"URL path does not match pattern: {path}")
             return False
-        self.logger.debug("URL path matches pattern: {path}")
+        self.logger.debug(f"URL path matches pattern: {path}")
 
-        self.logger.debug("URL passed all checks, will be processed: {url}")
+        self.logger.debug(f"URL passed all checks, will be processed: {url}")
         return True
 
     async def get_documents(self) -> list[Document]:
@@ -178,7 +178,7 @@ class PublicDocsConnector(BaseConnector):
         try:
             # Get all pages
             pages = await self._get_all_pages()
-            self.logger.debug("Found {len(pages)} pages to process", pages=pages)
+            self.logger.debug(f"Found {len(pages)} pages to process", pages=pages)
             documents = []
 
             for page in pages:
@@ -259,9 +259,9 @@ class PublicDocsConnector(BaseConnector):
                                         page_url=page,
                                         processed_count=len(attachment_documents),
                                     )
-                            except Exception:
+                            except Exception as e:
                                 self.logger.error(
-                                    "Failed to process attachments for page {page}: {e}"
+                                    f"Failed to process attachments for page {page}: {e}"
                                 )
                                 # Continue processing even if attachment processing fails
                     else:
@@ -270,8 +270,8 @@ class PublicDocsConnector(BaseConnector):
                             url=page,
                             title=title,
                         )
-                except Exception:
-                    self.logger.error("Failed to process page {page}: {e}")
+                except Exception as e:
+                    self.logger.error(f"Failed to process page {page}: {e}")
                     continue
 
             if not documents:
@@ -348,7 +348,7 @@ class PublicDocsConnector(BaseConnector):
                     return html, title
             except Exception as e:
                 raise DocumentProcessingError(
-                    "Failed to process page {url}: {e!s}"
+                    f"Failed to process page {url}: {e!s}"
                 ) from e
 
         except (
@@ -358,7 +358,9 @@ class PublicDocsConnector(BaseConnector):
         ):
             raise
         except Exception as e:
-            raise ConnectorError("Unexpected error processing page {url}: {e!s}") from e
+            raise ConnectorError(
+                f"Unexpected error processing page {url}: {e!s}"
+            ) from e
 
     def _extract_links(self, html: str, current_url: str) -> list[str]:
         """Extract all links from the HTML content."""
@@ -369,7 +371,7 @@ class PublicDocsConnector(BaseConnector):
         links = []
 
         for link in soup.find_all("a", href=True):
-            href = str(cast(BeautifulSoup, link)["hre"])  # type: ignore
+            href = str(cast(BeautifulSoup, link)["href"])  # type: ignore
             # Convert relative URLs to absolute
             absolute_url = urljoin(current_url, href)
 
@@ -402,15 +404,17 @@ class PublicDocsConnector(BaseConnector):
 
         # Remove unwanted elements
         for selector in self.config.selectors.remove:
-            self.logger.debug("Processing selector: {selector}")
+            self.logger.debug(f"Processing selector: {selector}")
             elements = soup.select(selector)
-            self.logger.debug("Found {len(elements)} elements for selector: {selector}")
+            self.logger.debug(
+                f"Found {len(elements)} elements for selector: {selector}"
+            )
             for element in elements:
                 element.decompose()
 
         # Find main content
         self.logger.debug(
-            "Looking for main content with selector: {self.config.selectors.content}"
+            f"Looking for main content with selector: {self.config.selectors.content}"
         )
         content = soup.select_one(self.config.selectors.content)
         if not content:
@@ -428,15 +432,15 @@ class PublicDocsConnector(BaseConnector):
 
         # Preserve code blocks
         self.logger.debug(
-            "Looking for code blocks with selector: {self.config.selectors.code_blocks}"
+            f"Looking for code blocks with selector: {self.config.selectors.code_blocks}"
         )
         code_blocks = content.select(self.config.selectors.code_blocks)
-        self.logger.debug("Found {len(code_blocks)} code blocks")
+        self.logger.debug(f"Found {len(code_blocks)} code blocks")
 
         for code_block in code_blocks:
             code_text = code_block.text
             if code_text:  # Only process non-empty code blocks
-                new_code = BeautifulSoup("\n```\n{code_text}\n```\n", "html.parser")
+                new_code = BeautifulSoup(f"\n```\n{code_text}\n```\n", "html.parser")
                 if new_code.string:  # Ensure we have a valid string to replace with
                     code_block.replace_with(new_code.string)  # type: ignore[arg-type]
 
@@ -518,10 +522,10 @@ class PublicDocsConnector(BaseConnector):
         # Use configured selectors to find attachment links
         for selector in self.config.attachment_selectors:
             links = soup.select(selector)
-            self.logger.debug("Found {len(links)} links for selector: {selector}")
+            self.logger.debug(f"Found {len(links)} links for selector: {selector}")
 
             for link in links:
-                href = link.get("hre")
+                href = link.get("href")
                 if not href:
                     continue
 
@@ -540,7 +544,7 @@ class PublicDocsConnector(BaseConnector):
 
                 # Create attachment metadata
                 attachment = AttachmentMetadata(
-                    id="{document_id}_{len(attachments)}",  # Simple ID generation
+                    id=f"{document_id}_{len(attachments)}",  # Simple ID generation
                     filename=filename,
                     size=0,  # We don't know the size until we download
                     mime_type=mime_type,
@@ -559,7 +563,7 @@ class PublicDocsConnector(BaseConnector):
                     mime_type=mime_type,
                 )
 
-        self.logger.debug("Extracted {len(attachments)} attachments from page")
+        self.logger.debug(f"Extracted {len(attachments)} attachments from page")
         return attachments
 
     def _get_mime_type_from_extension(self, extension: str) -> str:
@@ -636,7 +640,7 @@ class PublicDocsConnector(BaseConnector):
 
                     for link in soup.find_all("a"):
                         try:
-                            href = str(cast(BeautifulSoup, link)["hre"])  # type: ignore
+                            href = str(cast(BeautifulSoup, link)["href"])  # type: ignore
                             if not href or not isinstance(href, str):
                                 continue
 
@@ -672,7 +676,7 @@ class PublicDocsConnector(BaseConnector):
                         except Exception as e:
                             self.logger.warning(
                                 "Failed to process link",
-                                href=str(link.get("hre", "")),  # type: ignore
+                                href=str(link.get("href", "")),  # type: ignore
                                 error=str(e),
                             )
                             continue
@@ -684,9 +688,11 @@ class PublicDocsConnector(BaseConnector):
                     )
                     return pages
                 except Exception as e:
-                    raise ConnectorError("Failed to process page content: {e!s}") from e
+                    raise ConnectorError(
+                        f"Failed to process page content: {e!s}"
+                    ) from e
 
         except (ConnectorNotInitializedError, HTTPRequestError, ConnectorError):
             raise
         except Exception as e:
-            raise ConnectorError("Unexpected error getting pages: {e!s}") from e
+            raise ConnectorError(f"Unexpected error getting pages: {e!s}") from e

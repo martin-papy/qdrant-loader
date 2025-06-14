@@ -91,10 +91,10 @@ class PipelineOrchestrator:
                     or not project_context.config.sources
                 ):
                     raise ValueError(
-                        "Project '{project_id}' not found or has no configuration"
+                        "Project f'{project_id}' not found or has no configuration"
                     )
 
-                logger.debug("Using project configuration for project: {project_id}")
+                logger.debug(f"Using project configuration for project: {project_id}")
                 project_sources_config = project_context.config.sources
                 filtered_config = self.components.source_filter.filter_sources(
                     project_sources_config, source_type, source
@@ -120,7 +120,7 @@ class PipelineOrchestrator:
                     filtered_config.localfile,
                 ]
             ):
-                raise ValueError("No sources found for type '{source_type}'")
+                raise ValueError("No sources found for type f'{source_type}'")
 
             # Collect documents from all sources
             documents = await self._collect_documents_from_sources(
@@ -151,12 +151,12 @@ class PipelineOrchestrator:
             )
 
             logger.info(
-                "✅ Ingestion completed: {result.success_count} chunks processed successfully"
+                f"✅ Ingestion completed: {result.success_count} chunks processed successfully"
             )
             return documents
 
-        except Exception:
-            logger.error("❌ Pipeline orchestration failed: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"❌ Pipeline orchestration failed: {e}", exc_info=True)
             raise
 
     async def _process_all_projects(
@@ -169,11 +169,11 @@ class PipelineOrchestrator:
         all_documents = []
         project_ids = self.project_manager.list_project_ids()
 
-        logger.info("Processing {len(project_ids)} projects")
+        logger.info(f"Processing {len(project_ids)} projects")
 
         for project_id in project_ids:
             try:
-                logger.debug("Processing project: {project_id}")
+                logger.debug(f"Processing project: {project_id}")
                 project_documents = await self.process_documents(
                     project_id=project_id,
                     source_type=source_type,
@@ -181,17 +181,17 @@ class PipelineOrchestrator:
                 )
                 all_documents.extend(project_documents)
                 logger.debug(
-                    "Processed {len(project_documents)} documents from project: {project_id}"
+                    f"Processed {len(project_documents)} documents from project: {project_id}"
                 )
-            except Exception:
+            except Exception as e:
                 logger.error(
-                    "Failed to process project {project_id}: {e}", exc_info=True
+                    f"Failed to process project {project_id}: {e}", exc_info=True
                 )
                 # Continue processing other projects
                 continue
 
         logger.info(
-            "Completed processing all projects: {len(all_documents)} total documents"
+            f"Completed processing all projects: {len(all_documents)} total documents"
         )
         return all_documents
 
@@ -244,7 +244,7 @@ class PipelineOrchestrator:
                 )
                 document.metadata = enhanced_metadata
 
-        logger.info("📄 Collected {len(documents)} documents from all sources")
+        logger.info(f"📄 Collected {len(documents)} documents from all sources")
         return documents
 
     async def _detect_document_changes(
@@ -257,7 +257,7 @@ class PipelineOrchestrator:
         if not documents:
             return []
 
-        logger.debug("Starting change detection for {len(documents)} documents")
+        logger.debug(f"Starting change detection for {len(documents)} documents")
 
         try:
             # Ensure state manager is initialized before use
@@ -273,15 +273,15 @@ class PipelineOrchestrator:
                 )
 
                 logger.info(
-                    "🔍 Change detection: {len(changes['new'])} new, "
+                    f"🔍 Change detection: {len(changes['new'])} new, "
                     "{len(changes['updated'])} updated, {len(changes['deleted'])} deleted"
                 )
 
                 # Return new and updated documents
                 return changes["new"] + changes["updated"]
 
-        except Exception:
-            logger.error("Error during change detection: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"Error during change detection: {e}", exc_info=True)
             raise
 
     async def _update_document_states(
@@ -296,7 +296,7 @@ class PipelineOrchestrator:
         ]
 
         logger.debug(
-            "Updating document states for {len(successfully_processed_docs)} documents"
+            f"Updating document states for {len(successfully_processed_docs)} documents"
         )
 
         # Ensure state manager is initialized before use
@@ -309,6 +309,6 @@ class PipelineOrchestrator:
                 await self.components.state_manager.update_document_state(
                     doc, project_id
                 )
-                logger.debug("Updated document state for {doc.id}")
-            except Exception:
-                logger.error("Failed to update document state for {doc.id}: {e}")
+                logger.debug(f"Updated document state for {doc.id}")
+            except Exception as e:
+                logger.error(f"Failed to update document state for {doc.id}: {e}")

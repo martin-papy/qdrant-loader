@@ -15,14 +15,14 @@ class LocalFileMetadataExtractor:
         self.logger = LoggingConfig.get_logger(__name__)
 
     def extract_all_metadata(self, file_path: str, content: str) -> dict[str, Any]:
-        self.logger.debug("Starting metadata extraction for file: {file_path!s}")
+        self.logger.debug(f"Starting metadata extraction for file: {file_path}")
         file_metadata = self._extract_file_metadata(file_path, content)
         structure_metadata = {}
         if file_path.lower().endswith(".md"):
             structure_metadata = self._extract_structure_metadata(content)
         metadata = {**file_metadata, **structure_metadata}
-        self.logger.debug("Completed metadata extraction for {file_path!s}.")
-        self.logger.debug("Metadata: {metadata!s}")
+        self.logger.debug(f"Completed metadata extraction for {file_path}.")
+        self.logger.debug(f"Metadata: {metadata}")
         return metadata
 
     def _extract_file_metadata(self, file_path: str, content: str) -> dict[str, Any]:

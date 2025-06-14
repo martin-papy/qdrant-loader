@@ -43,13 +43,13 @@ class EmbeddingWorker(BaseWorker):
             return []
 
         try:
-            logger.debug("EmbeddingWorker processing batch of {len(chunks)} items")
+            logger.debug(f"EmbeddingWorker processing batch of {len(chunks)} items")
 
             # Monitor memory usage
             memory_percent = psutil.virtual_memory().percent
             if memory_percent > 85:
                 logger.warning(
-                    "High memory usage detected: {memory_percent}%. Running garbage collection..."
+                    f"High memory usage detected: {memory_percent}%. Running garbage collection..."
                 )
                 gc.collect()
 
@@ -66,7 +66,7 @@ class EmbeddingWorker(BaseWorker):
                     return []
 
                 result = list(zip(chunks, embeddings, strict=False))
-                logger.debug("EmbeddingWorker completed batch of {len(chunks)} items")
+                logger.debug(f"EmbeddingWorker completed batch of {len(chunks)} items")
 
                 # Cleanup after large batches
                 if len(chunks) > 50:
@@ -76,11 +76,11 @@ class EmbeddingWorker(BaseWorker):
 
         except TimeoutError:
             logger.error(
-                "EmbeddingWorker timed out processing batch of {len(chunks)} items"
+                f"EmbeddingWorker timed out processing batch of {len(chunks)} items"
             )
             raise
-        except Exception:
-            logger.error("EmbeddingWorker error processing batch: {e}")
+        except Exception as e:
+            logger.error(f"EmbeddingWorker error processing batch: {e}")
             raise
 
     async def process_chunks(
@@ -112,21 +112,21 @@ class EmbeddingWorker(BaseWorker):
                 if len(batch) >= batch_size:
                     try:
                         logger.debug(
-                            "🔄 Processing embedding batch of {len(batch)} chunks..."
+                            f"🔄 Processing embedding batch of {len(batch)} chunks..."
                         )
                         results = await self.process(batch)
                         total_processed += len(batch)
                         logger.info(
-                            "🔗 Generated embeddings: {len(batch)} items in batch, {total_processed} total processed"
+                            f"🔗 Generated embeddings: {len(batch)} items in batch, {total_processed} total processed"
                         )
 
                         for result in results:
                             yield result
-                    except Exception:
-                        logger.error("EmbeddingWorker batch processing failed: {e}")
+                    except Exception as e:
+                        logger.error(f"EmbeddingWorker batch processing failed: {e}")
                         # Mark chunks as failed but continue processing
                         for chunk in batch:
-                            logger.error("Embedding failed for chunk {chunk.id}: {e}")
+                            logger.error(f"Embedding failed for chunk {chunk.id}: {e}")
 
                     batch = []
 
@@ -134,22 +134,22 @@ class EmbeddingWorker(BaseWorker):
             if batch and not self.shutdown_event.is_set():
                 try:
                     logger.debug(
-                        "🔄 Processing final embedding batch of {len(batch)} chunks..."
+                        f"🔄 Processing final embedding batch of {len(batch)} chunks..."
                     )
                     results = await self.process(batch)
                     total_processed += len(batch)
                     logger.info(
-                        "🔗 Generated embeddings: {len(batch)} items in final batch, {total_processed} total processed"
+                        f"🔗 Generated embeddings: {len(batch)} items in final batch, {total_processed} total processed"
                     )
 
                     for result in results:
                         yield result
-                except Exception:
-                    logger.error("EmbeddingWorker final batch processing failed: {e}")
+                except Exception as e:
+                    logger.error(f"EmbeddingWorker final batch processing failed: {e}")
                     for chunk in batch:
-                        logger.error("Embedding failed for chunk {chunk.id}: {e}")
+                        logger.error(f"Embedding failed for chunk {chunk.id}: {e}")
 
-            logger.info("✅ Embedding completed: {total_processed} chunks processed")
+            logger.info(f"✅ Embedding completed: {total_processed} chunks processed")
 
         except asyncio.CancelledError:
             logger.debug("EmbeddingWorker cancelled")

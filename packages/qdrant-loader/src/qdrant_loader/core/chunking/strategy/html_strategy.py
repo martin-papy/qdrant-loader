@@ -261,7 +261,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         # Performance check: use simple parsing for very large files
         if len(html) > MAX_HTML_SIZE_FOR_PARSING:
             self.logger.info(
-                "HTML too large for complex parsing ({len(html)} bytes), using simple parsing"
+                f"HTML too large for complex parsing ({len(html)} bytes), using simple parsing"
             )
             return self._simple_html_parse(html)
 
@@ -338,8 +338,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return sections[:MAX_SECTIONS_TO_PROCESS]  # Ensure we don't exceed limit
 
-        except Exception:
-            self.logger.warning("HTML parsing failed: {e}")
+        except Exception as e:
+            self.logger.warning(f"HTML parsing failed: {e}")
             return self._simple_html_parse(html)
 
     def _simple_html_parse(self, html: str) -> list[dict[str, Any]]:
@@ -401,8 +401,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return sections
 
-        except Exception:
-            self.logger.error("Simple HTML parsing failed: {e}")
+        except Exception as e:
+            self.logger.error(f"Simple HTML parsing failed: {e}")
             # Ultimate fallback: return the entire content as one section
             return [
                 {
@@ -520,7 +520,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
         # Performance check: use simple parsing for large files
         if len(html) > SIMPLE_PARSING_THRESHOLD:
             self.logger.info(
-                "Using simple parsing for large HTML file ({len(html)} bytes)"
+                f"Using simple parsing for large HTML file ({len(html)} bytes)"
             )
             return self._simple_html_parse(html)
 
@@ -643,7 +643,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             document.metadata.get("file_name")
             or document.metadata.get("original_filename")
             or document.title
-            or "{document.source_type}:{document.source}"
+            or f"{document.source_type}:{document.source}"
         )
 
         # Start progress tracking
@@ -659,10 +659,10 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             # Check for very large files that should use fallback chunking
             if len(document.content) > MAX_HTML_SIZE_FOR_PARSING:
                 self.logger.info(
-                    "HTML file too large ({len(document.content)} bytes), using fallback chunking"
+                    f"HTML file too large ({len(document.content)} bytes), using fallback chunking"
                 )
                 self.progress_tracker.log_fallback(
-                    document.id, "Large HTML file ({len(document.content)} bytes)"
+                    document.id, f"Large HTML file ({len(document.content)} bytes)"
                 )
                 return self._fallback_chunking(document)
 
@@ -679,7 +679,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             for i, section in enumerate(sections):
                 chunk_content = section["content"]
                 self.logger.debug(
-                    "Processing HTML section {i+1}/{len(sections)}",
+                    f"Processing HTML section {i+1}/{len(sections)}",
                     extra={
                         "chunk_size": len(chunk_content),
                         "section_type": section.get("section_type", "unknown"),
@@ -713,7 +713,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.log_error(document.id, str(e))
             # Fallback to default chunking
             self.progress_tracker.log_fallback(
-                document.id, "HTML parsing failed: {str(e)}"
+                document.id, f"HTML parsing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
 
@@ -768,7 +768,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             for i, chunk_content in enumerate(chunks):
                 # Validate chunk content
                 if not chunk_content or not chunk_content.strip():
-                    self.logger.warning("Skipping empty fallback chunk {i+1}")
+                    self.logger.warning(f"Skipping empty fallback chunk {i+1}")
                     continue
 
                 # Use base class chunk creation
@@ -796,8 +796,8 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             return chunked_docs
 
-        except Exception:
-            self.logger.error("Fallback chunking failed: {e}")
+        except Exception as e:
+            self.logger.error(f"Fallback chunking failed: {e}")
             # Ultimate fallback: return original document as single chunk
             chunk_doc = Document(
                 content=document.content,
