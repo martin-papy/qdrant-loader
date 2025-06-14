@@ -68,14 +68,8 @@ def _get_connector_configs():
 
 __all__ = [
     "ChunkingConfig",
-    "ConfluenceSpaceConfig",
-    "GitAuthConfig",
-    "GitRepoConfig",
     "GlobalConfig",
-    "JiraProjectConfig",
     "Neo4jConfig",
-    "PublicDocsSourceConfig",
-    "SelectorsConfig",
     "SemanticAnalysisConfig",
     "Settings",
     "SourcesConfig",
