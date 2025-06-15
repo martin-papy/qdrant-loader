@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Unio
 
 if TYPE_CHECKING:
     from .graphiti_temporal_integration import GraphitiTemporalIntegration
+    from .sync_conflict_monitor import SyncConflictMonitor
 
 from ..utils.logging import LoggingConfig
 from .atomic_transactions import (
@@ -133,6 +134,7 @@ class EnhancedSyncEventSystem:
         atomic_transaction_manager: AtomicTransactionManager,
         graphiti_temporal_integration: Optional["GraphitiTemporalIntegration"] = None,
         base_sync_system: Optional[SyncEventSystem] = None,
+        sync_conflict_monitor: Optional["SyncConflictMonitor"] = None,
         max_concurrent_operations: int = 10,
         operation_timeout_seconds: int = 300,
         enable_cascading_deletes: bool = True,
@@ -148,6 +150,7 @@ class EnhancedSyncEventSystem:
             atomic_transaction_manager: Atomic transaction manager instance
             graphiti_temporal_integration: Optional Graphiti temporal integration
             base_sync_system: Optional base sync event system for change detection
+            sync_conflict_monitor: Optional sync conflict monitor for comprehensive monitoring
             max_concurrent_operations: Maximum concurrent sync operations
             operation_timeout_seconds: Timeout for sync operations
             enable_cascading_deletes: Whether to enable cascading deletions
@@ -160,6 +163,7 @@ class EnhancedSyncEventSystem:
         self.atomic_transaction_manager = atomic_transaction_manager
         self.graphiti_temporal_integration = graphiti_temporal_integration
         self.base_sync_system = base_sync_system
+        self.sync_conflict_monitor = sync_conflict_monitor
         self.max_concurrent_operations = max_concurrent_operations
         self.operation_timeout_seconds = operation_timeout_seconds
         self.enable_cascading_deletes = enable_cascading_deletes
@@ -358,6 +362,18 @@ class EnhancedSyncEventSystem:
         operation_id = operation.operation_id
         self._active_operations[operation_id] = operation
 
+        # Initialize sync conflict monitoring if available
+        sync_metrics = None
+        if self.sync_conflict_monitor:
+            try:
+                sync_metrics = await self.sync_conflict_monitor.monitor_sync_operation(
+                    operation
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Sync conflict monitoring failed for {operation_id}: {e}"
+                )
+
         try:
             logger.info(
                 f"Processing operation {operation_id} of type {operation.operation_type}"
@@ -420,6 +436,17 @@ class EnhancedSyncEventSystem:
                 await self.queue_operation(operation)
 
         finally:
+            # Update sync metrics with final operation status
+            if sync_metrics and self.sync_conflict_monitor:
+                try:
+                    sync_metrics.mark_completed(operation.status)
+                    if operation.error_message:
+                        sync_metrics.add_error(operation.error_message)
+                except Exception as e:
+                    logger.warning(
+                        f"Error updating sync metrics for {operation_id}: {e}"
+                    )
+
             # Remove from active operations
             if operation_id in self._active_operations:
                 del self._active_operations[operation_id]
@@ -847,16 +874,31 @@ class EnhancedSyncEventSystem:
                         "error": str(e),
                     }
 
+            # Check sync conflict monitor health
+            sync_monitor_health = {}
+            if self.sync_conflict_monitor:
+                try:
+                    sync_monitor_health = (
+                        await self.sync_conflict_monitor.health_check()
+                    )
+                except Exception as e:
+                    sync_monitor_health = {
+                        "status": "unhealthy",
+                        "error": str(e),
+                    }
+
             return {
                 "healthy": self._running
                 and base_health.get("healthy", True)
                 and tx_health.get("healthy", True)
-                and graphiti_health.get("healthy", True),
+                and graphiti_health.get("healthy", True)
+                and sync_monitor_health.get("status", "healthy") == "healthy",
                 "enhanced_system_running": self._running,
                 "graphiti_temporal_features_enabled": self.enable_graphiti_temporal_features,
                 "base_system_health": base_health,
                 "transaction_manager_health": tx_health,
                 "graphiti_temporal_health": graphiti_health,
+                "sync_conflict_monitor_health": sync_monitor_health,
                 "operation_stats": stats,
             }
 
