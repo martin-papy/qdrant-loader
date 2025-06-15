@@ -68,6 +68,21 @@ class IDMapping:
     sync_version: int = 1
     sync_errors: List[str] = field(default_factory=list)
 
+    # Document versioning and update tracking
+    document_version: int = 1  # Version of the actual document content
+    last_update_time: Optional[datetime] = None  # When document was last updated
+    created_time: datetime = field(default_factory=lambda: datetime.now(UTC))
+    update_source: Optional[str] = (
+        None  # Source of the last update (e.g., "qdrant", "neo4j", "manual")
+    )
+    content_hash: Optional[str] = None  # Hash of document content for change detection
+
+    # Historical tracking
+    version_history: List[Dict[str, Any]] = field(
+        default_factory=list
+    )  # Track version changes
+    update_frequency: int = 0  # Number of updates performed
+
     # Validation fields
     qdrant_exists: bool = False
     neo4j_exists: bool = False
@@ -98,6 +113,111 @@ class IDMapping:
         self.sync_version += 1
         self.sync_errors.clear()
 
+    def increment_document_version(
+        self,
+        update_source: str = "unknown",
+        content_hash: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Increment document version and record update details.
+
+        Args:
+            update_source: Source of the update (e.g., "qdrant", "neo4j", "manual")
+            content_hash: Hash of the updated content for change detection
+            metadata: Additional metadata about the update
+        """
+        # Store previous version in history
+        previous_version = {
+            "version": self.document_version,
+            "timestamp": (
+                self.last_update_time.isoformat() if self.last_update_time else None
+            ),
+            "source": self.update_source,
+            "content_hash": self.content_hash,
+            "metadata": metadata or {},
+        }
+        self.version_history.append(previous_version)
+
+        # Update to new version
+        self.document_version += 1
+        self.last_update_time = datetime.now(UTC)
+        self.update_source = update_source
+        self.content_hash = content_hash
+        self.update_frequency += 1
+
+        # Update temporal info version as well
+        self.temporal_info.version = self.document_version
+        self.temporal_info.transaction_time = self.last_update_time
+
+    def get_version_at_time(self, timestamp: datetime) -> Optional[Dict[str, Any]]:
+        """Get the document version that was active at a specific time.
+
+        Args:
+            timestamp: The timestamp to check
+
+        Returns:
+            Version information if found, None otherwise
+        """
+        # Check if current version was active at that time
+        if self.last_update_time and timestamp >= self.last_update_time:
+            return {
+                "version": self.document_version,
+                "timestamp": self.last_update_time.isoformat(),
+                "source": self.update_source,
+                "content_hash": self.content_hash,
+                "is_current": True,
+            }
+
+        # Search through version history
+        for version_info in reversed(self.version_history):
+            if version_info["timestamp"]:
+                version_time = datetime.fromisoformat(version_info["timestamp"])
+                if timestamp >= version_time:
+                    version_info["is_current"] = False
+                    return version_info
+
+        # If no version found, return creation info
+        if timestamp >= self.created_time:
+            return {
+                "version": 1,
+                "timestamp": self.created_time.isoformat(),
+                "source": "creation",
+                "content_hash": None,
+                "is_current": False,
+            }
+
+        return None
+
+    def get_update_statistics(self) -> Dict[str, Any]:
+        """Get statistics about document updates.
+
+        Returns:
+            Dictionary containing update statistics
+        """
+        now = datetime.now(UTC)
+        time_since_creation = (now - self.created_time).total_seconds()
+        time_since_last_update = (
+            (now - self.last_update_time).total_seconds()
+            if self.last_update_time
+            else time_since_creation
+        )
+
+        return {
+            "current_version": self.document_version,
+            "total_updates": self.update_frequency,
+            "created_time": self.created_time.isoformat(),
+            "last_update_time": (
+                self.last_update_time.isoformat() if self.last_update_time else None
+            ),
+            "time_since_creation_hours": time_since_creation / 3600,
+            "time_since_last_update_hours": time_since_last_update / 3600,
+            "update_rate_per_day": (
+                self.update_frequency / max(time_since_creation / 86400, 1)
+            ),
+            "version_history_count": len(self.version_history),
+            "last_update_source": self.update_source,
+        }
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert mapping to dictionary format."""
         return {
@@ -116,6 +236,17 @@ class IDMapping:
             ),
             "sync_version": self.sync_version,
             "sync_errors": self.sync_errors,
+            # Document versioning fields
+            "document_version": self.document_version,
+            "last_update_time": (
+                self.last_update_time.isoformat() if self.last_update_time else None
+            ),
+            "created_time": self.created_time.isoformat(),
+            "update_source": self.update_source,
+            "content_hash": self.content_hash,
+            "version_history": self.version_history,
+            "update_frequency": self.update_frequency,
+            # Validation fields
             "qdrant_exists": self.qdrant_exists,
             "neo4j_exists": self.neo4j_exists,
             "last_validation_time": (
@@ -140,6 +271,13 @@ class IDMapping:
             metadata=data.get("metadata", {}),
             sync_version=data.get("sync_version", 1),
             sync_errors=data.get("sync_errors", []),
+            # Document versioning fields
+            document_version=data.get("document_version", 1),
+            update_source=data.get("update_source"),
+            content_hash=data.get("content_hash"),
+            version_history=data.get("version_history", []),
+            update_frequency=data.get("update_frequency", 0),
+            # Validation fields
             qdrant_exists=data.get("qdrant_exists", False),
             neo4j_exists=data.get("neo4j_exists", False),
         )
@@ -155,6 +293,10 @@ class IDMapping:
             mapping.last_validation_time = datetime.fromisoformat(
                 data["last_validation_time"]
             )
+        if data.get("last_update_time"):
+            mapping.last_update_time = datetime.fromisoformat(data["last_update_time"])
+        if data.get("created_time"):
+            mapping.created_time = datetime.fromisoformat(data["created_time"])
 
         return mapping
 
@@ -413,6 +555,169 @@ class IDMappingManager:
 
         logger.debug(f"Updated ID mapping: {mapping_id}")
         return mapping
+
+    async def update_document_version(
+        self,
+        mapping_id: str,
+        update_source: str,
+        content_hash: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        validate_existence: bool = True,
+    ) -> Optional[IDMapping]:
+        """Update document version and timestamp for a mapping.
+
+        Args:
+            mapping_id: ID of the mapping to update
+            update_source: Source of the update (e.g., "qdrant", "neo4j", "manual")
+            content_hash: Hash of the updated content for change detection
+            metadata: Additional metadata about the update
+            validate_existence: Whether to validate entity existence
+
+        Returns:
+            Updated IDMapping if successful, None otherwise
+        """
+        try:
+            # Get existing mapping
+            mapping = await self.get_mapping_by_id(mapping_id)
+            if not mapping:
+                logger.warning(f"Mapping {mapping_id} not found for version update")
+                return None
+
+            # Increment document version
+            mapping.increment_document_version(
+                update_source=update_source,
+                content_hash=content_hash,
+                metadata=metadata,
+            )
+
+            # Validate existence if requested
+            if validate_existence:
+                await self._validate_mapping_existence(mapping)
+
+            # Store updated mapping
+            await self._store_mapping(mapping)
+            self._cache_mapping(mapping)
+
+            logger.debug(
+                f"Updated document version for mapping {mapping_id} to v{mapping.document_version}"
+            )
+            return mapping
+
+        except Exception as e:
+            logger.error(
+                f"Failed to update document version for mapping {mapping_id}: {e}"
+            )
+            return None
+
+    async def get_mappings_by_version_range(
+        self,
+        min_version: int = 1,
+        max_version: Optional[int] = None,
+        entity_type: Optional[EntityType] = None,
+        limit: int = 1000,
+    ) -> List[IDMapping]:
+        """Get mappings within a specific version range.
+
+        Args:
+            min_version: Minimum document version (inclusive)
+            max_version: Maximum document version (inclusive), None for no upper limit
+            entity_type: Optional entity type filter
+            limit: Maximum number of mappings to return
+
+        Returns:
+            List of IDMapping objects matching the criteria
+        """
+        try:
+            # Build query conditions
+            conditions = [f"m.document_version >= {min_version}"]
+
+            if max_version is not None:
+                conditions.append(f"m.document_version <= {max_version}")
+
+            if entity_type:
+                conditions.append(f"m.entity_type = '{entity_type.value}'")
+
+            where_clause = " AND ".join(conditions)
+
+            query = f"""
+            MATCH (m:IDMapping)
+            WHERE {where_clause}
+            RETURN m
+            ORDER BY m.document_version DESC
+            LIMIT {limit}
+            """
+
+            results = self.neo4j_manager.execute_read_query(query)
+            mappings = []
+
+            for result in results:
+                node_data = result["m"]
+                mapping = self._neo4j_result_to_mapping(node_data)
+                mappings.append(mapping)
+
+            logger.debug(
+                f"Found {len(mappings)} mappings in version range {min_version}-{max_version}"
+            )
+            return mappings
+
+        except Exception as e:
+            logger.error(f"Failed to get mappings by version range: {e}")
+            return []
+
+    async def get_recently_updated_mappings(
+        self,
+        hours: int = 24,
+        update_source: Optional[str] = None,
+        limit: int = 1000,
+    ) -> List[IDMapping]:
+        """Get mappings that were updated within the specified time period.
+
+        Args:
+            hours: Number of hours to look back
+            update_source: Optional filter by update source
+            limit: Maximum number of mappings to return
+
+        Returns:
+            List of recently updated IDMapping objects
+        """
+        try:
+            from datetime import timedelta
+
+            cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
+            cutoff_iso = cutoff_time.isoformat()
+
+            # Build query conditions
+            conditions = [f"m.last_update_time >= '{cutoff_iso}'"]
+
+            if update_source:
+                conditions.append(f"m.update_source = '{update_source}'")
+
+            where_clause = " AND ".join(conditions)
+
+            query = f"""
+            MATCH (m:IDMapping)
+            WHERE {where_clause}
+            RETURN m
+            ORDER BY m.last_update_time DESC
+            LIMIT {limit}
+            """
+
+            results = self.neo4j_manager.execute_read_query(query)
+            mappings = []
+
+            for result in results:
+                node_data = result["m"]
+                mapping = self._neo4j_result_to_mapping(node_data)
+                mappings.append(mapping)
+
+            logger.debug(
+                f"Found {len(mappings)} mappings updated in last {hours} hours"
+            )
+            return mappings
+
+        except Exception as e:
+            logger.error(f"Failed to get recently updated mappings: {e}")
+            return []
 
     async def delete_mapping(self, mapping_id: str) -> bool:
         """Delete a mapping.
