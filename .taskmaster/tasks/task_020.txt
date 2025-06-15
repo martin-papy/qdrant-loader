@@ -11,7 +11,7 @@ Design and implement a bi-directional synchronization service that monitors and 
 1. Create and update documents in QDrant and verify corresponding nodes and relationships are created or updated in Neo4j, and vice versa. 2. Delete entities in either database and confirm proper cascading deletions or updates in the counterpart system. 3. Simulate conflicting updates and verify that the conflict resolution policy is correctly applied. 4. Intentionally introduce inconsistencies (e.g., missing vectors, orphaned nodes) and run validation/repair tools to confirm detection and correction. 5. Perform load testing with batch operations to ensure the synchronization mechanism scales and maintains performance. 6. Review logs to ensure all sync actions and conflicts are properly recorded.
 
 # Subtasks:
-## 1. Design and Implement Cross-Database ID Mapping System [pending]
+## 1. Design and Implement Cross-Database ID Mapping System [in-progress]
 ### Dependencies: None
 ### Description: Create a mapping service that maintains relationships between QDrant point IDs and Neo4j node IDs, ensuring referential integrity across both databases.
 ### Details:

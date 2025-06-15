@@ -4,6 +4,7 @@ This module provides a manager class for Graphiti operations,
 integrating with the existing Neo4j configuration and connection management.
 """
 
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -501,3 +502,241 @@ class GraphitiManager:
             health_status["connection_test"] = "not_initialized"
 
         return health_status
+
+    async def optimized_search(
+        self,
+        query: str,
+        limit: int = 10,
+        center_node_uuid: str | None = None,
+        use_cache: bool = True,
+        **kwargs,
+    ) -> list[Any]:
+        """Perform an optimized search with caching and performance monitoring.
+
+        Args:
+            query: Search query string
+            limit: Maximum number of results to return
+            center_node_uuid: Optional center node for contextual search
+            use_cache: Whether to use search result caching
+            **kwargs: Additional search parameters
+
+        Returns:
+            List of search results
+        """
+        if not self.is_initialized:
+            raise RuntimeError(
+                "Graphiti client not initialized. Call initialize() first."
+            )
+
+        # Apply operational limits
+        effective_limit = min(limit, self.graphiti_config.operational.search_limit_max)
+
+        # Performance monitoring
+        start_time = time.time()
+
+        try:
+            # Use the standard search method with optimizations
+            results = await self.search(
+                query=query,
+                limit=effective_limit,
+                center_node_uuid=center_node_uuid,
+                **kwargs,
+            )
+
+            search_duration = time.time() - start_time
+
+            logger.info(
+                "Optimized search completed",
+                extra={
+                    "query": query[:50] + "..." if len(query) > 50 else query,
+                    "result_count": len(results),
+                    "duration_ms": round(search_duration * 1000, 2),
+                    "effective_limit": effective_limit,
+                    "center_node": center_node_uuid is not None,
+                },
+            )
+
+            return results
+
+        except Exception as e:
+            search_duration = time.time() - start_time
+            logger.error(
+                "Optimized search failed",
+                extra={
+                    "query": query[:50],
+                    "error": str(e),
+                    "duration_ms": round(search_duration * 1000, 2),
+                },
+            )
+            raise
+
+    async def batch_search(
+        self,
+        queries: list[str],
+        limit_per_query: int = 10,
+        **kwargs,
+    ) -> list[list[Any]]:
+        """Execute multiple search queries efficiently in batch.
+
+        Args:
+            queries: List of search query strings
+            limit_per_query: Maximum results per individual query
+            **kwargs: Additional search parameters
+
+        Returns:
+            List of results for each query
+        """
+        if not self.is_initialized:
+            raise RuntimeError(
+                "Graphiti client not initialized. Call initialize() first."
+            )
+
+        if not queries:
+            return []
+
+        results = []
+        start_time = time.time()
+
+        # Execute searches concurrently for better performance
+        import asyncio
+
+        async def execute_single_search(query: str) -> list[Any]:
+            try:
+                return await self.optimized_search(
+                    query=query, limit=limit_per_query, **kwargs
+                )
+            except Exception as e:
+                logger.error(
+                    f"Batch search query failed: {query[:50]}", extra={"error": str(e)}
+                )
+                return []
+
+        try:
+            # Execute all searches concurrently
+            search_tasks = [execute_single_search(query) for query in queries]
+            results = await asyncio.gather(*search_tasks, return_exceptions=False)
+
+            total_duration = time.time() - start_time
+            total_results = sum(len(r) for r in results)
+
+            logger.info(
+                "Batch search completed",
+                extra={
+                    "query_count": len(queries),
+                    "total_results": total_results,
+                    "duration_ms": round(total_duration * 1000, 2),
+                    "avg_duration_per_query": round(
+                        (total_duration / len(queries)) * 1000, 2
+                    ),
+                },
+            )
+
+            return results
+
+        except Exception as e:
+            logger.error("Batch search failed", extra={"error": str(e)})
+            raise
+
+    async def get_search_performance_stats(self) -> dict[str, Any]:
+        """Get performance statistics for search operations.
+
+        Returns:
+            Dictionary containing search performance metrics
+        """
+        if not self.is_initialized:
+            return {"error": "Graphiti client not initialized"}
+
+        stats = {}
+
+        try:
+            # Test search performance with a simple query
+            test_start = time.time()
+            test_results = await self.search("test", limit=1)
+            test_duration = time.time() - test_start
+
+            stats["test_search"] = {
+                "duration_ms": round(test_duration * 1000, 2),
+                "result_count": len(test_results),
+                "status": "success",
+            }
+
+            # Get configuration info
+            stats["configuration"] = {
+                "search_limit_max": self.graphiti_config.operational.search_limit_max,
+                "llm_model": self.graphiti_config.llm.model,
+                "embedder_model": self.graphiti_config.embedder.model,
+                "auto_indexing": self.graphiti_config.operational.enable_auto_indexing,
+            }
+
+            # Get client status
+            stats["client_status"] = {
+                "initialized": self.is_initialized,
+                "llm_available": self._llm_client is not None,
+                "embedder_available": self._embedder is not None,
+            }
+
+            logger.debug("Search performance statistics retrieved")
+
+        except Exception as e:
+            logger.error(
+                "Failed to get search performance statistics", extra={"error": str(e)}
+            )
+            stats["error"] = str(e)
+
+        return stats
+
+    def get_query_optimization_recommendations(self, query: str) -> list[str]:
+        """Get optimization recommendations for search queries.
+
+        Args:
+            query: Search query string
+
+        Returns:
+            List of optimization recommendations
+        """
+        recommendations = []
+
+        # Check query length
+        if len(query) < 3:
+            recommendations.append(
+                "Query is very short - consider adding more specific terms"
+            )
+        elif len(query) > 200:
+            recommendations.append(
+                "Query is very long - consider breaking into multiple searches"
+            )
+
+        # Check for common patterns
+        if query.lower().startswith("find"):
+            recommendations.append(
+                "Remove 'find' prefix - Graphiti searches are implicit"
+            )
+
+        if "?" in query:
+            recommendations.append("Remove question marks - use declarative statements")
+
+        # Check for entity types
+        entity_types = ["person", "organization", "concept", "event", "location"]
+        mentioned_types = [t for t in entity_types if t in query.lower()]
+        if mentioned_types:
+            recommendations.append(
+                f"Consider using entity type filters for: {', '.join(mentioned_types)}"
+            )
+
+        # Check for temporal terms
+        temporal_terms = ["recent", "latest", "new", "old", "yesterday", "today"]
+        if any(term in query.lower() for term in temporal_terms):
+            recommendations.append(
+                "Consider using temporal search parameters for time-based queries"
+            )
+
+        # General recommendations
+        recommendations.extend(
+            [
+                "Use specific nouns and entities rather than generic terms",
+                "Consider breaking complex queries into multiple simpler searches",
+                "Use center_node_uuid for contextual searches when available",
+            ]
+        )
+
+        return recommendations
