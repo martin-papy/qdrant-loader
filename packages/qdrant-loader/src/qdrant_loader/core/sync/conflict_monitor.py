@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from ...utils.logging import LoggingConfig
-from ..conflict_resolution_system import (
+from ..conflict_resolution import (
     ConflictRecord,
     ConflictResolutionConfig,
     ConflictResolutionStrategy,
