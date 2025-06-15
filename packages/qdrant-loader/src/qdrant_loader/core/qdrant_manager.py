@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast
+from typing import cast, Any
 from urllib.parse import urlparse
 
 from qdrant_client import QdrantClient
@@ -305,3 +305,101 @@ class QdrantManager:
                 },
             )
             raise
+
+    async def delete_points(self, point_ids: list[str]) -> None:
+        """Delete points by their IDs.
+
+        Args:
+            point_ids: List of point IDs to delete
+        """
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.delete,
+                collection_name=self.collection_name,
+                points_selector=models.PointIdsList(points=point_ids),  # type: ignore
+            )
+            self.logger.debug(
+                "Successfully deleted points",
+                extra={"point_ids": point_ids, "collection": self.collection_name},
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to delete points",
+                extra={
+                    "error": str(e),
+                    "point_ids": point_ids,
+                    "collection": self.collection_name,
+                },
+            )
+            raise
+
+    async def set_payload(self, point_id: str, payload: dict) -> None:
+        """Set payload for a specific point.
+
+        Args:
+            point_id: ID of the point to update
+            payload: New payload data
+        """
+        try:
+            client = self._ensure_client_connected()
+            await asyncio.to_thread(
+                client.set_payload,
+                collection_name=self.collection_name,
+                payload=payload,
+                points=[point_id],
+            )
+            self.logger.debug(
+                "Successfully set payload",
+                extra={"point_id": point_id, "collection": self.collection_name},
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to set payload",
+                extra={
+                    "error": str(e),
+                    "point_id": point_id,
+                    "collection": self.collection_name,
+                },
+            )
+            raise
+
+    async def health_check(self) -> dict[str, Any]:
+        """Perform health check of the QDrant connection.
+
+        Returns:
+            Dictionary containing health status and metrics
+        """
+        try:
+            client = self._ensure_client_connected()
+
+            # Test basic connectivity
+            collections = await asyncio.to_thread(client.get_collections)
+
+            # Check if our collection exists
+            collection_exists = any(
+                c.name == self.collection_name for c in collections.collections
+            )
+
+            # Get collection info if it exists
+            collection_info = None
+            if collection_exists:
+                collection_info = await asyncio.to_thread(
+                    client.get_collection, collection_name=self.collection_name
+                )
+
+            return {
+                "status": "healthy",
+                "connected": True,
+                "collection_exists": collection_exists,
+                "collection_name": self.collection_name,
+                "total_collections": len(collections.collections),
+                "collection_info": collection_info.dict() if collection_info else None,
+            }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "connected": False,
+                "error": str(e),
+                "collection_name": self.collection_name,
+            }

@@ -1966,3 +1966,42 @@ class Neo4jManager:
             List of result records as dictionaries
         """
         return self.execute_query(query, parameters, database, access_mode="WRITE")
+
+    def health_check(self) -> dict[str, Any]:
+        """Perform health check of the Neo4j connection.
+
+        Returns:
+            Dictionary containing health status and metrics
+        """
+        try:
+            if not self.is_connected:
+                return {
+                    "status": "unhealthy",
+                    "connected": False,
+                    "error": "Not connected to Neo4j",
+                }
+
+            # Test basic connectivity
+            test_result = self.test_connection()
+
+            if test_result:
+                # Get database info
+                db_info = self.get_database_info()
+
+                return {
+                    "status": "healthy",
+                    "connected": True,
+                    "database_info": db_info,
+                }
+            else:
+                return {
+                    "status": "unhealthy",
+                    "connected": False,
+                    "error": "Connection test failed",
+                }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "connected": False,
+                "error": str(e),
+            }
