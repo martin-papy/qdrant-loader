@@ -58,11 +58,9 @@ class TestSetupProjectManager:
         """Test setup with workspace parameter."""
         with (
             patch(
-                "qdrant_loader.cli.project_commands.load_config_with_workspace"
-            ) as mock_load_config,
-            patch(
-                "qdrant_loader.cli.project_commands.check_settings"
-            ) as mock_check_settings,
+                "qdrant_loader.config.initialize_multi_file_config_with_workspace"
+            ) as mock_init_config,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
             patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
@@ -71,6 +69,15 @@ class TestSetupProjectManager:
             # Mock workspace config with proper structure
             mock_workspace_config = Mock()
             mock_workspace_config.workspace_path = Path("/test/workspace")
+            mock_workspace_config.config_path = Path("/test/workspace/config.yaml")
+            mock_workspace_config.env_path = None  # No .env file in test workspace
+            mock_workspace_config.logs_path = Path(
+                "/test/workspace/logs/qdrant-loader.log"
+            )
+            mock_workspace_config.metrics_path = Path("/test/workspace/metrics")
+            mock_workspace_config.database_path = Path(
+                "/test/workspace/data/qdrant-loader.db"
+            )
 
             # Mock settings with proper structure
             mock_settings = Mock()
@@ -78,25 +85,17 @@ class TestSetupProjectManager:
             mock_settings.global_config.qdrant = Mock()
             mock_settings.global_config.qdrant.collection_name = "test_collection"
             mock_settings.projects_config = Mock()
-            mock_check_settings.return_value = mock_settings
+            mock_get_settings.return_value = mock_settings
 
             # Mock project manager
             mock_project_manager = Mock()
             mock_pm.return_value = mock_project_manager
 
-            result = _setup_project_manager(mock_workspace_config, None, None)
+            result = await _setup_project_manager(mock_workspace_config, None, None)
 
-            # Verify calls
-            mock_load_config.assert_called_once_with(
-                mock_workspace_config,
-                None,
-                None,
-                domains=None,
-                preset=None,
-                use_case=None,
-                measure_performance=False,
-            )
-            mock_check_settings.assert_called_once()
+            # Verify calls - check that the deeper config initialization was called
+            mock_init_config.assert_called_once()
+            mock_get_settings.assert_called_once()
             mock_pm.assert_called_once_with(
                 projects_config=mock_settings.projects_config,
                 global_collection_name="test_collection",
@@ -113,9 +112,7 @@ class TestSetupProjectManager:
             patch(
                 "qdrant_loader.cli.project_commands.load_config_with_workspace"
             ) as mock_load_config,
-            patch(
-                "qdrant_loader.cli.project_commands.check_settings"
-            ) as mock_check_settings,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
             patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
@@ -127,7 +124,7 @@ class TestSetupProjectManager:
             mock_settings.global_config.qdrant = Mock()
             mock_settings.global_config.qdrant.collection_name = "test_collection"
             mock_settings.projects_config = Mock()
-            mock_check_settings.return_value = mock_settings
+            mock_get_settings.return_value = mock_settings
 
             # Mock project manager
             mock_project_manager = Mock()
@@ -135,7 +132,7 @@ class TestSetupProjectManager:
 
             config_path = Path("/test/config.yaml")
             env_path = Path("/test/.env")
-            result = _setup_project_manager(None, config_path, env_path)
+            result = await _setup_project_manager(None, config_path, env_path)
 
             # Verify calls
             mock_load_config.assert_called_once_with(
@@ -147,7 +144,7 @@ class TestSetupProjectManager:
                 use_case=None,
                 measure_performance=False,
             )
-            mock_check_settings.assert_called_once()
+            mock_get_settings.assert_called_once()
             mock_pm.assert_called_once_with(
                 projects_config=mock_settings.projects_config,
                 global_collection_name="test_collection",
@@ -162,20 +159,18 @@ class TestSetupProjectManager:
         """Test setup when Qdrant configuration is missing."""
         with (
             patch("qdrant_loader.cli.project_commands.load_config_with_workspace"),
-            patch(
-                "qdrant_loader.cli.project_commands.check_settings"
-            ) as mock_check_settings,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
         ):
             # Mock settings without Qdrant config
             mock_settings = Mock()
             mock_settings.global_config = None
-            mock_check_settings.return_value = mock_settings
+            mock_get_settings.return_value = mock_settings
 
             with pytest.raises(
                 ClickException,
                 match="Global configuration or Qdrant configuration is missing",
             ):
-                _ = _setup_project_manager(None, None, None)
+                _ = await _setup_project_manager(None, None, None)
 
 
 class TestInitializeProjectContextsFromConfig:
