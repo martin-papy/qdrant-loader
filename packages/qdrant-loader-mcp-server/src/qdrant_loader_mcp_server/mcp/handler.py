@@ -3,6 +3,19 @@
 from typing import Any
 
 from ..search.engine import SearchEngine
+from ..search.exceptions import (
+    SearchEngineError,
+    QdrantConnectionError,
+    QdrantQueryError,
+    Neo4jConnectionError,
+    Neo4jQueryError,
+    GraphitiError,
+    OpenAIEmbeddingError,
+    SearchConfigurationError,
+    SearchTimeoutError,
+    FusionStrategyError,
+    HybridSearchError,
+)
 from ..graphiti import (
     is_graphiti_available,
     get_graphiti_capabilities,
@@ -26,6 +39,36 @@ class MCPHandler:
         self.search_engine = search_engine
         self.query_processor = query_processor
         logger.info("MCP Handler initialized")
+
+    def _validate_fusion_strategy(
+        self, fusion_strategy: str, request_id: str | int | None
+    ) -> dict[str, Any] | None:
+        """Validate fusion strategy parameter.
+
+        Args:
+            fusion_strategy: The fusion strategy to validate
+            request_id: The request ID for error responses
+
+        Returns:
+            Error response dict if invalid, None if valid
+        """
+        if fusion_strategy is not None:
+            from ..search.enhanced_hybrid_search import FusionStrategy
+
+            try:
+                FusionStrategy(fusion_strategy)
+            except ValueError:
+                logger.error("Invalid fusion strategy", fusion_strategy=fusion_strategy)
+                valid_strategies = [strategy.value for strategy in FusionStrategy]
+                return self.protocol.create_response(
+                    request_id,
+                    error={
+                        "code": -32602,
+                        "message": "Invalid params",
+                        "data": f"Invalid fusion strategy: {fusion_strategy}. Valid strategies: {', '.join(valid_strategies)}",
+                    },
+                )
+        return None
 
     async def handle_request(self, request: dict[str, Any]) -> dict[str, Any]:
         """Handle MCP request.
@@ -178,11 +221,35 @@ class MCPHandler:
                         "data": f"Method '{method}' not found",
                     },
                 )
-        except Exception as e:
-            logger.error("Error handling request", exc_info=True)
+        except SearchEngineError as e:
+            logger.error(
+                "Search engine error handling request",
+                error_code=e.error_code,
+                message=e.message,
+                details=e.details,
+                recoverable=e.recoverable,
+            )
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal error", "data": str(e)},
+                error={
+                    "code": -32603,
+                    "message": f"Search engine error: {e.message}",
+                    "data": e.to_dict(),
+                },
+            )
+        except Exception as e:
+            logger.error("Unexpected error handling request", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Internal error",
+                    "data": {
+                        "error_type": type(e).__name__,
+                        "message": str(e),
+                        "recoverable": True,
+                    },
+                },
             )
 
     async def _handle_initialize(
@@ -225,7 +292,7 @@ class MCPHandler:
         # Define the search tool according to MCP specification
         search_tool = {
             "name": "search",
-            "description": "Perform semantic search across multiple data sources",
+            "description": "Perform semantic search across multiple data sources with optional hybrid search capabilities",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -259,6 +326,42 @@ class MCPHandler:
                         "description": "Maximum number of results to return",
                         "default": 5,
                     },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["vector_only", "graph_only", "hybrid", "auto"],
+                        "description": "Optional search mode for hybrid capabilities (defaults to legacy behavior)",
+                    },
+                    "vector_weight": {
+                        "type": "number",
+                        "description": "Optional weight for vector search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "keyword_weight": {
+                        "type": "number",
+                        "description": "Optional weight for keyword search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "graph_weight": {
+                        "type": "number",
+                        "description": "Optional weight for graph search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "fusion_strategy": {
+                        "type": "string",
+                        "enum": [
+                            "weighted_sum",
+                            "reciprocal_rank_fusion",
+                            "maximal_marginal_relevance",
+                            "graph_enhanced_weighted",
+                            "confidence_adaptive",
+                            "multi_stage",
+                            "context_aware",
+                        ],
+                        "description": "Optional fusion strategy for combining search results",
+                    },
                 },
                 "required": ["query"],
             },
@@ -267,7 +370,7 @@ class MCPHandler:
         # Define the hierarchical search tool for Confluence
         hierarchy_search_tool = {
             "name": "hierarchy_search",
-            "description": "Search Confluence documents with hierarchy-aware filtering and organization",
+            "description": "Search Confluence documents with hierarchy-aware filtering, organization, and optional hybrid search capabilities",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -306,6 +409,42 @@ class MCPHandler:
                         "description": "Maximum number of results to return",
                         "default": 10,
                     },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["vector_only", "graph_only", "hybrid", "auto"],
+                        "description": "Optional search mode for hybrid capabilities",
+                    },
+                    "vector_weight": {
+                        "type": "number",
+                        "description": "Optional weight for vector search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "keyword_weight": {
+                        "type": "number",
+                        "description": "Optional weight for keyword search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "graph_weight": {
+                        "type": "number",
+                        "description": "Optional weight for graph search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "fusion_strategy": {
+                        "type": "string",
+                        "enum": [
+                            "weighted_sum",
+                            "reciprocal_rank_fusion",
+                            "maximal_marginal_relevance",
+                            "graph_enhanced_weighted",
+                            "confidence_adaptive",
+                            "multi_stage",
+                            "context_aware",
+                        ],
+                        "description": "Optional fusion strategy for combining search results",
+                    },
                 },
                 "required": ["query"],
             },
@@ -314,7 +453,7 @@ class MCPHandler:
         # Define the attachment search tool
         attachment_search_tool = {
             "name": "attachment_search",
-            "description": "Search for file attachments and their parent documents across Confluence, Jira, and other sources",
+            "description": "Search for file attachments and their parent documents across Confluence, Jira, and other sources with optional hybrid search capabilities",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -360,6 +499,42 @@ class MCPHandler:
                         "type": "integer",
                         "description": "Maximum number of results to return",
                         "default": 10,
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": ["vector_only", "graph_only", "hybrid", "auto"],
+                        "description": "Optional search mode for hybrid capabilities",
+                    },
+                    "vector_weight": {
+                        "type": "number",
+                        "description": "Optional weight for vector search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "keyword_weight": {
+                        "type": "number",
+                        "description": "Optional weight for keyword search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "graph_weight": {
+                        "type": "number",
+                        "description": "Optional weight for graph search results (0.0-1.0)",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                    },
+                    "fusion_strategy": {
+                        "type": "string",
+                        "enum": [
+                            "weighted_sum",
+                            "reciprocal_rank_fusion",
+                            "maximal_marginal_relevance",
+                            "graph_enhanced_weighted",
+                            "confidence_adaptive",
+                            "multi_stage",
+                            "context_aware",
+                        ],
+                        "description": "Optional fusion strategy for combining search results",
                     },
                 },
                 "required": ["query"],
@@ -732,15 +907,83 @@ class MCPHandler:
         project_ids = params.get("project_ids", [])
         limit = params.get("limit", 10)
 
+        # Extract optional hybrid search parameters
+        mode = params.get("mode")
+        vector_weight = params.get("vector_weight")
+        keyword_weight = params.get("keyword_weight")
+        graph_weight = params.get("graph_weight")
+        fusion_strategy = params.get("fusion_strategy")
+
         logger.info(
             "Processing search request",
             query=query,
             source_types=source_types,
             project_ids=project_ids,
             limit=limit,
+            mode=mode,
+            hybrid_params_provided=any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
+            ),
         )
 
         try:
+            # Validate hybrid parameters if provided
+            if mode is not None:
+                from ..search.enhanced_hybrid_search import SearchMode
+
+                try:
+                    SearchMode(mode)
+                except ValueError:
+                    logger.error("Invalid search mode", mode=mode)
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid search mode: {mode}. Must be one of: vector_only, graph_only, hybrid, auto",
+                        },
+                    )
+
+            # Validate weight parameters
+            for weight_name, weight_value in [
+                ("vector_weight", vector_weight),
+                ("keyword_weight", keyword_weight),
+                ("graph_weight", graph_weight),
+            ]:
+                if weight_value is not None and not (0.0 <= weight_value <= 1.0):
+                    logger.error(
+                        "Invalid weight parameter",
+                        weight_name=weight_name,
+                        weight_value=weight_value,
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid {weight_name}: {weight_value}. Must be between 0.0 and 1.0",
+                        },
+                    )
+
+            # Validate fusion strategy if provided
+            if fusion_strategy is not None:
+                from ..search.enhanced_hybrid_search import FusionStrategy
+
+                try:
+                    FusionStrategy(fusion_strategy)
+                except ValueError:
+                    logger.error(
+                        "Invalid fusion strategy", fusion_strategy=fusion_strategy
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid fusion strategy: {fusion_strategy}",
+                        },
+                    )
+
             # Process the query
             logger.debug("Processing query with OpenAI")
             processed_query = await self.query_processor.process_query(query)
@@ -748,14 +991,34 @@ class MCPHandler:
                 "Query processed successfully", processed_query=processed_query
             )
 
-            # Perform the search
-            logger.debug("Executing search in Qdrant")
-            results = await self.search_engine.search(
-                query=processed_query["query"],
-                source_types=source_types,
-                project_ids=project_ids,
-                limit=limit,
+            # Determine if we should use enhanced search or legacy search
+            use_enhanced_search = any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
             )
+
+            if use_enhanced_search:
+                logger.debug("Using enhanced hybrid search due to hybrid parameters")
+                # Use enhanced search capabilities
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=source_types,
+                    project_ids=project_ids,
+                    limit=limit,
+                    mode=mode,
+                    vector_weight=vector_weight,
+                    keyword_weight=keyword_weight,
+                    graph_weight=graph_weight,
+                    fusion_strategy=fusion_strategy,
+                )
+            else:
+                logger.debug("Using legacy search behavior")
+                # Perform the legacy search
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=source_types,
+                    project_ids=project_ids,
+                    limit=limit,
+                )
             logger.info(
                 "Search completed successfully",
                 result_count=len(results),
@@ -781,11 +1044,144 @@ class MCPHandler:
             logger.debug("Search response formatted successfully")
             return response
 
-        except Exception as e:
-            logger.error("Error during search", exc_info=True)
+        except QdrantConnectionError as e:
+            logger.error("Qdrant connection failed during search", error=e.to_dict())
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal error", "data": str(e)},
+                error={
+                    "code": -32603,
+                    "message": "Vector database connection failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Please check if Qdrant server is running and accessible",
+                    },
+                },
+            )
+        except QdrantQueryError as e:
+            logger.error("Qdrant query failed during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Vector search query failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Please check your query parameters and try again",
+                    },
+                },
+            )
+        except Neo4jConnectionError as e:
+            logger.error("Neo4j connection failed during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Graph database connection failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Graph search features may be limited. Vector search will continue to work.",
+                    },
+                },
+            )
+        except Neo4jQueryError as e:
+            logger.error("Neo4j query failed during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Graph search query failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Falling back to vector-only search",
+                    },
+                },
+            )
+        except GraphitiError as e:
+            logger.error("Graphiti operation failed during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Knowledge graph search failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Falling back to basic hybrid search",
+                    },
+                },
+            )
+        except OpenAIEmbeddingError as e:
+            logger.error("OpenAI embedding failed during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Text embedding generation failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Please check your OpenAI API key and try again",
+                    },
+                },
+            )
+        except SearchConfigurationError as e:
+            logger.error("Search configuration error", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid search configuration",
+                    "data": e.to_dict(),
+                },
+            )
+        except FusionStrategyError as e:
+            logger.error("Fusion strategy error during search", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Result fusion failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Falling back to default fusion strategy",
+                    },
+                },
+            )
+        except HybridSearchError as e:
+            logger.error("Hybrid search error", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Hybrid search operation failed",
+                    "data": {
+                        **e.to_dict(),
+                        "suggestion": "Some search components may have failed. Partial results may be available.",
+                    },
+                },
+            )
+        except SearchEngineError as e:
+            logger.error("Search engine error", error=e.to_dict())
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": f"Search error: {e.message}",
+                    "data": e.to_dict(),
+                },
+            )
+        except Exception as e:
+            logger.error("Unexpected error during search", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32603,
+                    "message": "Unexpected search error",
+                    "data": {
+                        "error_type": type(e).__name__,
+                        "message": str(e),
+                        "recoverable": True,
+                        "suggestion": "Please try again or contact support if the issue persists",
+                    },
+                },
             )
 
     def _format_search_result(self, result: SearchResult) -> str:
@@ -1326,15 +1722,83 @@ class MCPHandler:
         organize_by_hierarchy = params.get("organize_by_hierarchy", False)
         limit = params.get("limit", 10)
 
+        # Extract optional hybrid search parameters
+        mode = params.get("mode")
+        vector_weight = params.get("vector_weight")
+        keyword_weight = params.get("keyword_weight")
+        graph_weight = params.get("graph_weight")
+        fusion_strategy = params.get("fusion_strategy")
+
         logger.info(
             "Processing hierarchy search request",
             query=query,
             hierarchy_filter=hierarchy_filter,
             organize_by_hierarchy=organize_by_hierarchy,
             limit=limit,
+            mode=mode,
+            hybrid_params_provided=any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
+            ),
         )
 
         try:
+            # Validate hybrid parameters if provided (reuse validation from basic search)
+            if mode is not None:
+                from ..search.enhanced_hybrid_search import SearchMode
+
+                try:
+                    SearchMode(mode)
+                except ValueError:
+                    logger.error("Invalid search mode", mode=mode)
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid search mode: {mode}. Must be one of: vector_only, graph_only, hybrid, auto",
+                        },
+                    )
+
+            # Validate weight parameters
+            for weight_name, weight_value in [
+                ("vector_weight", vector_weight),
+                ("keyword_weight", keyword_weight),
+                ("graph_weight", graph_weight),
+            ]:
+                if weight_value is not None and not (0.0 <= weight_value <= 1.0):
+                    logger.error(
+                        "Invalid weight parameter",
+                        weight_name=weight_name,
+                        weight_value=weight_value,
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid {weight_name}: {weight_value}. Must be between 0.0 and 1.0",
+                        },
+                    )
+
+            # Validate fusion strategy if provided
+            if fusion_strategy is not None:
+                from ..search.enhanced_hybrid_search import FusionStrategy
+
+                try:
+                    FusionStrategy(fusion_strategy)
+                except ValueError:
+                    logger.error(
+                        "Invalid fusion strategy", fusion_strategy=fusion_strategy
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid fusion strategy: {fusion_strategy}",
+                        },
+                    )
+
             # Process the query
             logger.debug("Processing query with OpenAI")
             processed_query = await self.query_processor.process_query(query)
@@ -1342,13 +1806,32 @@ class MCPHandler:
                 "Query processed successfully", processed_query=processed_query
             )
 
+            # Determine if we should use enhanced search or legacy search
+            use_enhanced_search = any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
+            )
+
             # Perform the search (Confluence only for hierarchy)
             logger.debug("Executing hierarchy search in Qdrant")
-            results = await self.search_engine.search(
-                query=processed_query["query"],
-                source_types=["confluence"],  # Only search Confluence for hierarchy
-                limit=limit * 2,  # Get more results to filter
-            )
+            if use_enhanced_search:
+                logger.debug("Using enhanced hybrid search for hierarchy search")
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=["confluence"],  # Only search Confluence for hierarchy
+                    limit=limit * 2,  # Get more results to filter
+                    mode=mode,
+                    vector_weight=vector_weight,
+                    keyword_weight=keyword_weight,
+                    graph_weight=graph_weight,
+                    fusion_strategy=fusion_strategy,
+                )
+            else:
+                logger.debug("Using legacy search for hierarchy search")
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=["confluence"],  # Only search Confluence for hierarchy
+                    limit=limit * 2,  # Get more results to filter
+                )
 
             # Apply hierarchy filters
             filtered_results = self._apply_hierarchy_filters(results, hierarchy_filter)
@@ -1527,15 +2010,83 @@ class MCPHandler:
         include_parent_context = params.get("include_parent_context", True)
         limit = params.get("limit", 10)
 
+        # Extract optional hybrid search parameters
+        mode = params.get("mode")
+        vector_weight = params.get("vector_weight")
+        keyword_weight = params.get("keyword_weight")
+        graph_weight = params.get("graph_weight")
+        fusion_strategy = params.get("fusion_strategy")
+
         logger.info(
             "Processing attachment search request",
             query=query,
             attachment_filter=attachment_filter,
             include_parent_context=include_parent_context,
             limit=limit,
+            mode=mode,
+            hybrid_params_provided=any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
+            ),
         )
 
         try:
+            # Validate hybrid parameters if provided (reuse validation from basic search)
+            if mode is not None:
+                from ..search.enhanced_hybrid_search import SearchMode
+
+                try:
+                    SearchMode(mode)
+                except ValueError:
+                    logger.error("Invalid search mode", mode=mode)
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid search mode: {mode}. Must be one of: vector_only, graph_only, hybrid, auto",
+                        },
+                    )
+
+            # Validate weight parameters
+            for weight_name, weight_value in [
+                ("vector_weight", vector_weight),
+                ("keyword_weight", keyword_weight),
+                ("graph_weight", graph_weight),
+            ]:
+                if weight_value is not None and not (0.0 <= weight_value <= 1.0):
+                    logger.error(
+                        "Invalid weight parameter",
+                        weight_name=weight_name,
+                        weight_value=weight_value,
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid {weight_name}: {weight_value}. Must be between 0.0 and 1.0",
+                        },
+                    )
+
+            # Validate fusion strategy if provided
+            if fusion_strategy is not None:
+                from ..search.enhanced_hybrid_search import FusionStrategy
+
+                try:
+                    FusionStrategy(fusion_strategy)
+                except ValueError:
+                    logger.error(
+                        "Invalid fusion strategy", fusion_strategy=fusion_strategy
+                    )
+                    return self.protocol.create_response(
+                        request_id,
+                        error={
+                            "code": -32602,
+                            "message": "Invalid params",
+                            "data": f"Invalid fusion strategy: {fusion_strategy}",
+                        },
+                    )
+
             # Process the query
             logger.debug("Processing query with OpenAI")
             processed_query = await self.query_processor.process_query(query)
@@ -1543,13 +2094,32 @@ class MCPHandler:
                 "Query processed successfully", processed_query=processed_query
             )
 
+            # Determine if we should use enhanced search or legacy search
+            use_enhanced_search = any(
+                [mode, vector_weight, keyword_weight, graph_weight, fusion_strategy]
+            )
+
             # Perform the search
             logger.debug("Executing attachment search in Qdrant")
-            results = await self.search_engine.search(
-                query=processed_query["query"],
-                source_types=None,  # Search all sources for attachments
-                limit=limit * 2,  # Get more results to filter
-            )
+            if use_enhanced_search:
+                logger.debug("Using enhanced hybrid search for attachment search")
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=None,  # Search all sources for attachments
+                    limit=limit * 2,  # Get more results to filter
+                    mode=mode,
+                    vector_weight=vector_weight,
+                    keyword_weight=keyword_weight,
+                    graph_weight=graph_weight,
+                    fusion_strategy=fusion_strategy,
+                )
+            else:
+                logger.debug("Using legacy search for attachment search")
+                results = await self.search_engine.search(
+                    query=processed_query["query"],
+                    source_types=None,  # Search all sources for attachments
+                    limit=limit * 2,  # Get more results to filter
+                )
 
             # Apply attachment filters
             filtered_results = self._apply_attachment_filters(

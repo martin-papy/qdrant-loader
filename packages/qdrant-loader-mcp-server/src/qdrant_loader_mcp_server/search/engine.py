@@ -5,9 +5,17 @@ from typing import Any
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
+from .exceptions import (
+    QdrantConnectionError,
+    QdrantQueryError,
+    OpenAIEmbeddingError,
+    SearchConfigurationError,
+    HybridSearchError,
+)
 from .hybrid_search import HybridSearchEngine
 from .enhanced_hybrid_search import (
     EnhancedHybridSearchEngine,
@@ -108,17 +116,41 @@ class SearchEngine:
                 enhanced_search=self.use_enhanced_search,
                 graphiti_available=graphiti_available,
             )
-        except Exception as e:
+        except UnexpectedResponse as e:
+            self.logger.error(
+                "Qdrant server returned unexpected response",
+                error=str(e),
+                url=config.url,
+                status_code=getattr(e, "status_code", None),
+            )
+            raise QdrantConnectionError(
+                message=f"Qdrant server returned unexpected response: {e}",
+                qdrant_url=config.url,
+                original_error=e,
+            )
+        except ConnectionError as e:
             self.logger.error(
                 "Failed to connect to Qdrant server",
                 error=str(e),
                 url=config.url,
-                hint="Make sure Qdrant is running and accessible at the configured URL",
             )
-            raise RuntimeError(
-                "Failed to connect to Qdrant server at {config.url}. "
-                "Please ensure Qdrant is running and accessible."
-            ) from None  # Suppress the original exception
+            raise QdrantConnectionError(
+                message=f"Cannot connect to Qdrant server at {config.url}",
+                qdrant_url=config.url,
+                original_error=e,
+            )
+        except Exception as e:
+            self.logger.error(
+                "Unexpected error during Qdrant initialization",
+                error=str(e),
+                url=config.url,
+                error_type=type(e).__name__,
+            )
+            raise QdrantConnectionError(
+                message=f"Failed to initialize Qdrant client: {e}",
+                qdrant_url=config.url,
+                original_error=e,
+            )
 
     async def cleanup(self) -> None:
         """Cleanup resources."""
@@ -137,6 +169,7 @@ class SearchEngine:
         vector_weight: float | None = None,
         keyword_weight: float | None = None,
         graph_weight: float | None = None,
+        fusion_strategy: str | None = None,
     ) -> list[SearchResult]:
         """Search for documents using hybrid search.
 
@@ -149,6 +182,7 @@ class SearchEngine:
             vector_weight: Weight for vector search results (0.0-1.0) - enhanced search only
             keyword_weight: Weight for keyword search results (0.0-1.0) - enhanced search only
             graph_weight: Weight for graph search results (0.0-1.0) - enhanced search only
+            fusion_strategy: Fusion strategy for combining results - enhanced search only
         """
         # Use enhanced search if available and enhanced parameters are provided
         use_enhanced = (
@@ -159,6 +193,7 @@ class SearchEngine:
                 or vector_weight is not None
                 or keyword_weight is not None
                 or graph_weight is not None
+                or fusion_strategy is not None
             )
         )
 
@@ -173,9 +208,33 @@ class SearchEngine:
                 vector_weight=vector_weight,
                 keyword_weight=keyword_weight,
                 graph_weight=graph_weight,
+                fusion_strategy=fusion_strategy,
             )
 
             try:
+                # Handle fusion strategy if provided
+                original_strategy = None
+                if fusion_strategy is not None:
+                    from .enhanced_hybrid_search import FusionStrategy
+
+                    strategy_map = {
+                        "weighted_sum": FusionStrategy.WEIGHTED_SUM,
+                        "reciprocal_rank_fusion": FusionStrategy.RECIPROCAL_RANK_FUSION,
+                        "maximal_marginal_relevance": FusionStrategy.MMR,
+                        "graph_enhanced_weighted": FusionStrategy.GRAPH_ENHANCED_WEIGHTED,
+                        "confidence_adaptive": FusionStrategy.CONFIDENCE_ADAPTIVE,
+                        "multi_stage": FusionStrategy.MULTI_STAGE,
+                        "context_aware": FusionStrategy.CONTEXT_AWARE,
+                    }
+
+                    if fusion_strategy in strategy_map:
+                        original_strategy = (
+                            self.enhanced_hybrid_search.config.fusion_strategy
+                        )
+                        self.enhanced_hybrid_search.config.fusion_strategy = (
+                            strategy_map[fusion_strategy]
+                        )
+
                 results = await self.enhanced_hybrid_search.search(
                     query=query,
                     mode=mode,
@@ -187,6 +246,12 @@ class SearchEngine:
                     graph_weight=graph_weight,
                 )
 
+                # Restore original fusion strategy if it was changed
+                if original_strategy is not None:
+                    self.enhanced_hybrid_search.config.fusion_strategy = (
+                        original_strategy
+                    )
+
                 self.logger.info(
                     "Enhanced search completed",
                     query=query,
@@ -196,12 +261,23 @@ class SearchEngine:
                 )
 
                 return results
+            except QdrantConnectionError:
+                # Re-raise Qdrant connection errors
+                raise
+            except QdrantQueryError:
+                # Re-raise Qdrant query errors
+                raise
+            except OpenAIEmbeddingError:
+                # Re-raise OpenAI embedding errors
+                raise
             except Exception as e:
                 self.logger.error(
                     "Enhanced search failed, falling back to basic search",
                     error=str(e),
+                    error_type=type(e).__name__,
                     query=query,
                 )
+                # Wrap in HybridSearchError but allow fallback
                 # Fall through to basic search
 
         # Use basic hybrid search
@@ -232,9 +308,30 @@ class SearchEngine:
             )
 
             return results
+        except UnexpectedResponse as e:
+            self.logger.error("Qdrant server error during basic search", error=str(e))
+            raise QdrantQueryError(
+                message=f"Qdrant query failed: {e}",
+                query=query,
+                original_error=e,
+            )
+        except ConnectionError as e:
+            self.logger.error("Connection error during basic search", error=str(e))
+            raise QdrantConnectionError(
+                message=f"Connection lost during search: {e}",
+                original_error=e,
+            )
         except Exception as e:
-            self.logger.error("Search failed", error=str(e), query=query)
-            raise
+            self.logger.error(
+                "Unexpected error during basic search",
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise HybridSearchError(
+                message=f"Basic search failed: {e}",
+                failed_components=["basic_hybrid_search"],
+                original_error=e,
+            )
 
     def get_search_capabilities(self) -> dict[str, bool]:
         """Get current search engine capabilities.
