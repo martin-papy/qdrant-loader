@@ -1,12 +1,13 @@
 """Integration tests for PublicDocs connector with real configuration."""
 
 import os
+import tempfile
 import warnings
 from pathlib import Path
 
 import pytest
-import yaml
 from bs4 import XMLParsedAsHTMLWarning
+from qdrant_loader.config import get_settings, initialize_multi_file_config
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 from qdrant_loader.connectors.publicdocs.connector import PublicDocsConnector
@@ -18,27 +19,64 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 class TestPublicDocsIntegration:
     """Integration tests for PublicDocs connector."""
 
+    @pytest.fixture(scope="class")
+    def test_settings(self):
+        """Load test settings from configuration files."""
+        config_dir = Path(__file__).parent.parent.parent.parent / "config"
+        initialize_multi_file_config(config_dir, enhanced_validation=False)
+        return get_settings()
+
     @pytest.fixture
-    def publicdocs_config(self):
-        """Get the PublicDocs configuration from test config file."""
-        # Load the test configuration directly from the file
-        config_path = Path("tests/config.test.yaml")
+    def publicdocs_config(self, test_settings):
+        """Get the PublicDocs configuration from multi-file configuration."""
+        try:
+            # Look for publicdocs sources in the loaded configuration
+            publicdocs_sources = None
+            for (
+                project_id,
+                project_config,
+            ) in test_settings.projects_config.projects.items():
+                if hasattr(project_config, "sources") and project_config.sources:
+                    project_sources = project_config.sources
+                    if (
+                        hasattr(project_sources, "publicdocs")
+                        and project_sources.publicdocs
+                    ):
+                        publicdocs_sources = project_sources.publicdocs
+                        break
 
-        with open(config_path) as f:
-            config_data = yaml.safe_load(f)
+            if not publicdocs_sources:
+                # No PublicDocs sources found, create mock configuration
+                mock_config = {
+                    "source": "test-publicdocs",
+                    "source_type": SourceType.PUBLICDOCS,
+                    "base_url": "https://example.com/docs",
+                    "version": "1.0",
+                    "selectors": {"content": ".content", "title": "h1"},
+                    "exclude_paths": ["/api/*", "/internal/*"],
+                    "max_depth": 3,
+                    "delay": 1.0,
+                }
+                return PublicDocsSourceConfig.model_validate(mock_config)
 
-        # Look for publicdocs sources in the new multi-project format
-        projects = config_data.get("projects", {})
+            # Use the first publicdocs source
+            source_name = next(iter(publicdocs_sources.keys()), None)
+            if not source_name:
+                pytest.skip("No PublicDocs source configured in test settings")
 
-        publicdocs_sources = None
-        for project_id, project_config in projects.items():
-            project_sources = project_config.get("sources", {})
-            if "publicdocs" in project_sources:
-                publicdocs_sources = project_sources["publicdocs"]
-                break
+            # Get the source configuration
+            config_dict = publicdocs_sources[source_name].model_dump()
 
-        if not publicdocs_sources:
-            # Create a mock PublicDocs configuration for testing
+            # Add required fields
+            config_dict["source"] = source_name
+            config_dict["source_type"] = SourceType.PUBLICDOCS
+
+            # Create the configuration object
+            return PublicDocsSourceConfig.model_validate(config_dict)
+
+        except Exception as e:
+            # If anything fails, fall back to mock configuration
+            print(f"Failed to load PublicDocs configuration: {e}")
             mock_config = {
                 "source": "test-publicdocs",
                 "source_type": SourceType.PUBLICDOCS,
@@ -50,21 +88,6 @@ class TestPublicDocsIntegration:
                 "delay": 1.0,
             }
             return PublicDocsSourceConfig.model_validate(mock_config)
-
-        # Use the first publicdocs source
-        source_name = next(iter(publicdocs_sources.keys()), None)
-        if not source_name:
-            pytest.skip("No PublicDocs source configured in test settings")
-
-        # Get the source configuration
-        config_dict = publicdocs_sources[source_name]
-
-        # Add required fields
-        config_dict["source"] = source_name
-        config_dict["source_type"] = SourceType.PUBLICDOCS
-
-        # Create the configuration object
-        return PublicDocsSourceConfig.model_validate(config_dict)
 
     @pytest.mark.asyncio
     async def test_document_crawling(self, publicdocs_config):

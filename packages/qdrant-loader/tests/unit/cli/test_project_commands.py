@@ -84,7 +84,7 @@ class TestSetupProjectManager:
             mock_project_manager = Mock()
             mock_pm.return_value = mock_project_manager
 
-            result = await _setup_project_manager(mock_workspace_config, None, None)
+            result = _setup_project_manager(mock_workspace_config, None, None)
 
             # Verify calls
             mock_load_config.assert_called_once_with(
@@ -135,7 +135,7 @@ class TestSetupProjectManager:
 
             config_path = Path("/test/config.yaml")
             env_path = Path("/test/.env")
-            result = await _setup_project_manager(None, config_path, env_path)
+            result = _setup_project_manager(None, config_path, env_path)
 
             # Verify calls
             mock_load_config.assert_called_once_with(
@@ -175,7 +175,7 @@ class TestSetupProjectManager:
                 ClickException,
                 match="Global configuration or Qdrant configuration is missing",
             ):
-                await _setup_project_manager(None, None, None)
+                _ = _setup_project_manager(None, None, None)
 
 
 class TestInitializeProjectContextsFromConfig:

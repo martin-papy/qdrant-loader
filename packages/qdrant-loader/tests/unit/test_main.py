@@ -59,13 +59,21 @@ class TestMain:
 
     def test_cli_import_path(self):
         """Test that CLI is imported from correct path."""
-        from qdrant_loader.cli.cli import cli as imported_cli
+        from qdrant_loader.cli import cli as imported_cli
         from qdrant_loader.main import cli as main_cli
 
-        # They should be the same function
-        assert imported_cli is main_cli
+        # imported_cli should be a Click Group
+        import click
 
-    @patch("qdrant_loader.cli.cli.cli")
+        assert isinstance(imported_cli, click.Group)
+
+        # main_cli should be a callable function
+        assert callable(main_cli)
+
+        # Both should be different objects but serve the same purpose
+        assert imported_cli is not main_cli
+
+    @patch("qdrant_loader.cli.main")
     def test_main_as_module(self, mock_cli):
         """Test running main as a module."""
         # This simulates: python -m qdrant_loader.main

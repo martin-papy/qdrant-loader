@@ -8,39 +8,101 @@ This module tests the complete Neo4j integration including:
 """
 
 import os
+import socket
 import subprocess
 import time
 from collections.abc import Generator
 from datetime import datetime
+from pathlib import Path
 
 import pytest
-from qdrant_loader.config.neo4j import Neo4jConfig
+from qdrant_loader.config import get_settings, initialize_multi_file_config
 from qdrant_loader.core.neo4j_manager import Neo4jManager
+
+
+def is_neo4j_properly_configured():
+    """Check if Neo4j is properly configured for integration tests."""
+    try:
+        # Try to load the configuration first to get the actual URI
+        config_dir = Path(__file__).parent.parent.parent / "config"
+        if not config_dir.exists():
+            return False, "Test configuration directory not found"
+
+        try:
+            initialize_multi_file_config(config_dir, enhanced_validation=False)
+            settings = get_settings()
+            neo4j_config = settings.global_config.neo4j
+
+            # Check if neo4j config exists
+            if neo4j_config is None:
+                return False, "Neo4j configuration not found in settings"
+
+            # Parse URI to get host and port
+            uri = neo4j_config.uri
+            if "://" in uri:
+                # Extract host and port from URI like "neo4j+s://host:port" or "bolt://host:port"
+                protocol_part = uri.split("://")[1]
+                if ":" in protocol_part:
+                    host = protocol_part.split(":")[0]
+                    # For cloud URIs, we can't easily test socket connection
+                    if ".databases.neo4j.io" in host:
+                        # This is a Neo4j Aura instance, skip socket test
+                        pass
+                    else:
+                        # Local instance, test socket connection
+                        port = (
+                            int(protocol_part.split(":")[1].split("/")[0])
+                            if "/" in protocol_part
+                            else int(protocol_part.split(":")[1])
+                        )
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(2)
+                        result = sock.connect_ex((host, port))
+                        sock.close()
+                        if result != 0:
+                            return False, f"Neo4j not available on {host}:{port}"
+        except Exception as e:
+            return False, f"Configuration loading error: {e}"
+
+    except Exception as e:
+        return False, f"Socket error: {e}"
+
+    # Check if required environment variables are set for authentication
+    required_env_vars = ["NEO4J_PASSWORD"]
+    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+    if missing_vars:
+        return (
+            False,
+            f"Missing required environment variables: {missing_vars}. Set NEO4J_PASSWORD to match your Neo4j setup.",
+        )
+
+    return True, "Neo4j properly configured"
+
+
+# Check Neo4j configuration
+neo4j_available, skip_reason = is_neo4j_properly_configured()
+
+# Skip all tests in this class if Neo4j is not properly configured
+pytestmark = pytest.mark.skipif(
+    not neo4j_available,
+    reason=f"Neo4j integration tests skipped: {skip_reason}",
+)
 
 
 class TestNeo4jPersistenceIntegration:
     """Test Neo4j data persistence and integration."""
 
-    @pytest.fixture
-    def neo4j_config(self) -> Neo4jConfig:
-        """Create Neo4j configuration for testing."""
-        return Neo4jConfig(
-            uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-            user=os.getenv("NEO4J_USER", "neo4j"),
-            password=os.getenv("NEO4J_PASSWORD", "secure_password_2024"),
-            database=os.getenv("NEO4J_DATABASE", "neo4j"),
-            encrypted=True,  # Enable encryption for Aura compatibility
-            max_retry_time=30,
-            initial_retry_delay=1.0,
-            retry_delay_multiplier=2.0,
-            retry_delay_jitter_factor=0.1,
-        )
+    @pytest.fixture(scope="class")
+    def test_settings(self):
+        """Load test settings from configuration files."""
+        config_dir = Path(__file__).parent.parent.parent / "config"
+        initialize_multi_file_config(config_dir, enhanced_validation=False)
+        return get_settings()
 
     @pytest.fixture
-    def neo4j_manager(
-        self, neo4j_config: Neo4jConfig
-    ) -> Generator[Neo4jManager, None, None]:
-        """Create Neo4j manager instance."""
+    def neo4j_manager(self, test_settings) -> Generator[Neo4jManager, None, None]:
+        """Create Neo4j manager instance using actual configuration."""
+        neo4j_config = test_settings.global_config.neo4j
         manager = Neo4jManager(neo4j_config)
         yield manager
         # Cleanup after test
@@ -66,10 +128,10 @@ class TestNeo4jPersistenceIntegration:
         assert "available_databases" in db_info
 
         # Log info for debugging
-        print("Neo4j Version: {db_info['version']}")
-        print("Neo4j Edition: {db_info['edition']}")
-        print("APOC Version: {db_info['apoc_version']}")
-        print("Available Databases: {db_info['available_databases']}")
+        print(f"Neo4j Version: {db_info['version']}")
+        print(f"Neo4j Edition: {db_info['edition']}")
+        print(f"APOC Version: {db_info['apoc_version']}")
+        print(f"Available Databases: {db_info['available_databases']}")
 
     def test_data_insertion_and_retrieval(self, neo4j_manager: Neo4jManager):
         """Test data insertion and retrieval operations."""
@@ -182,7 +244,7 @@ class TestNeo4jPersistenceIntegration:
 
         # Look for our expected indexes
         index_names = [idx["name"] for idx in indexes]
-        print("Available indexes: {index_names}")
+        print(f"Available indexes: {index_names}")
 
     def test_transaction_rollback_and_consistency(self, neo4j_manager: Neo4jManager):
         """Test transaction rollback and data consistency."""
@@ -231,11 +293,22 @@ class TestNeo4jPersistenceIntegration:
             assert result[0]["new_value"] == i + 1
 
     @pytest.mark.slow
-    def test_container_restart_persistence(self, neo4j_manager: Neo4jManager):
+    def test_container_restart_persistence(
+        self, neo4j_manager: Neo4jManager, test_settings
+    ):
         """Test data persistence across container restarts.
 
         This test requires Docker to be available and the Neo4j container to be running.
+        Note: This test is only applicable for local Docker setups, not cloud instances.
         """
+        neo4j_config = test_settings.global_config.neo4j
+
+        # Skip this test for cloud instances
+        if ".databases.neo4j.io" in neo4j_config.uri:
+            pytest.skip(
+                "Container restart test not applicable for cloud Neo4j instances"
+            )
+
         neo4j_manager.connect()
 
         # Insert persistent test data
@@ -285,6 +358,8 @@ class TestNeo4jPersistenceIntegration:
             # Wait for health check to pass
             max_wait = 60  # seconds
             wait_time = 0
+            neo4j_password = os.getenv("NEO4J_PASSWORD", "secure_password_2024")
+
             while wait_time < max_wait:
                 try:
                     result = subprocess.run(
@@ -296,7 +371,7 @@ class TestNeo4jPersistenceIntegration:
                             "-u",
                             "neo4j",
                             "-p",
-                            "secure_password_2024",
+                            neo4j_password,
                             "RETURN 1 as test",
                         ],
                         check=True,
@@ -316,8 +391,8 @@ class TestNeo4jPersistenceIntegration:
             if wait_time >= max_wait:
                 pytest.skip("Neo4j container did not become ready after restart")
 
-        except subprocess.CalledProcessError:
-            pytest.skip("Could not restart Neo4j container: {e}")
+        except subprocess.CalledProcessError as e:
+            pytest.skip(f"Could not restart Neo4j container: {e}")
         except FileNotFoundError:
             pytest.skip("Docker not available for container restart test")
 
@@ -404,7 +479,7 @@ class TestNeo4jPersistenceIntegration:
         assert result[0]["created_count"] == batch_size
 
         creation_time = end_time - start_time
-        print("Created {batch_size} nodes in {creation_time:.2f} seconds")
+        print(f"Created {batch_size} nodes in {creation_time:.2f} seconds")
 
         # Test batch query performance
         start_time = time.time()
@@ -417,21 +492,15 @@ class TestNeo4jPersistenceIntegration:
         assert query_result[0]["total_count"] == batch_size
 
         query_time = end_time - start_time
-        print("Queried {batch_size} nodes in {query_time:.2f} seconds")
+        print(f"Queried {batch_size} nodes in {query_time:.2f} seconds")
 
-    def teardown_method(self):
+    def teardown_method(self, test_settings):
         """Clean up test data after each test."""
         try:
-            # Create a temporary manager for cleanup
-            config = Neo4jConfig(
-                uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-                user=os.getenv("NEO4J_USER", "neo4j"),
-                password=os.getenv("NEO4J_PASSWORD", "secure_password_2024"),
-                database=os.getenv("NEO4J_DATABASE", "neo4j"),
-                encrypted=True,  # Disable encryption for local testing
-            )
+            # Use the actual configuration for cleanup
+            neo4j_config = test_settings.global_config.neo4j
 
-            with Neo4jManager(config) as manager:
+            with Neo4jManager(neo4j_config) as manager:
                 manager.connect()
 
                 # Clean up all test data
@@ -448,8 +517,8 @@ class TestNeo4jPersistenceIntegration:
                 for query in cleanup_queries:
                     try:
                         manager.execute_query(query)
-                    except Exception:
-                        print("Cleanup warning: {e}")
+                    except Exception as e:
+                        print(f"Cleanup warning: {e}")
 
-        except Exception:
-            print("Cleanup error: {e}")
+        except Exception as e:
+            print(f"Cleanup error: {e}")

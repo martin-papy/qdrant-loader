@@ -117,6 +117,7 @@ projects:
           base_url: "https://github.com/example/repo.git"
           branch: "main"
           token: "test_token"
+          file_types: ["*.md", "*.txt"]
 """
             (config_dir / "projects.yaml").write_text(projects_content)
 
@@ -183,10 +184,12 @@ projects:
           base_url: "https://github.com/example/repo1.git"
           branch: "main"
           token: "test_token1"
+          file_types: ["*.md", "*.txt"]
         repo2:
           base_url: "https://github.com/example/repo2.git"
           branch: "develop"
           token: "test_token2"
+          file_types: ["*.md", "*.txt"]
       publicdocs:
         docs1:
           base_url: "https://example.com/docs1"
