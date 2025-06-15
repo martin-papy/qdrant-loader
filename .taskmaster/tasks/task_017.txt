@@ -11,23 +11,138 @@ Update the search logic in packages/qdrant-loader-mcp-server/src/qdrant_loader_m
 1. Write unit and integration tests to verify that hybrid search queries return results that reflect both vector similarity and graph relationship relevance. 2. Test with mock and real data to ensure that the result fusion logic correctly combines QDrant and Neo4j scores according to configurable weights. 3. Validate that existing MCP tool interfaces and legacy search queries remain functional and unchanged. 4. Simulate QDrant and Neo4j outages to confirm robust error handling and fallback behavior. 5. Review documentation and ensure new query parameters and result formats are clearly described.
 
 # Subtasks:
-## 1. Implement QDrant Vector Search Integration [pending]
+## 1. Implement QDrant Vector Search Integration [done]
 ### Dependencies: None
 ### Description: Integrate QDrant's Query API into the MCP server tools to perform top-k vector similarity searches, retrieving semantically relevant candidates for a given query.
 ### Details:
 Update the search logic to call QDrant's vector search endpoint, handle query parameters, and parse the returned results for downstream processing.
+<info added on 2025-06-15T06:35:10.912Z>
+Fixed linter errors in handler.py by resolving "Cannot access attribute 'graph_module'" errors. Removed references to non-existent graph_module on SearchEngine class since current implementation uses HybridSearchEngine rather than EnhancedHybridSearchEngine which contains the graph capabilities. Updated all graph operation handlers to use content-based search fallback with TODO comments marking where future graph integration is needed. Removed unused variable assignments causing pyflakes warnings. Updated tests to expect 7 tools instead of 3 to account for 4 new graph operation tools. All linter errors now resolved and MCP handler tests passing (14/14). Graph operation tools are properly defined and accessible via MCP but currently use content search fallback until EnhancedHybridSearchEngine integration is completed.
+</info added on 2025-06-15T06:35:10.912Z>
+<info added on 2025-06-15T06:59:32.786Z>
+Successfully completed QDrant vector search integration for the MCP server. Implementation includes:
 
-## 2. Integrate Neo4j Graph-Based Relationship Queries [pending]
+**Core SearchEngine Updates:**
+- Enhanced SearchEngine class to optionally use EnhancedHybridSearchEngine when Graphiti is available
+- Added runtime detection of Graphiti availability using is_graphiti_available() function
+- Implemented graceful fallback to basic HybridSearchEngine when enhanced features are not available
+- Added new search method parameters: mode, vector_weight, keyword_weight, graph_weight
+- Added get_search_capabilities() and get_search_stats() methods for introspection
+
+**New MCP Tool - enhanced_search:**
+- Created comprehensive enhanced_search MCP tool with full parameter validation
+- Supports all search modes: vector_only, graph_only, hybrid, auto
+- Implements query-time weight controls for vector, keyword, and graph search results
+- Provides detailed response formatting with search engine status information
+- Includes intelligent fallback messaging when enhanced features are unavailable
+
+**Integration & Testing:**
+- Updated MCP handler to route enhanced_search tool calls to new handler method
+- Added enhanced_search tool to MCP tools list (now 9 tools total)
+- Updated all tests to expect 9 tools instead of 8
+- All 14 MCP handler tests passing
+- No linter errors
+
+**Key Features Implemented:**
+- Runtime Graphiti detection and adaptive search engine selection
+- Query-time weight validation (0.0-1.0 range)
+- Search mode validation with clear error messages
+- Comprehensive logging and error handling
+- Backward compatibility with existing search functionality
+- Clear user feedback about search engine capabilities and status
+
+The enhanced search tool provides a seamless interface for users to leverage advanced hybrid search capabilities when available, while gracefully degrading to basic search when Graphiti is not configured.
+</info added on 2025-06-15T06:59:32.786Z>
+
+## 2. Integrate Neo4j Graph-Based Relationship Queries [done]
 ### Dependencies: 17.1
 ### Description: Add logic to perform Cypher queries in Neo4j for the candidates returned by QDrant, extracting relationship-based context and scoring information.
 ### Details:
 For each candidate from QDrant, execute Neo4j Cypher queries to fetch graph features such as entity connections, graph distance, and centrality metrics.
+<info added on 2025-06-15T07:08:03.485Z>
+Successfully completed Neo4j graph-based relationship queries integration for the MCP server. Implementation includes:
 
-## 3. Develop Hybrid Result Fusion and Scoring Mechanism [pending]
+**New MCP Tool - enrich_with_relationships:**
+- Created comprehensive relationship enrichment tool that works with QDrant vector search candidates
+- Supports enriching entity IDs with Neo4j relationship context and graph-based scoring
+- Configurable parameters: max_depth (1-5), include_centrality, include_temporal, relationship_types filter, limit (1-100)
+- Provides detailed relationship analysis including centrality scores, temporal relevance, and connected entities
+- Returns structured data with relationship counts, top relationships, and aggregate scoring
+
+**Enhanced Graph Integration:**
+- Integrated with EnhancedHybridSearchEngine's GraphSearchModule for sophisticated Neo4j queries
+- Supports filtering by specific relationship types (overlaps_with, extends, preferred_for_task, etc.)
+- Implements graph traversal with configurable depth for relationship discovery
+- Provides centrality scoring and temporal relevance analysis for relationship context
+
+**Intelligent Fallback System:**
+- Graceful degradation when graph search module is unavailable
+- Clear status reporting about Graphiti and Neo4j availability
+- Content-based fallback mode with configuration guidance
+- Comprehensive error handling for individual entity enrichment failures
+
+**Response Format:**
+- Rich text formatting with relationship counts, connected entities, and scoring metrics
+- Top relationships display with combined scores and relationship types
+- Structured JSON response with enriched_entities array for programmatic access
+- Clear error reporting and configuration status information
+
+**Testing & Quality:**
+- Updated test suite to expect 10 tools (added relationship enrichment)
+- All 14 tests passing successfully
+- Fixed linter issues and code quality checks
+- Proper error handling and logging throughout
+
+**Technical Integration:**
+- Works seamlessly with existing enhanced hybrid search architecture
+- Leverages GraphSearchModule's sophisticated Cypher queries for relationship analysis
+- Supports both Graphiti and direct Neo4j integration paths
+- Maintains compatibility with existing search engine capabilities
+
+This implementation provides a powerful bridge between QDrant vector search results and Neo4j graph relationship context, enabling rich entity relationship analysis for search candidates.
+</info added on 2025-06-15T07:08:03.485Z>
+
+## 3. Develop Hybrid Result Fusion and Scoring Mechanism [done]
 ### Dependencies: 17.2
 ### Description: Design and implement a mechanism to combine QDrant vector scores with Neo4j-derived relationship scores, supporting configurable weighting and result reranking.
 ### Details:
 Implement a fusion strategy (e.g., weighted sum or configurable formula) to merge semantic and graph-based scores, referencing best practices from GraphRAG and QDrant hybrid search documentation.
+<info added on 2025-06-15T07:10:41.927Z>
+**Current Implementation Status:**
+
+The fusion strategy implementation is complete with three sophisticated approaches:
+
+**Weighted Sum Fusion** - Operational with configurable weights for vector, keyword, and graph scores through QueryWeights class. Includes score normalization and boosting mechanisms for centrality, temporal relevance, and entity count.
+
+**Reciprocal Rank Fusion (RRF)** - Implemented with rank-based scoring and configurable weight parameters for balanced result combination.
+
+**Maximal Marginal Relevance (MMR)** - Active for balancing relevance and diversity in search results.
+
+**Advanced Features Deployed:**
+- Query-time weight controls with intelligent fusion strategy selection based on query characteristics
+- Weight-aware caching system for performance optimization
+- Comprehensive reranking pipeline with multiple strategies
+- Score normalization and boosting based on graph centrality and temporal factors
+
+**Identified Enhancement Opportunities:**
+
+**Advanced Graph-Vector Score Fusion** - More sophisticated algorithms leveraging graph centrality and temporal relevance beyond current implementations.
+
+**Context-Aware Fusion** - Adaptive fusion strategies based on query intent detection and result characteristics analysis.
+
+**Multi-Stage Fusion** - Cascaded fusion architecture with preliminary filtering and progressive refinement stages.
+
+**Confidence-Based Weighting** - Dynamic weight adjustment mechanisms using search result confidence scoring.
+
+**Domain-Specific Fusion** - Specialized fusion algorithms optimized for different content types and domain-specific requirements.
+
+**Proposed Implementation Extensions:**
+- New fusion strategies: GRAPH_ENHANCED_WEIGHTED, CONFIDENCE_ADAPTIVE, MULTI_STAGE
+- Enhanced graph score integration for existing strategies
+- Confidence scoring framework with adaptive weighting
+- Query intent detection system for context-aware fusion
+- Comprehensive testing and benchmarking infrastructure for fusion strategy evaluation
+</info added on 2025-06-15T07:10:41.927Z>
 
 ## 4. Expose Hybrid Search via Existing MCP Interfaces with Backward Compatibility [pending]
 ### Dependencies: 17.3
@@ -40,4 +155,13 @@ Modify API endpoints and internal interfaces to accept hybrid search options, de
 ### Description: Add comprehensive error handling for QDrant and Neo4j failures, and document new query parameters, result schema, and usage patterns.
 ### Details:
 Ensure all failure modes are gracefully handled and clearly reported. Update documentation to cover hybrid search configuration, error cases, and result interpretation.
+
+## 6. Implement Adaptive Graphiti Detection and Integration [done]
+### Dependencies: None
+### Description: Add runtime detection of Graphiti/Neo4j availability to the MCP server, enabling dynamic adaptation of search capabilities based on actual configuration and connectivity rather than just dependency availability.
+### Details:
+Implement a comprehensive detection system that checks for Neo4j configuration (environment variables), tests actual connectivity, and adapts MCP tool behavior accordingly. When Graphiti is available, use real graph operations; when not available, fall back to content-based search with clear user feedback about capabilities.
+<info added on 2025-06-15T06:52:25.820Z>
+Successfully completed the adaptive Graphiti detection and integration system implementation. The core GraphitiDetector class provides comprehensive runtime configuration checking with environment variable validation, connectivity testing with timeout handling, and intelligent caching to optimize performance. Integrated seamlessly with MCP tools including a new get_capabilities tool for transparency, enhanced find_relationships with automatic fallback capabilities, and clear user feedback about system status. Added required dependencies (graphiti-core>=0.3.0, neo4j>=5.0.0) to pyproject.toml and created comprehensive test suite with 11 tests covering all detection scenarios. All 25 tests passing. The system now provides graceful degradation from graph operations to content-based search when Graphiti is unavailable, with clear capability reporting and configuration guidance for users.
+</info added on 2025-06-15T06:52:25.820Z>
 

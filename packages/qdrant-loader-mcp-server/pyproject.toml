@@ -40,6 +40,9 @@ dependencies = [
     "numpy>=1.26.0",
     "click>=8.0.0",
     "tomli>=2.0.0",
+    "sentence-transformers>=2.2.0",
+    "graphiti-core>=0.3.0",
+    "neo4j>=5.0.0",
     "qdrant-loader",
 ]
 classifiers = [

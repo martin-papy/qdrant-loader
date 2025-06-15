@@ -17,7 +17,7 @@ async def test_handle_tools_list(mcp_handler):
     assert response["id"] == 1
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 3
+    assert len(response["result"]["tools"]) == 11
 
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
@@ -300,8 +300,8 @@ async def test_handle_unknown_tool(mcp_handler):
 
 
 @pytest.mark.asyncio
-async def test_tools_list_contains_all_three_tools(mcp_handler):
-    """Test that tools/list returns all three search tools."""
+async def test_tools_list_contains_all_ten_tools(mcp_handler):
+    """Test that tools/list returns all eleven tools (5 search + 4 graph operation + 1 capabilities + 1 fusion benchmark tool)."""
     request = {
         "jsonrpc": "2.0",
         "method": "tools/list",
@@ -315,12 +315,24 @@ async def test_tools_list_contains_all_three_tools(mcp_handler):
     assert "tools" in response["result"]
 
     tools = response["result"]["tools"]
-    assert len(tools) == 3
+    assert len(tools) == 11
 
     tool_names = [tool["name"] for tool in tools]
+    # Original search tools
     assert "search" in tool_names
+    assert "enhanced_search" in tool_names
+    assert "enrich_with_relationships" in tool_names
     assert "hierarchy_search" in tool_names
     assert "attachment_search" in tool_names
+    # Graph operation tools
+    assert "find_relationships" in tool_names
+    assert "trace_dependencies" in tool_names
+    assert "analyze_impact" in tool_names
+    assert "get_temporal_context" in tool_names
+    # Capabilities tool
+    assert "get_capabilities" in tool_names
+    # Fusion benchmark tool
+    assert "fusion_benchmark" in tool_names
 
     # Check hierarchy_search tool schema
     hierarchy_tool = next(tool for tool in tools if tool["name"] == "hierarchy_search")
@@ -332,4 +344,5 @@ async def test_tools_list_contains_all_three_tools(mcp_handler):
         tool for tool in tools if tool["name"] == "attachment_search"
     )
     assert "attachment_filter" in attachment_tool["inputSchema"]["properties"]
+    assert "include_parent_context" in attachment_tool["inputSchema"]["properties"]
     assert "include_parent_context" in attachment_tool["inputSchema"]["properties"]
