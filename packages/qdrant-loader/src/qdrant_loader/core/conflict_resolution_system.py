@@ -14,10 +14,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union, Callable
 
 from ..utils.logging import LoggingConfig
-from .id_mapping_manager import IDMapping, IDMappingManager
-from .neo4j_manager import Neo4jManager
-from .qdrant_manager import QdrantManager
-from .sync_event_system import ChangeEvent, ChangeType, DatabaseType
+from .managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
+from .sync import ChangeEvent, ChangeType, DatabaseType
 from .types import EntityType
 
 logger = LoggingConfig.get_logger(__name__)

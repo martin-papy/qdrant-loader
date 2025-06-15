@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from neo4j import Session
 from qdrant_client.http.models import PointStruct
 
-from ..utils.logging import LoggingConfig
+from ...utils.logging import LoggingConfig
 from .neo4j_manager import Neo4jManager
 from .qdrant_manager import QdrantManager
-from .types import EntityType, TemporalInfo
+from ..types import EntityType, TemporalInfo
 
 logger = LoggingConfig.get_logger(__name__)
 

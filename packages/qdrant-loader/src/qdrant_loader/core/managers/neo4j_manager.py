@@ -22,8 +22,8 @@ from neo4j.exceptions import (
     TransientError,
 )
 
-from ..config import Neo4jConfig
-from ..utils.logging import LoggingConfig
+from ...config import Neo4jConfig
+from ...utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

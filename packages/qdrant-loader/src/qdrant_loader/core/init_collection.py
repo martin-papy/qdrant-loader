@@ -1,6 +1,5 @@
-
 from qdrant_loader.config import get_settings
-from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.managers import QdrantManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger()

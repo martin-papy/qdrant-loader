@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from qdrant_client.http.models import PointStruct
 
 from ...utils.logging import LoggingConfig
-from ..qdrant_manager import QdrantManager
+from ..managers.qdrant_manager import QdrantManager
 from .base import DatabaseTransactionManager
 from .enums import OperationType
 from .models import DatabaseOperation

@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from neo4j import Transaction
 
 from ...utils.logging import LoggingConfig
-from ..neo4j_manager import Neo4jManager
+from ..managers.neo4j_manager import Neo4jManager
 from .base import DatabaseTransactionManager
 from .enums import OperationType
 from .models import DatabaseOperation

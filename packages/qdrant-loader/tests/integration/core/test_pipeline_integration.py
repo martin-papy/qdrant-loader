@@ -14,7 +14,7 @@ from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 
 

@@ -6,8 +6,7 @@ from qdrant_loader.config import Settings, SourcesConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
-from qdrant_loader.core.project_manager import ProjectManager
-from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.managers import ProjectManager, QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 

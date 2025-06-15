@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
 from ...utils.logging import LoggingConfig
-from ..id_mapping_manager import IDMappingManager
-from ..neo4j_manager import Neo4jManager
-from ..qdrant_manager import QdrantManager
+from ..managers.id_mapping_manager import IDMappingManager
+from ..managers.neo4j_manager import Neo4jManager
+from ..managers.qdrant_manager import QdrantManager
 from .context import TransactionContext
 from .enums import TransactionState
 from .models import DistributedTransaction

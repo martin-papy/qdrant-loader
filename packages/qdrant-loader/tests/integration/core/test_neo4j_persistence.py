@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 from qdrant_loader.config import get_settings, initialize_multi_file_config
-from qdrant_loader.core.neo4j_manager import Neo4jManager
+from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
 
 
 def is_neo4j_properly_configured():

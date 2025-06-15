@@ -9,8 +9,8 @@ from qdrant_client.http.models import (
     VectorParams,
 )
 
-from ..config import Settings, get_global_config, get_settings
-from ..utils.logging import LoggingConfig
+from ...config import Settings, get_global_config, get_settings
+from ...utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 

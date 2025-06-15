@@ -17,11 +17,9 @@ from typing import Any, Callable, Dict, List, Optional, Set, Union
 from neo4j import Session
 from qdrant_client.http.models import PointStruct
 
-from ..utils.logging import LoggingConfig
-from .id_mapping_manager import IDMappingManager, MappingType
-from .neo4j_manager import Neo4jManager
-from .qdrant_manager import QdrantManager
-from .types import EntityType
+from ...utils.logging import LoggingConfig
+from ..managers import IDMappingManager, MappingType, Neo4jManager, QdrantManager
+from ..types import EntityType
 
 logger = LoggingConfig.get_logger(__name__)
 

@@ -6,7 +6,10 @@ import pytest
 from qdrant_client.http import models
 from qdrant_client.http.models import Distance, VectorParams
 from qdrant_loader.config import Settings
-from qdrant_loader.core.qdrant_manager import QdrantConnectionError, QdrantManager
+from qdrant_loader.core.managers.qdrant_manager import (
+    QdrantConnectionError,
+    QdrantManager,
+)
 
 
 class TestQdrantConnectionError:

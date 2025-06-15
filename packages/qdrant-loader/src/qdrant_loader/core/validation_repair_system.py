@@ -13,9 +13,8 @@ from enum import Enum
 from typing import Dict, List, Optional, Any, Set, Tuple, Callable
 from uuid import uuid4
 
-from .id_mapping_manager import IDMappingManager, IDMapping, MappingStatus
-from .neo4j_manager import Neo4jManager
-from .qdrant_manager import QdrantManager
+from .managers import IDMappingManager, IDMapping, MappingStatus
+from .managers import Neo4jManager, QdrantManager
 from .conflict_resolution_system import ConflictResolutionSystem
 from .types import EntityType
 

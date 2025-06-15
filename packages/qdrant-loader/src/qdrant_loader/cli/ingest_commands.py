@@ -237,7 +237,7 @@ async def run_ingest(
         settings = check_settings()
 
         # Lazy import to avoid slow startup
-        from qdrant_loader.core.qdrant_manager import QdrantManager
+        from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 
         qdrant_manager = QdrantManager(settings)
 
@@ -376,7 +376,7 @@ def check_status(
         settings = check_settings()
 
         # Lazy import to avoid slow startup
-        from qdrant_loader.core.qdrant_manager import QdrantManager
+        from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 
         qdrant_manager = QdrantManager(settings)
 

@@ -39,7 +39,7 @@ def __getattr__(name):
 
         return EmbeddingService
     elif name == "QdrantManager":
-        from qdrant_loader.core.qdrant_manager import QdrantManager
+        from qdrant_loader.core.managers import QdrantManager
 
         return QdrantManager
     else:

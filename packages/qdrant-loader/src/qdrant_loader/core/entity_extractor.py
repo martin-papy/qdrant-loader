@@ -15,7 +15,7 @@ from typing import Any
 from graphiti_core.nodes import EpisodeType
 
 from ..utils.logging import LoggingConfig
-from .graphiti_manager import GraphitiManager
+from .managers import GraphitiManager
 from .prompts import EntityPromptManager
 from .prompts.entity_prompts import PromptDomain
 from .types import EntityType, ExtractedEntity, ExtractedRelationship, RelationshipType

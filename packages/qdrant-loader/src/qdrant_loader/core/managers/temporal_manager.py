@@ -10,10 +10,10 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from ..utils.logging import LoggingConfig
-from ..utils.timezone_utils import TimezoneUtils
+from ...utils.logging import LoggingConfig
+from ...utils.timezone_utils import TimezoneUtils
 from .graphiti_manager import GraphitiManager
-from .types import ExtractedEntity, ExtractedRelationship, TemporalInfo
+from ..types import ExtractedEntity, ExtractedRelationship, TemporalInfo
 
 logger = LoggingConfig.get_logger(__name__)
 

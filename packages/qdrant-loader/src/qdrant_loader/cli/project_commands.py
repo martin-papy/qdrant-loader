@@ -560,7 +560,7 @@ async def _setup_project_manager(
         raise ClickException("Global configuration or Qdrant configuration is missing")
 
     # Lazy import to avoid slow startup
-    from qdrant_loader.core.project_manager import ProjectManager
+    from qdrant_loader.core.managers.project_manager import ProjectManager
 
     project_manager = ProjectManager(
         projects_config=settings.projects_config,
@@ -593,7 +593,7 @@ async def _initialize_project_contexts_from_config(
         )
 
         # Create project context
-        from qdrant_loader.core.project_manager import ProjectContext
+        from qdrant_loader.core.managers.project_manager import ProjectContext
 
         context = ProjectContext(
             project_id=project_id,

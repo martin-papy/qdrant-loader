@@ -14,8 +14,8 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-from ..utils.logging import LoggingConfig
-from .conflict_resolution_system import (
+from ...utils.logging import LoggingConfig
+from ..conflict_resolution_system import (
     ConflictRecord,
     ConflictResolutionConfig,
     ConflictResolutionStrategy,
@@ -23,18 +23,12 @@ from .conflict_resolution_system import (
     ConflictStatus,
     ConflictType,
 )
-from .enhanced_sync_event_system import (
-    EnhancedSyncEventSystem,
-    EnhancedSyncOperation,
-    SyncOperationStatus,
-    SyncOperationType,
-)
-from .id_mapping_manager import IDMapping, IDMappingManager
-from .monitoring.ingestion_metrics import IngestionMonitor
-from .neo4j_manager import Neo4jManager
-from .qdrant_manager import QdrantManager
-from .sync_event_system import ChangeEvent, ChangeType, DatabaseType
-from .types import EntityType
+from .enhanced_event_system import EnhancedSyncEventSystem, EnhancedSyncOperation
+from .types import SyncOperationStatus, SyncOperationType
+from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
+from ..monitoring.ingestion_metrics import IngestionMonitor
+from ..sync import ChangeEvent, ChangeType, DatabaseType
+from ..types import EntityType
 
 logger = LoggingConfig.get_logger(__name__)
 

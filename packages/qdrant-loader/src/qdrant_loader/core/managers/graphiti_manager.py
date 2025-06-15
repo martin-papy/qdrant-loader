@@ -13,9 +13,9 @@ from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
 from graphiti_core.llm_client import LLMConfig, OpenAIClient
 from graphiti_core.nodes import EpisodeType
 
-from ..config.graphiti import GraphitiConfig
-from ..config.neo4j import Neo4jConfig
-from ..utils.logging import LoggingConfig
+from ...config.graphiti import GraphitiConfig
+from ...config.neo4j import Neo4jConfig
+from ...utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -125,6 +125,8 @@ class GraphitiManager:
             return
 
         try:
+            import asyncio
+
             logger.info("Initializing Graphiti client with Neo4j configuration")
 
             # Create LLM client and embedder
@@ -143,7 +145,7 @@ class GraphitiManager:
             # Build indices and constraints (only needs to be done once)
             if self.graphiti_config.operational.enable_auto_indexing:
                 logger.info("Building Graphiti indices and constraints")
-                await self._graphiti.build_indices_and_constraints()
+                await asyncio.to_thread(self._graphiti.build_indices_and_constraints)
             else:
                 logger.info("Auto-indexing disabled, skipping index creation")
 

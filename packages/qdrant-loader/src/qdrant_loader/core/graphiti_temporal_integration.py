@@ -15,10 +15,9 @@ from typing import Any, Dict, List, Optional, Set
 from graphiti_core.nodes import EpisodeType
 
 from ..utils.logging import LoggingConfig
-from .enhanced_sync_event_system import EnhancedSyncOperation, SyncOperationType
-from .graphiti_manager import GraphitiManager
-from .id_mapping_manager import IDMapping, IDMappingManager
-from .temporal_manager import TemporalManager
+from .sync import EnhancedSyncOperation
+from .sync.types import SyncOperationType
+from .managers import GraphitiManager, IDMapping, IDMappingManager, TemporalManager
 from .types import EntityType, ExtractedEntity, ExtractedRelationship
 
 logger = LoggingConfig.get_logger(__name__)

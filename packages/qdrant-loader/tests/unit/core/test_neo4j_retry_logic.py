@@ -18,7 +18,7 @@ from neo4j.exceptions import (
     TransientError,
 )
 from qdrant_loader.config.neo4j import Neo4jConfig
-from qdrant_loader.core.neo4j_manager import (
+from qdrant_loader.core.managers.neo4j_manager import (
     Neo4jManager,
     _is_retryable_exception,
     retry_on_transient_failure,

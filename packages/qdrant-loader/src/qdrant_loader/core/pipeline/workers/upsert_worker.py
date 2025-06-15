@@ -7,7 +7,7 @@ from typing import Any
 from qdrant_client.http import models
 
 from qdrant_loader.core.monitoring import prometheus_metrics
-from qdrant_loader.core.qdrant_manager import QdrantManager
+from qdrant_loader.core.managers import QdrantManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .base_worker import BaseWorker
