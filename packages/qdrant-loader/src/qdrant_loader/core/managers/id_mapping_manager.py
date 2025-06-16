@@ -412,9 +412,7 @@ class IDMappingManager:
         logger.debug(f"Created ID mapping: {mapping.mapping_id}")
         return mapping
 
-    async def get_mapping_by_qdrant_id(
-        self, qdrant_point_id: str
-    ) -> IDMapping | None:
+    async def get_mapping_by_qdrant_id(self, qdrant_point_id: str) -> IDMapping | None:
         """Get mapping by QDrant point ID."""
         # Check cache first
         for mapping in self._mapping_cache.values():
@@ -462,9 +460,7 @@ class IDMappingManager:
 
         return None
 
-    async def get_mapping_by_neo4j_uuid(
-        self, neo4j_node_uuid: str
-    ) -> IDMapping | None:
+    async def get_mapping_by_neo4j_uuid(self, neo4j_node_uuid: str) -> IDMapping | None:
         """Get mapping by Neo4j node UUID."""
         # Check cache first
         for mapping in self._mapping_cache.values():

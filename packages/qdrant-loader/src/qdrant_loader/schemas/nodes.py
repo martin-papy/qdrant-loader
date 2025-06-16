@@ -76,9 +76,7 @@ class SourceNode(EntityNode):
     access_method: str | None = Field(
         None, description="How source was accessed (API, clone, etc.)"
     )
-    credentials_used: str | None = Field(
-        None, description="Type of credentials used"
-    )
+    credentials_used: str | None = Field(None, description="Type of credentials used")
 
     # Source statistics
     total_documents: int | None = Field(
@@ -199,9 +197,7 @@ class OrganizationNode(EntityNode):
     )
 
     # Activity tracking
-    first_mentioned: datetime | None = Field(
-        None, description="First time mentioned"
-    )
+    first_mentioned: datetime | None = Field(None, description="First time mentioned")
     last_mentioned: datetime | None = Field(None, description="Last time mentioned")
 
     @validator("organization_type")
@@ -234,9 +230,7 @@ class ProjectNode(EntityNode):
     # Project metadata
     priority: str | None = Field(None, description="Project priority level")
     budget: float | None = Field(None, description="Project budget")
-    progress: float | None = Field(
-        None, description="Completion percentage (0.0-1.0)"
-    )
+    progress: float | None = Field(None, description="Completion percentage (0.0-1.0)")
 
     # Relationships
     project_manager: str | None = Field(None, description="Project manager name")
@@ -278,9 +272,7 @@ class ChunkNode(EntityNode):
     # Chunk identification
     document_id: str = Field(..., description="ID of the parent document")
     chunk_index: int = Field(..., description="Index of this chunk within the document")
-    chunk_id: str | None = Field(
-        None, description="Unique identifier for this chunk"
-    )
+    chunk_id: str | None = Field(None, description="Unique identifier for this chunk")
 
     # Content metadata
     content: str = Field(..., description="The actual text content of the chunk")
@@ -301,9 +293,7 @@ class ChunkNode(EntityNode):
     embedding_dimension: int | None = Field(
         None, description="Dimension of the embedding vector"
     )
-    processed_at: datetime | None = Field(
-        None, description="When chunk was processed"
-    )
+    processed_at: datetime | None = Field(None, description="When chunk was processed")
 
     # Semantic metadata
     topics: list[str] = Field(

@@ -496,9 +496,7 @@ class VersionOperations:
             "similarity_score": similarity_score,
         }
 
-    async def _get_entity_snapshot_data(
-        self, entity_id: str
-    ) -> dict[str, Any] | None:
+    async def _get_entity_snapshot_data(self, entity_id: str) -> dict[str, Any] | None:
         """Get snapshot data for an entity.
 
         Args:

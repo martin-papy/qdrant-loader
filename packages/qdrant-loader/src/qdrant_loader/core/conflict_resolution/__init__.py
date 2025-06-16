@@ -19,9 +19,7 @@ from .merge_strategies import (
     SemanticConflictDetector,
     ThreeWayMerger,
 )
-from .merge_strategies import (
-    ConflictType as MergeConflictType,
-)
+from .merge_strategies import ConflictType as MergeConflictType
 from .models import (
     ConflictRecord,
     ConflictResolutionConfig,

@@ -84,9 +84,7 @@ class ReferencesEdge(DocumentRelationshipEdge):
 
     # Reference metadata
     reference_type: str = Field(default="mention", description="Type of reference")
-    reference_context: str | None = Field(
-        None, description="Context of the reference"
-    )
+    reference_context: str | None = Field(None, description="Context of the reference")
     page_number: int | None = Field(None, description="Page where reference occurs")
     line_number: int | None = Field(None, description="Line where reference occurs")
 
@@ -125,9 +123,7 @@ class AuthoredByEdge(EntityEdge):
     )
 
     # Temporal metadata
-    authored_at: datetime | None = Field(
-        None, description="When document was authored"
-    )
+    authored_at: datetime | None = Field(None, description="When document was authored")
     last_modified_at: datetime | None = Field(
         None, description="Last modification by this author"
     )
@@ -288,9 +284,7 @@ class DerivedFromEdge(DocumentRelationshipEdge):
     )
 
     # Processing metadata
-    derived_at: datetime | None = Field(
-        None, description="When derivation was created"
-    )
+    derived_at: datetime | None = Field(None, description="When derivation was created")
     derived_by: str | None = Field(
         None, description="Who or what created the derivation"
     )

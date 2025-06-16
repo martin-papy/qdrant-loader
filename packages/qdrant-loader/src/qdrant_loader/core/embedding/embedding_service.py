@@ -113,7 +113,14 @@ class EmbeddingService:
 
                 return result
 
-            except (TimeoutError, requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError, ConnectionError, OSError) as e:
+            except (
+                TimeoutError,
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                ConnectionError,
+                OSError,
+            ) as e:
                 last_exception = e
 
                 if attempt == self.max_retries:
@@ -167,7 +174,9 @@ class EmbeddingService:
                 valid_contents.append(content.strip())
                 valid_indices.append(i)
             else:
-                logger.warning(f"Skipping invalid content at index {i}: {repr(content)}")
+                logger.warning(
+                    f"Skipping invalid content at index {i}: {repr(content)}"
+                )
 
         if not valid_contents:
             logger.warning(
