@@ -126,140 +126,40 @@ jobs:
           echo "Contents (with secrets masked):"
           sed 's/=.*/=***/' tests/.env.test
 
-      - name: Setup multi-file test configuration for loader
+      - name: Verify test configuration files exist
         run: |
           cd packages/qdrant-loader
 
-          # Process the multi-file configuration in tests/config/
-          echo "Processing multi-file test configuration..."
+          echo "Verifying test configuration files..."
 
-          # Process connectivity.yaml
-          if [ -f "tests/config/connectivity.yaml" ]; then
-            cp tests/config/connectivity.yaml tests/config/connectivity.test.yaml
+          # Check if multi-file configuration exists
+          if [ -d "tests/config" ]; then
+            echo "✅ Multi-file configuration directory found"
+            ls -la tests/config/
             
-            # Replace environment variables in connectivity config
-            sed -i "s|\${QDRANT_URL}|${{ secrets.QDRANT_URL }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${QDRANT_API_KEY}|${{ secrets.QDRANT_API_KEY }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${QDRANT_COLLECTION_NAME}|${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${OPENAI_API_KEY}|${{ secrets.OPENAI_API_KEY }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${STATE_DB_PATH}|:memory:|g" tests/config/connectivity.test.yaml
-            
-            # Neo4j configuration
-            sed -i "s|\${NEO4J_URI}|${{ secrets.NEO4J_URI }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${NEO4J_USER}|${{ secrets.NEO4J_USER }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${NEO4J_PASSWORD}|${{ secrets.NEO4J_PASSWORD }}|g" tests/config/connectivity.test.yaml
-            sed -i "s|\${NEO4J_DATABASE}|${{ secrets.NEO4J_DATABASE }}|g" tests/config/connectivity.test.yaml
-            
-            echo "✅ Processed connectivity.yaml"
+            # Verify the key configuration files exist
+            for config_file in connectivity.yaml fine-tuning.yaml projects.yaml; do
+              if [ -f "tests/config/$config_file" ]; then
+                echo "✅ Found tests/config/$config_file"
+              else
+                echo "❌ Missing tests/config/$config_file"
+                exit 1
+              fi
+            done
+          else
+            echo "❌ tests/config directory not found"
+            exit 1
           fi
 
-          # Process fine-tuning.yaml
-          if [ -f "tests/config/fine-tuning.yaml" ]; then
-            cp tests/config/fine-tuning.yaml tests/config/fine-tuning.test.yaml
-            
-            # Replace environment variables in fine-tuning config
-            sed -i "s|\${OPENAI_API_KEY}|${{ secrets.OPENAI_API_KEY }}|g" tests/config/fine-tuning.test.yaml
-            
-            echo "✅ Processed fine-tuning.yaml"
-          fi
-
-          # Process projects.yaml
-          if [ -f "tests/config/projects.yaml" ]; then
-            cp tests/config/projects.yaml tests/config/projects.test.yaml
-            
-            # Replace environment variables in projects config
-            # Optional environment variables - only replace if they exist
-            if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
-              sed -i "s|\${REPO_TOKEN}|${{ secrets.REPO_TOKEN }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.REPO_URL }}" ]; then
-              sed -i "s|\${REPO_URL}|${{ secrets.REPO_URL }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_TOKEN }}" ]; then
-              sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_TOKEN }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_EMAIL }}" ]; then
-              sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_URL }}" ]; then
-              sed -i "s|\${CONFLUENCE_URL}|${{ secrets.CONFLUENCE_URL }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_SPACE_KEY }}" ]; then
-              sed -i "s|\${CONFLUENCE_SPACE_KEY}|${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_TOKEN }}" ]; then
-              sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_EMAIL }}" ]; then
-              sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_URL }}" ]; then
-              sed -i "s|\${JIRA_URL}|${{ secrets.JIRA_URL }}|g" tests/config/projects.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
-              sed -i "s|\${JIRA_PROJECT_KEY}|${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config/projects.test.yaml
-            fi
-            
-            echo "✅ Processed projects.yaml"
-          fi
-
-          # Also create the legacy config.test.yaml for backward compatibility
+          # Check if legacy config exists for backward compatibility
           if [ -f "tests/config/config.test.yaml" ]; then
-            cp tests/config/config.test.yaml tests/config.test.yaml
-            
-            # Replace environment variables in legacy config
-            sed -i "s|\${QDRANT_URL}|${{ secrets.QDRANT_URL }}|g" tests/config.test.yaml
-            sed -i "s|\${QDRANT_API_KEY}|${{ secrets.QDRANT_API_KEY }}|g" tests/config.test.yaml
-            sed -i "s|\${QDRANT_COLLECTION_NAME}|${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config.test.yaml
-            sed -i "s|\${OPENAI_API_KEY}|${{ secrets.OPENAI_API_KEY }}|g" tests/config.test.yaml
-            
-            # Neo4j configuration
-            sed -i "s|\${NEO4J_URI}|${{ secrets.NEO4J_URI }}|g" tests/config.test.yaml
-            sed -i "s|\${NEO4J_USER}|${{ secrets.NEO4J_USER }}|g" tests/config.test.yaml
-            sed -i "s|\${NEO4J_PASSWORD}|${{ secrets.NEO4J_PASSWORD }}|g" tests/config.test.yaml
-            sed -i "s|\${NEO4J_DATABASE}|${{ secrets.NEO4J_DATABASE }}|g" tests/config.test.yaml
-            
-            # Optional environment variables - only replace if they exist
-            if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
-              sed -i "s|\${REPO_TOKEN}|${{ secrets.REPO_TOKEN }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.REPO_URL }}" ]; then
-              sed -i "s|\${REPO_URL}|${{ secrets.REPO_URL }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_TOKEN }}" ]; then
-              sed -i "s|\${CONFLUENCE_TOKEN}|${{ secrets.CONFLUENCE_TOKEN }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_EMAIL }}" ]; then
-              sed -i "s|\${CONFLUENCE_EMAIL}|${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_URL }}" ]; then
-              sed -i "s|\${CONFLUENCE_URL}|${{ secrets.CONFLUENCE_URL }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.CONFLUENCE_SPACE_KEY }}" ]; then
-              sed -i "s|\${CONFLUENCE_SPACE_KEY}|${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_TOKEN }}" ]; then
-              sed -i "s|\${JIRA_TOKEN}|${{ secrets.JIRA_TOKEN }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_EMAIL }}" ]; then
-              sed -i "s|\${JIRA_EMAIL}|${{ secrets.JIRA_EMAIL }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_URL }}" ]; then
-              sed -i "s|\${JIRA_URL}|${{ secrets.JIRA_URL }}|g" tests/config.test.yaml
-            fi
-            if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
-              sed -i "s|\${JIRA_PROJECT_KEY}|${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config.test.yaml
-            fi
-            
-            echo "✅ Created legacy config.test.yaml for backward compatibility"
+            echo "✅ Legacy config.test.yaml found for backward compatibility"
+          else
+            echo "⚠️  Legacy config.test.yaml not found (may not be needed)"
           fi
 
-          echo "Multi-file test configuration setup completed successfully"
-          echo "Configuration files created:"
-          ls -la tests/config/*.test.yaml 2>/dev/null || echo "No .test.yaml files found"
-          if [ -f "tests/config.test.yaml" ]; then
-            echo "Legacy config.test.yaml also created"
-          fi
+          echo "Configuration verification completed successfully"
+          echo "Environment variables will be substituted at runtime by the config loader"
 
       - name: Run loader tests and generate coverage reports
         run: |
