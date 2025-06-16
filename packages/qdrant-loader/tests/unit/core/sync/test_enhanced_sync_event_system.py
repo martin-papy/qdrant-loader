@@ -662,7 +662,7 @@ class TestEnhancedSyncEventSystem:
 
     def test_operation_handlers_registration(self, enhanced_sync_system):
         """Test that operation handlers are properly registered."""
-        handlers = enhanced_sync_system._operation_handlers
+        handlers = enhanced_sync_system.operation_processor._operation_handler_map
 
         expected_operations = [
             SyncOperationType.CREATE_DOCUMENT,

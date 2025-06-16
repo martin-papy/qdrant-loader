@@ -190,8 +190,8 @@ class TestSyncMonitoringFramework:
                 "status": "healthy",
                 "active_transactions": 1,
                 "total_transactions": 100,
-                "successful_transactions": 99,
-                "failed_transactions": 1,
+                "successful_transactions": 98,
+                "failed_transactions": 2,
             }
         )
         return mock
@@ -457,7 +457,7 @@ class TestSyncMonitoringFramework:
 
         assert metric.name == "transaction_success_rate"
         assert metric.type == MetricType.GAUGE
-        assert metric.value == 0.96  # 48/50 = 0.96
+        assert metric.value == 0.98  # 98/100 = 0.98
         assert metric.unit == "percentage"
 
     @pytest.mark.asyncio
