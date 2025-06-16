@@ -516,7 +516,7 @@ class TestComprehensivePerformanceSuite:
         id_mapping_manager = MagicMock()
 
         with patch(
-            "qdrant_loader.tests.performance.sync_performance_testing.SyncPerformanceTester"
+            "qdrant_loader.performance.sync_performance_testing.SyncPerformanceTester"
         ) as mock_tester_class:
             mock_tester = MagicMock()
             mock_tester_class.return_value = mock_tester
@@ -562,7 +562,7 @@ class TestComprehensivePerformanceSuite:
         id_mapping_manager = MagicMock()
 
         with patch(
-            "qdrant_loader.tests.performance.sync_performance_testing.SyncPerformanceTester"
+            "qdrant_loader.performance.sync_performance_testing.SyncPerformanceTester"
         ) as mock_tester_class:
             mock_tester = MagicMock()
             mock_tester_class.return_value = mock_tester

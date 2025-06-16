@@ -21,7 +21,7 @@ from ..conflict_resolution import (
 )
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
 from ..monitoring.ingestion_metrics import IngestionMonitor
-from ..sync import ChangeEvent, ChangeType, DatabaseType
+from .event_system import ChangeEvent, ChangeType, DatabaseType
 from ..types import EntityType
 from .enhanced_event_system import EnhancedSyncEventSystem, EnhancedSyncOperation
 from .types import SyncOperationStatus, SyncOperationType

@@ -169,31 +169,27 @@ class QdrantTransactionManager(DatabaseTransactionManager):
             payload=point_data.get("payload", {}),
         )
 
-        await asyncio.to_thread(
-            client.upsert,
-            collection_name=self.qdrant_manager.collection_name,
-            points=[point],
-        )
+        # Use QdrantManager method instead of client directly
+        await self.qdrant_manager.upsert_points([point])
 
     async def _execute_update(self, client, operation: DatabaseOperation) -> None:
         """Execute QDrant update operation."""
         update_data = operation.operation_data or {}
 
         if "payload" in update_data:
-            await asyncio.to_thread(
-                client.set_payload,
-                collection_name=self.qdrant_manager.collection_name,
-                payload=update_data["payload"],
-                points=[operation.entity_id],
+            if not operation.entity_id:
+                raise ValueError("Entity ID is required for update operation")
+            # Use QdrantManager method instead of client directly
+            await self.qdrant_manager.set_payload(
+                operation.entity_id, update_data["payload"]
             )
 
     async def _execute_delete(self, client, operation: DatabaseOperation) -> None:
         """Execute QDrant delete operation."""
-        await asyncio.to_thread(
-            client.delete,
-            collection_name=self.qdrant_manager.collection_name,
-            points_selector=[operation.entity_id],
-        )
+        if not operation.entity_id:
+            raise ValueError("Entity ID is required for delete operation")
+        # Use QdrantManager method instead of client directly
+        await self.qdrant_manager.delete_points([operation.entity_id])
 
     async def _execute_upsert(self, client, operation: DatabaseOperation) -> None:
         """Execute QDrant upsert operation."""

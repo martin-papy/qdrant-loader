@@ -92,11 +92,11 @@ class TestQdrantManager:
         """Test QdrantManager initialization with default settings."""
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_settings",
+                "qdrant_loader.core.managers.qdrant_manager.get_settings",
                 return_value=mock_settings,
             ),
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch.object(QdrantManager, "connect"),
@@ -112,7 +112,7 @@ class TestQdrantManager:
         """Test QdrantManager initialization with custom settings."""
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch.object(QdrantManager, "connect"),
@@ -127,7 +127,7 @@ class TestQdrantManager:
         """Test API key detection with None value."""
         mock_settings.qdrant_api_key = None
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -137,7 +137,7 @@ class TestQdrantManager:
         """Test API key detection with empty string."""
         mock_settings.qdrant_api_key = ""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -147,7 +147,7 @@ class TestQdrantManager:
         """Test API key detection with 'None' string."""
         mock_settings.qdrant_api_key = "None"
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -157,7 +157,7 @@ class TestQdrantManager:
         """Test API key detection with 'null' string."""
         mock_settings.qdrant_api_key = "null"
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -167,7 +167,7 @@ class TestQdrantManager:
         """Test API key detection with valid key."""
         mock_settings.qdrant_api_key = "valid_key"
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -176,9 +176,9 @@ class TestQdrantManager:
     def test_connect_without_api_key(self, mock_settings, mock_qdrant_client):
         """Test connection without API key."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -191,9 +191,9 @@ class TestQdrantManager:
     ):
         """Test connection with API key on localhost (should not force HTTPS)."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
@@ -208,9 +208,9 @@ class TestQdrantManager:
     ):
         """Test connection with API key on cloud (should force HTTPS)."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
@@ -226,9 +226,9 @@ class TestQdrantManager:
         """Test connection with API key on 127.0.0.1 (should not force HTTPS)."""
         mock_settings_with_api_key.qdrant_url = "http://127.0.0.1:6333"
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ) as mock_client_class,
         ):
@@ -241,9 +241,9 @@ class TestQdrantManager:
     def test_connect_client_error(self, mock_settings):
         """Test connection failure due to client error."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 side_effect=Exception("Connection failed"),
             ),
         ):
@@ -256,9 +256,9 @@ class TestQdrantManager:
     def test_connect_unexpected_error(self, mock_settings):
         """Test connection failure due to unexpected error."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 side_effect=RuntimeError("Unexpected error"),
             ),
         ):
@@ -271,9 +271,9 @@ class TestQdrantManager:
     def test_ensure_client_connected_success(self, mock_settings, mock_qdrant_client):
         """Test _ensure_client_connected with connected client."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -284,7 +284,7 @@ class TestQdrantManager:
     def test_ensure_client_connected_not_connected(self, mock_settings):
         """Test _ensure_client_connected with no client."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch.object(QdrantManager, "connect"),
         ):
             manager = QdrantManager(mock_settings)
@@ -303,11 +303,11 @@ class TestQdrantManager:
 
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -336,11 +336,11 @@ class TestQdrantManager:
 
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -359,11 +359,11 @@ class TestQdrantManager:
 
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -383,11 +383,11 @@ class TestQdrantManager:
 
         with (
             patch(
-                "qdrant_loader.core.qdrant_manager.get_global_config",
+                "qdrant_loader.core.managers.qdrant_manager.get_global_config",
                 return_value=mock_global_config,
             ),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -406,9 +406,9 @@ class TestQdrantManager:
         points = [mock_point]
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
             patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread,
@@ -432,9 +432,9 @@ class TestQdrantManager:
         points = [mock_point]
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
             patch("asyncio.to_thread", side_effect=Exception("Upsert failed")),
@@ -451,9 +451,9 @@ class TestQdrantManager:
         mock_qdrant_client.search.return_value = mock_results
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -472,9 +472,9 @@ class TestQdrantManager:
         mock_qdrant_client.search.return_value = mock_results
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -491,9 +491,9 @@ class TestQdrantManager:
         mock_qdrant_client.search.side_effect = Exception("Search failed")
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -505,9 +505,9 @@ class TestQdrantManager:
     def test_delete_collection_success(self, mock_settings, mock_qdrant_client):
         """Test successful collection deletion."""
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -523,9 +523,9 @@ class TestQdrantManager:
         mock_qdrant_client.delete_collection.side_effect = Exception("Delete failed")
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
         ):
@@ -542,9 +542,9 @@ class TestQdrantManager:
         document_ids = ["doc1", "doc2", "doc3"]
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
             patch("asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread,
@@ -570,9 +570,9 @@ class TestQdrantManager:
         document_ids = ["doc1", "doc2"]
 
         with (
-            patch("qdrant_loader.core.qdrant_manager.get_global_config"),
+            patch("qdrant_loader.core.managers.qdrant_manager.get_global_config"),
             patch(
-                "qdrant_loader.core.qdrant_manager.QdrantClient",
+                "qdrant_loader.core.managers.qdrant_manager.QdrantClient",
                 return_value=mock_qdrant_client,
             ),
             patch("asyncio.to_thread", side_effect=Exception("Delete failed")),

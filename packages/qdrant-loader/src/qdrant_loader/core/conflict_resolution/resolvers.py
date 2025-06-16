@@ -9,7 +9,7 @@ from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMapping
-from ..sync import DatabaseType
+from ..sync.event_system import DatabaseType
 from .merge_strategies import AdvancedMergeStrategy, MergeStrategy
 from .models import (
     ConflictRecord,

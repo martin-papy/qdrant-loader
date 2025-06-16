@@ -8,7 +8,7 @@ from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMapping
-from ..sync import ChangeEvent, DatabaseType
+from ..sync.event_system import ChangeEvent, DatabaseType
 from .models import ConflictRecord, ConflictType, EntityVersion
 
 logger = LoggingConfig.get_logger(__name__)

@@ -336,7 +336,7 @@ class TestNeo4jManagerRetryIntegration:
 
     def test_connect_with_retry_on_service_unavailable(self, neo4j_manager):
         """Test that connect() retries on ServiceUnavailable."""
-        with patch("qdrant_loader.core.neo4j_manager.GraphDatabase") as mock_gdb:
+        with patch("qdrant_loader.core.managers.neo4j_manager.GraphDatabase") as mock_gdb:
             mock_driver = Mock()
             mock_gdb.driver.return_value = mock_driver
 

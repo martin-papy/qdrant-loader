@@ -9,7 +9,7 @@ from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
-from ..sync import ChangeEvent
+from ..sync.event_system import ChangeEvent
 from .detector import ConflictDetector
 from .models import ConflictRecord, ConflictResolutionConfig, ConflictResolutionStrategy
 from .persistence import ConflictPersistence, SyncProvider, VersionProvider

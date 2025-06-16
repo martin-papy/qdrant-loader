@@ -9,7 +9,7 @@ from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMapping, Neo4jManager, QdrantManager
-from ..sync import DatabaseType
+from ..sync.event_system import DatabaseType
 from .models import ConflictRecord, EntityVersion
 
 logger = LoggingConfig.get_logger(__name__)

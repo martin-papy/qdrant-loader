@@ -97,11 +97,14 @@ class SyncOperationHandlers:
     ) -> None:
         """Handle DELETE document operation with cascading."""
         logger.debug(f"Handling DELETE document operation {operation.operation_id}")
+        logger.debug(f"Operation entity_id: {operation.entity_id}")
+        logger.debug(f"Operation target_databases: {operation.target_databases}")
 
         operation.mark_processing(tx.transaction.transaction_id)
 
         # Get existing mapping
         mapping = await self._get_mapping_for_operation(operation)
+        logger.debug(f"Found mapping: {mapping}")
         if not mapping:
             logger.warning(f"No mapping found for entity {operation.entity_id}")
             return
@@ -234,9 +237,26 @@ class SyncOperationHandlers:
 
         # Try UUID lookup
         if operation.entity_uuid:
-            return await self.id_mapping_manager.get_mapping_by_neo4j_uuid(
+            mapping = await self.id_mapping_manager.get_mapping_by_neo4j_uuid(
                 operation.entity_uuid
             )
+            if mapping:
+                return mapping
+
+        # If no source event, try both QDrant and Neo4j ID lookups
+        # Try QDrant ID first
+        mapping = await self.id_mapping_manager.get_mapping_by_qdrant_id(
+            operation.entity_id
+        )
+        if mapping:
+            return mapping
+
+        # Try Neo4j ID
+        mapping = await self.id_mapping_manager.get_mapping_by_neo4j_id(
+            operation.entity_id
+        )
+        if mapping:
+            return mapping
 
         return None
 
@@ -396,7 +416,15 @@ class SyncOperationHandlers:
         mapping: IDMapping,
     ) -> None:
         """Handle simple delete without cascading."""
+        logger.debug(
+            f"_handle_simple_delete called for operation {operation.operation_id}"
+        )
+        logger.debug(f"Target databases: {operation.target_databases}")
+        logger.debug(f"Mapping neo4j_node_uuid: {mapping.neo4j_node_uuid}")
+        logger.debug(f"Mapping qdrant_point_id: {mapping.qdrant_point_id}")
+
         if DatabaseType.NEO4J in operation.target_databases and mapping.neo4j_node_uuid:
+            logger.debug("Adding Neo4j delete operation to transaction")
             await tx.add_neo4j_operation(
                 operation_type=OperationType.DELETE,
                 entity_id=mapping.neo4j_node_uuid,
@@ -407,6 +435,9 @@ class SyncOperationHandlers:
             DatabaseType.QDRANT in operation.target_databases
             and mapping.qdrant_point_id
         ):
+            logger.debug(
+                f"Adding QDrant delete operation to transaction for point {mapping.qdrant_point_id}"
+            )
             await tx.add_qdrant_operation(
                 operation_type=OperationType.DELETE,
                 entity_id=mapping.qdrant_point_id,

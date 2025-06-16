@@ -188,10 +188,10 @@ class TestSyncMonitoringFramework:
         mock.health_check = AsyncMock(
             return_value={
                 "status": "healthy",
-                "active_transactions": 2,
-                "total_transactions": 50,
-                "successful_transactions": 48,
-                "failed_transactions": 2,
+                "active_transactions": 1,
+                "total_transactions": 100,
+                "successful_transactions": 99,
+                "failed_transactions": 1,
             }
         )
         return mock

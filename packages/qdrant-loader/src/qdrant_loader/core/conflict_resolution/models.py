@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any
 
 from ..managers import IDMapping
-from ..sync import DatabaseType
+from ..sync.event_system import DatabaseType
 
 
 class ConflictType(Enum):

@@ -9,14 +9,6 @@ This package provides comprehensive database synchronization capabilities includ
 """
 
 # Core sync event system (base functionality)
-# Conflict monitoring
-from .conflict_monitor import (
-    ContentHashComparison,
-    ContentHashStatus,
-    SyncConflictMonitor,
-    SyncMonitoringLevel,
-    SyncOperationMetrics,
-)
 
 # Enhanced sync event system
 from .enhanced_event_system import EnhancedSyncEventSystem
@@ -58,10 +50,4 @@ __all__ = [
     # Types
     "SyncOperationStatus",
     "SyncOperationType",
-    # Conflict monitoring
-    "SyncConflictMonitor",
-    "SyncMonitoringLevel",
-    "ContentHashStatus",
-    "ContentHashComparison",
-    "SyncOperationMetrics",
 ]

@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 import pytest
+import pytest_asyncio
 
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
 from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
@@ -26,12 +27,13 @@ from qdrant_loader.core.sync.conflict_monitor import (
     SyncMonitoringLevel,
 )
 from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
+from qdrant_client.http import models
 
 
 class TestEndToEndPipeline:
     """End-to-end integration tests for the complete document processing pipeline."""
 
-    @pytest.fixture(autouse=True)
+    @pytest_asyncio.fixture(autouse=True)
     async def setup_pipeline(self, test_config, qdrant_manager, neo4j_manager):
         """Set up the complete document processing pipeline."""
         self.config = test_config
@@ -119,6 +121,7 @@ class TestEndToEndPipeline:
         # Cleanup
         await self.sync_system.stop()
 
+    @pytest.mark.asyncio
     async def test_complete_document_ingestion_workflow(self):
         """Test the complete document ingestion workflow from input to storage."""
         # Create test document
@@ -183,6 +186,7 @@ class TestEndToEndPipeline:
         )
         # Note: In actual implementation, this would verify real ID mapping
 
+    @pytest.mark.asyncio
     async def test_document_update_with_entity_evolution(self):
         """Test document updates with entity extraction and relationship evolution."""
         # Create initial document
@@ -251,6 +255,7 @@ class TestEndToEndPipeline:
         if mapping is not None:
             assert mapping.document_version >= 1, "Document version should be tracked"
 
+    @pytest.mark.asyncio
     async def test_concurrent_document_processing(self):
         """Test concurrent processing of multiple documents."""
         num_documents = 5
@@ -325,6 +330,7 @@ class TestEndToEndPipeline:
             entities = await self._get_extracted_entities(document_id)
             # Note: In actual implementation, this would verify real entities
 
+    @pytest.mark.asyncio
     async def test_error_handling_and_recovery(self):
         """Test error handling and recovery in the pipeline."""
         # Create document with problematic content
@@ -370,6 +376,7 @@ class TestEndToEndPipeline:
             assert "error" in result, "Should provide error information"
             assert "document_id" not in result, "Should not create partial document"
 
+    @pytest.mark.asyncio
     async def test_temporal_consistency_across_systems(self):
         """Test temporal consistency across QDrant, Neo4j, and Graphiti."""
         # Create document with temporal information

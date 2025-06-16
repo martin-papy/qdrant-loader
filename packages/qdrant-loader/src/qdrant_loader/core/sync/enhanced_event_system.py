@@ -28,6 +28,7 @@ from ..managers import (
 )
 from .event_system import ChangeEvent, ChangeType, DatabaseType, SyncEventSystem
 from .operations import EnhancedSyncOperation
+from .processor import SyncOperationProcessor
 from .types import SyncOperationType
 
 logger = LoggingConfig.get_logger(__name__)
@@ -95,6 +96,28 @@ class EnhancedSyncEventSystem:
         else:
             self.operation_differentiation_manager = None
 
+        # Initialize the operation processor
+        from .handlers import SyncOperationHandlers
+
+        operation_handlers = SyncOperationHandlers(
+            qdrant_manager=qdrant_manager,
+            neo4j_manager=neo4j_manager,
+            id_mapping_manager=id_mapping_manager,
+            enable_cascading_deletes=enable_cascading_deletes,
+            enable_versioned_updates=enable_versioned_updates,
+        )
+
+        self.operation_processor = SyncOperationProcessor(
+            atomic_transaction_manager=atomic_transaction_manager,
+            operation_handlers=operation_handlers,
+            operation_differentiation_manager=self.operation_differentiation_manager,
+            graphiti_temporal_integration=graphiti_temporal_integration,
+            sync_conflict_monitor=sync_conflict_monitor,
+            operation_timeout_seconds=operation_timeout_seconds,
+            enable_operation_differentiation=enable_operation_differentiation,
+            enable_graphiti_temporal_features=enable_graphiti_temporal_features,
+        )
+
         # Operation management (legacy queue for fallback)
         self._pending_operations: asyncio.Queue[EnhancedSyncOperation] = asyncio.Queue()
         self._active_operations: dict[str, EnhancedSyncOperation] = {}
@@ -105,18 +128,6 @@ class EnhancedSyncEventSystem:
         self._running = False
         self._processing_tasks: list[asyncio.Task] = []
         self._semaphore = asyncio.Semaphore(max_concurrent_operations)
-
-        # Event handlers
-        self._operation_handlers: dict[SyncOperationType, Callable] = {
-            SyncOperationType.CREATE_DOCUMENT: self._handle_create_document,
-            SyncOperationType.UPDATE_DOCUMENT: self._handle_update_document,
-            SyncOperationType.DELETE_DOCUMENT: self._handle_delete_document,
-            SyncOperationType.CREATE_ENTITY: self._handle_create_entity,
-            SyncOperationType.UPDATE_ENTITY: self._handle_update_entity,
-            SyncOperationType.DELETE_ENTITY: self._handle_delete_entity,
-            SyncOperationType.CASCADE_DELETE: self._handle_cascade_delete,
-            SyncOperationType.VERSION_UPDATE: self._handle_version_update,
-        }
 
         # Statistics
         self._stats = {
@@ -310,17 +321,13 @@ class EnhancedSyncEventSystem:
                 # Fallback to legacy queue system
                 await self._pending_operations.put(operation)
                 logger.debug(
-                    f"Queued operation {operation.operation_id} of type {operation.operation_type} (legacy mode)"
+                    f"Queued operation {operation.operation_id} of type {operation.operation_type} (legacy mode, queue size now: {self._pending_operations.qsize()})"
                 )
 
         except Exception as e:
             logger.error(f"Error queuing operation {operation.operation_id}: {e}")
             operation.mark_failed(str(e))
             self._failed_operations[operation.operation_id] = operation
-
-    # Note: The operation handlers and helper methods would continue here
-    # For brevity, I'm including just the core structure. The full implementation
-    # would include all the handler methods from the original file.
 
     async def get_operation_statistics(self) -> dict[str, Any]:
         """Get operation statistics."""
@@ -436,57 +443,103 @@ class EnhancedSyncEventSystem:
                 "running": self._running,
             }
 
-    # Placeholder methods for operation handlers - these would be extracted to separate files
-    async def _handle_create_document(self, operation: EnhancedSyncOperation) -> None:
-        """Handle CREATE document operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_update_document(self, operation: EnhancedSyncOperation) -> None:
-        """Handle UPDATE document operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_delete_document(self, operation: EnhancedSyncOperation) -> None:
-        """Handle DELETE document operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_create_entity(self, operation: EnhancedSyncOperation) -> None:
-        """Handle CREATE entity operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_update_entity(self, operation: EnhancedSyncOperation) -> None:
-        """Handle UPDATE entity operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_delete_entity(self, operation: EnhancedSyncOperation) -> None:
-        """Handle DELETE entity operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_cascade_delete(self, operation: EnhancedSyncOperation) -> None:
-        """Handle CASCADE delete operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
-    async def _handle_version_update(self, operation: EnhancedSyncOperation) -> None:
-        """Handle VERSION update operation."""
-        # Implementation would be moved to operation handlers module
-        pass
-
     async def _operation_processor(self) -> None:
         """Main operation processing loop with intelligent priority handling."""
-        # Implementation would be moved to processor module
-        pass
+        logger.debug("Operation processor started")
+        while self._running:
+            try:
+                operation = None
+                characteristics = None
 
-    async def _process_operation(
-        self,
-        operation: EnhancedSyncOperation,
-        characteristics: Optional["OperationCharacteristics"],
-    ) -> None:
-        """Process a single sync operation."""
-        # Implementation would be moved to processor module
-        pass
+                # Try to get operation from differentiation manager first if enabled
+                if (
+                    self.enable_operation_differentiation
+                    and self.operation_differentiation_manager
+                ):
+                    try:
+                        result = (
+                            await self.operation_differentiation_manager.get_next_operation()
+                        )
+                        if result:
+                            operation, characteristics = result
+                            logger.debug(
+                                f"Got operation {operation.operation_id} from differentiation manager"
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Error getting operation from differentiation manager: {e}"
+                        )
+
+                # Fallback to legacy queue if no operation from differentiation manager
+                if not operation:
+                    try:
+                        logger.debug(
+                            f"Waiting for operation from legacy queue (queue size: {self._pending_operations.qsize()})"
+                        )
+                        operation = await asyncio.wait_for(
+                            self._pending_operations.get(), timeout=1.0
+                        )
+                        logger.debug(
+                            f"Got operation {operation.operation_id} from legacy queue"
+                        )
+                    except asyncio.TimeoutError:
+                        logger.debug("Operation processor timeout, continuing...")
+                        continue
+
+                # Acquire semaphore for concurrent processing
+                async with self._semaphore:
+                    # Move operation to active
+                    self._active_operations[operation.operation_id] = operation
+
+                    try:
+                        # If we don't have characteristics from differentiation manager,
+                        # try to extract from metadata (for legacy operations)
+                        if (
+                            not characteristics
+                            and self.enable_operation_differentiation
+                            and self.operation_differentiation_manager
+                            and "operation_characteristics" in operation.metadata
+                        ):
+                            # Extract characteristics from metadata
+                            char_data = operation.metadata["operation_characteristics"]
+                            from ..operation_differentiation import (
+                                OperationCharacteristics,
+                                OperationComplexity,
+                                OperationImpact,
+                                OperationPriority,
+                                ValidationLevel,
+                            )
+
+                            characteristics = OperationCharacteristics(
+                                operation_type=operation.operation_type,
+                                priority=OperationPriority(char_data["priority"]),
+                                complexity=OperationComplexity(char_data["complexity"]),
+                                impact=OperationImpact(char_data["impact"]),
+                                validation_level=ValidationLevel(
+                                    char_data["validation_level"]
+                                ),
+                            )
+
+                        # Process the operation using the processor
+                        await self.operation_processor.process_operation(
+                            operation, characteristics, self._stats
+                        )
+
+                        # Move to completed operations
+                        self._completed_operations[operation.operation_id] = operation
+
+                    except Exception as e:
+                        logger.error(
+                            f"Error processing operation {operation.operation_id}: {e}"
+                        )
+                        operation.mark_failed(str(e))
+                        self._failed_operations[operation.operation_id] = operation
+                        self._stats["operations_failed"] += 1
+
+                    finally:
+                        # Remove from active operations
+                        self._active_operations.pop(operation.operation_id, None)
+
+            except Exception as e:
+                logger.error(f"Error in operation processor: {e}")
+                await asyncio.sleep(1)  # Brief pause before retrying

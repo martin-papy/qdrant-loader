@@ -62,7 +62,7 @@ class TestSetupProjectManager:
                 "qdrant_loader.config.initialize_multi_file_config_with_workspace"
             ) as mock_init_config,
             patch("qdrant_loader.config.get_settings") as mock_get_settings,
-            patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
+            patch("qdrant_loader.core.managers.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -114,7 +114,7 @@ class TestSetupProjectManager:
                 "qdrant_loader.cli.project_commands.load_config_with_workspace"
             ) as mock_load_config,
             patch("qdrant_loader.config.get_settings") as mock_get_settings,
-            patch("qdrant_loader.core.project_manager.ProjectManager") as mock_pm,
+            patch("qdrant_loader.core.managers.project_manager.ProjectManager") as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -181,7 +181,7 @@ class TestInitializeProjectContextsFromConfig:
     async def test_initialize_project_contexts_success(self):
         """Test successful initialization of project contexts."""
         with patch(
-            "qdrant_loader.core.project_manager.ProjectContext"
+            "qdrant_loader.core.managers.project_manager.ProjectContext"
         ) as mock_context_class:
             # Mock project manager with projects config
             mock_project_manager = Mock()

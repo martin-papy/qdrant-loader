@@ -18,15 +18,17 @@ from qdrant_loader.core.conflict_resolution import (
 )
 from qdrant_loader.core.managers import IDMapping, MappingType
 from qdrant_loader.core.sync import (
-    ContentHashComparison,
-    ContentHashStatus,
     DatabaseType,
     EnhancedSyncOperation,
+    SyncOperationStatus,
+    SyncOperationType,
+)
+from qdrant_loader.core.sync.conflict_monitor import (
+    ContentHashComparison,
+    ContentHashStatus,
     SyncConflictMonitor,
     SyncMonitoringLevel,
     SyncOperationMetrics,
-    SyncOperationStatus,
-    SyncOperationType,
 )
 from qdrant_loader.core.types import EntityType
 
