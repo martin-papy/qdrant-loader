@@ -6,6 +6,7 @@ import pytest
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.exceptions import QdrantConnectionError
 
 
 @pytest.fixture
@@ -66,7 +67,9 @@ async def test_search_engine_initialization_failure(
         "qdrant_loader_mcp_server.search.engine.QdrantClient",
         side_effect=Exception("Connection failed"),
     ):
-        with pytest.raises(RuntimeError, match="Failed to connect to Qdrant server"):
+        with pytest.raises(
+            QdrantConnectionError, match="Failed to initialize Qdrant client"
+        ):
             await search_engine.initialize(qdrant_config, openai_config)
 
 

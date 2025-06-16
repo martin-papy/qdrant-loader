@@ -115,7 +115,7 @@ async def test_handle_list_tools(mcp_handler):
     assert response["id"] == 2
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 3
+    assert len(response["result"]["tools"]) == 11
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
     assert "description" in tool
@@ -160,4 +160,4 @@ async def test_handle_request_with_exception(mcp_handler):
     assert "error" in response
     assert response["error"]["code"] == -32603
     assert "Internal error" in response["error"]["message"]
-    assert "Test error" in response["error"]["data"]
+    assert "Test error" in response["error"]["data"]["message"]

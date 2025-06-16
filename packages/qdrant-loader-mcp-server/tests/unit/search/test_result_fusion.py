@@ -276,6 +276,15 @@ class TestResultFusionEngine:
         )
 
         assert isinstance(strategy, FusionStrategy)
+        assert strategy in [
+            FusionStrategy.WEIGHTED_SUM,
+            FusionStrategy.RECIPROCAL_RANK_FUSION,
+            FusionStrategy.MMR,
+            FusionStrategy.GRAPH_ENHANCED_WEIGHTED,
+            FusionStrategy.CONFIDENCE_ADAPTIVE,
+            FusionStrategy.MULTI_STAGE,
+            FusionStrategy.CONTEXT_AWARE,
+        ]
 
     def test_fusion_with_empty_results(self, fusion_engine):
         """Test fusion behavior with empty result lists."""
@@ -421,6 +430,10 @@ class TestResultFusionEngine:
             FusionStrategy.WEIGHTED_SUM,
             FusionStrategy.RECIPROCAL_RANK_FUSION,
             FusionStrategy.MMR,
+            FusionStrategy.GRAPH_ENHANCED_WEIGHTED,
+            FusionStrategy.CONFIDENCE_ADAPTIVE,
+            FusionStrategy.MULTI_STAGE,
+            FusionStrategy.CONTEXT_AWARE,
         ]
 
         # Test MMR fusion for diversity

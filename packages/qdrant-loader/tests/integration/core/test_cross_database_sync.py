@@ -378,7 +378,7 @@ class TestCrossDatabaseSync:
                     if mapping.entity_name == doc_id:
                         found_mapping = True
                         break
-            except:
+            except Exception as e:
                 pass
             # Note: This is a simplified assertion - the actual mapping lookup
             # would depend on how the document ID is stored in the mapping
@@ -475,7 +475,7 @@ class TestCrossDatabaseSync:
                 collection_name="test_collection", point_ids=[point_id]
             )
             return result[0] if result else None
-        except:
+        except Exception as e:
             return None
 
     async def _update_qdrant_document(

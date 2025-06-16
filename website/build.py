@@ -373,7 +373,7 @@ class WebsiteBuilder:
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
                 version = pyproject.get("project", {}).get("version", version)
-        except:
+        except Exception as e:
             pass
 
         # Prepare replacements
@@ -553,7 +553,7 @@ class WebsiteBuilder:
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
                 version = pyproject.get("project", {}).get("version", version)
-        except:
+        except Exception as e:
             pass
 
         replacements = {
@@ -793,7 +793,7 @@ class WebsiteBuilder:
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
                 version = pyproject.get("project", {}).get("version", version)
-        except:
+        except Exception as e:
             pass
 
         replacements = {
@@ -1391,7 +1391,7 @@ class WebsiteBuilder:
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
                 version = pyproject.get("project", {}).get("version", version)
-        except:
+        except Exception as e:
             pass
 
         # Set base_url to '../' for docs/index.html (one level deep)

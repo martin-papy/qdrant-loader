@@ -420,7 +420,7 @@ class TestEndToEndPipeline:
                 "payload": {"title": "Test Document"},
                 "vector": [0.1] * 384,
             }
-        except:
+        except Exception as e:
             return None
 
     async def _get_neo4j_document(self, document_id: str) -> dict[str, Any] | None:
@@ -435,7 +435,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return result[0]["d"] if result else None
-        except:
+        except Exception as e:
             return None
 
     async def _get_extracted_entities(self, document_id: str) -> list[dict[str, Any]]:
@@ -450,7 +450,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["e"] for record in result]
-        except:
+        except Exception as e:
             return []
 
     async def _get_entity_relationships(self, document_id: str) -> list[dict[str, Any]]:
@@ -473,7 +473,7 @@ class TestEndToEndPipeline:
                 }
                 for record in result
             ]
-        except:
+        except Exception as e:
             return []
 
     async def _get_document_version_history(
@@ -491,7 +491,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["prev"] for record in result]
-        except:
+        except Exception as e:
             return []
 
     async def _get_temporal_relationships(
@@ -516,7 +516,7 @@ class TestEndToEndPipeline:
                 }
                 for record in result
             ]
-        except:
+        except Exception as e:
             return []
 
     async def _get_temporal_nodes(self, document_id: str) -> list[dict[str, Any]]:
@@ -531,7 +531,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["t"] for record in result]
-        except:
+        except Exception as e:
             return []
 
     async def _get_graphiti_episodes(self, document_id: str) -> list[dict[str, Any]]:
