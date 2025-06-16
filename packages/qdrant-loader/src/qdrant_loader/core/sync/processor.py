@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING, Dict, Optional
 if TYPE_CHECKING:
     from ..graphiti_temporal_integration import GraphitiTemporalIntegration
     from .conflict_monitor import SyncConflictMonitor
+    from ..operation_differentiation import (
+        OperationCharacteristics,
+        OperationDifferentiationManager,
+    )
 
 from ...utils.logging import LoggingConfig
 from ..atomic_transactions import AtomicTransactionManager
-from ..operation_differentiation import (
-    OperationCharacteristics,
-    OperationDifferentiationManager,
-)
+
 from .types import SyncOperationStatus, SyncOperationType
 from .handlers import SyncOperationHandlers
 from .operations import EnhancedSyncOperation
@@ -33,7 +34,7 @@ class SyncOperationProcessor:
         atomic_transaction_manager: AtomicTransactionManager,
         operation_handlers: SyncOperationHandlers,
         operation_differentiation_manager: Optional[
-            OperationDifferentiationManager
+            "OperationDifferentiationManager"
         ] = None,
         graphiti_temporal_integration: Optional["GraphitiTemporalIntegration"] = None,
         sync_conflict_monitor: Optional["SyncConflictMonitor"] = None,
@@ -77,7 +78,7 @@ class SyncOperationProcessor:
     async def process_operation(
         self,
         operation: EnhancedSyncOperation,
-        characteristics: Optional[OperationCharacteristics] = None,
+        characteristics: Optional["OperationCharacteristics"] = None,
         stats: Optional[Dict[str, int]] = None,
     ) -> None:
         """Process a single sync operation.
@@ -204,7 +205,7 @@ class SyncOperationProcessor:
     async def process_operation_with_priority(
         self,
         operation: EnhancedSyncOperation,
-        characteristics: Optional[OperationCharacteristics] = None,
+        characteristics: Optional["OperationCharacteristics"] = None,
         stats: Optional[Dict[str, int]] = None,
     ) -> None:
         """Process operation with intelligent priority handling.

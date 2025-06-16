@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from ...utils.logging import LoggingConfig
-from ..sync.types import SyncOperationType
+from qdrant_loader.core.sync.types import SyncOperationType
 from ..types import EntityType
 from .types import OperationCharacteristics, ValidationLevel, ValidationResult
 

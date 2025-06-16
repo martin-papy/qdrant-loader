@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from ..sync.types import SyncOperationType
+from qdrant_loader.core.sync.types import SyncOperationType
 
 
 class OperationPriority(Enum):

@@ -13,6 +13,11 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set
 if TYPE_CHECKING:
     from ..graphiti_temporal_integration import GraphitiTemporalIntegration
     from .conflict_monitor import SyncConflictMonitor
+    from ..operation_differentiation import (
+        OperationCharacteristics,
+        OperationDifferentiationManager,
+        ValidationResult,
+    )
 
 from ...utils.logging import LoggingConfig
 from ..atomic_transactions import (
@@ -27,11 +32,7 @@ from ..managers import (
     MappingType,
     Neo4jManager,
 )
-from ..operation_differentiation import (
-    OperationCharacteristics,
-    OperationDifferentiationManager,
-    ValidationResult,
-)
+
 from ..managers import QdrantManager
 from .types import SyncOperationStatus, SyncOperationType
 from ..types import EntityType
@@ -93,6 +94,8 @@ class EnhancedSyncEventSystem:
 
         # Initialize Operation Differentiation Manager
         if self.enable_operation_differentiation:
+            from ..operation_differentiation import OperationDifferentiationManager
+
             self.operation_differentiation_manager = OperationDifferentiationManager(
                 max_concurrent_operations=max_concurrent_operations,
                 enable_caching=True,
@@ -491,7 +494,7 @@ class EnhancedSyncEventSystem:
     async def _process_operation(
         self,
         operation: EnhancedSyncOperation,
-        characteristics: Optional[OperationCharacteristics],
+        characteristics: Optional["OperationCharacteristics"],
     ) -> None:
         """Process a single sync operation."""
         # Implementation would be moved to processor module
