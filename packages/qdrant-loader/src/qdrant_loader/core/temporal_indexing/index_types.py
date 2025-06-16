@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 
@@ -45,8 +45,8 @@ class TemporalIndexConfig:
 
     # Index fields
     temporal_field: str = "valid_from"  # Primary temporal field
-    entity_field: Optional[str] = None  # Entity identifier field
-    additional_fields: List[str] = field(default_factory=list)
+    entity_field: str | None = None  # Entity identifier field
+    additional_fields: list[str] = field(default_factory=list)
 
     # Performance settings
     page_size: int = 4096
@@ -62,7 +62,7 @@ class TemporalIndexConfig:
     cluster_by_entity: bool = True
     cluster_time_window_hours: int = 24
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "index_id": self.index_id,
@@ -101,20 +101,20 @@ class TemporalIndexStatistics:
     average_query_time_ms: float = 0.0
 
     # Maintenance statistics
-    last_rebuild: Optional[datetime] = None
+    last_rebuild: datetime | None = None
     fragmentation_ratio: float = 0.0
     maintenance_operations: int = 0
 
     # Time range coverage
-    earliest_timestamp: Optional[datetime] = None
-    latest_timestamp: Optional[datetime] = None
+    earliest_timestamp: datetime | None = None
+    latest_timestamp: datetime | None = None
 
     def cache_hit_ratio(self) -> float:
         """Calculate cache hit ratio."""
         total = self.cache_hits + self.cache_misses
         return self.cache_hits / total if total > 0 else 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "index_id": self.index_id,
@@ -151,8 +151,8 @@ class TemporalIndex:
     last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Index data structure (implementation-specific)
-    _index_data: Dict[str, Any] = field(default_factory=dict)
-    _cache: Dict[str, Any] = field(default_factory=dict)
+    _index_data: dict[str, Any] = field(default_factory=dict)
+    _cache: dict[str, Any] = field(default_factory=dict)
 
     # Statistics
     statistics: TemporalIndexStatistics = field(init=False)
@@ -201,8 +201,8 @@ class TemporalQueryHint:
     """Query optimization hints for temporal queries."""
 
     # Index preferences
-    preferred_indexes: List[str] = field(default_factory=list)
-    avoid_indexes: List[str] = field(default_factory=list)
+    preferred_indexes: list[str] = field(default_factory=list)
+    avoid_indexes: list[str] = field(default_factory=list)
 
     # Query strategy hints
     use_clustering: bool = True
@@ -210,11 +210,11 @@ class TemporalQueryHint:
     parallel_execution: bool = False
 
     # Performance hints
-    expected_result_size: Optional[int] = None
-    time_range_selectivity: Optional[float] = None  # 0.0 to 1.0
+    expected_result_size: int | None = None
+    time_range_selectivity: float | None = None  # 0.0 to 1.0
 
     # Memory hints
-    max_memory_mb: Optional[int] = None
+    max_memory_mb: int | None = None
     streaming_results: bool = False
 
 
@@ -226,8 +226,8 @@ class TemporalQueryPlan:
     query_hash: str = ""
 
     # Selected indexes
-    primary_index: Optional[str] = None
-    secondary_indexes: List[str] = field(default_factory=list)
+    primary_index: str | None = None
+    secondary_indexes: list[str] = field(default_factory=list)
 
     # Execution strategy
     execution_strategy: str = "sequential"  # sequential, parallel, streaming
@@ -243,7 +243,7 @@ class TemporalQueryPlan:
     estimated_execution_time_ms: float = 0.0
     estimated_memory_usage_mb: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "plan_id": self.plan_id,

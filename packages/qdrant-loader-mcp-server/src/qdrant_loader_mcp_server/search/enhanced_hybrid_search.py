@@ -7,16 +7,14 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 
-import numpy as np
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from rank_bm25 import BM25Okapi
 
 from ..utils.logging import LoggingConfig
-from .hybrid_search import HybridSearchEngine, HybridSearchResult
+from .hybrid_search import HybridSearchEngine
 from .models import SearchResult
 
 logger = LoggingConfig.get_logger(__name__)
@@ -59,9 +57,9 @@ class RerankingStrategy(Enum):
 class QueryWeights:
     """Query-time weight overrides for search result fusion."""
 
-    vector_weight: Optional[float] = None
-    keyword_weight: Optional[float] = None
-    graph_weight: Optional[float] = None
+    vector_weight: float | None = None
+    keyword_weight: float | None = None
+    graph_weight: float | None = None
 
     def __post_init__(self):
         """Validate weights after initialization."""
@@ -129,7 +127,7 @@ class QueryWeights:
             if not 0.99 <= total <= 1.01:  # Allow small floating point tolerance
                 raise ValueError(f"All three weights must sum to 1.0, got {total}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for caching and serialization."""
         return {
             "vector_weight": self.vector_weight,
@@ -139,9 +137,9 @@ class QueryWeights:
 
 
 def validate_query_weights(
-    vector_weight: Optional[float] = None,
-    keyword_weight: Optional[float] = None,
-    graph_weight: Optional[float] = None,
+    vector_weight: float | None = None,
+    keyword_weight: float | None = None,
+    graph_weight: float | None = None,
 ) -> QueryWeights:
     """Validate and create QueryWeights instance.
 
@@ -240,22 +238,22 @@ class EnhancedSearchResult:
     rerank_score: float = 0.0
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Vector search specific
     vector_distance: float = 0.0
-    embedding_model: Optional[str] = None
+    embedding_model: str | None = None
 
     # Graph search specific
-    entity_ids: List[str] = field(default_factory=list)
-    relationship_types: List[str] = field(default_factory=list)
+    entity_ids: list[str] = field(default_factory=list)
+    relationship_types: list[str] = field(default_factory=list)
     graph_distance: int = 0
     centrality_score: float = 0.0
     temporal_relevance: float = 0.0
 
     # Additional context
-    explanation: Optional[str] = None
-    debug_info: Dict[str, Any] = field(default_factory=dict)
+    explanation: str | None = None
+    debug_info: dict[str, Any] = field(default_factory=dict)
 
 
 class VectorSearchModule:
@@ -284,9 +282,9 @@ class VectorSearchModule:
         query: str,
         limit: int,
         min_score: float = 0.3,
-        project_ids: Optional[List[str]] = None,
+        project_ids: list[str] | None = None,
         **kwargs,
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Perform vector search using QDrant.
 
         Args:
@@ -349,7 +347,7 @@ class VectorSearchModule:
             self.logger.error(f"Vector search failed: {e}")
             raise
 
-    async def _get_embedding(self, text: str) -> List[float]:
+    async def _get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI."""
         try:
             response = await self.openai_client.embeddings.create(
@@ -361,7 +359,7 @@ class VectorSearchModule:
             self.logger.error(f"Failed to get embedding: {e}")
             raise
 
-    def _build_filter(self, project_ids: List[str]) -> models.Filter:
+    def _build_filter(self, project_ids: list[str]) -> models.Filter:
         """Build filter for project IDs."""
         return models.Filter(
             must=[
@@ -395,7 +393,7 @@ class GraphSearchModule:
         include_temporal: bool = True,
         use_graphiti: bool = True,
         **kwargs,
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Perform graph search using Neo4j and Graphiti.
 
         Args:
@@ -440,8 +438,8 @@ class GraphSearchModule:
             return []
 
     async def _search_with_graphiti(
-        self, query: str, limit: int, center_node_uuid: Optional[str] = None, **kwargs
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, limit: int, center_node_uuid: str | None = None, **kwargs
+    ) -> list[EnhancedSearchResult]:
         """Search using Graphiti knowledge graph."""
         try:
             if not self.graphiti_manager:
@@ -510,7 +508,7 @@ class GraphSearchModule:
         max_depth: int,
         include_relationships: bool,
         include_temporal: bool,
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Search using direct Neo4j queries with enhanced relationship analysis."""
         try:
             if not self.neo4j_manager:
@@ -731,7 +729,7 @@ class GraphSearchModule:
 
     async def _fallback_neo4j_search(
         self, query: str, limit: int
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Fallback Neo4j search with simpler queries."""
         try:
             if not self.neo4j_manager:
@@ -789,8 +787,8 @@ class GraphSearchModule:
             return []
 
     def _deduplicate_results(
-        self, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Remove duplicate results based on content similarity."""
         seen_ids = set()
         unique_results = []
@@ -817,8 +815,8 @@ class ResultFusionEngine:
         self.logger = LoggingConfig.get_logger(__name__)
 
     def normalize_scores(
-        self, results: List[EnhancedSearchResult], score_field: str = "combined_score"
-    ) -> List[EnhancedSearchResult]:
+        self, results: list[EnhancedSearchResult], score_field: str = "combined_score"
+    ) -> list[EnhancedSearchResult]:
         """Normalize scores to 0-1 range using min-max normalization.
 
         Args:
@@ -854,8 +852,8 @@ class ResultFusionEngine:
             return results
 
     def apply_score_boosting(
-        self, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Apply score boosting based on result characteristics.
 
         Args:
@@ -903,9 +901,9 @@ class ResultFusionEngine:
     def select_optimal_fusion_strategy(
         self,
         query: str,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
     ) -> FusionStrategy:
         """Select the optimal fusion strategy based on query and result characteristics.
 
@@ -1044,11 +1042,11 @@ class ResultFusionEngine:
 
     def fuse_results(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Fuse results from vector, keyword, and graph search.
 
         Args:
@@ -1147,11 +1145,11 @@ class ResultFusionEngine:
 
     def _weighted_sum_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Fuse results using weighted sum of scores."""
         # Create a mapping of content to results
         result_map = {}
@@ -1234,11 +1232,11 @@ class ResultFusionEngine:
 
     def _reciprocal_rank_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Fuse results using reciprocal rank fusion (RRF)."""
         # Create rank mappings for each result type
         vector_ranks = {
@@ -1299,12 +1297,12 @@ class ResultFusionEngine:
 
     def _mmr_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
         lambda_param: float = 0.7,
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Fuse results using Maximal Marginal Relevance (MMR).
 
         MMR balances relevance and diversity by selecting results that are
@@ -1385,11 +1383,11 @@ class ResultFusionEngine:
 
     def _graph_enhanced_weighted_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Enhanced weighted fusion that leverages graph centrality and temporal factors.
 
         This fusion strategy applies sophisticated graph-based boosting to improve
@@ -1498,11 +1496,11 @@ class ResultFusionEngine:
 
     def _confidence_adaptive_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Adaptive fusion that adjusts weights based on result confidence scores.
 
         This strategy dynamically adjusts the fusion weights based on the confidence
@@ -1597,11 +1595,11 @@ class ResultFusionEngine:
 
     def _multi_stage_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Multi-stage fusion with preliminary filtering and progressive refinement.
 
         This strategy applies fusion in multiple stages:
@@ -1695,11 +1693,11 @@ class ResultFusionEngine:
 
     def _context_aware_fusion(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Context-aware fusion that adapts based on query characteristics and result patterns.
 
         This strategy analyzes the query and result characteristics to select
@@ -1787,7 +1785,7 @@ class ResultFusionEngine:
             )
 
     def _calculate_result_confidence(
-        self, results: List[EnhancedSearchResult], result_type: str
+        self, results: list[EnhancedSearchResult], result_type: str
     ) -> float:
         """Calculate confidence score for a set of results.
 
@@ -1851,11 +1849,11 @@ class ResultFusionEngine:
 
     def _combine_and_score_results(
         self,
-        vector_results: List[EnhancedSearchResult],
-        keyword_results: List[EnhancedSearchResult],
-        graph_results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
-    ) -> List[EnhancedSearchResult]:
+        vector_results: list[EnhancedSearchResult],
+        keyword_results: list[EnhancedSearchResult],
+        graph_results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Combine results from all sources and calculate initial relevance scores."""
         # Get effective weights (query-time overrides or config defaults)
         if query_weights and query_weights.has_weights():
@@ -2018,8 +2016,8 @@ class CacheManager:
         self.ttl = ttl
         self.max_size = max_size
         self.cleanup_interval = cleanup_interval
-        self.cache: Dict[str, Dict[str, Any]] = {}
-        self.access_times: Dict[str, float] = {}  # For LRU eviction
+        self.cache: dict[str, dict[str, Any]] = {}
+        self.access_times: dict[str, float] = {}  # For LRU eviction
         self.stats = {
             "hits": 0,
             "misses": 0,
@@ -2034,8 +2032,8 @@ class CacheManager:
         self,
         query: str,
         config: EnhancedSearchConfig,
-        query_weights: Optional[QueryWeights] = None,
-    ) -> Optional[List[EnhancedSearchResult]]:
+        query_weights: QueryWeights | None = None,
+    ) -> list[EnhancedSearchResult] | None:
         """Get cached results for query.
 
         Args:
@@ -2074,8 +2072,8 @@ class CacheManager:
         self,
         query: str,
         config: EnhancedSearchConfig,
-        results: List[EnhancedSearchResult],
-        query_weights: Optional[QueryWeights] = None,
+        results: list[EnhancedSearchResult],
+        query_weights: QueryWeights | None = None,
     ) -> None:
         """Cache search results.
 
@@ -2100,7 +2098,7 @@ class CacheManager:
         self,
         query: str,
         config: EnhancedSearchConfig,
-        query_weights: Optional[QueryWeights] = None,
+        query_weights: QueryWeights | None = None,
     ) -> str:
         """Generate cache key for query and config."""
         # Use query weights if provided, otherwise use config defaults
@@ -2188,7 +2186,7 @@ class CacheManager:
         self.stats["evictions"] += len(entries_to_evict)
         self.logger.debug(f"Evicted {len(entries_to_evict)} LRU cache entries")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:
@@ -2251,7 +2249,7 @@ class RerankingEngine:
     """Advanced reranking engine with multiple strategies."""
 
     def __init__(
-        self, config: EnhancedSearchConfig, openai_client: Optional[AsyncOpenAI] = None
+        self, config: EnhancedSearchConfig, openai_client: AsyncOpenAI | None = None
     ):
         """Initialize reranking engine.
 
@@ -2287,9 +2285,9 @@ class RerankingEngine:
     async def rerank_results(
         self,
         query: str,
-        results: List[EnhancedSearchResult],
-        user_context: Optional[Dict[str, Any]] = None,
-    ) -> List[EnhancedSearchResult]:
+        results: list[EnhancedSearchResult],
+        user_context: dict[str, Any] | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Apply reranking strategy to search results.
 
         Args:
@@ -2325,8 +2323,8 @@ class RerankingEngine:
             return results
 
     async def _cross_encoder_rerank(
-        self, query: str, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Rerank using cross-encoder models."""
         if self.config.cross_encoder_model == "openai" and self.openai_client:
             return await self._openai_cross_encoder_rerank(query, results)
@@ -2337,8 +2335,8 @@ class RerankingEngine:
             return results
 
     async def _openai_cross_encoder_rerank(
-        self, query: str, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Rerank using OpenAI model for relevance classification."""
         try:
             # Prepare batch for OpenAI classification
@@ -2407,8 +2405,8 @@ class RerankingEngine:
             return results
 
     def _bge_cross_encoder_rerank(
-        self, query: str, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Rerank using BGE cross-encoder model."""
         try:
             if not self._bge_reranker:
@@ -2422,7 +2420,7 @@ class RerankingEngine:
             scores = self._bge_reranker.predict(pairs)
 
             # Update results with cross-encoder scores
-            for result, score in zip(results, scores):
+            for result, score in zip(results, scores, strict=False):
                 result.rerank_score = float(score)
                 result.combined_score = (result.combined_score + score) / 2
 
@@ -2435,8 +2433,8 @@ class RerankingEngine:
             return results
 
     def _diversity_rerank(
-        self, query: str, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Apply diversity-based reranking using MMR approach."""
         if len(results) <= 1:
             return results
@@ -2491,8 +2489,8 @@ class RerankingEngine:
             return results
 
     def _temporal_rerank(
-        self, results: List[EnhancedSearchResult]
-    ) -> List[EnhancedSearchResult]:
+        self, results: list[EnhancedSearchResult]
+    ) -> list[EnhancedSearchResult]:
         """Apply temporal relevance boosting."""
         try:
             from datetime import datetime, timedelta
@@ -2543,9 +2541,9 @@ class RerankingEngine:
     def _contextual_rerank(
         self,
         query: str,
-        results: List[EnhancedSearchResult],
-        user_context: Optional[Dict[str, Any]] = None,
-    ) -> List[EnhancedSearchResult]:
+        results: list[EnhancedSearchResult],
+        user_context: dict[str, Any] | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Apply contextual boosting based on user context and query context."""
         try:
             for result in results:
@@ -2609,9 +2607,9 @@ class RerankingEngine:
     async def _combined_rerank(
         self,
         query: str,
-        results: List[EnhancedSearchResult],
-        user_context: Optional[Dict[str, Any]] = None,
-    ) -> List[EnhancedSearchResult]:
+        results: list[EnhancedSearchResult],
+        user_context: dict[str, Any] | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Apply combined reranking strategy using multiple approaches."""
         try:
             # Step 1: Apply cross-encoder reranking for relevance
@@ -2652,7 +2650,7 @@ class RerankingEngine:
         except Exception:
             return 0.0
 
-    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
+    def _parse_timestamp(self, timestamp_str: str) -> datetime | None:
         """Parse timestamp string to datetime object."""
         try:
             from datetime import datetime
@@ -2687,7 +2685,7 @@ class EnhancedHybridSearchEngine:
         collection_name: str,
         neo4j_manager=None,
         graphiti_manager=None,
-        config: Optional[EnhancedSearchConfig] = None,
+        config: EnhancedSearchConfig | None = None,
     ):
         """Initialize enhanced hybrid search engine.
 
@@ -2741,15 +2739,15 @@ class EnhancedHybridSearchEngine:
     async def search(
         self,
         query: str,
-        mode: Optional[SearchMode] = None,
-        limit: Optional[int] = None,
-        project_ids: Optional[List[str]] = None,
-        source_types: Optional[List[str]] = None,
-        vector_weight: Optional[float] = None,
-        keyword_weight: Optional[float] = None,
-        graph_weight: Optional[float] = None,
+        mode: SearchMode | None = None,
+        limit: int | None = None,
+        project_ids: list[str] | None = None,
+        source_types: list[str] | None = None,
+        vector_weight: float | None = None,
+        keyword_weight: float | None = None,
+        graph_weight: float | None = None,
         **kwargs,
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """Perform enhanced hybrid search.
 
         Args:
@@ -2851,8 +2849,8 @@ class EnhancedHybridSearchEngine:
             )
 
     async def _vector_only_search(
-        self, query: str, limit: int, project_ids: Optional[List[str]] = None, **kwargs
-    ) -> List[EnhancedSearchResult]:
+        self, query: str, limit: int, project_ids: list[str] | None = None, **kwargs
+    ) -> list[EnhancedSearchResult]:
         """Perform vector-only search."""
         return await self.vector_module.search(
             query=query,
@@ -2864,7 +2862,7 @@ class EnhancedHybridSearchEngine:
 
     async def _graph_only_search(
         self, query: str, limit: int, **kwargs
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Perform graph-only search."""
         return await self.graph_module.search(
             query=query,
@@ -2880,11 +2878,11 @@ class EnhancedHybridSearchEngine:
         self,
         query: str,
         limit: int,
-        project_ids: Optional[List[str]] = None,
-        source_types: Optional[List[str]] = None,
-        query_weights: Optional[QueryWeights] = None,
+        project_ids: list[str] | None = None,
+        source_types: list[str] | None = None,
+        query_weights: QueryWeights | None = None,
         **kwargs,
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Perform hybrid search combining vector, keyword, and graph search."""
         try:
             # Perform searches in parallel
@@ -2908,26 +2906,26 @@ class EnhancedHybridSearchEngine:
             )
 
             # Handle exceptions and ensure proper typing
-            final_vector_results: List[EnhancedSearchResult] = []
-            final_keyword_results: List[EnhancedSearchResult] = []
-            final_graph_results: List[EnhancedSearchResult] = []
+            final_vector_results: list[EnhancedSearchResult] = []
+            final_keyword_results: list[EnhancedSearchResult] = []
+            final_graph_results: list[EnhancedSearchResult] = []
 
             if isinstance(vector_results, Exception):
                 self.logger.warning(f"Vector search failed: {vector_results}")
             else:
-                final_vector_results = cast(List[EnhancedSearchResult], vector_results)
+                final_vector_results = cast(list[EnhancedSearchResult], vector_results)
 
             if isinstance(keyword_results, Exception):
                 self.logger.warning(f"Keyword search failed: {keyword_results}")
             else:
                 final_keyword_results = cast(
-                    List[EnhancedSearchResult], keyword_results
+                    list[EnhancedSearchResult], keyword_results
                 )
 
             if isinstance(graph_results, Exception):
                 self.logger.warning(f"Graph search failed: {graph_results}")
             else:
-                final_graph_results = cast(List[EnhancedSearchResult], graph_results)
+                final_graph_results = cast(list[EnhancedSearchResult], graph_results)
 
             # Use adaptive fusion strategy if enabled
             if kwargs.get("adaptive_fusion", False):
@@ -2970,11 +2968,11 @@ class EnhancedHybridSearchEngine:
         self,
         query: str,
         limit: int,
-        project_ids: Optional[List[str]] = None,
-        source_types: Optional[List[str]] = None,
-        query_weights: Optional[QueryWeights] = None,
+        project_ids: list[str] | None = None,
+        source_types: list[str] | None = None,
+        query_weights: QueryWeights | None = None,
         **kwargs,
-    ) -> List[EnhancedSearchResult]:
+    ) -> list[EnhancedSearchResult]:
         """Automatically determine best search strategy."""
         # Simple heuristic: use hybrid for most queries
         # Could be enhanced with query analysis
@@ -2985,9 +2983,9 @@ class EnhancedHybridSearchEngine:
     async def _get_keyword_results(
         self,
         query: str,
-        project_ids: Optional[List[str]] = None,
-        source_types: Optional[List[str]] = None,
-    ) -> List[EnhancedSearchResult]:
+        project_ids: list[str] | None = None,
+        source_types: list[str] | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Get keyword search results from existing engine."""
         try:
             # Use existing hybrid search engine for keyword functionality
@@ -3027,9 +3025,9 @@ class EnhancedHybridSearchEngine:
     async def _rerank_results(
         self,
         query: str,
-        results: List[EnhancedSearchResult],
-        user_context: Optional[Dict[str, Any]] = None,
-    ) -> List[EnhancedSearchResult]:
+        results: list[EnhancedSearchResult],
+        user_context: dict[str, Any] | None = None,
+    ) -> list[EnhancedSearchResult]:
         """Rerank results using the reranking engine."""
         if not self.reranking_engine or not results:
             return results
@@ -3043,8 +3041,8 @@ class EnhancedHybridSearchEngine:
             return results
 
     def _convert_to_search_results(
-        self, results: List[EnhancedSearchResult]
-    ) -> List[SearchResult]:
+        self, results: list[EnhancedSearchResult]
+    ) -> list[SearchResult]:
         """Convert EnhancedSearchResult to SearchResult for compatibility."""
         search_results = []
         for result in results:
@@ -3107,7 +3105,7 @@ class EnhancedHybridSearchEngine:
 
         self.logger.info("Enhanced search configuration updated")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get search engine statistics.
 
         Returns:
@@ -3154,7 +3152,7 @@ class EnhancedHybridSearchEngine:
             return count
         return 0
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get detailed cache statistics.
 
         Returns:

@@ -4,7 +4,6 @@ This conftest.py ensures that test environment variables are loaded
 before any module-level configuration checks are performed.
 """
 
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv

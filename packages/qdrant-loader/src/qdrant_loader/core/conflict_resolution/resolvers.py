@@ -4,18 +4,19 @@ This module contains all the different strategies for resolving conflicts
 between QDrant and Neo4j databases.
 """
 
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..sync import DatabaseType
 from ..managers import IDMapping
+from ..sync import DatabaseType
+from .merge_strategies import AdvancedMergeStrategy, MergeStrategy
 from .models import (
     ConflictRecord,
     ConflictResolutionStrategy,
     ConflictStatus,
     ConflictType,
 )
-from .merge_strategies import AdvancedMergeStrategy, MergeStrategy
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -40,7 +41,7 @@ class ConflictResolver:
         self._manual_interventions = 0
 
         # Initialize resolution handlers
-        self._resolution_handlers: Dict[ConflictResolutionStrategy, Callable] = {
+        self._resolution_handlers: dict[ConflictResolutionStrategy, Callable] = {
             ConflictResolutionStrategy.LAST_WRITE_WINS: self._resolve_last_write_wins,
             ConflictResolutionStrategy.FIRST_WRITE_WINS: self._resolve_first_write_wins,
             ConflictResolutionStrategy.SOURCE_PRIORITY: self._resolve_source_priority,
@@ -52,7 +53,7 @@ class ConflictResolver:
     async def resolve_conflict(
         self,
         conflict: ConflictRecord,
-        strategy: Optional[ConflictResolutionStrategy] = None,
+        strategy: ConflictResolutionStrategy | None = None,
     ) -> bool:
         """Resolve a specific conflict.
 
@@ -430,7 +431,7 @@ class ConflictResolver:
             return await self._resolve_last_write_wins(conflict)
 
     async def _apply_priority_resolution(
-        self, conflict: ConflictRecord, priority_rules: Dict[str, Any]
+        self, conflict: ConflictRecord, priority_rules: dict[str, Any]
     ) -> bool:
         """Apply resolution based on entity type priority."""
         # Implement priority-based resolution logic
@@ -438,7 +439,7 @@ class ConflictResolver:
 
     async def _get_common_ancestor_data(
         self, conflict: ConflictRecord
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get common ancestor data for three-way merge.
 
         Args:
@@ -483,7 +484,7 @@ class ConflictResolver:
             return None
 
     async def _apply_merged_data(
-        self, mapping: IDMapping, data: Dict[str, Any], database_type: DatabaseType
+        self, mapping: IDMapping, data: dict[str, Any], database_type: DatabaseType
     ) -> bool:
         """Apply merged data to a specific database."""
         try:
@@ -502,9 +503,9 @@ class ConflictResolver:
     async def resolve_manual_conflict(
         self,
         conflict: ConflictRecord,
-        resolution_data: Dict[str, Any],
+        resolution_data: dict[str, Any],
         resolved_by: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> bool:
         """Manually resolve a conflict.
 
@@ -539,7 +540,7 @@ class ConflictResolver:
             return False
 
     async def _apply_manual_resolution(
-        self, conflict: ConflictRecord, resolution_data: Dict[str, Any]
+        self, conflict: ConflictRecord, resolution_data: dict[str, Any]
     ) -> bool:
         """Apply manual resolution data."""
         # Implement manual resolution logic
@@ -548,7 +549,7 @@ class ConflictResolver:
         return True
 
     @property
-    def statistics(self) -> Dict[str, int]:
+    def statistics(self) -> dict[str, int]:
         """Get resolver statistics."""
         return {
             "conflicts_resolved": self._conflicts_resolved,

@@ -10,28 +10,28 @@ This module provides comprehensive performance testing capabilities for:
 """
 
 import asyncio
-import time
-import psutil
-import statistics
-import uuid
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Tuple, Callable
-from datetime import datetime, timezone
-from concurrent.futures import ThreadPoolExecutor
 import logging
+import statistics
+import time
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
-from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
+import psutil
+
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
-from qdrant_loader.core.sync.conflict_monitor import SyncConflictMonitor
+from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
+from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
+from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 from qdrant_loader.core.operation_differentiation import (
     OperationDifferentiationManager,
 )
-from qdrant_loader.core.sync.types import SyncOperationType
-from qdrant_loader.core.sync.operations import EnhancedSyncOperation
+from qdrant_loader.core.sync.conflict_monitor import SyncConflictMonitor
+from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
 from qdrant_loader.core.sync.event_system import DatabaseType
-from qdrant_loader.core.managers.qdrant_manager import QdrantManager
-from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
-from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
+from qdrant_loader.core.sync.operations import EnhancedSyncOperation
+from qdrant_loader.core.sync.types import SyncOperationType
 
 
 @dataclass
@@ -91,9 +91,9 @@ class StressTestConfig:
     delete_operations_percent: float = 20.0
 
     # Data parameters
-    document_size_range: Tuple[int, int] = (1000, 10000)  # bytes
+    document_size_range: tuple[int, int] = (1000, 10000)  # bytes
     metadata_complexity: str = "medium"  # low, medium, high
-    entity_count_range: Tuple[int, int] = (5, 20)
+    entity_count_range: tuple[int, int] = (5, 20)
 
     # Performance thresholds
     max_avg_latency_ms: float = 1000.0
@@ -111,7 +111,7 @@ class LoadTestScenario:
     description: str
     concurrent_users: int
     operations_per_user: int
-    operation_types: List[SyncOperationType]
+    operation_types: list[SyncOperationType]
     data_size_mb: float
     expected_duration_seconds: float
 
@@ -124,7 +124,7 @@ class SyncPerformanceTester:
         qdrant_manager: QdrantManager,
         neo4j_manager: Neo4jManager,
         id_mapping_manager: IDMappingManager,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """Initialize the performance tester.
 
@@ -181,9 +181,9 @@ class SyncPerformanceTester:
         )
 
         # Performance tracking
-        self.operation_times: List[float] = []
-        self.memory_samples: List[float] = []
-        self.cpu_samples: List[float] = []
+        self.operation_times: list[float] = []
+        self.memory_samples: list[float] = []
+        self.cpu_samples: list[float] = []
         self.process = psutil.Process()
 
     async def setup(self):
@@ -419,7 +419,7 @@ class SyncPerformanceTester:
                 else final_memory
             )
 
-            self.logger.info(f"Memory stress test completed")
+            self.logger.info("Memory stress test completed")
             self.logger.info(
                 f"Memory growth: {initial_memory:.1f}MB -> {final_memory:.1f}MB"
             )
@@ -435,8 +435,8 @@ class SyncPerformanceTester:
         self,
         user_id: int,
         operation_count: int,
-        operation_types: List[SyncOperationType],
-    ) -> Dict[str, Any]:
+        operation_types: list[SyncOperationType],
+    ) -> dict[str, Any]:
         """Simulate operations for a single user.
 
         Args:
@@ -556,7 +556,7 @@ class SyncPerformanceTester:
         content = f"Test document content for {document_id} " * 50  # ~1KB content
         metadata = {
             "title": f"Test Document {document_id}",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "test_type": "performance_test",
         }
 
@@ -574,7 +574,7 @@ class SyncPerformanceTester:
         """Update a test document."""
         metadata = {
             "title": f"Updated Test Document {document_id}",
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
             "version": 2,
         }
 
@@ -629,7 +629,7 @@ class SyncPerformanceTester:
             pass
 
     def _calculate_metrics(
-        self, total_duration: float, results: List[Any]
+        self, total_duration: float, results: list[Any]
     ) -> SyncPerformanceMetrics:
         """Calculate performance metrics from test results."""
         metrics = SyncPerformanceMetrics()
@@ -795,8 +795,8 @@ async def run_comprehensive_performance_suite(
     qdrant_manager: QdrantManager,
     neo4j_manager: Neo4jManager,
     id_mapping_manager: IDMappingManager,
-    logger: Optional[logging.Logger] = None,
-) -> Dict[str, SyncPerformanceMetrics]:
+    logger: logging.Logger | None = None,
+) -> dict[str, SyncPerformanceMetrics]:
     """Run the complete performance testing suite.
 
     Args:

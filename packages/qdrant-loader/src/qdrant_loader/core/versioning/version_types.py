@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 
 class VersionType(Enum):
@@ -54,33 +54,33 @@ class VersionMetadata:
     # Temporal information
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     valid_from: datetime = field(default_factory=lambda: datetime.now(UTC))
-    valid_to: Optional[datetime] = None
+    valid_to: datetime | None = None
 
     # Version relationships
-    parent_version_id: Optional[str] = None
-    child_version_ids: List[str] = field(default_factory=list)
-    supersedes: Optional[str] = None
-    superseded_by: Optional[str] = None
+    parent_version_id: str | None = None
+    child_version_ids: list[str] = field(default_factory=list)
+    supersedes: str | None = None
+    superseded_by: str | None = None
 
     # Operation tracking
     operation: VersionOperation = VersionOperation.CREATE
     operation_source: str = "system"
-    operation_metadata: Dict[str, Any] = field(default_factory=dict)
+    operation_metadata: dict[str, Any] = field(default_factory=dict)
 
     # Content tracking
-    content_hash: Optional[str] = None
+    content_hash: str | None = None
     content_size: int = 0
 
     # Status and flags
     status: VersionStatus = VersionStatus.ACTIVE
     is_milestone: bool = False
-    tags: Set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set)
 
     # User information
-    created_by: Optional[str] = None
-    modified_by: Optional[str] = None
+    created_by: str | None = None
+    modified_by: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "version_id": self.version_id,
@@ -107,7 +107,7 @@ class VersionMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VersionMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> "VersionMetadata":
         """Create from dictionary format."""
         metadata = cls(
             version_id=data["version_id"],
@@ -150,9 +150,9 @@ class VersionDiff:
     diff_type: str  # "content", "metadata", "structure"
 
     # Change details
-    added_fields: Dict[str, Any] = field(default_factory=dict)
-    removed_fields: Dict[str, Any] = field(default_factory=dict)
-    modified_fields: Dict[str, Tuple[Any, Any]] = field(default_factory=dict)
+    added_fields: dict[str, Any] = field(default_factory=dict)
+    removed_fields: dict[str, Any] = field(default_factory=dict)
+    modified_fields: dict[str, tuple[Any, Any]] = field(default_factory=dict)
 
     # Statistics
     total_changes: int = 0
@@ -171,14 +171,14 @@ class VersionSnapshot:
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Snapshot content
-    entities: Dict[str, Any] = field(default_factory=dict)
-    relationships: Dict[str, Any] = field(default_factory=dict)
-    mappings: Dict[str, Any] = field(default_factory=dict)
+    entities: dict[str, Any] = field(default_factory=dict)
+    relationships: dict[str, Any] = field(default_factory=dict)
+    mappings: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
     description: str = ""
-    tags: Set[str] = field(default_factory=set)
-    created_by: Optional[str] = None
+    tags: set[str] = field(default_factory=set)
+    created_by: str | None = None
 
     # Statistics
     entity_count: int = 0
@@ -197,7 +197,7 @@ class VersionConfig:
     enable_compression: bool = False
     compression_threshold_days: int = 30
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "retention_days": self.retention_days,
@@ -209,7 +209,7 @@ class VersionConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VersionConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "VersionConfig":
         """Create from dictionary format."""
         return cls(
             retention_days=data.get("retention_days", 90),
@@ -229,14 +229,14 @@ class VersionStatistics:
     total_entities: int = 0
     average_versions_per_entity: float = 0.0
     max_versions_per_entity: int = 0
-    oldest_version: Optional[datetime] = None
-    newest_version: Optional[datetime] = None
-    version_types: Dict[str, int] = field(default_factory=dict)
-    version_statuses: Dict[str, int] = field(default_factory=dict)
+    oldest_version: datetime | None = None
+    newest_version: datetime | None = None
+    version_types: dict[str, int] = field(default_factory=dict)
+    version_statuses: dict[str, int] = field(default_factory=dict)
     cache_size: int = 0
     storage_size_bytes: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {
             "total_versions": self.total_versions,

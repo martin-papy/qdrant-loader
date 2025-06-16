@@ -5,11 +5,13 @@ validation of synchronization operations based on their characteristics.
 """
 
 import hashlib
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
+
+from qdrant_loader.core.sync.types import SyncOperationType
 
 from ...utils.logging import LoggingConfig
-from qdrant_loader.core.sync.types import SyncOperationType
 from ..types import EntityType
 from .types import OperationCharacteristics, ValidationLevel, ValidationResult
 
@@ -24,8 +26,8 @@ class OperationValidator:
 
     def __init__(self):
         """Initialize the operation validator."""
-        self._validation_cache: Dict[str, ValidationResult] = {}
-        self._validation_rules: Dict[ValidationLevel, List[Callable]] = {
+        self._validation_cache: dict[str, ValidationResult] = {}
+        self._validation_rules: dict[ValidationLevel, list[Callable]] = {
             ValidationLevel.BASIC: [
                 self._validate_basic_data_types,
                 self._validate_required_fields,
@@ -60,7 +62,7 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """Validate an operation based on its characteristics.
 
@@ -150,8 +152,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate basic data types and formats."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -180,8 +182,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate required fields based on operation type."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -216,8 +218,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate business rules and constraints."""
         result = {"valid": True, "errors": [], "warnings": [], "recommendations": []}
 
@@ -251,8 +253,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate data consistency within the operation."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -277,8 +279,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate referential integrity constraints."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -298,8 +300,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate operation permissions and authorization."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -321,8 +323,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate security constraints and policies."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -343,8 +345,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate performance impact and resource usage."""
         result = {"valid": True, "errors": [], "warnings": [], "recommendations": []}
 
@@ -375,8 +377,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate consistency across QDrant and Neo4j databases."""
         result = {"valid": True, "errors": [], "warnings": []}
 
@@ -400,8 +402,8 @@ class OperationValidator:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        context: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         """Validate data integrity constraints."""
         result = {"valid": True, "errors": [], "warnings": []}
 

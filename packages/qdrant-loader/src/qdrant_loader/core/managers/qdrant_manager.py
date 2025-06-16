@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast, Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from qdrant_client import QdrantClient

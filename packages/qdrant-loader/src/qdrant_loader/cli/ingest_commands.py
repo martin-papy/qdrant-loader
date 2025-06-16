@@ -11,7 +11,6 @@ from pathlib import Path
 
 import click
 from click.exceptions import ClickException
-from click.types import Path as ClickPath
 
 from qdrant_loader.cli.asyncio import async_command
 
@@ -122,6 +121,7 @@ async def init(
         db_path = settings.global_config.state_management.database_path
         if db_path != ":memory:":
             import os
+
             from .core import create_database_directory
 
             # Ensure the directory exists
@@ -396,7 +396,7 @@ def check_status(
                 collection_info = client.get_collection(settings.qdrant_collection_name)
                 click.echo("✅ QDrant Collection Status:")
                 click.echo(f"  Collection: {settings.qdrant_collection_name}")
-                click.echo(f"  Status: Active")
+                click.echo("  Status: Active")
                 click.echo(f"  Vector Count: {collection_info.points_count}")
                 # Get vector size from the first vector configuration
                 vectors = collection_info.config.params.vectors
@@ -446,7 +446,7 @@ def check_status(
         else:
             # Show summary of all projects
             if settings.projects_config and settings.projects_config.projects:
-                click.echo(f"\n📁 Projects Summary:")
+                click.echo("\n📁 Projects Summary:")
                 click.echo(
                     f"  Total Projects: {len(settings.projects_config.projects)}"
                 )

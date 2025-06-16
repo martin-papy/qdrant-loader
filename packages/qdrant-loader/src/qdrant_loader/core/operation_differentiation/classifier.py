@@ -6,10 +6,11 @@ operations to determine their characteristics, complexity, and requirements.
 
 import hashlib
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
+
+from qdrant_loader.core.sync.types import SyncOperationType
 
 from ...utils.logging import LoggingConfig
-from qdrant_loader.core.sync.types import SyncOperationType
 from ..types import EntityType
 from .types import (
     OperationCharacteristics,
@@ -30,13 +31,13 @@ class OperationClassifier:
 
     def __init__(self):
         """Initialize the operation classifier."""
-        self._classification_cache: Dict[str, OperationCharacteristics] = {}
-        self._historical_data: Dict[str, List[Dict[str, Any]]] = {}
+        self._classification_cache: dict[str, OperationCharacteristics] = {}
+        self._historical_data: dict[str, list[dict[str, Any]]] = {}
 
     async def classify_operation(
         self,
         operation: "EnhancedSyncOperation",
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> OperationCharacteristics:
         """Classify an operation and determine its characteristics.
 
@@ -134,7 +135,7 @@ class OperationClassifier:
         self,
         operation: "EnhancedSyncOperation",
         characteristics: OperationCharacteristics,
-        context: Optional[Dict[str, Any]],
+        context: dict[str, Any] | None,
     ) -> None:
         """Analyze operation context to determine characteristics."""
         # Extract context information

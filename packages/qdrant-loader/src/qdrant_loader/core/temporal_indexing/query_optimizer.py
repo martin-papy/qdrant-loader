@@ -5,9 +5,8 @@ including index selection, query planning, and performance estimation.
 """
 
 import hashlib
-import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .index_types import (
@@ -25,9 +24,9 @@ class TemporalQueryOptimizer:
 
     def __init__(self):
         """Initialize the query optimizer."""
-        self.available_indexes: Dict[str, TemporalIndex] = {}
-        self.query_cache: Dict[str, TemporalQueryPlan] = {}
-        self.performance_history: Dict[str, List[float]] = {}
+        self.available_indexes: dict[str, TemporalIndex] = {}
+        self.query_cache: dict[str, TemporalQueryPlan] = {}
+        self.performance_history: dict[str, list[float]] = {}
 
     def register_index(self, index: TemporalIndex) -> None:
         """Register an index with the optimizer.
@@ -51,10 +50,10 @@ class TemporalQueryOptimizer:
     def create_query_plan(
         self,
         query_type: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        entity_ids: Optional[List[str]] = None,
-        hints: Optional[TemporalQueryHint] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        entity_ids: list[str] | None = None,
+        hints: TemporalQueryHint | None = None,
     ) -> TemporalQueryPlan:
         """Create an optimized query execution plan.
 
@@ -130,10 +129,10 @@ class TemporalQueryOptimizer:
     def _create_query_signature(
         self,
         query_type: str,
-        start_time: Optional[datetime],
-        end_time: Optional[datetime],
-        entity_ids: Optional[List[str]],
-        hints: Optional[TemporalQueryHint],
+        start_time: datetime | None,
+        end_time: datetime | None,
+        entity_ids: list[str] | None,
+        hints: TemporalQueryHint | None,
     ) -> str:
         """Create a unique signature for the query."""
         signature_parts = [query_type]
@@ -153,11 +152,11 @@ class TemporalQueryOptimizer:
     def _select_indexes(
         self,
         query_type: str,
-        start_time: Optional[datetime],
-        end_time: Optional[datetime],
-        entity_ids: Optional[List[str]],
-        hints: Optional[TemporalQueryHint],
-    ) -> List[str]:
+        start_time: datetime | None,
+        end_time: datetime | None,
+        entity_ids: list[str] | None,
+        hints: TemporalQueryHint | None,
+    ) -> list[str]:
         """Select the best indexes for the query."""
         candidates = []
 
@@ -202,9 +201,9 @@ class TemporalQueryOptimizer:
         self,
         index: TemporalIndex,
         query_type: str,
-        start_time: Optional[datetime],
-        end_time: Optional[datetime],
-        entity_ids: Optional[List[str]],
+        start_time: datetime | None,
+        end_time: datetime | None,
+        entity_ids: list[str] | None,
     ) -> float:
         """Score an index for a specific query."""
         score = 0.0
@@ -255,8 +254,8 @@ class TemporalQueryOptimizer:
     def _determine_execution_strategy(
         self,
         query_type: str,
-        selected_indexes: List[str],
-        hints: Optional[TemporalQueryHint],
+        selected_indexes: list[str],
+        hints: TemporalQueryHint | None,
     ) -> str:
         """Determine the best execution strategy."""
         if hints and hints.parallel_execution and len(selected_indexes) > 1:
@@ -269,10 +268,10 @@ class TemporalQueryOptimizer:
     def _estimate_query_cost(
         self,
         query_type: str,
-        selected_indexes: List[str],
-        start_time: Optional[datetime],
-        end_time: Optional[datetime],
-        entity_ids: Optional[List[str]],
+        selected_indexes: list[str],
+        start_time: datetime | None,
+        end_time: datetime | None,
+        entity_ids: list[str] | None,
     ) -> float:
         """Estimate the computational cost of the query."""
         if not selected_indexes:
@@ -306,10 +305,10 @@ class TemporalQueryOptimizer:
     def _estimate_result_size(
         self,
         query_type: str,
-        selected_indexes: List[str],
-        start_time: Optional[datetime],
-        end_time: Optional[datetime],
-        entity_ids: Optional[List[str]],
+        selected_indexes: list[str],
+        start_time: datetime | None,
+        end_time: datetime | None,
+        entity_ids: list[str] | None,
     ) -> int:
         """Estimate the number of results the query will return."""
         if not selected_indexes:
@@ -355,7 +354,7 @@ class TemporalQueryOptimizer:
         return max(0.1, base_memory)
 
     def _should_use_index_intersection(
-        self, selected_indexes: List[str], query_type: str
+        self, selected_indexes: list[str], query_type: str
     ) -> bool:
         """Determine if index intersection should be used."""
         return len(selected_indexes) > 1 and query_type in [
@@ -364,7 +363,7 @@ class TemporalQueryOptimizer:
         ]
 
     def _should_use_temporal_clustering(
-        self, query_type: str, hints: Optional[TemporalQueryHint]
+        self, query_type: str, hints: TemporalQueryHint | None
     ) -> bool:
         """Determine if temporal clustering should be used."""
         if hints and not hints.use_clustering:
@@ -396,7 +395,7 @@ class TemporalQueryOptimizer:
         if len(self.performance_history[plan_id]) > 100:
             self.performance_history[plan_id] = self.performance_history[plan_id][-100:]
 
-    def get_optimizer_statistics(self) -> Dict[str, Any]:
+    def get_optimizer_statistics(self) -> dict[str, Any]:
         """Get optimizer performance statistics."""
         return {
             "registered_indexes": len(self.available_indexes),

@@ -6,16 +6,14 @@ ensuring data consistency with transaction management and batch processing.
 """
 
 import asyncio
-import json
 import uuid
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
-from neo4j import Session, Transaction
-from qdrant_client.http.models import PointStruct, UpdateResult
+from qdrant_client.http.models import PointStruct
+
 from qdrant_loader.core.sync.event_system import (
     ChangeEvent,
     ChangeType,
@@ -28,11 +26,9 @@ from ..managers import (
     IDMapping,
     IDMappingManager,
     MappingStatus,
-    MappingType,
     Neo4jManager,
     QdrantManager,
 )
-
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -60,31 +56,31 @@ class SyncOperation:
     operation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     event: ChangeEvent = field(default_factory=ChangeEvent)
     direction: SyncDirection = SyncDirection.BIDIRECTIONAL
-    mapping: Optional[IDMapping] = None
+    mapping: IDMapping | None = None
 
     # Operation status
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     success: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
     retry_count: int = 0
 
     # Transaction tracking
-    transaction_id: Optional[str] = None
-    rollback_data: Optional[Dict[str, Any]] = None
+    transaction_id: str | None = None
+    rollback_data: dict[str, Any] | None = None
 
     def mark_started(self) -> None:
         """Mark operation as started."""
         self.started_at = datetime.now(UTC)
 
-    def mark_completed(self, success: bool = True, error: Optional[str] = None) -> None:
+    def mark_completed(self, success: bool = True, error: str | None = None) -> None:
         """Mark operation as completed."""
         self.completed_at = datetime.now(UTC)
         self.success = success
         if error:
             self.error_message = error
 
-    def duration_ms(self) -> Optional[float]:
+    def duration_ms(self) -> float | None:
         """Get operation duration in milliseconds."""
         if self.started_at and self.completed_at:
             return (self.completed_at - self.started_at).total_seconds() * 1000
@@ -96,13 +92,13 @@ class SyncBatch:
     """Container for batch synchronization operations."""
 
     batch_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    operations: List[SyncOperation] = field(default_factory=list)
+    operations: list[SyncOperation] = field(default_factory=list)
     direction: SyncDirection = SyncDirection.BIDIRECTIONAL
 
     # Batch status
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
     # Results
     successful_operations: int = 0
@@ -171,10 +167,10 @@ class BidirectionalSyncEngine:
 
         # Engine state
         self._running = False
-        self._sync_task: Optional[asyncio.Task] = None
-        self._pending_operations: List[SyncOperation] = []
-        self._current_batch: Optional[SyncBatch] = None
-        self._batch_timer: Optional[asyncio.Task] = None
+        self._sync_task: asyncio.Task | None = None
+        self._pending_operations: list[SyncOperation] = []
+        self._current_batch: SyncBatch | None = None
+        self._batch_timer: asyncio.Task | None = None
 
         # Statistics
         self._total_operations = 0
@@ -343,7 +339,7 @@ class BidirectionalSyncEngine:
         )
 
     async def _process_qdrant_to_neo4j_batch(
-        self, operations: List[SyncOperation]
+        self, operations: list[SyncOperation]
     ) -> None:
         """Process a batch of QDrant-to-Neo4j operations."""
         for operation in operations:
@@ -357,7 +353,7 @@ class BidirectionalSyncEngine:
                 operation.mark_completed(success=False, error=str(e))
 
     async def _process_neo4j_to_qdrant_batch(
-        self, operations: List[SyncOperation]
+        self, operations: list[SyncOperation]
     ) -> None:
         """Process a batch of Neo4j-to-QDrant operations."""
         for operation in operations:
@@ -672,8 +668,8 @@ class BidirectionalSyncEngine:
         )
 
     def _extract_neo4j_properties_from_qdrant_data(
-        self, qdrant_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, qdrant_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract Neo4j node properties from QDrant point data."""
         properties = {}
 
@@ -693,8 +689,8 @@ class BidirectionalSyncEngine:
         return properties
 
     def _extract_qdrant_data_from_neo4j_properties(
-        self, neo4j_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, neo4j_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract QDrant point data from Neo4j node properties."""
         qdrant_data = {}
         payload = {}
@@ -718,7 +714,7 @@ class BidirectionalSyncEngine:
 
         return qdrant_data
 
-    async def get_sync_statistics(self) -> Dict[str, Any]:
+    async def get_sync_statistics(self) -> dict[str, Any]:
         """Get synchronization statistics."""
         return {
             "total_operations": self._total_operations,
@@ -736,7 +732,7 @@ class BidirectionalSyncEngine:
             "is_running": self._running,
         }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check of the sync engine."""
         stats = await self.get_sync_statistics()
 
@@ -773,7 +769,7 @@ class BidirectionalSyncEngine:
         self,
         entity_id: str,
         database_type: DatabaseType,
-        direction: Optional[SyncDirection] = None,
+        direction: SyncDirection | None = None,
     ) -> bool:
         """Force synchronization of a specific entity."""
         try:

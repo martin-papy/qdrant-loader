@@ -7,8 +7,8 @@ from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.chunking_service import ChunkingService
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
 from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionConfig
+from qdrant_loader.core.managers import GraphitiManager, QdrantManager
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
-from qdrant_loader.core.managers import QdrantManager, GraphitiManager
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 

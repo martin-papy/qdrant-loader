@@ -7,7 +7,7 @@ the operation differentiation system.
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from qdrant_loader.core.sync.types import SyncOperationType
 
@@ -63,13 +63,13 @@ class OperationCharacteristics:
     entity_count: int = 1
     relationship_count: int = 0
     data_size_bytes: int = 0
-    content_hash: Optional[str] = None
+    content_hash: str | None = None
 
     # Context metadata
-    source_system: Optional[str] = None
-    user_context: Optional[str] = None
+    source_system: str | None = None
+    user_context: str | None = None
     business_criticality: float = 0.5  # 0.0 to 1.0
-    deadline: Optional[datetime] = None
+    deadline: datetime | None = None
 
     # Historical patterns
     operation_frequency: float = 0.0  # Operations per hour
@@ -77,9 +77,9 @@ class OperationCharacteristics:
     average_duration: float = 0.0  # Average processing time in seconds
 
     # Dependencies
-    blocking_operations: List[str] = field(default_factory=list)
-    dependent_operations: List[str] = field(default_factory=list)
-    resource_requirements: Dict[str, float] = field(default_factory=dict)
+    blocking_operations: list[str] = field(default_factory=list)
+    dependent_operations: list[str] = field(default_factory=list)
+    resource_requirements: dict[str, float] = field(default_factory=dict)
 
     # Validation requirements
     validation_level: ValidationLevel = ValidationLevel.STANDARD
@@ -130,8 +130,8 @@ class ValidationResult:
 
     is_valid: bool
     validation_level: ValidationLevel
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     validation_time: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)

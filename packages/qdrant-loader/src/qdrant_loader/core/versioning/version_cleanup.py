@@ -6,11 +6,11 @@ operations for the versioning system.
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .version_storage import VersionStorage
-from .version_types import VersionConfig, VersionStatus, VersionType
+from .version_types import VersionConfig
 
 
 class VersionCleanup:
@@ -27,7 +27,7 @@ class VersionCleanup:
         self.config = config
         self.logger = LoggingConfig.get_logger(__name__)
 
-    async def run_cleanup(self) -> Dict[str, int]:
+    async def run_cleanup(self) -> dict[str, int]:
         """Run comprehensive cleanup operations.
 
         Returns:
@@ -63,7 +63,7 @@ class VersionCleanup:
 
         return stats
 
-    async def cleanup_old_versions(self, retention_days: Optional[int] = None) -> int:
+    async def cleanup_old_versions(self, retention_days: int | None = None) -> int:
         """Clean up versions older than retention period.
 
         Args:
@@ -164,7 +164,7 @@ class VersionCleanup:
         except Exception as e:
             self.logger.error(f"Cleanup scheduler error: {e}")
 
-    async def validate_version_integrity(self) -> Dict[str, List[str]]:
+    async def validate_version_integrity(self) -> dict[str, list[str]]:
         """Validate version data integrity.
 
         Returns:
@@ -189,8 +189,8 @@ class VersionCleanup:
         return issues
 
     async def repair_version_issues(
-        self, issues: Dict[str, List[str]]
-    ) -> Dict[str, int]:
+        self, issues: dict[str, list[str]]
+    ) -> dict[str, int]:
         """Repair identified version issues.
 
         Args:
@@ -217,7 +217,7 @@ class VersionCleanup:
 
         return repairs
 
-    async def get_cleanup_recommendations(self) -> Dict[str, Any]:
+    async def get_cleanup_recommendations(self) -> dict[str, Any]:
         """Get recommendations for cleanup operations.
 
         Returns:

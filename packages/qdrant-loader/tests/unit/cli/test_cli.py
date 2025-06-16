@@ -7,6 +7,8 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
+
+from qdrant_loader.cli import create_cli
 from qdrant_loader.cli.core import (
     check_for_updates,
     check_settings,
@@ -16,7 +18,6 @@ from qdrant_loader.cli.core import (
     setup_logging,
 )
 from qdrant_loader.cli.ingest_commands import run_init
-from qdrant_loader.cli import create_cli
 from qdrant_loader.config.state import DatabaseDirectoryError
 
 

@@ -5,20 +5,18 @@ and the enhanced sync event system, leveraging episodic processing and temporal
 edge invalidation for document versioning and relationship management.
 """
 
-import asyncio
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from graphiti_core.nodes import EpisodeType
 
 from ..utils.logging import LoggingConfig
+from .managers import GraphitiManager, IDMappingManager, TemporalManager
 from .sync import EnhancedSyncOperation
 from .sync.types import SyncOperationType
-from .managers import GraphitiManager, IDMapping, IDMappingManager, TemporalManager
-from .types import EntityType, ExtractedEntity, ExtractedRelationship
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -44,30 +42,30 @@ class GraphitiTemporalOperation:
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     # Episode information
-    episode_name: Optional[str] = None
-    episode_content: Optional[str] = None
+    episode_name: str | None = None
+    episode_content: str | None = None
     episode_type: EpisodeType = EpisodeType.text
-    episode_uuid: Optional[str] = None
-    reference_time: Optional[datetime] = None
+    episode_uuid: str | None = None
+    reference_time: datetime | None = None
 
     # Versioning information
-    document_uuid: Optional[str] = None
+    document_uuid: str | None = None
     document_version: int = 1
-    previous_version: Optional[int] = None
-    version_metadata: Dict[str, Any] = field(default_factory=dict)
+    previous_version: int | None = None
+    version_metadata: dict[str, Any] = field(default_factory=dict)
 
     # Edge invalidation information
-    edges_to_invalidate: List[str] = field(default_factory=list)
-    invalidation_reason: Optional[str] = None
-    invalidation_timestamp: Optional[datetime] = None
+    edges_to_invalidate: list[str] = field(default_factory=list)
+    invalidation_reason: str | None = None
+    invalidation_timestamp: datetime | None = None
 
     # Temporal query information
-    query_time: Optional[datetime] = None
-    time_range_start: Optional[datetime] = None
-    time_range_end: Optional[datetime] = None
+    query_time: datetime | None = None
+    time_range_start: datetime | None = None
+    time_range_end: datetime | None = None
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class GraphitiTemporalIntegration:
@@ -100,17 +98,17 @@ class GraphitiTemporalIntegration:
         self.episode_retention_days = episode_retention_days
 
         # Operation tracking
-        self._active_operations: Dict[str, GraphitiTemporalOperation] = {}
-        self._episode_version_map: Dict[str, List[str]] = (
+        self._active_operations: dict[str, GraphitiTemporalOperation] = {}
+        self._episode_version_map: dict[str, list[str]] = (
             {}
         )  # document_uuid -> episode_uuids
-        self._edge_invalidation_log: List[Dict[str, Any]] = []
+        self._edge_invalidation_log: list[dict[str, Any]] = []
 
         logger.info("GraphitiTemporalIntegration initialized")
 
     async def process_sync_operation(
         self, sync_operation: EnhancedSyncOperation
-    ) -> List[GraphitiTemporalOperation]:
+    ) -> list[GraphitiTemporalOperation]:
         """Process an enhanced sync operation using Graphiti temporal features.
 
         Args:
@@ -154,7 +152,7 @@ class GraphitiTemporalIntegration:
 
     async def _handle_create_document_temporal(
         self, sync_operation: EnhancedSyncOperation
-    ) -> List[GraphitiTemporalOperation]:
+    ) -> list[GraphitiTemporalOperation]:
         """Handle CREATE document operation with episodic processing."""
         operations = []
 
@@ -193,7 +191,7 @@ class GraphitiTemporalIntegration:
 
     async def _handle_update_document_temporal(
         self, sync_operation: EnhancedSyncOperation
-    ) -> List[GraphitiTemporalOperation]:
+    ) -> list[GraphitiTemporalOperation]:
         """Handle UPDATE document operation with versioning and edge invalidation."""
         operations = []
 
@@ -249,7 +247,7 @@ class GraphitiTemporalIntegration:
 
     async def _handle_delete_document_temporal(
         self, sync_operation: EnhancedSyncOperation
-    ) -> List[GraphitiTemporalOperation]:
+    ) -> list[GraphitiTemporalOperation]:
         """Handle DELETE document operation with temporal preservation."""
         operations = []
 
@@ -290,7 +288,7 @@ class GraphitiTemporalIntegration:
 
     async def _handle_version_update_temporal(
         self, sync_operation: EnhancedSyncOperation
-    ) -> List[GraphitiTemporalOperation]:
+    ) -> list[GraphitiTemporalOperation]:
         """Handle VERSION update operation with episodic versioning."""
         operations = []
 
@@ -360,7 +358,7 @@ class GraphitiTemporalIntegration:
 
     async def _create_edge_invalidation_operation(
         self, sync_operation: EnhancedSyncOperation, document_uuid: str
-    ) -> Optional[GraphitiTemporalOperation]:
+    ) -> GraphitiTemporalOperation | None:
         """Create an edge invalidation operation for document updates."""
         try:
             # Find edges related to the document that need invalidation
@@ -390,7 +388,7 @@ class GraphitiTemporalIntegration:
 
     async def _create_comprehensive_edge_invalidation(
         self, sync_operation: EnhancedSyncOperation, document_uuid: str
-    ) -> Optional[GraphitiTemporalOperation]:
+    ) -> GraphitiTemporalOperation | None:
         """Create comprehensive edge invalidation for document deletion."""
         try:
             # Find all edges related to the document
@@ -450,7 +448,7 @@ class GraphitiTemporalIntegration:
             logger.error(f"Failed to execute edge invalidation: {e}")
             raise
 
-    async def _find_edges_for_invalidation(self, document_uuid: str) -> List[str]:
+    async def _find_edges_for_invalidation(self, document_uuid: str) -> list[str]:
         """Find edges that need invalidation for a document update."""
         try:
             # Use Graphiti search to find relationships involving the document
@@ -474,7 +472,7 @@ class GraphitiTemporalIntegration:
             logger.error(f"Failed to find edges for invalidation: {e}")
             return []
 
-    async def _find_all_document_edges(self, document_uuid: str) -> List[str]:
+    async def _find_all_document_edges(self, document_uuid: str) -> list[str]:
         """Find all edges related to a document for comprehensive invalidation."""
         try:
             # Use broader search to find all relationships
@@ -523,10 +521,10 @@ class GraphitiTemporalIntegration:
     async def query_temporal_episodes(
         self,
         document_uuid: str,
-        query_time: Optional[datetime] = None,
-        time_range_start: Optional[datetime] = None,
-        time_range_end: Optional[datetime] = None,
-    ) -> List[Dict[str, Any]]:
+        query_time: datetime | None = None,
+        time_range_start: datetime | None = None,
+        time_range_end: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """Query episodes for a document within a temporal range."""
         try:
             episodes = self._episode_version_map.get(document_uuid, [])
@@ -562,7 +560,7 @@ class GraphitiTemporalIntegration:
 
     async def get_document_version_history(
         self, document_uuid: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get the complete version history for a document."""
         try:
             episodes = await self.query_temporal_episodes(document_uuid)
@@ -587,10 +585,10 @@ class GraphitiTemporalIntegration:
 
     async def get_edge_invalidation_log(
         self,
-        document_uuid: Optional[str] = None,
-        time_range_start: Optional[datetime] = None,
-        time_range_end: Optional[datetime] = None,
-    ) -> List[Dict[str, Any]]:
+        document_uuid: str | None = None,
+        time_range_start: datetime | None = None,
+        time_range_end: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """Get the edge invalidation log with optional filtering."""
         try:
             filtered_log = self._edge_invalidation_log
@@ -628,7 +626,7 @@ class GraphitiTemporalIntegration:
             logger.error(f"Failed to get edge invalidation log: {e}")
             return []
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the Graphiti temporal integration."""
         try:
             return {

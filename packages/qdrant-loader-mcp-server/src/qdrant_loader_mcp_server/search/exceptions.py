@@ -1,6 +1,6 @@
 """Custom exceptions for the search system."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class SearchEngineError(Exception):
@@ -10,7 +10,7 @@ class SearchEngineError(Exception):
         self,
         message: str,
         error_code: str = "SEARCH_ERROR",
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         recoverable: bool = True,
     ):
         """Initialize search engine error.
@@ -27,7 +27,7 @@ class SearchEngineError(Exception):
         self.details = details or {}
         self.recoverable = recoverable
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for API responses."""
         return {
             "error_code": self.error_code,
@@ -43,8 +43,8 @@ class QdrantConnectionError(SearchEngineError):
     def __init__(
         self,
         message: str = "Failed to connect to Qdrant server",
-        qdrant_url: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        qdrant_url: str | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if qdrant_url:
@@ -67,9 +67,9 @@ class QdrantQueryError(SearchEngineError):
     def __init__(
         self,
         message: str = "Failed to execute Qdrant query",
-        query: Optional[str] = None,
-        collection_name: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        query: str | None = None,
+        collection_name: str | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if query:
@@ -94,8 +94,8 @@ class Neo4jConnectionError(SearchEngineError):
     def __init__(
         self,
         message: str = "Failed to connect to Neo4j database",
-        neo4j_uri: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        neo4j_uri: str | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if neo4j_uri:
@@ -118,9 +118,9 @@ class Neo4jQueryError(SearchEngineError):
     def __init__(
         self,
         message: str = "Failed to execute Neo4j query",
-        cypher_query: Optional[str] = None,
-        parameters: Optional[Dict[str, Any]] = None,
-        original_error: Optional[Exception] = None,
+        cypher_query: str | None = None,
+        parameters: dict[str, Any] | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if cypher_query:
@@ -145,8 +145,8 @@ class GraphitiError(SearchEngineError):
     def __init__(
         self,
         message: str = "Graphiti operation failed",
-        operation: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        operation: str | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if operation:
@@ -169,9 +169,9 @@ class OpenAIEmbeddingError(SearchEngineError):
     def __init__(
         self,
         message: str = "Failed to generate embeddings",
-        text: Optional[str] = None,
-        model: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        text: str | None = None,
+        model: str | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if text:
@@ -197,9 +197,9 @@ class SearchConfigurationError(SearchEngineError):
     def __init__(
         self,
         message: str = "Invalid search configuration",
-        parameter: Optional[str] = None,
-        value: Optional[Any] = None,
-        expected: Optional[str] = None,
+        parameter: str | None = None,
+        value: Any | None = None,
+        expected: str | None = None,
     ):
         details = {}
         if parameter:
@@ -223,8 +223,8 @@ class SearchTimeoutError(SearchEngineError):
     def __init__(
         self,
         message: str = "Search operation timed out",
-        timeout_seconds: Optional[float] = None,
-        operation: Optional[str] = None,
+        timeout_seconds: float | None = None,
+        operation: str | None = None,
     ):
         details = {}
         if timeout_seconds:
@@ -246,9 +246,9 @@ class FusionStrategyError(SearchEngineError):
     def __init__(
         self,
         message: str = "Result fusion failed",
-        strategy: Optional[str] = None,
-        result_counts: Optional[Dict[str, int]] = None,
-        original_error: Optional[Exception] = None,
+        strategy: str | None = None,
+        result_counts: dict[str, int] | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if strategy:
@@ -273,9 +273,9 @@ class SearchResultsEmptyError(SearchEngineError):
     def __init__(
         self,
         message: str = "Search returned no results",
-        query: Optional[str] = None,
-        search_type: Optional[str] = None,
-        filters_applied: Optional[Dict[str, Any]] = None,
+        query: str | None = None,
+        search_type: str | None = None,
+        filters_applied: dict[str, Any] | None = None,
     ):
         details = {}
         if query:
@@ -299,9 +299,9 @@ class HybridSearchError(SearchEngineError):
     def __init__(
         self,
         message: str = "Hybrid search operation failed",
-        failed_components: Optional[list[str]] = None,
-        successful_components: Optional[list[str]] = None,
-        original_error: Optional[Exception] = None,
+        failed_components: list[str] | None = None,
+        successful_components: list[str] | None = None,
+        original_error: Exception | None = None,
     ):
         details = {}
         if failed_components:

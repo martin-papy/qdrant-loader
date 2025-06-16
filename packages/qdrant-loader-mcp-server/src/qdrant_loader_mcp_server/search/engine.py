@@ -8,22 +8,21 @@ from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from ..config import OpenAIConfig, QdrantConfig
+from ..graphiti import is_graphiti_available
 from ..utils.logging import LoggingConfig
-from .exceptions import (
-    QdrantConnectionError,
-    QdrantQueryError,
-    OpenAIEmbeddingError,
-    SearchConfigurationError,
-    HybridSearchError,
-)
-from .hybrid_search import HybridSearchEngine
 from .enhanced_hybrid_search import (
     EnhancedHybridSearchEngine,
     EnhancedSearchConfig,
     SearchMode,
 )
+from .exceptions import (
+    HybridSearchError,
+    OpenAIEmbeddingError,
+    QdrantConnectionError,
+    QdrantQueryError,
+)
+from .hybrid_search import HybridSearchEngine
 from .models import SearchResult
-from ..graphiti import is_graphiti_available
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -400,7 +399,7 @@ class SearchEngine:
             basic_results = await self.search(
                 query=query, limit=limit, project_ids=project_ids
             )
-            return {strategy: basic_results for strategy in strategies}
+            return dict.fromkeys(strategies, basic_results)
 
         try:
             from .enhanced_hybrid_search import FusionStrategy
@@ -468,4 +467,4 @@ class SearchEngine:
             basic_results = await self.search(
                 query=query, limit=limit, project_ids=project_ids
             )
-            return {strategy: basic_results for strategy in strategies}
+            return dict.fromkeys(strategies, basic_results)

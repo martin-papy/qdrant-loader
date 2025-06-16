@@ -6,18 +6,17 @@ fix various types of validation issues.
 """
 
 import logging
-from datetime import datetime, UTC
-from typing import Optional
+from datetime import UTC, datetime
 
 from ..managers import (
+    IDMapping,
     IDMappingManager,
+    MappingStatus,
     Neo4jManager,
     QdrantManager,
-    MappingStatus,
-    IDMapping,
 )
 from ..types import EntityType
-from .models import ValidationIssue, RepairResult, RepairAction
+from .models import RepairAction, RepairResult, ValidationIssue
 
 logger = logging.getLogger(__name__)
 

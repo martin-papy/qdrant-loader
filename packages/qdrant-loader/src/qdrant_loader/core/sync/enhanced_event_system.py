@@ -6,38 +6,29 @@ operations with operation-specific handling for CREATE, UPDATE, and DELETE.
 """
 
 import asyncio
-import uuid
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from ..graphiti_temporal_integration import GraphitiTemporalIntegration
-    from .conflict_monitor import SyncConflictMonitor
     from ..operation_differentiation import (
         OperationCharacteristics,
-        OperationDifferentiationManager,
-        ValidationResult,
     )
+    from .conflict_monitor import SyncConflictMonitor
 
 from ...utils.logging import LoggingConfig
 from ..atomic_transactions import (
     AtomicTransactionManager,
-    OperationType,
-    TransactionContext,
 )
 from ..managers import (
-    IDMapping,
     IDMappingManager,
-    MappingStatus,
     MappingType,
     Neo4jManager,
+    QdrantManager,
 )
-
-from ..managers import QdrantManager
-from .types import SyncOperationStatus, SyncOperationType
-from ..types import EntityType
 from .event_system import ChangeEvent, ChangeType, DatabaseType, SyncEventSystem
 from .operations import EnhancedSyncOperation
+from .types import SyncOperationType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -52,7 +43,7 @@ class EnhancedSyncEventSystem:
         id_mapping_manager: IDMappingManager,
         atomic_transaction_manager: AtomicTransactionManager,
         graphiti_temporal_integration: Optional["GraphitiTemporalIntegration"] = None,
-        base_sync_system: Optional[SyncEventSystem] = None,
+        base_sync_system: SyncEventSystem | None = None,
         sync_conflict_monitor: Optional["SyncConflictMonitor"] = None,
         max_concurrent_operations: int = 10,
         operation_timeout_seconds: int = 300,
@@ -106,17 +97,17 @@ class EnhancedSyncEventSystem:
 
         # Operation management (legacy queue for fallback)
         self._pending_operations: asyncio.Queue[EnhancedSyncOperation] = asyncio.Queue()
-        self._active_operations: Dict[str, EnhancedSyncOperation] = {}
-        self._completed_operations: Dict[str, EnhancedSyncOperation] = {}
-        self._failed_operations: Dict[str, EnhancedSyncOperation] = {}
+        self._active_operations: dict[str, EnhancedSyncOperation] = {}
+        self._completed_operations: dict[str, EnhancedSyncOperation] = {}
+        self._failed_operations: dict[str, EnhancedSyncOperation] = {}
 
         # Processing control
         self._running = False
-        self._processing_tasks: List[asyncio.Task] = []
+        self._processing_tasks: list[asyncio.Task] = []
         self._semaphore = asyncio.Semaphore(max_concurrent_operations)
 
         # Event handlers
-        self._operation_handlers: Dict[SyncOperationType, Callable] = {
+        self._operation_handlers: dict[SyncOperationType, Callable] = {
             SyncOperationType.CREATE_DOCUMENT: self._handle_create_document,
             SyncOperationType.UPDATE_DOCUMENT: self._handle_update_document,
             SyncOperationType.DELETE_DOCUMENT: self._handle_delete_document,
@@ -161,7 +152,7 @@ class EnhancedSyncEventSystem:
 
     def _create_operation_from_event(
         self, event: ChangeEvent
-    ) -> Optional[EnhancedSyncOperation]:
+    ) -> EnhancedSyncOperation | None:
         """Create enhanced sync operation from change event."""
         try:
             # Determine operation type based on change type and mapping type
@@ -331,7 +322,7 @@ class EnhancedSyncEventSystem:
     # For brevity, I'm including just the core structure. The full implementation
     # would include all the handler methods from the original file.
 
-    async def get_operation_statistics(self) -> Dict[str, Any]:
+    async def get_operation_statistics(self) -> dict[str, Any]:
         """Get operation statistics."""
         # Create a new dictionary with all statistics
         result = {
@@ -364,7 +355,7 @@ class EnhancedSyncEventSystem:
 
         return result
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the enhanced sync system."""
         try:
             stats = await self.get_operation_statistics()

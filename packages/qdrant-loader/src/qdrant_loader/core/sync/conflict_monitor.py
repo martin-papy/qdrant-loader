@@ -12,23 +12,19 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..conflict_resolution import (
     ConflictRecord,
-    ConflictResolutionConfig,
-    ConflictResolutionStrategy,
     ConflictResolutionSystem,
-    ConflictStatus,
-    ConflictType,
 )
-from .enhanced_event_system import EnhancedSyncEventSystem, EnhancedSyncOperation
-from .types import SyncOperationStatus, SyncOperationType
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
 from ..monitoring.ingestion_metrics import IngestionMonitor
 from ..sync import ChangeEvent, ChangeType, DatabaseType
 from ..types import EntityType
+from .enhanced_event_system import EnhancedSyncEventSystem, EnhancedSyncOperation
+from .types import SyncOperationStatus, SyncOperationType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -59,15 +55,15 @@ class ContentHashComparison:
 
     mapping_id: str
     entity_id: str
-    qdrant_hash: Optional[str] = None
-    neo4j_hash: Optional[str] = None
+    qdrant_hash: str | None = None
+    neo4j_hash: str | None = None
     status: ContentHashStatus = ContentHashStatus.BOTH_MISSING
     comparison_time: datetime = field(default_factory=lambda: datetime.now(UTC))
     requires_sync: bool = False
-    sync_direction: Optional[DatabaseType] = None  # Which DB should be updated
-    error_message: Optional[str] = None
+    sync_direction: DatabaseType | None = None  # Which DB should be updated
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging/storage."""
         return {
             "mapping_id": self.mapping_id,
@@ -91,20 +87,20 @@ class SyncOperationMetrics:
     operation_id: str
     operation_type: SyncOperationType
     start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
-    end_time: Optional[datetime] = None
-    duration_seconds: Optional[float] = None
+    end_time: datetime | None = None
+    duration_seconds: float | None = None
     status: SyncOperationStatus = SyncOperationStatus.PENDING
 
     # Content hash metrics
-    content_hash_comparison: Optional[ContentHashComparison] = None
-    hash_computation_time_ms: Optional[float] = None
+    content_hash_comparison: ContentHashComparison | None = None
+    hash_computation_time_ms: float | None = None
 
     # Conflict resolution metrics
     conflicts_detected: int = 0
     conflicts_resolved: int = 0
     conflicts_failed: int = 0
     manual_interventions_required: int = 0
-    conflict_resolution_time_ms: Optional[float] = None
+    conflict_resolution_time_ms: float | None = None
 
     # Database operation metrics
     qdrant_operations: int = 0
@@ -115,11 +111,11 @@ class SyncOperationMetrics:
     # Data metrics
     entities_processed: int = 0
     relationships_processed: int = 0
-    data_size_bytes: Optional[int] = None
+    data_size_bytes: int | None = None
 
     # Error tracking
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def mark_completed(self, status: SyncOperationStatus) -> None:
         """Mark operation as completed with final status."""
@@ -135,7 +131,7 @@ class SyncOperationMetrics:
         """Add a warning to the operation metrics."""
         self.warnings.append(f"{datetime.now(UTC).isoformat()}: {warning}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage/logging."""
         return {
             "operation_id": self.operation_id,
@@ -177,7 +173,7 @@ class SyncConflictMonitor:
         qdrant_manager: QdrantManager,
         neo4j_manager: Neo4jManager,
         id_mapping_manager: IDMappingManager,
-        ingestion_monitor: Optional[IngestionMonitor] = None,
+        ingestion_monitor: IngestionMonitor | None = None,
         monitoring_level: SyncMonitoringLevel = SyncMonitoringLevel.STANDARD,
         enable_content_hash_sync: bool = True,
         enable_automatic_conflict_resolution: bool = True,
@@ -215,13 +211,13 @@ class SyncConflictMonitor:
         self.max_concurrent_hash_checks = max_concurrent_hash_checks
 
         # Monitoring state
-        self._operation_metrics: Dict[str, SyncOperationMetrics] = {}
-        self._content_hash_cache: Dict[str, ContentHashComparison] = {}
-        self._conflict_history: Dict[str, List[ConflictRecord]] = {}
+        self._operation_metrics: dict[str, SyncOperationMetrics] = {}
+        self._content_hash_cache: dict[str, ContentHashComparison] = {}
+        self._conflict_history: dict[str, list[ConflictRecord]] = {}
         self._running = False
 
         # Background tasks
-        self._monitoring_tasks: List[asyncio.Task] = []
+        self._monitoring_tasks: list[asyncio.Task] = []
         self._hash_check_semaphore = asyncio.Semaphore(max_concurrent_hash_checks)
 
         # Statistics
@@ -412,7 +408,7 @@ class SyncConflictMonitor:
 
             return comparison
 
-    async def _get_qdrant_content_hash(self, mapping: IDMapping) -> Optional[str]:
+    async def _get_qdrant_content_hash(self, mapping: IDMapping) -> str | None:
         """Get content hash from QDrant.
 
         Args:
@@ -447,7 +443,7 @@ class SyncConflictMonitor:
             logger.error(f"Error getting QDrant content hash: {e}")
             return None
 
-    async def _get_neo4j_content_hash(self, mapping: IDMapping) -> Optional[str]:
+    async def _get_neo4j_content_hash(self, mapping: IDMapping) -> str | None:
         """Get content hash from Neo4j.
 
         Args:
@@ -694,7 +690,7 @@ class SyncConflictMonitor:
                 error="; ".join(metrics.errors) if metrics.errors else None,
             )
 
-    async def get_monitoring_statistics(self) -> Dict[str, Any]:
+    async def get_monitoring_statistics(self) -> dict[str, Any]:
         """Get comprehensive monitoring statistics.
 
         Returns:
@@ -759,7 +755,7 @@ class SyncConflictMonitor:
 
     async def get_recent_operations(
         self, hours: int = 24, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get recent sync operations with their metrics.
 
         Args:
@@ -782,7 +778,7 @@ class SyncConflictMonitor:
 
     async def get_content_hash_mismatches(
         self, limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get recent content hash mismatches.
 
         Args:
@@ -801,7 +797,7 @@ class SyncConflictMonitor:
         mismatches.sort(key=lambda x: x["comparison_time"], reverse=True)
         return mismatches[:limit]
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check of the sync conflict monitor.
 
         Returns:
@@ -848,7 +844,7 @@ class SyncConflictMonitor:
 
         return health
 
-    async def cleanup_old_data(self, days: int = 30) -> Dict[str, int]:
+    async def cleanup_old_data(self, days: int = 30) -> dict[str, int]:
         """Clean up old monitoring data.
 
         Args:

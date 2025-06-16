@@ -427,7 +427,7 @@ def check_config(
             echo("🔍 Configuration Format Check Results:")
             echo("=" * 40)
             echo(f"📄 Configuration file: {legacy_path}")
-            echo(f"📋 Format: Legacy (single-file)")
+            echo("📋 Format: Legacy (single-file)")
             echo(f"🔍 Detection reason: {reason}")
             echo()
             echo("💡 Migration recommended:")
@@ -444,7 +444,7 @@ def check_config(
             echo(
                 f"📄 Configuration directory: {config_path.parent if config_path.name in ['connectivity.yaml', 'projects.yaml', 'fine-tuning.yaml'] else config_path}"
             )
-            echo(f"📋 Format: Modern (domain-specific files)")
+            echo("📋 Format: Modern (domain-specific files)")
             echo("✅ Your configuration is using the recommended format!")
 
     except Exception as e:

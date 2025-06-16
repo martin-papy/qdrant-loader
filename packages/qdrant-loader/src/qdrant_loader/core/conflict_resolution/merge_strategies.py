@@ -4,16 +4,13 @@ This module provides sophisticated merge strategies including field-level mergin
 semantic conflict detection, and three-way merging with common ancestor detection.
 """
 
-import asyncio
-import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..types import EntityType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -49,21 +46,21 @@ class MergeConflict:
     field_path: str = ""  # Dot-notation path to conflicting field
     source_value: Any = None
     target_value: Any = None
-    ancestor_value: Optional[Any] = None
+    ancestor_value: Any | None = None
 
     # Metadata
-    source_timestamp: Optional[datetime] = None
-    target_timestamp: Optional[datetime] = None
+    source_timestamp: datetime | None = None
+    target_timestamp: datetime | None = None
     field_priority: int = 0  # Higher number = higher priority
-    semantic_context: Optional[Dict[str, Any]] = None
-    business_rules: List[str] = field(default_factory=list)
+    semantic_context: dict[str, Any] | None = None
+    business_rules: list[str] = field(default_factory=list)
 
     # Resolution
-    suggested_resolution: Optional[Any] = None
+    suggested_resolution: Any | None = None
     resolution_confidence: float = 0.0
     requires_manual_review: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage/logging."""
         return {
             "conflict_id": self.conflict_id,
@@ -92,9 +89,9 @@ class MergeResult:
     """Result of a merge operation."""
 
     success: bool = False
-    merged_data: Optional[Dict[str, Any]] = None
-    conflicts: List[MergeConflict] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    merged_data: dict[str, Any] | None = None
+    conflicts: list[MergeConflict] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     # Statistics
     fields_merged: int = 0
@@ -103,7 +100,7 @@ class MergeResult:
     merge_duration_seconds: float = 0.0
 
     # Metadata
-    merge_strategy: Optional[MergeStrategy] = None
+    merge_strategy: MergeStrategy | None = None
     merge_timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     merge_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -119,7 +116,7 @@ class MergeResult:
         """Add a warning to the merge result."""
         self.warnings.append(f"{datetime.now(UTC).isoformat()}: {warning}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage/logging."""
         return {
             "success": self.success,
@@ -143,16 +140,16 @@ class FieldLevelMerger:
 
     def __init__(self):
         """Initialize the field-level merger."""
-        self._field_priorities: Dict[str, int] = {}
-        self._semantic_rules: Dict[str, List[str]] = {}
-        self._business_rules: Dict[str, List[str]] = {}
+        self._field_priorities: dict[str, int] = {}
+        self._semantic_rules: dict[str, list[str]] = {}
+        self._business_rules: dict[str, list[str]] = {}
 
     async def merge_fields(
         self,
-        source_data: Dict[str, Any],
-        target_data: Dict[str, Any],
-        ancestor_data: Optional[Dict[str, Any]] = None,
-        field_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
+        source_data: dict[str, Any],
+        target_data: dict[str, Any],
+        ancestor_data: dict[str, Any] | None = None,
+        field_metadata: dict[str, dict[str, Any]] | None = None,
     ) -> MergeResult:
         """Perform field-level merge with conflict detection.
 
@@ -208,11 +205,11 @@ class FieldLevelMerger:
     async def _merge_field(
         self,
         field_path: str,
-        source_data: Dict[str, Any],
-        target_data: Dict[str, Any],
-        ancestor_data: Optional[Dict[str, Any]],
-        field_metadata: Optional[Dict[str, Dict[str, Any]]],
-        merged_data: Dict[str, Any],
+        source_data: dict[str, Any],
+        target_data: dict[str, Any],
+        ancestor_data: dict[str, Any] | None,
+        field_metadata: dict[str, dict[str, Any]] | None,
+        merged_data: dict[str, Any],
         result: MergeResult,
     ) -> None:
         """Merge a specific field with conflict detection."""
@@ -257,7 +254,7 @@ class FieldLevelMerger:
     async def _resolve_field_conflict(
         self,
         conflict: MergeConflict,
-        merged_data: Dict[str, Any],
+        merged_data: dict[str, Any],
         result: MergeResult,
     ) -> None:
         """Resolve a field-level conflict."""
@@ -306,7 +303,7 @@ class FieldLevelMerger:
         else:
             return ConflictType.VALUE_CONFLICT
 
-    def _get_field_paths(self, data: Dict[str, Any], prefix: str = "") -> Set[str]:
+    def _get_field_paths(self, data: dict[str, Any], prefix: str = "") -> set[str]:
         """Get all field paths in a nested dictionary."""
         paths = set()
 
@@ -319,7 +316,7 @@ class FieldLevelMerger:
 
         return paths
 
-    def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
+    def _get_nested_value(self, data: dict[str, Any], path: str) -> Any:
         """Get value from nested dictionary using dot notation."""
         if not data:
             return None
@@ -337,7 +334,7 @@ class FieldLevelMerger:
         except (KeyError, TypeError):
             return None
 
-    def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
+    def _set_nested_value(self, data: dict[str, Any], path: str, value: Any) -> None:
         """Set value in nested dictionary using dot notation."""
         keys = path.split(".")
         current = data
@@ -357,21 +354,21 @@ class SemanticConflictDetector:
 
     def __init__(self):
         """Initialize the semantic conflict detector."""
-        self._semantic_rules: Dict[str, List[str]] = {
+        self._semantic_rules: dict[str, list[str]] = {
             # Example semantic rules
             "status": ["active", "inactive", "pending", "archived"],
             "priority": ["low", "medium", "high", "critical"],
             "type": ["document", "entity", "relationship", "concept"],
         }
-        self._incompatible_combinations: List[Tuple[str, str, str, str]] = [
+        self._incompatible_combinations: list[tuple[str, str, str, str]] = [
             # (field1, value1, field2, value2) - incompatible combinations
             ("status", "archived", "priority", "critical"),
             ("status", "inactive", "last_accessed", "recent"),
         ]
 
     async def detect_semantic_conflicts(
-        self, merged_data: Dict[str, Any]
-    ) -> List[MergeConflict]:
+        self, merged_data: dict[str, Any]
+    ) -> list[MergeConflict]:
         """Detect semantic conflicts in merged data.
 
         Args:
@@ -412,7 +409,7 @@ class SemanticConflictDetector:
 
         return conflicts
 
-    def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
+    def _get_nested_value(self, data: dict[str, Any], path: str) -> Any:
         """Get value from nested dictionary using dot notation."""
         if not data:
             return None
@@ -444,10 +441,10 @@ class ThreeWayMerger:
 
     async def three_way_merge(
         self,
-        source_data: Dict[str, Any],
-        target_data: Dict[str, Any],
-        ancestor_data: Dict[str, Any],
-        field_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
+        source_data: dict[str, Any],
+        target_data: dict[str, Any],
+        ancestor_data: dict[str, Any],
+        field_metadata: dict[str, dict[str, Any]] | None = None,
     ) -> MergeResult:
         """Perform three-way merge using common ancestor.
 
@@ -514,8 +511,8 @@ class ThreeWayMerger:
         return result
 
     def _analyze_changes(
-        self, ancestor: Dict[str, Any], current: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, ancestor: dict[str, Any], current: dict[str, Any]
+    ) -> dict[str, Any]:
         """Analyze changes between ancestor and current version."""
         changes = {}
 
@@ -536,7 +533,7 @@ class ThreeWayMerger:
     async def _resolve_three_way_conflict(
         self,
         conflict: MergeConflict,
-        merged_data: Dict[str, Any],
+        merged_data: dict[str, Any],
         result: MergeResult,
     ) -> None:
         """Resolve a three-way merge conflict."""
@@ -568,7 +565,7 @@ class ThreeWayMerger:
 
         result.add_conflict(conflict)
 
-    def _get_field_paths(self, data: Dict[str, Any], prefix: str = "") -> Set[str]:
+    def _get_field_paths(self, data: dict[str, Any], prefix: str = "") -> set[str]:
         """Get all field paths in a nested dictionary."""
         paths = set()
 
@@ -581,7 +578,7 @@ class ThreeWayMerger:
 
         return paths
 
-    def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
+    def _get_nested_value(self, data: dict[str, Any], path: str) -> Any:
         """Get value from nested dictionary using dot notation."""
         if not data:
             return None
@@ -599,7 +596,7 @@ class ThreeWayMerger:
         except (KeyError, TypeError):
             return None
 
-    def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
+    def _set_nested_value(self, data: dict[str, Any], path: str, value: Any) -> None:
         """Set value in nested dictionary using dot notation."""
         keys = path.split(".")
         current = data
@@ -625,11 +622,11 @@ class AdvancedMergeStrategy:
 
     async def merge_data(
         self,
-        source_data: Dict[str, Any],
-        target_data: Dict[str, Any],
+        source_data: dict[str, Any],
+        target_data: dict[str, Any],
         strategy: MergeStrategy = MergeStrategy.FIELD_LEVEL,
-        ancestor_data: Optional[Dict[str, Any]] = None,
-        field_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
+        ancestor_data: dict[str, Any] | None = None,
+        field_metadata: dict[str, dict[str, Any]] | None = None,
     ) -> MergeResult:
         """Perform advanced merge using specified strategy.
 

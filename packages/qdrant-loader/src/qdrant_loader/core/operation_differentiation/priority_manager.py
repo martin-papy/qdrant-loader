@@ -4,7 +4,7 @@ This module provides the OperationPriorityManager class that handles operation
 queuing, priority-based scheduling, and resource allocation.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from ...utils.logging import LoggingConfig
 from .types import OperationCharacteristics, OperationPriority
@@ -25,19 +25,19 @@ class OperationPriorityManager:
             max_concurrent_operations: Maximum concurrent operations
         """
         self.max_concurrent_operations = max_concurrent_operations
-        self._priority_queues: Dict[
+        self._priority_queues: dict[
             OperationPriority,
-            List[Tuple[float, "EnhancedSyncOperation", OperationCharacteristics]],
+            list[tuple[float, EnhancedSyncOperation, OperationCharacteristics]],
         ] = {priority: [] for priority in OperationPriority}
-        self._active_operations: Dict[
-            str, Tuple["EnhancedSyncOperation", OperationCharacteristics]
+        self._active_operations: dict[
+            str, tuple[EnhancedSyncOperation, OperationCharacteristics]
         ] = {}
-        self._resource_usage: Dict[str, float] = {
+        self._resource_usage: dict[str, float] = {
             "cpu": 0.0,
             "memory": 0.0,
             "network": 0.0,
         }
-        self._max_resources: Dict[str, float] = {
+        self._max_resources: dict[str, float] = {
             "cpu": 4.0,
             "memory": 8192.0,
             "network": 1024.0,
@@ -73,7 +73,7 @@ class OperationPriorityManager:
 
     async def get_next_operation(
         self,
-    ) -> Optional[Tuple["EnhancedSyncOperation", OperationCharacteristics]]:
+    ) -> tuple["EnhancedSyncOperation", OperationCharacteristics] | None:
         """Get the next operation to process based on priority and resources.
 
         Returns:
@@ -163,7 +163,7 @@ class OperationPriorityManager:
 
             logger.debug(f"Released resources for operation {operation_id}")
 
-    async def get_queue_statistics(self) -> Dict[str, Any]:
+    async def get_queue_statistics(self) -> dict[str, Any]:
         """Get queue statistics.
 
         Returns:

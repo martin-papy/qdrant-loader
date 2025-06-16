@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import requests
 from pydantic import HttpUrl
+
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,

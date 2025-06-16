@@ -6,31 +6,32 @@ resolution suggestions, and workflow management for manual resolution.
 """
 
 # Core models and configuration
-from .models import (
-    ConflictType,
-    ConflictResolutionStrategy,
-    ConflictStatus,
-    EntityVersion,
-    ConflictRecord,
-    ConflictResolutionConfig,
-)
+# Core system components
+from .detector import ConflictDetector
 
 # Advanced merge strategies (Phase 1 - Implemented)
 from .merge_strategies import (
     AdvancedMergeStrategy,
     FieldLevelMerger,
+    MergeConflict,
+    MergeResult,
+    MergeStrategy,
     SemanticConflictDetector,
     ThreeWayMerger,
-    MergeResult,
-    MergeConflict,
-    MergeStrategy,
+)
+from .merge_strategies import (
     ConflictType as MergeConflictType,
 )
-
-# Core system components
-from .detector import ConflictDetector
+from .models import (
+    ConflictRecord,
+    ConflictResolutionConfig,
+    ConflictResolutionStrategy,
+    ConflictStatus,
+    ConflictType,
+    EntityVersion,
+)
+from .persistence import ConflictPersistence, SyncProvider, VersionProvider
 from .resolvers import ConflictResolver
-from .persistence import ConflictPersistence, VersionProvider, SyncProvider
 from .statistics import ConflictStatistics
 from .system import ConflictResolutionSystem
 

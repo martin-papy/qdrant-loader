@@ -4,12 +4,12 @@ This module handles the detection of various types of conflicts between
 QDrant and Neo4j databases during synchronization.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..sync import ChangeEvent, DatabaseType
 from ..managers import IDMapping
-from .models import ConflictType, ConflictRecord, EntityVersion
+from ..sync import ChangeEvent, DatabaseType
+from .models import ConflictRecord, ConflictType, EntityVersion
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -19,15 +19,15 @@ class ConflictDetector:
 
     def __init__(self):
         """Initialize the conflict detector."""
-        self._version_cache: Dict[str, EntityVersion] = {}
+        self._version_cache: dict[str, EntityVersion] = {}
 
     async def detect_conflict(
         self,
         mapping: IDMapping,
         source_event: ChangeEvent,
-        target_data: Optional[Dict[str, Any]] = None,
+        target_data: dict[str, Any] | None = None,
         version_provider=None,  # Will be injected by the system
-    ) -> Optional[ConflictRecord]:
+    ) -> ConflictRecord | None:
         """Detect if a conflict exists for the given entity.
 
         Args:
@@ -86,11 +86,11 @@ class ConflictDetector:
 
     def _determine_conflict_type(
         self,
-        source_version: Optional[EntityVersion],
-        target_version: Optional[EntityVersion],
+        source_version: EntityVersion | None,
+        target_version: EntityVersion | None,
         source_event: ChangeEvent,
-        target_data: Optional[Dict[str, Any]],
-    ) -> Optional[ConflictType]:
+        target_data: dict[str, Any] | None,
+    ) -> ConflictType | None:
         """Determine the type of conflict based on version information.
 
         Args:

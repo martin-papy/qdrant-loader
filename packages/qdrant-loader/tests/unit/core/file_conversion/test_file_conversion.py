@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.core.file_conversion import (
     ConnectorFileConversionConfig,
     ConversionTimeoutError,

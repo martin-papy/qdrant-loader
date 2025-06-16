@@ -5,14 +5,13 @@ managing index lifecycle, query routing, and maintenance operations.
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from datetime import datetime
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .btree_index import TemporalBTreeIndex
 from .composite_index import TemporalCompositeIndex
 from .index_types import (
-    IndexStatus,
     IndexType,
     TemporalIndex,
     TemporalIndexConfig,
@@ -28,9 +27,9 @@ class TemporalIndexManager:
 
     def __init__(self):
         """Initialize the temporal index manager."""
-        self.indexes: Dict[str, TemporalIndex] = {}
+        self.indexes: dict[str, TemporalIndex] = {}
         self.optimizer = TemporalQueryOptimizer()
-        self.maintenance_task: Optional[asyncio.Task] = None
+        self.maintenance_task: asyncio.Task | None = None
         self.maintenance_interval_hours = 24
         self._shutdown_event = asyncio.Event()
 
@@ -102,8 +101,8 @@ class TemporalIndexManager:
         self,
         timestamp: datetime,
         entity_id: str,
-        target_indexes: Optional[List[str]] = None,
-    ) -> Dict[str, bool]:
+        target_indexes: list[str] | None = None,
+    ) -> dict[str, bool]:
         """Insert temporal data into indexes.
 
         Args:
@@ -150,9 +149,9 @@ class TemporalIndexManager:
         self,
         start_time: datetime,
         end_time: datetime,
-        limit: Optional[int] = None,
-        hints: Optional[TemporalQueryHint] = None,
-    ) -> List[Tuple[datetime, List[str]]]:
+        limit: int | None = None,
+        hints: TemporalQueryHint | None = None,
+    ) -> list[tuple[datetime, list[str]]]:
         """Perform a temporal range query.
 
         Args:
@@ -199,11 +198,11 @@ class TemporalIndexManager:
     async def entity_timeline_query(
         self,
         entity_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: Optional[int] = None,
-        hints: Optional[TemporalQueryHint] = None,
-    ) -> List[datetime]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+        hints: TemporalQueryHint | None = None,
+    ) -> list[datetime]:
         """Query the timeline for a specific entity.
 
         Args:
@@ -264,8 +263,8 @@ class TemporalIndexManager:
             return []
 
     async def point_query(
-        self, timestamp: datetime, hints: Optional[TemporalQueryHint] = None
-    ) -> List[str]:
+        self, timestamp: datetime, hints: TemporalQueryHint | None = None
+    ) -> list[str]:
         """Find all entities at a specific timestamp.
 
         Args:
@@ -311,12 +310,12 @@ class TemporalIndexManager:
 
     async def multi_entity_query(
         self,
-        entity_ids: List[str],
+        entity_ids: list[str],
         start_time: datetime,
         end_time: datetime,
-        limit: Optional[int] = None,
-        hints: Optional[TemporalQueryHint] = None,
-    ) -> Dict[str, List[datetime]]:
+        limit: int | None = None,
+        hints: TemporalQueryHint | None = None,
+    ) -> dict[str, list[datetime]]:
         """Query multiple entities within a time range.
 
         Args:
@@ -367,7 +366,7 @@ class TemporalIndexManager:
             logger.error(f"Multi-entity query failed: {e}")
             return {}
 
-    def get_index_statistics(self, index_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_index_statistics(self, index_id: str | None = None) -> dict[str, Any]:
         """Get statistics for indexes.
 
         Args:
@@ -386,7 +385,7 @@ class TemporalIndexManager:
                 idx_id: idx.statistics.to_dict() for idx_id, idx in self.indexes.items()
             }
 
-    def get_manager_statistics(self) -> Dict[str, Any]:
+    def get_manager_statistics(self) -> dict[str, Any]:
         """Get overall manager statistics."""
         active_indexes = sum(1 for idx in self.indexes.values() if idx.is_active())
         total_entries = sum(
@@ -421,7 +420,7 @@ class TemporalIndexManager:
             index = self.indexes[index_id]
 
             # Check if index supports rebuilding
-            if hasattr(index, "rebuild") and callable(getattr(index, "rebuild")):
+            if hasattr(index, "rebuild") and callable(index.rebuild):
                 success = await index.rebuild()
             else:
                 logger.warning(
@@ -456,7 +455,7 @@ class TemporalIndexManager:
         if self.maintenance_task and not self.maintenance_task.done():
             try:
                 await asyncio.wait_for(self.maintenance_task, timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.maintenance_task.cancel()
                 logger.warning("Maintenance task did not stop gracefully, cancelled")
 
@@ -474,7 +473,7 @@ class TemporalIndexManager:
                     timeout=self.maintenance_interval_hours * 3600,
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Normal timeout, continue maintenance
                 continue
             except Exception as e:
@@ -494,7 +493,7 @@ class TemporalIndexManager:
 
                 # Update memory usage statistics
                 if hasattr(index, "get_memory_usage") and callable(
-                    getattr(index, "get_memory_usage")
+                    index.get_memory_usage
                 ):
                     try:
                         index.statistics.memory_usage_bytes = index.get_memory_usage()

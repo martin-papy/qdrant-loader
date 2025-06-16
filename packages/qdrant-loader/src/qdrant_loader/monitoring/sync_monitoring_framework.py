@@ -10,22 +10,21 @@ This module provides real-time monitoring capabilities including:
 """
 
 import asyncio
-import time
 import json
 import logging
-from dataclasses import dataclass, field, asdict
-from typing import Dict, Any, List, Optional, Callable, Set, Union, Awaitable
-from datetime import datetime, timezone, timedelta
+import time
+from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import aiofiles
-from collections import defaultdict, deque
+from typing import Any
 
-from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
-from qdrant_loader.core.sync.conflict_monitor import SyncConflictMonitor
 from qdrant_loader.core.operation_differentiation import OperationDifferentiationManager
-from qdrant_loader.core.sync.types import SyncOperationType
+from qdrant_loader.core.sync.conflict_monitor import SyncConflictMonitor
+from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
 
 
 class AlertSeverity(Enum):
@@ -64,10 +63,10 @@ class Alert:
     title: str
     description: str
     component: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     resolved: bool = False
-    resolved_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    resolved_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -77,9 +76,9 @@ class HealthCheckResult:
     component: str
     status: HealthStatus
     message: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     response_time_ms: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -88,9 +87,9 @@ class Metric:
 
     name: str
     type: MetricType
-    value: Union[int, float]
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    labels: Dict[str, str] = field(default_factory=dict)
+    value: int | float
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    labels: dict[str, str] = field(default_factory=dict)
     unit: str = ""
 
 
@@ -99,10 +98,10 @@ class SystemStatus:
     """Overall system status."""
 
     overall_health: HealthStatus
-    component_health: Dict[str, HealthCheckResult]
-    active_alerts: List[Alert]
-    metrics_summary: Dict[str, Any]
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    component_health: dict[str, HealthCheckResult]
+    active_alerts: list[Alert]
+    metrics_summary: dict[str, Any]
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass
@@ -118,7 +117,7 @@ class MonitoringConfig:
     log_file_path: str = "logs/sync_monitoring.log"
     enable_dashboard: bool = True
     dashboard_port: int = 8080
-    alert_thresholds: Dict[str, Dict[str, float]] = field(
+    alert_thresholds: dict[str, dict[str, float]] = field(
         default_factory=lambda: {
             "operation_latency": {"warning": 1000.0, "critical": 5000.0},  # ms
             "error_rate": {"warning": 0.05, "critical": 0.10},  # percentage
@@ -146,7 +145,7 @@ class SyncMonitoringFramework:
         atomic_transaction_manager: AtomicTransactionManager,
         sync_conflict_monitor: SyncConflictMonitor,
         operation_diff_manager: OperationDifferentiationManager,
-        config: Optional[MonitoringConfig] = None,
+        config: MonitoringConfig | None = None,
     ):
         self.sync_system = sync_system
         self.atomic_transaction_manager = atomic_transaction_manager
@@ -155,14 +154,14 @@ class SyncMonitoringFramework:
         self.config = config or MonitoringConfig()
 
         # Internal state
-        self.alerts: Dict[str, Alert] = {}
-        self.metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self.health_checks: Dict[str, HealthCheckResult] = {}
-        self.alert_handlers: List[Callable[[Alert], None]] = []
-        self.metric_collectors: Dict[str, Callable[[], Awaitable[Metric]]] = {}
+        self.alerts: dict[str, Alert] = {}
+        self.metrics: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.health_checks: dict[str, HealthCheckResult] = {}
+        self.alert_handlers: list[Callable[[Alert], None]] = []
+        self.metric_collectors: dict[str, Callable[[], Awaitable[Metric]]] = {}
 
         # Monitoring tasks
-        self.monitoring_tasks: Set[asyncio.Task] = set()
+        self.monitoring_tasks: set[asyncio.Task] = set()
         self.is_monitoring = False
 
         # Setup logging
@@ -340,7 +339,7 @@ class SyncMonitoringFramework:
 
     async def _cleanup_old_data(self):
         """Clean up old alerts and metrics."""
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now(UTC)
 
         # Clean up old alerts
         alert_cutoff = current_time - timedelta(days=self.config.alert_retention_days)
@@ -657,7 +656,7 @@ class SyncMonitoringFramework:
         title: str,
         description: str,
         component: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Create or update an alert."""
         existing_alert = self.alerts.get(alert_id)
@@ -665,7 +664,7 @@ class SyncMonitoringFramework:
         if existing_alert and not existing_alert.resolved:
             # Update existing alert
             existing_alert.description = description
-            existing_alert.timestamp = datetime.now(timezone.utc)
+            existing_alert.timestamp = datetime.now(UTC)
             existing_alert.metadata.update(metadata or {})
         else:
             # Create new alert
@@ -703,7 +702,7 @@ class SyncMonitoringFramework:
         alert = self.alerts.get(alert_id)
         if alert and not alert.resolved:
             alert.resolved = True
-            alert.resolved_at = datetime.now(timezone.utc)
+            alert.resolved_at = datetime.now(UTC)
             self.logger.info(f"RESOLVED: Alert {alert_id} - {alert.title}")
 
     def add_alert_handler(self, handler: Callable[[Alert], None]):
@@ -777,7 +776,7 @@ async def create_monitoring_framework(
     atomic_transaction_manager: AtomicTransactionManager,
     sync_conflict_monitor: SyncConflictMonitor,
     operation_diff_manager: OperationDifferentiationManager,
-    config: Optional[MonitoringConfig] = None,
+    config: MonitoringConfig | None = None,
 ) -> SyncMonitoringFramework:
     """Create and configure a monitoring framework instance."""
     framework = SyncMonitoringFramework(
@@ -843,7 +842,7 @@ async def run_monitoring_demo(
 
         # Get final system status
         status = framework.get_system_status()
-        print(f"\n📈 Final System Status:")
+        print("\n📈 Final System Status:")
         print(f"   Overall Health: {status.overall_health.value}")
         print(f"   Active Alerts: {len(status.active_alerts)}")
         print(f"   Components Monitored: {len(status.component_health)}")

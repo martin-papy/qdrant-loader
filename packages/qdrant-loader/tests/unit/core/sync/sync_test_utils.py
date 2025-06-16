@@ -5,16 +5,17 @@ Provides data generators, assertion helpers, performance measurement tools,
 and event collection utilities for comprehensive sync testing.
 """
 
-import time
 import asyncio
 import random
 import string
-from typing import Dict, Any, List, Optional, Callable, AsyncGenerator
+import time
+from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Any
 from unittest.mock import AsyncMock
 
-from qdrant_loader.core.sync.types import SyncOperationType, SyncOperationStatus
+from qdrant_loader.core.sync.types import SyncOperationStatus, SyncOperationType
 
 
 @dataclass
@@ -22,11 +23,11 @@ class PerformanceMeasurement:
     """Performance measurement utilities for sync operations."""
 
     operation_name: str
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
-    duration: Optional[float] = None
-    memory_usage: Optional[int] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    start_time: float | None = None
+    end_time: float | None = None
+    duration: float | None = None
+    memory_usage: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def start(self):
         """Start performance measurement."""
@@ -56,7 +57,7 @@ class TestEvent:
 
     event_type: str
     timestamp: datetime
-    data: Dict[str, Any]
+    data: dict[str, Any]
     source: str = "test"
 
 
@@ -64,10 +65,10 @@ class TestEventCollector:
     """Collect and analyze events during testing."""
 
     def __init__(self):
-        self.events: List[TestEvent] = []
-        self.event_counts: Dict[str, int] = {}
+        self.events: list[TestEvent] = []
+        self.event_counts: dict[str, int] = {}
 
-    def add_event(self, event_type: str, data: Dict[str, Any], source: str = "test"):
+    def add_event(self, event_type: str, data: dict[str, Any], source: str = "test"):
         """Add an event to the collection."""
         event = TestEvent(
             event_type=event_type, timestamp=datetime.now(), data=data, source=source
@@ -75,7 +76,7 @@ class TestEventCollector:
         self.events.append(event)
         self.event_counts[event_type] = self.event_counts.get(event_type, 0) + 1
 
-    def get_events_by_type(self, event_type: str) -> List[TestEvent]:
+    def get_events_by_type(self, event_type: str) -> list[TestEvent]:
         """Get all events of a specific type."""
         return [event for event in self.events if event.event_type == event_type]
 
@@ -90,7 +91,7 @@ class TestEventCollector:
 
     def get_events_in_timerange(
         self, start_time: datetime, end_time: datetime
-    ) -> List[TestEvent]:
+    ) -> list[TestEvent]:
         """Get events within a specific time range."""
         return [
             event for event in self.events if start_time <= event.timestamp <= end_time
@@ -107,10 +108,10 @@ class SyncTestDataGenerator:
 
     @staticmethod
     def generate_document_data(
-        doc_id: Optional[str] = None,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        doc_id: str | None = None,
+        title: str | None = None,
+        content: str | None = None,
+    ) -> dict[str, Any]:
         """Generate document data for testing."""
         return {
             "id": doc_id or f"doc_{SyncTestDataGenerator.random_string(8)}",
@@ -129,8 +130,8 @@ class SyncTestDataGenerator:
 
     @staticmethod
     def generate_entity_data(
-        entity_id: Optional[str] = None, entity_type: str = "Person"
-    ) -> Dict[str, Any]:
+        entity_id: str | None = None, entity_type: str = "Person"
+    ) -> dict[str, Any]:
         """Generate entity data for testing."""
         return {
             "id": entity_id or f"entity_{SyncTestDataGenerator.random_string(8)}",
@@ -146,8 +147,8 @@ class SyncTestDataGenerator:
     @staticmethod
     def generate_sync_operation(
         operation_type: SyncOperationType = SyncOperationType.CREATE_DOCUMENT,
-        entity_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        entity_id: str | None = None,
+    ) -> dict[str, Any]:
         """Generate sync operation data for testing."""
         return {
             "operation_id": f"op_{SyncTestDataGenerator.random_string(8)}",
@@ -166,8 +167,8 @@ class SyncTestDataGenerator:
 
     @staticmethod
     def generate_batch_operations(
-        count: int = 10, operation_types: Optional[List[SyncOperationType]] = None
-    ) -> List[Dict[str, Any]]:
+        count: int = 10, operation_types: list[SyncOperationType] | None = None
+    ) -> list[dict[str, Any]]:
         """Generate a batch of sync operations."""
         if operation_types is None:
             operation_types = [
@@ -188,21 +189,21 @@ class SyncAssertionHelpers:
     """Assertion helpers for sync testing."""
 
     @staticmethod
-    def assert_operation_completed(operation: Dict[str, Any]):
+    def assert_operation_completed(operation: dict[str, Any]):
         """Assert that a sync operation completed successfully."""
         assert (
             operation.get("status") == SyncOperationStatus.COMPLETED
         ), f"Operation {operation.get('operation_id')} not completed: {operation.get('status')}"
 
     @staticmethod
-    def assert_operation_failed(operation: Dict[str, Any]):
+    def assert_operation_failed(operation: dict[str, Any]):
         """Assert that a sync operation failed."""
         assert (
             operation.get("status") == SyncOperationStatus.FAILED
         ), f"Operation {operation.get('operation_id')} did not fail: {operation.get('status')}"
 
     @staticmethod
-    def assert_operations_in_order(operations: List[Dict[str, Any]]):
+    def assert_operations_in_order(operations: list[dict[str, Any]]):
         """Assert that operations are processed in the correct order."""
         timestamps = []
         for op in operations:
@@ -216,7 +217,7 @@ class SyncAssertionHelpers:
 
     @staticmethod
     def assert_no_data_loss(
-        original_data: List[Dict[str, Any]], synced_data: List[Dict[str, Any]]
+        original_data: list[dict[str, Any]], synced_data: list[dict[str, Any]]
     ):
         """Assert that no data was lost during synchronization."""
         original_ids = {item.get("id") for item in original_data}
@@ -226,7 +227,7 @@ class SyncAssertionHelpers:
         assert not missing_ids, f"Data loss detected. Missing IDs: {missing_ids}"
 
     @staticmethod
-    def assert_conflict_resolved(conflict_data: Dict[str, Any]):
+    def assert_conflict_resolved(conflict_data: dict[str, Any]):
         """Assert that a conflict was properly resolved."""
         assert (
             "resolution_strategy" in conflict_data
@@ -245,7 +246,7 @@ class SyncAssertionHelpers:
         """Assert that an async operation completes within timeout."""
         try:
             await asyncio.wait_for(async_func(), timeout=timeout_seconds)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise AssertionError(
                 f"Operation did not complete within {timeout_seconds} seconds"
             )
@@ -310,7 +311,7 @@ async def wait_for_condition(
 
 def create_test_batch_generator(
     batch_size: int = 10, total_items: int = 100
-) -> AsyncGenerator[List[Dict[str, Any]], None]:
+) -> AsyncGenerator[list[dict[str, Any]], None]:
     """Create an async generator for batch testing."""
 
     async def generator():

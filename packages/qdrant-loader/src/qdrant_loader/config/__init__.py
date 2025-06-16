@@ -35,17 +35,17 @@ from .models import (
     ProjectsConfig,
     ProjectStats,
 )
+from .multi_file_loader import (
+    ConfigDomain,
+    MultiFileConfigLoader,
+    load_multi_file_config,
+)
 from .neo4j import Neo4jConfig
 from .parser import MultiProjectConfigParser
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 from .validator import ConfigValidator
 from .workspace import WorkspaceConfig
-from .multi_file_loader import (
-    MultiFileConfigLoader,
-    ConfigDomain,
-    load_multi_file_config,
-)
 
 # Load environment variables from .env file
 load_dotenv(override=False)
@@ -121,7 +121,7 @@ class ThreadSafeSettingsManager:
 
     def __init__(self):
         """Initialize the settings manager."""
-        self._settings: Optional["Settings"] = None
+        self._settings: Settings | None = None
         self._settings_lock = threading.RLock()
         self._initialized = False
 
@@ -141,11 +141,11 @@ class ThreadSafeSettingsManager:
     def initialize_multi_file_config(
         self,
         config_dir: Path,
-        domains: Optional[Set[str]] = None,
+        domains: set[str] | None = None,
         env_path: Path | None = None,
         skip_validation: bool = False,
-        preset: Optional[str] = None,
-        use_case: Optional[str] = None,
+        preset: str | None = None,
+        use_case: str | None = None,
         measure_performance: bool = False,
         enhanced_validation: bool = True,
         fail_fast: bool = False,
@@ -210,10 +210,10 @@ class ThreadSafeSettingsManager:
     def initialize_multi_file_config_with_workspace(
         self,
         workspace_config: WorkspaceConfig,
-        domains: Optional[Set[str]] = None,
+        domains: set[str] | None = None,
         skip_validation: bool = False,
-        preset: Optional[str] = None,
-        use_case: Optional[str] = None,
+        preset: str | None = None,
+        use_case: str | None = None,
         measure_performance: bool = False,
         enhanced_validation: bool = True,
         fail_fast: bool = False,
@@ -348,11 +348,11 @@ def get_global_config() -> GlobalConfig:
 
 def initialize_multi_file_config(
     config_dir: Path,
-    domains: Optional[Set[str]] = None,
+    domains: set[str] | None = None,
     env_path: Path | None = None,
     skip_validation: bool = False,
-    preset: Optional[str] = None,
-    use_case: Optional[str] = None,
+    preset: str | None = None,
+    use_case: str | None = None,
     measure_performance: bool = False,
     enhanced_validation: bool = True,
     fail_fast: bool = False,
@@ -389,10 +389,10 @@ def initialize_multi_file_config(
 
 def initialize_multi_file_config_with_workspace(
     workspace_config: WorkspaceConfig,
-    domains: Optional[Set[str]] = None,
+    domains: set[str] | None = None,
     skip_validation: bool = False,
-    preset: Optional[str] = None,
-    use_case: Optional[str] = None,
+    preset: str | None = None,
+    use_case: str | None = None,
     measure_performance: bool = False,
     enhanced_validation: bool = True,
     fail_fast: bool = False,
@@ -642,11 +642,11 @@ class Settings(BaseSettings):
     def from_multi_file(
         cls,
         config_dir: Path,
-        domains: Optional[Set[str]] = None,
+        domains: set[str] | None = None,
         env_path: Path | None = None,
         skip_validation: bool = False,
-        preset: Optional[str] = None,
-        use_case: Optional[str] = None,
+        preset: str | None = None,
+        use_case: str | None = None,
         measure_performance: bool = False,
         enhanced_validation: bool = True,
         fail_fast: bool = False,

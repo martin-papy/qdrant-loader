@@ -5,25 +5,23 @@ Tests comprehensive operation differentiation including classification, validati
 priority management, queuing, statistics tracking, and health monitoring.
 """
 
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock
+
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
-from typing import Dict, Any, Optional
 
 from qdrant_loader.core.operation_differentiation import (
-    OperationDifferentiationManager,
+    OperationCharacteristics,
     OperationComplexity,
+    OperationDifferentiationManager,
     OperationImpact,
     OperationPriority,
     ValidationLevel,
-    OperationCharacteristics,
     ValidationResult,
 )
 from qdrant_loader.core.sync import (
     EnhancedSyncOperation,
     SyncOperationType,
-    SyncOperationStatus,
 )
 
 

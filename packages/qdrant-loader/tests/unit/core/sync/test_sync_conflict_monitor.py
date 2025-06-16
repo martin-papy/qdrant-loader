@@ -5,35 +5,30 @@ Tests comprehensive sync monitoring with conflict resolution, content hash synch
 operation metrics tracking, health monitoring, and background task management.
 """
 
-import pytest
 import asyncio
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC, timedelta
-from typing import Dict, Any, List
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
-from qdrant_loader.core.sync import (
-    SyncConflictMonitor,
-    SyncMonitoringLevel,
-    ContentHashStatus,
-    ContentHashComparison,
-    SyncOperationMetrics,
-    EnhancedSyncOperation,
-    SyncOperationType,
-    SyncOperationStatus,
-    ChangeEvent,
-    ChangeType,
-    DatabaseType,
-)
+import pytest
+
 from qdrant_loader.core.conflict_resolution import (
-    ConflictResolutionSystem,
     ConflictRecord,
-    ConflictType,
     ConflictStatus,
+    ConflictType,
 )
 from qdrant_loader.core.managers import IDMapping, MappingType
+from qdrant_loader.core.sync import (
+    ContentHashComparison,
+    ContentHashStatus,
+    DatabaseType,
+    EnhancedSyncOperation,
+    SyncConflictMonitor,
+    SyncMonitoringLevel,
+    SyncOperationMetrics,
+    SyncOperationStatus,
+    SyncOperationType,
+)
 from qdrant_loader.core.types import EntityType
-from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 
 
 @pytest.fixture

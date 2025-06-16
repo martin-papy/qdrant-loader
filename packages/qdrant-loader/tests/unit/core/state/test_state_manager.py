@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from pydantic import HttpUrl
+
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document

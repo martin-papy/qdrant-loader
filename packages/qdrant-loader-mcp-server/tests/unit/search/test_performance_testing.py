@@ -2,15 +2,15 @@
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
-import pytest
 
+import pytest
+from qdrant_loader_mcp_server.search.enhanced_hybrid_search import SearchMode
 from qdrant_loader_mcp_server.utils.performance_testing import (
     BenchmarkConfig,
     BenchmarkResult,
     PerformanceMetrics,
     PerformanceTester,
 )
-from qdrant_loader_mcp_server.search.enhanced_hybrid_search import SearchMode
 
 
 class TestPerformanceMetrics:

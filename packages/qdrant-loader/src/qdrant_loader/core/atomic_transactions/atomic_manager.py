@@ -3,7 +3,7 @@ Main atomic transaction manager coordinating QDrant and Neo4j operations.
 """
 
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers.id_mapping_manager import IDMappingManager
@@ -52,7 +52,7 @@ class AtomicTransactionManager:
         self.neo4j_tx_manager = Neo4jTransactionManager(neo4j_manager)
 
         # Active transactions
-        self._active_transactions: Dict[str, DistributedTransaction] = {}
+        self._active_transactions: dict[str, DistributedTransaction] = {}
 
         # Statistics
         self._total_transactions = 0
@@ -63,8 +63,8 @@ class AtomicTransactionManager:
     @asynccontextmanager
     async def transaction(
         self,
-        timeout_seconds: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        timeout_seconds: int | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Context manager for atomic transactions across both databases.
 
@@ -272,7 +272,7 @@ class AtomicTransactionManager:
                     f"Failed to execute compensation action {action.action_id}: {e}"
                 )
 
-    async def get_transaction_statistics(self) -> Dict[str, Any]:
+    async def get_transaction_statistics(self) -> dict[str, Any]:
         """Get transaction statistics."""
         return {
             "total_transactions": self._total_transactions,
@@ -288,7 +288,7 @@ class AtomicTransactionManager:
             "active_transaction_ids": list(self._active_transactions.keys()),
         }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the transaction manager."""
         return {
             "status": "healthy",

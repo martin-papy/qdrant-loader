@@ -6,12 +6,12 @@ This module defines separate Pydantic models for each configuration domain:
 - FineTuningConfig: Processing parameters and performance tuning
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..core.file_conversion import FileConversionConfig
 from .base import BaseConfig
-from .models import ProjectsConfig as BaseProjectsConfig
 from .chunking import ChunkingConfig
 from .embedding import EmbeddingConfig
 from .graphiti import GraphitiConfig
@@ -19,7 +19,6 @@ from .models import ProjectsConfig as BaseProjectsConfig
 from .neo4j import Neo4jConfig
 from .qdrant import QdrantConfig
 from .state import StateManagementConfig
-from ..core.file_conversion import FileConversionConfig
 
 
 class NetworkConfig(BaseModel):
@@ -86,7 +85,7 @@ class ConnectivityConfig(BaseConfig):
     )
 
     # Neo4j configuration (optional, for Graphiti features)
-    neo4j: Optional[Neo4jConfig] = Field(
+    neo4j: Neo4jConfig | None = Field(
         None, description="Neo4j graph database configuration"
     )
 
@@ -112,7 +111,7 @@ class ConnectivityConfig(BaseConfig):
         default_factory=ServerConfig, description="Server configuration"
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert connectivity configuration to dictionary.
 
         Returns the configuration wrapped under 'global' key to match
@@ -269,7 +268,7 @@ class ProjectsConfig(BaseConfig):
         default_factory=WorkerConfig, description="Worker configuration and limits"
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert projects configuration to dictionary."""
         return {
             "projects": self.projects.to_dict(),
@@ -445,7 +444,7 @@ class FineTuningConfig(BaseConfig):
         description="Performance monitoring and resource limits",
     )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert fine-tuning configuration to dictionary."""
         return {
             "chunking": {
@@ -473,7 +472,7 @@ class DomainConfigValidator:
     """Validator for domain-specific configurations."""
 
     @staticmethod
-    def validate_connectivity(data: Dict[str, Any]) -> ConnectivityConfig:
+    def validate_connectivity(data: dict[str, Any]) -> ConnectivityConfig:
         """Validate connectivity configuration data.
 
         Args:
@@ -488,7 +487,7 @@ class DomainConfigValidator:
         return ConnectivityConfig(**data)
 
     @staticmethod
-    def validate_projects(data: Dict[str, Any]) -> ProjectsConfig:
+    def validate_projects(data: dict[str, Any]) -> ProjectsConfig:
         """Validate projects configuration data.
 
         Args:
@@ -526,7 +525,7 @@ class DomainConfigValidator:
         return ProjectsConfig(projects=base_projects_config)
 
     @staticmethod
-    def _inject_source_metadata(sources_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _inject_source_metadata(sources_data: dict[str, Any]) -> dict[str, Any]:
         """Inject source_type and source fields into source configurations.
 
         Args:
@@ -561,7 +560,7 @@ class DomainConfigValidator:
         return enhanced_data
 
     @staticmethod
-    def validate_fine_tuning(data: Dict[str, Any]) -> FineTuningConfig:
+    def validate_fine_tuning(data: dict[str, Any]) -> FineTuningConfig:
         """Validate fine-tuning configuration data.
 
         Args:

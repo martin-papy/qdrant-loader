@@ -4,10 +4,9 @@ This module provides comprehensive error handling infrastructure for configurati
 validation with domain context, severity levels, and user-friendly error messages.
 """
 
-import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -27,11 +26,11 @@ class ConfigValidationError(Exception):
         self,
         message: str,
         domain: str,
-        file_path: Optional[Path] = None,
-        field_path: Optional[str] = None,
+        file_path: Path | None = None,
+        field_path: str | None = None,
         severity: ValidationSeverity = ValidationSeverity.CRITICAL,
-        remediation: Optional[str] = None,
-        original_error: Optional[Exception] = None,
+        remediation: str | None = None,
+        original_error: Exception | None = None,
     ):
         """Initialize configuration validation error.
 
@@ -74,7 +73,7 @@ class ConfigValidationError(Exception):
 
         return "\n".join(parts)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for structured reporting."""
         return {
             "message": self.message,
@@ -97,9 +96,9 @@ class ValidationErrorCollector:
             fail_fast: If True, raise immediately on critical errors
         """
         self.fail_fast = fail_fast
-        self.errors: List[ConfigValidationError] = []
-        self.warnings: List[ConfigValidationError] = []
-        self.info: List[ConfigValidationError] = []
+        self.errors: list[ConfigValidationError] = []
+        self.warnings: list[ConfigValidationError] = []
+        self.info: list[ConfigValidationError] = []
 
     def add_error(self, error: ConfigValidationError) -> None:
         """Add a validation error to the collector.
@@ -123,7 +122,7 @@ class ValidationErrorCollector:
         self,
         pydantic_error: ValidationError,
         domain: str,
-        file_path: Optional[Path] = None,
+        file_path: Path | None = None,
         severity: ValidationSeverity = ValidationSeverity.CRITICAL,
     ) -> None:
         """Convert and add Pydantic validation errors.
@@ -225,7 +224,7 @@ class ValidationErrorCollector:
         """Check if there are any issues (errors, warnings, or info)."""
         return len(self.errors) > 0 or len(self.warnings) > 0 or len(self.info) > 0
 
-    def get_error_summary(self) -> Dict[str, Any]:
+    def get_error_summary(self) -> dict[str, Any]:
         """Get a summary of all validation issues."""
         return {
             "critical_errors": len(self.errors),
@@ -305,8 +304,8 @@ class DomainValidationContext:
     def __init__(
         self,
         domain: str,
-        file_path: Optional[Path] = None,
-        error_collector: Optional[ValidationErrorCollector] = None,
+        file_path: Path | None = None,
+        error_collector: ValidationErrorCollector | None = None,
     ):
         """Initialize validation context.
 
@@ -322,9 +321,9 @@ class DomainValidationContext:
     def add_error(
         self,
         message: str,
-        field_path: Optional[str] = None,
+        field_path: str | None = None,
         severity: ValidationSeverity = ValidationSeverity.CRITICAL,
-        remediation: Optional[str] = None,
+        remediation: str | None = None,
     ) -> None:
         """Add a validation error within this context."""
         error = ConfigValidationError(
@@ -339,7 +338,7 @@ class DomainValidationContext:
 
     def validate_required_field(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         field_path: str,
         field_description: str = "",
     ) -> bool:
@@ -442,10 +441,10 @@ class DomainValidationContext:
 
     def validate_numeric_range(
         self,
-        value: Union[int, float],
+        value: int | float,
         field_path: str,
-        min_value: Optional[Union[int, float]] = None,
-        max_value: Optional[Union[int, float]] = None,
+        min_value: int | float | None = None,
+        max_value: int | float | None = None,
     ) -> bool:
         """Validate numeric value is within specified range.
 

@@ -8,7 +8,6 @@ from pathlib import Path
 
 import click
 from click.exceptions import ClickException
-from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 

@@ -7,7 +7,6 @@ supporting efficient range queries and time-based lookups.
 import bisect
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
 
 from ...utils.logging import LoggingConfig
 from .index_types import IndexStatus, TemporalIndex, TemporalIndexConfig
@@ -27,9 +26,9 @@ class TemporalBTreeNode:
         """
         self.is_leaf = is_leaf
         self.max_keys = max_keys
-        self.keys: List[datetime] = []  # Temporal keys (timestamps)
-        self.values: List[List[str]] = []  # Entity IDs for each timestamp
-        self.children: List["TemporalBTreeNode"] = []
+        self.keys: list[datetime] = []  # Temporal keys (timestamps)
+        self.values: list[list[str]] = []  # Entity IDs for each timestamp
+        self.children: list[TemporalBTreeNode] = []
 
     def is_full(self) -> bool:
         """Check if node is full."""
@@ -63,7 +62,7 @@ class TemporalBTreeIndex(TemporalIndex):
             config: Index configuration
         """
         super().__init__(config)
-        self.root: Optional[TemporalBTreeNode] = None
+        self.root: TemporalBTreeNode | None = None
         self.max_keys = min(config.page_size // 32, 255)  # Estimate based on page size
         self._build_index()
 
@@ -159,8 +158,8 @@ class TemporalBTreeIndex(TemporalIndex):
         parent.children.insert(child_index + 1, new_child)
 
     async def range_query(
-        self, start_time: datetime, end_time: datetime, limit: Optional[int] = None
-    ) -> List[Tuple[datetime, List[str]]]:
+        self, start_time: datetime, end_time: datetime, limit: int | None = None
+    ) -> list[tuple[datetime, list[str]]]:
         """Perform a range query on the temporal index.
 
         Args:
@@ -196,8 +195,8 @@ class TemporalBTreeIndex(TemporalIndex):
         node: TemporalBTreeNode,
         start_time: datetime,
         end_time: datetime,
-        results: List[Tuple[datetime, List[str]]],
-        limit: Optional[int],
+        results: list[tuple[datetime, list[str]]],
+        limit: int | None,
     ) -> None:
         """Recursively search for values in range."""
         if limit and len(results) >= limit:
@@ -224,7 +223,7 @@ class TemporalBTreeIndex(TemporalIndex):
         if not node.is_leaf and len(node.children) > len(node.keys):
             self._range_search(node.children[-1], start_time, end_time, results, limit)
 
-    async def point_query(self, timestamp: datetime) -> List[str]:
+    async def point_query(self, timestamp: datetime) -> list[str]:
         """Find all entities at a specific timestamp.
 
         Args:
@@ -251,7 +250,7 @@ class TemporalBTreeIndex(TemporalIndex):
             logger.error(f"Point query failed: {e}")
             return []
 
-    def _point_search(self, node: TemporalBTreeNode, key: datetime) -> List[str]:
+    def _point_search(self, node: TemporalBTreeNode, key: datetime) -> list[str]:
         """Search for exact key in the tree."""
         index = bisect.bisect_left(node.keys, key)
 
@@ -308,7 +307,7 @@ class TemporalBTreeIndex(TemporalIndex):
             self.status = IndexStatus.ERROR
             return False
 
-    def _extract_all_data(self) -> List[Tuple[datetime, List[str]]]:
+    def _extract_all_data(self) -> list[tuple[datetime, list[str]]]:
         """Extract all data from the current index."""
         if not self.root:
             return []
@@ -318,7 +317,7 @@ class TemporalBTreeIndex(TemporalIndex):
         return data
 
     def _extract_node_data(
-        self, node: TemporalBTreeNode, data: List[Tuple[datetime, List[str]]]
+        self, node: TemporalBTreeNode, data: list[tuple[datetime, list[str]]]
     ) -> None:
         """Recursively extract data from nodes."""
         for i, key in enumerate(node.keys):

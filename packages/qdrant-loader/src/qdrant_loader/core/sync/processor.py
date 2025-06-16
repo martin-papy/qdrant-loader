@@ -6,22 +6,21 @@ enhanced sync event system for better maintainability and separation of concerns
 
 import asyncio
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ..graphiti_temporal_integration import GraphitiTemporalIntegration
-    from .conflict_monitor import SyncConflictMonitor
     from ..operation_differentiation import (
         OperationCharacteristics,
         OperationDifferentiationManager,
     )
+    from .conflict_monitor import SyncConflictMonitor
 
 from ...utils.logging import LoggingConfig
 from ..atomic_transactions import AtomicTransactionManager
-
-from .types import SyncOperationStatus, SyncOperationType
 from .handlers import SyncOperationHandlers
 from .operations import EnhancedSyncOperation
+from .types import SyncOperationStatus, SyncOperationType
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -79,7 +78,7 @@ class SyncOperationProcessor:
         self,
         operation: EnhancedSyncOperation,
         characteristics: Optional["OperationCharacteristics"] = None,
-        stats: Optional[Dict[str, int]] = None,
+        stats: dict[str, int] | None = None,
     ) -> None:
         """Process a single sync operation.
 
@@ -206,7 +205,7 @@ class SyncOperationProcessor:
         self,
         operation: EnhancedSyncOperation,
         characteristics: Optional["OperationCharacteristics"] = None,
-        stats: Optional[Dict[str, int]] = None,
+        stats: dict[str, int] | None = None,
     ) -> None:
         """Process operation with intelligent priority handling.
 
@@ -245,7 +244,7 @@ class SyncOperationProcessor:
         await self.process_operation(operation, characteristics, stats)
 
     def _update_operation_type_stats(
-        self, stats: Dict[str, int], operation_type: SyncOperationType
+        self, stats: dict[str, int], operation_type: SyncOperationType
     ) -> None:
         """Update statistics based on operation type."""
         if operation_type in [

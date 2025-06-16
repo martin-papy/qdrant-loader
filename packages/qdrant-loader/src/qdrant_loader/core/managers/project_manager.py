@@ -169,11 +169,11 @@ class ProjectManager:
                     f"Updating project configuration: {context.project_id}"
                 )
                 # Use setattr for SQLAlchemy model attribute assignment to avoid type checker issues
-                setattr(project, "display_name", context.display_name)
-                setattr(project, "description", context.description)
-                setattr(project, "collection_name", context.collection_name)
-                setattr(project, "config_hash", config_hash)
-                setattr(project, "updated_at", now)
+                project.display_name = context.display_name  # type: ignore
+                project.description = context.description  # type: ignore
+                project.collection_name = context.collection_name  # type: ignore
+                project.config_hash = config_hash  # type: ignore
+                project.updated_at = now  # type: ignore
         else:
             # Create new project
             self.logger.info(f"Creating new project: {context.project_id}")
@@ -242,8 +242,8 @@ class ProjectManager:
                             f"Updating source configuration: {source_type}:{source_name}"
                         )
                         # Use setattr for SQLAlchemy model attribute assignment to avoid type checker issues
-                        setattr(source, "config_hash", source_config_hash)
-                        setattr(source, "updated_at", now)
+                        source.config_hash = source_config_hash  # type: ignore
+                        source.updated_at = now  # type: ignore
                 else:
                     # Create new source
                     self.logger.debug(

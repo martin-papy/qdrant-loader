@@ -4,10 +4,9 @@ This module handles all database interactions for version management,
 including storing, retrieving, and querying version data.
 """
 
-import asyncio
 import json
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from neo4j import AsyncDriver
 
@@ -17,7 +16,6 @@ from .version_types import (
     VersionMetadata,
     VersionSnapshot,
     VersionStatistics,
-    VersionStatus,
     VersionType,
 )
 
@@ -85,7 +83,7 @@ class VersionStorage:
 
         return False
 
-    async def get_version_metadata(self, version_id: str) -> Optional[VersionMetadata]:
+    async def get_version_metadata(self, version_id: str) -> VersionMetadata | None:
         """Retrieve version metadata by ID.
 
         Args:
@@ -116,9 +114,9 @@ class VersionStorage:
     async def get_entity_versions(
         self,
         entity_id: str,
-        version_type: Optional[VersionType] = None,
-        limit: Optional[int] = None,
-    ) -> List[VersionMetadata]:
+        version_type: VersionType | None = None,
+        limit: int | None = None,
+    ) -> list[VersionMetadata]:
         """Get all versions for an entity.
 
         Args:
@@ -134,7 +132,7 @@ class VersionStorage:
             MATCH (v:Version {entity_id: $entity_id})
             """
 
-            params: Dict[str, Any] = {"entity_id": entity_id}
+            params: dict[str, Any] = {"entity_id": entity_id}
 
             if version_type:
                 query += " WHERE v.version_type = $version_type"
@@ -162,9 +160,9 @@ class VersionStorage:
     async def get_version_history(
         self,
         entity_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[VersionMetadata]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[VersionMetadata]:
         """Get version history for an entity within a time range.
 
         Args:
@@ -181,7 +179,7 @@ class VersionStorage:
             WHERE 1=1
             """
 
-            params: Dict[str, Any] = {"entity_id": entity_id}
+            params: dict[str, Any] = {"entity_id": entity_id}
 
             if start_time:
                 query += " AND datetime(v.created_at) >= datetime($start_time)"
@@ -261,7 +259,7 @@ class VersionStorage:
 
         return False
 
-    async def get_version_snapshot(self, snapshot_id: str) -> Optional[VersionSnapshot]:
+    async def get_version_snapshot(self, snapshot_id: str) -> VersionSnapshot | None:
         """Retrieve a version snapshot by ID.
 
         Args:
@@ -333,7 +331,7 @@ class VersionStorage:
 
         return False
 
-    async def cleanup_old_versions(self, retention_days: Optional[int] = None) -> int:
+    async def cleanup_old_versions(self, retention_days: int | None = None) -> int:
         """Clean up old versions based on retention policy.
 
         Args:

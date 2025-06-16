@@ -4,27 +4,23 @@ This module provides advanced validation for each configuration domain with
 detailed error reporting, edge case handling, and cross-domain validation.
 """
 
-import os
 import socket
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
+from ..utils.logging import LoggingConfig
 from .domain_models import (
     ConnectivityConfig,
     DomainConfigValidator,
-    FineTuningConfig,
-    ProjectsConfig,
 )
 from .validation_errors import (
-    ConfigValidationError,
     DomainValidationContext,
     ValidationErrorCollector,
     ValidationSeverity,
 )
-from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -45,8 +41,8 @@ class EnhancedDomainValidator:
 
     def validate_all_domains(
         self,
-        domain_configs: Dict[str, Dict[str, Any]],
-        domain_files: Dict[str, Path],
+        domain_configs: dict[str, dict[str, Any]],
+        domain_files: dict[str, Path],
     ) -> ValidationErrorCollector:
         """Validate all configuration domains with comprehensive error collection.
 
@@ -83,8 +79,8 @@ class EnhancedDomainValidator:
 
     def _validate_connectivity_domain(
         self,
-        config_data: Dict[str, Any],
-        file_path: Optional[Path],
+        config_data: dict[str, Any],
+        file_path: Path | None,
         error_collector: ValidationErrorCollector,
     ) -> None:
         """Validate connectivity domain configuration."""
@@ -118,8 +114,8 @@ class EnhancedDomainValidator:
 
     def _validate_projects_domain(
         self,
-        config_data: Dict[str, Any],
-        file_path: Optional[Path],
+        config_data: dict[str, Any],
+        file_path: Path | None,
         error_collector: ValidationErrorCollector,
     ) -> None:
         """Validate projects domain configuration."""
@@ -145,8 +141,8 @@ class EnhancedDomainValidator:
 
     def _validate_fine_tuning_domain(
         self,
-        config_data: Dict[str, Any],
-        file_path: Optional[Path],
+        config_data: dict[str, Any],
+        file_path: Path | None,
         error_collector: ValidationErrorCollector,
     ) -> None:
         """Validate fine-tuning domain configuration."""
@@ -171,7 +167,7 @@ class EnhancedDomainValidator:
             )
 
     def _validate_qdrant_config(
-        self, qdrant_config: Dict[str, Any], context: DomainValidationContext
+        self, qdrant_config: dict[str, Any], context: DomainValidationContext
     ) -> None:
         """Validate QDrant configuration with enhanced checks."""
         if not qdrant_config:
@@ -199,7 +195,7 @@ class EnhancedDomainValidator:
             return
 
     def _validate_embedding_config(
-        self, embedding_config: Dict[str, Any], context: DomainValidationContext
+        self, embedding_config: dict[str, Any], context: DomainValidationContext
     ) -> None:
         """Validate embedding service configuration."""
         if not embedding_config:
@@ -219,7 +215,7 @@ class EnhancedDomainValidator:
         )
 
     def _validate_neo4j_config(
-        self, neo4j_config: Dict[str, Any], context: DomainValidationContext
+        self, neo4j_config: dict[str, Any], context: DomainValidationContext
     ) -> None:
         """Validate Neo4j configuration (optional)."""
         if not neo4j_config:
@@ -231,7 +227,7 @@ class EnhancedDomainValidator:
             context.validate_required_field(neo4j_config, field, f"Neo4j {field}")
 
     def _validate_project_definitions(
-        self, projects_config: Dict[str, Any], context: DomainValidationContext
+        self, projects_config: dict[str, Any], context: DomainValidationContext
     ) -> None:
         """Validate project definitions structure."""
         if not projects_config:
@@ -260,7 +256,7 @@ class EnhancedDomainValidator:
             )
 
     def _validate_chunking_config(
-        self, chunking_config: Dict[str, Any], context: DomainValidationContext
+        self, chunking_config: dict[str, Any], context: DomainValidationContext
     ) -> None:
         """Validate text chunking configuration."""
         if not chunking_config:
@@ -282,7 +278,7 @@ class EnhancedDomainValidator:
 
     def _validate_cross_domain_dependencies(
         self,
-        domain_configs: Dict[str, Dict[str, Any]],
+        domain_configs: dict[str, dict[str, Any]],
         error_collector: ValidationErrorCollector,
     ) -> None:
         """Validate dependencies between configuration domains."""
@@ -296,8 +292,8 @@ class EnhancedDomainValidator:
 
     def _validate_projects_connectivity_dependency(
         self,
-        projects_config: Dict[str, Any],
-        connectivity_config: Dict[str, Any],
+        projects_config: dict[str, Any],
+        connectivity_config: dict[str, Any],
         error_collector: ValidationErrorCollector,
     ) -> None:
         """Validate that projects configuration is compatible with connectivity."""

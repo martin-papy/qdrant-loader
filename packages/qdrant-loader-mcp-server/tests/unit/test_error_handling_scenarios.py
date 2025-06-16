@@ -1,25 +1,24 @@
 """Tests for error handling scenarios in the search system."""
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from qdrant_client.http.exceptions import UnexpectedResponse
-import httpx
+from unittest.mock import AsyncMock, Mock, patch
 
+import httpx
+import pytest
+from qdrant_client.http.exceptions import UnexpectedResponse
+from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
+from qdrant_loader_mcp_server.mcp.handler import MCPHandler
+from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.exceptions import (
+    FusionStrategyError,
+    GraphitiError,
+    HybridSearchError,
+    Neo4jConnectionError,
+    OpenAIEmbeddingError,
     QdrantConnectionError,
     QdrantQueryError,
-    Neo4jConnectionError,
-    Neo4jQueryError,
-    GraphitiError,
-    OpenAIEmbeddingError,
     SearchConfigurationError,
-    FusionStrategyError,
-    HybridSearchError,
 )
-from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
-from qdrant_loader_mcp_server.config import QdrantConfig, OpenAIConfig
 
 
 class TestSearchEngineExceptions:

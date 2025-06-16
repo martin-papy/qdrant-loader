@@ -7,10 +7,10 @@ domain-specific modules for better maintainability and readability.
 import click
 
 from .core import (
+    LOG_LEVEL_OPTION,
     check_for_updates,
     get_version,
     setup_logging,
-    LOG_LEVEL_OPTION,
 )
 
 
@@ -45,10 +45,10 @@ def create_cli():
         click.Group: The complete CLI application
     """
     # Import command groups lazily to avoid slow startup
-    from .config_commands import config_group, config_command
-    from .ingest_commands import ingest_group, ingest_command, init_command
-    from .migrate_commands import migrate_group, migrate_config_command
-    from .export_commands import export_group, export_config_command
+    from .config_commands import config_command, config_group
+    from .export_commands import export_config_command, export_group
+    from .ingest_commands import ingest_command, ingest_group, init_command
+    from .migrate_commands import migrate_config_command, migrate_group
     from .project_commands import project_group
 
     # Add all command groups to the main CLI

@@ -1,14 +1,14 @@
 """Tests for Graphiti detection functionality."""
 
 import os
-import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from qdrant_loader_mcp_server.graphiti.detection import (
     GraphitiDetector,
+    get_graphiti_capabilities,
     is_graphiti_available,
     is_graphiti_configured,
-    get_graphiti_capabilities,
 )
 
 

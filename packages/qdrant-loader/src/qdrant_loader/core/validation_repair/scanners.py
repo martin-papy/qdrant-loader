@@ -6,16 +6,16 @@ of validation issues across the synchronized databases.
 """
 
 import logging
-from datetime import datetime, UTC
-from typing import List, Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
-from ..managers import IDMappingManager, Neo4jManager, QdrantManager, MappingStatus
+from ..managers import IDMappingManager, MappingStatus, Neo4jManager, QdrantManager
 from ..types import EntityType
 from .models import (
-    ValidationIssue,
-    ValidationCategory,
-    ValidationSeverity,
     RepairAction,
+    ValidationCategory,
+    ValidationIssue,
+    ValidationSeverity,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,8 @@ class ValidationScanners:
         self.qdrant_manager = qdrant_manager
 
     async def scan_missing_mappings(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for entities that exist in one database but lack mappings."""
         issues = []
 
@@ -55,8 +55,8 @@ class ValidationScanners:
         return issues
 
     async def _scan_qdrant_missing_mappings(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for QDrant points without corresponding mappings."""
         issues = []
 
@@ -103,8 +103,8 @@ class ValidationScanners:
         return issues
 
     async def _scan_neo4j_missing_mappings(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for Neo4j nodes without corresponding mappings."""
         issues = []
 
@@ -159,8 +159,8 @@ class ValidationScanners:
         return issues
 
     async def scan_orphaned_records(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for orphaned records where mapped entities no longer exist."""
         issues = []
 
@@ -208,8 +208,8 @@ class ValidationScanners:
         return issues
 
     async def scan_data_mismatches(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for data mismatches between QDrant and Neo4j."""
         issues = []
 
@@ -292,8 +292,8 @@ class ValidationScanners:
         return issues
 
     async def scan_version_inconsistencies(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for version inconsistencies between databases."""
         issues = []
 
@@ -328,8 +328,8 @@ class ValidationScanners:
         return issues
 
     async def scan_sync_failures(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for mappings with sync failures."""
         issues = []
 
@@ -383,8 +383,8 @@ class ValidationScanners:
         return issues
 
     async def scan_constraint_violations(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for constraint violations in the databases."""
         issues = []
 
@@ -403,8 +403,8 @@ class ValidationScanners:
         return issues
 
     async def scan_performance_issues(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Scan for performance-related issues."""
         issues = []
 
@@ -449,7 +449,7 @@ class ValidationScanners:
 
     def _compare_entity_data(
         self, qdrant_point, neo4j_node, mapping
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Compare data between QDrant point and Neo4j node."""
         mismatches = []
 
@@ -517,7 +517,7 @@ class ValidationScanners:
 
         return mismatches
 
-    async def _check_version_consistency(self, mapping) -> Optional[ValidationIssue]:
+    async def _check_version_consistency(self, mapping) -> ValidationIssue | None:
         """Check version consistency for a mapping."""
         try:
             # Get version information from both databases
@@ -556,7 +556,7 @@ class ValidationScanners:
 
         return None
 
-    async def _get_qdrant_version(self, point_id: str) -> Optional[str]:
+    async def _get_qdrant_version(self, point_id: str) -> str | None:
         """Get version information from QDrant point."""
         try:
             client = self.qdrant_manager._ensure_client_connected()
@@ -574,7 +574,7 @@ class ValidationScanners:
 
         return None
 
-    async def _get_neo4j_version(self, node_identifier: str) -> Optional[str]:
+    async def _get_neo4j_version(self, node_identifier: str) -> str | None:
         """Get version information from Neo4j node."""
         try:
             if node_identifier.isdigit():
@@ -593,7 +593,7 @@ class ValidationScanners:
 
         return None
 
-    async def _check_neo4j_constraints(self) -> List[ValidationIssue]:
+    async def _check_neo4j_constraints(self) -> list[ValidationIssue]:
         """Check Neo4j database constraints."""
         issues = []
 
@@ -614,7 +614,7 @@ class ValidationScanners:
 
         return issues
 
-    async def _check_qdrant_constraints(self) -> List[ValidationIssue]:
+    async def _check_qdrant_constraints(self) -> list[ValidationIssue]:
         """Check QDrant database constraints."""
         issues = []
 
@@ -642,7 +642,7 @@ class ValidationScanners:
 
         return issues
 
-    async def _collect_performance_metrics(self) -> Dict[str, Any]:
+    async def _collect_performance_metrics(self) -> dict[str, Any]:
         """Collect performance metrics from both databases."""
         metrics = {}
 
@@ -660,7 +660,7 @@ class ValidationScanners:
 
         return metrics
 
-    async def _collect_neo4j_metrics(self) -> Dict[str, Any]:
+    async def _collect_neo4j_metrics(self) -> dict[str, Any]:
         """Collect Neo4j-specific performance metrics."""
         metrics = {}
 
@@ -697,7 +697,7 @@ class ValidationScanners:
 
         return metrics
 
-    async def _collect_qdrant_metrics(self) -> Dict[str, Any]:
+    async def _collect_qdrant_metrics(self) -> dict[str, Any]:
         """Collect QDrant-specific performance metrics."""
         metrics = {}
 

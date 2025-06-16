@@ -9,15 +9,12 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
-
-from neo4j import Session
-from qdrant_client.http.models import PointStruct
+from typing import Any
 
 from ...utils.logging import LoggingConfig
+from ..types import EntityType, TemporalInfo
 from .neo4j_manager import Neo4jManager
 from .qdrant_manager import QdrantManager
-from ..types import EntityType, TemporalInfo
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -47,38 +44,38 @@ class IDMapping:
 
     # Core mapping information
     mapping_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    qdrant_point_id: Optional[str] = None
-    neo4j_node_id: Optional[str] = None
-    neo4j_node_uuid: Optional[str] = None  # For Graphiti nodes
+    qdrant_point_id: str | None = None
+    neo4j_node_id: str | None = None
+    neo4j_node_uuid: str | None = None  # For Graphiti nodes
 
     # Entity information
     entity_type: EntityType = EntityType.CONCEPT
     mapping_type: MappingType = MappingType.DOCUMENT
-    entity_name: Optional[str] = None
+    entity_name: str | None = None
 
     # Status and metadata
     status: MappingStatus = MappingStatus.ACTIVE
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Temporal tracking
     temporal_info: TemporalInfo = field(default_factory=TemporalInfo)
 
     # Sync tracking
-    last_sync_time: Optional[datetime] = None
+    last_sync_time: datetime | None = None
     sync_version: int = 1
-    sync_errors: List[str] = field(default_factory=list)
+    sync_errors: list[str] = field(default_factory=list)
 
     # Document versioning and update tracking
     document_version: int = 1  # Version of the actual document content
-    last_update_time: Optional[datetime] = None  # When document was last updated
+    last_update_time: datetime | None = None  # When document was last updated
     created_time: datetime = field(default_factory=lambda: datetime.now(UTC))
-    update_source: Optional[str] = (
+    update_source: str | None = (
         None  # Source of the last update (e.g., "qdrant", "neo4j", "manual")
     )
-    content_hash: Optional[str] = None  # Hash of document content for change detection
+    content_hash: str | None = None  # Hash of document content for change detection
 
     # Historical tracking
-    version_history: List[Dict[str, Any]] = field(
+    version_history: list[dict[str, Any]] = field(
         default_factory=list
     )  # Track version changes
     update_frequency: int = 0  # Number of updates performed
@@ -86,7 +83,7 @@ class IDMapping:
     # Validation fields
     qdrant_exists: bool = False
     neo4j_exists: bool = False
-    last_validation_time: Optional[datetime] = None
+    last_validation_time: datetime | None = None
 
     def is_valid(self) -> bool:
         """Check if the mapping is valid and both entities exist."""
@@ -116,8 +113,8 @@ class IDMapping:
     def increment_document_version(
         self,
         update_source: str = "unknown",
-        content_hash: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        content_hash: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Increment document version and record update details.
 
@@ -149,7 +146,7 @@ class IDMapping:
         self.temporal_info.version = self.document_version
         self.temporal_info.transaction_time = self.last_update_time
 
-    def get_version_at_time(self, timestamp: datetime) -> Optional[Dict[str, Any]]:
+    def get_version_at_time(self, timestamp: datetime) -> dict[str, Any] | None:
         """Get the document version that was active at a specific time.
 
         Args:
@@ -188,7 +185,7 @@ class IDMapping:
 
         return None
 
-    def get_update_statistics(self) -> Dict[str, Any]:
+    def get_update_statistics(self) -> dict[str, Any]:
         """Get statistics about document updates.
 
         Returns:
@@ -218,7 +215,7 @@ class IDMapping:
             "last_update_source": self.update_source,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert mapping to dictionary format."""
         return {
             "mapping_id": self.mapping_id,
@@ -257,7 +254,7 @@ class IDMapping:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "IDMapping":
+    def from_dict(cls, data: dict[str, Any]) -> "IDMapping":
         """Create IDMapping from dictionary."""
         mapping = cls(
             mapping_id=data["mapping_id"],
@@ -325,7 +322,7 @@ class IDMappingManager:
         self.validation_interval_hours = validation_interval_hours
 
         # In-memory cache for frequently accessed mappings
-        self._mapping_cache: Dict[str, IDMapping] = {}
+        self._mapping_cache: dict[str, IDMapping] = {}
         self._cache_max_size = 10000
 
         # Ensure mapping table exists
@@ -361,13 +358,13 @@ class IDMappingManager:
 
     async def create_mapping(
         self,
-        qdrant_point_id: Optional[str] = None,
-        neo4j_node_id: Optional[str] = None,
-        neo4j_node_uuid: Optional[str] = None,
+        qdrant_point_id: str | None = None,
+        neo4j_node_id: str | None = None,
+        neo4j_node_uuid: str | None = None,
         entity_type: EntityType = EntityType.CONCEPT,
         mapping_type: MappingType = MappingType.DOCUMENT,
-        entity_name: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        entity_name: str | None = None,
+        metadata: dict[str, Any] | None = None,
         validate_existence: bool = True,
     ) -> IDMapping:
         """Create a new ID mapping.
@@ -417,7 +414,7 @@ class IDMappingManager:
 
     async def get_mapping_by_qdrant_id(
         self, qdrant_point_id: str
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Get mapping by QDrant point ID."""
         # Check cache first
         for mapping in self._mapping_cache.values():
@@ -441,7 +438,7 @@ class IDMappingManager:
 
         return None
 
-    async def get_mapping_by_neo4j_id(self, neo4j_node_id: str) -> Optional[IDMapping]:
+    async def get_mapping_by_neo4j_id(self, neo4j_node_id: str) -> IDMapping | None:
         """Get mapping by Neo4j node ID."""
         # Check cache first
         for mapping in self._mapping_cache.values():
@@ -467,7 +464,7 @@ class IDMappingManager:
 
     async def get_mapping_by_neo4j_uuid(
         self, neo4j_node_uuid: str
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Get mapping by Neo4j node UUID."""
         # Check cache first
         for mapping in self._mapping_cache.values():
@@ -491,7 +488,7 @@ class IDMappingManager:
 
         return None
 
-    async def get_mapping_by_id(self, mapping_id: str) -> Optional[IDMapping]:
+    async def get_mapping_by_id(self, mapping_id: str) -> IDMapping | None:
         """Get mapping by mapping ID."""
         # Check cache first
         if mapping_id in self._mapping_cache:
@@ -517,9 +514,9 @@ class IDMappingManager:
     async def update_mapping(
         self,
         mapping_id: str,
-        updates: Dict[str, Any],
+        updates: dict[str, Any],
         validate_existence: bool = True,
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Update an existing mapping.
 
         Args:
@@ -560,10 +557,10 @@ class IDMappingManager:
         self,
         mapping_id: str,
         update_source: str,
-        content_hash: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        content_hash: str | None = None,
+        metadata: dict[str, Any] | None = None,
         validate_existence: bool = True,
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Update document version and timestamp for a mapping.
 
         Args:
@@ -612,10 +609,10 @@ class IDMappingManager:
     async def get_mappings_by_version_range(
         self,
         min_version: int = 1,
-        max_version: Optional[int] = None,
-        entity_type: Optional[EntityType] = None,
+        max_version: int | None = None,
+        entity_type: EntityType | None = None,
         limit: int = 1000,
-    ) -> List[IDMapping]:
+    ) -> list[IDMapping]:
         """Get mappings within a specific version range.
 
         Args:
@@ -667,9 +664,9 @@ class IDMappingManager:
     async def get_recently_updated_mappings(
         self,
         hours: int = 24,
-        update_source: Optional[str] = None,
+        update_source: str | None = None,
         limit: int = 1000,
-    ) -> List[IDMapping]:
+    ) -> list[IDMapping]:
         """Get mappings that were updated within the specified time period.
 
         Args:
@@ -750,9 +747,9 @@ class IDMappingManager:
     async def get_mappings_by_entity_type(
         self,
         entity_type: EntityType,
-        status: Optional[MappingStatus] = None,
+        status: MappingStatus | None = None,
         limit: int = 1000,
-    ) -> List[IDMapping]:
+    ) -> list[IDMapping]:
         """Get mappings by entity type and optionally status."""
         query_parts = ["MATCH (m:IDMapping {entity_type: $entity_type})"]
         params = {"entity_type": entity_type.value}
@@ -774,7 +771,7 @@ class IDMappingManager:
 
         return mappings
 
-    async def get_orphaned_mappings(self, limit: int = 1000) -> List[IDMapping]:
+    async def get_orphaned_mappings(self, limit: int = 1000) -> list[IDMapping]:
         """Get mappings where one or both entities don't exist."""
         query = """
         MATCH (m:IDMapping)
@@ -799,8 +796,8 @@ class IDMappingManager:
     async def validate_all_mappings(
         self,
         batch_size: int = 100,
-        max_mappings: Optional[int] = None,
-    ) -> Dict[str, int]:
+        max_mappings: int | None = None,
+    ) -> dict[str, int]:
         """Validate all mappings and update their existence status.
 
         Args:
@@ -878,7 +875,7 @@ class IDMappingManager:
         self,
         dry_run: bool = True,
         max_age_days: int = 7,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """Clean up orphaned mappings older than specified age.
 
         Args:
@@ -926,7 +923,7 @@ class IDMappingManager:
         logger.info(f"Orphaned mapping cleanup (dry_run={dry_run}): {stats}")
         return stats
 
-    async def get_mapping_statistics(self) -> Dict[str, Any]:
+    async def get_mapping_statistics(self) -> dict[str, Any]:
         """Get comprehensive mapping statistics."""
         query = """
         MATCH (m:IDMapping)
@@ -1044,7 +1041,7 @@ class IDMappingManager:
 
         self._mapping_cache[mapping.mapping_id] = mapping
 
-    def _neo4j_result_to_mapping(self, node_data: Dict[str, Any]) -> IDMapping:
+    def _neo4j_result_to_mapping(self, node_data: dict[str, Any]) -> IDMapping:
         """Convert Neo4j node data to IDMapping instance."""
         return IDMapping.from_dict(node_data)
 
@@ -1053,7 +1050,7 @@ class IDMappingManager:
         self._mapping_cache.clear()
         logger.debug("ID mapping cache cleared")
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the ID mapping system."""
         try:
             # Test Neo4j connection

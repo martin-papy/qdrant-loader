@@ -3,6 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
+
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.core.chunking.strategy.markdown_strategy import (

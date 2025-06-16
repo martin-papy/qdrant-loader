@@ -6,6 +6,7 @@ import signal
 from unittest.mock import Mock, call, patch
 
 import pytest
+
 from qdrant_loader.core.pipeline.resource_manager import ResourceManager
 
 

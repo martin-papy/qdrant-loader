@@ -109,6 +109,9 @@ dev = [
     "snakeviz",
     "memory_profiler",
     "prometheus_client",
+    "bandit>=1.7.8",
+    "radon>=6.0.1",
+    "vulture>=2.11",
 ]
 
 [tool.setuptools.packages.find]

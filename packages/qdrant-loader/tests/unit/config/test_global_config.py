@@ -1,6 +1,7 @@
 """Tests for global configuration with file conversion settings."""
 
 import pytest
+
 from qdrant_loader.config.global_config import GlobalConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig, MarkItDownConfig

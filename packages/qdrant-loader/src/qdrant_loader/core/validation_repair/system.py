@@ -5,22 +5,22 @@ This module contains the primary ValidationRepairSystem class that coordinates
 validation scanning and repair operations across QDrant and Neo4j databases.
 """
 
-import asyncio
 import logging
-from datetime import datetime, UTC
-from typing import Dict, List, Optional, Callable, Any
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from ..managers import IDMappingManager, Neo4jManager, QdrantManager
 from .models import (
-    ValidationReport,
-    ValidationIssue,
-    RepairResult,
     RepairAction,
+    RepairResult,
     ValidationCategory,
+    ValidationIssue,
+    ValidationReport,
     ValidationSeverity,
 )
-from .scanners import ValidationScanners
 from .repair_handlers import RepairHandlers
+from .scanners import ValidationScanners
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ValidationRepairSystem:
         )
 
         # Validation scanners registry
-        self._scanners: Dict[str, Callable] = {
+        self._scanners: dict[str, Callable] = {
             "missing_mappings": self.scanners.scan_missing_mappings,
             "orphaned_records": self.scanners.scan_orphaned_records,
             "data_mismatches": self.scanners.scan_data_mismatches,
@@ -67,7 +67,7 @@ class ValidationRepairSystem:
         }
 
         # Repair handlers registry
-        self._repair_handlers: Dict[RepairAction, Callable] = {
+        self._repair_handlers: dict[RepairAction, Callable] = {
             RepairAction.CREATE_MAPPING: self.repair_handlers.repair_create_mapping,
             RepairAction.DELETE_ORPHANED: self.repair_handlers.repair_delete_orphaned,
             RepairAction.UPDATE_DATA: self.repair_handlers.repair_update_data,
@@ -80,8 +80,8 @@ class ValidationRepairSystem:
 
     async def run_full_validation(
         self,
-        scanners: Optional[List[str]] = None,
-        max_entities_per_scanner: Optional[int] = None,
+        scanners: list[str] | None = None,
+        max_entities_per_scanner: int | None = None,
     ) -> ValidationReport:
         """Run comprehensive validation across all systems."""
         start_time = datetime.now(UTC)
@@ -142,9 +142,9 @@ class ValidationRepairSystem:
 
     async def auto_repair_issues(
         self,
-        issues: List[ValidationIssue],
-        max_repairs: Optional[int] = None,
-    ) -> List[RepairResult]:
+        issues: list[ValidationIssue],
+        max_repairs: int | None = None,
+    ) -> list[RepairResult]:
         """Automatically repair issues that are marked as auto-repairable."""
         if not self.auto_repair_enabled:
             logger.warning("Auto-repair is disabled")
@@ -196,7 +196,7 @@ class ValidationRepairSystem:
 
     # Helper Methods
 
-    async def _check_database_connectivity(self) -> Dict[str, bool]:
+    async def _check_database_connectivity(self) -> dict[str, bool]:
         """Check connectivity to both databases."""
         connectivity = {}
 
@@ -219,57 +219,57 @@ class ValidationRepairSystem:
 
         return connectivity
 
-    async def _collect_performance_metrics(self) -> Dict[str, Any]:
+    async def _collect_performance_metrics(self) -> dict[str, Any]:
         """Collect performance metrics from both databases."""
         return await self.scanners._collect_performance_metrics()
 
     # Convenience methods for individual operations
 
     async def validate_missing_mappings(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the missing mappings validation."""
         return await self.scanners.scan_missing_mappings(max_entities)
 
     async def validate_orphaned_records(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the orphaned records validation."""
         return await self.scanners.scan_orphaned_records(max_entities)
 
     async def validate_data_mismatches(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the data mismatches validation."""
         return await self.scanners.scan_data_mismatches(max_entities)
 
     async def validate_version_inconsistencies(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the version inconsistencies validation."""
         return await self.scanners.scan_version_inconsistencies(max_entities)
 
     async def validate_sync_failures(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the sync failures validation."""
         return await self.scanners.scan_sync_failures(max_entities)
 
     async def validate_constraint_violations(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the constraint violations validation."""
         return await self.scanners.scan_constraint_violations(max_entities)
 
     async def validate_performance_issues(
-        self, max_entities: Optional[int] = None
-    ) -> List[ValidationIssue]:
+        self, max_entities: int | None = None
+    ) -> list[ValidationIssue]:
         """Run only the performance issues validation."""
         return await self.scanners.scan_performance_issues(max_entities)
 
     # Repair convenience methods
 
-    async def repair_issue(self, issue: ValidationIssue) -> List[RepairResult]:
+    async def repair_issue(self, issue: ValidationIssue) -> list[RepairResult]:
         """Repair a single issue using its suggested actions."""
         results = []
 

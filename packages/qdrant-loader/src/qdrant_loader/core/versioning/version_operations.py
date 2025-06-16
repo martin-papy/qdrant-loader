@@ -4,15 +4,13 @@ This module implements the core version operations including creation,
 retrieval, comparison, and rollback functionality.
 """
 
-import asyncio
 import hashlib
 import json
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
-from ..types import ExtractedEntity, ExtractedRelationship
 from .version_storage import VersionStorage
 from .version_types import (
     VersionConfig,
@@ -56,14 +54,14 @@ class VersionOperations:
         self,
         entity_id: str,
         version_type: VersionType,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         operation: VersionOperation = VersionOperation.CREATE,
-        parent_version_id: Optional[str] = None,
-        supersedes: Optional[str] = None,
-        created_by: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        parent_version_id: str | None = None,
+        supersedes: str | None = None,
+        created_by: str | None = None,
+        tags: list[str] | None = None,
         is_milestone: bool = False,
-    ) -> Optional[VersionMetadata]:
+    ) -> VersionMetadata | None:
         """Create a new version.
 
         Args:
@@ -119,7 +117,7 @@ class VersionOperations:
 
         return None
 
-    async def get_version(self, version_id: str) -> Optional[VersionMetadata]:
+    async def get_version(self, version_id: str) -> VersionMetadata | None:
         """Get version by ID.
 
         Args:
@@ -132,7 +130,7 @@ class VersionOperations:
 
     async def get_latest_version(
         self, entity_id: str, version_type: VersionType
-    ) -> Optional[VersionMetadata]:
+    ) -> VersionMetadata | None:
         """Get the latest version for an entity.
 
         Args:
@@ -149,7 +147,7 @@ class VersionOperations:
 
     async def compare_versions(
         self, from_version_id: str, to_version_id: str
-    ) -> Optional[VersionDiff]:
+    ) -> VersionDiff | None:
         """Compare two versions and generate a diff.
 
         Args:
@@ -197,7 +195,7 @@ class VersionOperations:
         return None
 
     async def rollback_to_version(
-        self, entity_id: str, version_id: str, created_by: Optional[str] = None
+        self, entity_id: str, version_id: str, created_by: str | None = None
     ) -> bool:
         """Rollback an entity to a specific version.
 
@@ -249,10 +247,10 @@ class VersionOperations:
     async def create_snapshot(
         self,
         description: str = "",
-        entity_ids: Optional[List[str]] = None,
-        created_by: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-    ) -> Optional[VersionSnapshot]:
+        entity_ids: list[str] | None = None,
+        created_by: str | None = None,
+        tags: list[str] | None = None,
+    ) -> VersionSnapshot | None:
         """Create a point-in-time snapshot.
 
         Args:
@@ -298,7 +296,7 @@ class VersionOperations:
 
         return None
 
-    def _calculate_content_hash(self, content: Dict[str, Any]) -> str:
+    def _calculate_content_hash(self, content: dict[str, Any]) -> str:
         """Calculate hash of content for change detection.
 
         Args:
@@ -312,7 +310,7 @@ class VersionOperations:
 
     async def _get_version_content(
         self, version: VersionMetadata
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get content for a version based on its type.
 
         Args:
@@ -392,7 +390,7 @@ class VersionOperations:
         return None
 
     async def _restore_version_content(
-        self, version: VersionMetadata, content: Dict[str, Any]
+        self, version: VersionMetadata, content: dict[str, Any]
     ) -> bool:
         """Restore content for a version.
 
@@ -456,8 +454,8 @@ class VersionOperations:
         return False
 
     def _calculate_diff(
-        self, from_content: Dict[str, Any], to_content: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, from_content: dict[str, Any], to_content: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate differences between two content dictionaries.
 
         Args:
@@ -500,7 +498,7 @@ class VersionOperations:
 
     async def _get_entity_snapshot_data(
         self, entity_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get snapshot data for an entity.
 
         Args:

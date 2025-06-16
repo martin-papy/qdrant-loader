@@ -5,15 +5,15 @@ all conflict resolution components including detection, resolution, persistence,
 and statistics.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..sync import ChangeEvent
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
-from .models import ConflictRecord, ConflictResolutionConfig, ConflictResolutionStrategy
+from ..sync import ChangeEvent
 from .detector import ConflictDetector
-from .resolvers import ConflictResolver
+from .models import ConflictRecord, ConflictResolutionConfig, ConflictResolutionStrategy
 from .persistence import ConflictPersistence, SyncProvider, VersionProvider
+from .resolvers import ConflictResolver
 from .statistics import ConflictStatistics
 
 logger = LoggingConfig.get_logger(__name__)
@@ -27,7 +27,7 @@ class ConflictResolutionSystem:
         qdrant_manager: QdrantManager,
         neo4j_manager: Neo4jManager,
         id_mapping_manager: IDMappingManager,
-        config: Optional[ConflictResolutionConfig] = None,
+        config: ConflictResolutionConfig | None = None,
     ):
         """Initialize the conflict resolution system.
 
@@ -43,7 +43,7 @@ class ConflictResolutionSystem:
         self.config = config or ConflictResolutionConfig()
 
         # In-memory storage for active conflicts
-        self._active_conflicts: Dict[str, ConflictRecord] = {}
+        self._active_conflicts: dict[str, ConflictRecord] = {}
 
         # Initialize components
         self._detector = ConflictDetector()
@@ -57,8 +57,8 @@ class ConflictResolutionSystem:
         self,
         mapping: IDMapping,
         source_event: ChangeEvent,
-        target_data: Optional[Dict[str, Any]] = None,
-    ) -> Optional[ConflictRecord]:
+        target_data: dict[str, Any] | None = None,
+    ) -> ConflictRecord | None:
         """Detect if a conflict exists for the given entity.
 
         Args:
@@ -90,7 +90,7 @@ class ConflictResolutionSystem:
             return None
 
     async def resolve_conflict(
-        self, conflict_id: str, strategy: Optional[ConflictResolutionStrategy] = None
+        self, conflict_id: str, strategy: ConflictResolutionStrategy | None = None
     ) -> bool:
         """Resolve a specific conflict.
 
@@ -124,7 +124,7 @@ class ConflictResolutionSystem:
             self._statistics.increment_failed()
             return False
 
-    async def get_conflicts_for_manual_review(self) -> List[ConflictRecord]:
+    async def get_conflicts_for_manual_review(self) -> list[ConflictRecord]:
         """Get all conflicts that require manual review."""
         return await self._persistence.get_conflicts_for_manual_review(
             self._active_conflicts
@@ -133,9 +133,9 @@ class ConflictResolutionSystem:
     async def resolve_manual_conflict(
         self,
         conflict_id: str,
-        resolution_data: Dict[str, Any],
+        resolution_data: dict[str, Any],
         resolved_by: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> bool:
         """Manually resolve a conflict.
 
@@ -170,7 +170,7 @@ class ConflictResolutionSystem:
             self._statistics.increment_failed()
             return False
 
-    async def get_conflict_statistics(self) -> Dict[str, Any]:
+    async def get_conflict_statistics(self) -> dict[str, Any]:
         """Get comprehensive conflict resolution statistics."""
         manual_review_conflicts = await self.get_conflicts_for_manual_review()
         cache_size = self._version_provider.get_cache_size()
@@ -195,7 +195,7 @@ class ConflictResolutionSystem:
             self._active_conflicts, older_than_days
         )
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check of the conflict resolution system."""
         manual_review_conflicts = await self.get_conflicts_for_manual_review()
         cache_size = self._version_provider.get_cache_size()
@@ -222,11 +222,11 @@ class ConflictResolutionSystem:
         return len(self._active_conflicts)
 
     @property
-    def basic_statistics(self) -> Dict[str, int]:
+    def basic_statistics(self) -> dict[str, int]:
         """Get basic statistics."""
         return self._statistics.basic_statistics
 
-    def get_conflict(self, conflict_id: str) -> Optional[ConflictRecord]:
+    def get_conflict(self, conflict_id: str) -> ConflictRecord | None:
         """Get a specific conflict by ID.
 
         Args:
@@ -237,7 +237,7 @@ class ConflictResolutionSystem:
         """
         return self._active_conflicts.get(conflict_id)
 
-    def get_all_conflicts(self) -> Dict[str, ConflictRecord]:
+    def get_all_conflicts(self) -> dict[str, ConflictRecord]:
         """Get all active conflicts.
 
         Returns:

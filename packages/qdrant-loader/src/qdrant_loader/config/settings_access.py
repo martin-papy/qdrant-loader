@@ -4,7 +4,7 @@ This module provides convenient access to configuration values from the
 merged configuration, replacing hardcoded constants throughout the codebase.
 """
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from . import get_settings
 
@@ -17,7 +17,7 @@ class ConfigAccessor:
 
     def __init__(self):
         """Initialize the configuration accessor."""
-        self._settings: Optional["Settings"] = None
+        self._settings: Settings | None = None
 
     def _ensure_loaded(self):
         """Ensure configuration is loaded."""

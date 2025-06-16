@@ -9,22 +9,23 @@ This module tests all temporal tracking features including:
 """
 
 import asyncio
-import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
+
+import pytest
 
 from qdrant_loader.core.managers.temporal_manager import (
     TemporalManager,
     TemporalQuery,
 )
 from qdrant_loader.core.types import (
+    EntityType,
     ExtractedEntity,
     ExtractedRelationship,
-    TemporalInfo,
-    EntityType,
     RelationshipType,
+    TemporalInfo,
 )
-from qdrant_loader.utils.timezone_utils import TimezoneUtils, TimezoneError
+from qdrant_loader.utils.timezone_utils import TimezoneError, TimezoneUtils
 
 
 class TestTemporalInfo:

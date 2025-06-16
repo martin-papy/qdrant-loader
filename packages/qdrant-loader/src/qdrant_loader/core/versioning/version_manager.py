@@ -6,7 +6,7 @@ all versioning operations using the modular versioning components.
 
 import asyncio
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from neo4j import AsyncDriver
 
@@ -35,7 +35,7 @@ class VersionManager:
         neo4j_manager: Neo4jManager,
         qdrant_manager: QdrantManager,
         neo4j_driver: AsyncDriver,
-        config: Optional[VersionConfig] = None,
+        config: VersionConfig | None = None,
     ):
         """Initialize the version manager.
 
@@ -66,7 +66,7 @@ class VersionManager:
         self.cleanup = VersionCleanup(self.storage, self.config)
 
         self.logger = LoggingConfig.get_logger(__name__)
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
 
     async def initialize(self) -> None:
         """Initialize the version manager."""
@@ -91,14 +91,14 @@ class VersionManager:
         self,
         entity_id: str,
         version_type: VersionType,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         operation: VersionOperation = VersionOperation.CREATE,
-        parent_version_id: Optional[str] = None,
-        supersedes: Optional[str] = None,
-        created_by: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        parent_version_id: str | None = None,
+        supersedes: str | None = None,
+        created_by: str | None = None,
+        tags: list[str] | None = None,
         is_milestone: bool = False,
-    ) -> Optional[VersionMetadata]:
+    ) -> VersionMetadata | None:
         """Create a new version."""
         return await self.operations.create_version(
             entity_id=entity_id,
@@ -112,42 +112,42 @@ class VersionManager:
             is_milestone=is_milestone,
         )
 
-    async def get_version(self, version_id: str) -> Optional[VersionMetadata]:
+    async def get_version(self, version_id: str) -> VersionMetadata | None:
         """Get version by ID."""
         return await self.operations.get_version(version_id)
 
     async def get_latest_version(
         self, entity_id: str, version_type: VersionType
-    ) -> Optional[VersionMetadata]:
+    ) -> VersionMetadata | None:
         """Get the latest version for an entity."""
         return await self.operations.get_latest_version(entity_id, version_type)
 
     async def get_entity_versions(
         self,
         entity_id: str,
-        version_type: Optional[VersionType] = None,
-        limit: Optional[int] = None,
-    ) -> List[VersionMetadata]:
+        version_type: VersionType | None = None,
+        limit: int | None = None,
+    ) -> list[VersionMetadata]:
         """Get all versions for an entity."""
         return await self.storage.get_entity_versions(entity_id, version_type, limit)
 
     async def get_version_history(
         self,
         entity_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[VersionMetadata]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[VersionMetadata]:
         """Get version history for an entity within a time range."""
         return await self.storage.get_version_history(entity_id, start_time, end_time)
 
     async def compare_versions(
         self, from_version_id: str, to_version_id: str
-    ) -> Optional[VersionDiff]:
+    ) -> VersionDiff | None:
         """Compare two versions and generate a diff."""
         return await self.operations.compare_versions(from_version_id, to_version_id)
 
     async def rollback_to_version(
-        self, entity_id: str, version_id: str, created_by: Optional[str] = None
+        self, entity_id: str, version_id: str, created_by: str | None = None
     ) -> bool:
         """Rollback an entity to a specific version."""
         return await self.operations.rollback_to_version(
@@ -158,10 +158,10 @@ class VersionManager:
     async def create_snapshot(
         self,
         description: str = "",
-        entity_ids: Optional[List[str]] = None,
-        created_by: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-    ) -> Optional[VersionSnapshot]:
+        entity_ids: list[str] | None = None,
+        created_by: str | None = None,
+        tags: list[str] | None = None,
+    ) -> VersionSnapshot | None:
         """Create a point-in-time snapshot."""
         return await self.operations.create_snapshot(
             description=description,
@@ -170,24 +170,24 @@ class VersionManager:
             tags=tags,
         )
 
-    async def get_snapshot(self, snapshot_id: str) -> Optional[VersionSnapshot]:
+    async def get_snapshot(self, snapshot_id: str) -> VersionSnapshot | None:
         """Get a version snapshot by ID."""
         return await self.storage.get_version_snapshot(snapshot_id)
 
     # Cleanup Operations
-    async def run_cleanup(self) -> Dict[str, int]:
+    async def run_cleanup(self) -> dict[str, int]:
         """Run comprehensive cleanup operations."""
         return await self.cleanup.run_cleanup()
 
-    async def cleanup_old_versions(self, retention_days: Optional[int] = None) -> int:
+    async def cleanup_old_versions(self, retention_days: int | None = None) -> int:
         """Clean up old versions."""
         return await self.cleanup.cleanup_old_versions(retention_days)
 
-    async def get_cleanup_recommendations(self) -> Dict[str, Any]:
+    async def get_cleanup_recommendations(self) -> dict[str, Any]:
         """Get cleanup recommendations."""
         return await self.cleanup.get_cleanup_recommendations()
 
-    async def validate_version_integrity(self) -> Dict[str, List[str]]:
+    async def validate_version_integrity(self) -> dict[str, list[str]]:
         """Validate version data integrity."""
         return await self.cleanup.validate_version_integrity()
 
@@ -196,7 +196,7 @@ class VersionManager:
         """Get version usage statistics."""
         return await self.storage.get_version_statistics()
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the version manager."""
         try:
             stats = await self.get_version_statistics()

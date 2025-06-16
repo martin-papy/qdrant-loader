@@ -6,16 +6,13 @@ enabling real-time synchronization through a unified event system.
 
 import asyncio
 import json
-import time
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Union
-
-from neo4j import Session
-from qdrant_client.http.models import PointStruct
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from ..managers import IDMappingManager, MappingType, Neo4jManager, QdrantManager
@@ -58,26 +55,26 @@ class ChangeEvent:
     mapping_type: MappingType = MappingType.DOCUMENT
 
     # Entity identification
-    entity_id: Optional[str] = None  # Primary ID in source database
-    entity_uuid: Optional[str] = None  # UUID for cross-database tracking
-    entity_name: Optional[str] = None
+    entity_id: str | None = None  # Primary ID in source database
+    entity_uuid: str | None = None  # UUID for cross-database tracking
+    entity_name: str | None = None
 
     # Change data
-    old_data: Optional[Dict[str, Any]] = None
-    new_data: Optional[Dict[str, Any]] = None
-    affected_fields: Set[str] = field(default_factory=set)
+    old_data: dict[str, Any] | None = None
+    new_data: dict[str, Any] | None = None
+    affected_fields: set[str] = field(default_factory=set)
 
     # Metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    source_transaction_id: Optional[str] = None
-    batch_id: Optional[str] = None  # For bulk operations
+    metadata: dict[str, Any] = field(default_factory=dict)
+    source_transaction_id: str | None = None
+    batch_id: str | None = None  # For bulk operations
 
     # Processing status
     processed: bool = False
-    processing_errors: List[str] = field(default_factory=list)
+    processing_errors: list[str] = field(default_factory=list)
     retry_count: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary format."""
         return {
             "event_id": self.event_id,
@@ -101,7 +98,7 @@ class ChangeEvent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ChangeEvent":
+    def from_dict(cls, data: dict[str, Any]) -> "ChangeEvent":
         """Create ChangeEvent from dictionary."""
         event = cls(
             event_id=data["event_id"],
@@ -141,8 +138,8 @@ class ChangeDetector(ABC):
 
     @abstractmethod
     async def get_recent_changes(
-        self, since: Optional[datetime] = None, limit: int = 1000
-    ) -> List[ChangeEvent]:
+        self, since: datetime | None = None, limit: int = 1000
+    ) -> list[ChangeEvent]:
         """Get recent changes since specified time."""
         pass
 
@@ -168,13 +165,13 @@ class QdrantChangeDetector(ChangeDetector):
         self.enable_polling = enable_polling
 
         self._monitoring = False
-        self._polling_task: Optional[asyncio.Task] = None
-        self._last_poll_time: Optional[datetime] = None
-        self._known_points: Set[str] = set()
-        self._point_checksums: Dict[str, str] = {}
+        self._polling_task: asyncio.Task | None = None
+        self._last_poll_time: datetime | None = None
+        self._known_points: set[str] = set()
+        self._point_checksums: dict[str, str] = {}
 
         # Event callbacks
-        self._event_callbacks: List[Callable[[ChangeEvent], None]] = []
+        self._event_callbacks: list[Callable[[ChangeEvent], None]] = []
 
     def add_event_callback(self, callback: Callable[[ChangeEvent], None]) -> None:
         """Add callback for change events."""
@@ -220,8 +217,8 @@ class QdrantChangeDetector(ChangeDetector):
         logger.info("Stopped QDrant change monitoring")
 
     async def get_recent_changes(
-        self, since: Optional[datetime] = None, limit: int = 1000
-    ) -> List[ChangeEvent]:
+        self, since: datetime | None = None, limit: int = 1000
+    ) -> list[ChangeEvent]:
         """Get recent changes by comparing current state with known state."""
         if since is None:
             since = self._last_poll_time or datetime.now(UTC)
@@ -375,8 +372,8 @@ class QdrantChangeDetector(ChangeDetector):
         self,
         change_type: ChangeType,
         entity_id: str,
-        new_data: Optional[Dict[str, Any]] = None,
-        old_data: Optional[Dict[str, Any]] = None,
+        new_data: dict[str, Any] | None = None,
+        old_data: dict[str, Any] | None = None,
     ) -> ChangeEvent:
         """Create a change event for QDrant."""
         # Extract entity information from payload
@@ -416,7 +413,7 @@ class QdrantChangeDetector(ChangeDetector):
             },
         )
 
-    def _point_to_dict(self, point) -> Dict[str, Any]:
+    def _point_to_dict(self, point) -> dict[str, Any]:
         """Convert QDrant point to dictionary."""
         return {
             "point_id": str(point.id),
@@ -439,7 +436,7 @@ class Neo4jChangeDetector(ChangeDetector):
         neo4j_manager: Neo4jManager,
         polling_interval: int = 30,
         enable_polling: bool = True,
-        track_node_types: Optional[List[str]] = None,
+        track_node_types: list[str] | None = None,
     ):
         """Initialize Neo4j change detector.
 
@@ -455,12 +452,12 @@ class Neo4jChangeDetector(ChangeDetector):
         self.track_node_types = track_node_types or []
 
         self._monitoring = False
-        self._polling_task: Optional[asyncio.Task] = None
-        self._last_poll_time: Optional[datetime] = None
-        self._known_nodes: Dict[str, Dict[str, Any]] = {}
+        self._polling_task: asyncio.Task | None = None
+        self._last_poll_time: datetime | None = None
+        self._known_nodes: dict[str, dict[str, Any]] = {}
 
         # Event callbacks
-        self._event_callbacks: List[Callable[[ChangeEvent], None]] = []
+        self._event_callbacks: list[Callable[[ChangeEvent], None]] = []
 
     def add_event_callback(self, callback: Callable[[ChangeEvent], None]) -> None:
         """Add callback for change events."""
@@ -506,8 +503,8 @@ class Neo4jChangeDetector(ChangeDetector):
         logger.info("Stopped Neo4j change monitoring")
 
     async def get_recent_changes(
-        self, since: Optional[datetime] = None, limit: int = 1000
-    ) -> List[ChangeEvent]:
+        self, since: datetime | None = None, limit: int = 1000
+    ) -> list[ChangeEvent]:
         """Get recent changes by comparing current state with known state."""
         if since is None:
             since = self._last_poll_time or datetime.now(UTC)
@@ -672,9 +669,9 @@ class Neo4jChangeDetector(ChangeDetector):
         self,
         change_type: ChangeType,
         entity_id: str,
-        new_data: Optional[Dict[str, Any]] = None,
-        old_data: Optional[Dict[str, Any]] = None,
-        affected_fields: Optional[Set[str]] = None,
+        new_data: dict[str, Any] | None = None,
+        old_data: dict[str, Any] | None = None,
+        affected_fields: set[str] | None = None,
     ) -> ChangeEvent:
         """Create a change event for Neo4j."""
         # Extract entity information
@@ -776,8 +773,8 @@ class SyncEventSystem:
         self._event_queue: asyncio.Queue[ChangeEvent] = asyncio.Queue(
             maxsize=max_event_queue_size
         )
-        self._event_handlers: Dict[str, List[Callable[[ChangeEvent], None]]] = {}
-        self._processing_task: Optional[asyncio.Task] = None
+        self._event_handlers: dict[str, list[Callable[[ChangeEvent], None]]] = {}
+        self._processing_task: asyncio.Task | None = None
         self._running = False
 
         # Statistics
@@ -910,7 +907,7 @@ class SyncEventSystem:
                 self._stats["events_processed"] += 1
                 self._stats["last_event_time"] = datetime.now(UTC)
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # No events to process, continue
                 continue
             except asyncio.CancelledError:
@@ -975,7 +972,7 @@ class SyncEventSystem:
         except Exception as e:
             logger.error(f"Error persisting event {event.event_id}: {e}")
 
-    async def get_event_statistics(self) -> Dict[str, Any]:
+    async def get_event_statistics(self) -> dict[str, Any]:
         """Get event system statistics."""
         stats = self._stats.copy()
         stats.update(
@@ -993,16 +990,16 @@ class SyncEventSystem:
     async def get_recent_events(
         self,
         limit: int = 100,
-        event_type: Optional[str] = None,
-        database_type: Optional[DatabaseType] = None,
-    ) -> List[ChangeEvent]:
+        event_type: str | None = None,
+        database_type: DatabaseType | None = None,
+    ) -> list[ChangeEvent]:
         """Get recent events from persistence store."""
         if not self.enable_event_persistence:
             return []
 
         try:
             query_parts = ["MATCH (e:SyncEvent)"]
-            params: Dict[str, Any] = {"limit": limit}
+            params: dict[str, Any] = {"limit": limit}
 
             where_conditions = []
             if event_type:
@@ -1035,7 +1032,7 @@ class SyncEventSystem:
             logger.error(f"Error retrieving recent events: {e}")
             return []
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the event system."""
         try:
             qdrant_healthy = True

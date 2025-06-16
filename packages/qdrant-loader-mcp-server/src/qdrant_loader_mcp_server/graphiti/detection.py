@@ -1,9 +1,8 @@
 """Graphiti detection and integration module."""
 
 import asyncio
-import logging
 import os
-from typing import Optional, Tuple, Any
+from typing import Any
 
 import structlog
 
@@ -14,9 +13,9 @@ class GraphitiDetector:
     """Detects and manages Graphiti/Neo4j availability."""
 
     def __init__(self):
-        self._graphiti_available: Optional[bool] = None
-        self._graphiti_client: Optional[Any] = None
-        self._last_check_time: Optional[float] = None
+        self._graphiti_available: bool | None = None
+        self._graphiti_client: Any | None = None
+        self._last_check_time: float | None = None
         self._check_interval = 300  # 5 minutes
 
     def is_configured(self) -> bool:
@@ -83,7 +82,7 @@ class GraphitiDetector:
                     neo4j_user=neo4j_user,
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "Graphiti connection timeout", neo4j_uri=neo4j_uri, timeout=10.0
                 )
@@ -112,7 +111,7 @@ class GraphitiDetector:
         self._last_check_time = time.time()
         return self._graphiti_available
 
-    def get_client(self) -> Optional[object]:
+    def get_client(self) -> object | None:
         """Get the Graphiti client if available."""
         return self._graphiti_client if self._graphiti_available else None
 
@@ -149,7 +148,7 @@ def is_graphiti_configured() -> bool:
     return _detector.is_configured()
 
 
-def get_graphiti_client() -> Optional[object]:
+def get_graphiti_client() -> object | None:
     """Get the Graphiti client if available."""
     return _detector.get_client()
 
@@ -160,7 +159,7 @@ async def get_graphiti_capabilities() -> dict:
 
 
 async def perform_graphiti_search(
-    query: str, center_node_uuid: Optional[str] = None, limit: int = 10, **kwargs
+    query: str, center_node_uuid: str | None = None, limit: int = 10, **kwargs
 ) -> list:
     """Perform a Graphiti search if available, otherwise return empty results."""
     client = get_graphiti_client()

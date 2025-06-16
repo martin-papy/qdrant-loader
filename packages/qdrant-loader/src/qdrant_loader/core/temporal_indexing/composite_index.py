@@ -7,7 +7,7 @@ with temporal data for efficient entity-time queries.
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .btree_index import TemporalBTreeIndex
@@ -28,13 +28,13 @@ class TemporalCompositeIndex(TemporalIndex):
         super().__init__(config)
 
         # Primary index: entity_id -> temporal B-tree
-        self.entity_indexes: Dict[str, TemporalBTreeIndex] = {}
+        self.entity_indexes: dict[str, TemporalBTreeIndex] = {}
 
         # Secondary index: timestamp -> set of entity_ids
-        self.time_index: Dict[datetime, Set[str]] = defaultdict(set)
+        self.time_index: dict[datetime, set[str]] = defaultdict(set)
 
         # Reverse lookup: entity_id -> set of timestamps
-        self.entity_times: Dict[str, Set[datetime]] = defaultdict(set)
+        self.entity_times: dict[str, set[datetime]] = defaultdict(set)
 
         self._build_index()
 
@@ -53,7 +53,7 @@ class TemporalCompositeIndex(TemporalIndex):
         self,
         timestamp: datetime,
         entity_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """Insert an entity-timestamp mapping into the composite index.
 
@@ -106,10 +106,10 @@ class TemporalCompositeIndex(TemporalIndex):
     async def query_entity_timeline(
         self,
         entity_id: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: Optional[int] = None,
-    ) -> List[datetime]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[datetime]:
         """Query the timeline for a specific entity.
 
         Args:
@@ -158,8 +158,8 @@ class TemporalCompositeIndex(TemporalIndex):
             return []
 
     async def query_entities_at_time(
-        self, timestamp: datetime, entity_filter: Optional[Set[str]] = None
-    ) -> List[str]:
+        self, timestamp: datetime, entity_filter: set[str] | None = None
+    ) -> list[str]:
         """Query all entities active at a specific time.
 
         Args:
@@ -193,11 +193,11 @@ class TemporalCompositeIndex(TemporalIndex):
 
     async def query_entity_time_range(
         self,
-        entity_ids: List[str],
+        entity_ids: list[str],
         start_time: datetime,
         end_time: datetime,
-        limit: Optional[int] = None,
-    ) -> Dict[str, List[datetime]]:
+        limit: int | None = None,
+    ) -> dict[str, list[datetime]]:
         """Query multiple entities within a time range.
 
         Args:
@@ -237,7 +237,7 @@ class TemporalCompositeIndex(TemporalIndex):
 
     async def find_temporal_neighbors(
         self, entity_id: str, timestamp: datetime, time_window_seconds: int = 3600
-    ) -> List[Tuple[str, datetime, float]]:
+    ) -> list[tuple[str, datetime, float]]:
         """Find entities that were active near the same time.
 
         Args:
@@ -290,7 +290,7 @@ class TemporalCompositeIndex(TemporalIndex):
         """Get the number of unique timestamps in the index."""
         return len(self.time_index)
 
-    def get_entity_statistics(self, entity_id: str) -> Optional[Dict[str, Any]]:
+    def get_entity_statistics(self, entity_id: str) -> dict[str, Any] | None:
         """Get statistics for a specific entity.
 
         Args:

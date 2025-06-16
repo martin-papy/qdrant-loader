@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-loader test-mcp test-coverage lint format clean build publish-loader publish-mcp
+.PHONY: help install install-dev test test-loader test-mcp test-coverage lint format clean build publish-loader publish-mcp analyze
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -51,6 +51,14 @@ format: ## Format code in all packages
 	black packages/
 	isort packages/
 	ruff check --fix packages/
+
+analyze: lint ## Run comprehensive static analysis
+	@echo "Running security analysis with Bandit..."
+	bandit -r packages/
+	@echo "Running complexity analysis with Radon..."
+	radon cc packages/ -a -s
+	@echo "Running dead code analysis with Vulture..."
+	vulture packages/ --min-confidence 80
 
 check: lint test ## Run all checks (lint + test)
 

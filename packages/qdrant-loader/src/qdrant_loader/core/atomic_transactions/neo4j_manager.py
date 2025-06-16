@@ -3,7 +3,7 @@ Neo4j transaction manager for atomic operations.
 """
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 from neo4j import Transaction
 
@@ -21,7 +21,7 @@ class Neo4jTransactionManager(DatabaseTransactionManager):
 
     def __init__(self, neo4j_manager: Neo4jManager):
         self.neo4j_manager = neo4j_manager
-        self._active_transactions: Dict[str, Transaction] = {}
+        self._active_transactions: dict[str, Transaction] = {}
 
     async def begin_transaction(self, transaction_id: str) -> Transaction:
         """Begin a Neo4j transaction."""
@@ -127,7 +127,7 @@ class Neo4jTransactionManager(DatabaseTransactionManager):
 
     async def _capture_node_state(
         self, transaction: Transaction, node_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Capture current state of a node for rollback."""
         try:
 

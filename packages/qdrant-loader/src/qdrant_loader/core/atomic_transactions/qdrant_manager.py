@@ -3,7 +3,7 @@ QDrant transaction manager for atomic operations.
 """
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 from qdrant_client.http.models import PointStruct
 
@@ -21,9 +21,9 @@ class QdrantTransactionManager(DatabaseTransactionManager):
 
     def __init__(self, qdrant_manager: QdrantManager):
         self.qdrant_manager = qdrant_manager
-        self._active_transactions: Dict[str, Dict[str, Any]] = {}
+        self._active_transactions: dict[str, dict[str, Any]] = {}
 
-    async def begin_transaction(self, transaction_id: str) -> Dict[str, Any]:
+    async def begin_transaction(self, transaction_id: str) -> dict[str, Any]:
         """Begin a QDrant transaction (simulated with operation tracking)."""
         transaction_context = {
             "transaction_id": transaction_id,
@@ -35,7 +35,7 @@ class QdrantTransactionManager(DatabaseTransactionManager):
         return transaction_context
 
     async def prepare_operation(
-        self, transaction: Dict[str, Any], operation: DatabaseOperation
+        self, transaction: dict[str, Any], operation: DatabaseOperation
     ) -> bool:
         """Prepare a QDrant operation."""
         try:
@@ -63,7 +63,7 @@ class QdrantTransactionManager(DatabaseTransactionManager):
             return False
 
     async def execute_operation(
-        self, transaction: Dict[str, Any], operation: DatabaseOperation
+        self, transaction: dict[str, Any], operation: DatabaseOperation
     ) -> bool:
         """Execute a QDrant operation."""
         try:
@@ -92,7 +92,7 @@ class QdrantTransactionManager(DatabaseTransactionManager):
             operation.mark_executed(success=False, error=str(e))
             return False
 
-    async def commit_transaction(self, transaction: Dict[str, Any]) -> bool:
+    async def commit_transaction(self, transaction: dict[str, Any]) -> bool:
         """Commit QDrant transaction (cleanup tracking)."""
         transaction_id = transaction["transaction_id"]
         try:
@@ -104,7 +104,7 @@ class QdrantTransactionManager(DatabaseTransactionManager):
             logger.error(f"Failed to commit QDrant transaction {transaction_id}: {e}")
             return False
 
-    async def rollback_transaction(self, transaction: Dict[str, Any]) -> bool:
+    async def rollback_transaction(self, transaction: dict[str, Any]) -> bool:
         """Rollback QDrant transaction using compensation actions."""
         transaction_id = transaction["transaction_id"]
         try:
@@ -124,7 +124,7 @@ class QdrantTransactionManager(DatabaseTransactionManager):
             logger.error(f"Failed to rollback QDrant transaction {transaction_id}: {e}")
             return False
 
-    async def _capture_point_state(self, point_id: str) -> Optional[Dict[str, Any]]:
+    async def _capture_point_state(self, point_id: str) -> dict[str, Any] | None:
         """Capture current state of a point for rollback."""
         try:
             client = self.qdrant_manager._ensure_client_connected()

@@ -9,7 +9,7 @@ import weakref
 from collections.abc import AsyncGenerator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from graphiti_core.nodes import EpisodeType
@@ -523,7 +523,7 @@ class EntityExtractor:
 
         # Add episode to Graphiti for entity extraction
         episode_id = await self.graphiti_manager.add_episode(
-            name=f"Entity extraction - {datetime.now(timezone.utc).isoformat()}",
+            name=f"Entity extraction - {datetime.now(UTC).isoformat()}",
             content=text,
             episode_type=EpisodeType.text,
             source_description=source_description or "Entity extraction source",
@@ -866,7 +866,7 @@ class EntityExtractor:
         episode_id = None
         try:
             episode_id = await self.graphiti_manager.add_episode(
-                name=f"Custom prompt extraction - {datetime.now(timezone.utc).isoformat()}",
+                name=f"Custom prompt extraction - {datetime.now(UTC).isoformat()}",
                 content=text,
                 episode_type=EpisodeType.text,
                 source_description=source_description

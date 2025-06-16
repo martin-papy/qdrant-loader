@@ -8,7 +8,6 @@ import asyncio
 import os
 import signal
 from pathlib import Path
-from typing import Optional
 
 import click
 from click.exceptions import ClickException
@@ -168,9 +167,6 @@ def load_config_with_workspace(
     """
     try:
         # Lazy import to avoid slow startup
-        from qdrant_loader.config import (
-            initialize_config_with_workspace,
-        )
         from qdrant_loader.config.legacy_detection import (
             detect_legacy_configuration,
             get_migration_guidance,
@@ -477,7 +473,7 @@ PERFORMANCE_OPTION = click.option(
 
 
 def validate_workspace_flags(
-    workspace: Optional[Path], config: Optional[Path], env: Optional[Path]
+    workspace: Path | None, config: Path | None, env: Path | None
 ) -> None:
     """Validate workspace flag combinations.
 

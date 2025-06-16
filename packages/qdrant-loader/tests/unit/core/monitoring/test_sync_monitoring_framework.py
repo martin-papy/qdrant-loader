@@ -4,27 +4,22 @@ This module tests the comprehensive monitoring and alerting capabilities includi
 health checks, metrics collection, alert management, and system status monitoring.
 """
 
-import asyncio
-import pytest
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone, timedelta
 
-from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
-from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
-from qdrant_loader.core.sync.conflict_monitor import SyncConflictMonitor
-from qdrant_loader.core.operation_differentiation import OperationDifferentiationManager
+import pytest
+
 from qdrant_loader.monitoring.sync_monitoring_framework import (
-    SyncMonitoringFramework,
-    MonitoringConfig,
-    AlertSeverity,
-    HealthStatus,
-    MetricType,
     Alert,
+    AlertSeverity,
     HealthCheckResult,
+    HealthStatus,
     Metric,
-    SystemStatus,
-    create_monitoring_framework,
+    MetricType,
+    MonitoringConfig,
+    SyncMonitoringFramework,
     create_default_alert_handler,
+    create_monitoring_framework,
 )
 
 

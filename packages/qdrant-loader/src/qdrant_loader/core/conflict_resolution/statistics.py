@@ -4,7 +4,7 @@ This module provides comprehensive statistics collection and analysis
 for conflict resolution operations.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .models import ConflictRecord, ConflictStatus
@@ -40,11 +40,11 @@ class ConflictStatistics:
 
     async def get_comprehensive_statistics(
         self,
-        active_conflicts: Dict[str, ConflictRecord],
-        manual_review_conflicts: List[ConflictRecord],
+        active_conflicts: dict[str, ConflictRecord],
+        manual_review_conflicts: list[ConflictRecord],
         cache_size: int,
         advanced_merge_enabled: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get comprehensive conflict resolution statistics.
 
         Args:
@@ -123,12 +123,12 @@ class ConflictStatistics:
 
     async def health_check(
         self,
-        active_conflicts: Dict[str, ConflictRecord],
-        manual_review_conflicts: List[ConflictRecord],
+        active_conflicts: dict[str, ConflictRecord],
+        manual_review_conflicts: list[ConflictRecord],
         cache_size: int,
         config,
         advanced_merge_enabled: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform health check of the conflict resolution system.
 
         Args:
@@ -173,7 +173,7 @@ class ConflictStatistics:
         logger.info("Conflict resolution statistics reset")
 
     @property
-    def basic_statistics(self) -> Dict[str, int]:
+    def basic_statistics(self) -> dict[str, int]:
         """Get basic statistics.
 
         Returns:

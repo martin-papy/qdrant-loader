@@ -6,30 +6,26 @@ graph storage, temporal versioning, and synchronization across all systems.
 """
 
 import asyncio
-import pytest
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Union, cast
-from pathlib import Path
+from datetime import UTC, datetime
+from typing import Any, cast
 
-from qdrant_loader.core.pipeline import DocumentPipeline
-from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
+import pytest
+
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
+from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
+from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionConfig
+from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
+from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
+from qdrant_loader.core.managers.temporal_manager import TemporalManager
+from qdrant_loader.core.operation_differentiation import (
+    OperationDifferentiationManager,
+)
 from qdrant_loader.core.sync.conflict_monitor import (
     SyncConflictMonitor,
     SyncMonitoringLevel,
 )
-from qdrant_loader.core.operation_differentiation import (
-    OperationDifferentiationManager,
-)
-from qdrant_loader.core.managers.qdrant_manager import QdrantManager
-from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
-from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
-from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
-from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionConfig
-from qdrant_loader.core.managers.temporal_manager import TemporalManager
-from qdrant_loader.core.sync.types import SyncOperationType
-from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
+from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
 
 
 class TestEndToEndPipeline:
@@ -101,11 +97,6 @@ class TestEndToEndPipeline:
 
         # Initialize document processor (using DocumentPipeline instead)
         # Note: In a real implementation, you would create actual workers
-        from qdrant_loader.core.pipeline.workers import (
-            ChunkingWorker,
-            EmbeddingWorker,
-            UpsertWorker,
-        )
 
         # Create mock workers for testing
         class MockWorker:
@@ -142,7 +133,7 @@ class TestEndToEndPipeline:
             "title": "TechCorp Company Profile",
             "source": "company_database",
             "author": "HR Department",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "document_type": "company_profile",
         }
 
@@ -203,7 +194,7 @@ class TestEndToEndPipeline:
         initial_metadata = {
             "title": "TechCorp Initial Profile",
             "version": 1,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         # Simulate initial document processing
@@ -229,7 +220,7 @@ class TestEndToEndPipeline:
         updated_metadata = {
             "title": "TechCorp Updated Profile",
             "version": 2,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         # Simulate document update
@@ -301,14 +292,14 @@ class TestEndToEndPipeline:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Verify all processing succeeded
-        successful_results: List[Dict[str, Any]] = []
+        successful_results: list[dict[str, Any]] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 pytest.fail(f"Document {i} processing failed: {str(result)}")
                 continue
 
             # At this point, result is not an Exception - cast to correct type
-            result_dict = cast(Dict[str, Any], result)
+            result_dict = cast(dict[str, Any], result)
             assert (
                 result_dict["success"] is True
             ), f"Document {i} should process successfully"
@@ -348,7 +339,7 @@ class TestEndToEndPipeline:
         metadata = {
             "title": "Problematic Document",
             "source": "error_test",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
         # Simulate processing (should handle errors gracefully)
@@ -391,7 +382,7 @@ class TestEndToEndPipeline:
         metadata = {
             "title": "TechCorp Timeline",
             "temporal_context": "company_history",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
         # Simulate document processing
@@ -420,7 +411,7 @@ class TestEndToEndPipeline:
 
     # Helper methods
 
-    async def _get_qdrant_document(self, point_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_qdrant_document(self, point_id: str) -> dict[str, Any] | None:
         """Retrieve document from QDrant."""
         try:
             # Simulate QDrant document retrieval
@@ -432,7 +423,7 @@ class TestEndToEndPipeline:
         except:
             return None
 
-    async def _get_neo4j_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_neo4j_document(self, document_id: str) -> dict[str, Any] | None:
         """Retrieve document from Neo4j."""
         query = """
         MATCH (d:Document {document_id: $document_id})
@@ -447,7 +438,7 @@ class TestEndToEndPipeline:
         except:
             return None
 
-    async def _get_extracted_entities(self, document_id: str) -> List[Dict[str, Any]]:
+    async def _get_extracted_entities(self, document_id: str) -> list[dict[str, Any]]:
         """Get extracted entities for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:CONTAINS]->(e:Entity)
@@ -462,7 +453,7 @@ class TestEndToEndPipeline:
         except:
             return []
 
-    async def _get_entity_relationships(self, document_id: str) -> List[Dict[str, Any]]:
+    async def _get_entity_relationships(self, document_id: str) -> list[dict[str, Any]]:
         """Get entity relationships for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:CONTAINS]->(e1:Entity)-[r]->(e2:Entity)
@@ -487,7 +478,7 @@ class TestEndToEndPipeline:
 
     async def _get_document_version_history(
         self, document_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get version history for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:PREVIOUS_VERSION*]->(prev:Document)
@@ -505,7 +496,7 @@ class TestEndToEndPipeline:
 
     async def _get_temporal_relationships(
         self, document_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get temporal relationships for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:CONTAINS]->(e:Entity)-[r:TEMPORAL_RELATION]->(target)
@@ -528,7 +519,7 @@ class TestEndToEndPipeline:
         except:
             return []
 
-    async def _get_temporal_nodes(self, document_id: str) -> List[Dict[str, Any]]:
+    async def _get_temporal_nodes(self, document_id: str) -> list[dict[str, Any]]:
         """Get temporal nodes for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:CONTAINS]->(t:TemporalNode)
@@ -543,7 +534,7 @@ class TestEndToEndPipeline:
         except:
             return []
 
-    async def _get_graphiti_episodes(self, document_id: str) -> List[Dict[str, Any]]:
+    async def _get_graphiti_episodes(self, document_id: str) -> list[dict[str, Any]]:
         """Get Graphiti episodes for a document."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:HAS_EPISODE]->(ep:Episode)

@@ -1,14 +1,13 @@
 """Tests for the result fusion mechanism in enhanced hybrid search."""
 
-import pytest
 from unittest.mock import Mock, patch
-from typing import List
 
+import pytest
 from qdrant_loader_mcp_server.search.enhanced_hybrid_search import (
-    ResultFusionEngine,
     EnhancedSearchConfig,
     EnhancedSearchResult,
     FusionStrategy,
+    ResultFusionEngine,
     SearchMode,
 )
 

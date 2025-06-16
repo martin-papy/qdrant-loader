@@ -4,6 +4,8 @@ This package provides advanced temporal indexing capabilities for efficient
 time-range queries, temporal joins, and historical data analysis.
 """
 
+from .btree_index import TemporalBTreeIndex
+from .composite_index import TemporalCompositeIndex
 from .index_manager import TemporalIndexManager
 from .index_types import (
     IndexType,
@@ -12,8 +14,6 @@ from .index_types import (
     TemporalIndexStatistics,
 )
 from .query_optimizer import TemporalQueryOptimizer
-from .btree_index import TemporalBTreeIndex
-from .composite_index import TemporalCompositeIndex
 
 __all__ = [
     "TemporalIndexManager",

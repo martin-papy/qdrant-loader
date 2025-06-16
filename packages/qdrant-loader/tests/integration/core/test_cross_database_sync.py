@@ -10,27 +10,26 @@ Tests the complete synchronization workflow including:
 """
 
 import asyncio
-import pytest
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
-from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
+import pytest
+
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
+from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
+from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
+from qdrant_loader.core.operation_differentiation import (
+    OperationDifferentiationManager,
+)
 from qdrant_loader.core.sync.conflict_monitor import (
     SyncConflictMonitor,
     SyncMonitoringLevel,
 )
-from qdrant_loader.core.operation_differentiation import (
-    OperationDifferentiationManager,
-)
-from qdrant_loader.core.sync.types import SyncOperationType, SyncOperationStatus
+from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
 from qdrant_loader.core.sync.operations import EnhancedSyncOperation
-from qdrant_loader.core.managers.qdrant_manager import QdrantManager
-from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
-from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
+from qdrant_loader.core.sync.types import SyncOperationType
 from qdrant_loader.core.types import EntityType
-from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
 
 
 class TestCrossDatabaseSync:
@@ -103,7 +102,7 @@ class TestCrossDatabaseSync:
         metadata = {
             "title": "Test Document",
             "author": "Test Author",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
         # Create document in QDrant
@@ -154,7 +153,7 @@ class TestCrossDatabaseSync:
         initial_metadata = {
             "title": "Initial Title",
             "version": 1,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         # Create and sync initial document
@@ -181,7 +180,7 @@ class TestCrossDatabaseSync:
         updated_metadata = {
             "title": "Updated Title",
             "version": 2,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         # Update in QDrant
@@ -393,7 +392,7 @@ class TestCrossDatabaseSync:
         initial_metadata = {
             "title": "Conflict Test",
             "version": 1,
-            "last_modified": datetime.now(timezone.utc).isoformat(),
+            "last_modified": datetime.now(UTC).isoformat(),
         }
 
         qdrant_point_id = await self._create_qdrant_document(
@@ -418,14 +417,14 @@ class TestCrossDatabaseSync:
         qdrant_update_metadata = {
             "title": "QDrant Updated Title",
             "version": 2,
-            "last_modified": datetime.now(timezone.utc).isoformat(),
+            "last_modified": datetime.now(UTC).isoformat(),
             "source": "qdrant",
         }
 
         neo4j_update_metadata = {
             "title": "Neo4j Updated Title",
             "version": 2,
-            "last_modified": datetime.now(timezone.utc).isoformat(),
+            "last_modified": datetime.now(UTC).isoformat(),
             "source": "neo4j",
         }
 
@@ -452,7 +451,7 @@ class TestCrossDatabaseSync:
     # Helper methods for database operations
 
     async def _create_qdrant_document(
-        self, document_id: str, content: str, metadata: Dict[str, Any]
+        self, document_id: str, content: str, metadata: dict[str, Any]
     ) -> str:
         """Create a document in QDrant and return the point ID."""
         point_id = str(uuid.uuid4())
@@ -469,7 +468,7 @@ class TestCrossDatabaseSync:
 
         return point_id
 
-    async def _get_qdrant_document(self, point_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_qdrant_document(self, point_id: str) -> dict[str, Any] | None:
         """Retrieve a document from QDrant."""
         try:
             result = await self.qdrant_manager.get_points(
@@ -480,7 +479,7 @@ class TestCrossDatabaseSync:
             return None
 
     async def _update_qdrant_document(
-        self, point_id: str, content: str, metadata: Dict[str, Any]
+        self, point_id: str, content: str, metadata: dict[str, Any]
     ):
         """Update a document in QDrant."""
         embedding = [0.2] * 384  # Updated mock embedding
@@ -498,7 +497,7 @@ class TestCrossDatabaseSync:
             collection_name="test_collection", point_ids=[point_id]
         )
 
-    async def _get_neo4j_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+    async def _get_neo4j_document(self, document_id: str) -> dict[str, Any] | None:
         """Retrieve a document from Neo4j."""
         query = """
         MATCH (d:Document {document_id: $document_id})
@@ -511,7 +510,7 @@ class TestCrossDatabaseSync:
 
         return result[0]["d"] if result else None
 
-    async def _update_neo4j_document(self, document_id: str, metadata: Dict[str, Any]):
+    async def _update_neo4j_document(self, document_id: str, metadata: dict[str, Any]):
         """Update a document in Neo4j."""
         query = """
         MATCH (d:Document {document_id: $document_id})
@@ -527,7 +526,7 @@ class TestCrossDatabaseSync:
 
     async def _get_document_version_history(
         self, document_id: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get version history for a document from Neo4j."""
         query = """
         MATCH (d:Document {document_id: $document_id})-[:PREVIOUS_VERSION*]->(prev:Document)
@@ -542,7 +541,7 @@ class TestCrossDatabaseSync:
         return [record["prev"] for record in result]
 
     async def _create_and_sync_document(
-        self, document_id: str, content: str, metadata: Dict[str, Any]
+        self, document_id: str, content: str, metadata: dict[str, Any]
     ) -> str:
         """Helper to create and sync a document."""
         qdrant_point_id = await self._create_qdrant_document(

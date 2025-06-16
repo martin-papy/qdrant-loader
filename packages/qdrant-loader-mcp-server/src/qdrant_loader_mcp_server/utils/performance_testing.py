@@ -4,16 +4,13 @@ import asyncio
 import statistics
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-import numpy as np
-
-from .logging import LoggingConfig
 from ..search.enhanced_hybrid_search import (
     EnhancedHybridSearchEngine,
-    EnhancedSearchConfig,
     SearchMode,
 )
+from .logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -59,7 +56,7 @@ class BenchmarkConfig:
     warmup_queries: int = 10
 
     # Search configurations to test
-    search_modes: List[SearchMode] = field(
+    search_modes: list[SearchMode] = field(
         default_factory=lambda: [
             SearchMode.VECTOR_ONLY,
             SearchMode.GRAPH_ONLY,
@@ -69,8 +66,8 @@ class BenchmarkConfig:
     )
 
     # Query complexity levels
-    query_lengths: List[int] = field(default_factory=lambda: [5, 15, 50, 100])
-    result_limits: List[int] = field(default_factory=lambda: [5, 10, 25, 50])
+    query_lengths: list[int] = field(default_factory=lambda: [5, 15, 50, 100])
+    result_limits: list[int] = field(default_factory=lambda: [5, 10, 25, 50])
 
     # Performance thresholds
     max_latency_ms: float = 1000.0
@@ -83,9 +80,9 @@ class BenchmarkResult:
     """Results from a performance benchmark."""
 
     config: BenchmarkConfig
-    metrics: Dict[str, PerformanceMetrics] = field(default_factory=dict)
-    summary: Dict[str, Any] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    metrics: dict[str, PerformanceMetrics] = field(default_factory=dict)
+    summary: dict[str, Any] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
     timestamp: float = field(default_factory=time.time)
 
 
@@ -218,7 +215,7 @@ class PerformanceTester:
                     all_times.append(query_time)
                     all_results.append(len(results))
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     timeout_count += 1
                     self.logger.warning(f"Query timeout: {query[:50]}...")
 
@@ -336,8 +333,8 @@ class PerformanceTester:
         return metrics
 
     def _generate_summary(
-        self, metrics: Dict[str, PerformanceMetrics]
-    ) -> Dict[str, Any]:
+        self, metrics: dict[str, PerformanceMetrics]
+    ) -> dict[str, Any]:
         """Generate performance summary."""
         summary = {
             "best_mode": None,
@@ -398,8 +395,8 @@ class PerformanceTester:
         return summary
 
     def _generate_recommendations(
-        self, metrics: Dict[str, PerformanceMetrics], config: BenchmarkConfig
-    ) -> List[str]:
+        self, metrics: dict[str, PerformanceMetrics], config: BenchmarkConfig
+    ) -> list[str]:
         """Generate performance optimization recommendations."""
         recommendations = []
 
@@ -468,7 +465,7 @@ class PerformanceTester:
 
 
 async def run_performance_test(
-    search_engine: EnhancedHybridSearchEngine, config: Optional[BenchmarkConfig] = None
+    search_engine: EnhancedHybridSearchEngine, config: BenchmarkConfig | None = None
 ) -> BenchmarkResult:
     """Run performance test on the enhanced hybrid search engine.
 
@@ -497,7 +494,7 @@ def print_benchmark_results(result: BenchmarkResult) -> None:
     print("=" * 80)
 
     # Summary
-    print(f"\nSUMMARY:")
+    print("\nSUMMARY:")
     print(f"  Best Mode: {result.summary.get('best_mode', 'N/A')}")
     print(f"  Best QPS: {result.summary.get('best_qps', 0):.2f}")
     print(f"  Avg Latency: {result.summary.get('avg_latency_ms', 0):.1f}ms")
@@ -506,7 +503,7 @@ def print_benchmark_results(result: BenchmarkResult) -> None:
     print(f"  Scalability Score: {result.summary.get('scalability_score', 0):.1%}")
 
     # Detailed metrics
-    print(f"\nDETAILED METRICS:")
+    print("\nDETAILED METRICS:")
     for mode_name, metrics in result.metrics.items():
         print(f"\n  {mode_name.upper()}:")
         print(f"    QPS: {metrics.queries_per_second:.2f}")
@@ -518,7 +515,7 @@ def print_benchmark_results(result: BenchmarkResult) -> None:
             print(f"    Cache Hit Rate: {metrics.cache_hit_rate:.1%}")
 
     # Recommendations
-    print(f"\nRECOMMENDATIONS:")
+    print("\nRECOMMENDATIONS:")
     for i, rec in enumerate(result.recommendations, 1):
         print(f"  {i}. {rec}")
 

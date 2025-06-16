@@ -6,16 +6,16 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 import yaml
 
 from qdrant_loader.config import (
     ThreadSafeSettingsManager,
-    initialize_multi_file_config,
-    get_settings,
     _settings_manager,
+    get_settings,
+    initialize_multi_file_config,
 )
 from qdrant_loader.config.hot_reload import HotReloadConfigLoader
 
@@ -229,8 +229,8 @@ class TestHotReloadThreadSafety:
 
         # Simulate hot-reload by manually updating settings
         try:
-            from qdrant_loader.config.multi_file_loader import load_multi_file_config
             from qdrant_loader.config import Settings
+            from qdrant_loader.config.multi_file_loader import load_multi_file_config
 
             # Create updated configuration
             updated_connectivity_config = {

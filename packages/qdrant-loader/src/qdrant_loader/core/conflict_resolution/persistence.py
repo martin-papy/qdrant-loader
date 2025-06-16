@@ -5,11 +5,11 @@ and providing version information for conflict detection and resolution.
 """
 
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...utils.logging import LoggingConfig
-from ..sync import DatabaseType
 from ..managers import IDMapping, Neo4jManager, QdrantManager
+from ..sync import DatabaseType
 from .models import ConflictRecord, EntityVersion
 
 logger = LoggingConfig.get_logger(__name__)
@@ -55,8 +55,8 @@ class ConflictPersistence:
             logger.error(f"Error persisting conflict: {e}")
 
     async def get_conflicts_for_manual_review(
-        self, active_conflicts: Dict[str, ConflictRecord]
-    ) -> List[ConflictRecord]:
+        self, active_conflicts: dict[str, ConflictRecord]
+    ) -> list[ConflictRecord]:
         """Get all conflicts that require manual review.
 
         Args:
@@ -72,7 +72,7 @@ class ConflictPersistence:
         ]
 
     async def cleanup_resolved_conflicts(
-        self, active_conflicts: Dict[str, ConflictRecord], older_than_days: int = 30
+        self, active_conflicts: dict[str, ConflictRecord], older_than_days: int = 30
     ) -> int:
         """Clean up resolved conflicts older than specified days.
 
@@ -118,11 +118,11 @@ class VersionProvider:
         """
         self.qdrant_manager = qdrant_manager
         self.neo4j_manager = neo4j_manager
-        self._version_cache: Dict[str, EntityVersion] = {}
+        self._version_cache: dict[str, EntityVersion] = {}
 
     async def get_entity_version(
         self, mapping: IDMapping, database_type: DatabaseType
-    ) -> Optional[EntityVersion]:
+    ) -> EntityVersion | None:
         """Get version information for an entity in a specific database.
 
         Args:
@@ -154,7 +154,7 @@ class VersionProvider:
             logger.error(f"Error getting entity version: {e}")
             return None
 
-    async def _get_qdrant_version(self, mapping: IDMapping) -> Optional[EntityVersion]:
+    async def _get_qdrant_version(self, mapping: IDMapping) -> EntityVersion | None:
         """Get version information from QDrant.
 
         Args:
@@ -172,7 +172,7 @@ class VersionProvider:
             last_modified=datetime.now(UTC),
         )
 
-    async def _get_neo4j_version(self, mapping: IDMapping) -> Optional[EntityVersion]:
+    async def _get_neo4j_version(self, mapping: IDMapping) -> EntityVersion | None:
         """Get version information from Neo4j.
 
         Args:
@@ -218,7 +218,7 @@ class SyncProvider:
         self.neo4j_manager = neo4j_manager
 
     async def sync_qdrant_to_neo4j(
-        self, mapping: IDMapping, data: Dict[str, Any]
+        self, mapping: IDMapping, data: dict[str, Any]
     ) -> bool:
         """Sync data from QDrant to Neo4j.
 
@@ -235,7 +235,7 @@ class SyncProvider:
         return True
 
     async def sync_neo4j_to_qdrant(
-        self, mapping: IDMapping, data: Dict[str, Any]
+        self, mapping: IDMapping, data: dict[str, Any]
     ) -> bool:
         """Sync data from Neo4j to QDrant.
 

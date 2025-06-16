@@ -1,12 +1,12 @@
 """Integration tests for PublicDocs connector with real configuration."""
 
 import os
-import tempfile
 import warnings
 from pathlib import Path
 
 import pytest
 from bs4 import XMLParsedAsHTMLWarning
+
 from qdrant_loader.config import get_settings, initialize_multi_file_config
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig

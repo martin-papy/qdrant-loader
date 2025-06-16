@@ -5,7 +5,7 @@ all operation differentiation components including classification, validation,
 and priority management.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from ...utils.logging import LoggingConfig
 from .classifier import OperationClassifier
@@ -54,8 +54,8 @@ class OperationDifferentiationManager:
     async def process_operation(
         self,
         operation: "EnhancedSyncOperation",
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[OperationCharacteristics, ValidationResult]:
+        context: dict[str, Any] | None = None,
+    ) -> tuple[OperationCharacteristics, ValidationResult]:
         """Process an operation through the differentiation pipeline.
 
         Args:
@@ -91,7 +91,7 @@ class OperationDifferentiationManager:
 
     async def get_next_operation(
         self,
-    ) -> Optional[Tuple["EnhancedSyncOperation", OperationCharacteristics]]:
+    ) -> tuple["EnhancedSyncOperation", OperationCharacteristics] | None:
         """Get the next operation to process.
 
         Returns:
@@ -118,7 +118,7 @@ class OperationDifferentiationManager:
         # Note: We'd need to store the operation reference to do this properly
         # For now, we'll skip this step
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         """Get comprehensive statistics.
 
         Returns:
@@ -133,7 +133,7 @@ class OperationDifferentiationManager:
             "cache_ttl_seconds": self.cache_ttl_seconds,
         }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the differentiation system.
 
         Returns:

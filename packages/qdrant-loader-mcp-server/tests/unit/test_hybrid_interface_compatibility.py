@@ -1,8 +1,8 @@
 """Tests for hybrid search interface compatibility and backward compatibility."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.models import SearchResult
 

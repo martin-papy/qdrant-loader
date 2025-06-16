@@ -5,7 +5,6 @@ and guide users to migrate to the new domain-specific format.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import yaml
 
@@ -38,8 +37,8 @@ class LegacyConfigDetector:
         ]
 
     def detect_legacy_config(
-        self, config_path: Optional[Path] = None, search_dir: Optional[Path] = None
-    ) -> Tuple[bool, Optional[Path], str]:
+        self, config_path: Path | None = None, search_dir: Path | None = None
+    ) -> tuple[bool, Path | None, str]:
         """Detect if a legacy configuration file is being used.
 
         Args:
@@ -65,7 +64,7 @@ class LegacyConfigDetector:
 
     def _search_for_legacy_configs(
         self, search_dir: Path
-    ) -> Tuple[bool, Optional[Path], str]:
+    ) -> tuple[bool, Path | None, str]:
         """Search for legacy configuration files in a directory.
 
         Args:
@@ -100,7 +99,7 @@ class LegacyConfigDetector:
 
         return False, None, "No configuration files found"
 
-    def _is_legacy_config_file(self, config_path: Path) -> Tuple[bool, str]:
+    def _is_legacy_config_file(self, config_path: Path) -> tuple[bool, str]:
         """Check if a specific configuration file is in legacy format.
 
         Args:
@@ -110,7 +109,7 @@ class LegacyConfigDetector:
             Tuple of (is_legacy, reason)
         """
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
 
             if not isinstance(config_data, dict):
@@ -135,7 +134,7 @@ class LegacyConfigDetector:
         except Exception as e:
             return False, f"Error reading file: {e}"
 
-    def _check_legacy_indicators(self, config_data: Dict) -> List[str]:
+    def _check_legacy_indicators(self, config_data: dict) -> list[str]:
         """Check for indicators that suggest legacy configuration format.
 
         Args:
@@ -201,8 +200,8 @@ class LegacyConfigDetector:
         return indicators
 
     def get_migration_guidance(
-        self, legacy_config_path: Path, suggested_output_dir: Optional[Path] = None
-    ) -> Dict[str, str]:
+        self, legacy_config_path: Path, suggested_output_dir: Path | None = None
+    ) -> dict[str, str]:
         """Get migration guidance for a detected legacy configuration.
 
         Args:
@@ -227,8 +226,8 @@ class LegacyConfigDetector:
 
 
 def detect_legacy_configuration(
-    config_path: Optional[Path] = None, search_dir: Optional[Path] = None
-) -> Tuple[bool, Optional[Path], str]:
+    config_path: Path | None = None, search_dir: Path | None = None
+) -> tuple[bool, Path | None, str]:
     """Convenience function to detect legacy configuration.
 
     Args:
@@ -243,8 +242,8 @@ def detect_legacy_configuration(
 
 
 def get_migration_guidance(
-    legacy_config_path: Path, suggested_output_dir: Optional[Path] = None
-) -> Dict[str, str]:
+    legacy_config_path: Path, suggested_output_dir: Path | None = None
+) -> dict[str, str]:
     """Convenience function to get migration guidance.
 
     Args:

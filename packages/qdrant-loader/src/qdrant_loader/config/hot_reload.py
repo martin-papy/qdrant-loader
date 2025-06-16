@@ -8,20 +8,20 @@ source attribution.
 import json
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from watchdog.observers import Observer as WatchdogObserver
+    pass
 
 import yaml
-
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from ..utils.logging import LoggingConfig
-from .multi_file_loader import ConfigDomain, MultiFileConfigLoader
 from .models import ParsedConfig
+from .multi_file_loader import ConfigDomain, MultiFileConfigLoader
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -31,7 +31,7 @@ class ConfigFileHandler(FileSystemEventHandler):  # type: ignore
 
     def __init__(
         self,
-        config_files: Dict[str, Path],
+        config_files: dict[str, Path],
         reload_callback: Callable[[], None],
         debounce_seconds: float = 1.0,
     ):
@@ -100,23 +100,23 @@ class HotReloadConfigLoader:
             update_global_settings: If True, update global settings on reload
         """
         self.loader = MultiFileConfigLoader(validator)
-        self._config: Optional[ParsedConfig] = None
+        self._config: ParsedConfig | None = None
         self._config_lock = threading.RLock()
-        self._observer: Optional[Any] = None
-        self._config_files: Dict[str, Path] = {}
-        self._config_dir: Optional[Path] = None
-        self._domains: Optional[Set[str]] = None
-        self._env_path: Optional[Path] = None
+        self._observer: Any | None = None
+        self._config_files: dict[str, Path] = {}
+        self._config_dir: Path | None = None
+        self._domains: set[str] | None = None
+        self._env_path: Path | None = None
         self._skip_validation: bool = False
-        self._reload_callbacks: List[Callable[[ParsedConfig], None]] = []
+        self._reload_callbacks: list[Callable[[ParsedConfig], None]] = []
         self._version = 0
         self._update_global_settings = update_global_settings
 
     def load_config(
         self,
         config_dir: Path,
-        domains: Optional[Set[str]] = None,
-        env_path: Optional[Path] = None,
+        domains: set[str] | None = None,
+        env_path: Path | None = None,
         skip_validation: bool = False,
         enable_hot_reload: bool = True,
     ) -> ParsedConfig:
@@ -183,8 +183,7 @@ class HotReloadConfigLoader:
 
         try:
             # Import here to avoid circular imports
-            from . import _settings_manager
-            from . import Settings
+            from . import Settings, _settings_manager
 
             # Create new Settings instance from parsed config
             new_settings = Settings(
@@ -202,7 +201,7 @@ class HotReloadConfigLoader:
                 "Failed to update global settings from hot-reload", error=str(e)
             )
 
-    def get_config(self) -> Optional[ParsedConfig]:
+    def get_config(self) -> ParsedConfig | None:
         """Get the current configuration thread-safely.
 
         Returns:
@@ -312,7 +311,7 @@ class HotReloadConfigLoader:
 
     def export_config_with_sources(
         self, format: str = "yaml", include_metadata: bool = True
-    ) -> Union[str, Dict[str, Any]]:
+    ) -> str | dict[str, Any]:
         """Export current configuration with source attribution.
 
         Args:
@@ -342,7 +341,7 @@ class HotReloadConfigLoader:
             else:
                 raise ValueError(f"Unsupported export format: {format}")
 
-    def _build_export_data(self, include_metadata: bool) -> Dict[str, Any]:
+    def _build_export_data(self, include_metadata: bool) -> dict[str, Any]:
         """Build export data with source attribution.
 
         Args:
@@ -369,8 +368,6 @@ class HotReloadConfigLoader:
                 config_dict.update(self._config.projects_config.to_dict())
             elif hasattr(self._config.projects_config, "model_dump"):
                 config_dict.update(self._config.projects_config.model_dump())
-        elif hasattr(self._config, "model_dump"):
-            config_dict = getattr(self._config, "model_dump")()
         elif hasattr(self._config, "__dict__"):
             config_dict = vars(self._config)
 

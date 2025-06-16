@@ -59,11 +59,11 @@ class TestMain:
 
     def test_cli_import_path(self):
         """Test that CLI is imported from correct path."""
-        from qdrant_loader.cli import cli as imported_cli
-        from qdrant_loader.main import cli as main_cli
-
         # imported_cli should be a Click Group
         import click
+
+        from qdrant_loader.cli import cli as imported_cli
+        from qdrant_loader.main import cli as main_cli
 
         assert isinstance(imported_cli, click.Group)
 

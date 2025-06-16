@@ -9,38 +9,37 @@ This package provides comprehensive database synchronization capabilities includ
 """
 
 # Core sync event system (base functionality)
+# Conflict monitoring
+from .conflict_monitor import (
+    ContentHashComparison,
+    ContentHashStatus,
+    SyncConflictMonitor,
+    SyncMonitoringLevel,
+    SyncOperationMetrics,
+)
+
+# Enhanced sync event system
+from .enhanced_event_system import EnhancedSyncEventSystem
 from .event_system import (
     ChangeEvent,
     ChangeType,
     DatabaseType,
-    SyncEventSystem,
-    QdrantChangeDetector,
     Neo4jChangeDetector,
+    QdrantChangeDetector,
+    SyncEventSystem,
 )
-
-# Enhanced sync operations
-from .operations import EnhancedSyncOperation
-
-# Enhanced sync event system
-from .enhanced_event_system import EnhancedSyncEventSystem
 
 # Operation handlers
 from .handlers import SyncOperationHandlers
+
+# Enhanced sync operations
+from .operations import EnhancedSyncOperation
 
 # Operation processor
 from .processor import SyncOperationProcessor
 
 # Sync types and enums
 from .types import SyncOperationStatus, SyncOperationType
-
-# Conflict monitoring
-from .conflict_monitor import (
-    SyncConflictMonitor,
-    SyncMonitoringLevel,
-    ContentHashStatus,
-    ContentHashComparison,
-    SyncOperationMetrics,
-)
 
 __all__ = [
     # Base event system

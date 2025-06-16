@@ -5,18 +5,18 @@ validation frameworks, and specialized handling strategies for synchronization
 operations across QDrant and Neo4j databases.
 """
 
+from .classifier import OperationClassifier
+from .manager import OperationDifferentiationManager
+from .priority_manager import OperationPriorityManager
 from .types import (
+    OperationCharacteristics,
     OperationComplexity,
     OperationImpact,
     OperationPriority,
     ValidationLevel,
-    OperationCharacteristics,
     ValidationResult,
 )
-from .classifier import OperationClassifier
-from .priority_manager import OperationPriorityManager
 from .validator import OperationValidator
-from .manager import OperationDifferentiationManager
 
 __all__ = [
     # Types and enums

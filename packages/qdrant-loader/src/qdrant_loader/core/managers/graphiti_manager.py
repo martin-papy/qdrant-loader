@@ -294,7 +294,7 @@ class GraphitiManager:
             logger.info(f"Search returned {len(results)} results for query: {query}")
             return results
 
-        except Exception as e:
+        except Exception:
             logger.error("Search failed for query f'{query}': {e}")
             raise
 

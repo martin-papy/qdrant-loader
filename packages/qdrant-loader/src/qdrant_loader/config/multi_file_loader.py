@@ -7,7 +7,7 @@ domain-specific files: connectivity.yaml, projects.yaml, and fine-tuning.yaml.
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 import yaml
 from dotenv import load_dotenv
@@ -16,14 +16,13 @@ from pydantic import ValidationError
 from ..utils.logging import LoggingConfig
 from .domain_models import DomainConfigValidator
 from .enhanced_validator import EnhancedDomainValidator
-from .global_config import GlobalConfig
+from .models import ParsedConfig
+from .parser import MultiProjectConfigParser
 from .validation_errors import (
     ConfigValidationError,
     ValidationErrorCollector,
     ValidationSeverity,
 )
-from .models import ParsedConfig, ProjectsConfig
-from .parser import MultiProjectConfigParser
 from .validator import ConfigValidator
 
 logger = LoggingConfig.get_logger(__name__)
@@ -152,7 +151,7 @@ class MultiFileConfigLoader:
 
     def __init__(
         self,
-        validator: Optional[ConfigValidator] = None,
+        validator: ConfigValidator | None = None,
         enhanced_validation: bool = True,
         fail_fast: bool = False,
         validate_connectivity: bool = False,
@@ -180,11 +179,11 @@ class MultiFileConfigLoader:
     def load_config(
         self,
         config_dir: Path,
-        domains: Optional[Set[str]] = None,
-        env_path: Optional[Path] = None,
+        domains: set[str] | None = None,
+        env_path: Path | None = None,
         skip_validation: bool = False,
-        preset: Optional[str] = None,
-        use_case: Optional[str] = None,
+        preset: str | None = None,
+        use_case: str | None = None,
         measure_performance: bool = False,
     ) -> ParsedConfig:
         """Load and merge configuration from multiple domain files.
@@ -332,7 +331,7 @@ class MultiFileConfigLoader:
         )
         return parsed_config
 
-    def _load_environment_variables(self, env_path: Optional[Path]) -> None:
+    def _load_environment_variables(self, env_path: Path | None) -> None:
         """Load environment variables from .env file.
 
         Args:
@@ -348,8 +347,8 @@ class MultiFileConfigLoader:
             load_dotenv(override=False)
 
     def _discover_config_files(
-        self, config_dir: Path, domains: Set[str]
-    ) -> Dict[str, Path]:
+        self, config_dir: Path, domains: set[str]
+    ) -> dict[str, Path]:
         """Discover available configuration files for requested domains.
 
         Args:
@@ -381,9 +380,9 @@ class MultiFileConfigLoader:
     def _load_and_validate_domains(
         self,
         config_dir: Path,
-        domain_files: Dict[str, Path],
-        requested_domains: Set[str],
-    ) -> Dict[str, Any]:
+        domain_files: dict[str, Path],
+        requested_domains: set[str],
+    ) -> dict[str, Any]:
         """Load and validate configuration from domain files using domain-specific models.
 
         Args:
@@ -444,9 +443,9 @@ class MultiFileConfigLoader:
     def _load_and_validate_domains_enhanced(
         self,
         config_dir: Path,
-        domain_files: Dict[str, Path],
-        requested_domains: Set[str],
-    ) -> Dict[str, Any]:
+        domain_files: dict[str, Path],
+        requested_domains: set[str],
+    ) -> dict[str, Any]:
         """Load and validate configuration using enhanced validation.
 
         Args:
@@ -541,8 +540,8 @@ class MultiFileConfigLoader:
         return validated_domains
 
     def _merge_validated_domains(
-        self, validated_domains: Dict[str, Any], requested_domains: Set[str]
-    ) -> Dict[str, Any]:
+        self, validated_domains: dict[str, Any], requested_domains: set[str]
+    ) -> dict[str, Any]:
         """Merge validated domain configurations into a unified configuration.
 
         Args:
@@ -570,7 +569,7 @@ class MultiFileConfigLoader:
 
         return merged_config
 
-    def _load_domain_file(self, file_path: Path) -> Dict[str, Any]:
+    def _load_domain_file(self, file_path: Path) -> dict[str, Any]:
         """Load configuration from a single domain file.
 
         Args:
@@ -606,8 +605,8 @@ class MultiFileConfigLoader:
             raise
 
     def _deep_merge(
-        self, base: Dict[str, Any], update: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, base: dict[str, Any], update: dict[str, Any]
+    ) -> dict[str, Any]:
         """Deep merge two dictionaries.
 
         Args:
@@ -632,7 +631,7 @@ class MultiFileConfigLoader:
         return result
 
     def _validate_minimum_config(
-        self, config: Dict[str, Any], requested_domains: Set[str]
+        self, config: dict[str, Any], requested_domains: set[str]
     ) -> None:
         """Validate that minimum required configuration is present.
 
@@ -746,11 +745,11 @@ class MultiFileConfigLoader:
 
 def load_multi_file_config(
     config_dir: Path,
-    domains: Optional[Set[str]] = None,
-    env_path: Optional[Path] = None,
+    domains: set[str] | None = None,
+    env_path: Path | None = None,
     skip_validation: bool = False,
-    preset: Optional[str] = None,
-    use_case: Optional[str] = None,
+    preset: str | None = None,
+    use_case: str | None = None,
     measure_performance: bool = False,
     enhanced_validation: bool = True,
     fail_fast: bool = False,

@@ -6,7 +6,6 @@ extracted from the main enhanced sync event system for better maintainability.
 
 import uuid
 from datetime import UTC, datetime
-from typing import Optional
 
 from ...utils.logging import LoggingConfig
 from ..atomic_transactions import OperationType, TransactionContext
@@ -17,7 +16,6 @@ from ..managers import (
     Neo4jManager,
     QdrantManager,
 )
-from .types import SyncOperationType
 from .event_system import DatabaseType
 from .operations import EnhancedSyncOperation
 
@@ -185,7 +183,7 @@ class SyncOperationHandlers:
 
     async def _ensure_mapping_exists(
         self, operation: EnhancedSyncOperation
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Ensure mapping exists for the operation."""
         if not operation.entity_id:
             return None
@@ -218,7 +216,7 @@ class SyncOperationHandlers:
 
     async def _get_mapping_for_operation(
         self, operation: EnhancedSyncOperation
-    ) -> Optional[IDMapping]:
+    ) -> IDMapping | None:
         """Get mapping for the operation."""
         if not operation.entity_id:
             return None
@@ -246,7 +244,7 @@ class SyncOperationHandlers:
         self,
         tx: TransactionContext,
         operation: EnhancedSyncOperation,
-        mapping: Optional[IDMapping],
+        mapping: IDMapping | None,
     ) -> None:
         """Add QDrant create operation to transaction."""
         if not mapping or not mapping.qdrant_point_id:
@@ -262,7 +260,7 @@ class SyncOperationHandlers:
         self,
         tx: TransactionContext,
         operation: EnhancedSyncOperation,
-        mapping: Optional[IDMapping],
+        mapping: IDMapping | None,
     ) -> None:
         """Add Neo4j create operation to transaction."""
         if not mapping:

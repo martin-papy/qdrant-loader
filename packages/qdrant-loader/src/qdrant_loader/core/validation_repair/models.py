@@ -6,9 +6,9 @@ the validation and repair workflow.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any
 from uuid import uuid4
 
 from ..types import EntityType
@@ -58,28 +58,28 @@ class ValidationIssue:
     description: str = ""
 
     # Entity information
-    entity_id: Optional[str] = None
-    entity_type: Optional[EntityType] = None
-    qdrant_point_id: Optional[str] = None
-    neo4j_node_id: Optional[str] = None
-    mapping_id: Optional[str] = None
+    entity_id: str | None = None
+    entity_type: EntityType | None = None
+    qdrant_point_id: str | None = None
+    neo4j_node_id: str | None = None
+    mapping_id: str | None = None
 
     # Issue details
-    expected_value: Optional[Any] = None
-    actual_value: Optional[Any] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    expected_value: Any | None = None
+    actual_value: Any | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Resolution information
-    suggested_actions: List[RepairAction] = field(default_factory=list)
+    suggested_actions: list[RepairAction] = field(default_factory=list)
     auto_repairable: bool = False
     repair_priority: int = 5  # 1-10, higher is more urgent
 
     # Tracking
     detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    resolved_at: Optional[datetime] = None
-    resolution_notes: Optional[str] = None
+    resolved_at: datetime | None = None
+    resolution_notes: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert issue to dictionary format."""
         return {
             "issue_id": self.issue_id,
@@ -111,11 +111,11 @@ class RepairResult:
     issue_id: str
     action_taken: RepairAction
     success: bool
-    error_message: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
     execution_time_ms: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary format."""
         return {
             "issue_id": self.issue_id,
@@ -143,17 +143,17 @@ class ValidationReport:
     auto_repairable_issues: int = 0
 
     # Issues by category
-    issues_by_category: Dict[ValidationCategory, int] = field(default_factory=dict)
-    issues: List[ValidationIssue] = field(default_factory=list)
+    issues_by_category: dict[ValidationCategory, int] = field(default_factory=dict)
+    issues: list[ValidationIssue] = field(default_factory=list)
 
     # System health metrics
     system_health_score: float = 100.0  # 0-100
-    database_connectivity: Dict[str, bool] = field(default_factory=dict)
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    database_connectivity: dict[str, bool] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
 
     # Execution details
     validation_duration_ms: float = 0.0
-    scanned_entities: Dict[str, int] = field(default_factory=dict)
+    scanned_entities: dict[str, int] = field(default_factory=dict)
 
     def add_issue(self, issue: ValidationIssue) -> None:
         """Add an issue to the report."""
@@ -202,7 +202,7 @@ class ValidationReport:
         penalty = min(total_weight, max_penalty)
         self.system_health_score = max(0.0, 100.0 - penalty)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert report to dictionary format."""
         return {
             "report_id": self.report_id,

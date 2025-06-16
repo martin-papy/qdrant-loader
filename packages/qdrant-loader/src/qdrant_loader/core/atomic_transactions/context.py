@@ -2,7 +2,8 @@
 Transaction context for building and executing atomic transactions.
 """
 
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from .enums import OperationType
 from .models import CompensationAction, DatabaseOperation, DistributedTransaction
@@ -25,7 +26,7 @@ class TransactionContext:
         self,
         operation_type: OperationType,
         entity_id: str,
-        operation_data: Optional[Dict[str, Any]] = None,
+        operation_data: dict[str, Any] | None = None,
     ) -> DatabaseOperation:
         """Add a QDrant operation to the transaction."""
         operation = DatabaseOperation(
@@ -41,7 +42,7 @@ class TransactionContext:
         self,
         operation_type: OperationType,
         entity_id: str,
-        operation_data: Optional[Dict[str, Any]] = None,
+        operation_data: dict[str, Any] | None = None,
     ) -> DatabaseOperation:
         """Add a Neo4j operation to the transaction."""
         operation = DatabaseOperation(
@@ -57,8 +58,8 @@ class TransactionContext:
         self,
         database: str,
         entity_id: str,
-        rollback_data: Dict[str, Any],
-        compensation_function: Optional[Callable] = None,
+        rollback_data: dict[str, Any],
+        compensation_function: Callable | None = None,
     ) -> CompensationAction:
         """Add a compensation action for rollback."""
         action = CompensationAction(

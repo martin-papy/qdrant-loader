@@ -8,10 +8,10 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
-from ..sync import DatabaseType
 from ..managers import IDMapping
+from ..sync import DatabaseType
 
 
 class ConflictType(Enum):
@@ -55,8 +55,8 @@ class EntityVersion:
     database_type: DatabaseType
     version_number: int = 1
     last_modified: datetime = field(default_factory=lambda: datetime.now(UTC))
-    checksum: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    checksum: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def increment_version(self) -> None:
         """Increment the version number and update timestamp."""
@@ -69,7 +69,7 @@ class EntityVersion:
             return self.version_number > other.version_number
         return self.last_modified > other.last_modified
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage."""
         return {
             "entity_id": self.entity_id,
@@ -81,7 +81,7 @@ class EntityVersion:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "EntityVersion":
+    def from_dict(cls, data: dict[str, Any]) -> "EntityVersion":
         """Create from dictionary."""
         return cls(
             entity_id=data["entity_id"],
@@ -99,25 +99,25 @@ class ConflictRecord:
 
     conflict_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     conflict_type: ConflictType = ConflictType.VERSION_CONFLICT
-    entity_mapping: Optional[IDMapping] = None
-    source_version: Optional[EntityVersion] = None
-    target_version: Optional[EntityVersion] = None
-    source_data: Optional[Dict[str, Any]] = None
-    target_data: Optional[Dict[str, Any]] = None
+    entity_mapping: IDMapping | None = None
+    source_version: EntityVersion | None = None
+    target_version: EntityVersion | None = None
+    source_data: dict[str, Any] | None = None
+    target_data: dict[str, Any] | None = None
 
     # Conflict metadata
     detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    resolution_strategy: Optional[ConflictResolutionStrategy] = None
+    resolution_strategy: ConflictResolutionStrategy | None = None
     status: ConflictStatus = ConflictStatus.DETECTED
     resolution_attempts: int = 0
     max_resolution_attempts: int = 3
 
     # Resolution tracking
-    resolved_at: Optional[datetime] = None
-    resolved_by: Optional[str] = None  # System or user ID
-    resolution_data: Optional[Dict[str, Any]] = None
-    resolution_notes: Optional[str] = None
-    error_message: Optional[str] = None
+    resolved_at: datetime | None = None
+    resolved_by: str | None = None  # System or user ID
+    resolution_data: dict[str, Any] | None = None
+    resolution_notes: str | None = None
+    error_message: str | None = None
 
     def mark_resolving(self, strategy: ConflictResolutionStrategy) -> None:
         """Mark conflict as being resolved."""
@@ -128,8 +128,8 @@ class ConflictRecord:
     def mark_resolved(
         self,
         resolved_by: str,
-        resolution_data: Optional[Dict[str, Any]] = None,
-        notes: Optional[str] = None,
+        resolution_data: dict[str, Any] | None = None,
+        notes: str | None = None,
     ) -> None:
         """Mark conflict as resolved."""
         self.status = ConflictStatus.RESOLVED
@@ -152,7 +152,7 @@ class ConflictRecord:
             == ConflictResolutionStrategy.MANUAL_INTERVENTION
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage."""
         return {
             "conflict_id": self.conflict_id,
@@ -193,8 +193,8 @@ class ConflictResolutionConfig:
     enable_auto_resolution: bool = True
     max_resolution_attempts: int = 3
     manual_review_threshold: int = 2
-    source_priority_database: Optional[DatabaseType] = None
-    custom_rules: Dict[str, Any] = field(default_factory=dict)
+    source_priority_database: DatabaseType | None = None
+    custom_rules: dict[str, Any] = field(default_factory=dict)
     enable_merge_strategy: bool = False
     conflict_retention_days: int = 30
     enable_conflict_logging: bool = True

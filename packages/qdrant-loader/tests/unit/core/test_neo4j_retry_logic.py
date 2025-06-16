@@ -17,6 +17,7 @@ from neo4j.exceptions import (
     SessionExpired,
     TransientError,
 )
+
 from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.managers.neo4j_manager import (
     Neo4jManager,

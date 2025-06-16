@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
 from qdrant_loader.config import Settings
 from qdrant_loader.core.text_processing.text_processor import (
     MAX_ENTITIES_TO_EXTRACT,

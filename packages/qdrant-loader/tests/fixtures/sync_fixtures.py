@@ -5,22 +5,24 @@ Provides database setup/teardown, mock configurations, and test data.
 """
 
 import asyncio
-import pytest
-import tempfile
 import shutil
+import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Dict, Any, AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from qdrant_loader.config import ConfigurationManager
-from qdrant_loader.core.managers.qdrant_manager import QdrantManager
-from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
 from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
-from qdrant_loader.core.sync.types import SyncOperationType, SyncOperationStatus
+from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
+from qdrant_loader.core.managers.qdrant_manager import QdrantManager
+from qdrant_loader.core.sync.types import SyncOperationStatus, SyncOperationType
 
 
 @pytest.fixture
-def sync_test_config() -> Dict[str, Any]:
+def sync_test_config() -> dict[str, Any]:
     """Provide test configuration for sync components."""
     return {
         "qdrant": {
@@ -97,8 +99,8 @@ async def mock_graphiti_manager() -> AsyncGenerator[AsyncMock, None]:
 
 @pytest.fixture
 async def test_database_setup(
-    sync_test_config: Dict[str, Any],
-) -> AsyncGenerator[Dict[str, Any], None]:
+    sync_test_config: dict[str, Any],
+) -> AsyncGenerator[dict[str, Any], None]:
     """Set up test databases and provide cleanup."""
     # Create temporary directories for test data
     temp_dir = Path(tempfile.mkdtemp(prefix="sync_test_"))
@@ -136,7 +138,7 @@ def cleanup_test_data():
 
 @pytest.fixture
 async def test_configuration_manager(
-    sync_test_config: Dict[str, Any],
+    sync_test_config: dict[str, Any],
 ) -> AsyncGenerator[ConfigurationManager, None]:
     """Provide test configuration manager."""
     # Create temporary config files
