@@ -33,6 +33,15 @@ from .processor import SyncOperationProcessor
 # Sync types and enums
 from .types import SyncOperationStatus, SyncOperationType
 
+# Conflict monitoring
+from .conflict_monitor import (
+    SyncConflictMonitor,
+    SyncMonitoringLevel,
+    ContentHashStatus,
+    ContentHashComparison,
+    SyncOperationMetrics,
+)
+
 __all__ = [
     # Base event system
     "ChangeEvent",
@@ -50,4 +59,10 @@ __all__ = [
     # Types
     "SyncOperationStatus",
     "SyncOperationType",
+    # Conflict monitoring
+    "SyncConflictMonitor",
+    "SyncMonitoringLevel",
+    "ContentHashStatus",
+    "ContentHashComparison",
+    "SyncOperationMetrics",
 ]
