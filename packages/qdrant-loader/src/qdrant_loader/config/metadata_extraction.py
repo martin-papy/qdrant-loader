@@ -670,7 +670,7 @@ class MetadataExtractionConfig(BaseConfig):
                     if hasattr(component_config, key):
                         setattr(component_config, key, value)
 
-    def to_base_config(self) -> "BaseMetadataExtractionConfig":
+    def to_base_config(self):
         """Convert to base metadata extraction config for compatibility."""
         from qdrant_loader.connectors.metadata.base import (
             MetadataExtractionConfig as BaseConfig,
