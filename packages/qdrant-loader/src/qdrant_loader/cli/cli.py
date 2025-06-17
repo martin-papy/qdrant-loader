@@ -553,7 +553,21 @@ async def ingest(
             logger.debug(" SIGINT received, cancelling all tasks...")
             stop_event.set()
 
-        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        # Setup signal handling - Windows doesn't support signal handlers in asyncio
+        try:
+            loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        except NotImplementedError:
+            # Windows doesn't support signal handlers in ProactorEventLoop
+            # Use a different approach for graceful shutdown on Windows
+            import threading
+
+            def _signal_handler(signum, frame):
+                logger = LoggingConfig.get_logger(__name__)
+                logger.debug(" SIGINT received on Windows, cancelling all tasks...")
+                # Schedule the stop event to be set in the event loop
+                loop.call_soon_threadsafe(stop_event.set)
+
+            signal.signal(signal.SIGINT, _signal_handler)
 
         try:
             if profile:

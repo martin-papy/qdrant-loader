@@ -50,9 +50,17 @@ class CleanFileHandler(logging.FileHandler):
             msg = self.format(record)
             # Strip ANSI escape sequences
             clean_msg = self.ANSI_ESCAPE.sub("", msg)
-            # Write the clean message
+            # Write the clean message with proper encoding handling for Windows
             stream = self.stream
-            stream.write(clean_msg + self.terminator)
+            try:
+                stream.write(clean_msg + self.terminator)
+            except UnicodeEncodeError:
+                # Fallback for Windows console encoding issues
+                # Encode as UTF-8 and replace unsupported characters
+                safe_msg = clean_msg.encode("utf-8", errors="replace").decode(
+                    "utf-8", errors="replace"
+                )
+                stream.write(safe_msg + self.terminator)
             self.flush()
         except Exception:
             self.handleError(record)
@@ -245,7 +253,18 @@ class LoggingConfig:
         # Create a list of handlers
         handlers = []
 
-        # Add console handler
+        # Add console handler with Windows encoding support
+        import sys
+
+        # Use a custom stream for Windows console encoding support
+        if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+            try:
+                # Try to reconfigure stdout to use UTF-8 encoding on Windows
+                sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError):
+                # Fallback if reconfigure is not available or fails
+                pass
+
         console_handler = logging.StreamHandler()
 
         if clean_output and format == "console":
