@@ -28,6 +28,12 @@
 #    - Legacy single-project configurations are no longer supported
 #    - Convert by wrapping existing sources in a project structure
 #    - Move global settings to connectivity.yaml and fine-tuning.yaml
+#
+# 6. Enhanced Metadata Extraction:
+#    - Set enable_enhanced_metadata: true to extract rich metadata for knowledge graphs
+#    - Extracts relationships, cross-references, author information, and timestamps
+#    - Requires additional processing time but enables advanced graph features
+#    - Works with Graphiti knowledge graph integration when enabled
 
 # Multi-project configuration
 # Define multiple projects, each with their own sources and settings
@@ -90,6 +96,11 @@ projects:
           # Download and process attachments
           download_attachments: true
 
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts web document metadata, author information, publication timestamps,
+          # navigation hierarchy, cross-references, and source-specific metadata
+          enable_enhanced_metadata: false  # Set to true to enable enhanced metadata extraction
+
       # Git repository sources
       git:
         # Example configuration for a documentation repository
@@ -113,6 +124,11 @@ projects:
           # File conversion settings for this source
           # Enable file conversion for this connector
           enable_file_conversion: true
+
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts commit metadata, author information, file relationships,
+          # cross-references, branch information, and repository metadata
+          enable_enhanced_metadata: false  # Set to true to enable enhanced metadata extraction
 
   # Example project: Code Repository
   code-project:
@@ -148,6 +164,11 @@ projects:
           # Enable file conversion for this connector
           enable_file_conversion: true
 
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts commit metadata, author information, file relationships,
+          # cross-references, branch information, and repository metadata
+          enable_enhanced_metadata: true  # Enable for code repositories to track development relationships
+
   # Example project: Knowledge Base
   kb-project:
     project_id: "kb-project"
@@ -176,6 +197,11 @@ projects:
           # Download and process attachments
           download_attachments: true
 
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts page metadata, author information, parent/child relationships,
+          # cross-references, space relationships, and content hierarchy
+          enable_enhanced_metadata: true  # Enable for Confluence to track page relationships
+
         # Example configuration for Confluence Datacenter/Server
         company-wiki-datacenter:
           base_url: "https://confluence.mycompany.com"  # Confluence Datacenter/Server URL
@@ -199,6 +225,11 @@ projects:
           # Download and process attachments
           download_attachments: true
 
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts page metadata, author information, parent/child relationships,
+          # cross-references, space relationships, and content hierarchy
+          enable_enhanced_metadata: true  # Enable for Confluence to track page relationships
+
       # JIRA issue tracking sources
       jira:
         # Example configuration for Jira Cloud
@@ -208,16 +239,18 @@ projects:
           project_key: "${JIRA_PROJECT_KEY}"        # Project to process
           requests_per_minute: 60                   # Rate limit for API calls
           page_size: 50                            # Number of issues per API request
-          process_attachments: true                 # Whether to process issue attachments
-          track_last_sync: true                    # Track last sync time for incremental updates
+          download_attachments: true                # Whether to download and process issue attachments
           token: "${JIRA_TOKEN}"                    # Jira API token (from id.atlassian.com)
           email: "${JIRA_EMAIL}"                    # Jira user email
 
           # File conversion settings for this source
           # Enable file conversion for this connector
           enable_file_conversion: true
-          # Download and process attachments
-          download_attachments: true
+
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts issue metadata, reporter/assignee information, project relationships,
+          # issue links, component associations, and epic relationships
+          enable_enhanced_metadata: true  # Enable for JIRA to track issue relationships
 
         # Example configuration for Jira Datacenter/Server
         support-project-datacenter:
@@ -226,8 +259,7 @@ projects:
           project_key: "${JIRA_DC_PROJECT_KEY}"     # Project to process
           requests_per_minute: 120                  # Rate limit for API calls (typically higher for on-premise)
           page_size: 100                           # Number of issues per API request
-          process_attachments: true                 # Whether to process issue attachments
-          track_last_sync: true                    # Track last sync time for incremental updates
+          download_attachments: true                # Whether to download and process issue attachments
           
           # For Datacenter/Server, use Personal Access Token (PAT) only
           token: "${JIRA_DC_TOKEN}"                 # Personal Access Token (required for Datacenter/Server)
@@ -246,8 +278,11 @@ projects:
           # File conversion settings for this source
           # Enable file conversion for this connector
           enable_file_conversion: true
-          # Download and process attachments
-          download_attachments: true
+
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts issue metadata, reporter/assignee information, project relationships,
+          # issue links, component associations, and epic relationships
+          enable_enhanced_metadata: true  # Enable for JIRA to track issue relationships
 
   # Example project: Local Files
   local-project:
@@ -277,4 +312,9 @@ projects:
 
           # File conversion settings for this source
           # Enable file conversion for this connector
-          enable_file_conversion: true 
+          enable_file_conversion: true
+
+          # Enhanced metadata extraction for knowledge graphs
+          # Extracts file system metadata, directory hierarchy relationships,
+          # cross-references, file attributes, and content analysis
+          enable_enhanced_metadata: false  # Set to true to enable enhanced metadata extraction 

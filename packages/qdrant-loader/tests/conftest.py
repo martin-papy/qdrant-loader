@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from dotenv import load_dotenv
+from qdrant_client.http import models
 
 # Add the src directory to Python path for imports
 
@@ -124,28 +126,57 @@ def qdrant_client(test_global_config):
     from qdrant_client import QdrantClient
 
     client = QdrantClient(
-        url=os.getenv("QDRANT_URL"), api_key=os.getenv("QDRANT_API_KEY")
+        url=test_global_config.qdrant.url, api_key=test_global_config.qdrant.api_key
     )
     yield client
     # Cleanup: Delete test collection after tests
-    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    collection_name = test_global_config.qdrant.collection_name
     if collection_name:
-        client.delete_collection(collection_name)
+        try:
+            client.delete_collection(collection_name)
+        except Exception:
+            pass
+
+
+@pytest_asyncio.fixture(scope="function")
+async def neo4j_driver(test_global_config):
+    """Create and return a Neo4j driver for testing."""
+    from neo4j import AsyncGraphDatabase
+
+    uri = test_global_config.neo4j.uri
+    user = test_global_config.neo4j.user
+    password = test_global_config.neo4j.password
+    driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+    yield driver
+    await driver.close()
 
 
 @pytest.fixture(scope="function")
-def clean_collection(qdrant_client):
+def clean_collection(qdrant_client, test_global_config):
     """Ensure the test collection is empty before each test."""
-    collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+    collection_name = test_global_config.qdrant.collection_name
+    vector_size = test_global_config.embedding.vector_size or 1536
+
     if collection_name:
-        qdrant_client.delete_collection(collection_name)
+        try:
+            qdrant_client.delete_collection(collection_name=collection_name)
+        except Exception:
+            # Ignore errors if collection doesn't exist
+            pass
+
         qdrant_client.create_collection(
             collection_name=collection_name,
-            vectors_config={
-                "size": 1536,
-                "distance": "Cosine",
-            },  # OpenAI embedding size
+            vectors_config=models.VectorParams(
+                size=vector_size, distance=models.Distance.COSINE
+            ),
         )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def clean_neo4j(neo4j_driver):
+    """Ensure the Neo4j database is empty before each test."""
+    async with neo4j_driver.session() as session:
+        await session.run("MATCH (n) DETACH DELETE n")
 
 
 @pytest.fixture(scope="session")

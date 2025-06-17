@@ -6,7 +6,7 @@ This guide helps you diagnose and resolve connection issues with QDrant Loader, 
 
 ### Quick Diagnosis
 
-```
+```text
 🔌 Can't connect to QDrant      → See [QDrant Connection Issues](#qdrant-connection-issues)
 🔑 Authentication failures      → See [Authentication Problems](#authentication-problems)
 🌐 Network timeouts            → See [Network Issues](#network-issues)

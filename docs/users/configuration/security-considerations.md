@@ -8,7 +8,7 @@ QDrant Loader handles sensitive data including API keys, documents, and search q
 
 ### Security Areas
 
-```
+```text
 🔐 Credential Management - API keys and tokens
 🌐 Network Security     - HTTPS connections
 📊 Data Protection     - Secure data handling
@@ -181,7 +181,7 @@ QDrant Loader processes documents with the following security considerations:
 
 ### Data Flow Security
 
-```
+```text
 Local Files → Memory → OpenAI API → QDrant Database
      ↓              ↓         ↓           ↓
   File System   Temporary   External    Vector DB

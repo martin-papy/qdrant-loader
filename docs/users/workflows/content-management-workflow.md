@@ -8,7 +8,7 @@ The content management workflow focuses on creating efficient processes for cont
 
 ### Workflow Benefits
 
-```
+```text
 📝 Streamlined Publishing  - Efficient content creation to publication
 🔍 Quality Control        - Automated review and validation processes
 🔄 Content Synchronization - Multi-source content coordination
@@ -48,7 +48,7 @@ graph TD
 
 ### Content Sources
 
-```
+```text
 📚 Documentation Sites   - Static site generators, public docs
 🏢 Enterprise CMS       - Confluence, JIRA
 📁 File Systems         - Markdown, Word docs, PDFs

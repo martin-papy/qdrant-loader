@@ -46,6 +46,12 @@ class ConfluenceSpaceConfig(SourceConfig):
         default=[], description="List of labels to exclude"
     )
 
+    # Metadata extraction
+    enable_enhanced_metadata: bool = Field(
+        default=False,
+        description="Enable enhanced metadata extraction including page metadata, author information, parent/child relationships, and cross-references",
+    )
+
     @field_validator("content_types")
     @classmethod
     def validate_content_types(cls, v: list[str]) -> list[str]:

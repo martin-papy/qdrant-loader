@@ -1,0 +1,400 @@
+# SharePoint Connector Configuration Template
+# This template provides comprehensive configuration options for the SharePoint connector
+
+# =============================================================================
+# SharePoint Global Configuration
+# =============================================================================
+sharepoint:
+  # Enable/disable SharePoint connector globally
+  enabled: true
+  
+  # Default authentication method for all SharePoint sources
+  # Options: oauth, service_principal, certificate, ntlm
+  default_auth_method: "service_principal"
+  
+  # Global rate limiting settings (applied to all SharePoint sources)
+  global_rate_limiting:
+    requests_per_minute: 600
+    requests_per_hour: 10000
+    burst_limit: 10
+    backoff_factor: 2.0
+    max_backoff_seconds: 300
+  
+  # Global performance settings
+  performance:
+    max_concurrent_sources: 3
+    max_concurrent_sites_per_source: 5
+    batch_size: 100
+    request_timeout_seconds: 30
+    max_retries: 3
+  
+  # Global content processing defaults
+  content_defaults:
+    max_file_size_mb: 100
+    supported_file_types:
+      - "docx"
+      - "xlsx" 
+      - "pptx"
+      - "pdf"
+      - "txt"
+      - "md"
+      - "html"
+      - "xml"
+      - "json"
+    enable_file_conversion: true
+    download_attachments: true
+  
+  # Monitoring and logging
+  monitoring:
+    enable_metrics: true
+    enable_performance_tracking: true
+    log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+    metrics_export_interval_seconds: 300
+    
+  # Security settings
+  security:
+    validate_certificates: true
+    enable_request_signing: false
+    mask_sensitive_data_in_logs: true
+
+# =============================================================================
+# SharePoint Sources Configuration
+# =============================================================================
+sources:
+  sharepoint:
+    # --------------------------------------------------------------------------
+    # SharePoint Online - Tenant-wide Discovery
+    # --------------------------------------------------------------------------
+    - source_type: "sharepoint"
+      source: "company-tenant"
+      base_url: "https://company.sharepoint.com"
+      
+      # Authentication Configuration
+      auth_method: "service_principal"
+      tenant_id: "${SHAREPOINT_TENANT_ID}"
+      client_id: "${SHAREPOINT_CLIENT_ID}"
+      client_secret: "${SHAREPOINT_CLIENT_SECRET}"
+      
+      # Discovery Configuration
+      discovery_scope: "tenant"  # tenant, site_collection, specific_sites
+      include_subsites: true
+      max_sites: 1000
+      
+      # Site filtering (optional)
+      site_filters:
+        # Include only sites matching these patterns
+        include_patterns:
+          - "*/sites/engineering/*"
+          - "*/sites/product/*"
+          - "*/sites/documentation/*"
+        # Exclude sites matching these patterns
+        exclude_patterns:
+          - "*/sites/archive/*"
+          - "*/sites/temp/*"
+          - "*/personal/*"  # OneDrive personal sites
+      
+      # Content Processing
+      include_document_libraries: true
+      include_lists: true
+      include_pages: true
+      include_attachments: true
+      
+      # File processing overrides
+      max_file_size_mb: 50
+      supported_file_types: ["docx", "xlsx", "pptx", "pdf", "md"]
+      
+      # Advanced features
+      enable_file_conversion: true
+      download_attachments: true
+      enable_enhanced_metadata: true
+      enable_analytics_extraction: false
+      enable_permission_tracking: true
+      enable_taxonomy_extraction: true
+      
+      # Incremental sync
+      enable_incremental_sync: true
+      change_log_retention_days: 30
+      sync_frequency: "daily"  # hourly, daily, weekly
+      
+      # Performance tuning for this source
+      max_concurrent_requests: 5
+      rate_limit_rpm: 300  # Override global setting
+      
+    # --------------------------------------------------------------------------
+    # SharePoint Online - Specific Site Collections
+    # --------------------------------------------------------------------------
+    - source_type: "sharepoint"
+      source: "engineering-sites"
+      base_url: "https://company.sharepoint.com"
+      
+      # Same authentication as above
+      auth_method: "service_principal"
+      tenant_id: "${SHAREPOINT_TENANT_ID}"
+      client_id: "${SHAREPOINT_CLIENT_ID}"
+      client_secret: "${SHAREPOINT_CLIENT_SECRET}"
+      
+      # Target specific site collections
+      discovery_scope: "site_collection"
+      site_collections:
+        - "https://company.sharepoint.com/sites/engineering"
+        - "https://company.sharepoint.com/sites/architecture"
+        - "https://company.sharepoint.com/sites/devops"
+      include_subsites: true
+      
+      # Content focus
+      include_document_libraries: true
+      include_pages: true
+      include_lists: false  # Skip lists for engineering sites
+      
+      # Enhanced processing for code documentation
+      enable_file_conversion: true
+      supported_file_types: ["md", "txt", "docx", "pdf", "json", "xml"]
+      enable_enhanced_metadata: true
+      
+    # --------------------------------------------------------------------------
+    # SharePoint Online - High-Value Specific Sites
+    # --------------------------------------------------------------------------
+    - source_type: "sharepoint"
+      source: "knowledge-base"
+      base_url: "https://company.sharepoint.com"
+      
+      auth_method: "service_principal"
+      tenant_id: "${SHAREPOINT_TENANT_ID}"
+      client_id: "${SHAREPOINT_CLIENT_ID}"
+      client_secret: "${SHAREPOINT_CLIENT_SECRET}"
+      
+      # Target specific high-value sites
+      discovery_scope: "specific_sites"
+      specific_sites:
+        - "https://company.sharepoint.com/sites/knowledge-base"
+        - "https://company.sharepoint.com/sites/best-practices"
+        - "https://company.sharepoint.com/sites/standards"
+        - "https://company.sharepoint.com/sites/training"
+      
+      # Comprehensive content processing
+      include_document_libraries: true
+      include_pages: true
+      include_lists: true
+      include_attachments: true
+      
+      # Premium features enabled
+      enable_enhanced_metadata: true
+      enable_analytics_extraction: true
+      enable_permission_tracking: true
+      enable_taxonomy_extraction: true
+      
+      # Higher quality processing
+      max_file_size_mb: 200
+      enable_file_conversion: true
+      download_attachments: true
+      
+      # More frequent sync for knowledge base
+      enable_incremental_sync: true
+      sync_frequency: "hourly"
+      
+    # --------------------------------------------------------------------------
+    # SharePoint Server (On-Premises) - NTLM Authentication
+    # --------------------------------------------------------------------------
+    - source_type: "sharepoint"
+      source: "on-premises-sharepoint"
+      base_url: "https://sharepoint.company.internal"
+      
+      # NTLM Authentication for on-premises
+      auth_method: "ntlm"
+      domain: "${SHAREPOINT_DOMAIN}"
+      username: "${SHAREPOINT_USERNAME}"
+      password: "${SHAREPOINT_PASSWORD}"
+      
+      # Discovery
+      discovery_scope: "site_collection"
+      site_collections:
+        - "https://sharepoint.company.internal/sites/legacy-docs"
+        - "https://sharepoint.company.internal/sites/policies"
+      
+      # Basic content processing
+      include_document_libraries: true
+      include_pages: true
+      include_lists: false
+      
+      # Conservative settings for on-premises
+      max_concurrent_requests: 2
+      rate_limit_rpm: 120
+      max_file_size_mb: 25
+      enable_incremental_sync: false  # Full sync only
+      
+    # --------------------------------------------------------------------------
+    # SharePoint Online - Certificate Authentication (High Security)
+    # --------------------------------------------------------------------------
+    - source_type: "sharepoint"
+      source: "secure-sharepoint"
+      base_url: "https://company.sharepoint.com"
+      
+      # Certificate-based authentication
+      auth_method: "certificate"
+      tenant_id: "${SHAREPOINT_TENANT_ID}"
+      client_id: "${SHAREPOINT_CLIENT_ID}"
+      certificate_path: "${SHAREPOINT_CERT_PATH}"
+      certificate_password: "${SHAREPOINT_CERT_PASSWORD}"
+      
+      # High-security sites
+      discovery_scope: "specific_sites"
+      specific_sites:
+        - "https://company.sharepoint.com/sites/security"
+        - "https://company.sharepoint.com/sites/compliance"
+        - "https://company.sharepoint.com/sites/legal"
+      
+      # Security-focused processing
+      include_document_libraries: true
+      include_pages: true
+      include_lists: true
+      enable_permission_tracking: true
+      enable_enhanced_metadata: true
+      
+      # Conservative processing for sensitive content
+      max_file_size_mb: 50
+      max_concurrent_requests: 2
+      rate_limit_rpm: 100
+
+# =============================================================================
+# Environment Variables Template
+# =============================================================================
+# Copy these to your .env file and fill in the actual values
+
+# SharePoint Online Service Principal Authentication
+# SHAREPOINT_TENANT_ID=your-tenant-id-here
+# SHAREPOINT_CLIENT_ID=your-app-registration-client-id
+# SHAREPOINT_CLIENT_SECRET=your-client-secret-here
+
+# SharePoint Certificate Authentication (Alternative)
+# SHAREPOINT_CERT_PATH=/path/to/your/certificate.pfx
+# SHAREPOINT_CERT_PASSWORD=your-certificate-password
+
+# SharePoint Server (On-Premises) Authentication
+# SHAREPOINT_DOMAIN=YOURDOMAIN
+# SHAREPOINT_USERNAME=serviceaccount
+# SHAREPOINT_PASSWORD=servicepassword
+
+# Performance Tuning (Optional Overrides)
+# SHAREPOINT_RATE_LIMIT_RPM=600
+# SHAREPOINT_RATE_LIMIT_RPH=10000
+# SHAREPOINT_MAX_CONCURRENT=5
+# SHAREPOINT_REQUEST_TIMEOUT=30
+
+# Monitoring and Debugging
+# SHAREPOINT_LOG_LEVEL=INFO
+# SHAREPOINT_ENABLE_METRICS=true
+# SHAREPOINT_ENABLE_DEBUG=false
+
+# =============================================================================
+# Advanced Configuration Examples
+# =============================================================================
+
+# Example: Multi-tenant configuration
+# sources:
+#   sharepoint:
+#     # Tenant A
+#     - source: "tenant-a"
+#       base_url: "https://tenanta.sharepoint.com"
+#       tenant_id: "${SHAREPOINT_TENANT_A_ID}"
+#       client_id: "${SHAREPOINT_CLIENT_A_ID}"
+#       client_secret: "${SHAREPOINT_CLIENT_A_SECRET}"
+#       
+#     # Tenant B  
+#     - source: "tenant-b"
+#       base_url: "https://tenantb.sharepoint.com"
+#       tenant_id: "${SHAREPOINT_TENANT_B_ID}"
+#       client_id: "${SHAREPOINT_CLIENT_B_ID}"
+#       client_secret: "${SHAREPOINT_CLIENT_B_SECRET}"
+
+# Example: Department-specific configuration
+# sources:
+#   sharepoint:
+#     # Engineering Department
+#     - source: "engineering"
+#       discovery_scope: "specific_sites"
+#       specific_sites:
+#         - "*/sites/engineering*"
+#         - "*/sites/development*"
+#       supported_file_types: ["md", "py", "js", "json", "yaml"]
+#       
+#     # Marketing Department
+#     - source: "marketing"
+#       discovery_scope: "specific_sites"
+#       specific_sites:
+#         - "*/sites/marketing*"
+#         - "*/sites/brand*"
+#       supported_file_types: ["docx", "pptx", "pdf", "jpg", "png"]
+
+# Example: Content type-specific configuration
+# sources:
+#   sharepoint:
+#     # Documentation Only
+#     - source: "documentation"
+#       include_document_libraries: true
+#       include_pages: true
+#       include_lists: false
+#       supported_file_types: ["md", "docx", "pdf"]
+#       
+#     # Data and Reports Only
+#     - source: "data-reports"
+#       include_document_libraries: true
+#       include_pages: false
+#       include_lists: true
+#       supported_file_types: ["xlsx", "csv", "json", "xml"]
+
+# =============================================================================
+# Validation and Testing Configuration
+# =============================================================================
+
+# Test configuration for development/staging
+# test_sharepoint:
+#   enabled: true
+#   
+#   # Test environment settings
+#   sources:
+#     sharepoint:
+#       - source: "test-sharepoint"
+#         base_url: "${TEST_SHAREPOINT_URL}"
+#         auth_method: "service_principal"
+#         tenant_id: "${TEST_SHAREPOINT_TENANT_ID}"
+#         client_id: "${TEST_SHAREPOINT_CLIENT_ID}"
+#         client_secret: "${TEST_SHAREPOINT_CLIENT_SECRET}"
+#         
+#         # Limited scope for testing
+#         discovery_scope: "specific_sites"
+#         specific_sites:
+#           - "${TEST_SHAREPOINT_SITE_URL}"
+#         
+#         # Conservative settings for testing
+#         max_sites: 5
+#         max_file_size_mb: 10
+#         max_concurrent_requests: 2
+#         rate_limit_rpm: 60
+
+# =============================================================================
+# Configuration Validation Notes
+# =============================================================================
+
+# Required Environment Variables:
+# - At least one authentication method must be configured
+# - For service_principal: SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CLIENT_SECRET
+# - For certificate: SHAREPOINT_TENANT_ID, SHAREPOINT_CLIENT_ID, SHAREPOINT_CERT_PATH
+# - For ntlm: SHAREPOINT_DOMAIN, SHAREPOINT_USERNAME, SHAREPOINT_PASSWORD
+
+# Performance Recommendations:
+# - Start with conservative rate limits and increase based on monitoring
+# - Use specific_sites for initial testing, expand to site_collection/tenant later
+# - Enable incremental_sync for large deployments
+# - Monitor memory usage with large file processing
+
+# Security Best Practices:
+# - Use service principal or certificate authentication for production
+# - Enable permission tracking for compliance requirements
+# - Set appropriate file size limits to prevent resource exhaustion
+# - Use environment variables for all sensitive configuration
+
+# Troubleshooting:
+# - Set SHAREPOINT_LOG_LEVEL=DEBUG for detailed logging
+# - Start with small site collections to validate configuration
+# - Monitor rate limiting and adjust limits as needed
+# - Check authentication tokens are not expired 

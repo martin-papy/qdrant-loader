@@ -251,10 +251,24 @@ jobs:
         if: always()
         with:
           name: coverage-website-${{ github.run_id }}
-          path: |
-            htmlcov-website
-            coverage-website.xml
-          retention-days: 30
+          path: coverage-artifacts/website
+
+      - name: Install tree
+        run: sudo apt-get install -y tree
+
+      - name: Display structure of downloaded files
+        run: tree
+
+      - name: Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: martin-papy/qdrant-loader
+          directory: ./coverage-artifacts/
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test-summary:
     name: Test Summary
@@ -304,3 +318,45 @@ jobs:
           name: test-status-${{ github.run_id }}
           path: test-results/
           retention-days: 30
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [test-loader, test-mcp-server, test-website]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download loader coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-loader-${{ github.run_id }}
+          path: coverage-artifacts/loader
+
+      - name: Download MCP server coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-mcp-${{ github.run_id }}
+          path: coverage-artifacts/mcp
+
+      - name: Download website coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-website-${{ github.run_id }}
+          path: coverage-artifacts/website
+
+      - name: Install tree
+        run: sudo apt-get install -y tree
+
+      - name: Display structure of downloaded files
+        run: tree
+
+      - name: Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage-artifacts/
+          slug: martin-papy/qdrant-loader
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

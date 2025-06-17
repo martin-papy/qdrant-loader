@@ -38,6 +38,12 @@ class GitRepoConfig(SourceConfig):
         None, description="Temporary directory where the repository is cloned"
     )
 
+    # Metadata extraction
+    enable_enhanced_metadata: bool = Field(
+        default=False,
+        description="Enable enhanced metadata extraction including commit metadata, author information, file relationships, and cross-references",
+    )
+
     @field_validator("base_url")
     @classmethod
     def validate_url(cls, v: str) -> str:
