@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 0.4.8 - June 17, 2025
+
+### 🪟 Windows Compatibility Fixes
+
+- **LocalFile Connector**: Fixed Windows file URL parsing (`file:///C:/Users/...` now works correctly)
+- **Git Connector**: Fixed document URL generation with Windows paths (backslashes → forward slashes)
+- **File Conversion**: Cross-platform timeout handling (threading on Windows, signals on Unix)
+- **Console Output**: Enhanced emoji handling for clean Windows display
+- **Logging**: Suppressed verbose SQLite logs for cleaner output
+- **Testing**: Added 33 Windows compatibility test cases
+
 ## Version 0.4.7 - June 9, 2025
 
 ### 🧹 Test Suite Improvements
