@@ -7,6 +7,12 @@ import warnings
 from contextlib import contextmanager
 from pathlib import Path
 
+# Windows compatibility fix: Monkey patch signal module for MarkItDown
+if sys.platform == "win32" and not hasattr(signal, "SIGALRM"):
+    # MarkItDown tries to use SIGALRM on Windows, so we provide a dummy
+    signal.SIGALRM = 14  # Standard SIGALRM signal number on Unix
+    signal.alarm = lambda _: None  # No-op function for Windows
+
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.file_conversion.exceptions import (
     ConversionTimeoutError,

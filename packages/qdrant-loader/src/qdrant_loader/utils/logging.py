@@ -200,10 +200,30 @@ class CleanFormatter(logging.Formatter):
             if match:
                 timestamp = match.group(1)
                 rest_of_message = match.group(2)
-                return f"{timestamp} [{record.levelname}] {rest_of_message}"
+
+                # Check if the rest_of_message already contains a level tag
+                # This can happen when CustomConsoleRenderer already formatted it
+                level_in_message_pattern = (
+                    r"^\[(?:DEBUG|INFO|WARNING|ERROR|CRITICAL)\]\s"
+                )
+                if re.match(level_in_message_pattern, rest_of_message):
+                    # Level already present, don't add another one
+                    return f"{timestamp} {rest_of_message}"
+                else:
+                    # Add level tag
+                    return f"{timestamp} [{record.levelname}] {rest_of_message}"
             else:
-                # No timestamp found, just add level name
-                return f"[{record.levelname}] {message}"
+                # No timestamp found
+                # Check if message already has a level tag at the beginning
+                level_in_message_pattern = (
+                    r"^\[(?:DEBUG|INFO|WARNING|ERROR|CRITICAL)\]\s"
+                )
+                if re.match(level_in_message_pattern, message):
+                    # Level already present, don't add another one
+                    return message
+                else:
+                    # Add level tag
+                    return f"[{record.levelname}] {message}"
 
 
 class FileRenderer:
