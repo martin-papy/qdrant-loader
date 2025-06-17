@@ -33,6 +33,9 @@ from .processor import SyncOperationProcessor
 # Sync types and enums
 from .types import SyncOperationStatus, SyncOperationType
 
+# Validation integration
+from .validation_integration import ValidationIntegrationManager
+
 __all__ = [
     # Base event system
     "ChangeEvent",
@@ -50,4 +53,6 @@ __all__ = [
     # Types
     "SyncOperationStatus",
     "SyncOperationType",
+    # Validation integration
+    "ValidationIntegrationManager",
 ]

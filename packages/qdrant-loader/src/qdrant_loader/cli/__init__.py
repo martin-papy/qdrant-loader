@@ -24,7 +24,8 @@ def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI - A comprehensive tool for loading data into QDrant vector database.
 
     This CLI provides commands for configuration management, data ingestion,
-    project management, migration operations, and data export functionality.
+    project management, migration operations, data export functionality,
+    and validation/repair operations for data consistency management.
 
     Use 'qdrant-loader COMMAND --help' for detailed help on any command.
     """
@@ -50,6 +51,7 @@ def create_cli():
     from .ingest_commands import ingest_command, ingest_group, init_command
     from .migrate_commands import migrate_config_command, migrate_group
     from .project_commands import project_group
+    from .validation_commands import validate_command, validation_group
 
     # Add all command groups to the main CLI
     cli.add_command(config_group)
@@ -57,6 +59,7 @@ def create_cli():
     cli.add_command(migrate_group)
     cli.add_command(export_group)
     cli.add_command(project_group)
+    cli.add_command(validation_group)
 
     # Add backward compatibility commands directly to the main CLI
     # These maintain the original command structure for existing users
@@ -65,6 +68,7 @@ def create_cli():
     cli.add_command(init_command)
     cli.add_command(migrate_config_command)
     cli.add_command(export_config_command)
+    cli.add_command(validate_command)
 
     return cli
 

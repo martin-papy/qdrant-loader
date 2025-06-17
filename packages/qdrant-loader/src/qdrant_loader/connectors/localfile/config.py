@@ -23,6 +23,12 @@ class LocalFileConfig(SourceConfig):
         default=1048576, description="Maximum file size in bytes"
     )
 
+    # Metadata extraction
+    enable_enhanced_metadata: bool = Field(
+        default=False,
+        description="Enable enhanced metadata extraction including file system attributes, directory hierarchy, and content cross-references",
+    )
+
     @field_validator("base_url")
     @classmethod
     def validate_base_url(cls, v: AnyUrl) -> AnyUrl:

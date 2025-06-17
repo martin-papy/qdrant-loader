@@ -21,6 +21,7 @@ from ..atomic_transactions import AtomicTransactionManager
 from .handlers import SyncOperationHandlers
 from .operations import EnhancedSyncOperation
 from .types import SyncOperationStatus, SyncOperationType
+from .validation_integration import ValidationIntegrationManager
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -40,6 +41,7 @@ class SyncOperationProcessor:
         operation_timeout_seconds: int = 300,
         enable_operation_differentiation: bool = True,
         enable_graphiti_temporal_features: bool = True,
+        validation_integration_manager: Optional[ValidationIntegrationManager] = None,
     ):
         """Initialize the operation processor.
 
@@ -52,6 +54,7 @@ class SyncOperationProcessor:
             operation_timeout_seconds: Timeout for sync operations
             enable_operation_differentiation: Whether to enable intelligent operation differentiation
             enable_graphiti_temporal_features: Whether to enable Graphiti temporal features
+            validation_integration_manager: Optional validation integration manager
         """
         self.atomic_transaction_manager = atomic_transaction_manager
         self.operation_handlers = operation_handlers
@@ -61,6 +64,7 @@ class SyncOperationProcessor:
         self.operation_timeout_seconds = operation_timeout_seconds
         self.enable_operation_differentiation = enable_operation_differentiation
         self.enable_graphiti_temporal_features = enable_graphiti_temporal_features
+        self.validation_integration_manager = validation_integration_manager
 
         # Operation handler mapping
         self._operation_handler_map = {
@@ -150,6 +154,19 @@ class SyncOperationProcessor:
             if stats:
                 stats["operations_processed"] += 1
                 self._update_operation_type_stats(stats, operation.operation_type)
+
+            # Trigger post-sync validation if enabled
+            if self.validation_integration_manager:
+                try:
+                    await self.validation_integration_manager.trigger_post_sync_validation(
+                        operation=operation,
+                        operation_success=True,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Post-sync validation failed for {operation_id}: {e}",
+                        exc_info=True,
+                    )
 
             logger.info(f"Completed operation {operation_id}")
 

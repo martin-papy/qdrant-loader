@@ -72,6 +72,27 @@ class JiraConnector(BaseConnector):
         if config.download_attachments:
             self.attachment_downloader = AttachmentDownloader(session=self.session)
 
+        # Initialize enhanced metadata extractor if enabled
+        self._enhanced_metadata_extractor = None
+        if config.enable_enhanced_metadata:
+            try:
+                # Lazy import to avoid circular dependencies
+                from qdrant_loader.connectors.metadata.base import (
+                    MetadataExtractionConfig,
+                )
+                from qdrant_loader.connectors.jira.relationship_extractor import (
+                    JiraRelationshipExtractor,
+                )
+
+                metadata_config = MetadataExtractionConfig()
+                self._enhanced_metadata_extractor = JiraRelationshipExtractor(
+                    config=metadata_config, jira_config=config
+                )
+                logger.debug("Enhanced metadata extraction enabled for JIRA connector")
+            except ImportError as e:
+                logger.warning(f"Could not import enhanced metadata extractor: {e}")
+                self._enhanced_metadata_extractor = None
+
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
         if self.config.deployment_type == JiraDeploymentType.CLOUD:
@@ -593,6 +614,160 @@ class JiraConnector(BaseConnector):
 
             content = "\n\n".join(content_parts)
 
+            # Build base metadata
+            base_metadata = {
+                "project": self.config.project_key,
+                "issue_type": issue.issue_type,
+                "status": issue.status,
+                "key": issue.key,
+                "priority": issue.priority,
+                "labels": issue.labels,
+                "reporter": issue.reporter.display_name if issue.reporter else None,
+                "assignee": issue.assignee.display_name if issue.assignee else None,
+                "created": issue.created.isoformat(),
+                "updated": issue.updated.isoformat(),
+                "parent_key": issue.parent_key,
+                "subtasks": issue.subtasks,
+                "linked_issues": issue.linked_issues,
+                "commentsf": [
+                    {
+                        "id": comment.id,
+                        "body": comment.body,
+                        "created": comment.created.isoformat(),
+                        "updated": (
+                            comment.updated.isoformat() if comment.updated else None
+                        ),
+                        "author": (
+                            comment.author.display_name if comment.author else None
+                        ),
+                    }
+                    for comment in issue.comments
+                ],
+                "attachmentsf": (
+                    [
+                        {
+                            "id": att.id,
+                            "filename": att.filename,
+                            "size": att.size,
+                            "mime_type": att.mime_type,
+                            "created": att.created.isoformat(),
+                            "author": (att.author.display_name if att.author else None),
+                        }
+                        for att in issue.attachments
+                    ]
+                    if issue.attachments
+                    else []
+                ),
+            }
+
+            # Extract enhanced metadata if enabled
+            if self._enhanced_metadata_extractor:
+                try:
+                    # Prepare context for enhanced metadata extraction
+                    context = {
+                        "issue_data": {
+                            "key": issue.key,
+                            "id": issue.id,
+                            "project_key": self.config.project_key,
+                            "issue_type": issue.issue_type,
+                            "status": issue.status,
+                            "priority": issue.priority,
+                            "labels": issue.labels,
+                            "reporter": {
+                                "display_name": (
+                                    issue.reporter.display_name
+                                    if issue.reporter
+                                    else None
+                                ),
+                                "account_id": (
+                                    issue.reporter.account_id
+                                    if issue.reporter
+                                    else None
+                                ),
+                            },
+                            "assignee": {
+                                "display_name": (
+                                    issue.assignee.display_name
+                                    if issue.assignee
+                                    else None
+                                ),
+                                "account_id": (
+                                    issue.assignee.account_id
+                                    if issue.assignee
+                                    else None
+                                ),
+                            },
+                            "created": issue.created,
+                            "updated": issue.updated,
+                            "parent_key": issue.parent_key,
+                            "subtasks": issue.subtasks,
+                            "linked_issues": issue.linked_issues,
+                            "comments": [
+                                {
+                                    "id": comment.id,
+                                    "body": comment.body,
+                                    "created": comment.created,
+                                    "updated": comment.updated,
+                                    "author": {
+                                        "display_name": (
+                                            comment.author.display_name
+                                            if comment.author
+                                            else None
+                                        ),
+                                        "account_id": (
+                                            comment.author.account_id
+                                            if comment.author
+                                            else None
+                                        ),
+                                    },
+                                }
+                                for comment in issue.comments
+                            ],
+                            "attachments": (
+                                [
+                                    {
+                                        "id": att.id,
+                                        "filename": att.filename,
+                                        "size": att.size,
+                                        "mime_type": att.mime_type,
+                                        "created": att.created,
+                                        "author": {
+                                            "display_name": (
+                                                att.author.display_name
+                                                if att.author
+                                                else None
+                                            ),
+                                            "account_id": (
+                                                att.author.account_id
+                                                if att.author
+                                                else None
+                                            ),
+                                        },
+                                    }
+                                    for att in issue.attachments
+                                ]
+                                if issue.attachments
+                                else []
+                            ),
+                        }
+                    }
+
+                    enhanced_metadata = (
+                        self._enhanced_metadata_extractor.extract_metadata(
+                            content, context
+                        )
+                    )
+                    if enhanced_metadata:
+                        base_metadata["enhanced_metadata"] = enhanced_metadata
+                        logger.debug(
+                            f"Extracted enhanced metadata for JIRA issue {issue.key}"
+                        )
+
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract enhanced metadata for JIRA issue {issue.key}: {e}"
+                    )
+
             base_url = str(self.config.base_url).rstrip("/")
             document = Document(
                 id=issue.id,
@@ -605,52 +780,7 @@ class JiraConnector(BaseConnector):
                 title=issue.summary,
                 updated_at=issue.updated,
                 is_deleted=False,
-                metadata={
-                    "project": self.config.project_key,
-                    "issue_type": issue.issue_type,
-                    "status": issue.status,
-                    "key": issue.key,
-                    "priority": issue.priority,
-                    "labels": issue.labels,
-                    "reporter": issue.reporter.display_name if issue.reporter else None,
-                    "assignee": issue.assignee.display_name if issue.assignee else None,
-                    "created": issue.created.isoformat(),
-                    "updated": issue.updated.isoformat(),
-                    "parent_key": issue.parent_key,
-                    "subtasks": issue.subtasks,
-                    "linked_issues": issue.linked_issues,
-                    "commentsf": [
-                        {
-                            "id": comment.id,
-                            "body": comment.body,
-                            "created": comment.created.isoformat(),
-                            "updated": (
-                                comment.updated.isoformat() if comment.updated else None
-                            ),
-                            "author": (
-                                comment.author.display_name if comment.author else None
-                            ),
-                        }
-                        for comment in issue.comments
-                    ],
-                    "attachmentsf": (
-                        [
-                            {
-                                "id": att.id,
-                                "filename": att.filename,
-                                "size": att.size,
-                                "mime_type": att.mime_type,
-                                "created": att.created.isoformat(),
-                                "author": (
-                                    att.author.display_name if att.author else None
-                                ),
-                            }
-                            for att in issue.attachments
-                        ]
-                        if issue.attachments
-                        else []
-                    ),
-                },
+                metadata=base_metadata,
             )
             documents.append(document)
             logger.debug(

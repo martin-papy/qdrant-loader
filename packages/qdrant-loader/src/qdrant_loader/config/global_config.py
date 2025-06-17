@@ -16,6 +16,7 @@ from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
+from qdrant_loader.config.validation import ValidationConfig
 from qdrant_loader.core.file_conversion import FileConversionConfig
 
 
@@ -54,6 +55,10 @@ class GlobalConfig(BaseConfig):
     graphiti: GraphitiConfig = Field(
         default_factory=GraphitiConfig,
         description="Graphiti knowledge graph configuration",
+    )
+    validation: ValidationConfig = Field(
+        default_factory=ValidationConfig,
+        description="Validation and repair system configuration",
     )
 
     def __init__(self, **data):
@@ -95,4 +100,5 @@ class GlobalConfig(BaseConfig):
             "qdrant": self.qdrant.to_dict() if self.qdrant else None,
             "neo4j": self.neo4j.to_dict() if self.neo4j else None,
             "graphiti": self.graphiti.to_dict() if self.graphiti else None,
+            "validation": self.validation.to_dict(),
         }

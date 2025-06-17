@@ -6,22 +6,60 @@ import chardet
 import git
 
 from qdrant_loader.connectors.git.config import GitRepoConfig
+from qdrant_loader.connectors.metadata.base import MetadataExtractionConfig
 from qdrant_loader.utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
 
 class GitMetadataExtractor:
-    """Extract metadata from Git repository files."""
+    """Extract metadata from Git repository files.
 
-    def __init__(self, config: GitRepoConfig):
+    This is the main Git metadata extractor that provides:
+    - Legacy metadata: File info, repo info, Git history, structure analysis
+    - Enhanced metadata: Relationships and cross-references via GitRelationshipExtractor
+    - Full backward compatibility with existing code
+    - Optional enhanced features for knowledge graph enrichment
+    """
+
+    def __init__(self, config: GitRepoConfig, enable_enhanced_metadata: bool = True):
         """Initialize the Git metadata extractor.
 
         Args:
             config (GitRepoConfig): Configuration for the Git repository.
+            enable_enhanced_metadata: Whether to enable the new metadata framework
         """
         self.config = config
         self.logger = LoggingConfig.get_logger(__name__)
+        self.enable_enhanced_metadata = enable_enhanced_metadata
+
+        # Initialize the new metadata extractor if enabled
+        self._enhanced_extractor: Any | None = None
+        if enable_enhanced_metadata:
+            # Lazy import to avoid circular dependency
+            from qdrant_loader.connectors.git.relationship_extractor import (
+                GitRelationshipExtractor,
+            )
+
+            metadata_config = MetadataExtractionConfig(
+                enabled=True,
+                extract_authors=True,
+                extract_timestamps=True,
+                extract_relationships=True,
+                extract_cross_references=True,
+                max_relationships=50,  # Reasonable limit for performance
+                max_cross_references=25,
+            )
+            self._enhanced_extractor = GitRelationshipExtractor(metadata_config, config)
+
+    def set_repository(self, repo: git.Repo) -> None:
+        """Set the Git repository instance for enhanced metadata extraction.
+
+        Args:
+            repo: Git repository instance
+        """
+        if self._enhanced_extractor:
+            self._enhanced_extractor.set_repository(repo)
 
     def extract_all_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         """Extract all metadata for a file.
@@ -35,6 +73,7 @@ class GitMetadataExtractor:
         """
         self.logger.debug(f"Starting metadata extraction for file: {file_path}")
 
+        # Extract legacy metadata (backward compatibility)
         file_metadata = self._extract_file_metadata(file_path, content)
         repo_metadata = self._extract_repo_metadata(file_path)
         git_metadata = self._extract_git_metadata(file_path)
@@ -45,6 +84,7 @@ class GitMetadataExtractor:
             self.logger.debug(f"Processing markdown file: {file_path}")
             structure_metadata = self._extract_structure_metadata(content)
 
+        # Combine legacy metadata
         metadata = {
             **file_metadata,
             **repo_metadata,
@@ -52,8 +92,33 @@ class GitMetadataExtractor:
             **structure_metadata,
         }
 
+        # Extract enhanced metadata using the new framework
+        if self.enable_enhanced_metadata and self._enhanced_extractor:
+            try:
+                context = {
+                    "file_path": file_path,
+                    "content_type": file_metadata.get("file_type", "text"),
+                    "source_type": "git",
+                    "extraction_timestamp": None,  # Will be set by framework
+                }
+
+                enhanced_metadata = self._enhanced_extractor.extract_metadata(
+                    content, context
+                )
+
+                # Add enhanced metadata under a separate namespace to avoid conflicts
+                if enhanced_metadata:
+                    metadata["enhanced_metadata"] = enhanced_metadata
+                    self.logger.debug(
+                        f"Enhanced metadata extracted with {len(enhanced_metadata)} fields"
+                    )
+
+            except Exception as e:
+                self.logger.error(f"Error extracting enhanced metadata: {e}")
+                # Continue with legacy metadata if enhanced extraction fails
+
         self.logger.debug(f"Completed metadata extraction for {file_path}.")
-        self.logger.debug(f"Metadata: {metadata}")
+        self.logger.debug(f"Total metadata fields: {len(metadata)}")
         return metadata
 
     def _extract_file_metadata(self, file_path: str, content: str) -> dict[str, Any]:

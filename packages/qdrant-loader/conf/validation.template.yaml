@@ -1,0 +1,524 @@
+# Validation Configuration Template
+# Copy this file to validation.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+# Configuration Notes:
+# 
+# 1. Validation Settings:
+#    - Post-ingestion and post-sync validation triggers
+#    - Automatic validation scheduling and intervals
+#    - Validation timeout and retry configurations
+#
+# 2. Validation Rules:
+#    - Scanner configurations for different validation types
+#    - Health score thresholds and severity weights
+#    - Auto-repair limits and safety constraints
+#
+# 3. Repair Strategies:
+#    - Repair handler configurations and policies
+#    - Confirmation requirements and backup settings
+#    - Repair prioritization and execution limits
+#
+# 4. Notification Settings:
+#    - Multiple notification channels (log, email, slack, webhook)
+#    - Event-specific notification policies
+#    - Escalation settings for critical issues
+#
+# 5. Environment Variables:
+#    - Use ${VARIABLE_NAME} syntax for sensitive information
+#    - Recommended for SMTP credentials, webhook URLs, and API keys
+#    - Set environment variables before running the application
+
+# Validation and repair system configuration
+validation:
+  # Basic validation settings
+  enable_post_ingestion_validation: true
+  enable_post_sync_validation: true
+  enable_change_event_validation: true  # Set to false for development to reduce noise
+  
+  # Validation delays (adjust based on environment)
+  post_ingestion_delay_seconds: 30     # Production: 30, Development: 5
+  post_sync_delay_seconds: 15          # Production: 15, Development: 3
+  change_event_delay_seconds: 5        # Production: 5, Development: 1
+  
+  # Retry and timeout settings
+  max_retry_attempts: 3                # Production: 5, Development: 2
+  retry_delay_seconds: 30              # Production: 60, Development: 10
+  validation_timeout_seconds: 300      # Production: 600, Development: 120
+  
+  # Auto-repair settings
+  auto_repair_enabled: true
+  auto_repair_max_attempts: 3
+  auto_repair_delay_seconds: 30
+  
+  # Performance settings
+  max_concurrent_validations: 3        # Production: 5, Development: 2
+  
+  # Logging and monitoring
+  log_validation_events: true
+  log_validation_performance: false    # Set to true for debugging
+  
+  # Scheduled validation settings
+  enable_scheduled_validation: false   # Set to true for production
+  default_schedule_interval: "daily"   # hourly, daily, weekly
+  schedule_persistence_enabled: false  # Set to true for production
+  max_concurrent_scheduled_jobs: 2     # Production: 3, Development: 1
+  scheduled_job_timeout_seconds: 600   # Production: 1800, Development: 300
+  schedule_overlap_prevention: true
+  
+  # Validation rules configuration
+  validation_rules:
+    # Global scanner settings
+    global_max_entities: 10000          # Production: 50000, Development: 1000
+    global_timeout_seconds: 600         # Production: 1800, Development: 300
+    parallel_scanner_limit: 3           # Production: 4, Development: 2
+    
+    # Individual scanner configurations
+    scanners:
+      missing_mappings:
+        enabled: true
+        max_entities: 5000               # Production: 10000, Development: 500
+        severity_threshold: "warning"
+        auto_repair_enabled: true
+        scan_interval_hours: 24          # Production: 6, Development: null (manual)
+        timeout_seconds: 180             # Production: 300, Development: 60
+        custom_parameters:
+          check_qdrant_orphans: true
+          check_neo4j_orphans: true
+          exclude_system_nodes: true
+      
+      orphaned_records:
+        enabled: true
+        max_entities: 5000               # Production: 10000, Development: 500
+        severity_threshold: "error"
+        auto_repair_enabled: false       # Requires manual approval
+        scan_interval_hours: 12          # Production: 4, Development: null
+        timeout_seconds: 180             # Production: 300, Development: 60
+        custom_parameters:
+          cleanup_inactive_mappings: true # Development: false (preserve data)
+          grace_period_hours: 24         # Development: 0.5
+      
+      data_mismatches:
+        enabled: true
+        max_entities: 1000               # Production: 5000, Development: 200
+        severity_threshold: "warning"
+        auto_repair_enabled: false       # Manual review recommended
+        scan_interval_hours: 48          # Production: 12, Development: null
+        timeout_seconds: 300             # Production: 600, Development: 120
+        custom_parameters:
+          check_content_hash: true
+          check_metadata: true
+          check_timestamps: true         # Development: false
+          tolerance_threshold: 0.1       # Production: 0.05, Development: 0.2
+      
+      version_inconsistencies:
+        enabled: true                    # Development: false
+        max_entities: 2000               # Production: 5000, Development: 100
+        severity_threshold: "error"
+        auto_repair_enabled: false
+        scan_interval_hours: 24          # Production: 8, Development: null
+        timeout_seconds: 180             # Production: 300, Development: 60
+        custom_parameters:
+          check_version_fields: ["version", "updated_at", "revision"]
+          version_tolerance_seconds: 300 # Production: 60
+      
+      sync_failures:
+        enabled: true
+        max_entities: 1000               # Production: 2000, Development: 200
+        severity_threshold: "error"
+        auto_repair_enabled: true
+        scan_interval_hours: 6           # Production: 2, Development: null
+        timeout_seconds: 180             # Production: 300, Development: 60
+        custom_parameters:
+          retry_failed_syncs: true
+          max_retry_attempts: 3          # Production: 5, Development: 2
+          retry_delay_minutes: 30        # Production: 60, Development: 5
+      
+      constraint_violations:
+        enabled: true                    # Development: false
+        max_entities: null               # Check all constraints
+        severity_threshold: "critical"
+        auto_repair_enabled: false
+        scan_interval_hours: 72          # Production: 24, Development: null
+        timeout_seconds: 300             # Production: 600, Development: 120
+        custom_parameters:
+          check_database_constraints: true
+          check_business_rules: true
+          check_data_integrity: true
+      
+      performance_issues:
+        enabled: true
+        max_entities: null
+        severity_threshold: "warning"
+        auto_repair_enabled: false
+        scan_interval_hours: 24          # Production: 6, Development: null
+        timeout_seconds: 180             # Production: 300, Development: 60
+        custom_parameters:
+          query_timeout_threshold_ms: 5000    # Production: 3000, Development: 10000
+          memory_usage_threshold_mb: 1000     # Production: 500, Development: 2000
+          connection_pool_threshold: 0.8      # Production: 0.7, Development: 0.9
+          index_efficiency_threshold: 0.7     # Production: 0.8, Development: 0.5
+    
+    # Health score thresholds
+    health_score_thresholds:
+      excellent: 95.0                   # Production: 98.0, Development: 90.0
+      good: 85.0                        # Production: 90.0, Development: 75.0
+      fair: 70.0                        # Production: 80.0, Development: 60.0
+      poor: 50.0                        # Production: 60.0, Development: 40.0
+      critical: 30.0                    # Production: 40.0, Development: 20.0
+    
+    # Issue severity weights for health score calculation
+    severity_weights:
+      critical: 20                      # Production: 25
+      error: 10
+      warning: 5                        # Production: 3
+      info: 1
+    
+    # Auto-repair limits
+    auto_repair_limits:
+      max_repairs_per_run: 100          # Production: 200, Development: 50
+      max_repairs_per_category: 50      # Production: 100, Development: 25
+      max_repairs_per_hour: 200         # Production: 500, Development: 100
+      max_critical_repairs: 10          # Production: 20, Development: 5
+  
+  # Repair strategies configuration
+  repair_strategies:
+    # Global repair settings
+    global_max_repairs_per_run: 100     # Production: 200, Development: 50
+    global_timeout_seconds: 1800        # Production: 3600, Development: 600
+    parallel_repair_limit: 2            # Production: 3, Development: 1
+    require_approval_for_critical: true # Development: false
+    
+    # Individual repair handler configurations
+    handlers:
+      create_mapping:
+        enabled: true
+        auto_execute: true
+        max_attempts: 3                 # Production: 5, Development: 2
+        retry_delay_seconds: 30         # Production: 30, Development: 5
+        timeout_seconds: 60             # Production: 120, Development: 30
+        batch_size: 20                  # Production: 50, Development: 10
+        confirmation_required: false
+        dry_run_first: false
+        backup_before_repair: false
+        custom_parameters:
+          prefer_existing_entities: true
+          create_bidirectional_mapping: true
+          validate_after_creation: true
+      
+      delete_orphaned:
+        enabled: true
+        auto_execute: false             # Always require confirmation for deletions
+        max_attempts: 2                 # Production: 3, Development: 1
+        retry_delay_seconds: 30         # Production: 60, Development: 10
+        timeout_seconds: 120            # Production: 300, Development: 60
+        batch_size: 10                  # Production: 20, Development: 5
+        confirmation_required: true
+        dry_run_first: true
+        backup_before_repair: false     # Production: true, Development: false
+        custom_parameters:
+          grace_period_hours: 24        # Production: 48, Development: 0.5
+          verify_orphan_status: true
+          cascade_delete: false
+      
+      update_data:
+        enabled: true
+        auto_execute: false             # Always require approval for data updates
+        max_attempts: 3
+        retry_delay_seconds: 60         # Production: 120, Development: 30
+        timeout_seconds: 300            # Production: 600, Development: 120
+        batch_size: 5                   # Production: 10, Development: 3
+        confirmation_required: true
+        dry_run_first: true
+        backup_before_repair: false     # Production: true, Development: false
+        custom_parameters:
+          conflict_resolution_strategy: "merge"
+          preserve_user_data: true
+          update_timestamps: true
+          validate_data_integrity: true
+      
+      sync_entities:
+        enabled: true
+        auto_execute: true
+        max_attempts: 5                 # Production: 5, Development: 3
+        retry_delay_seconds: 120        # Production: 180, Development: 60
+        timeout_seconds: 600            # Production: 900, Development: 300
+        batch_size: 3                   # Production: 10, Development: 2
+        confirmation_required: false
+        dry_run_first: false
+        backup_before_repair: false
+        custom_parameters:
+          sync_direction: "bidirectional"
+          force_sync: false
+          preserve_local_changes: true
+          sync_metadata: true
+      
+      resolve_conflict:
+        enabled: true
+        auto_execute: false             # Always require manual review
+        max_attempts: 2
+        retry_delay_seconds: 300        # Production: 600, Development: 120
+        timeout_seconds: 900            # Production: 1800, Development: 300
+        batch_size: 1
+        confirmation_required: true
+        dry_run_first: true
+        backup_before_repair: false     # Production: true, Development: false
+        custom_parameters:
+          conflict_resolution_algorithm: "timestamp_based"
+          manual_review_required: true
+          preserve_conflict_history: true
+      
+      rebuild_index:
+        enabled: true                   # Development: false (rarely needed)
+        auto_execute: false             # Always require approval
+        max_attempts: 1
+        retry_delay_seconds: 600        # Production: 1800, Development: 300
+        timeout_seconds: 3600           # Production: 7200, Development: 1800
+        batch_size: 1
+        confirmation_required: true
+        dry_run_first: false
+        backup_before_repair: false     # Production: true, Development: false
+        custom_parameters:
+          rebuild_scope: "affected_only"
+          optimize_after_rebuild: true
+          verify_integrity: true
+      
+      manual_intervention:
+        enabled: true
+        auto_execute: false
+        max_attempts: 1
+        retry_delay_seconds: 0
+        timeout_seconds: 0              # No timeout for manual intervention
+        batch_size: 1
+        confirmation_required: true
+        dry_run_first: false
+        backup_before_repair: false
+        custom_parameters:
+          notification_required: true
+          escalation_timeout_hours: 24  # Production: 4
+          assign_to_role: "admin"
+    
+    # Repair policies
+    repair_policies:
+      auto_repair_severity_threshold: "warning"  # Production: "error"
+      critical_issue_escalation: true           # Development: false
+      repair_window_hours: [2, 6]               # Preferred repair window (2 AM to 6 AM), Development: null
+      max_concurrent_repairs: 5                 # Production: 10, Development: 3
+      repair_cooldown_minutes: 30               # Production: 60, Development: 5
+      rollback_on_failure: true
+    
+    # Repair prioritization (1-10, higher is more urgent)
+    repair_priorities:
+      critical_data_loss: 10
+      orphaned_records: 8
+      missing_mappings: 7
+      sync_failures: 6
+      data_mismatches: 5
+      version_inconsistencies: 4
+      constraint_violations: 3
+      performance_issues: 2
+    
+    # Notification settings for repairs
+    repair_notifications:
+      notify_on_start: false            # Production: false, Development: false
+      notify_on_completion: true
+      notify_on_failure: true
+      notify_on_critical: true
+      notification_channels: ["log", "email"]  # Development: ["log"]
+      escalation_after_failures: 3
+  
+  # Notification settings
+  notification_settings:
+    # Global notification settings
+    global_enabled: true
+    default_channels: ["log"]           # Production: ["log", "email"]
+    notification_cooldown_minutes: 15   # Production: 30, Development: 5
+    batch_notifications: true
+    batch_window_minutes: 5             # Production: 10, Development: 2
+    
+    # Notification channels
+    channels:
+      log:
+        enabled: true
+        channel_type: "log"
+        custom_parameters:
+          log_level: "INFO"             # Development: "DEBUG"
+          logger_name: "qdrant_loader.validation.notifications"
+      
+      email:
+        enabled: false                  # Set to true for production
+        channel_type: "email"
+        retry_attempts: 3               # Production: 5
+        retry_delay_seconds: 60         # Production: 120
+        timeout_seconds: 30             # Production: 60
+        rate_limit_per_hour: 50         # Production: 100
+        custom_parameters:
+          smtp_server: "${SMTP_SERVER}"
+          smtp_port: 587
+          use_tls: true
+          from_address: "${NOTIFICATION_FROM_EMAIL}"
+          to_addresses: ["${ADMIN_EMAIL}"]
+      
+      slack:
+        enabled: false                  # Set to true for production
+        channel_type: "slack"
+        retry_attempts: 3
+        retry_delay_seconds: 60
+        timeout_seconds: 30
+        rate_limit_per_hour: 50
+        custom_parameters:
+          webhook_url: "${SLACK_WEBHOOK_URL}"
+          channel: "#alerts"            # Production: "#production-alerts"
+          username: "QDrant Loader"
+          icon_emoji: ":warning:"       # Production: ":rotating_light:"
+      
+      webhook:
+        enabled: false                  # Configure if needed
+        channel_type: "webhook"
+        endpoint: "${WEBHOOK_ENDPOINT}"
+        retry_attempts: 3
+        retry_delay_seconds: 60
+        timeout_seconds: 30
+        custom_parameters:
+          method: "POST"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer ${WEBHOOK_TOKEN}"
+          auth_type: "bearer"
+    
+    # Event-specific notification settings
+    validation_events:
+      validation_started:
+        enabled: false                  # Too noisy for most environments
+        channels: ["log"]
+        severity_threshold: "info"
+      
+      validation_completed:
+        enabled: true
+        channels: ["log"]
+        severity_threshold: "info"
+        notify_if_issues_found: true
+      
+      validation_failed:
+        enabled: true
+        channels: ["log", "email"]      # Development: ["log"]
+        severity_threshold: "error"
+        immediate_notification: true
+      
+      critical_issues_found:
+        enabled: true
+        channels: ["log", "email", "slack"]  # Development: ["log"]
+        severity_threshold: "critical"
+        immediate_notification: true
+        escalation_required: true       # Development: false
+    
+    repair_events:
+      repair_started:
+        enabled: false                  # Too noisy for most environments
+        channels: ["log"]
+        severity_threshold: "info"
+      
+      repair_completed:
+        enabled: true
+        channels: ["log"]               # Production: ["log", "email"]
+        severity_threshold: "info"
+        notify_on_success: true
+      
+      repair_failed:
+        enabled: true
+        channels: ["log", "email"]      # Development: ["log"]
+        severity_threshold: "error"
+        immediate_notification: true
+        include_error_details: true
+      
+      manual_intervention_required:
+        enabled: true
+        channels: ["log", "email", "slack"]  # Development: ["log"]
+        severity_threshold: "warning"
+        immediate_notification: true
+        escalation_required: true       # Development: false
+    
+    system_events:
+      system_health_degraded:
+        enabled: true
+        channels: ["log", "email"]      # Development: ["log"]
+        health_score_threshold: 70.0    # Production: 80.0, Development: 60.0
+        immediate_notification: true
+      
+      system_health_critical:
+        enabled: true
+        channels: ["log", "email", "slack"]  # Development: ["log"]
+        health_score_threshold: 30.0    # Production: 40.0, Development: 20.0
+        immediate_notification: true
+        escalation_required: true       # Development: false
+      
+      database_connectivity_lost:
+        enabled: true
+        channels: ["log", "email", "slack"]  # Development: ["log"]
+        immediate_notification: true
+        escalation_required: true       # Development: false
+      
+      performance_degradation:
+        enabled: true                   # Development: false (often expected)
+        channels: ["log"]               # Production: ["log", "email"]
+        performance_threshold: 0.5      # Production: 0.3, Development: 0.7
+    
+    # Notification templates
+    templates:
+      validation_completed:
+        subject_template: "Validation Completed - {total_issues} issues found"
+        body_template: |
+          Validation Report Summary:
+          - Total Issues: {total_issues}
+          - Critical: {critical_issues}
+          - Errors: {error_issues}
+          - Warnings: {warning_issues}
+          - System Health Score: {health_score}%
+          
+          Report ID: {report_id}
+          Generated: {generated_at}
+        format_type: "text"
+        include_details: true
+        include_metadata: false
+      
+      repair_failed:
+        subject_template: "Repair Operation Failed - {issue_category}"
+        body_template: |
+          Repair operation failed:
+          - Issue ID: {issue_id}
+          - Category: {issue_category}
+          - Repair Action: {repair_action}
+          - Error: {error_message}
+          - Attempts: {attempt_count}/{max_attempts}
+          
+          Manual intervention may be required.
+        format_type: "text"
+        include_details: true
+        include_metadata: true
+      
+      critical_issues:
+        subject_template: "CRITICAL: {critical_count} Critical Issues Detected"
+        body_template: |
+          CRITICAL VALIDATION ISSUES DETECTED
+          
+          {critical_count} critical issues require immediate attention:
+          
+          {critical_issues_list}
+          
+          System Health Score: {health_score}%
+          Immediate action required.
+          
+          Report ID: {report_id}
+        format_type: "text"
+        include_details: true
+    
+    # Escalation settings
+    escalation_settings:
+      enabled: true                     # Development: false
+      escalation_delay_minutes: 30     # Production: 15, Development: 60
+      max_escalation_levels: 3          # Development: 1
+      escalation_channels: ["email", "slack"]  # Development: ["log"]
+      escalation_recipients:
+        level_1: ["${ADMIN_EMAIL}"]
+        level_2: ["${MANAGER_EMAIL}", "${ADMIN_EMAIL}"]
+        level_3: ["${DIRECTOR_EMAIL}", "${MANAGER_EMAIL}", "${ADMIN_EMAIL}"] 

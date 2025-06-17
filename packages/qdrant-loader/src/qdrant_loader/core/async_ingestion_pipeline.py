@@ -8,6 +8,7 @@ from qdrant_loader.core.managers import ProjectManager, QdrantManager
 from qdrant_loader.core.monitoring import prometheus_metrics
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 from qdrant_loader.core.state.state_manager import StateManager
+from qdrant_loader.core.sync.validation_integration import ValidationIntegrationManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .pipeline import (
@@ -40,6 +41,7 @@ class AsyncIngestionPipeline:
         upsert_batch_size: int | None = None,
         enable_metrics: bool = False,
         metrics_dir: Path | None = None,  # New parameter for workspace support
+        validation_integrator=None,  # Optional validation integrator
     ):
         """Initialize the async ingestion pipeline.
 
@@ -55,6 +57,7 @@ class AsyncIngestionPipeline:
             upsert_batch_size: Batch size for upserts
             enable_metrics: Whether to enable metrics server
             metrics_dir: Custom metrics directory (for workspace support)
+            validation_integrator: Optional validation integrator for automatic validation
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
@@ -128,6 +131,18 @@ class AsyncIngestionPipeline:
             prometheus_metrics.start_metrics_server()
 
         logger.info("AsyncIngestionPipeline initialized with new modular architecture")
+
+        # Initialize validation integration if provided
+        self.validation_integration_manager = None
+        if (
+            validation_integrator
+            and settings.global_config.validation.enable_auto_validation
+        ):
+            self.validation_integration_manager = ValidationIntegrationManager(
+                validation_config=settings.global_config.validation,
+                validation_integrator=validation_integrator,
+            )
+            logger.info("Validation integration enabled for ingestion pipeline")
 
         # Track cleanup state to prevent duplicate cleanup
         self._cleanup_performed = False
@@ -208,6 +223,22 @@ class AsyncIngestionPipeline:
 
             self.monitor.end_operation("ingestion_process")
 
+            # Trigger post-ingestion validation if enabled
+            if self.validation_integration_manager and documents:
+                try:
+                    await self.validation_integration_manager.trigger_post_ingestion_validation(
+                        documents_processed=len(documents),
+                        project_id=project_id,
+                        source_type=source_type,
+                        metadata={
+                            "source": source,
+                        },
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Post-ingestion validation failed: {e}", exc_info=True
+                    )
+
             logger.debug(
                 f"Document processing completed. Processed {len(documents)} documents"
             )
@@ -236,6 +267,13 @@ class AsyncIngestionPipeline:
                 prometheus_metrics.stop_metrics_server()
             except Exception:
                 logger.warning("Error stopping metrics server: {e}")
+
+            # Clean up validation integration
+            if (
+                hasattr(self, "validation_integration_manager")
+                and self.validation_integration_manager
+            ):
+                await self.validation_integration_manager.cleanup()
 
             # Use resource manager for cleanup
             if hasattr(self, "resource_manager"):

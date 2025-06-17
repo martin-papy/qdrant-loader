@@ -44,6 +44,7 @@ from .neo4j import Neo4jConfig
 from .parser import MultiProjectConfigParser
 from .sources import SourcesConfig
 from .state import StateManagementConfig
+from .validation import ValidationConfig
 from .validator import ConfigValidator
 from .workspace import WorkspaceConfig
 
@@ -80,6 +81,7 @@ __all__ = [
     "Settings",
     "SourcesConfig",
     "StateManagementConfig",
+    "ValidationConfig",
     # Multi-project support
     "ProjectContext",
     "ProjectConfig",

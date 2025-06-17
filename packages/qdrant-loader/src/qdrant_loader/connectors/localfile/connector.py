@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 from qdrant_loader.connectors.base import BaseConnector
+from qdrant_loader.connectors.metadata.base import MetadataExtractionConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
     FileConversionConfig,
@@ -15,6 +16,7 @@ from qdrant_loader.utils.logging import LoggingConfig
 from .config import LocalFileConfig
 from .file_processor import LocalFileFileProcessor
 from .metadata_extractor import LocalFileMetadataExtractor
+from .relationship_extractor import LocalFileRelationshipExtractor
 
 
 class LocalFileConnector(BaseConnector):
@@ -28,6 +30,21 @@ class LocalFileConnector(BaseConnector):
         self.base_path = parsed.path
         self.file_processor = LocalFileFileProcessor(config, self.base_path)
         self.metadata_extractor = LocalFileMetadataExtractor(self.base_path)
+
+        # Initialize enhanced metadata extractor if enabled
+        self.enhanced_metadata_extractor = None
+        if self.config.enable_enhanced_metadata:
+            metadata_config = MetadataExtractionConfig(
+                enabled=True,
+                extract_authors=True,
+                extract_timestamps=True,
+                extract_relationships=True,
+                extract_cross_references=True,
+            )
+            self.enhanced_metadata_extractor = LocalFileRelationshipExtractor(
+                metadata_config, self.base_path
+            )
+
         self.logger = LoggingConfig.get_logger(__name__)
         self._initialized = True
 
@@ -114,9 +131,20 @@ class LocalFileConnector(BaseConnector):
                     file_mtime = os.path.getmtime(file_path)
                     updated_at = datetime.fromtimestamp(file_mtime, tz=UTC)
 
+                    # Extract base metadata
                     metadata = self.metadata_extractor.extract_all_metadata(
                         file_path, content
                     )
+
+                    # Extract enhanced metadata if enabled
+                    if self.enhanced_metadata_extractor:
+                        enhanced_metadata = (
+                            self.enhanced_metadata_extractor.extract_metadata(
+                                file_path, content
+                            )
+                        )
+                        # Merge enhanced metadata with base metadata
+                        metadata.update(enhanced_metadata)
 
                     # Add file conversion metadata if applicable
                     if needs_conversion:

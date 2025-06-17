@@ -30,15 +30,19 @@ logger = LoggingConfig.get_logger(__name__)
 class ConfluenceConnector(BaseConnector):
     """Connector for Atlassian Confluence."""
 
-    def __init__(self, config: ConfluenceSpaceConfig):
+    def __init__(
+        self, config: ConfluenceSpaceConfig, enable_enhanced_metadata: bool = True
+    ):
         """Initialize the connector with configuration.
 
         Args:
             config: Confluence configuration
+            enable_enhanced_metadata: Whether to enable enhanced metadata extraction
         """
         super().__init__(config)
         self.config = config
         self.base_url = config.base_url
+        self.enable_enhanced_metadata = enable_enhanced_metadata
 
         # Initialize session
         self.session = requests.Session()
@@ -51,6 +55,30 @@ class ConfluenceConnector(BaseConnector):
         self.file_converter = None
         self.file_detector = None
         self.attachment_downloader = None
+
+        # Initialize enhanced metadata extractor if enabled
+        self._enhanced_extractor = None
+        if self.enable_enhanced_metadata:
+            try:
+                # Lazy import to avoid circular dependencies
+                from qdrant_loader.connectors.metadata.base import (
+                    MetadataExtractionConfig,
+                )
+                from qdrant_loader.connectors.confluence.relationship_extractor import (
+                    ConfluenceRelationshipExtractor,
+                )
+
+                # Create metadata extraction config with sensible defaults
+                metadata_config = MetadataExtractionConfig()
+                self._enhanced_extractor = ConfluenceRelationshipExtractor(
+                    metadata_config, config
+                )
+                logger.info(
+                    "Enhanced metadata extraction enabled for Confluence connector"
+                )
+            except ImportError as e:
+                logger.warning(f"Enhanced metadata extraction not available: {e}")
+                self.enable_enhanced_metadata = False
 
         if self.config.enable_file_conversion:
             logger.info("File conversion enabled for Confluence connector")
@@ -757,6 +785,9 @@ class ConfluenceConnector(BaseConnector):
             # Extract hierarchy information
             hierarchy_info = self._extract_hierarchy_info(content)
 
+            # Clean content if requested
+            content_text = self._clean_html(body) if clean_html else body
+
             # Create metadata with all available information including hierarchy
             metadata = {
                 "id": content_id,
@@ -789,8 +820,34 @@ class ConfluenceConnector(BaseConnector):
                 ),
             }
 
-            # Clean content if requested
-            content_text = self._clean_html(body) if clean_html else body
+            # Add enhanced metadata if extractor is available
+            if self._enhanced_extractor:
+                try:
+                    context = {
+                        "page_data": content,
+                        "hierarchy_info": hierarchy_info,
+                        "space_data": content.get("space", {}),
+                    }
+                    enhanced_metadata = self._enhanced_extractor.extract_metadata(
+                        content_text, context
+                    )
+                    if enhanced_metadata:
+                        metadata["enhanced_metadata"] = enhanced_metadata
+                        logger.debug(
+                            f"Enhanced metadata extracted for page {content_id}",
+                            page_id=content_id,
+                            enhanced_keys=(
+                                list(enhanced_metadata.keys())
+                                if enhanced_metadata
+                                else []
+                            ),
+                        )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract enhanced metadata for page {content_id}: {e}",
+                        page_id=content_id,
+                        error_type=type(e).__name__,
+                    )
 
             # Construct URL based on deployment type
             page_url = self._construct_page_url(

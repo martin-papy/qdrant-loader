@@ -75,6 +75,12 @@ class JiraProjectConfig(SourceConfig):
         description="Optional list of statuses to include (e.g., ['Open', 'In Progress']). If empty, all statuses are included.",
     )
 
+    # Metadata extraction
+    enable_enhanced_metadata: bool = Field(
+        default=True,
+        description="Enable enhanced metadata extraction for knowledge graphs and relationship mapping",
+    )
+
     model_config = ConfigDict(validate_default=True, arbitrary_types_allowed=True)
 
     @field_validator("deployment_type", mode="before")

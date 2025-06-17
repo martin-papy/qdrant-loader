@@ -137,6 +137,11 @@ class GitConnector(BaseConnector):
                 )
                 raise
 
+            # Set repository instance for enhanced metadata extraction
+            if hasattr(self.metadata_extractor, "set_repository"):
+                self.metadata_extractor.set_repository(self.git_ops.repo)
+                self.logger.debug("Repository instance set for metadata extractor")
+
             self._initialized = True
             return self
         except ValueError as e:
@@ -230,6 +235,11 @@ class GitConnector(BaseConnector):
                     temp_dir=self.temp_dir,
                 )
                 raise
+
+            # Set repository instance for enhanced metadata extraction
+            if hasattr(self.metadata_extractor, "set_repository"):
+                self.metadata_extractor.set_repository(self.git_ops.repo)
+                self.logger.debug("Repository instance set for metadata extractor")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
