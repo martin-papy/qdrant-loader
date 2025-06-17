@@ -1,6 +1,5 @@
 """Configuration models for file conversion settings."""
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,7 +19,7 @@ class MarkItDownConfig(BaseModel):
         default="https://api.openai.com/v1", description="LLM endpoint (when enabled)"
     )
 
-    llm_api_key: Optional[str] = Field(
+    llm_api_key: str | None = Field(
         default=None,
         description="API key for LLM service (required when enable_llm_descriptions is True)",
     )
@@ -72,7 +71,7 @@ class ConnectorFileConversionConfig(BaseModel):
         default=False, description="Enable file conversion for this connector"
     )
 
-    download_attachments: Optional[bool] = Field(
+    download_attachments: bool | None = Field(
         default=None,
         description="Download and process attachments (for Confluence/JIRA/PublicDocs)",
     )

@@ -3,15 +3,14 @@
 import os
 import tempfile
 from pathlib import Path
-import pytest
 
+import pytest
 from qdrant_loader.core.file_conversion import (
+    FileConversionConfig,
     FileConverter,
     FileDetector,
-    FileConversionConfig,
     MarkItDownConfig,
 )
-from qdrant_loader.core.document import Document
 
 
 @pytest.mark.integration

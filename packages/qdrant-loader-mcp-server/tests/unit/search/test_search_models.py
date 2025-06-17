@@ -1,6 +1,5 @@
 """Tests for search models."""
 
-import pytest
 from qdrant_loader_mcp_server.search.models import SearchResult
 
 

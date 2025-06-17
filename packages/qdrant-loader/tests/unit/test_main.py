@@ -1,7 +1,6 @@
 """Tests for the main.py module."""
 
-import pytest
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 
 from qdrant_loader import main
 
@@ -37,7 +36,7 @@ class TestMain:
                 if "qdrant_loader.main" in sys.modules:
                     importlib.reload(sys.modules["qdrant_loader.main"])
                 else:
-                    import qdrant_loader.main
+                    pass
 
             finally:
                 # Restore original argv
@@ -70,13 +69,10 @@ class TestMain:
     def test_main_as_module(self, mock_cli):
         """Test running main as a module."""
         # This simulates: python -m qdrant_loader.main
-        import sys
-        import subprocess
 
         # Instead of using runpy which can cause import issues,
         # let's test that the main module can be executed properly
         # by checking its structure and ensuring it would work when called
-
         # Verify the main module has the right structure for module execution
         import qdrant_loader.main as main_module
 

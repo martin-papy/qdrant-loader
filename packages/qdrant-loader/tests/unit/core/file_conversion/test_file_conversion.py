@@ -3,23 +3,22 @@
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-import pytest
+from unittest.mock import Mock, patch
 
+import pytest
 from qdrant_loader.core.file_conversion import (
+    ConnectorFileConversionConfig,
+    ConversionTimeoutError,
+    FileAccessError,
+    FileConversionConfig,
+    FileConversionError,
     FileConverter,
     FileDetector,
-    FileConversionConfig,
-    MarkItDownConfig,
-    ConnectorFileConversionConfig,
-    FileConversionError,
-    UnsupportedFileTypeError,
     FileSizeExceededError,
-    ConversionTimeoutError,
+    MarkItDownConfig,
     MarkItDownError,
-    FileAccessError,
+    UnsupportedFileTypeError,
 )
-from qdrant_loader.core.document import Document
 
 
 class TestFileDetector:

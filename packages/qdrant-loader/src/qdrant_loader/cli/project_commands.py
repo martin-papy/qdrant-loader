@@ -1,26 +1,21 @@
 """Project management CLI commands for QDrant Loader."""
 
-import asyncio
 import json
 from pathlib import Path
-from typing import Optional
 
-import click
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from rich.text import Text
+from rich.table import Table
 
 from qdrant_loader.cli.asyncio import async_command
-from qdrant_loader.config import Settings, get_settings
-from qdrant_loader.config.workspace import WorkspaceConfig, validate_workspace_flags
+from qdrant_loader.config import Settings
+from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.core.project_manager import ProjectManager
-from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 # Rich console for better output formatting
@@ -363,9 +358,9 @@ async def _setup_project_manager(
 ) -> tuple[Settings, ProjectManager]:
     """Setup project manager with configuration loading."""
     from qdrant_loader.cli.cli import (
-        _setup_workspace,
-        _load_config_with_workspace,
         _check_settings,
+        _load_config_with_workspace,
+        _setup_workspace,
     )
 
     # Setup workspace if provided

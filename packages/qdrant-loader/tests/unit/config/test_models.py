@@ -1,16 +1,15 @@
 """Tests for configuration models."""
 
-import pytest
 from datetime import datetime
 
+import pytest
 from qdrant_loader.config.models import (
-    ProjectContext,
     ProjectConfig,
-    ProjectsConfig,
-    ParsedConfig,
-    ProjectStats,
-    ProjectInfo,
+    ProjectContext,
     ProjectDetail,
+    ProjectInfo,
+    ProjectsConfig,
+    ProjectStats,
 )
 from qdrant_loader.config.sources import SourcesConfig
 

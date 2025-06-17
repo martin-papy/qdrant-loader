@@ -2,13 +2,12 @@
 
 import pytest
 from pydantic import ValidationError
-
 from qdrant_loader.config import (
-    SemanticAnalysisConfig,
     ChunkingConfig,
     GlobalConfig,
-    Settings,
     ProjectsConfig,
+    SemanticAnalysisConfig,
+    Settings,
 )
 from qdrant_loader.config.qdrant import QdrantConfig
 

@@ -1,8 +1,8 @@
 """Tests for the init_collection module."""
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
+import pytest
 from qdrant_loader.core.init_collection import init_collection
 
 

@@ -2,17 +2,14 @@
 Unit tests for GitOperations.
 """
 
-import pytest
 import os
-import tempfile
 import shutil
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch, Mock
-from pathlib import Path
+import tempfile
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
-import git
+import pytest
 from git.exc import GitCommandError
-
 from qdrant_loader.connectors.git.operations import GitOperations
 
 

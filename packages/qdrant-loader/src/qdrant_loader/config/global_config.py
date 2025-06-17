@@ -14,7 +14,6 @@ from qdrant_loader.config.embedding import EmbeddingConfig
 from qdrant_loader.config.qdrant import QdrantConfig
 from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.state import StateManagementConfig
-from qdrant_loader.config.types import GlobalConfigDict
 from qdrant_loader.core.file_conversion import FileConversionConfig
 
 

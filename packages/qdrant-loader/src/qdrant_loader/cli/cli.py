@@ -2,12 +2,10 @@
 
 import asyncio
 import json
-import os
 import signal
 from pathlib import Path
 
 import click
-import tomli
 from click.decorators import group, option
 from click.exceptions import ClickException
 from click.types import Choice
@@ -129,9 +127,8 @@ def _setup_workspace(workspace_path: Path):
     try:
         # Lazy import to avoid slow startup
         from qdrant_loader.config.workspace import (
-            WorkspaceConfig,
-            setup_workspace,
             create_workspace_structure,
+            setup_workspace,
         )
 
         # Create workspace structure if needed
@@ -178,7 +175,6 @@ def _load_config_with_workspace(
     try:
         # Lazy import to avoid slow startup
         from qdrant_loader.config import (
-            initialize_config,
             initialize_config_with_workspace,
         )
 
@@ -559,7 +555,6 @@ async def ingest(
         except NotImplementedError:
             # Windows doesn't support signal handlers in ProactorEventLoop
             # Use a different approach for graceful shutdown on Windows
-            import threading
 
             def _signal_handler(signum, frame):
                 logger = LoggingConfig.get_logger(__name__)

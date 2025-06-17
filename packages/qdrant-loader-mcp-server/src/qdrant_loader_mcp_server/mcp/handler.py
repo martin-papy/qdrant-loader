@@ -469,7 +469,7 @@ class MCPHandler:
 
         # Add attachment information if this is a file attachment
         if result.is_attachment:
-            formatted_result += f"\n📎 Attachment"
+            formatted_result += "\n📎 Attachment"
             if result.original_filename:
                 formatted_result += f": {result.original_filename}"
             if result.attachment_context:
@@ -867,7 +867,7 @@ class MCPHandler:
             formatted_result += f" - {result.source_title}"
 
         # Add attachment information
-        formatted_result += f"\n📎 Attachment"
+        formatted_result += "\n📎 Attachment"
         if result.original_filename:
             formatted_result += f": {result.original_filename}"
         if result.attachment_context:

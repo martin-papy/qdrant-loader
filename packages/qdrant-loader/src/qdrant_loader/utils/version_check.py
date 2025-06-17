@@ -1,14 +1,10 @@
 """Version checking utility for QDrant Loader CLI."""
 
-import asyncio
 import json
-import os
 import time
 from pathlib import Path
-from typing import Optional, Tuple
-from urllib.parse import urljoin
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
 from packaging import version
 
@@ -29,7 +25,7 @@ class VersionChecker:
         self.current_version = current_version
         self.cache_path = Path.home() / self.CACHE_FILE
 
-    def _get_cache_data(self) -> Optional[dict]:
+    def _get_cache_data(self) -> dict | None:
         """Get cached version data if still valid.
 
         Returns:
@@ -39,7 +35,7 @@ class VersionChecker:
             if not self.cache_path.exists():
                 return None
 
-            with open(self.cache_path, "r") as f:
+            with open(self.cache_path) as f:
                 cache_data = json.load(f)
 
             # Check if cache is still valid
@@ -65,7 +61,7 @@ class VersionChecker:
             # Silently fail if we can't write cache
             pass
 
-    def _fetch_latest_version(self) -> Optional[str]:
+    def _fetch_latest_version(self) -> str | None:
         """Fetch latest version from PyPI.
 
         Returns:
@@ -85,7 +81,7 @@ class VersionChecker:
         except (URLError, HTTPError, json.JSONDecodeError, KeyError, OSError):
             return None
 
-    def check_for_updates(self, silent: bool = False) -> Tuple[bool, Optional[str]]:
+    def check_for_updates(self, silent: bool = False) -> tuple[bool, str | None]:
         """Check if a newer version is available.
 
         Args:
@@ -127,11 +123,11 @@ class VersionChecker:
         Args:
             latest_version: Latest available version
         """
-        print(f"\n🆕 A new version of qdrant-loader is available!")
+        print("\n🆕 A new version of qdrant-loader is available!")
         print(f"   Current: {self.current_version}")
         print(f"   Latest:  {latest_version}")
         print(
-            f"   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
+            "   Update:  pip install --upgrade qdrant-loader qdrant-loader-mcp-server"
         )
         print()
 

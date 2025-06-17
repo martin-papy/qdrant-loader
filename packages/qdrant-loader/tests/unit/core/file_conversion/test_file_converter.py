@@ -2,17 +2,12 @@
 Unit tests for the file converter.
 """
 
-import pytest
-import tempfile
 import signal
-import time
+import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from qdrant_loader.core.file_conversion.file_converter import (
-    FileConverter,
-    TimeoutHandler,
-)
+import pytest
 from qdrant_loader.core.file_conversion.conversion_config import (
     FileConversionConfig,
     MarkItDownConfig,
@@ -23,6 +18,10 @@ from qdrant_loader.core.file_conversion.exceptions import (
     FileSizeExceededError,
     MarkItDownError,
     UnsupportedFileTypeError,
+)
+from qdrant_loader.core.file_conversion.file_converter import (
+    FileConverter,
+    TimeoutHandler,
 )
 
 

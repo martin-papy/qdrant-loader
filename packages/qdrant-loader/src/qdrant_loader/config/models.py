@@ -5,8 +5,8 @@ including project contexts, project configurations, and related models.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -19,9 +19,9 @@ class ProjectContext:
 
     project_id: str
     display_name: str
-    description: Optional[str]
+    description: str | None
     collection_name: str
-    config_overrides: Dict[str, Any]
+    config_overrides: dict[str, Any]
 
     def __post_init__(self):
         """Validate project context after initialization."""
@@ -38,11 +38,11 @@ class ProjectConfig(BaseModel):
 
     project_id: str = Field(..., description="Unique project identifier")
     display_name: str = Field(..., description="Human-readable project name")
-    description: Optional[str] = Field(None, description="Project description")
+    description: str | None = Field(None, description="Project description")
     sources: SourcesConfig = Field(
         default_factory=SourcesConfig, description="Project-specific sources"
     )
-    overrides: Dict[str, Any] = Field(
+    overrides: dict[str, Any] = Field(
         default_factory=dict, description="Project-specific configuration overrides"
     )
 
@@ -62,11 +62,11 @@ class ProjectConfig(BaseModel):
 class ProjectsConfig(BaseModel):
     """Configuration for multiple projects."""
 
-    projects: Dict[str, ProjectConfig] = Field(
+    projects: dict[str, ProjectConfig] = Field(
         default_factory=dict, description="Project configurations"
     )
 
-    def get_project(self, project_id: str) -> Optional[ProjectConfig]:
+    def get_project(self, project_id: str) -> ProjectConfig | None:
         """Get a project configuration by ID.
 
         Args:
@@ -77,7 +77,7 @@ class ProjectsConfig(BaseModel):
         """
         return self.projects.get(project_id)
 
-    def list_project_ids(self) -> List[str]:
+    def list_project_ids(self) -> list[str]:
         """Get a list of all project IDs.
 
         Returns:
@@ -99,7 +99,7 @@ class ProjectsConfig(BaseModel):
 
         self.projects[project_config.project_id] = project_config
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the projects configuration to a dictionary.
 
         Returns:
@@ -118,7 +118,7 @@ class ParsedConfig:
     global_config: Any  # Will be GlobalConfig, but avoiding circular import
     projects_config: ProjectsConfig
 
-    def get_all_projects(self) -> List[ProjectConfig]:
+    def get_all_projects(self) -> list[ProjectConfig]:
         """Get all project configurations.
 
         Returns:
@@ -133,8 +133,8 @@ class ProjectStats(BaseModel):
     project_id: str = Field(..., description="Project identifier")
     document_count: int = Field(default=0, description="Number of documents in project")
     source_count: int = Field(default=0, description="Number of sources in project")
-    last_updated: Optional[datetime] = Field(None, description="Last update timestamp")
-    storage_size: Optional[int] = Field(None, description="Storage size in bytes")
+    last_updated: datetime | None = Field(None, description="Last update timestamp")
+    storage_size: int | None = Field(None, description="Storage size in bytes")
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -145,11 +145,11 @@ class ProjectInfo(BaseModel):
 
     id: str = Field(..., description="Project identifier")
     display_name: str = Field(..., description="Project display name")
-    description: Optional[str] = Field(None, description="Project description")
+    description: str | None = Field(None, description="Project description")
     collection_name: str = Field(..., description="QDrant collection name")
     source_count: int = Field(default=0, description="Number of sources")
     document_count: int = Field(default=0, description="Number of documents")
-    last_updated: Optional[datetime] = Field(None, description="Last update timestamp")
+    last_updated: datetime | None = Field(None, description="Last update timestamp")
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -158,9 +158,9 @@ class ProjectInfo(BaseModel):
 class ProjectDetail(ProjectInfo):
     """Detailed project information including sources and statistics."""
 
-    sources: List[Dict[str, Any]] = Field(
+    sources: list[dict[str, Any]] = Field(
         default_factory=list, description="Source information"
     )
-    statistics: Dict[str, Any] = Field(
+    statistics: dict[str, Any] = Field(
         default_factory=dict, description="Project statistics"
     )

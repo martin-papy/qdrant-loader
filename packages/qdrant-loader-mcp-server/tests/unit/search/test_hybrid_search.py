@@ -2,12 +2,11 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 import numpy as np
+import pytest
 from openai import AsyncOpenAI
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
-    HybridSearchResult,
 )
 from qdrant_loader_mcp_server.search.models import SearchResult
 

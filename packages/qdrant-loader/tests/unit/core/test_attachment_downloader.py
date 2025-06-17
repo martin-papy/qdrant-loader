@@ -2,21 +2,17 @@
 Unit tests for the attachment downloader service.
 """
 
-import pytest
 import tempfile
-import json
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 from pathlib import Path
-from datetime import datetime, UTC
+from unittest.mock import MagicMock, patch
 
+import pytest
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
 )
-from qdrant_loader.core.file_conversion.file_converter import FileConverter
-from qdrant_loader.core.file_conversion.file_detector import FileDetector
-from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 
 
 @pytest.fixture

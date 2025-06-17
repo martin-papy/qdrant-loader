@@ -10,7 +10,6 @@ This module provides the core project management functionality including:
 
 import hashlib
 from datetime import UTC, datetime
-from typing import Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,9 +28,9 @@ class ProjectContext:
         self,
         project_id: str,
         display_name: str,
-        description: Optional[str] = None,
-        collection_name: Optional[str] = None,
-        config: Optional[ProjectConfig] = None,
+        description: str | None = None,
+        collection_name: str | None = None,
+        config: ProjectConfig | None = None,
     ):
         self.project_id = project_id
         self.display_name = display_name
@@ -40,7 +39,7 @@ class ProjectContext:
         self.config = config
         self.created_at = datetime.now(UTC)
 
-    def to_metadata(self) -> Dict[str, str]:
+    def to_metadata(self) -> dict[str, str]:
         """Convert project context to metadata dictionary for document injection."""
         metadata = {
             "project_id": self.project_id,
@@ -64,7 +63,7 @@ class ProjectManager:
         self.projects_config = projects_config
         self.global_collection_name = global_collection_name
         self.logger = LoggingConfig.get_logger(__name__)
-        self._project_contexts: Dict[str, ProjectContext] = {}
+        self._project_contexts: dict[str, ProjectContext] = {}
         self._initialized = False
 
     async def initialize(self, session: AsyncSession) -> None:
@@ -165,11 +164,11 @@ class ProjectManager:
                     f"Updating project configuration: {context.project_id}"
                 )
                 # Use setattr for SQLAlchemy model attribute assignment
-                setattr(project, "display_name", context.display_name)
-                setattr(project, "description", context.description)
-                setattr(project, "collection_name", context.collection_name)
-                setattr(project, "config_hash", config_hash)
-                setattr(project, "updated_at", now)
+                project.display_name = context.display_name  # type: ignore
+                project.description = context.description  # type: ignore
+                project.collection_name = context.collection_name  # type: ignore
+                project.config_hash = config_hash  # type: ignore
+                project.updated_at = now  # type: ignore
         else:
             # Create new project
             self.logger.info(f"Creating new project: {context.project_id}")
@@ -237,8 +236,8 @@ class ProjectManager:
                         self.logger.debug(
                             f"Updating source configuration: {source_type}:{source_name}"
                         )
-                        setattr(source, "config_hash", source_config_hash)
-                        setattr(source, "updated_at", now)
+                        source.config_hash = source_config_hash  # type: ignore
+                        source.updated_at = now  # type: ignore
                 else:
                     # Create new source
                     self.logger.debug(
@@ -317,26 +316,26 @@ class ProjectManager:
             # Fallback to string representation
             return {"config": str(source_config)}
 
-    def get_project_context(self, project_id: str) -> Optional[ProjectContext]:
+    def get_project_context(self, project_id: str) -> ProjectContext | None:
         """Get project context by ID."""
         return self._project_contexts.get(project_id)
 
-    def get_all_project_contexts(self) -> Dict[str, ProjectContext]:
+    def get_all_project_contexts(self) -> dict[str, ProjectContext]:
         """Get all project contexts."""
         return self._project_contexts.copy()
 
-    def list_project_ids(self) -> List[str]:
+    def list_project_ids(self) -> list[str]:
         """Get list of all project IDs."""
         return list(self._project_contexts.keys())
 
-    def get_project_collection_name(self, project_id: str) -> Optional[str]:
+    def get_project_collection_name(self, project_id: str) -> str | None:
         """Get the collection name for a specific project."""
         context = self._project_contexts.get(project_id)
         return context.collection_name if context else None
 
     def inject_project_metadata(
-        self, project_id: str, metadata: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, project_id: str, metadata: dict[str, str]
+    ) -> dict[str, str]:
         """Inject project metadata into document metadata."""
         context = self._project_contexts.get(project_id)
         if not context:
@@ -355,7 +354,7 @@ class ProjectManager:
 
     async def get_project_stats(
         self, session: AsyncSession, project_id: str
-    ) -> Optional[Dict]:
+    ) -> dict | None:
         """Get statistics for a specific project."""
         if not self.validate_project_exists(project_id):
             return None

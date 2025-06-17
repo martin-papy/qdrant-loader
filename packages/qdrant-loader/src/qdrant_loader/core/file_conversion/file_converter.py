@@ -1,16 +1,12 @@
 """Main file conversion service using MarkItDown."""
 
-import logging
 import os
 import signal
 import sys
-import tempfile
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
-from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion.conversion_config import FileConversionConfig
 from qdrant_loader.core.file_conversion.exceptions import (
     ConversionTimeoutError,

@@ -113,14 +113,7 @@ class EmbeddingService:
 
                 return result
 
-            except (
-                asyncio.TimeoutError,
-                requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.HTTPError,
-                ConnectionError,
-                OSError,
-            ) as e:
+            except (TimeoutError, requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError, ConnectionError, OSError) as e:
                 last_exception = e
 
                 if attempt == self.max_retries:
@@ -282,7 +275,7 @@ class EmbeddingService:
             return []
 
         batch_num = getattr(self, "_batch_counter", 0) + 1
-        setattr(self, "_batch_counter", batch_num)
+        self._batch_counter = batch_num
 
         logger.debug(
             "Processing embedding batch",

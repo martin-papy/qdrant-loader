@@ -2,15 +2,15 @@
 Tests for the Project Manager component.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import AnyUrl
 
+import pytest
+from pydantic import AnyUrl
 from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.sources import SourcesConfig
-from qdrant_loader.core.project_manager import ProjectManager, ProjectContext
 from qdrant_loader.connectors.git.config import GitRepoConfig
+from qdrant_loader.core.project_manager import ProjectContext, ProjectManager
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.fixture

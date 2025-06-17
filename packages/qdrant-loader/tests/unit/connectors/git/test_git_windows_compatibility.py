@@ -1,8 +1,7 @@
 """Test Windows compatibility for Git connector."""
 
 import os
-import tempfile
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest

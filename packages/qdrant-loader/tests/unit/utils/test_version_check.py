@@ -1,15 +1,11 @@
 """Tests for version checking utility."""
 
 import json
-import os
-import tempfile
 import time
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
-from urllib.error import URLError, HTTPError
 from email.message import EmailMessage
-
-import pytest
+from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
+from urllib.error import HTTPError, URLError
 
 from qdrant_loader.utils.version_check import (
     VersionChecker,

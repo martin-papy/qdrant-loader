@@ -2,21 +2,20 @@
 Tests for pipeline integration with multi-project support.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import AnyUrl
 
+import pytest
+from pydantic import AnyUrl
 from qdrant_loader.config import Settings
-from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
-from qdrant_loader.config.sources import SourcesConfig
 from qdrant_loader.config.global_config import GlobalConfig
+from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 from qdrant_loader.config.qdrant import QdrantConfig
+from qdrant_loader.config.sources import SourcesConfig
+from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
+from qdrant_loader.core.document import Document
 from qdrant_loader.core.qdrant_manager import QdrantManager
 from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.document import Document
-from qdrant_loader.connectors.git.config import GitRepoConfig
 
 
 @pytest.fixture

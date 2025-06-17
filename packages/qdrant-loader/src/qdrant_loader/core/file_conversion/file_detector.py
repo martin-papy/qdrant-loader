@@ -3,7 +3,6 @@
 import mimetypes
 import os
 from pathlib import Path
-from typing import Optional, Tuple
 
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -87,7 +86,7 @@ class FileDetector:
         for ext, mime_type in custom_types.items():
             mimetypes.add_type(mime_type, ext)
 
-    def detect_file_type(self, file_path: str) -> Tuple[Optional[str], Optional[str]]:
+    def detect_file_type(self, file_path: str) -> tuple[str | None, str | None]:
         """Detect file type using MIME type detection with extension fallback.
 
         Args:
@@ -118,7 +117,7 @@ class FileDetector:
             )
             return None, None
 
-    def _detect_mime_type(self, file_path: str) -> Optional[str]:
+    def _detect_mime_type(self, file_path: str) -> str | None:
         """Detect MIME type using mimetypes module.
 
         Args:

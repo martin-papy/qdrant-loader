@@ -1,6 +1,7 @@
 import asyncio
 import re
 from datetime import datetime
+from urllib.parse import urlparse
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -17,13 +18,11 @@ from qdrant_loader.core.attachment_downloader import (
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
+    FileConversionConfig,
     FileConverter,
     FileDetector,
-    FileConversionConfig,
-    FileConversionError,
 )
 from qdrant_loader.utils.logging import LoggingConfig
-from urllib.parse import urlparse
 
 logger = LoggingConfig.get_logger(__name__)
 

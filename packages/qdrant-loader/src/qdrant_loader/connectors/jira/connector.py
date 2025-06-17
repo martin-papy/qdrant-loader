@@ -231,7 +231,7 @@ class JiraConnector(BaseConnector):
 
                 return response.json()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(
                     "JIRA API request timed out",
                     method=method,

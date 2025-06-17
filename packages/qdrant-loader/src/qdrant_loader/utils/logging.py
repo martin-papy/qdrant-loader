@@ -1,10 +1,9 @@
 """Centralized logging configuration for the application."""
 
 import logging
-import structlog
-import sys
 import re
-from typing import Any, Dict
+
+import structlog
 
 
 class QdrantVersionFilter(logging.Filter):
@@ -125,7 +124,7 @@ class CleanFileHandler(logging.FileHandler):
             stream = self.stream
             try:
                 stream.write(clean_msg + self.terminator)
-            except UnicodeEncodeError as e:
+            except UnicodeEncodeError:
                 # Fallback for Windows console encoding issues
                 # Replace problematic Unicode characters with safe alternatives
                 import sys
@@ -359,7 +358,6 @@ class LoggingConfig:
         handlers = []
 
         # Add console handler with Windows encoding support
-        import sys
 
         # Use Windows-safe console handler for all platforms
         console_handler = WindowsSafeConsoleHandler()

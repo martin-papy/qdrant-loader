@@ -1,6 +1,5 @@
 """Custom exceptions for file conversion operations."""
 
-from typing import Optional
 
 
 class FileConversionError(Exception):
@@ -9,8 +8,8 @@ class FileConversionError(Exception):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        file_type: Optional[str] = None,
+        file_path: str | None = None,
+        file_type: str | None = None,
     ):
         """Initialize the exception.
 
@@ -27,7 +26,7 @@ class FileConversionError(Exception):
 class UnsupportedFileTypeError(FileConversionError):
     """Exception raised when file type is not supported for conversion."""
 
-    def __init__(self, file_type: str, file_path: Optional[str] = None):
+    def __init__(self, file_type: str, file_path: str | None = None):
         """Initialize the exception.
 
         Args:
@@ -41,7 +40,7 @@ class UnsupportedFileTypeError(FileConversionError):
 class FileSizeExceededError(FileConversionError):
     """Exception raised when file size exceeds the maximum allowed size."""
 
-    def __init__(self, file_size: int, max_size: int, file_path: Optional[str] = None):
+    def __init__(self, file_size: int, max_size: int, file_path: str | None = None):
         """Initialize the exception.
 
         Args:
@@ -60,7 +59,7 @@ class FileSizeExceededError(FileConversionError):
 class ConversionTimeoutError(FileConversionError):
     """Exception raised when file conversion times out."""
 
-    def __init__(self, timeout: int, file_path: Optional[str] = None):
+    def __init__(self, timeout: int, file_path: str | None = None):
         """Initialize the exception.
 
         Args:
@@ -78,8 +77,8 @@ class MarkItDownError(FileConversionError):
     def __init__(
         self,
         original_error: Exception,
-        file_path: Optional[str] = None,
-        file_type: Optional[str] = None,
+        file_path: str | None = None,
+        file_type: str | None = None,
     ):
         """Initialize the exception.
 
@@ -96,7 +95,7 @@ class MarkItDownError(FileConversionError):
 class FileAccessError(FileConversionError):
     """Exception raised when file cannot be accessed or read."""
 
-    def __init__(self, file_path: str, original_error: Optional[Exception] = None):
+    def __init__(self, file_path: str, original_error: Exception | None = None):
         """Initialize the exception.
 
         Args:

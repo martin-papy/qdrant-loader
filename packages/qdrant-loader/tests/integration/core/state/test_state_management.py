@@ -2,15 +2,13 @@
 Tests for state management extensions - file conversion and attachment metadata tracking.
 """
 
-import pytest
-import pytest_asyncio
-from datetime import datetime, UTC
 from unittest.mock import MagicMock
 
-from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
-from qdrant_loader.core.document import Document
+import pytest
+import pytest_asyncio
 from qdrant_loader.config.state import StateManagementConfig
+from qdrant_loader.core.document import Document
+from qdrant_loader.core.state.state_manager import StateManager
 
 
 @pytest.fixture

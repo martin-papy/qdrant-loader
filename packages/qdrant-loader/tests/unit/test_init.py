@@ -1,7 +1,7 @@
 """Tests for the __init__.py module."""
 
+
 import pytest
-from unittest.mock import patch, Mock
 
 
 class TestInit:
