@@ -1,0 +1,398 @@
+# Metadata Extraction Configuration Template
+# Copy this file to metadata-extraction.yaml and customize it for your needs
+# Environment variables can be used with ${VARIABLE_NAME} syntax
+
+# Configuration Notes:
+# 
+# 1. Extraction Strategies:
+#    - minimal: Extract only essential metadata (authors, timestamps)
+#    - standard: Extract common metadata types (default)
+#    - comprehensive: Extract all available metadata
+#    - custom: Use detailed custom configuration below
+#
+# 2. Performance Considerations:
+#    - Higher extraction levels require more processing time
+#    - Semantic analysis can be resource-intensive
+#    - Consider your system resources when configuring
+#
+# 3. Quality Control:
+#    - Enable validation and quality scoring for better results
+#    - Configure sensitive data patterns for security
+#    - Set appropriate confidence thresholds
+#
+# 4. Source-Specific Settings:
+#    - Each connector type has specialized extraction options
+#    - Configure based on your data sources and requirements
+#    - Balance between comprehensiveness and performance
+
+# =============================================================================
+# Global Metadata Extraction Configuration
+# =============================================================================
+metadata_extraction:
+  # Enable/disable metadata extraction globally
+  enabled: true
+  
+  # Extraction strategy: minimal, standard, comprehensive, custom
+  # - minimal: Only essential metadata (fast)
+  # - standard: Common metadata types (balanced)
+  # - comprehensive: All available metadata (thorough)
+  # - custom: Use detailed configuration below
+  strategy: "standard"
+  
+  # Legacy compatibility settings
+  include_system_metadata: false
+  max_relationships: 100
+  max_cross_references: 50
+
+# =============================================================================
+# Author Metadata Extraction
+# =============================================================================
+  authors:
+    enabled: true
+    
+    # Extraction methods (can use multiple):
+    # - content_analysis: Analyze content for author information
+    # - system_metadata: Use system-provided metadata
+    # - version_control: Extract from version control systems
+    # - api_attributes: Use API-provided attributes
+    # - hybrid: Combine multiple methods (recommended)
+    methods:
+      - "hybrid"
+    
+    # What to extract
+    extract_display_names: true
+    extract_email_addresses: true
+    extract_usernames: true
+    extract_roles: true
+    extract_avatars: false
+    extract_profiles: false
+    
+    # Content analysis settings
+    content_analysis:
+      search_patterns:
+        - "(?i)author[:\\s]+([^\\n\\r]+)"
+        - "(?i)by[:\\s]+([^\\n\\r]+)"
+        - "(?i)created by[:\\s]+([^\\n\\r]+)"
+        - "(?i)written by[:\\s]+([^\\n\\r]+)"
+      exclude_patterns:
+        - "(?i)system"
+        - "(?i)automated"
+        - "(?i)unknown"
+      confidence_threshold: 0.7
+    
+    # Data quality settings
+    deduplicate_authors: true
+    normalize_names: true
+    merge_similar_authors: true
+    similarity_threshold: 0.85
+
+# =============================================================================
+# Timestamp Metadata Extraction
+# =============================================================================
+  timestamps:
+    enabled: true
+    
+    # Extraction methods:
+    # - filesystem: Use filesystem timestamps
+    # - content_parsing: Parse timestamps from content
+    # - api_metadata: Use API-provided timestamps
+    # - version_history: Extract from version history
+    # - hybrid: Combine multiple methods (recommended)
+    methods:
+      - "hybrid"
+    
+    # What to extract
+    extract_created: true
+    extract_modified: true
+    extract_published: true
+    extract_accessed: false
+    extract_archived: false
+    extract_versions: true
+    
+    # Content parsing settings
+    content_parsing:
+      date_patterns:
+        - "(?i)date[:\\s]+(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2})"
+        - "(?i)created[:\\s]+(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2})"
+        - "(?i)modified[:\\s]+(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2})"
+        - "(?i)published[:\\s]+(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2})"
+      time_patterns:
+        - "(\\d{1,2}:\\d{2}(?::\\d{2})?)"
+        - "(\\d{1,2}:\\d{2}(?::\\d{2})?\\s*(?:AM|PM))"
+      timezone_patterns:
+        - "(UTC[+-]\\d{1,2})"
+        - "([A-Z]{3,4})"
+    
+    # Timezone handling
+    default_timezone: "UTC"
+    normalize_to_utc: true
+
+# =============================================================================
+# Relationship Metadata Extraction
+# =============================================================================
+  relationships:
+    enabled: true
+    
+    # Extraction methods:
+    # - content_links: Extract links from content
+    # - directory_structure: Use directory hierarchy
+    # - api_relationships: Use API-provided relationships
+    # - semantic_analysis: Analyze semantic relationships
+    # - cross_reference: Extract cross-references
+    # - hybrid: Combine multiple methods (recommended)
+    methods:
+      - "content_links"
+      - "directory_structure"
+    
+    max_relationships: 100
+    
+    # Relationship types to extract
+    extract_hierarchical: true
+    extract_dependencies: true
+    extract_references: true
+    extract_similarities: false  # Can be resource-intensive
+    extract_sequences: true
+    
+    # Content link analysis
+    content_links:
+      extract_internal_links: true
+      extract_external_links: false
+      extract_anchor_text: true
+      resolve_relative_links: true
+      include_fragment_links: false
+      link_patterns:
+        - "\\[([^\\]]+)\\]\\(([^)]+)\\)"  # Markdown links
+        - "<a[^>]+href=[\"']([^\"']+)[\"'][^>]*>([^<]+)</a>"  # HTML links
+        - "href=[\"']([^\"']+)[\"']"  # Generic href attributes
+    
+    # Directory structure analysis
+    directory_structure:
+      max_depth: 10
+      include_parent_child: true
+      include_sibling: false
+      include_ancestor: true
+      weight_by_depth: true
+      depth_weight_factor: 0.8
+    
+    # Semantic analysis (resource-intensive)
+    semantic_analysis:
+      enabled: false
+      similarity_threshold: 0.7
+      max_comparisons: 1000
+      use_embeddings: true
+      embedding_model: "text-embedding-3-small"
+      content_similarity_weight: 0.6
+      title_similarity_weight: 0.4
+    
+    # Relationship quality
+    minimum_confidence: 0.5
+    deduplicate_relationships: true
+    bidirectional_relationships: false
+
+# =============================================================================
+# Cross-Reference Metadata Extraction
+# =============================================================================
+  cross_references:
+    enabled: true
+    max_cross_references: 50
+    
+    # Cross-reference types
+    extract_links: true
+    extract_mentions: true
+    extract_citations: true
+    extract_attachments: true
+    extract_embeds: true
+    extract_includes: true
+    extract_imports: true
+    
+    # Reference resolution
+    resolve_references: true
+    resolution_timeout: 5
+    include_external_references: false
+    
+    # Pattern matching
+    mention_patterns:
+      - "@([a-zA-Z0-9_-]+)"  # @mentions
+      - "#([a-zA-Z0-9_-]+)"  # #hashtags
+      - "\\b([A-Z][A-Z0-9_]+-\\d+)\\b"  # Issue/ticket references
+      - "\\b(RFC\\s*\\d+)\\b"  # RFC references
+      - "\\b(DOC-\\d+)\\b"  # Document references
+    
+    citation_patterns:
+      - "\\[(\\d+)\\]"  # Numbered citations
+      - "\\[([^\\]]+,\\s*\\d{4})\\]"  # Author, year citations
+      - "\\(([^\\)]+,\\s*\\d{4})\\)"  # Parenthetical citations
+      - "(?i)see\\s+([^\\n\\r.]+)"  # "See also" references
+      - "(?i)ref(?:erence)?[:\\s]+([^\\n\\r.]+)"  # Reference indicators
+
+# =============================================================================
+# Source-Specific Extraction Settings
+# =============================================================================
+  source_specific:
+    enabled: true
+    
+    # Git repository sources
+    git:
+      extract_commit_info: true
+      extract_branch_info: true
+      extract_tag_info: true
+      extract_merge_info: true
+      extract_file_history: true
+      max_history_depth: 100
+      include_parent_commits: true
+      extract_commit_stats: true
+      extract_author_stats: true
+    
+    # Confluence sources
+    confluence:
+      extract_space_info: true
+      extract_page_hierarchy: true
+      extract_labels: true
+      extract_restrictions: true
+      extract_attachments: true
+      extract_comments: false
+      extract_page_history: true
+      max_history_versions: 10
+      extract_macro_info: true
+      extract_template_info: true
+    
+    # JIRA sources
+    jira:
+      extract_issue_hierarchy: true
+      extract_linked_issues: true
+      extract_components: true
+      extract_versions: true
+      extract_labels: true
+      extract_custom_fields: true
+      extract_comments: false
+      extract_workflow_history: true
+      max_history_entries: 50
+      extract_time_tracking: true
+      extract_attachments: true
+    
+    # Local file sources
+    localfile:
+      extract_filesystem_metadata: true
+      extract_file_permissions: false
+      extract_file_stats: true
+      extract_directory_structure: true
+      extract_file_type_metadata: true
+      extract_encoding_info: true
+      extract_content_structure: true
+      analyze_code_files: true
+      analyze_document_files: true
+      analyze_config_files: true
+    
+    # Public documentation sources
+    publicdocs:
+      extract_html_metadata: true
+      extract_seo_metadata: true
+      extract_navigation_structure: true
+      extract_breadcrumbs: true
+      extract_social_metadata: true
+      extract_schema_org: true
+      extract_dublin_core: true
+      extract_open_graph: true
+      extract_twitter_cards: true
+      analyze_page_structure: true
+
+# =============================================================================
+# Performance Configuration
+# =============================================================================
+  performance:
+    # Parallel processing
+    max_parallel_extractions: 4
+    extraction_timeout: 30
+    
+    # Caching
+    enable_caching: true
+    cache_ttl: 3600  # 1 hour
+    cache_size_limit: 1000
+    
+    # Memory management
+    max_content_size: 10485760  # 10MB
+    chunk_large_content: true
+    chunk_size: 1048576  # 1MB
+    
+    # Error handling
+    continue_on_error: true
+    max_retries: 3
+    retry_delay: 1.0
+
+# =============================================================================
+# Quality Control Configuration
+# =============================================================================
+  quality:
+    # Validation
+    enable_validation: true
+    strict_validation: false
+    
+    # Quality scoring
+    enable_quality_scoring: true
+    minimum_quality_score: 0.6
+    
+    # Required fields
+    required_fields:
+      - "content_length"
+      - "content_type"
+      - "extraction_timestamp"
+    
+    # Consistency checks
+    enable_consistency_checks: true
+    cross_validate_timestamps: true
+    cross_validate_authors: true
+    
+    # Security and sanitization
+    sanitize_metadata: true
+    remove_sensitive_data: true
+    sensitive_patterns:
+      - "\\b\\d{3}-\\d{2}-\\d{4}\\b"  # SSN
+      - "\\b\\d{4}\\s?\\d{4}\\s?\\d{4}\\s?\\d{4}\\b"  # Credit card
+      - "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"  # Email
+      - "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"  # IP address
+
+# =============================================================================
+# Preset Configurations
+# =============================================================================
+
+# Uncomment one of these preset configurations for quick setup:
+
+# Fast/Minimal Configuration (for development or testing)
+# metadata_extraction:
+#   enabled: true
+#   strategy: "minimal"
+#   authors:
+#     enabled: true
+#     methods: ["system_metadata"]
+#   timestamps:
+#     enabled: true
+#     methods: ["filesystem"]
+#   relationships:
+#     enabled: false
+#   cross_references:
+#     enabled: false
+#   source_specific:
+#     enabled: false
+#   performance:
+#     max_parallel_extractions: 2
+#     extraction_timeout: 10
+
+# Balanced Configuration (recommended for most use cases)
+# metadata_extraction:
+#   enabled: true
+#   strategy: "standard"
+#   # All other settings use defaults from template above
+
+# Comprehensive Configuration (for detailed analysis)
+# metadata_extraction:
+#   enabled: true
+#   strategy: "comprehensive"
+#   relationships:
+#     semantic_analysis:
+#       enabled: true
+#       max_comparisons: 5000
+#   cross_references:
+#     include_external_references: true
+#   quality:
+#     strict_validation: true
+#     minimum_quality_score: 0.8 
