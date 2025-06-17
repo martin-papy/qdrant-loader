@@ -48,29 +48,64 @@ class StateManagementConfig(BaseConfig):
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
         """Validate database path."""
         # Handle in-memory database
-        if v == ":memory:":
+        if v in (":memory:", "sqlite:///:memory:"):
             return v
 
-        # Expand environment variables, including $HOME
-        expanded_path = os.path.expanduser(os.path.expandvars(v))
-        path = Path(expanded_path)
+        # Handle SQLite URLs
+        if v.startswith("sqlite://"):
+            # For SQLite URLs, skip file path validation since they might be
+            # in-memory or use special formats
+            return v
 
-        # Convert to absolute path for consistent handling
-        if not path.is_absolute():
-            path = path.resolve()
+        # For file paths, perform basic validation but allow directory creation
+        try:
+            # Expand environment variables, including $HOME
+            expanded_path = os.path.expanduser(os.path.expandvars(v))
+            path = Path(expanded_path)
 
-        parent_dir = path.parent
+            # Convert to absolute path for consistent handling
+            if not path.is_absolute():
+                path = path.resolve()
 
-        if not parent_dir.exists():
-            raise DatabaseDirectoryError(parent_dir)
+            # For absolute paths, use them as-is
+            parent_dir = path.parent
 
-        if not parent_dir.is_dir():
-            raise ValueError(
-                f"Database directory path is not a directory: {parent_dir}"
-            )
+            # Check if parent directory exists
+            if not parent_dir.exists():
+                # Don't fail here - let StateManager handle directory creation
+                # Just validate that the path structure is reasonable
+                try:
+                    # Test if the path is valid by trying to resolve it
+                    # Don't actually create the directory here
+                    resolved_parent = parent_dir.resolve()
 
-        if not os.access(str(parent_dir), os.W_OK):
-            raise ValueError(f"Database directory is not writable: {parent_dir}")
+                    # Basic validation: ensure the path is reasonable
+                    # Note: We removed the arbitrary depth limit as it was too restrictive
+                    # for legitimate use cases like nested project structures and Windows paths
+
+                except OSError as e:
+                    raise ValueError(
+                        f"Invalid database path - cannot resolve directory {parent_dir}: {e}"
+                    )
+            else:
+                # Directory exists, check if it's actually a directory and writable
+                if not parent_dir.is_dir():
+                    raise ValueError(
+                        f"Database directory path is not a directory: {parent_dir}"
+                    )
+
+                if not os.access(str(parent_dir), os.W_OK):
+                    raise ValueError(
+                        f"Database directory is not writable: {parent_dir}"
+                    )
+
+        except Exception as e:
+            # If any validation fails, still allow the path through
+            # StateManager will provide better error handling
+            if isinstance(e, ValueError):
+                raise  # Re-raise validation errors
+            # For other exceptions, just log and allow the path
+            pass
 
         # Return the original value to preserve any environment variables
         return v

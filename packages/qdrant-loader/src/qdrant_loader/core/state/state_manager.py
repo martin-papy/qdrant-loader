@@ -10,6 +10,7 @@ from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
@@ -50,209 +51,113 @@ class StateManager:
         """Async context manager exit."""
         await self.dispose()
 
-    async def initialize(self):
-        """Initialize the database schema and connection."""
-        self.logger.debug("=== StateManager.initialize() called ===")
-        self.logger.debug(f"Already initialized: {self._initialized}")
-
+    async def initialize(self) -> None:
+        """Initialize the database and create tables if they don't exist."""
         if self._initialized:
-            self.logger.debug("StateManager already initialized, returning early")
+            self.logger.debug("StateManager already initialized, skipping")
             return
 
-        db_path_str = self.config.database_path
-        self.logger.debug(f"Starting initialization with database_path: {db_path_str}")
+        try:
+            self.logger.debug("Starting StateManager initialization")
 
-        # Handle SQLite URL formats (e.g., "sqlite:///:memory:" from tests)
-        if db_path_str.startswith("sqlite://"):
-            self.logger.debug("Detected SQLite URL format")
-            if db_path_str == "sqlite:///:memory:":
-                self.logger.debug("Using SQLite URL for in-memory database")
-                db_url = "sqlite:///:memory:"
-                db_file = ":memory:"
+            # Process database path with enhanced Windows debugging
+            db_path_str = self.config.database_path
+            self.logger.debug(f"Original database path: {db_path_str}")
+
+            # Handle special databases
+            if db_path_str in (":memory:", "sqlite:///:memory:"):
+                self.logger.debug("Using in-memory database")
+                database_url = "sqlite+aiosqlite:///:memory:"
+            elif db_path_str.startswith("sqlite://"):
+                self.logger.debug("Database path is already a SQLite URL")
+                database_url = db_path_str.replace("sqlite://", "sqlite+aiosqlite://")
             else:
-                # For other SQLite URLs, use them directly
-                self.logger.debug(f"Using provided SQLite URL: {db_path_str}")
-                db_url = db_path_str
-                # Extract file path from URL for permission checks
-                if db_path_str.startswith("sqlite:///"):
-                    # Remove sqlite:/// prefix to get file path
-                    file_part = db_path_str[10:]  # Remove "sqlite:///"
-                    db_file = file_part if file_part else ":memory:"
-                else:
-                    db_file = ":memory:"  # Fallback for other URL formats
-        # Handle in-memory database case
-        elif db_path_str == ":memory:":
-            self.logger.debug("Using in-memory database")
-            db_url = "sqlite:///:memory:"
-            db_file = ":memory:"
-        else:
-            self.logger.debug(f"Processing database path: {db_path_str}")
-            # Convert string path to Path object for cross-platform handling
-            db_path = Path(db_path_str)
-            self.logger.debug(f"Path object created: {db_path}")
-            self.logger.debug(f"Path is absolute: {db_path.is_absolute()}")
+                # Process file path
+                self.logger.debug(f"Processing file path: {db_path_str}")
+                db_path = Path(db_path_str)
 
-            # Ensure we have an absolute path
-            if not db_path.is_absolute():
-                original_path = db_path
-                db_path = db_path.resolve()
-                self.logger.debug(
-                    f"Resolved relative path: {original_path} -> {db_path}"
-                )
+                # Resolve to absolute path for proper handling
+                if not db_path.is_absolute():
+                    db_path = db_path.resolve()
+                    self.logger.debug(f"Resolved relative path to: {db_path}")
 
-            self.logger.debug(f"Final absolute path: {db_path}")
-            self.logger.debug(f"Path parts: {db_path.parts}")
+                # Validate parent directory exists
+                parent_dir = db_path.parent
+                self.logger.debug(f"Database parent directory: {parent_dir}")
 
-            # For SQLite URLs, we need forward slashes even on Windows
-            # Convert to POSIX-style path for the URL
-            if db_path.is_absolute() and db_path.parts[0].endswith(":"):
-                # Windows absolute path with drive letter (e.g., C:\path\to\db.sqlite)
-                # SQLite expects sqlite:///C:/path/to/db.sqlite format (3 slashes + drive)
-                self.logger.debug("Detected Windows absolute path with drive letter")
+                if not parent_dir.exists():
+                    self.logger.debug(f"Creating parent directory: {parent_dir}")
+                    try:
+                        parent_dir.mkdir(parents=True, exist_ok=True)
+                        self.logger.debug("Parent directory created successfully")
+                    except Exception as e:
+                        self.logger.error(f"Failed to create parent directory: {e}")
+                        raise DatabaseError(
+                            f"Cannot create database directory {parent_dir}: {e}"
+                        )
+
+                # Check directory permissions
+                if not os.access(parent_dir, os.W_OK):
+                    error_msg = (
+                        f"No write permission for database directory: {parent_dir}"
+                    )
+                    self.logger.error(error_msg)
+                    raise DatabaseError(error_msg)
+
+                # Convert to proper SQLite URL format
                 db_url_path = db_path.as_posix()
-                db_url = f"sqlite:///{db_url_path}"
-                self.logger.debug(f"Windows path converted to POSIX: {db_url_path}")
-            else:
-                # Unix-style absolute path or relative path
-                self.logger.debug("Processing Unix-style or relative path")
-                db_url_path = db_path.as_posix()
-                if db_url_path.startswith("/"):
-                    # Unix absolute path - need 4 slashes total after aiosqlite conversion
-                    # Generate sqlite:////path so it becomes sqlite+aiosqlite:////path
-                    db_url = f"sqlite:////{db_url_path}"
-                    self.logger.debug(f"Unix absolute path URL: {db_url}")
+                if db_path.is_absolute():
+                    # For absolute paths, ensure proper URL format
+                    if db_path.parts[0].endswith(":"):
+                        # Windows absolute path with drive letter
+                        database_url = f"sqlite+aiosqlite:///{db_url_path}"
+                    else:
+                        # Unix absolute path (already starts with /)
+                        database_url = f"sqlite+aiosqlite://{db_url_path}"
                 else:
                     # Relative path
-                    db_url = f"sqlite:///{db_url_path}"
-                    self.logger.debug(f"Relative path URL: {db_url}")
+                    database_url = f"sqlite+aiosqlite:///{db_url_path}"
 
-            # Keep the original path as string for file operations
-            db_file = str(db_path)
-            self.logger.debug(f"Final database file path: {db_file}")
-            self.logger.debug(f"Final database URL: {db_url}")
+                self.logger.debug(f"Generated database URL: {database_url}")
 
-        # Skip file permission check for in-memory database
-        if db_file != ":memory:":
-            self.logger.debug("Starting file permission checks")
-            db_path_obj = Path(db_file)
-            self.logger.debug(f"Database path object: {db_path_obj}")
-            self.logger.debug(f"Database file exists: {db_path_obj.exists()}")
-
-            # Check if the database file exists and is writable
-            if db_path_obj.exists() and not os.access(db_file, os.W_OK):
-                self.logger.error(
-                    f"Database file exists but is not writable: {db_file}"
-                )
-                raise DatabaseError(
-                    f"Database file '{db_file}' exists but is not writable. "
-                    "Please check file permissions."
-                )
-            # If file doesn't exist, check if directory is writable
-            elif not db_path_obj.exists():
-                self.logger.debug("Database file does not exist, checking directory")
-                db_dir = db_path_obj.parent
-                self.logger.debug(f"Database directory: {db_dir}")
-                self.logger.debug(f"Directory exists: {db_dir.exists()}")
-
-                if not db_dir.exists():
-                    self.logger.error(f"Database directory does not exist: {db_dir}")
-                    raise DatabaseError(
-                        f"Database directory does not exist: '{db_dir}'. "
-                        "Please create the directory first or use the CLI init command."
-                    )
-
-                dir_writable = os.access(str(db_dir), os.W_OK)
-                self.logger.debug(f"Directory writable: {dir_writable}")
-                if not dir_writable:
-                    self.logger.error(f"Directory not writable: {db_dir}")
-                    raise DatabaseError(
-                        f"Cannot create database file in '{db_dir}'. "
-                        "Directory is not writable. Please check directory permissions."
-                    )
-            else:
-                self.logger.debug("Database file exists and is writable")
-
-            self.logger.debug("File permission checks completed successfully")
-
-        # Create async engine for async operations
-        engine_args = {}
-        if db_file != ":memory:":
-            engine_args.update(
-                {
-                    "pool_size": self.config.connection_pool["size"],
-                    "pool_timeout": self.config.connection_pool["timeout"],
-                    "pool_recycle": 3600,  # Recycle connections after 1 hour
-                    "pool_pre_ping": True,  # Enable connection health checks
-                }
+            # Create database engine
+            self.logger.debug("Creating database engine")
+            self._engine = create_async_engine(
+                database_url,
+                poolclass=StaticPool,
+                connect_args={"check_same_thread": False},
+                echo=False,
             )
+            self.logger.debug("Database engine created successfully")
 
-        try:
-            self.logger.debug(f"Starting SQLite database creation process")
-            self.logger.debug(f"Database file path: {db_file}")
-            self.logger.debug(f"Database URL: {db_url}")
-            self.logger.debug(f"Engine args: {engine_args}")
-
-            # Create the engine with the properly formatted URL
-            aiosqlite_url = db_url.replace("sqlite://", "sqlite+aiosqlite://")
-            self.logger.debug(f"Original SQLite URL: {db_url}")
-            self.logger.debug(f"Converted aiosqlite URL: {aiosqlite_url}")
-            self.logger.debug(f"About to create async engine with URL: {aiosqlite_url}")
-
-            self._engine = create_async_engine(aiosqlite_url, **engine_args)
-            self.logger.debug(f"Async engine created successfully")
-
-            # Create async session factory
-            self.logger.debug("Creating async session factory")
+            # Create session factory
+            self.logger.debug("Creating session factory")
             self._session_factory = async_sessionmaker(
-                bind=self._engine,
-                expire_on_commit=False,  # Prevent expired objects after commit
-                autoflush=False,  # Disable autoflush for better control
+                self._engine, expire_on_commit=False
             )
-            self.logger.debug(f"Async session factory created successfully")
+            self.logger.debug("Session factory created successfully")
 
-            # Initialize schema
-            self.logger.debug("About to initialize database schema")
-            self.logger.debug(f"Engine dialect: {self._engine.dialect}")
-            self.logger.debug(f"Engine URL: {self._engine.url}")
-
-            try:
-                self.logger.debug("Attempting to begin database transaction")
-                async with self._engine.begin() as conn:
-                    self.logger.debug(
-                        "Database connection established, running schema creation"
-                    )
-                    self.logger.debug(f"Connection info: {conn.info}")
-                    await conn.run_sync(Base.metadata.create_all)
-                    self.logger.debug("Schema creation completed successfully")
-            except Exception as schema_error:
-                self.logger.error(f"Schema initialization failed: {schema_error}")
-                self.logger.error(f"Schema error type: {type(schema_error).__name__}")
-                self.logger.error(f"Engine still valid: {self._engine is not None}")
-                raise
+            # Create tables
+            self.logger.debug("Creating database tables")
+            async with self._engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            self.logger.debug("Database tables created successfully")
 
             self._initialized = True
-            self.logger.debug("SQLite database creation process completed successfully")
-            self.logger.debug("StateManager initialized successfully")
-        except sqlite3.OperationalError as e:
-            # Handle specific SQLite errors
-            self.logger.error(f"SQLite OperationalError occurred: {e}")
-            self.logger.error(f"Database file: {db_file}")
-            self.logger.error(f"Original database URL: {db_url}")
-            if "aiosqlite_url" in locals():
-                self.logger.error(f"Converted aiosqlite URL: {aiosqlite_url}")
-            if "readonly database" in str(e).lower():
-                raise DatabaseError(
-                    f"Cannot write to database '{db_file}'. Database is read-only."
-                ) from e
-            raise DatabaseError(f"Failed to initialize database: {e}") from e
+            self.logger.debug("StateManager initialization completed successfully")
+
         except Exception as e:
-            self.logger.error(f"Unexpected error during SQLite creation: {e}")
-            self.logger.error(f"Database file: {db_file}")
-            self.logger.error(f"Original database URL: {db_url}")
-            if "aiosqlite_url" in locals():
-                self.logger.error(f"Converted aiosqlite URL: {aiosqlite_url}")
-            self.logger.error(f"Exception type: {type(e).__name__}")
-            raise DatabaseError(f"Unexpected error initializing database: {e}") from e
+            self.logger.error(f"StateManager initialization failed: {e}", exc_info=True)
+            # Ensure we clean up any partial initialization
+            if hasattr(self, "_engine") and self._engine:
+                try:
+                    await self._engine.dispose()
+                except Exception as cleanup_error:
+                    self.logger.error(
+                        f"Failed to cleanup engine during error handling: {cleanup_error}"
+                    )
+            self._initialized = False
+            raise
 
     async def dispose(self):
         """Clean up resources."""
