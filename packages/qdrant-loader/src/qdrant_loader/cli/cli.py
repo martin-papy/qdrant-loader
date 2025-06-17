@@ -208,12 +208,14 @@ def _create_database_directory(path: Path) -> bool:
         bool: True if directory was created, False if user declined
     """
     try:
-        _get_logger().info(
-            "The database directory does not exist", path=str(path.absolute())
-        )
+        # Ensure we're working with an absolute path
+        abs_path = path.resolve()
+
+        _get_logger().info("The database directory does not exist", path=str(abs_path))
         if click.confirm("Would you like to create this directory?", default=True):
-            path.mkdir(parents=True, mode=0o755)
-            _get_logger().info(f"Created directory: {path.absolute()}")
+            # Create directory with parents=True to handle nested paths on Windows
+            abs_path.mkdir(parents=True, mode=0o755, exist_ok=True)
+            _get_logger().info(f"Created directory: {abs_path}")
             return True
         return False
     except Exception as e:
@@ -264,9 +266,12 @@ def _load_config(
                 # For config display, we don't need to create the directory
                 return
 
-            # Get the path from the error and expand it properly
-            path = Path(os.path.expanduser(str(e.path)))
-            if not _create_database_directory(path):
+            # Get the path from the error - it's already a Path object
+            error_path = e.path
+            # Resolve to absolute path for consistency
+            abs_path = error_path.resolve()
+
+            if not _create_database_directory(abs_path):
                 raise ClickException(
                     "Database directory creation declined. Exiting."
                 ) from e
@@ -375,10 +380,13 @@ async def init(
         settings = _check_settings()
 
         # Delete and recreate the database file if it exists
-        db_path = settings.global_config.state_management.database_path
-        if db_path != ":memory:":
+        db_path_str = settings.global_config.state_management.database_path
+        if db_path_str != ":memory:":
+            # Convert to Path object for proper cross-platform handling
+            db_path = Path(db_path_str)
+
             # Ensure the directory exists
-            db_dir = Path(db_path).parent
+            db_dir = db_path.parent
             if not db_dir.exists():
                 if not _create_database_directory(db_dir):
                     raise ClickException(
@@ -386,16 +394,18 @@ async def init(
                     )
 
             # Delete the database file if it exists and force is True
-            if os.path.exists(db_path) and force:
-                _get_logger().info("Resetting state database", database_path=db_path)
-                os.remove(db_path)
+            if db_path.exists() and force:
                 _get_logger().info(
-                    "State database reset completed", database_path=db_path
+                    "Resetting state database", database_path=str(db_path)
+                )
+                db_path.unlink()  # Use Path.unlink() instead of os.remove()
+                _get_logger().info(
+                    "State database reset completed", database_path=str(db_path)
                 )
             elif force:
                 _get_logger().info(
                     "State database reset skipped (no existing database)",
-                    database_path=db_path,
+                    database_path=str(db_path),
                 )
 
         await _run_init(settings, force)
