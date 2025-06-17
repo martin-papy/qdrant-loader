@@ -47,19 +47,32 @@ class StateManagementConfig(BaseConfig):
     @classmethod
     def validate_database_path(cls, v: str, info: ValidationInfo) -> str:
         """Validate database path."""
+        # Handle in-memory database
+        if v == ":memory:":
+            return v
+
         # Expand environment variables, including $HOME
-        path = Path(os.path.expanduser(os.path.expandvars(v)))
+        expanded_path = os.path.expanduser(os.path.expandvars(v))
+        path = Path(expanded_path)
+
+        # Convert to absolute path for consistent handling
+        if not path.is_absolute():
+            path = path.resolve()
+
         parent_dir = path.parent
 
         if not parent_dir.exists():
             raise DatabaseDirectoryError(parent_dir)
 
         if not parent_dir.is_dir():
-            raise ValueError("Database path is not a directory")
+            raise ValueError(
+                f"Database directory path is not a directory: {parent_dir}"
+            )
 
-        if not os.access(parent_dir, os.W_OK):
-            raise ValueError("Database directory is not writable")
+        if not os.access(str(parent_dir), os.W_OK):
+            raise ValueError(f"Database directory is not writable: {parent_dir}")
 
+        # Return the original value to preserve any environment variables
         return v
 
     @field_validator("table_prefix")
