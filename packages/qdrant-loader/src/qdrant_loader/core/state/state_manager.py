@@ -62,8 +62,26 @@ class StateManager:
         db_path_str = self.config.database_path
         self.logger.debug(f"Starting initialization with database_path: {db_path_str}")
 
+        # Handle SQLite URL formats (e.g., "sqlite:///:memory:" from tests)
+        if db_path_str.startswith("sqlite://"):
+            self.logger.debug("Detected SQLite URL format")
+            if db_path_str == "sqlite:///:memory:":
+                self.logger.debug("Using SQLite URL for in-memory database")
+                db_url = "sqlite:///:memory:"
+                db_file = ":memory:"
+            else:
+                # For other SQLite URLs, use them directly
+                self.logger.debug(f"Using provided SQLite URL: {db_path_str}")
+                db_url = db_path_str
+                # Extract file path from URL for permission checks
+                if db_path_str.startswith("sqlite:///"):
+                    # Remove sqlite:/// prefix to get file path
+                    file_part = db_path_str[10:]  # Remove "sqlite:///"
+                    db_file = file_part if file_part else ":memory:"
+                else:
+                    db_file = ":memory:"  # Fallback for other URL formats
         # Handle in-memory database case
-        if db_path_str == ":memory:":
+        elif db_path_str == ":memory:":
             self.logger.debug("Using in-memory database")
             db_url = "sqlite:///:memory:"
             db_file = ":memory:"
