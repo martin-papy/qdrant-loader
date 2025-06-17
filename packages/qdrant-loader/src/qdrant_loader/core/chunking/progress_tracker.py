@@ -1,7 +1,7 @@
 """Progress tracking utility for chunking operations."""
 
 import logging
-from typing import Dict, Optional
+
 import structlog
 
 
@@ -10,7 +10,7 @@ class ChunkingProgressTracker:
 
     def __init__(self, logger: structlog.BoundLogger):
         self.logger = logger
-        self._progress: Dict[str, Dict] = {}
+        self._progress: dict[str, dict] = {}
         # Check if debug mode is enabled by checking the root logger level
         self._is_debug_mode = logging.getLogger().getEffectiveLevel() <= logging.DEBUG
 
@@ -53,7 +53,7 @@ class ChunkingProgressTracker:
             self._progress[document_id]["chunks_created"] = chunks_created
 
     def finish_chunking(
-        self, document_id: str, total_chunks: int, strategy_name: Optional[str] = None
+        self, document_id: str, total_chunks: int, strategy_name: str | None = None
     ) -> None:
         """Finish tracking chunking progress for a document."""
         if document_id not in self._progress:

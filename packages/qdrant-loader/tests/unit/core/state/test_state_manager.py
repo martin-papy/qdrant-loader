@@ -10,12 +10,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from pydantic import HttpUrl
-from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import DatabaseError
 from qdrant_loader.core.state.state_manager import StateManager
+from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 
 
 @pytest.fixture

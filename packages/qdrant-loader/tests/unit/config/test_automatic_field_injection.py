@@ -3,9 +3,7 @@
 import tempfile
 from pathlib import Path
 
-import pytest
-
-from qdrant_loader.config import initialize_config, get_settings
+from qdrant_loader.config import get_settings, initialize_config
 
 
 class TestAutomaticFieldInjection:

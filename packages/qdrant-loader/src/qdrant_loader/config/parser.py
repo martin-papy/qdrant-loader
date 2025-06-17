@@ -4,15 +4,15 @@ This module provides parsing functionality for multi-project configurations.
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import ValidationError
 
+from ..utils.logging import LoggingConfig
 from .global_config import GlobalConfig
 from .models import ParsedConfig, ProjectConfig, ProjectsConfig
 from .sources import SourcesConfig
 from .validator import ConfigValidator
-from ..utils.logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -29,7 +29,7 @@ class MultiProjectConfigParser:
         self.validator = validator
 
     def parse(
-        self, config_data: Dict[str, Any], skip_validation: bool = False
+        self, config_data: dict[str, Any], skip_validation: bool = False
     ) -> ParsedConfig:
         """Parse configuration with multi-project support.
 
@@ -71,7 +71,7 @@ class MultiProjectConfigParser:
         )
 
     def _parse_global_config(
-        self, global_data: Dict[str, Any], skip_validation: bool = False
+        self, global_data: dict[str, Any], skip_validation: bool = False
     ) -> GlobalConfig:
         """Parse global configuration section.
 
@@ -88,7 +88,7 @@ class MultiProjectConfigParser:
             logger.error("Failed to parse global configuration", error=str(e))
             raise
 
-    def _is_legacy_config(self, config_data: Dict[str, Any]) -> bool:
+    def _is_legacy_config(self, config_data: dict[str, Any]) -> bool:
         """Determine if configuration uses legacy single-project format.
 
         Args:
@@ -161,7 +161,7 @@ For more information, see the documentation on multi-project configuration.
         raise ValueError(error_message.strip())
 
     def _parse_projects(
-        self, config_data: Dict[str, Any], global_config: GlobalConfig
+        self, config_data: dict[str, Any], global_config: GlobalConfig
     ) -> ProjectsConfig:
         """Parse project configurations.
 
@@ -186,7 +186,7 @@ For more information, see the documentation on multi-project configuration.
         return projects_config
 
     def _parse_project_config(
-        self, project_id: str, project_data: Dict[str, Any], global_config: GlobalConfig
+        self, project_id: str, project_data: dict[str, Any], global_config: GlobalConfig
     ) -> ProjectConfig:
         """Parse individual project configuration.
 
@@ -229,7 +229,7 @@ For more information, see the documentation on multi-project configuration.
             overrides=merged_overrides,
         )
 
-    def _inject_source_metadata(self, sources_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _inject_source_metadata(self, sources_data: dict[str, Any]) -> dict[str, Any]:
         """Inject source_type and source fields into source configurations.
 
         Args:
@@ -278,8 +278,8 @@ For more information, see the documentation on multi-project configuration.
         return bool(re.match(pattern, project_id))
 
     def _merge_configs(
-        self, global_config: GlobalConfig, project_overrides: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, global_config: GlobalConfig, project_overrides: dict[str, Any]
+    ) -> dict[str, Any]:
         """Merge project-specific overrides with global configuration.
 
         Args:
@@ -298,8 +298,8 @@ For more information, see the documentation on multi-project configuration.
         return merged
 
     def _deep_merge_dicts(
-        self, base: Dict[str, Any], override: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, base: dict[str, Any], override: dict[str, Any]
+    ) -> dict[str, Any]:
         """Deep merge two dictionaries.
 
         Args:

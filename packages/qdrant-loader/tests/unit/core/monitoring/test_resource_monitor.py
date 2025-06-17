@@ -2,10 +2,10 @@
 Unit tests for the resource monitor.
 """
 
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from qdrant_loader.core.monitoring.resource_monitor import monitor_resources
 
 

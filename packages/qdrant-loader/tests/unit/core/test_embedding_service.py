@@ -1,8 +1,8 @@
 """Tests for the embedding_service module."""
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from qdrant_loader.core.embedding_service import EmbeddingService
 
 

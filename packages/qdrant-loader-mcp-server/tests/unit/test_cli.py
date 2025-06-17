@@ -1,16 +1,13 @@
 """Tests for CLI module."""
 
-import asyncio
 import json
 import os
-import signal
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, mock_open
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 from click.testing import CliRunner
-
 from qdrant_loader_mcp_server.cli import (
     _get_version,
     _setup_logging,

@@ -1,7 +1,6 @@
 """Code-specific chunking strategy for programming languages."""
 
 import ast
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
@@ -19,8 +18,8 @@ except ImportError:
     get_parser = None
 
 from qdrant_loader.config import Settings
-from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
+from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
 from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)

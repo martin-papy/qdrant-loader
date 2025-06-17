@@ -7,9 +7,9 @@ from qdrant_loader.connectors.jira import JiraConnector
 from qdrant_loader.connectors.localfile import LocalFileConnector
 from qdrant_loader.connectors.publicdocs import PublicDocsConnector
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.core.state.state_change_detector import StateChangeDetector
 from qdrant_loader.core.state.state_manager import StateManager
-from qdrant_loader.core.project_manager import ProjectManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 from .document_pipeline import DocumentPipeline

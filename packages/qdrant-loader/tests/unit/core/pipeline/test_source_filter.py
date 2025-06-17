@@ -1,8 +1,8 @@
 """Tests for SourceFilter."""
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
 from qdrant_loader.config import SourcesConfig
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.pipeline.source_filter import SourceFilter
@@ -269,7 +269,7 @@ class TestSourceFilter:
         source_types = ["git", "confluence", "jira", "localfile", "publicdocs"]
         expected_counts = [2, 1, 1, 1, 0]  # Expected count for each type
 
-        for source_type, expected_count in zip(source_types, expected_counts):
+        for source_type, expected_count in zip(source_types, expected_counts, strict=False):
             result = filter_obj.filter_sources(
                 sample_sources_config, source_type=source_type
             )

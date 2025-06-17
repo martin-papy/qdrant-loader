@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from qdrant_loader.utils.logging import LoggingConfig
 
-
 logger = LoggingConfig.get_logger(__name__)
 
 

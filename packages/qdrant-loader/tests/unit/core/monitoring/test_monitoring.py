@@ -2,17 +2,16 @@
 Tests for monitoring extensions - file conversion metrics tracking.
 """
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
 
+import pytest
 from qdrant_loader.core.monitoring.ingestion_metrics import (
-    IngestionMonitor,
-    IngestionMetrics,
     BatchMetrics,
     ConversionMetrics,
+    IngestionMetrics,
+    IngestionMonitor,
 )
 
 
@@ -398,7 +397,7 @@ class TestMetricsPersistence:
         assert len(metrics_files) == 1
 
         # Load and verify the saved data
-        with open(metrics_files[0], "r", encoding="utf-8") as f:
+        with open(metrics_files[0], encoding="utf-8") as f:
             saved_data = json.load(f)
 
         # Check ingestion metrics include conversion fields

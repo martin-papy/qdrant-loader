@@ -1,14 +1,13 @@
 """Default chunking strategy for text documents."""
 
 import re
-from typing import Any
 
 import structlog
 
-from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
-from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
-from qdrant_loader.core.document import Document
 from qdrant_loader.config import Settings
+from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
+from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
+from qdrant_loader.core.document import Document
 
 logger = structlog.get_logger(__name__)
 

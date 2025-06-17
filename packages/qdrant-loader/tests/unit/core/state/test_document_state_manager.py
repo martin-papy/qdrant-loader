@@ -2,12 +2,11 @@
 Unit tests for the DocumentStateManager.
 """
 
-import pytest
 import sqlite3
-import time
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch, Mock
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
+import pytest
 from qdrant_loader.core.state.document_state_manager import DocumentStateManager
 from qdrant_loader.core.state.state_change_detector import DocumentState
 

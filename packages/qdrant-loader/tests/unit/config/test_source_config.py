@@ -1,7 +1,6 @@
 """Tests for source configuration with file conversion settings."""
 
-import pytest
-from pydantic import ValidationError, AnyUrl
+from pydantic import AnyUrl
 from qdrant_loader.config.source_config import SourceConfig
 
 

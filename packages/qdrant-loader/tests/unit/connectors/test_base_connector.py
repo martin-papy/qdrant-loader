@@ -2,10 +2,10 @@
 Tests for the base connector interface and functionality.
 """
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock
 from abc import ABC
+from unittest.mock import MagicMock
 
+import pytest
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document

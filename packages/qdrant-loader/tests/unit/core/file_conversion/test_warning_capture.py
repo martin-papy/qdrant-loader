@@ -1,9 +1,7 @@
 """Tests for openpyxl warning capture functionality."""
 
 import warnings
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import Mock
 
 from qdrant_loader.core.file_conversion.file_converter import capture_openpyxl_warnings
 

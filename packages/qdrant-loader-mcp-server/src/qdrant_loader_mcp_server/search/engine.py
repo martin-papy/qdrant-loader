@@ -1,17 +1,14 @@
 """Search engine implementation for the MCP server."""
 
-from typing import Any, Dict, List, Optional
 
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.models import Filter
 
-from .hybrid_search import HybridSearchEngine
-from .models import SearchResult
-from .processor import QueryProcessor
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
+from .hybrid_search import HybridSearchEngine
+from .models import SearchResult
 
 logger = LoggingConfig.get_logger(__name__)
 

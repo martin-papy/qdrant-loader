@@ -1,15 +1,14 @@
 import os
-import sys
 from datetime import UTC, datetime
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
-    FileConverter,
-    FileDetector,
     FileConversionConfig,
     FileConversionError,
+    FileConverter,
+    FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
 

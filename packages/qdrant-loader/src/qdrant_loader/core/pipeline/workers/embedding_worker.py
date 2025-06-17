@@ -2,9 +2,10 @@
 
 import asyncio
 import gc
-import psutil
 from collections.abc import AsyncIterator
 from typing import Any
+
+import psutil
 
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService
 from qdrant_loader.core.monitoring import prometheus_metrics

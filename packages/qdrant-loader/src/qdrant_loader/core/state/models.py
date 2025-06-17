@@ -7,14 +7,14 @@ from datetime import UTC
 from sqlalchemy import (
     Boolean,
     Column,
+    Float,
+    ForeignKey,
     Index,
     Integer,
     String,
+    Text,
     TypeDecorator,
     UniqueConstraint,
-    Text,
-    Float,
-    ForeignKey,
 )
 from sqlalchemy import DateTime as SQLDateTime
 from sqlalchemy.orm import declarative_base, relationship

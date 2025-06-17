@@ -2,11 +2,11 @@
 Extended unit tests for the file detector to improve coverage.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
+import pytest
 from qdrant_loader.core.file_conversion.file_detector import FileDetector
 
 

@@ -3,10 +3,8 @@ State management service for tracking document ingestion state.
 """
 
 import os
-import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine

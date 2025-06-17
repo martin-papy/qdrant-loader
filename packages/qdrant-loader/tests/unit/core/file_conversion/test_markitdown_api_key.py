@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from qdrant_loader.config import get_settings, initialize_config
 from qdrant_loader.core.file_conversion import FileConverter
 

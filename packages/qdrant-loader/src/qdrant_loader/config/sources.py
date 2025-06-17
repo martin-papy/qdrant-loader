@@ -5,6 +5,7 @@ Confluence spaces, Jira projects, and public documentation.
 """
 
 from typing import TYPE_CHECKING, Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from qdrant_loader.config.source_config import SourceConfig
@@ -12,11 +13,7 @@ from qdrant_loader.config.types import SourceType
 
 # Use TYPE_CHECKING to avoid circular imports at runtime
 if TYPE_CHECKING:
-    from qdrant_loader.connectors.confluence.config import ConfluenceSpaceConfig
-    from qdrant_loader.connectors.git.config import GitRepoConfig
-    from qdrant_loader.connectors.jira.config import JiraProjectConfig
-    from qdrant_loader.connectors.localfile.config import LocalFileConfig
-    from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
+    pass
 
 
 def _get_connector_config_classes():
@@ -104,7 +101,7 @@ class SourcesConfig(BaseModel):
                 # Create the config object - let validation errors propagate
                 try:
                     converted[name] = config_class(**config_data)
-                except (ImportError, AttributeError, TypeError) as e:
+                except (ImportError, AttributeError, TypeError):
                     # Only catch import/type errors, not validation errors
                     # These indicate missing dependencies or code issues
                     converted[name] = config_data

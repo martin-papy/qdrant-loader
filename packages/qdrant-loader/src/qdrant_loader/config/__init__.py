@@ -24,22 +24,22 @@ from .chunking import ChunkingConfig
 
 # Import consolidated configs
 from .global_config import GlobalConfig, SemanticAnalysisConfig
-from .sources import SourcesConfig
-from .state import StateManagementConfig
-from .workspace import WorkspaceConfig, get_workspace_env_override
 
 # Import multi-project support
 from .models import (
-    ProjectContext,
-    ProjectConfig,
-    ProjectsConfig,
     ParsedConfig,
-    ProjectStats,
-    ProjectInfo,
+    ProjectConfig,
+    ProjectContext,
     ProjectDetail,
+    ProjectInfo,
+    ProjectsConfig,
+    ProjectStats,
 )
 from .parser import MultiProjectConfigParser
+from .sources import SourcesConfig
+from .state import StateManagementConfig
 from .validator import ConfigValidator
+from .workspace import WorkspaceConfig, get_workspace_env_override
 
 # Load environment variables from .env file
 load_dotenv(override=False)

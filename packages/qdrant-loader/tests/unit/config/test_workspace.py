@@ -1,18 +1,10 @@
 """Unit tests for workspace configuration."""
 
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
-
 from qdrant_loader.config.workspace import (
     WorkspaceConfig,
     setup_workspace,
-    validate_workspace,
-    create_workspace_structure,
-    get_workspace_env_override,
     validate_workspace_flags,
 )
 

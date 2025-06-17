@@ -2,18 +2,16 @@
 Tests for project-aware search functionality.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
-from qdrant_client.models import ScoredPoint, Filter, FieldCondition, MatchAny
-
+from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
-    HybridSearchResult,
 )
 from qdrant_loader_mcp_server.search.models import SearchResult
-from qdrant_loader_mcp_server.search.engine import SearchEngine
 
 
 @pytest.fixture

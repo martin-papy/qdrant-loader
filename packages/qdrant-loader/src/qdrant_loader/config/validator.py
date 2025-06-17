@@ -5,7 +5,7 @@ configurations, ensuring data integrity and catching common configuration errors
 """
 
 import re
-from typing import Any, Dict, List, Set
+from typing import Any
 
 from ..utils.logging import LoggingConfig
 
@@ -19,7 +19,7 @@ class ConfigValidator:
         """Initialize the validator."""
         pass
 
-    def validate_structure(self, config_data: Dict[str, Any]) -> None:
+    def validate_structure(self, config_data: dict[str, Any]) -> None:
         """Validate the overall configuration structure.
 
         Args:

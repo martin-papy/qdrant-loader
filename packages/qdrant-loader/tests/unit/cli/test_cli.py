@@ -2,19 +2,19 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, mock_open, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
 from qdrant_loader.cli.cli import (
+    _check_for_updates,
     _check_settings,
     _create_database_directory,
     _get_version,
     _load_config,
     _run_init,
     _setup_logging,
-    _check_for_updates,
     cli,
 )
 from qdrant_loader.config.state import DatabaseDirectoryError

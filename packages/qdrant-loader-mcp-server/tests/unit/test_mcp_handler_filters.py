@@ -1,8 +1,8 @@
 """Tests for MCP handler filter and formatting methods."""
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
 from qdrant_loader_mcp_server.search.models import SearchResult
 
 

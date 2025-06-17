@@ -2,17 +2,16 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.models import Filter, PointStruct, ScoredPoint
 from rank_bm25 import BM25Okapi
 
-from .models import SearchResult
 from ..utils.logging import LoggingConfig
+from .models import SearchResult
 
 logger = LoggingConfig.get_logger(__name__)
 

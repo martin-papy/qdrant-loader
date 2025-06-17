@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+
 from qdrant_loader.core.document import Document
 from qdrant_loader.utils.logging import LoggingConfig
 
@@ -59,7 +60,7 @@ class DocumentPipeline:
                     self.upsert_worker.process_embedded_chunks(embedded_chunks_iter),
                     timeout=3600.0,  # 1 hour timeout for the entire pipeline
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error("❌ Pipeline timed out after 1 hour")
                 result = PipelineResult()
                 result.error_count = len(documents)
