@@ -17,6 +17,7 @@ from qdrant_loader.connectors.exceptions import (
     DocumentProcessingError,
     HTTPRequestError,
 )
+from qdrant_loader.connectors.metadata.base import MetadataExtractionConfig
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
@@ -71,6 +72,24 @@ class PublicDocsConnector(BaseConnector):
         if config.enable_file_conversion:
             self.file_detector = FileDetector()
             # FileConverter will be initialized when file_conversion_config is set
+
+        # Initialize enhanced metadata extractor if enabled
+        self.enhanced_metadata_extractor = None
+        if self.config.enable_enhanced_metadata:
+            from qdrant_loader.connectors.publicdocs.relationship_extractor import (
+                PublicDocsRelationshipExtractor,
+            )
+
+            metadata_config = MetadataExtractionConfig(
+                enabled=True,
+                extract_authors=True,
+                extract_timestamps=True,
+                extract_relationships=True,
+                extract_cross_references=True,
+            )
+            self.enhanced_metadata_extractor = PublicDocsRelationshipExtractor(
+                metadata_config, self.base_url
+            )
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -195,16 +214,38 @@ class PublicDocsConnector(BaseConnector):
                     ):  # Only add documents with non-empty content
                         # Generate a consistent document ID based on the URL
                         doc_id = str(hash(page))  # Use URL hash as document ID
+
+                        # Prepare base metadata
+                        metadata = {
+                            "title": title,
+                            "url": page,
+                            "version": self.version,
+                        }
+
+                        # Extract enhanced metadata if enabled
+                        if self.enhanced_metadata_extractor:
+                            # We need to get the full HTML for metadata extraction
+                            try:
+                                response = await self.client.get(page)
+                                html = await response.text()
+                                enhanced_metadata = (
+                                    self.enhanced_metadata_extractor.extract_metadata(
+                                        page, html
+                                    )
+                                )
+                                # Merge enhanced metadata with base metadata
+                                metadata.update(enhanced_metadata)
+                            except Exception as e:
+                                self.logger.warning(
+                                    f"Failed to extract enhanced metadata for {page}: {e}"
+                                )
+
                         doc = Document(
                             id=doc_id,
                             title=title,
                             content=content,
                             content_type="html",
-                            metadata={
-                                "title": title,
-                                "url": page,
-                                "version": self.version,
-                            },
+                            metadata=metadata,
                             source_type=self.config.source_type,
                             source=self.config.source,
                             url=page,

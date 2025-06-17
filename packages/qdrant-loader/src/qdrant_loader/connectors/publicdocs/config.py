@@ -56,6 +56,12 @@ class PublicDocsSourceConfig(SourceConfig):
         description="CSS selectors for finding downloadable attachments",
     )
 
+    # Metadata extraction
+    enable_enhanced_metadata: bool = Field(
+        default=False,
+        description="Enable enhanced metadata extraction including web document metadata, author information, publication timestamps, and cross-references",
+    )
+
     @field_validator("content_type")
     @classmethod
     def validate_content_type(cls, v: str) -> str:
