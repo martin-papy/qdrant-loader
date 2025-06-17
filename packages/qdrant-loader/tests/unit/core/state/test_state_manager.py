@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from pydantic import HttpUrl
+from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
@@ -82,7 +83,9 @@ async def test_initialization_error():
         config.connection_pool = {"size": 5, "timeout": 30}
         manager = StateManager(config)
 
-        with pytest.raises((DatabaseError, sqlite3.OperationalError)):
+        with pytest.raises(
+            (DatabaseError, sqlite3.OperationalError, SQLAlchemyOperationalError)
+        ):
             await manager.initialize()  # This should fail because the database is read-only
 
         # Clean up by making the file writable again so it can be deleted
