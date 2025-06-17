@@ -37,6 +37,52 @@ class VerbosityFilter(logging.Filter):
         return not any(pattern in message for pattern in verbose_patterns)
 
 
+class WindowsSafeConsoleHandler(logging.StreamHandler):
+    """Custom console handler that handles Windows encoding issues."""
+
+    # ANSI escape sequence pattern
+    ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+    def emit(self, record):
+        """Emit a record, handling Windows console encoding issues."""
+        try:
+            # Get the formatted message
+            msg = self.format(record)
+
+            # For Windows, handle Unicode characters proactively
+            import sys
+
+            if sys.platform == "win32":
+                # Replace problematic Unicode characters with safe alternatives
+                safe_msg = (
+                    msg.replace("🚀", "[ROCKET]")
+                    .replace("📄", "[DOCUMENT]")
+                    .replace("✅", "[CHECK]")
+                    .replace("❌", "[CROSS]")
+                    .replace("⚠️", "[WARNING]")
+                    .replace("🔍", "[SEARCH]")
+                    .replace("💾", "[SAVE]")
+                    .replace("🔧", "[TOOL]")
+                    .replace("📊", "[CHART]")
+                    .replace("🎯", "[TARGET]")
+                )
+                try:
+                    self.stream.write(safe_msg + self.terminator)
+                except UnicodeEncodeError:
+                    # Final fallback: encode with ASCII and replace all unsupported chars
+                    ascii_msg = safe_msg.encode("ascii", errors="replace").decode(
+                        "ascii"
+                    )
+                    self.stream.write(ascii_msg + self.terminator)
+            else:
+                # For non-Windows, use standard handling
+                self.stream.write(msg + self.terminator)
+
+            self.flush()
+        except Exception:
+            self.handleError(record)
+
+
 class CleanFileHandler(logging.FileHandler):
     """Custom file handler that strips ANSI color codes from log messages."""
 
@@ -50,17 +96,44 @@ class CleanFileHandler(logging.FileHandler):
             msg = self.format(record)
             # Strip ANSI escape sequences
             clean_msg = self.ANSI_ESCAPE.sub("", msg)
-            # Write the clean message with proper encoding handling for Windows
+
+            # Handle Windows console encoding issues more robustly
             stream = self.stream
             try:
                 stream.write(clean_msg + self.terminator)
-            except UnicodeEncodeError:
+            except UnicodeEncodeError as e:
                 # Fallback for Windows console encoding issues
-                # Encode as UTF-8 and replace unsupported characters
-                safe_msg = clean_msg.encode("utf-8", errors="replace").decode(
-                    "utf-8", errors="replace"
-                )
-                stream.write(safe_msg + self.terminator)
+                # Replace problematic Unicode characters with safe alternatives
+                import sys
+
+                if sys.platform == "win32":
+                    # Replace common emoji/Unicode characters with ASCII equivalents
+                    safe_msg = (
+                        clean_msg.replace("🚀", "[ROCKET]")
+                        .replace("📄", "[DOCUMENT]")
+                        .replace("✅", "[CHECK]")
+                        .replace("❌", "[CROSS]")
+                        .replace("⚠️", "[WARNING]")
+                        .replace("🔍", "[SEARCH]")
+                        .replace("💾", "[SAVE]")
+                        .replace("🔧", "[TOOL]")
+                        .replace("📊", "[CHART]")
+                        .replace("🎯", "[TARGET]")
+                    )
+                    try:
+                        stream.write(safe_msg + self.terminator)
+                    except UnicodeEncodeError:
+                        # Final fallback: encode with ASCII and replace all unsupported chars
+                        ascii_msg = safe_msg.encode("ascii", errors="replace").decode(
+                            "ascii"
+                        )
+                        stream.write(ascii_msg + self.terminator)
+                else:
+                    # For non-Windows, try UTF-8 encoding with replacement
+                    safe_msg = clean_msg.encode("utf-8", errors="replace").decode(
+                        "utf-8", errors="replace"
+                    )
+                    stream.write(safe_msg + self.terminator)
             self.flush()
         except Exception:
             self.handleError(record)
@@ -256,16 +329,8 @@ class LoggingConfig:
         # Add console handler with Windows encoding support
         import sys
 
-        # Use a custom stream for Windows console encoding support
-        if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
-            try:
-                # Try to reconfigure stdout to use UTF-8 encoding on Windows
-                sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-            except (AttributeError, OSError):
-                # Fallback if reconfigure is not available or fails
-                pass
-
-        console_handler = logging.StreamHandler()
+        # Use Windows-safe console handler for all platforms
+        console_handler = WindowsSafeConsoleHandler()
 
         if clean_output and format == "console":
             # Use clean formatter for console output
