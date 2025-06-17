@@ -156,6 +156,8 @@ class LocalFileConnector(BaseConnector):
 
                     self.logger.debug(f"Processed local file: {rel_path}")
 
+                    # Create consistent URL with forward slashes for cross-platform compatibility
+                    normalized_path = os.path.realpath(file_path).replace("\\", "/")
                     doc = Document(
                         title=os.path.basename(file_path),
                         content=content,
@@ -163,7 +165,7 @@ class LocalFileConnector(BaseConnector):
                         metadata=metadata,
                         source_type="localfile",
                         source=self.config.source,
-                        url=f"file://{os.path.realpath(file_path)}",
+                        url=f"file://{normalized_path}",
                         is_deleted=False,
                         updated_at=updated_at,
                     )

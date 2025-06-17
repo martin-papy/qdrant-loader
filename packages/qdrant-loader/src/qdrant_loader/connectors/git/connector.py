@@ -266,6 +266,23 @@ class GitConnector(BaseConnector):
             # Get relative path from repository root
             rel_path = os.path.relpath(file_path, self.temp_dir)
 
+            # Fix cross-platform path issues: ensure we get a proper relative path
+            # If relpath returns a path that goes up directories (contains ..),
+            # it means the path calculation failed (common with mixed path styles)
+            if rel_path.startswith("..") and self.temp_dir:
+                # Fallback: try to extract relative path manually
+                if file_path.startswith(self.temp_dir):
+                    # Remove temp_dir prefix and any leading separators
+                    rel_path = (
+                        file_path[len(self.temp_dir) :]
+                        .lstrip(os.sep)
+                        .lstrip("/")
+                        .lstrip("\\")
+                    )
+                else:
+                    # Last resort: use basename
+                    rel_path = os.path.basename(file_path)
+
             # Check if file needs conversion
             needs_conversion = (
                 self.config.enable_file_conversion
@@ -340,6 +357,8 @@ class GitConnector(BaseConnector):
             self.logger.debug(f"Processed Git file: /{rel_path!s}")
 
             # Create document
+            # Normalize path separators for URL (use forward slashes on all platforms)
+            normalized_rel_path = rel_path.replace(os.sep, "/").replace("\\", "/")
             git_document = Document(
                 title=os.path.basename(file_path),
                 content=content,
@@ -347,7 +366,7 @@ class GitConnector(BaseConnector):
                 metadata=metadata,
                 source_type=SourceType.GIT,
                 source=self.config.source,
-                url=f"{str(self.config.base_url).replace('.git', '')}/blob/{self.config.branch}/{rel_path}",
+                url=f"{str(self.config.base_url).replace('.git', '')}/blob/{self.config.branch}/{normalized_rel_path}",
                 is_deleted=False,
                 created_at=first_commit_date,
                 updated_at=last_commit_date,

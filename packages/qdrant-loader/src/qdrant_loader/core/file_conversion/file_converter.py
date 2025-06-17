@@ -3,6 +3,7 @@
 import logging
 import os
 import signal
+import sys
 import tempfile
 import warnings
 from contextlib import contextmanager
@@ -92,22 +93,47 @@ class TimeoutHandler:
         self.timeout_seconds = timeout_seconds
         self.file_path = file_path
         self.old_handler = None
+        self.timer = None
 
-    def _timeout_handler(self, signum, frame):
+    def _timeout_handler(self, signum=None, frame=None):
         """Signal handler for timeout."""
         raise ConversionTimeoutError(self.timeout_seconds, self.file_path)
 
+    def _timeout_thread(self):
+        """Thread-based timeout for Windows."""
+        import time
+
+        time.sleep(self.timeout_seconds)
+        self._timeout_handler()
+
     def __enter__(self):
-        """Set up timeout signal handler."""
-        self.old_handler = signal.signal(signal.SIGALRM, self._timeout_handler)
-        signal.alarm(self.timeout_seconds)
+        """Set up timeout handler (Unix signals or Windows threading)."""
+        if sys.platform == "win32":
+            # Windows doesn't support SIGALRM, use threading instead
+            import threading
+
+            self.timer = threading.Thread(target=self._timeout_thread, daemon=True)
+            self.timer.start()
+        else:
+            # Unix/Linux/macOS: use signal-based timeout
+            if hasattr(signal, "SIGALRM"):
+                self.old_handler = signal.signal(signal.SIGALRM, self._timeout_handler)
+                signal.alarm(self.timeout_seconds)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Clean up timeout signal handler."""
-        signal.alarm(0)  # Cancel the alarm
-        if self.old_handler is not None:
-            signal.signal(signal.SIGALRM, self.old_handler)
+        """Clean up timeout handler."""
+        if sys.platform == "win32":
+            # On Windows, we can't easily cancel the thread, but since it's daemon,
+            # it will be cleaned up when the process exits
+            # The timeout will simply not trigger if conversion completes first
+            pass
+        else:
+            # Unix/Linux/macOS: clean up signal handler
+            if hasattr(signal, "SIGALRM"):
+                signal.alarm(0)  # Cancel the alarm
+                if self.old_handler is not None:
+                    signal.signal(signal.SIGALRM, self.old_handler)
 
 
 class FileConverter:

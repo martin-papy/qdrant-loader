@@ -8,7 +8,7 @@ The team collaboration workflow focuses on breaking down knowledge silos, facili
 
 ### Workflow Benefits
 
-```
+```text
 🤝 Cross-Team Knowledge   - Shared understanding across departments
 🚀 Faster Onboarding     - Streamlined new team member integration
 🔍 Knowledge Discovery   - Easy access to expertise and information
@@ -23,15 +23,15 @@ graph TD
     A[Team A Knowledge] --> D[Shared Knowledge Hub]
     B[Team B Knowledge] --> D
     C[Team C Knowledge] --> D
-    
+
     D --> E[QDrant Loader]
     E --> F[Vector Database]
     F --> G[MCP Server]
-    
+
     G --> H[Team Members]
     G --> I[New Hires]
     G --> J[Cross-Team Projects]
-    
+
     K[Confluence] --> E
     L[Git Repositories] --> E
     M[Local Documentation] --> E
@@ -50,10 +50,10 @@ graph TD
 
 ### Team Structure Setup
 
-```
+```text
 🏢 Organization
 ├── 📱 Product Team
-├── 🔧 Engineering Team  
+├── 🔧 Engineering Team
 ├── 🎨 Design Team
 ├── 📊 Data Team
 ├── 🛡️ Security Team
@@ -89,7 +89,7 @@ global_config:
     chunk_overlap: 300
 
   file_conversion:
-    max_file_size: 52428800  # 50MB
+    max_file_size: 52428800 # 50MB
     conversion_timeout: 300
     markitdown:
       enable_llm_descriptions: false
@@ -108,7 +108,7 @@ projects:
     project_id: "shared-knowledge"
     display_name: "Shared Knowledge Base"
     description: "Cross-team shared knowledge and documentation"
-    
+
     sources:
       confluence:
         shared-space:
@@ -121,7 +121,7 @@ projects:
           include_labels: ["shared", "cross-team", "onboarding"]
           enable_file_conversion: true
           download_attachments: true
-      
+
       git:
         shared-docs:
           base_url: "https://github.com/company/shared-docs.git"
@@ -149,7 +149,7 @@ projects:
     project_id: "product-team"
     display_name: "Product Team Knowledge"
     description: "Product team documentation and processes"
-    
+
     sources:
       confluence:
         product-space:
@@ -162,7 +162,7 @@ projects:
           include_labels: ["product", "requirements", "roadmap"]
           enable_file_conversion: true
           download_attachments: true
-      
+
       git:
         product-docs:
           base_url: "https://github.com/company/product-docs.git"
@@ -184,7 +184,7 @@ projects:
     project_id: "engineering-team"
     display_name: "Engineering Team Knowledge"
     description: "Engineering documentation, code, and technical guides"
-    
+
     sources:
       confluence:
         engineering-space:
@@ -197,7 +197,7 @@ projects:
           include_labels: ["engineering", "technical", "architecture"]
           enable_file_conversion: true
           download_attachments: true
-      
+
       git:
         engineering-docs:
           base_url: "https://github.com/company/engineering.git"
@@ -231,7 +231,7 @@ projects:
     project_id: "design-team"
     display_name: "Design Team Knowledge"
     description: "Design documentation, guidelines, and assets"
-    
+
     sources:
       confluence:
         design-space:
@@ -244,7 +244,7 @@ projects:
           include_labels: ["design", "guidelines", "assets"]
           enable_file_conversion: true
           download_attachments: true
-      
+
       localfile:
         design-assets:
           base_url: "file:///design/documentation"
@@ -286,7 +286,7 @@ STATE_DB_PATH=./workspace_state.db
 
 #### 2.1 New Hire Onboarding Script
 
-```bash
+````bash
 #!/bin/bash
 # scripts/onboard-team-member.sh - Team member onboarding automation
 
@@ -300,25 +300,25 @@ create_onboarding_package() {
     local new_hire_email="$1"
     local team="$2"
     local mentor="${3:-}"
-    
+
     echo "Creating onboarding package for $new_hire_email (Team: $team)"
-    
+
     # Create personalized onboarding directory
     local onboarding_path="$ONBOARDING_DIR/$new_hire_email"
     mkdir -p "$onboarding_path"
-    
+
     # Generate team-specific knowledge summary
     generate_team_knowledge_summary "$team" "$onboarding_path"
-    
+
     # Create learning path
     create_learning_path "$team" "$onboarding_path"
-    
+
     # Set up AI assistant access
     setup_ai_assistant_access "$new_hire_email" "$team"
-    
+
     # Generate onboarding checklist
     generate_onboarding_checklist "$team" "$onboarding_path"
-    
+
     echo "Onboarding package created: $onboarding_path"
 }
 
@@ -326,12 +326,12 @@ create_onboarding_package() {
 generate_team_knowledge_summary() {
     local team="$1"
     local output_dir="$2"
-    
+
     echo "Generating knowledge summary for $team team..."
-    
+
     # Get project status to understand available knowledge
     local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
-    
+
     cat > "$output_dir/knowledge-summary.md" << EOF
 # $team Team Knowledge Summary
 
@@ -409,7 +409,7 @@ This summary provides an overview of the knowledge and resources available to he
 
 **Welcome to the team!** 🎉
 EOF
-    
+
     echo "Knowledge summary generated: $output_dir/knowledge-summary.md"
 }
 
@@ -417,7 +417,7 @@ EOF
 create_learning_path() {
     local team="$1"
     local output_dir="$2"
-    
+
     cat > "$output_dir/learning-path.md" << EOF
 # $team Team Learning Path
 
@@ -487,7 +487,7 @@ Search for information about:
 
 **Happy Learning!** 📚
 EOF
-    
+
     echo "Learning path created: $output_dir/learning-path.md"
 }
 
@@ -495,9 +495,9 @@ EOF
 setup_ai_assistant_access() {
     local user_email="$1"
     local team="$2"
-    
+
     echo "Setting up AI assistant access for $user_email"
-    
+
     # Create user-specific MCP configuration for Cursor
     cat > "$ONBOARDING_DIR/$user_email/cursor-mcp-config.json" << EOF
 {
@@ -552,12 +552,12 @@ Your AI assistant can help you search and discover information from the team's k
 ## Setup for Claude Desktop
 
 1. Copy the configuration to Claude Desktop's config directory:
-   
+
    **macOS:**
    \`\`\`bash
    cp claude-desktop-config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
    \`\`\`
-   
+
    **Linux:**
    \`\`\`bash
    cp claude-desktop-config.json ~/.config/claude/claude_desktop_config.json
@@ -601,7 +601,7 @@ If you have issues with the AI assistant setup:
 
 **Happy Searching!** 🔍
 EOF
-    
+
     echo "AI assistant configured for $user_email"
 }
 
@@ -609,7 +609,7 @@ EOF
 generate_onboarding_checklist() {
     local team="$1"
     local output_dir="$2"
-    
+
     cat > "$output_dir/onboarding-checklist.md" << EOF
 # $team Team Onboarding Checklist
 
@@ -712,14 +712,14 @@ By the end of your first month, you should:
 
 We're excited to have you join us and look forward to your contributions!
 EOF
-    
+
     echo "Onboarding checklist created: $output_dir/onboarding-checklist.md"
 }
 
 # Main function
 main() {
     local command="${1:-help}"
-    
+
     case "$command" in
         onboard)
             if [ $# -lt 3 ]; then
@@ -759,7 +759,7 @@ qdrant-loader project --workspace . status
 
 # Validate all projects
 qdrant-loader project --workspace . validate
-```
+````
 
 #### 3.2 Weekly Team Operations
 
