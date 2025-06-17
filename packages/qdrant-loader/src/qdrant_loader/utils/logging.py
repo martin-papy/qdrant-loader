@@ -21,6 +21,22 @@ class ApplicationFilter(logging.Filter):
         return not record.name.startswith(("httpx", "httpcore", "urllib3"))
 
 
+class SQLiteFilter(logging.Filter):
+    """Filter to suppress verbose SQLite operation logs."""
+
+    def filter(self, record):
+        # Suppress verbose SQLite debug logs
+        message = record.getMessage()
+        sqlite_patterns = [
+            "executing functools.partial(<built-in method",
+            "operation functools.partial(<built-in method",
+            "executing <function connect.",
+            "operation <function connect.",
+            "returning exception",
+        ]
+        return not any(pattern in message for pattern in sqlite_patterns)
+
+
 class VerbosityFilter(logging.Filter):
     """Filter to reduce verbosity of debug messages."""
 
@@ -64,6 +80,14 @@ class WindowsSafeConsoleHandler(logging.StreamHandler):
                     .replace("🔧", "[TOOL]")
                     .replace("📊", "[CHART]")
                     .replace("🎯", "[TARGET]")
+                    .replace("⚙️", "[GEAR]")
+                    .replace("⏱️", "[TIMER]")
+                    .replace("⏭️", "[NEXT]")
+                    .replace("🏗️", "[CONSTRUCTION]")
+                    .replace("1️⃣", "[1]")
+                    .replace("2️⃣", "[2]")
+                    .replace("3️⃣", "[3]")
+                    .replace("4️⃣", "[4]")
                 )
                 try:
                     self.stream.write(safe_msg + self.terminator)
@@ -118,6 +142,14 @@ class CleanFileHandler(logging.FileHandler):
                         .replace("🔧", "[TOOL]")
                         .replace("📊", "[CHART]")
                         .replace("🎯", "[TARGET]")
+                        .replace("⚙️", "[GEAR]")
+                        .replace("⏱️", "[TIMER]")
+                        .replace("⏭️", "[NEXT]")
+                        .replace("🏗️", "[CONSTRUCTION]")
+                        .replace("1️⃣", "[1]")
+                        .replace("2️⃣", "[2]")
+                        .replace("3️⃣", "[3]")
+                        .replace("4️⃣", "[4]")
                     )
                     try:
                         stream.write(safe_msg + self.terminator)
@@ -338,6 +370,7 @@ class LoggingConfig:
             console_handler.setFormatter(logging.Formatter("%(message)s"))
 
         console_handler.addFilter(ApplicationFilter())  # Only show our application logs
+        console_handler.addFilter(SQLiteFilter())  # Suppress verbose SQLite logs
 
         if clean_output:
             console_handler.addFilter(VerbosityFilter())  # Reduce verbosity
@@ -348,6 +381,9 @@ class LoggingConfig:
         if file:
             file_handler = CleanFileHandler(file)
             file_handler.setFormatter(FileFormatter())
+            file_handler.addFilter(
+                SQLiteFilter()
+            )  # Suppress verbose SQLite logs in files too
             # Don't apply verbosity filter to file logs - keep everything for debugging
             handlers.append(file_handler)
 
@@ -358,10 +394,29 @@ class LoggingConfig:
             handlers=handlers,
         )
 
+        # Apply SQLite filter to all existing loggers
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            handler.addFilter(SQLiteFilter())
+
         # Add filter to suppress Qdrant version check warnings
         if suppress_qdrant_warnings:
             qdrant_logger = logging.getLogger("qdrant_client")
             qdrant_logger.addFilter(QdrantVersionFilter())
+
+            # Suppress verbose SQLAlchemy and SQLite logs
+        sqlalchemy_loggers = [
+            "sqlalchemy.engine",
+            "sqlalchemy.dialects",
+            "sqlalchemy.pool",
+            "aiosqlite",
+            "sqlite3",
+        ]
+
+        for logger_name in sqlalchemy_loggers:
+            logger = logging.getLogger(logger_name)
+            logger.addFilter(SQLiteFilter())
+            logger.setLevel(logging.WARNING)  # Only show warnings and errors
 
         # Configure structlog processors based on format and clean_output
         if clean_output and format == "console":

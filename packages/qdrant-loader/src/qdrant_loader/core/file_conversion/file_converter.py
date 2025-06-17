@@ -2,6 +2,8 @@
 
 import os
 import signal
+import sys
+import tempfile
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
@@ -88,22 +90,47 @@ class TimeoutHandler:
         self.timeout_seconds = timeout_seconds
         self.file_path = file_path
         self.old_handler = None
+        self.timer = None
 
-    def _timeout_handler(self, signum, frame):
+    def _timeout_handler(self, signum=None, frame=None):
         """Signal handler for timeout."""
         raise ConversionTimeoutError(self.timeout_seconds, self.file_path)
 
+    def _timeout_thread(self):
+        """Thread-based timeout for Windows."""
+        import time
+
+        time.sleep(self.timeout_seconds)
+        self._timeout_handler()
+
     def __enter__(self):
-        """Set up timeout signal handler."""
-        self.old_handler = signal.signal(signal.SIGALRM, self._timeout_handler)
-        signal.alarm(self.timeout_seconds)
+        """Set up timeout handler (Unix signals or Windows threading)."""
+        if sys.platform == "win32":
+            # Windows doesn't support SIGALRM, use threading instead
+            import threading
+
+            self.timer = threading.Thread(target=self._timeout_thread, daemon=True)
+            self.timer.start()
+        else:
+            # Unix/Linux/macOS: use signal-based timeout
+            if hasattr(signal, "SIGALRM"):
+                self.old_handler = signal.signal(signal.SIGALRM, self._timeout_handler)
+                signal.alarm(self.timeout_seconds)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Clean up timeout signal handler."""
-        signal.alarm(0)  # Cancel the alarm
-        if self.old_handler is not None:
-            signal.signal(signal.SIGALRM, self.old_handler)
+        """Clean up timeout handler."""
+        if sys.platform == "win32":
+            # On Windows, we can't easily cancel the thread, but since it's daemon,
+            # it will be cleaned up when the process exits
+            # The timeout will simply not trigger if conversion completes first
+            pass
+        else:
+            # Unix/Linux/macOS: clean up signal handler
+            if hasattr(signal, "SIGALRM"):
+                signal.alarm(0)  # Cancel the alarm
+                if self.old_handler is not None:
+                    signal.signal(signal.SIGALRM, self.old_handler)
 
 
 class FileConverter:
@@ -220,44 +247,45 @@ class FileConverter:
                 timeout=self.config.conversion_timeout,
             )
             raise
+
         except Exception as e:
             self.logger.error(
                 "File conversion failed", file_path=file_path, error=str(e)
             )
-            raise MarkItDownError(e, file_path) from e
+            raise MarkItDownError(e) from e
 
     def _validate_file(self, file_path: str) -> None:
-        """Validate file for conversion."""
-        if not os.path.exists(file_path):
-            raise FileAccessError(f"File does not exist: {file_path}")
+        """Validate the file before conversion."""
+        file = Path(file_path)
+        if not file.exists() or not file.is_file():
+            raise FileAccessError(f"File not found or not a regular file: {file_path}")
 
-        if not os.access(file_path, os.R_OK):
-            raise FileAccessError(f"File is not readable: {file_path}")
-
-        file_size = os.path.getsize(file_path)
-        if not self.config.is_file_size_allowed(file_size):
-            raise FileSizeExceededError(file_size, self.config.max_file_size, file_path)
-
-        if not self.file_detector.is_supported_for_conversion(file_path):
-            file_info = self.file_detector.get_file_type_info(file_path)
+        file_type, _ = self.file_detector.detect_file_type(file_path)
+        if not file_type:
             raise UnsupportedFileTypeError(
-                file_info.get("normalized_type", "unknown"), file_path
+                "Unsupported file type", os.path.splitext(file_path)[1]
             )
 
+        if (
+            self.config.max_file_size
+            and file.stat().st_size > self.config.max_file_size
+        ):
+            raise FileSizeExceededError(file.stat().st_size, self.config.max_file_size)
+
     def create_fallback_document(self, file_path: str, error: Exception) -> str:
-        """Create a fallback Markdown document when conversion fails."""
-        filename = Path(file_path).name
-        file_info = self.file_detector.get_file_type_info(file_path)
-
-        return f"""# {filename}
-
-**File Information:**
-- **Type**: {file_info.get("normalized_type", "unknown")}
-- **Size**: {file_info.get("file_size", 0):,} bytes
-- **Path**: {file_path}
-
-**Conversion Status**: ❌ Failed
-**Error**: {str(error)}
-
-*This document was created as a fallback when the original file could not be converted.*
-"""
+        """Create a fallback Markdown document on conversion failure."""
+        self.logger.warning(
+            "Creating fallback document due to conversion error",
+            file_path=file_path,
+            error=str(error),
+        )
+        file = Path(file_path)
+        content = (
+            f"# Fallback for {file.name}\n\n"
+            f"**Warning:** The original file could not be converted to Markdown.\n"
+            f"**Error:** `{type(error).__name__}: {error}`\n\n"
+            f"**File Information:**\n"
+            f"- **Path:** `{file_path}`\n"
+            f"- **Size:** `{file.stat().st_size}` bytes\n"
+        )
+        return content
