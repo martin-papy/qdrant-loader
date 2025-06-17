@@ -112,8 +112,8 @@ class StateManager:
                         # Windows absolute path with drive letter
                         database_url = f"sqlite+aiosqlite:///{db_url_path}"
                     else:
-                        # Unix absolute path (already starts with /)
-                        database_url = f"sqlite+aiosqlite://{db_url_path}"
+                        # Unix absolute path (already starts with /) - needs 4 slashes total
+                        database_url = f"sqlite+aiosqlite:///{db_url_path}"
                 else:
                     # Relative path
                     database_url = f"sqlite+aiosqlite:///{db_url_path}"
