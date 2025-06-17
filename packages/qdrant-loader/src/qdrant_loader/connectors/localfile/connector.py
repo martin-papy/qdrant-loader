@@ -1,6 +1,7 @@
 import os
+import sys
 from datetime import UTC, datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
@@ -23,9 +24,9 @@ class LocalFileConnector(BaseConnector):
     def __init__(self, config: LocalFileConfig):
         super().__init__(config)
         self.config = config
-        # Parse base_url (file://...) to get the local path
+        # Parse base_url (file://...) to get the local path with Windows support
         parsed = urlparse(str(config.base_url))
-        self.base_path = parsed.path
+        self.base_path = self._fix_windows_file_path(parsed.path)
         self.file_processor = LocalFileFileProcessor(config, self.base_path)
         self.metadata_extractor = LocalFileMetadataExtractor(self.base_path)
         self.logger = LoggingConfig.get_logger(__name__)
@@ -44,6 +45,29 @@ class LocalFileConnector(BaseConnector):
             )
         else:
             self.logger.debug("File conversion disabled for LocalFile connector")
+
+    def _fix_windows_file_path(self, path: str) -> str:
+        """Fix Windows file path from URL parsing.
+
+        urlparse() adds a leading slash to Windows drive letters, e.g.:
+        file:///C:/Users/... -> path = "/C:/Users/..."
+        This method removes the leading slash for Windows paths and handles URL decoding.
+
+        Args:
+            path: Raw path from urlparse()
+
+        Returns:
+            Fixed path suitable for the current platform
+        """
+        # First decode URL encoding (e.g., %20 -> space)
+        path = unquote(path)
+
+        # Handle Windows paths: remove leading slash if it's a drive letter
+        if len(path) >= 3 and path[0] == "/" and path[2] == ":":
+            # This looks like a Windows path with leading slash: "/C:/..." or "/C:" -> "C:/..." or "C:"
+            path = path[1:]
+
+        return path
 
     def set_file_conversion_config(self, file_conversion_config: FileConversionConfig):
         """Set file conversion configuration from global config.
