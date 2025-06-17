@@ -585,8 +585,11 @@ async def ingest(
             await asyncio.sleep(0.1)
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
-            logger.error(f" Exception in ingest: {e}")
-            raise
+            error_msg = (
+                str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+            )
+            logger.error("ingest_failed", error=error_msg, exc_info=True)
+            raise ClickException(f"Failed to run ingestion: {error_msg}") from e
         finally:
             if stop_event.is_set():
                 await _cancel_all_tasks()
@@ -597,8 +600,10 @@ async def ingest(
         LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
         raise e from None
     except Exception as e:
-        LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
-        raise ClickException(f"Failed to run ingestion: {str(e)!s}") from e
+        logger = LoggingConfig.get_logger(__name__)
+        error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
+        logger.error("ingest_failed", error=error_msg, exc_info=True)
+        raise ClickException(f"Failed to run ingestion: {error_msg}") from e
 
 
 @cli.command()

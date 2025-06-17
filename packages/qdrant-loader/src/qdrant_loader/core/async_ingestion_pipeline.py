@@ -137,17 +137,32 @@ class AsyncIngestionPipeline:
         """Initialize the pipeline (maintained for compatibility)."""
         logger.debug("Pipeline initialization called")
 
-        # Initialize state manager first
-        if not self.state_manager._initialized:
-            logger.debug("Initializing state manager")
-            await self.state_manager.initialize()
+        try:
+            # Initialize state manager first
+            if not self.state_manager._initialized:
+                logger.debug("Initializing state manager")
+                await self.state_manager.initialize()
+                logger.debug("State manager initialization completed")
 
-        # Initialize project manager
-        if not self.project_manager._initialized:
-            logger.debug("Initializing project manager")
-            if self.state_manager._session_factory:
-                async with self.state_manager._session_factory() as session:
-                    await self.project_manager.initialize(session)
+            # Initialize project manager
+            if not self.project_manager._initialized:
+                logger.debug("Initializing project manager")
+                if self.state_manager._session_factory:
+                    try:
+                        async with self.state_manager._session_factory() as session:
+                            await self.project_manager.initialize(session)
+                        logger.debug("Project manager initialization completed")
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to initialize project manager: {e}", exc_info=True
+                        )
+                        raise
+                else:
+                    logger.error("State manager session factory is not available")
+                    raise RuntimeError("State manager session factory is not available")
+        except Exception as e:
+            logger.error(f"Pipeline initialization failed: {e}", exc_info=True)
+            raise
 
     async def process_documents(
         self,
