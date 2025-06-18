@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.4.8 - June 17, 2025
+## Version 0.4.9 - June 18, 2025
 
 ### Bux fix
 
