@@ -308,7 +308,7 @@ class TestFileConverter:
             self.converter._validate_file("/non/existent/file.pdf")
 
         assert "Cannot access file" in str(exc_info.value)
-        assert "File does not exist" in str(exc_info.value)
+        assert "File not found or not a regular file" in str(exc_info.value)
 
     def test_validate_file_not_readable(self):
         """Test file validation with unreadable file."""

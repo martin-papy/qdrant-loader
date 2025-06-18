@@ -171,7 +171,7 @@ class FileConverter:
 
             except ImportError as e:
                 raise MarkItDownError(
-                    Exception("MarkItDown library not available")
+                    Exception("MarkItDown library not available"), None, None
                 ) from e
         return self._markitdown
 
@@ -210,7 +210,7 @@ class FileConverter:
                 "OpenAI library not available for LLM integration", error=str(e)
             )
             raise MarkItDownError(
-                Exception("OpenAI library required for LLM integration")
+                Exception("OpenAI library required for LLM integration"), None, None
             ) from e
 
     def convert_file(self, file_path: str) -> str:
@@ -252,7 +252,9 @@ class FileConverter:
             self.logger.error(
                 "File conversion failed", file_path=file_path, error=str(e)
             )
-            raise MarkItDownError(e) from e
+            # Get file type for error reporting
+            file_extension = os.path.splitext(file_path)[1].lstrip(".")
+            raise MarkItDownError(e, file_path, file_extension) from e
 
     def _validate_file(self, file_path: str) -> None:
         """Validate the file before conversion."""
@@ -260,11 +262,18 @@ class FileConverter:
         if not file.exists() or not file.is_file():
             raise FileAccessError(f"File not found or not a regular file: {file_path}")
 
-        file_type, _ = self.file_detector.detect_file_type(file_path)
-        if not file_type:
-            raise UnsupportedFileTypeError(
-                "Unsupported file type", os.path.splitext(file_path)[1]
-            )
+        # Check if file is readable before trying to detect type
+        try:
+            with open(file_path, "rb") as f:
+                # Just try to read the first byte to check readability
+                f.read(1)
+        except (OSError, IOError, PermissionError):
+            raise FileAccessError(f"File is not readable: {file_path}")
+
+        # Check if file is supported for conversion
+        if not self.file_detector.is_supported_for_conversion(file_path):
+            file_extension = os.path.splitext(file_path)[1]
+            raise UnsupportedFileTypeError(file_extension.lstrip("."), file_path)
 
         if (
             self.config.max_file_size
@@ -280,12 +289,29 @@ class FileConverter:
             error=str(error),
         )
         file = Path(file_path)
+
+        # Get file type information using the file detector
+        file_info = self.file_detector.get_file_type_info(file_path)
+
+        # Format file size nicely
+        file_size = file_info.get("file_size")
+        if file_size is not None:
+            # Format with commas for readability
+            size_text = f"{file_size:,} bytes"
+        else:
+            size_text = "0 bytes"
+
+        # Get normalized file type
+        normalized_type = file_info.get("normalized_type", "unknown")
+
         content = (
-            f"# Fallback for {file.name}\n\n"
-            f"**Warning:** The original file could not be converted to Markdown.\n"
-            f"**Error:** `{type(error).__name__}: {error}`\n\n"
-            f"**File Information:**\n"
-            f"- **Path:** `{file_path}`\n"
-            f"- **Size:** `{file.stat().st_size}` bytes\n"
+            f"# {file.name}\n\n"
+            f"**File:** `{file_path}`\n\n"
+            f"**Conversion Status:** ❌ Failed\n\n"
+            f"**Details:**\n"
+            f"- **Type:** `{normalized_type}`\n"
+            f"- **Size:** `{size_text}`\n"
+            f"- **Error:** `{str(error)}`\n\n"
+            f"This document was created as a fallback because the original file could not be converted.\n"
         )
         return content

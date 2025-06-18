@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -73,6 +74,8 @@ class StateManager:
                 if not db_path.is_absolute():
                     db_path = db_path.resolve()
                     self.logger.debug(f"Resolved relative path to: {db_path}")
+                else:
+                    self.logger.debug(f"Using absolute path: {db_path}")
 
                 # Validate parent directory exists
                 parent_dir = db_path.parent
@@ -101,12 +104,8 @@ class StateManager:
                 db_url_path = db_path.as_posix()
                 if db_path.is_absolute():
                     # For absolute paths, ensure proper URL format
-                    if db_path.parts[0].endswith(":"):
-                        # Windows absolute path with drive letter
-                        database_url = f"sqlite+aiosqlite:///{db_url_path}"
-                    else:
-                        # Unix absolute path (already starts with /)
-                        database_url = f"sqlite+aiosqlite://{db_url_path}"
+                    # Always use three slashes for absolute paths
+                    database_url = f"sqlite+aiosqlite:///{db_url_path}"
                 else:
                     # Relative path
                     database_url = f"sqlite+aiosqlite:///{db_url_path}"
@@ -150,6 +149,9 @@ class StateManager:
                         f"Failed to cleanup engine during error handling: {cleanup_error}"
                     )
             self._initialized = False
+            # Re-raise database-related errors as DatabaseError
+            if isinstance(e, SQLAlchemyError):
+                raise DatabaseError(f"Database initialization failed: {e}") from e
             raise
 
     async def dispose(self):

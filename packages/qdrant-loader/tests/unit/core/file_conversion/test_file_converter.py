@@ -212,18 +212,21 @@ class TestFileValidation:
         with pytest.raises(FileAccessError) as exc_info:
             file_converter._validate_file("/path/to/nonexistent/file.pd")
 
-        assert "File does not exist" in str(exc_info.value)
+        assert "File not found or not a regular file" in str(exc_info.value)
 
     def test_validate_file_too_large(self, file_converter):
         """Test validation of file that's too large."""
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"test content")
 
         try:
-            # Mock file size to be larger than limit
-            with patch("os.path.getsize") as mock_getsize:
-                mock_getsize.return_value = file_converter.config.max_file_size + 1
+            # Mock Path.stat to return larger size than limit
+            with patch("pathlib.Path.stat") as mock_stat:
+                mock_stat_result = MagicMock()
+                mock_stat_result.st_size = file_converter.config.max_file_size + 1
+                mock_stat_result.st_mode = 0o100644  # Regular file mode
+                mock_stat.return_value = mock_stat_result
 
                 with pytest.raises(FileSizeExceededError) as exc_info:
                     file_converter._validate_file(str(temp_path))
@@ -234,14 +237,16 @@ class TestFileValidation:
 
     def test_validate_unreadable_file(self, file_converter):
         """Test validation of unreadable file."""
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             temp_file.write(b"test content")
 
         try:
-            # Mock file access to return False
-            with patch("os.access") as mock_access:
-                mock_access.return_value = False
+            # Mock the specific open call in the validation method
+            with patch(
+                "qdrant_loader.core.file_conversion.file_converter.open"
+            ) as mock_open:
+                mock_open.side_effect = PermissionError("Permission denied")
 
                 with pytest.raises(FileAccessError) as exc_info:
                     file_converter._validate_file(str(temp_path))

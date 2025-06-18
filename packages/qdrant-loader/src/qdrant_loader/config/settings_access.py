@@ -272,7 +272,7 @@ class PipelineLimits:
     @staticmethod
     def file_timeout() -> float:
         """Get file timeout."""
-        return 60.0  # 1 minute
+        return 300.0  # 5 minutes
 
     @staticmethod
     def queue_max_size() -> int:
@@ -306,7 +306,7 @@ class SearchLimits:
     @staticmethod
     def max_query_length() -> int:
         """Get maximum query length."""
-        return 1000
+        return 512
 
     @staticmethod
     def search_timeout() -> float:
@@ -325,22 +325,22 @@ class CacheLimits:
     @staticmethod
     def metadata_cache_ttl() -> int:
         """Get metadata cache TTL."""
-        return 1800  # 30 minutes
+        return 3600  # 1 hour
 
     @staticmethod
     def search_cache_ttl() -> int:
         """Get search cache TTL."""
-        return 300  # 5 minutes
+        return 600  # 10 minutes
 
     @staticmethod
     def max_cache_size() -> int:
         """Get maximum cache size."""
-        return 1000
+        return 10000
 
     @staticmethod
     def cleanup_interval() -> int:
         """Get cleanup interval."""
-        return 300  # 5 minutes
+        return 3600  # 1 hour
 
 
 class WorkerLimits:

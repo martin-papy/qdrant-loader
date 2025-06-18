@@ -138,21 +138,17 @@ def test_server_limits():
 @pytest.fixture
 def mock_config_accessor():
     """Mock the global 'config' object in settings_access."""
-    with patch(
-        "qdrant_loader.config.settings_access.config", autospec=True
-    ) as mock_config:
+    with patch("qdrant_loader.config.settings_access.config") as mock_config:
         yield mock_config
 
 
 def test_get_chunk_size(mock_config_accessor):
-    mock_config_accessor.settings.global_config.chunking.chunk_size.return_value = 999
+    mock_config_accessor.global_config.chunking.chunk_size = 999
     assert get_chunk_size() == 999
 
 
 def test_get_chunk_overlap(mock_config_accessor):
-    mock_config_accessor.settings.global_config.chunking.chunk_overlap.return_value = (
-        111
-    )
+    mock_config_accessor.global_config.chunking.chunk_overlap = 111
     assert get_chunk_overlap() == 111
 
 
