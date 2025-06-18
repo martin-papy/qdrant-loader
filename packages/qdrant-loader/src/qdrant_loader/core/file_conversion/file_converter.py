@@ -220,7 +220,9 @@ class FileConverter:
 
     def convert_file(self, file_path: str) -> str:
         """Convert a file to Markdown format with timeout support."""
-        self.logger.info("Starting file conversion", file_path=file_path)
+        # Normalize path for consistent logging (Windows compatibility)
+        normalized_path = file_path.replace("\\", "/")
+        self.logger.info("Starting file conversion", file_path=normalized_path)
 
         try:
             self._validate_file(file_path)
@@ -238,7 +240,7 @@ class FileConverter:
 
             self.logger.info(
                 "File conversion completed",
-                file_path=file_path,
+                file_path=normalized_path,
                 content_length=len(markdown_content),
                 timeout_used=self.config.conversion_timeout,
             )
@@ -248,13 +250,13 @@ class FileConverter:
             # Re-raise timeout errors as-is
             self.logger.error(
                 "File conversion timed out",
-                file_path=file_path,
+                file_path=normalized_path,
                 timeout=self.config.conversion_timeout,
             )
             raise
         except Exception as e:
             self.logger.error(
-                "File conversion failed", file_path=file_path, error=str(e)
+                "File conversion failed", file_path=normalized_path, error=str(e)
             )
             raise MarkItDownError(e, file_path) from e
 

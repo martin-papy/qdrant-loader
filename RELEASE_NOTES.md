@@ -2,6 +2,12 @@
 
 ## Version 0.4.8 - June 17, 2025
 
+### Bux fix
+
+- **Issue when deleting a deleted document** : missing content_type="md" field to the `_create_deleted_document method`
+
+## Version 0.4.8 - June 17, 2025
+
 ### 🪟 Windows Compatibility Fixes
 
 - **LocalFile Connector**: Fixed Windows file URL parsing (`file:///C:/Users/...` now works correctly)
