@@ -99,7 +99,10 @@ class LocalFileConnector(BaseConnector):
                     )
 
                     if needs_conversion:
-                        self.logger.debug("File needs conversion", file_path=rel_path)
+                        self.logger.debug(
+                            "File needs conversion",
+                            file_path=rel_path.replace("\\", "/"),
+                        )
                         try:
                             # Convert file to markdown
                             assert self.file_converter is not None  # Type checker hint
