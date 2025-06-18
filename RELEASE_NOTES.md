@@ -1,8 +1,26 @@
 # Release Notes
 
+## Version 0.4.10 - June 18, 2025
+
+### 🐛 Bug Fixes
+
+#### Windows Compatibility & Logging
+
+- **Fixed duplicate debug logging**: Resolved `[DEBUG] [DEBUG]` duplicate level tags in both console and file output
+- **Enhanced logging verbosity control**: Added filtering for noisy third-party library debug messages (chardet, pdfminer, httpx)
+- **Improved Windows path formatting**: Fixed mixed path separators in log output for consistent cross-platform display
+- **Complete path normalization**: Fixed remaining instances of backslashes in Windows file paths in FileDetector and file processor logging
+- **Fixed .txt file processing**: Resolved issue where `.txt` files were excluded from ingestion when `file_types: []` was empty
+
+#### File Processing
+
+- **LocalFile connector**: `.txt` files now properly processed by default text strategy when no specific file types configured
+- **Git connector**: Consistent file type processing logic across all connectors
+- **Path normalization**: All file paths in logs now use forward slashes for consistency
+
 ## Version 0.4.9 - June 18, 2025
 
-### Bux fix
+### Bug fix
 
 - **Issue when deleting a deleted document** : missing content_type="md" field to the `_create_deleted_document method`
 
