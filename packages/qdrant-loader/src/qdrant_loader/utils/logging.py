@@ -41,6 +41,10 @@ class VerbosityFilter(logging.Filter):
     """Filter to reduce verbosity of debug messages."""
 
     def filter(self, record):
+        # Only filter DEBUG level messages
+        if record.levelno != logging.DEBUG:
+            return True
+
         # Suppress overly verbose debug messages
         message = record.getMessage()
         verbose_patterns = [
@@ -48,6 +52,37 @@ class VerbosityFilter(logging.Filter):
             "Response status:",
             "Request headers:",
             "Response headers:",
+            # PDF parsing debug messages
+            "seek:",
+            "nexttoken:",
+            "do_keyword:",
+            "nextobject:",
+            "add_results:",
+            "register:",
+            "getobj:",
+            "get_unichr:",
+            "exec:",
+            # Character encoding detection
+            "confidence =",
+            "prober hit error",
+            "not active",
+            # File processing verbosity
+            "checking if file should be processed",
+            "current configuration",
+            "checking file extension",
+            "file type detection",
+            "file supported via",
+            "starting metadata extraction",
+            "completed metadata extraction",
+            "document metadata:",
+            # HTTP client debug
+            "connect_tcp.started",
+            "connect_tcp.complete",
+            "send_request_headers",
+            "send_request_body",
+            "receive_response_headers",
+            "receive_response_body",
+            "response_closed",
         ]
         return not any(pattern in message for pattern in verbose_patterns)
 
@@ -267,13 +302,20 @@ class FileFormatter(logging.Formatter):
             # Remove the structlog timestamp since we're adding our own
             clean_message = re.sub(time_pattern, "", clean_message)
 
+        # Check if the message already contains a level tag to avoid duplication
+        level_in_message_pattern = r"^\[(?:DEBUG|INFO|WARNING|ERROR|CRITICAL)\]\s"
+        has_level_tag = re.match(level_in_message_pattern, clean_message)
+
         # Format based on log level
         if record.levelno == logging.INFO:
             # For INFO level, use a clean format: timestamp | message
             return f"{timestamp} | {clean_message}"
         else:
-            # For other levels, include the level: timestamp | [LEVEL] message
-            return f"{timestamp} | [{level}] {clean_message}"
+            # For other levels, include the level only if not already present
+            if has_level_tag:
+                return f"{timestamp} | {clean_message}"
+            else:
+                return f"{timestamp} | [{level}] {clean_message}"
 
 
 class CustomConsoleRenderer:
@@ -435,6 +477,29 @@ class LoggingConfig:
         for logger_name in sqlalchemy_loggers:
             logger = logging.getLogger(logger_name)
             logger.addFilter(SQLiteFilter())
+            logger.setLevel(logging.WARNING)  # Only show warnings and errors
+
+        # Suppress verbose third-party library debug logs
+        noisy_loggers = [
+            "chardet",  # Character encoding detection
+            "chardet.charsetprober",
+            "chardet.latin1prober",
+            "chardet.mbcharsetprober",
+            "chardet.sbcharsetprober",
+            "chardet.utf8prober",
+            "pdfminer",  # PDF parsing
+            "pdfminer.pdfparser",
+            "pdfminer.pdfdocument",
+            "pdfminer.pdfinterp",
+            "pdfminer.converter",
+            "pdfplumber",  # PDF processing
+            "markitdown",  # File conversion
+            "httpcore",  # HTTP client debug logs
+            "httpx",  # HTTP client debug logs
+        ]
+
+        for logger_name in noisy_loggers:
+            logger = logging.getLogger(logger_name)
             logger.setLevel(logging.WARNING)  # Only show warnings and errors
 
         # Configure structlog processors based on format and clean_output

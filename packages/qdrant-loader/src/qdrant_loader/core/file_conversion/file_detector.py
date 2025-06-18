@@ -104,7 +104,7 @@ class FileDetector:
 
             self.logger.debug(
                 "File type detection",
-                file_path=file_path,
+                file_path=file_path.replace("\\", "/"),
                 detected_mime_type=mime_type,
                 file_extension=file_extension,
             )
@@ -113,7 +113,9 @@ class FileDetector:
 
         except Exception as e:
             self.logger.warning(
-                "File type detection failed", file_path=file_path, error=str(e)
+                "File type detection failed",
+                file_path=file_path.replace("\\", "/"),
+                error=str(e),
             )
             return None, None
 
@@ -142,7 +144,7 @@ class FileDetector:
         except Exception as e:
             self.logger.debug(
                 "MIME type detection failed, will try extension fallback",
-                file_path=file_path,
+                file_path=file_path.replace("\\", "/"),
                 error=str(e),
             )
             return None
@@ -162,7 +164,7 @@ class FileDetector:
         if file_extension in self.EXCLUDED_EXTENSIONS:
             self.logger.debug(
                 "File excluded - handled by existing strategy",
-                file_path=file_path,
+                file_path=file_path.replace("\\", "/"),
                 file_extension=file_extension,
             )
             return False
@@ -170,7 +172,9 @@ class FileDetector:
         # Check if MIME type is supported
         if mime_type and mime_type in self.SUPPORTED_MIME_TYPES:
             self.logger.debug(
-                "File supported via MIME type", file_path=file_path, mime_type=mime_type
+                "File supported via MIME type",
+                file_path=file_path.replace("\\", "/"),
+                mime_type=mime_type,
             )
             return True
 
@@ -182,14 +186,14 @@ class FileDetector:
             if extension_without_dot in supported_extensions:
                 self.logger.debug(
                     "File supported via extension fallback",
-                    file_path=file_path,
+                    file_path=file_path.replace("\\", "/"),
                     file_extension=file_extension,
                 )
                 return True
 
         self.logger.debug(
             "File not supported for conversion",
-            file_path=file_path,
+            file_path=file_path.replace("\\", "/"),
             mime_type=mime_type,
             file_extension=file_extension,
         )
