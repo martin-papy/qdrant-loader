@@ -251,24 +251,10 @@ jobs:
         if: always()
         with:
           name: coverage-website-${{ github.run_id }}
-          path: coverage-artifacts/website
-
-      - name: Install tree
-        run: sudo apt-get install -y tree
-
-      - name: Display structure of downloaded files
-        run: tree
-
-      - name: Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: martin-papy/qdrant-loader
-          directory: ./coverage-artifacts/
-          fail_ci_if_error: true
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          path: |
+            htmlcov-website
+            coverage-website.xml
+          retention-days: 30
 
   test-summary:
     name: Test Summary
@@ -326,6 +312,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Download loader coverage artifact
         uses: actions/download-artifact@v4
         with:
@@ -344,18 +335,19 @@ jobs:
           name: coverage-website-${{ github.run_id }}
           path: coverage-artifacts/website
 
-      - name: Install tree
-        run: sudo apt-get install -y tree
+      - name: List coverage files
+        run: |
+          echo "=== Coverage files found ==="
+          find coverage-artifacts/ -name "*.xml" -exec ls -la {} \;
 
-      - name: Display structure of downloaded files
-        run: tree
+          echo "=== Copying coverage files to root ==="
+          find coverage-artifacts/ -name "*.xml" -exec cp {} . \;
+          ls -la *.xml || echo "No XML files found"
 
       - name: Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./coverage-artifacts/
-          slug: martin-papy/qdrant-loader
           fail_ci_if_error: true
           verbose: true
         env:
