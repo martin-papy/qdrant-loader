@@ -45,7 +45,8 @@ class FileProcessor:
         """
         try:
             self.logger.debug(
-                "Checking if file should be processed", file_path=file_path
+                "Checking if file should be processed",
+                file_path=file_path.replace("\\", "/"),
             )
             self.logger.debug(
                 "Current configuration",
@@ -110,17 +111,24 @@ class FileProcessor:
             ].lower()  # Get extension with dot
             self.logger.debug(f"Checking file extension: {file_ext}")
 
-            # First check configured file types
-            for pattern in self.config.file_types:
-                self.logger.debug(f"Checking file type pattern: {pattern}")
-                # Extract extension from pattern (e.g., "*.md" -> ".md")
-                pattern_ext = os.path.splitext(pattern)[1].lower()
-                if pattern_ext and file_ext == pattern_ext:
-                    file_type_match = True
-                    self.logger.debug(
-                        f"File {rel_path} matches file type pattern {pattern}"
-                    )
-                    break
+            # If no file types are configured, process all files (default behavior)
+            if not self.config.file_types:
+                self.logger.debug(
+                    "No file types configured, processing all readable files"
+                )
+                file_type_match = True
+            else:
+                # Check configured file types
+                for pattern in self.config.file_types:
+                    self.logger.debug(f"Checking file type pattern: {pattern}")
+                    # Extract extension from pattern (e.g., "*.md" -> ".md")
+                    pattern_ext = os.path.splitext(pattern)[1].lower()
+                    if pattern_ext and file_ext == pattern_ext:
+                        file_type_match = True
+                        self.logger.debug(
+                            f"File {rel_path} matches file type pattern {pattern}"
+                        )
+                        break
 
             # If file conversion is enabled and file doesn't match configured types,
             # check if it can be converted
