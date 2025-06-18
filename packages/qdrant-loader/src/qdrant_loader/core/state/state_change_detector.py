@@ -139,6 +139,7 @@ class StateChangeDetector:
 
         return Document(
             content="",
+            content_type="md",
             source=source,
             source_type=source_type,
             url=url,
