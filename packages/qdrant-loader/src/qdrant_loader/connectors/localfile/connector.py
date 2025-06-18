@@ -108,12 +108,13 @@ class LocalFileConnector(BaseConnector):
                             conversion_method = "markitdown"
                             conversion_failed = False
                             self.logger.info(
-                                "File conversion successful", file_path=rel_path
+                                "File conversion successful",
+                                file_path=rel_path.replace("\\", "/"),
                             )
                         except FileConversionError as e:
                             self.logger.warning(
                                 "File conversion failed, creating fallback document",
-                                file_path=rel_path,
+                                file_path=rel_path.replace("\\", "/"),
                                 error=str(e),
                             )
                             # Create fallback document
@@ -153,7 +154,9 @@ class LocalFileConnector(BaseConnector):
                             }
                         )
 
-                    self.logger.debug(f"Processed local file: {rel_path}")
+                    self.logger.debug(
+                        f"Processed local file: {rel_path.replace('\\', '/')}"
+                    )
 
                     # Create consistent URL with forward slashes for cross-platform compatibility
                     normalized_path = os.path.realpath(file_path).replace("\\", "/")
@@ -171,7 +174,9 @@ class LocalFileConnector(BaseConnector):
                     documents.append(doc)
                 except Exception as e:
                     self.logger.error(
-                        "Failed to process file", file_path=file_path, error=str(e)
+                        "Failed to process file",
+                        file_path=file_path.replace("\\", "/"),
+                        error=str(e),
                     )
                     continue
         return documents

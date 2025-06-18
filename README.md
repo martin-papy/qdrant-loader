@@ -5,7 +5,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Release Notes v0.4.7](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (June 9, 2025)
+📋 **[Release Notes v0.4.9](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (June 18, 2025)
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
 
@@ -26,7 +26,7 @@ This monorepo contains two complementary packages:
 
 ### 🔄 [QDrant Loader](./packages/qdrant-loader/)
 
-*Data ingestion and processing engine*
+_Data ingestion and processing engine_
 
 Collects and vectorizes content from multiple sources into QDrant vector database.
 
@@ -40,7 +40,7 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 
 ### 🔌 [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
 
-*AI development integration layer*
+_AI development integration layer_
 
 Model Context Protocol server providing RAG capabilities to AI development tools.
 
@@ -136,10 +136,10 @@ Add to `.cursor/mcp.json`:
 
 ### Example Queries in Cursor
 
-- *"Find documentation about authentication in our API"*
-- *"Show me examples of error handling patterns"*
-- *"What are the deployment requirements for this service?"*
-- *"Find all attachments related to database schema"*
+- _"Find documentation about authentication in our API"_
+- _"Show me examples of error handling patterns"_
+- _"What are the deployment requirements for this service?"_
+- _"Find all attachments related to database schema"_
 
 ## 📁 Project Structure
 
