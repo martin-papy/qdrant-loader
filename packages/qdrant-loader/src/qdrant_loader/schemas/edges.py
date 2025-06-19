@@ -7,7 +7,7 @@ to support document relationships, organizational connections, and knowledge lin
 from datetime import datetime
 
 from graphiti_core.edges import EntityEdge
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 
 class DocumentRelationshipEdge(EntityEdge):
@@ -39,7 +39,8 @@ class DocumentRelationshipEdge(EntityEdge):
         None, description="When relationship was detected"
     )
 
-    @validator("confidence_score")
+    @field_validator("confidence_score")
+    @classmethod
     def validate_confidence(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Confidence score must be between 0.0 and 1.0")
@@ -65,7 +66,8 @@ class ContainsEdge(DocumentRelationshipEdge):
         None, description="Size of contained item relative to container"
     )
 
-    @validator("position_index")
+    @field_validator("position_index")
+    @classmethod
     def validate_position(cls, v):
         if v is not None and v < 0:
             raise ValueError("Position index must be non-negative")
@@ -94,7 +96,8 @@ class ReferencesEdge(DocumentRelationshipEdge):
         default=False, description="Whether this is a formal citation"
     )
 
-    @validator("reference_type")
+    @field_validator("reference_type")
+    @classmethod
     def validate_reference_type(cls, v):
         valid_types = [
             "mention",
@@ -134,7 +137,8 @@ class AuthoredByEdge(EntityEdge):
         None, description="How authorship was verified"
     )
 
-    @validator("author_role")
+    @field_validator("author_role")
+    @classmethod
     def validate_author_role(cls, v):
         valid_roles = [
             "author",
@@ -149,7 +153,8 @@ class AuthoredByEdge(EntityEdge):
             raise ValueError(f"Author role must be one of {valid_roles}")
         return v
 
-    @validator("contribution_percentage")
+    @field_validator("contribution_percentage")
+    @classmethod
     def validate_contribution(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Contribution percentage must be between 0.0 and 1.0")
@@ -180,7 +185,8 @@ class BelongsToEdge(EntityEdge):
     )
     status: str = Field(default="active", description="Membership status")
 
-    @validator("membership_type")
+    @field_validator("membership_type")
+    @classmethod
     def validate_membership_type(cls, v):
         valid_types = [
             "belongs_to",
@@ -194,7 +200,8 @@ class BelongsToEdge(EntityEdge):
             raise ValueError(f"Membership type must be one of {valid_types}")
         return v
 
-    @validator("status")
+    @field_validator("status")
+    @classmethod
     def validate_status(cls, v):
         valid_statuses = ["active", "inactive", "pending", "suspended", "terminated"]
         if v not in valid_statuses:
@@ -239,13 +246,15 @@ class RelatedToEdge(DocumentRelationshipEdge):
         None, description="Algorithm used for discovery"
     )
 
-    @validator("semantic_similarity")
+    @field_validator("semantic_similarity")
+    @classmethod
     def validate_similarity(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Semantic similarity must be between 0.0 and 1.0")
         return v
 
-    @validator("relationship_strength")
+    @field_validator("relationship_strength")
+    @classmethod
     def validate_strength(cls, v):
         if v is not None:
             valid_strengths = ["weak", "moderate", "strong", "very_strong"]
@@ -292,7 +301,8 @@ class DerivedFromEdge(DocumentRelationshipEdge):
         None, description="Time taken for derivation (seconds)"
     )
 
-    @validator("derivation_type")
+    @field_validator("derivation_type")
+    @classmethod
     def validate_derivation_type(cls, v):
         valid_types = [
             "summary",
@@ -308,13 +318,15 @@ class DerivedFromEdge(DocumentRelationshipEdge):
             raise ValueError(f"Derivation type must be one of {valid_types}")
         return v
 
-    @validator("fidelity_score")
+    @field_validator("fidelity_score")
+    @classmethod
     def validate_fidelity(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Fidelity score must be between 0.0 and 1.0")
         return v
 
-    @validator("completeness_score")
+    @field_validator("completeness_score")
+    @classmethod
     def validate_completeness(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Completeness score must be between 0.0 and 1.0")

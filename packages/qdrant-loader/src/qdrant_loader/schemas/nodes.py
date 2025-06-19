@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from graphiti_core.nodes import EntityNode
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 
 class DocumentNode(EntityNode):
@@ -47,7 +47,8 @@ class DocumentNode(EntityNode):
     keywords: list[str] = Field(default_factory=list, description="Extracted keywords")
     topics: list[str] = Field(default_factory=list, description="Identified topics")
 
-    @validator("processing_status")
+    @field_validator("processing_status")
+    @classmethod
     def validate_status(cls, v):
         valid_statuses = ["pending", "processing", "completed", "failed", "skipped"]
         if v not in valid_statuses:
@@ -87,7 +88,8 @@ class SourceNode(EntityNode):
     )
     failed_imports: int | None = Field(None, description="Failed import attempts")
 
-    @validator("source_type")
+    @field_validator("source_type")
+    @classmethod
     def validate_source_type(cls, v):
         valid_types = [
             "git",
@@ -135,7 +137,8 @@ class ConceptNode(EntityNode):
         default_factory=list, description="More specific concepts"
     )
 
-    @validator("confidence_score")
+    @field_validator("confidence_score")
+    @classmethod
     def validate_confidence(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Confidence score must be between 0.0 and 1.0")
@@ -200,7 +203,8 @@ class OrganizationNode(EntityNode):
     first_mentioned: datetime | None = Field(None, description="First time mentioned")
     last_mentioned: datetime | None = Field(None, description="Last time mentioned")
 
-    @validator("organization_type")
+    @field_validator("organization_type")
+    @classmethod
     def validate_org_type(cls, v):
         valid_types = [
             "company",
@@ -249,14 +253,16 @@ class ProjectNode(EntityNode):
         default_factory=list, description="Project deliverables"
     )
 
-    @validator("project_status")
+    @field_validator("project_status")
+    @classmethod
     def validate_status(cls, v):
         valid_statuses = ["planning", "active", "on-hold", "completed", "cancelled"]
         if v not in valid_statuses:
             raise ValueError(f"Project status must be one of {valid_statuses}")
         return v
 
-    @validator("progress")
+    @field_validator("progress")
+    @classmethod
     def validate_progress(cls, v):
         if v is not None and (v < 0.0 or v > 1.0):
             raise ValueError("Progress must be between 0.0 and 1.0")
@@ -304,13 +310,15 @@ class ChunkNode(EntityNode):
     )
     sentiment: str | None = Field(None, description="Sentiment analysis result")
 
-    @validator("chunk_index")
+    @field_validator("chunk_index")
+    @classmethod
     def validate_chunk_index(cls, v):
         if v < 0:
             raise ValueError("Chunk index must be non-negative")
         return v
 
-    @validator("content_length")
+    @field_validator("content_length")
+    @classmethod
     def validate_content_length(cls, v):
         if v < 0:
             raise ValueError("Content length must be non-negative")
