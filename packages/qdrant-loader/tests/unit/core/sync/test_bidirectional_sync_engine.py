@@ -398,13 +398,11 @@ class TestBidirectionalSyncEngine:
         """Test starting engine with batch strategy."""
         sync_engine.sync_strategy = SyncStrategy.BATCH
 
-        with patch.object(sync_engine, "_batch_processing_loop") as mock_loop:
-            # Mock the coroutine properly and ensure it's awaitable
-            async def mock_batch_loop():
-                await asyncio.sleep(0.001)  # Small delay to simulate work
-                return None
-
-            mock_loop.return_value = mock_batch_loop()
+        with patch.object(
+            sync_engine, "_batch_processing_loop", new_callable=AsyncMock
+        ) as mock_loop:
+            # Mock the async method to return immediately
+            mock_loop.return_value = None
 
             await sync_engine.start()
 
