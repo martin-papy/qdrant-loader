@@ -133,12 +133,20 @@ async def test_pipeline_project_specific_processing(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test processing documents for a specific project."""
-    # Mock session for project manager initialization
-    mock_session = AsyncMock()
+    # Mock session for project manager initialization with proper sync/async methods
+    mock_session = MagicMock()
+
+    # Make only the async methods actually async
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.delete = AsyncMock()
+
+    # Keep sync methods as regular mocks
+    mock_session.add = MagicMock()  # This should be sync
+
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    mock_session.commit = AsyncMock()
 
     mock_state_manager._session_factory.return_value.__aenter__.return_value = (
         mock_session
@@ -191,12 +199,20 @@ async def test_pipeline_all_projects_processing(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test processing documents for all projects."""
-    # Mock session for project manager initialization
-    mock_session = AsyncMock()
+    # Mock session for project manager initialization with proper sync/async methods
+    mock_session = MagicMock()
+
+    # Make only the async methods actually async
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.delete = AsyncMock()
+
+    # Keep sync methods as regular mocks
+    mock_session.add = MagicMock()  # This should be sync
+
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    mock_session.commit = AsyncMock()
 
     mock_state_manager._session_factory.return_value.__aenter__.return_value = (
         mock_session
@@ -259,12 +275,20 @@ async def test_pipeline_project_metadata_injection(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test that project metadata is properly injected into documents."""
-    # Mock session for project manager initialization
-    mock_session = AsyncMock()
+    # Mock session for project manager initialization with proper sync/async methods
+    mock_session = MagicMock()
+
+    # Make only the async methods actually async
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.delete = AsyncMock()
+
+    # Keep sync methods as regular mocks
+    mock_session.add = MagicMock()  # This should be sync
+
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    mock_session.commit = AsyncMock()
 
     mock_state_manager._session_factory.return_value.__aenter__.return_value = (
         mock_session
@@ -302,12 +326,20 @@ async def test_pipeline_project_validation(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test pipeline validation for project existence."""
-    # Mock session for project manager initialization
-    mock_session = AsyncMock()
+    # Mock session for project manager initialization with proper sync/async methods
+    mock_session = MagicMock()
+
+    # Make only the async methods actually async
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.delete = AsyncMock()
+
+    # Keep sync methods as regular mocks
+    mock_session.add = MagicMock()  # This should be sync
+
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    mock_session.commit = AsyncMock()
 
     mock_state_manager._session_factory.return_value.__aenter__.return_value = (
         mock_session
@@ -336,12 +368,20 @@ async def test_pipeline_error_handling_invalid_project(
     sample_multi_project_settings, mock_qdrant_manager, mock_state_manager
 ):
     """Test pipeline error handling for invalid project ID."""
-    # Mock session for project manager initialization
-    mock_session = AsyncMock()
+    # Mock session for project manager initialization with proper sync/async methods
+    mock_session = MagicMock()
+
+    # Make only the async methods actually async
+    mock_session.execute = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.delete = AsyncMock()
+
+    # Keep sync methods as regular mocks
+    mock_session.add = MagicMock()  # This should be sync
+
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
-    mock_session.commit = AsyncMock()
 
     mock_state_manager._session_factory.return_value.__aenter__.return_value = (
         mock_session

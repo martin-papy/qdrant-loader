@@ -251,10 +251,213 @@ docs = [
     </div>
 </section>"""
 
-    coverage_template = """<div class="coverage">
-    <h1>Coverage Report</h1>
-    <p>Test coverage information</p>
-</div>"""
+    # Use the actual coverage template content with loader-coverage elements
+    coverage_template = """<!-- Coverage Header -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="bi bi-graph-up me-3"></i>Coverage Reports
+                </h1>
+                <p class="lead text-muted">
+                    Test coverage analysis for QDrant Loader packages
+                </p>
+                <div id="test-status-banner" class="alert d-none" role="alert">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <span id="status-indicator" class="status-indicator me-2"></span>
+                        <span id="status-text"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Coverage Overview -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <!-- QDrant Loader Core Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-arrow-repeat me-2"></i>QDrant Loader Core
+                            </h4>
+                            <span id="loader-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Main package coverage including connectors, processing pipeline, and CLI tools.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3" id="loader-coverage">
+                                    <h5 class="text-primary mb-1" id="loader-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="loader/" class="btn btn-primary">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Server Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-plug me-2"></i>MCP Server
+                            </h4>
+                            <span id="mcp-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Model Context Protocol server implementation and search capabilities.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3" id="mcp-coverage">
+                                    <h5 class="text-primary mb-1" id="mcp-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="mcp/" class="btn btn-success">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Website Coverage -->
+            <div class="col-lg-6">
+                <div class="card h-100 border-0 shadow card-hover">
+                    <div class="card-header bg-info text-white">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <h4 class="mb-0">
+                                <i class="bi bi-globe me-2"></i>Website
+                            </h4>
+                            <span id="website-status" class="badge bg-light text-dark">
+                                <span class="status-indicator status-unknown me-1"></span>
+                                Checking...
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-4">
+                            Website build system, templates, and documentation generation tools.
+                        </p>
+
+                        <div class="row text-center mb-4">
+                            <div class="col-12">
+                                <div class="border rounded p-3" id="website-coverage">
+                                    <h5 class="text-primary mb-1" id="website-line-coverage">--</h5>
+                                    <small class="text-muted">Line Coverage</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="website/" class="btn btn-info">
+                                <i class="bi bi-arrow-right me-2"></i>View Detailed Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Test Information -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Test Run Information
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-muted">Test Results Summary</h6>
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="loader-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>QDrant Loader Tests</strong>
+                                            </div>
+                                            <span id="loader-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="mcp-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>MCP Server Tests</strong>
+                                            </div>
+                                            <span id="mcp-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <span id="website-test-indicator"
+                                                    class="status-indicator status-unknown me-2"></span>
+                                                <strong>Website Tests</strong>
+                                            </div>
+                                            <span id="website-test-status" class="text-muted">Checking...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Load coverage data for all packages
+    Promise.all([
+        fetch('loader/status.json').then(response => response.json()).catch(() => null),
+        fetch('mcp/status.json').then(response => response.json()).catch(() => null),
+        fetch('website/status.json').then(response => response.json()).catch(() => null)
+    ]).then(([loaderData, mcpData, websiteData]) => {
+        console.log('Coverage data loaded');
+    });
+</script>"""
 
     robots_template = """User-agent: *
 Allow: /
@@ -320,13 +523,30 @@ def sample_coverage_data(tmp_path):
     loader_dir = coverage_dir / "htmlcov-loader"
     loader_dir.mkdir()
 
-    # Create status.json
+    # Create status.json with the required "files" key
     status_data = {
         "meta": {
             "version": "7.3.2",
             "timestamp": "2024-01-01T12:00:00",
             "branch_coverage": True,
             "show_contexts": False,
+        },
+        "files": {
+            "mock_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 100,
+                        "n_excluded": 0,
+                        "n_missing": 15,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
+                    }
+                },
+            }
         },
         "totals": {
             "covered_lines": 1500,
@@ -341,6 +561,84 @@ def sample_coverage_data(tmp_path):
 
     (loader_dir / "status.json").write_text(json.dumps(status_data, indent=2))
 
+    # Create MCP coverage data
+    mcp_dir = coverage_dir / "htmlcov-mcp"
+    mcp_dir.mkdir()
+    (mcp_dir / "index.html").write_text("<html><body>MCP Coverage Report</body></html>")
+    mcp_status_data = {
+        "meta": {
+            "version": "7.3.2",
+            "timestamp": "2024-01-01T12:00:00",
+            "branch_coverage": True,
+            "show_contexts": False,
+        },
+        "files": {
+            "mock_mcp_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 50,
+                        "n_excluded": 0,
+                        "n_missing": 4,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
+                    }
+                },
+            }
+        },
+        "totals": {
+            "covered_lines": 46,
+            "num_statements": 50,
+            "percent_covered": 92.0,
+            "missing_lines": 4,
+            "excluded_lines": 0,
+        },
+    }
+    (mcp_dir / "status.json").write_text(json.dumps(mcp_status_data, indent=2))
+
+    # Create website coverage data
+    website_dir = coverage_dir / "htmlcov-website"
+    website_dir.mkdir()
+    (website_dir / "index.html").write_text(
+        "<html><body>Website Coverage Report</body></html>"
+    )
+    website_status_data = {
+        "meta": {
+            "version": "7.3.2",
+            "timestamp": "2024-01-01T12:00:00",
+            "branch_coverage": True,
+            "show_contexts": False,
+        },
+        "files": {
+            "mock_website_file_py": {
+                "hash": "mock_hash",
+                "index": {
+                    "nums": {
+                        "precision": 0,
+                        "n_files": 1,
+                        "n_statements": 75,
+                        "n_excluded": 0,
+                        "n_missing": 8,
+                        "n_branches": 0,
+                        "n_partial_branches": 0,
+                        "n_missing_branches": 0,
+                    }
+                },
+            }
+        },
+        "totals": {
+            "covered_lines": 67,
+            "num_statements": 75,
+            "percent_covered": 89.3,
+            "missing_lines": 8,
+            "excluded_lines": 0,
+        },
+    }
+    (website_dir / "status.json").write_text(json.dumps(website_status_data, indent=2))
+
     return coverage_dir
 
 
@@ -350,10 +648,18 @@ def sample_test_results(temp_workspace):
     test_results_dir = temp_workspace / "test-results"
     test_results_dir.mkdir(exist_ok=True)
 
-    # Create status.json
+    # Create status.json with the expected "overall_status" key
     status_data = {
+        "overall_status": "success",
+        "timestamp": "2025-01-31T12:00:00Z",
         "tests": {"total": 150, "passed": 145, "failed": 3, "skipped": 2},
         "coverage": {"line_rate": 0.85, "branch_rate": 0.78},
+        "loader_status": "success",
+        "mcp_status": "success",
+        "website_status": "success",
+        "run_id": "12345",
+        "commit_sha": "abc123def456",
+        "branch": "main",
     }
 
     import json

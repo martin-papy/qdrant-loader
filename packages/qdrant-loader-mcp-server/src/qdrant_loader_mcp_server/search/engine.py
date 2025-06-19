@@ -64,7 +64,7 @@ class SearchEngine:
                 )
 
             # Check if Graphiti is available for enhanced search
-            graphiti_available = is_graphiti_available()
+            graphiti_available = await is_graphiti_available()
             self.logger.info(
                 "Graphiti availability check",
                 available=graphiti_available,
@@ -355,9 +355,9 @@ class SearchEngine:
         Returns:
             Dictionary containing search engine statistics
         """
-        stats = {
+        stats: dict[str, Any] = {
             "enhanced_search_available": self.use_enhanced_search,
-            "graphiti_available": is_graphiti_available(),
+            "graphiti_available": False,  # Will be updated async if needed
             "basic_search_available": self.hybrid_search is not None,
         }
 
@@ -365,7 +365,7 @@ class SearchEngine:
         if self.use_enhanced_search and self.enhanced_hybrid_search:
             try:
                 enhanced_stats = self.enhanced_hybrid_search.get_stats()
-                stats.update({"enhanced_search_stats": enhanced_stats})
+                stats["enhanced_search_stats"] = enhanced_stats
             except Exception as e:
                 self.logger.warning(f"Failed to get enhanced search stats: {e}")
 

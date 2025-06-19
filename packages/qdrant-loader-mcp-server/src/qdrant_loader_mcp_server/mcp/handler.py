@@ -1640,7 +1640,7 @@ class MCPHandler:
                     response_text += "📋 **Configuration Status:**\n"
                     from ..graphiti import is_graphiti_available
 
-                    graphiti_available = is_graphiti_available()
+                    graphiti_available = await is_graphiti_available()
 
                     response_text += f"• Graphiti Available: {'✅ Yes' if graphiti_available else '❌ No'}\n"
                     response_text += f"• Enhanced Search Engine: {'✅ Available' if hasattr(self.search_engine, 'enhanced_hybrid_search') else '❌ Not Available'}\n"
