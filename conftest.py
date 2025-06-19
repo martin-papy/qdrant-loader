@@ -46,7 +46,15 @@ def pytest_configure(config):
     # Add warning filters
     config.addinivalue_line("filterwarnings", "ignore::DeprecationWarning")
     config.addinivalue_line("filterwarnings", "ignore::PendingDeprecationWarning")
-    config.addinivalue_line("filterwarnings", "ignore::bs4.XMLParsedAsHTMLWarning")
+
+    # Only add bs4 warning filter if BeautifulSoup4 is available
+    try:
+        import bs4
+
+        config.addinivalue_line("filterwarnings", "ignore::bs4.XMLParsedAsHTMLWarning")
+    except ImportError:
+        # bs4 not available, skip the warning filter
+        pass
 
     # Set asyncio mode for async tests
     if hasattr(config.option, "asyncio_mode"):
