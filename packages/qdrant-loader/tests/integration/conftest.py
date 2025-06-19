@@ -18,24 +18,7 @@ from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager, Map
 from qdrant_loader.core.types import EntityType, TemporalInfo
 
 
-def pytest_configure(config):
-    """Configure pytest before test collection.
-
-    This runs before module imports, ensuring environment variables
-    are available for module-level configuration checks.
-    """
-    # Load test environment variables early
-    tests_dir = Path(__file__).parent.parent
-    env_path = tests_dir / ".env.test"
-
-    if env_path.exists():
-        load_dotenv(env_path, override=True)
-        print(f"Loaded test environment from {env_path}")
-    else:
-        print(f"Warning: Test environment file not found at {env_path}")
-
-
-# Also load environment variables at import time as a fallback
+# Load environment variables at import time
 tests_dir = Path(__file__).parent.parent
 env_path = tests_dir / ".env.test"
 if env_path.exists():

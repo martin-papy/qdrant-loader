@@ -5,9 +5,14 @@ These tests focus on error conditions, edge cases, and exception handling.
 """
 
 import importlib.util
+import json
 import os
+import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 

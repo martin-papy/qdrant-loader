@@ -14,28 +14,6 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 
-def pytest_configure(config):
-    """Configure pytest before test collection."""
-    # Set asyncio mode to strict
-    config.option.asyncio_mode = "strict"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Setup test environment before running tests."""
-
-    # Load test environment variables
-    test_env_path = Path(__file__).parent / ".env.test"
-    if test_env_path.exists():
-        load_dotenv(test_env_path, override=True)
-
-    # Set default test environment variables
-    os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
-    os.environ.setdefault("QDRANT_COLLECTION_NAME", "test_collection")
-    os.environ.setdefault("OPENAI_API_KEY", "test_key")
-    os.environ.setdefault("MCP_DISABLE_CONSOLE_LOGGING", "true")
-
-
 @pytest.fixture
 def mock_qdrant_client():
     """Create a mock Qdrant client."""

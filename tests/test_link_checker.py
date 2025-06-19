@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
-Tests for the link checker script.
+Tests for the link checker functionality.
 """
 
+import json
+import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import requests

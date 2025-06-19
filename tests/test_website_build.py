@@ -12,6 +12,9 @@ from pathlib import Path
 
 import pytest
 
+# Import website-specific fixtures
+# pytest_plugins = ["tests.conftest_website"]
+
 
 class TestWebsiteBuildSystem:
     """Test suite for the website build system."""

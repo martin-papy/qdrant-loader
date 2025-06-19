@@ -1,5 +1,8 @@
 """
 Pytest configuration and shared fixtures for website build tests.
+
+This module provides fixtures specific to website building and testing.
+Import fixtures from this module as needed in website tests.
 """
 
 import glob
@@ -552,10 +555,4 @@ def sample_test_results(temp_workspace):
     return test_results_dir
 
 
-def pytest_configure(config):
-    """Configure pytest with custom markers."""
-    config.addinivalue_line("markers", "integration: mark test as integration test")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line(
-        "markers", "requires_deps: mark test as requiring optional dependencies"
-    )
+# pytest_configure moved to root conftest.py to avoid conflicts

@@ -1,6 +1,6 @@
-"""Shared test fixtures and configuration.
+"""Shared test fixtures and configuration for qdrant-loader package.
 
-This module contains pytest fixtures that are shared across all test modules.
+This module contains pytest fixtures that are shared across qdrant-loader package tests.
 """
 
 import os
@@ -14,25 +14,11 @@ from dotenv import load_dotenv
 from qdrant_client.http import models
 
 # Add the src directory to Python path for imports
-
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from qdrant_loader.config import get_settings, initialize_multi_file_config
-
-
-def pytest_configure(config):
-    """Configure pytest before test collection."""
-    # Add the tests directory to the Python path
-    # This ensures imports within tests use absolute paths
-    # rather than trying to resolve relative to the module name
-    tests_dir = os.path.dirname(os.path.abspath(__file__))
-    if tests_dir not in sys.path:
-        sys.path.insert(0, tests_dir)
-
-    # Suppress XMLParsedAsHTMLWarning from BeautifulSoup
-    config.addinivalue_line("filterwarnings", "ignore::bs4.XMLParsedAsHTMLWarning")
 
 
 @pytest.fixture(scope="session", autouse=True)

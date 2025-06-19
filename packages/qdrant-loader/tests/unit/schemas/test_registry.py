@@ -378,6 +378,85 @@ class TestSchemaRegistry:
         assert "test_edge" in summary["edge_schemas"]["schemas"]
         assert summary["total_schemas"] == 2
 
+    @patch("qdrant_loader.schemas.registry.logger")
+    def test_create_node_instance_creation_failure(self, mock_logger):
+        """Test creating node instance when instantiation fails."""
+        registry = SchemaRegistry()
+
+        # Create a failing node class that raises an exception
+        class FailingNodeCreation(EntityNode):
+            def __init__(self, *args, **kwargs):
+                raise Exception("Creation failed")
+
+        registry._node_schemas["failing_node"] = FailingNodeCreation
+
+        result = registry.create_node_instance(
+            "failing_node", name="test", group_id="test_group"
+        )
+
+        assert result is None
+        mock_logger.error.assert_called_with(
+            "Failed to create node instance for failing_node: Creation failed"
+        )
+
+    @patch("qdrant_loader.schemas.registry.logger")
+    def test_create_edge_instance_creation_failure(self, mock_logger):
+        """Test creating edge instance when instantiation fails."""
+        registry = SchemaRegistry()
+
+        # Create a failing edge class that raises an exception
+        class FailingEdgeCreation(EntityEdge):
+            def __init__(self, *args, **kwargs):
+                raise Exception("Creation failed")
+
+        registry._edge_schemas["failing_edge"] = FailingEdgeCreation
+
+        result = registry.create_edge_instance(
+            "failing_edge",
+            group_id="test_group",
+            source_node_uuid="source",
+            target_node_uuid="target",
+            name="test",
+            fact="test fact",
+        )
+
+        assert result is None
+        mock_logger.error.assert_called_with(
+            "Failed to create edge instance for failing_edge: Creation failed"
+        )
+
+    def test_validate_schema_compatibility_no_model_fields(self):
+        """Test schema validation for class without model_fields."""
+        registry = SchemaRegistry()
+
+        class NoModelFields:
+            pass
+
+        result = registry.validate_schema_compatibility(NoModelFields)  # type: ignore
+        assert result is False
+
+    def test_validate_schema_compatibility_instantiation_failure(self):
+        """Test schema validation when instantiation fails."""
+        registry = SchemaRegistry()
+
+        class FailingNode(EntityNode):
+            def __init__(self, *args, **kwargs):
+                raise ValueError("Instantiation failed")
+
+        result = registry.validate_schema_compatibility(FailingNode)
+        assert result is False
+
+    def test_validate_schema_compatibility_failing_edge_instantiation(self):
+        """Test schema validation for edge when instantiation fails."""
+        registry = SchemaRegistry()
+
+        class FailingEdge(EntityEdge):
+            def __init__(self, *args, **kwargs):
+                raise ValueError("Edge instantiation failed")
+
+        result = registry.validate_schema_compatibility(FailingEdge)
+        assert result is False
+
 
 class TestModuleFunctions:
     """Test module-level functions."""
@@ -480,6 +559,50 @@ class TestModuleFunctions:
             container_section="introduction",
         )
         assert result == mock_instance
+
+    def test_register_custom_schema_node_invalid_inheritance(self):
+        """Test registering custom node schema with invalid inheritance."""
+        with pytest.raises(ValueError) as exc_info:
+            register_custom_schema("test", InvalidNode, "node")  # type: ignore
+
+        assert "Schema class must inherit from EntityNode for node type" in str(
+            exc_info.value
+        )
+
+    def test_register_custom_schema_edge_invalid_inheritance(self):
+        """Test registering custom edge schema with invalid inheritance."""
+        with pytest.raises(ValueError) as exc_info:
+            register_custom_schema("test", InvalidEdge, "edge")  # type: ignore
+
+        assert "Schema class must inherit from EntityEdge for edge type" in str(
+            exc_info.value
+        )
+
+    @patch("qdrant_loader.schemas.registry.get_schema_registry")
+    def test_create_document_node_wrong_type_returned(self, mock_get_registry):
+        """Test creating document node when wrong type is returned."""
+        mock_registry = MagicMock()
+        # Return a non-DocumentNode instance
+        mock_registry.create_node_instance.return_value = MagicMock()
+        mock_get_registry.return_value = mock_registry
+
+        result = create_document_node("test", "test_group")
+
+        assert result is None
+
+    @patch("qdrant_loader.schemas.registry.get_schema_registry")
+    def test_create_contains_edge_wrong_type_returned(self, mock_get_registry):
+        """Test creating contains edge when wrong type is returned."""
+        mock_registry = MagicMock()
+        # Return a non-ContainsEdge instance
+        mock_registry.create_edge_instance.return_value = MagicMock()
+        mock_get_registry.return_value = mock_registry
+
+        result = create_contains_edge(
+            "test_group", "source", "target", "test", "test fact"
+        )
+
+        assert result is None
 
 
 class TestSchemaRegistryIntegration:

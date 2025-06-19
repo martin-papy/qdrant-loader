@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-Tests for the favicon generation script.
+Tests for favicon generation functionality.
 """
 
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 
-class TestFaviconGenerationScript:
+class TestFaviconGeneration:
     """Test suite for favicon generation script structure and basic functionality."""
 
     def test_favicon_script_exists(self):
