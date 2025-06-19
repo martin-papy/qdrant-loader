@@ -5,6 +5,7 @@ import os
 import sqlite3
 import tempfile
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,10 +20,27 @@ from qdrant_loader.core.state.state_manager import StateManager
 
 
 @pytest.fixture
+def temp_db_dir():
+    """Create a temporary directory for database files."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir)
+
+
+@pytest.fixture
 def mock_config():
-    """Create mock state management configuration."""
+    """Create mock state management configuration with in-memory database."""
     config = MagicMock(spec=StateManagementConfig)
-    config.database_path = "sqlite:///:memory:"
+    config.database_path = ":memory:"
+    config.connection_pool = {"size": 5, "timeout": 30}
+    return config
+
+
+@pytest.fixture
+def file_based_config(temp_db_dir):
+    """Create mock state management configuration with file-based database."""
+    config = MagicMock(spec=StateManagementConfig)
+    db_path = temp_db_dir / "test.db"
+    config.database_path = str(db_path)
     config.connection_pool = {"size": 5, "timeout": 30}
     return config
 
@@ -31,6 +49,15 @@ def mock_config():
 async def state_manager(mock_config):
     """Create and initialize a state manager for testing."""
     manager = StateManager(mock_config)
+    await manager.initialize()
+    yield manager
+    await manager.dispose()
+
+
+@pytest_asyncio.fixture
+async def file_state_manager(file_based_config):
+    """Create and initialize a file-based state manager for testing."""
+    manager = StateManager(file_based_config)
     await manager.initialize()
     yield manager
     await manager.dispose()
@@ -93,39 +120,70 @@ async def test_initialization_error():
 
 
 @pytest.mark.asyncio
-async def test_update_last_ingestion(state_manager):
-    """Test updating last ingestion time."""
-    source_type = "test"
-    source = "test-source"
+async def test_context_manager(mock_config):
+    """Test state manager as context manager."""
+    manager = StateManager(mock_config)
 
+    async with manager:
+        assert manager._initialized
+        assert manager._engine is not None
+        assert manager._session_factory is not None
+
+    # After exiting context, should be disposed
+    assert not manager._initialized
+
+
+@pytest.mark.asyncio
+async def test_update_last_ingestion(state_manager):
+    """Test updating last ingestion timestamp."""
+    source_type = "test_source_type"
+    source = "test_source"
+    project_id = "test_project"
+
+    # Update last ingestion
     await state_manager.update_last_ingestion(
-        source_type=source_type,
-        source=source,
-        status=IngestionStatus.SUCCESS,
-        document_count=10,
+        source_type, source, project_id=project_id
     )
 
-    history = await state_manager.get_last_ingestion(source_type, source)
-    assert history is not None
-    assert history.source_type == source_type
-    assert history.source == source
-    assert history.status == IngestionStatus.SUCCESS
-    assert history.document_count == 10
+    # Verify the update worked by checking the record exists
+    async with state_manager._session_factory() as session:
+        from sqlalchemy import select
+        from qdrant_loader.core.state.models import IngestionHistory
+
+        result = await session.execute(
+            select(IngestionHistory).where(
+                IngestionHistory.project_id == project_id,
+                IngestionHistory.source_type == source_type,
+                IngestionHistory.source == source,
+            )
+        )
+        record = result.scalar_one_or_none()
+        assert record is not None
+        assert record.project_id == project_id
+        assert record.source_type == source_type
+        assert record.source == source
 
 
 @pytest.mark.asyncio
 async def test_update_last_ingestion_error(state_manager):
-    """Test error handling when updating last ingestion."""
-    with patch.object(
-        state_manager, "_session_factory", side_effect=Exception("Test error")
-    ):
-        with pytest.raises(Exception):
-            await state_manager.update_last_ingestion(
-                source_type="test",
-                source="test-source",
-                status=IngestionStatus.FAILED,
-                error_message="Test error",
-            )
+    """Test update last ingestion with error handling."""
+    from unittest.mock import AsyncMock
+
+    # Test with invalid parameters that might cause an error
+    with patch.object(state_manager, "_session_factory") as mock_factory:
+        # Mock session that raises an error
+        mock_session = AsyncMock()
+        mock_session.execute.side_effect = Exception("Test error")
+        mock_session.commit = AsyncMock()
+
+        # Create an async context manager mock
+        async_context_mock = AsyncMock()
+        async_context_mock.__aenter__.return_value = mock_session
+        async_context_mock.__aexit__.return_value = None
+        mock_factory.return_value = async_context_mock
+
+        with pytest.raises(Exception, match="Test error"):
+            await state_manager.update_last_ingestion("test_type", "test_source")
 
 
 @pytest.mark.asyncio
@@ -240,16 +298,6 @@ async def test_get_document_state_records_since(state_manager, sample_document):
 
     assert len(records) == 1
     assert records[0].document_id == new_record.document_id
-
-
-@pytest.mark.asyncio
-async def test_context_manager(mock_config):
-    """Test state manager as context manager."""
-    manager = StateManager(mock_config)
-    await manager.initialize()
-    async with manager:
-        assert manager._initialized
-    assert manager._initialized is False
 
 
 @pytest.mark.asyncio

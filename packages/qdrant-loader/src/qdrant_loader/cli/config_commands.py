@@ -272,7 +272,7 @@ def init_config(workspace: Path | None, log_level: str, template: str, force: bo
 
         # For now, create basic template files since the templates module doesn't exist yet
         # This is a placeholder implementation
-        echo("⚠️  Configuration template creation is not yet implemented.")
+        echo("⚠️  Configuration template creation not yet implemented.")
         echo("💡 Please create the following files manually:")
         for file_path in config_files:
             echo(f"  • {file_path}")
@@ -447,6 +447,8 @@ def check_config(
             echo("📋 Format: Modern (domain-specific files)")
             echo("✅ Your configuration is using the recommended format!")
 
+        echo("Configuration check completed successfully")
+
     except Exception as e:
         logger = get_logger()
         logger.error("Configuration check failed", error=str(e))
@@ -466,4 +468,13 @@ def config_command(
     """Display current configuration (backward compatibility command)."""
     # This is the same as show_config but registered as a standalone command
     # for backward compatibility with the original CLI
-    show_config(workspace, log_level, config, env)
+    show_config(
+        workspace=workspace,
+        log_level=log_level,
+        config=config,
+        env=env,
+        domains=None,
+        preset=None,
+        use_case=None,
+        measure_performance=False,
+    )
