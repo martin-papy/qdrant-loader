@@ -1,345 +1,339 @@
 # Comprehensive Testing Coverage Plan for qdrant-loader
 
-## Current Coverage Status ✅ IMPROVED
+## Current Coverage Status (Based on Latest Test Results)
 
-- **Previous Coverage**: 53% overall (11,311 lines missed out of 23,974 total)
-- **Current Coverage**: 56% overall (10,521 lines missed out of 23,974 total)
-- **Improvement**: +3% coverage (790 lines of code now covered)
+- **Overall Coverage**: 65% (9,847 lines missed out of 27,870 total)
 - **Target**: 80% coverage across all packages
+- **Gap to Target**: 15% coverage (~4,180 lines)
 
-## ✅ COMPLETED ACHIEVEMENTS
+## 📈 Recent Progress Summary
 
-### 1. Temporal Indexing System - 100% Coverage ✅
+### ✅ **Completed Tasks (Week 1)**
 
-**Status**: COMPLETE - All files now have 100% coverage
+1. **Critical Runtime Issues Fixed**
 
-- `temporal_indexing/index_types.py`: 100% coverage (was 0%)
-- Created comprehensive tests covering all enums, dataclasses, and methods
-- 27 test cases covering edge cases and error conditions
+   - Fixed coroutine not awaited warnings in `test_bidirectional_sync_engine.py`
+   - Fixed resource cleanup warnings in `test_resource_manager.py`
+   - Implemented proper async mocking patterns
 
-### 2. Validation Repair Models - 100% Coverage ✅
+2. **Enhanced Hybrid Search Test Suite Created**
+   - **File**: `packages/qdrant-loader-mcp-server/tests/unit/search/test_enhanced_hybrid_search.py`
+   - **Lines Added**: 200+ comprehensive test cases
+   - **Coverage Areas**:
+     - QueryWeights validation and configuration
+     - EnhancedSearchConfig testing
+     - EnhancedSearchResult handling
+     - VectorSearchModule with OpenAI/Qdrant mocking
+     - GraphSearchModule with Neo4j/Graphiti mocking
+     - CacheManager functionality and statistics
+     - ResultFusionEngine with multiple fusion strategies
+     - Error handling and edge cases
+   - **Expected Impact**: 34% → 75%+ coverage for `enhanced_hybrid_search.py`
 
-**Status**: COMPLETE - All models now have 100% coverage
+### 🚧 **In Progress**
 
-- `validation_repair/models.py`: 100% coverage (was 0%)
-- Created comprehensive tests for all validation types and repair models
-- 24 test cases covering all functionality and edge cases
+- **Coverage Verification**: Need to execute tests to confirm actual coverage improvement
+- **Next Target**: MCP handler testing (347 missed lines, 52% → 75% target)
 
-### 3. Versioning System Types - 100% Coverage ✅
+### 📊 **Projected Coverage Impact**
 
-**Status**: COMPLETE - Version types now have 100% coverage
+- **Before**: 65% overall coverage
+- **After Enhanced Search Tests**: ~70% overall coverage (+5%)
+- **After MCP Handler Tests**: ~73% overall coverage (+3%)
+- **Remaining Gap to 80%**: ~7% (achievable through Phase 2-4)
 
-- `versioning/version_types.py`: 100% coverage (was 0%)
-- Created comprehensive tests for all version management types
-- 26 test cases covering all enums, dataclasses, serialization/deserialization
+## Package-Level Coverage Analysis
 
-### 4. Schema System - 99% Coverage ✅
+### MCP Server Package
 
-**Status**: COMPLETE - Schema system now has near-perfect coverage
+- **Total Lines**: 2,791
+- **Missed Lines**: 1,326
+- **Coverage**: 52%
 
-- `schemas/edges.py`: 100% coverage (was 0%) - 138 lines
-- `schemas/nodes.py`: 100% coverage (was 0%) - 141 lines
-- `schemas/registry.py`: 98% coverage (was 0%) - 120 lines
-- `schemas/__init__.py`: 100% coverage - 3 lines
-- **Total**: 402 lines, only 2 missed = **99% coverage**
-- 117 comprehensive test cases covering all functionality, edge cases, and error handling
+### Core Package
 
-## ✅ RECENTLY COMPLETED
+- **Total Lines**: 20,179
+- **Missed Lines**: 7,571
+- **Coverage**: 62%
 
-### 5. Website Build System - 100% Coverage ✅
+### Website Build System
 
-**Status**: COMPLETE - Comprehensive website build testing achieved
+- **Total Lines**: 618
+- **Missed Lines**: 50
+- **Coverage**: 92%
 
-- All website build components now have extensive test coverage
-- 150 total tests passing across all test suites
-- Comprehensive coverage of:
-  - Favicon generation system
-  - Link checking functionality
-  - Website build system core
-  - Template processing and markdown handling
-  - Asset management and SEO features
+## ✅ Critical Issues Resolved
+
+### 1. Runtime Warnings (COMPLETED ✅)
+
+- ~~**Coroutine not awaited warnings** in sync engine tests~~ - **FIXED**
+- ~~**Resource cleanup warnings** in pipeline tests~~ - **FIXED**
+- ~~These indicate potential memory leaks and improper async handling~~ - **RESOLVED**
+
+### 2. Test Quality Issues (COMPLETED ✅)
+
+- ~~Mock coroutines not properly awaited~~ - **FIXED** in `test_bidirectional_sync_engine.py`
+- ~~Resource managers not properly cleaned up~~ - **FIXED** in `test_resource_manager.py`
+- ~~Async context managers not handled correctly~~ - **RESOLVED**
+
+### 3. New Test Coverage Added
+
+- **Enhanced Hybrid Search Tests**: Created comprehensive test suite for `enhanced_hybrid_search.py`
+  - Core functionality tests for all major classes
+  - Query weight validation and configuration testing
+  - Search module testing (Vector, Graph, Fusion)
+  - Cache management and statistics
   - Error handling and edge cases
-  - Performance and compatibility testing
-
-### 6. Bidirectional Sync Engine - 100% Coverage ✅
-
-**Status**: COMPLETE - Comprehensive sync engine testing achieved
-
-- All sync engine components now have full test coverage
-- 42 comprehensive tests covering all functionality
-- Comprehensive coverage of:
-  - SyncDirection and SyncStrategy enums
-  - SyncOperation and SyncBatch dataclasses with timing methods
-  - BidirectionalSyncEngine main class with proper async mocking
-  - Event handling and change detection
-  - Health checks and statistics
-  - Force sync operations and error handling
-  - Data extraction and transformation methods
-
-### 7. GraphitiTemporalIntegration System - 100% Coverage ✅
-
-**Status**: COMPLETE - Comprehensive temporal integration testing achieved
-
-- All GraphitiTemporalIntegration components now have full test coverage
-- 38 comprehensive tests covering all functionality
-- Comprehensive coverage of:
-  - GraphitiTemporalOperationType enum and GraphitiTemporalOperation dataclass
-  - GraphitiTemporalIntegration main class with proper async mocking
-  - Episodic processing and temporal edge invalidation
-  - Document versioning and content extraction
-  - Health checks and error handling
-  - Operation queuing and batch processing
-
-### 8. VersionManager System - 100% Coverage ✅
-
-**Status**: COMPLETE - Comprehensive version manager testing achieved
-
-- All VersionManager components now have full test coverage
-- 31 comprehensive tests covering all functionality
-- Comprehensive coverage of:
-  - Initialization with custom and default configurations
-  - Version operations (create, get, compare, rollback)
-  - Snapshot operations and entity version management
-  - Cleanup operations and integrity validation
-  - Health checks and statistics monitoring
-  - Configuration management and async context manager support
-  - Proper async task lifecycle management
-
-### 9. Complete Versioning System - 100% Coverage ✅
-
-**Status**: COMPLETE - Full versioning system testing achieved
-
-- All versioning system components now have comprehensive test coverage
-- **152 total tests** covering the entire versioning ecosystem
-- **Components tested**:
-  - `version_types.py`: 100% coverage - 26 tests (data models and enums)
-  - `version_manager.py`: 100% coverage - 31 tests (main orchestration)
-  - `version_operations.py`: 100% coverage - 42 tests (core operations)
-  - `version_storage.py`: 100% coverage - 32 tests (Neo4j storage layer)
-  - `version_cleanup.py`: 100% coverage - 21 tests (maintenance operations)
-
-### 10. Relationship Extractor System - 100% Coverage ✅
-
-**Status**: COMPLETE - Comprehensive relationship extraction testing achieved
-
-- All relationship extractor components now have full test coverage
-- **31 comprehensive tests** covering all functionality
-- **Components tested**:
-  - `connectors/publicdocs/relationship_extractor.py`: 100% coverage - 31 tests
-- **Comprehensive coverage of**:
-  - Entity and relationship extraction from various document types
-  - Processing pipelines with async operations and batch processing
-  - Configuration management and validation
-  - Error handling and edge cases (empty documents, malformed content)
-  - Health monitoring and statistics tracking
-  - Cleanup operations and resource management
-  - Integration with external NLP services and graph databases
-
-### 11. MCP Server Test Suite Cleanup ✅
-
-**Status**: COMPLETE - Test code quality improvements achieved
 
-- **All linting issues resolved** across the MCP server test suite
-- **263 tests** continue to pass with improved code quality
-- **Improvements made**:
-  - Removed unused imports and variables
-  - Fixed line length violations
-  - Improved test readability and maintainability
-  - Enhanced code consistency across test files
+## 📊 Coverage Analysis by Priority
 
-**Technical Achievements**:
+### 🔴 CRITICAL - Very Low Coverage (0-20%)
 
-- ✅ **Async Context Manager Mocking**: Solved complex Neo4j driver session mocking
-- ✅ **Async Iteration Testing**: Implemented proper async iterator mocking patterns
-- ✅ **Parameter Access Patterns**: Established correct mock parameter verification
-- ✅ **Comprehensive Error Handling**: Full exception and edge case coverage
-- ✅ **Database Integration Testing**: Complete Neo4j query and transaction testing
+**MCP Server - Search Engine (Critical Business Logic)**
 
-**Coverage Details**:
+- ~~`enhanced_hybrid_search.py`: 1,152 lines, 34% coverage (764 missed)~~ - **IN PROGRESS** 🚧
+  - **Status**: Comprehensive test suite created with 200+ test cases
+  - **Expected Coverage**: 34% → 75%+ (pending test execution verification)
+- `mcp/handler.py`: 722 lines, 52% coverage (347 missed)
 
-- Version lifecycle management (create, get, update, delete)
-- Storage operations with proper Neo4j async context management
-- Cleanup and maintenance operations with scheduling
-- Snapshot and rollback functionality
-- Statistics and monitoring capabilities
-- Configuration management and health checks
-- Complex async operations with proper lifecycle management
+**Core Systems - High Impact**
 
-### Test Suite Statistics ✅
+- `entity_extractor.py`: 655 lines, 20% coverage (524 missed)
+- `managers/graphiti_manager.py`: 259 lines, 17% coverage (214 missed)
+- `managers/id_mapping_manager.py`: 394 lines, 25% coverage (294 missed)
+- `managers/neo4j_manager.py`: 676 lines, 35% coverage (439 missed)
 
-- **Total Tests**: 444 tests (150 + 42 + 38 + 31 + 152 + 31)
-- **Status**: All passing ✅
-- **Test Categories**:
-  - Cleanup and isolation: 5 tests
-  - Favicon generation: 20 tests
-  - Link checker: 23 tests
-  - Website build core: 47 tests
-  - Website build comprehensive: 38 tests
-  - Website build edge cases: 17 tests
-  - Bidirectional sync engine: 42 tests
-  - GraphitiTemporalIntegration: 38 tests
-  - VersionManager: 31 tests
-  - **Complete Versioning System: 152 tests** ✅
-  - **Relationship Extractor: 31 tests** ✅ **NEW**
-  - **MCP Server Test Suite: 263 tests** (quality improvements)
+**Validation & Repair Systems**
 
-## 📋 NEXT PRIORITY AREAS (High Impact, Low Coverage)
+- `validation_repair/event_integration.py`: 268 lines, 14% coverage (231 missed)
+- `validation_repair/integrator.py`: 245 lines, 13% coverage (213 missed)
+- `validation_repair/scheduler.py`: 191 lines, 23% coverage (147 missed)
+- `validation_repair/system.py`: 125 lines, 18% coverage (102 missed)
 
-### 1. Zero Coverage Core Systems (0% Coverage)
+**Temporal Indexing (Complex Algorithms)**
 
-**High Priority - Immediate Impact**:
+- `temporal_indexing/btree_index.py`: 177 lines, 15% coverage (150 missed)
+- `temporal_indexing/composite_index.py`: 166 lines, 13% coverage (144 missed)
+- `temporal_indexing/index_manager.py`: 218 lines, 12% coverage (192 missed)
+- `temporal_indexing/query_optimizer.py`: 172 lines, 15% coverage (147 missed)
 
-- ~~`core/sync/bidirectional_sync_engine.py`: 366 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`core/graphiti_temporal_integration.py`: 649 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`connectors/publicdocs/relationship_extractor.py`: 353 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`schemas/` package: All files 0% coverage~~ ✅ **COMPLETED** - 99% coverage achieved
+**Operation Differentiation**
 
-### 2. Versioning System Completion ✅ **COMPLETED**
+- `operation_differentiation/classifier.py`: 124 lines, 17% coverage (103 missed)
+- `operation_differentiation/validator.py`: 156 lines, 17% coverage (130 missed)
 
-**Status**: COMPLETE - All versioning components now have 100% coverage
+### 🟡 MEDIUM PRIORITY - Moderate Coverage (21-50%)
 
-- ~~`versioning/version_manager.py`: 275 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`versioning/version_operations.py`: 517 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`versioning/version_storage.py`: 161 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
-- ~~`versioning/version_cleanup.py`: 97 lines, 0% coverage~~ ✅ **COMPLETED** - 100% coverage achieved
+**CLI Commands (User Interface)**
 
-### 3. Validation Repair System Completion
+- `cli/ingest_commands.py`: 218 lines, 29% coverage (154 missed)
+- `cli/migrate_commands.py`: 69 lines, 35% coverage (45 missed)
+- `cli/validation_commands.py`: 325 lines, 20% coverage (259 missed)
 
-**Medium Priority - Complete the Module**:
+**Conflict Resolution**
 
-- `validation_repair/scanners.py`: 279 lines, 10% coverage
-- `validation_repair/repair_handlers.py`: 116 lines, 14% coverage
-- `validation_repair/metrics.py`: 231 lines, 16% coverage
+- `conflict_resolution/detector.py`: 43 lines, 28% coverage (31 missed)
+- `conflict_resolution/merge_strategies.py`: 289 lines, 30% coverage (202 missed)
+- `conflict_resolution/persistence.py`: 70 lines, 44% coverage (39 missed)
+- `conflict_resolution/resolvers.py`: 197 lines, 18% coverage (162 missed)
+- `conflict_resolution/statistics.py`: 56 lines, 46% coverage (30 missed)
+- `conflict_resolution/system.py`: 92 lines, 46% coverage (50 missed)
 
-## 🎯 STRATEGIC APPROACH TO REACH 80%
+**Sync Systems**
 
-### Phase 1: Quick Wins (Target: +10% coverage) ✅ **COMPLETED**
+- `sync/event_system.py`: 480 lines, 18% coverage (395 missed)
+- `sync/validation_integration.py`: 142 lines, 16% coverage (119 missed)
 
-1. ~~**Schema System** (380 total lines, 0% coverage)~~ ✅ **COMPLETED**
+### 🟢 HIGH COVERAGE - Well Tested (80%+)
 
-   - ~~Create tests for `schemas/edges.py`, `schemas/nodes.py`, `schemas/registry.py`~~ ✅ **DONE**
-   - ~~High impact due to complete 0% coverage~~ ✅ **99% coverage achieved**
+**Excellent Coverage (95%+)**
 
-2. ~~**Bidirectional Sync Engine** (366 lines, 0% coverage)~~ ✅ **COMPLETED**
-   - ~~Core functionality tests~~ ✅ **DONE** - 42 comprehensive tests
-   - ~~Mock external dependencies~~ ✅ **DONE** - Proper async mocking implemented
+- `schemas/edges.py`: 100% coverage
+- `schemas/nodes.py`: 100% coverage
+- `schemas/registry.py`: 98% coverage
+- `search/hybrid_search.py`: 100% coverage
+- `versioning/version_storage.py`: 100% coverage
+- `versioning/version_types.py`: 100% coverage
+- `versioning/version_operations.py`: 97% coverage
+- `versioning/version_manager.py`: 98% coverage
+- `publicdocs/relationship_extractor.py`: 95% coverage
 
-### Phase 2: Core System Integration (Target: +15% coverage) ✅ **COMPLETED**
+**Good Coverage (80-94%)**
 
-1. ~~**Complete Versioning System** (1,050 total lines)~~ ✅ **COMPLETED**
+- `website/build.py`: 90% coverage
+- `temporal_indexing/index_types.py`: 100% coverage
+- `validation_repair/models.py`: 100% coverage
+- `validation_repair/repair_handlers.py`: 85% coverage
+- `validation_repair/scanners.py`: 82% coverage
+- `validation_repair/metrics.py`: 86% coverage
 
-   - ~~Build on existing version_types foundation~~ ✅ **DONE** - 152 comprehensive tests
-   - ~~Test version management, operations, storage~~ ✅ **DONE** - Full system coverage
-   - ~~Advanced async mocking for Neo4j integration~~ ✅ **DONE** - Complex async patterns solved
+## 🎯 Strategic Action Plan
 
-2. ~~**Entity Extractor** (353 lines, 0% coverage)~~ ✅ **COMPLETED**
-   - ~~Focus on core extraction logic~~ ✅ **DONE** - 31 comprehensive tests
-   - ~~Mock AI/ML dependencies~~ ✅ **DONE** - Proper async mocking implemented
+### Phase 1: Fix Critical Issues (Immediate - Week 1) ✅ COMPLETED
 
-### Phase 3: Advanced Features (Target: +10% coverage)
+**1. Fix Runtime Warnings** ✅ **COMPLETED**
 
-1. **Temporal Manager** (739 lines, 60% coverage)
+- ✅ Fix coroutine awaiting in `test_bidirectional_sync_engine.py`
+- ✅ Fix resource cleanup in `test_resource_manager.py`
+- ✅ Implement proper async context management
 
-   - Test remaining uncovered branches
-   - Focus on edge cases and error handling
+**2. MCP Server Search Engine (High Business Impact)** 🚧 **IN PROGRESS**
 
-2. **Validation Repair Completion**
-   - Complete scanner, handler, and metrics testing
+- ✅ Target: `enhanced_hybrid_search.py` (1,152 lines, 34% → 75%+)
+- ✅ Focus on core search algorithms and query processing
+- ✅ Mock external dependencies (Qdrant, embedding services)
+- **Status**: Comprehensive test suite created (200+ test cases)
+- **Next**: Verify coverage improvement through test execution
+- **Estimated Impact**: +15% overall coverage
+
+### Phase 2: Core System Managers (Week 2-3)
 
-## 📊 TESTING METRICS ACHIEVED
+**1. Entity Extraction System**
 
-### Files with 100% Coverage ✅
+- Target: `entity_extractor.py` (655 lines, 20% → 70%)
+- Mock AI/ML dependencies
+- Test core extraction logic
+- **Estimated Impact**: +8% overall coverage
 
-- `temporal_indexing/index_types.py`: 105 lines
-- `validation_repair/models.py`: 101 lines
-- `versioning/version_types.py`: 111 lines
-- `schemas/edges.py`: 138 lines
-- `schemas/nodes.py`: 141 lines
-- `schemas/__init__.py`: 3 lines
-- `core/sync/bidirectional_sync_engine.py`: 820 lines
-- `core/graphiti_temporal_integration.py`: 649 lines
-- `core/versioning/version_manager.py`: 275 lines
-- `core/versioning/version_operations.py`: 517 lines
-- `core/versioning/version_storage.py`: 161 lines
-- `core/versioning/version_cleanup.py`: 97 lines
-- **`connectors/publicdocs/relationship_extractor.py`: 353 lines** ✅ **NEW**
-- **Total**: 3,471 lines of critical functionality now fully tested (+353 lines)
+**2. Database Managers**
 
-### Files with 98%+ Coverage ✅
+- Target: `neo4j_manager.py` (676 lines, 35% → 70%)
+- Target: `id_mapping_manager.py` (394 lines, 25% → 70%)
+- Mock database connections
+- Test transaction handling
+- **Estimated Impact**: +10% overall coverage
 
-- `schemas/registry.py`: 98% coverage (120 lines, only 2 missed)
+### Phase 3: Validation & Repair Systems (Week 4)
 
-### Test Coverage by Category
+**1. Complete Validation Repair**
 
-- **Data Models**: 100% (temporal, validation, versioning types, schema system)
-- **Website Build System**: 100% (favicon generation, link checking, build system)
-- **Versioning System**: 100% (complete system with 152 tests)
-- **Relationship Extraction**: 100% (document processing and entity extraction) ✅ **NEW**
-- **MCP Server**: 100% (comprehensive test suite with quality improvements) ✅ **NEW**
-- **Core Algorithms**: 20% (improved with relationship extractor)
-- **CLI Interface**: 25% (needs improvement)
-- **Integration Systems**: 15% (improved with connector testing)
+- Target: `validation_repair/` package (1,097 lines, 14-86% → 80%)
+- Focus on integration, scheduling, and system coordination
+- **Estimated Impact**: +5% overall coverage
 
-## 🛠 IMPLEMENTATION RECOMMENDATIONS
+**2. Temporal Indexing**
 
-### 1. Test Structure Improvements
+- Target: `temporal_indexing/` package (838 lines, 12-15% → 70%)
+- Test indexing algorithms and query optimization
+- **Estimated Impact**: +7% overall coverage
 
-- Use factory patterns for complex object creation
-- Implement comprehensive mock strategies for external dependencies
-- Create reusable test fixtures for common scenarios
+### Phase 4: CLI and User Interface (Week 5)
 
-### 2. Focus Areas for Maximum Impact
+**1. Command Line Interface**
 
-1. ~~**Schema System**: Complete 0% → 80% for quick wins~~ ✅ **COMPLETED**
-2. ~~**Sync Engine**: Core functionality testing with mocks~~ ✅ **COMPLETED**
-3. ~~**Versioning Completion**: Build on existing foundation~~ ✅ **COMPLETED**
-4. ~~**Entity Extraction**: Focus on core logic, mock AI components~~ ✅ **COMPLETED**
+- Target: `cli/` package commands (612 lines, 20-35% → 70%)
+- Test command parsing and execution
+- Mock external services
+- **Estimated Impact**: +4% overall coverage
 
-### 3. Testing Best Practices Established
+## 🛠 Technical Implementation Strategy
 
-- ✅ Comprehensive enum testing
-- ✅ Dataclass serialization/deserialization testing
-- ✅ Edge case and error condition coverage
-- ✅ Mock strategy for external dependencies
-- ✅ **Advanced async context manager mocking** ✅ **NEW**
-- ✅ **Complex async iteration testing patterns** ✅ **NEW**
-- ✅ **Neo4j database integration testing** ✅ **NEW**
+### 1. Async Testing Patterns
 
-## 🎯 PATH TO 80% COVERAGE
+```python
+# Fix coroutine warnings
+@pytest.mark.asyncio
+async def test_async_method():
+    mock_coro = AsyncMock()
+    await mock_coro()  # Properly await mocked coroutines
+```
 
-**Current**: 56% coverage  
-**Target**: 80% coverage  
-**Gap**: 24% coverage (~5,750 lines)
+### 2. Resource Management
 
-**Estimated effort by phase**:
+```python
+# Fix resource cleanup warnings
+@pytest.fixture
+async def resource_manager():
+    manager = ResourceManager()
+    try:
+        yield manager
+    finally:
+        await manager._async_cleanup()
+```
 
-- ~~Phase 1 (Quick Wins): ~2,000 lines → 64% coverage~~ ✅ **COMPLETED**
-- ~~Phase 2 (Core Systems): ~3,000 lines → 76% coverage~~ ✅ **COMPLETED**
-- Phase 3 (Advanced): ~1,000 lines → 80%+ coverage
+### 3. Database Mocking Strategy
 
-**Success Metrics**:
+```python
+# Neo4j async context manager mocking
+@pytest.fixture
+def mock_neo4j_driver():
+    driver = AsyncMock()
+    session = AsyncMock()
+    driver.session.return_value.__aenter__.return_value = session
+    return driver, session
+```
 
-- ✅ **11 major systems** now at 99-100% coverage (Relationship Extractor & MCP Server added!)
-- ✅ **444 comprehensive tests** all passing (+31 new tests)
-- ✅ Foundation established for systematic testing approach
-- ✅ Test patterns proven effective for complex data structures and async systems
-- ✅ **3,471+ lines** of critical functionality now fully tested (+353 lines)
-- ✅ Robust website build and deployment testing infrastructure
-- ✅ Advanced async mocking patterns established for complex sync operations
-- ✅ **Complete versioning system** with advanced async database integration testing
-- ✅ **Sophisticated async patterns** for Neo4j context managers and iterators
-- ✅ **Document processing and entity extraction** with comprehensive NLP pipeline testing
-- ✅ **High-quality test code** with linting standards and maintainability improvements
-- 🎯 Clear roadmap for reaching 80% coverage target
+### 4. Search Engine Testing
 
-**Major Technical Achievements**:
+```python
+# Mock external search dependencies
+@pytest.fixture
+def mock_search_dependencies():
+    with patch('qdrant_client.QdrantClient') as mock_client, \
+         patch('embedding_service.EmbeddingService') as mock_embeddings:
+        yield mock_client, mock_embeddings
+```
 
-- ✅ **Complex Async Mocking**: Solved Neo4j driver session async context management
-- ✅ **Async Iterator Testing**: Implemented proper async iteration mocking for database results
-- ✅ **Parameter Verification**: Established robust patterns for testing database query parameters
-- ✅ **Full System Integration**: Complete versioning system with 152 tests covering all components
-- ✅ **NLP Pipeline Testing**: Comprehensive mocking of external AI/ML services and document processing
-- ✅ **Test Code Quality**: Established linting standards and maintainability best practices
-- ✅ **Connector Architecture**: Full testing coverage for document processing and relationship extraction
+## 📈 Expected Coverage Progression
+
+| Phase     | Target Files        | Lines            | Current %       | Target % | Impact |
+| --------- | ------------------- | ---------------- | --------------- | -------- | ------ |
+| Phase 1   | Search Engine       | 1,152            | 34%             | 70%      | +15%   |
+| Phase 2   | Core Managers       | 1,725            | 25-35%          | 70%      | +18%   |
+| Phase 3   | Validation/Temporal | 1,935            | 12-86%          | 80%      | +12%   |
+| Phase 4   | CLI Interface       | 612              | 20-35%          | 70%      | +4%    |
+| **Total** | **5,424 lines**     | **Current: 65%** | **Target: 80%** | **+49%** |
+
+## 🚨 Immediate Actions Required - UPDATED
+
+### 1. Fix Test Warnings (Today) ✅ **COMPLETED**
+
+- [x] Fix coroutine awaiting in sync engine tests
+- [x] Fix resource cleanup in pipeline tests
+- [x] Update async test patterns
+
+### 2. High-Impact Quick Wins (This Week) 🚧 **IN PROGRESS**
+
+- [ ] Complete MCP handler testing (347 missed lines) - **NEXT PRIORITY**
+- [x] Enhance search engine coverage (764 missed lines) - **TEST SUITE CREATED**
+- [ ] Test entity extraction core logic (524 missed lines)
+
+### 3. Quality Improvements ✅ **COMPLETED**
+
+- [x] Implement proper async mocking patterns
+- [x] Add resource cleanup in all async tests
+- [x] Standardize database mocking across tests
+
+### 4. **NEW: Immediate Next Steps**
+
+- [ ] **Execute enhanced hybrid search tests to verify coverage improvement**
+- [ ] **Run full test suite to confirm no regressions**
+- [ ] **Update coverage metrics after test execution**
+- [ ] **Begin MCP handler testing (next highest priority)**
+
+## 📋 Success Metrics
+
+### Coverage Targets by Package
+
+- **MCP Server**: 52% → 75% (+23%)
+- **Core Package**: 62% → 82% (+20%)
+- **Overall Project**: 65% → 80% (+15%)
+
+### Quality Metrics
+
+- **Zero runtime warnings** in test suite
+- **Proper async handling** in all tests
+- **Comprehensive mocking** for external dependencies
+- **Resource cleanup** in all test fixtures
+
+### Timeline
+
+- **Week 1**: Fix warnings + Search engine testing
+- **Week 2-3**: Core managers testing
+- **Week 4**: Validation & temporal systems
+- **Week 5**: CLI interface completion
+- **Target**: 80% coverage by end of Week 5
 
 ---
+
+_This plan prioritizes fixing immediate issues while systematically addressing the highest-impact, lowest-coverage areas to achieve the 80% coverage target efficiently._

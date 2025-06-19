@@ -73,7 +73,8 @@ packages/*/*.egg-info/
 # Ignore cursor AI rules
 qdrant-loader.code-workspace
 packages/qdrant-loader-mcp-server/coverage.xml
-coverage.xml
+coverage*.xml
+coverage*.json
 
 # Added by Claude Task Master
 logs

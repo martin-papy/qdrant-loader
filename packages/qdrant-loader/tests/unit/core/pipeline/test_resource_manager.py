@@ -571,4 +571,8 @@ class TestResourceManager:
         call_args = mock_asyncio_run.call_args[0][0]
         assert hasattr(call_args, "__await__")  # It's a coroutine
 
+        # Close the coroutine to prevent warnings
+        if hasattr(call_args, "close"):
+            call_args.close()
+
         assert self.resource_manager.cleanup_done

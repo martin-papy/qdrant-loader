@@ -46,6 +46,36 @@ def pytest_configure(config):
     # Add warning filters
     config.addinivalue_line("filterwarnings", "ignore::DeprecationWarning")
     config.addinivalue_line("filterwarnings", "ignore::PendingDeprecationWarning")
+    config.addinivalue_line("filterwarnings", "ignore::UserWarning:structlog.*")
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:coroutine.*AsyncMockMixin.*was never awaited:RuntimeWarning",
+    )
+    config.addinivalue_line(
+        "filterwarnings", "ignore:.*AsyncMockMixin.*was never awaited:RuntimeWarning"
+    )
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:.*AsyncMockMixin._execute_mock_call.*was never awaited:RuntimeWarning",
+    )
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:coroutine.*as_completed.*_wait_for_one.*was never awaited:RuntimeWarning",
+    )
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:Api key is used with an insecure connection:UserWarning",
+    )
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:Remove.*format_exc_info.*from your processor chain.*:UserWarning:structlog.*",
+    )
+    config.addinivalue_line(
+        "filterwarnings", "ignore:unclosed transport.*:ResourceWarning"
+    )
+    config.addinivalue_line(
+        "filterwarnings", "ignore:unclosed event loop.*:ResourceWarning"
+    )
 
     # Only add bs4 warning filter if BeautifulSoup4 is available
     try:

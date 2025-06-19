@@ -399,13 +399,25 @@ class TestBidirectionalSyncEngine:
         sync_engine.sync_strategy = SyncStrategy.BATCH
 
         with patch.object(sync_engine, "_batch_processing_loop") as mock_loop:
-            # Mock the coroutine properly
-            async def mock_coroutine():
+            # Mock the coroutine properly and ensure it's awaitable
+            async def mock_batch_loop():
+                await asyncio.sleep(0.001)  # Small delay to simulate work
                 return None
 
-            mock_loop.return_value = mock_coroutine()
+            mock_loop.return_value = mock_batch_loop()
 
             await sync_engine.start()
+
+            # Give the task a moment to start
+            await asyncio.sleep(0.01)
+
+            # Clean up the task
+            if sync_engine._sync_task:
+                sync_engine._sync_task.cancel()
+                try:
+                    await sync_engine._sync_task
+                except asyncio.CancelledError:
+                    pass
 
         assert sync_engine._running is True
 
@@ -454,11 +466,8 @@ class TestBidirectionalSyncEngine:
         operation = SyncOperation()
 
         with patch.object(sync_engine, "_execute_sync_operation") as mock_execute:
-            # Mock the coroutine properly
-            async def mock_coroutine():
-                return None
-
-            mock_execute.return_value = mock_coroutine()
+            # Mock the coroutine properly using AsyncMock
+            mock_execute.return_value = AsyncMock()
 
             await sync_engine._process_operation_immediate(operation)
 
@@ -574,11 +583,16 @@ class TestBidirectionalSyncEngine:
         )
 
         with patch.object(sync_engine, "_execute_sync_operation") as mock_execute:
-            mock_execute.return_value = AsyncMock()
+            # Mock the async method properly
+            async def mock_execute_operation(operation):
+                operation.mark_completed(success=True)
+                return None
+
+            mock_execute.side_effect = mock_execute_operation
 
             result = await sync_engine.force_sync_entity(entity_id, DatabaseType.QDRANT)
 
-        assert result is False  # Operation success defaults to False
+        assert result is True  # Operation should succeed with our mock
         mock_execute.assert_called_once()
 
     @pytest.mark.asyncio

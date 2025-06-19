@@ -1,0 +1,253 @@
+============================================================================================================================================================================= warnings summary ==============================================================================================================================================================================
+packages/qdrant-loader/tests/unit/core/pipeline/test_source_filter.py::TestSourceFilter::test_no_filters_returns_original
+  /opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/inspect.py:3076: RuntimeWarning: coroutine 'ResourceManager._async_cleanup' was never awaited
+    params = OrderedDict((param.name, param) for param in parameters)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+packages/qdrant-loader/tests/unit/core/sync/test_bidirectional_sync_engine.py::TestBidirectionalSyncEngine::test_start_already_running
+  /opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestBidirectionalSyncEngine.test_start_batch_strategy.<locals>.mock_coroutine' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+packages/qdrant-loader/tests/unit/core/sync/test_bidirectional_sync_engine.py::TestBidirectionalSyncEngine::test_add_to_batch_existing_batch
+  /opt/homebrew/Cellar/python@3.12/3.12.11/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestBidirectionalSyncEngine.test_process_operation_immediate.<locals>.mock_coroutine' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================================================================================================================================== tests coverage ===============================================================================================================================================================================
+_____________________________________________________________________________________________________________________________________________________________ coverage: platform darwin, python 3.12.11-final-0 _____________________________________________________________________________________________________________________________________________________________
+
+Name                                                                                              Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------------------------------------------------------------
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/__init__.py                            0      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/__main__.py                            1      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/cli.py                               178     26    85%   41-47, 142-145, 216-238, 322
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/config.py                             36      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/graphiti/__init__.py                   2      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/graphiti/detection.py                 80     23    71%   91-109, 153, 165-195
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/main.py                                3      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/mcp/__init__.py                        4      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/mcp/handler.py                       722    347    52%   54-70, 102, 142, 164, 168, 180, 184, 188, 192, 196, 200, 224-231, 856, 893-894, 1086-1087, 1099-1100, 1161-1162, 1198, 1202-1208, 1212, 1218, 1221, 1225, 1229, 1233, 1249-1399, 1416-1683, 1750-1752, 1768-1773, 1788-1792, 1878-1880, 2038-2040, 2056-2061, 2076-2080, 2160-2162, 2202, 2239, 2245, 2248, 2256, 2276-2351, 2368-2418, 2435-2480, 2497-2541, 2558-2633, 2650-2713
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/mcp/models.py                         12      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/mcp/protocol.py                       66      3    95%   30, 49, 150
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/__init__.py                     0      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/engine.py                     142     60    58%   61, 83-109, 126-132, 138-143, 224-240, 256-269, 275, 278, 348, 365-379, 401-477
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/enhanced_hybrid_search.py    1152    764    34%   66-67, 71, 83-97, 101-128, 132, 157, 275-278, 300-348, 352-360, 364, 383-385, 411-438, 444-502, 513-728, 734-787, 793-802, 850-852, 897-899, 978-981, 985-988, 992-993, 1001-1004, 1008-1009, 1019-1022, 1028-1031, 1083-1101, 1141-1144, 1164, 1175, 1186-1192, 1198, 1262, 1328, 1377-1380, 1396-1493, 1509-1592, 1611-1690, 1706-1783, 1799-1848, 1860, 1879-1882, 1891-1894, 1903-1910, 1943, 1945, 1956, 1958, 1992-1994, 2016-2029, 2047-2069, 2087-2095, 2105-2126, 2130-2139, 2143-2146, 2150-2162, 2166-2169, 2173-2187, 2195-2201, 2223-2245, 2260-2267, 2271-2283, 2301-2323, 2329-2335, 2341-2405, 2411-2433, 2439-2489, 2495-2539, 2548-2605, 2614-2631, 2637-2651, 2655-2675, 2700-2737, 2767-2844, 2855, 2867, 2887-2965, 2979, 2990-3023, 3032-3041, 3047-3079, 3087-3106, 3114-3130, 3134-3136, 3147-3153, 3161-3163
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/exceptions.py                 121     26    79%   125-134, 153, 155-156, 229-235, 280-288
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/hybrid_search.py              186      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/models.py                      67      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/search/processor.py                   44      6    86%   56-59, 90, 105, 109
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/utils/__init__.py                      2      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/utils/logging.py                      64      0   100%
+packages/qdrant-loader-mcp-server/src/qdrant_loader_mcp_server/utils/performance_testing.py         240     40    83%   165-167, 222-224, 293-294, 450-454, 479-483, 492-522
+packages/qdrant-loader/__init__.py                                                                    0      0   100%
+packages/qdrant-loader/src/qdrant_loader/__init__.py                                                 29      2    93%   9-11
+packages/qdrant-loader/src/qdrant_loader/cli/__init__.py                                             32      2    94%   83-84
+packages/qdrant-loader/src/qdrant_loader/cli/asyncio.py                                              22      0   100%
+packages/qdrant-loader/src/qdrant_loader/cli/config_commands.py                                     213     30    86%   37, 164, 178, 188, 197, 202, 251, 267-271, 337, 360-362, 395-396, 409, 427-440
+packages/qdrant-loader/src/qdrant_loader/cli/core.py                                                191     85    55%   26-28, 78, 109-140, 186-219, 226, 241-246, 305-333, 363, 379, 385-386, 410-413, 488-494, 499-510
+packages/qdrant-loader/src/qdrant_loader/cli/export_commands.py                                      53     28    47%   27, 69-116, 155
+packages/qdrant-loader/src/qdrant_loader/cli/ingest_commands.py                                     218    154    29%   36, 59, 104-159, 223-327, 362-470, 517, 544
+packages/qdrant-loader/src/qdrant_loader/cli/migrate_commands.py                                     69     45    35%   24, 82-155, 198
+packages/qdrant-loader/src/qdrant_loader/cli/project_commands.py                                    229     58    75%   56-62, 108, 175-194, 251, 299-300, 322-342, 391, 405, 433-448, 460-471, 496-511
+packages/qdrant-loader/src/qdrant_loader/cli/validation_commands.py                                 325    259    20%   35, 102-187, 253-366, 429-506, 555-642, 657-709, 719-798, 807-865, 886-887, 910-1001
+packages/qdrant-loader/src/qdrant_loader/config/__init__.py                                         206     56    73%   61-66, 112-115, 241-287, 300, 420, 449, 513, 518, 533, 541, 549, 557, 565, 573, 581, 590, 611-641
+packages/qdrant-loader/src/qdrant_loader/config/base.py                                               8      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/chunking.py                                          10      1    90%   27
+packages/qdrant-loader/src/qdrant_loader/config/domain_models.py                                    150      3    98%   541-542, 556
+packages/qdrant-loader/src/qdrant_loader/config/embedding.py                                         11      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/enhanced_validator.py                               145     65    55%   73, 95-97, 106-109, 133-136, 155-157, 162-163, 174-179, 185, 190, 195, 202-207, 225-227, 233-252, 263, 304, 315-319, 325-346, 357-378
+packages/qdrant-loader/src/qdrant_loader/config/global_config.py                                     33      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/graphiti.py                                          57      1    98%   32
+packages/qdrant-loader/src/qdrant_loader/config/hot_reload.py                                       194     52    73%   16, 57-62, 66-71, 79-89, 182, 199-200, 235, 243-244, 265-267, 272-273, 306-310, 354, 364-365, 369-372, 392-409
+packages/qdrant-loader/src/qdrant_loader/config/legacy_detection.py                                  88      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/metadata_extraction.py                              158     24    85%   628-656, 660-671, 696-724
+packages/qdrant-loader/src/qdrant_loader/config/migration.py                                         92      4    96%   112-114, 159
+packages/qdrant-loader/src/qdrant_loader/config/models.py                                            66      1    98%   127
+packages/qdrant-loader/src/qdrant_loader/config/multi_file_loader.py                                268     76    72%   68, 85-97, 116, 119, 122, 137-146, 214-215, 228, 244, 253, 260, 268, 282, 293, 302, 313, 320-321, 343, 425-426, 470-485, 503-540, 561, 568, 591-592, 601-605, 627, 645-664, 686, 715, 730
+packages/qdrant-loader/src/qdrant_loader/config/neo4j.py                                             30      1    97%   103
+packages/qdrant-loader/src/qdrant_loader/config/notifications.py                                     51     13    75%   320, 328, 341, 355-366
+packages/qdrant-loader/src/qdrant_loader/config/parser.py                                            84     10    88%   87-89, 203, 245-246, 260, 315-322
+packages/qdrant-loader/src/qdrant_loader/config/qdrant.py                                             8      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/repair_strategies.py                                 47     13    72%   271, 279-292, 300-305
+packages/qdrant-loader/src/qdrant_loader/config/settings_access.py                                  235      2    99%   12, 36
+packages/qdrant-loader/src/qdrant_loader/config/source_config.py                                      8      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/sources.py                                           55      9    84%   16, 74, 94-99, 107, 125-126
+packages/qdrant-loader/src/qdrant_loader/config/state.py                                             70     18    74%   58, 77-87, 93, 98-108, 118, 120, 132, 134, 137, 139, 147
+packages/qdrant-loader/src/qdrant_loader/config/types.py                                             68      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/validation.py                                        35      0   100%
+packages/qdrant-loader/src/qdrant_loader/config/validation_errors.py                                180     64    64%   78, 115-119, 165-182, 190-195, 203-215, 225, 260-264, 267-271, 370-375, 379-385, 400-405, 412-427, 433-438, 461-466, 469-474
+packages/qdrant-loader/src/qdrant_loader/config/validation_rules.py                                  36      7    81%   218, 226-239
+packages/qdrant-loader/src/qdrant_loader/config/validator.py                                        119     41    66%   34, 41, 51, 69, 82, 90-96, 109, 119, 127, 132-137, 147, 161, 166-169, 174, 187, 204, 213, 218, 233, 236, 241, 263-272, 291-300, 317, 324
+packages/qdrant-loader/src/qdrant_loader/config/workspace.py                                         65     20    69%   35, 45, 105-112, 124-139, 151-156
+packages/qdrant-loader/src/qdrant_loader/connectors/__init__.py                                       0      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/base.py                                          14      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/confluence/__init__.py                            3      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/confluence/config.py                             51      5    90%   62, 73, 95-101
+packages/qdrant-loader/src/qdrant_loader/connectors/confluence/connector.py                         435    185    57%   79-81, 84-86, 96-111, 118, 120, 129-140, 150-167, 171-173, 177, 239, 252, 279-310, 326, 339-502, 633-634, 684-692, 697, 699, 701, 704-712, 730-732, 744-748, 754-758, 764-773, 845-846, 877-886, 904, 910, 924, 936, 942, 948, 952, 958-960, 1027-1045, 1054-1055, 1079-1081, 1103-1104, 1126-1144, 1153-1154, 1171-1175
+packages/qdrant-loader/src/qdrant_loader/connectors/confluence/relationship_extractor.py            150     48    68%   88-103, 110-129, 133-135, 168-170, 185-187, 199-201, 221, 280-292, 296-298, 319-327, 332-340, 345-352, 359-366, 373-381, 390-394, 428, 476-492
+packages/qdrant-loader/src/qdrant_loader/connectors/exceptions.py                                     9      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/git/__init__.py                                   5      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/git/adapter.py                                   61      4    93%   57, 106-108
+packages/qdrant-loader/src/qdrant_loader/connectors/git/config.py                                    28      2    93%   52, 60
+packages/qdrant-loader/src/qdrant_loader/connectors/git/connector.py                                185     57    69%   49-51, 61-63, 120-123, 131-138, 149-150, 206-215, 219-222, 230-237, 260-261, 286, 305-325, 357, 386-390, 407-409, 415, 421-425, 430-436, 441-444
+packages/qdrant-loader/src/qdrant_loader/connectors/git/file_processor.py                           108     21    81%   10-11, 84-91, 116-119, 140-142, 180-183, 193-197, 204-207, 213-215
+packages/qdrant-loader/src/qdrant_loader/connectors/git/metadata_extractor.py                       223     96    57%   116-117, 161, 170-171, 198, 206-208, 233-266, 308-319, 334-427, 441-443, 449-482
+packages/qdrant-loader/src/qdrant_loader/connectors/git/operations.py                               135     16    88%   109, 221-236, 281-304
+packages/qdrant-loader/src/qdrant_loader/connectors/git/relationship_extractor.py                   154     86    44%   77, 83-102, 126, 132-150, 174, 180-232, 256-267, 273-306, 311-319, 323-325, 345, 351-386, 398-442
+packages/qdrant-loader/src/qdrant_loader/connectors/jira/__init__.py                                  3      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/jira/config.py                                   53      3    94%   94, 116, 131
+packages/qdrant-loader/src/qdrant_loader/connectors/jira/connector.py                               224     56    75%   69, 73, 92-94, 101, 103, 113, 139, 148-150, 158-162, 255-281, 289-303, 331, 384-402, 481-483, 490, 493-497, 566-586, 766-767, 796-809
+packages/qdrant-loader/src/qdrant_loader/connectors/jira/models.py                                   39      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/jira/relationship_extractor.py                  169     48    72%   112-122, 134-144, 148-150, 180-184, 193-197, 212-214, 234, 292-293, 316-332, 337-349, 353-355, 376-384, 394-402, 408-415, 439-441, 493-495, 506-526
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/__init__.py                             3      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/config.py                              15      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/connector.py                           90     29    68%   38-45, 56-60, 95-97, 120-148, 169-175, 179, 207-213
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/file_processor.py                      94     46    51%   10, 51-52, 54-55, 60-63, 66-89, 97-100, 120-122, 132-133, 136, 142-143, 145-149, 151-156, 159-162
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/metadata_extractor.py                  44      4    91%   61, 69-71
+packages/qdrant-loader/src/qdrant_loader/connectors/localfile/relationship_extractor.py             216    190    12%   42-43, 57-90, 104-144, 158-209, 223-262, 276-335, 347-357, 364-388, 394-416, 422-448, 454-476, 482-517, 521-535, 539-547, 551-569, 573-608, 612-630
+packages/qdrant-loader/src/qdrant_loader/connectors/metadata/__init__.py                              3      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/metadata/base.py                                 94     43    54%   125-126, 225, 236-274, 285-301
+packages/qdrant-loader/src/qdrant_loader/connectors/metadata/schemas.py                             129      2    98%   261, 278
+packages/qdrant-loader/src/qdrant_loader/connectors/publicdocs/__init__.py                            2      0   100%
+packages/qdrant-loader/src/qdrant_loader/connectors/publicdocs/config.py                             22      1    95%   71
+packages/qdrant-loader/src/qdrant_loader/connectors/publicdocs/connector.py                         313     87    72%   73, 79-90, 103-106, 121, 132-139, 152-153, 170-171, 175-176, 228-239, 279-309, 319-320, 324-326, 342, 383-389, 401-402, 556-608, 619-633, 647, 662-663, 686, 717-723, 731-739
+packages/qdrant-loader/src/qdrant_loader/connectors/publicdocs/relationship_extractor.py            353     17    95%   344, 401-402, 428, 506-507, 625-627, 799, 807-810, 813, 870-871
+packages/qdrant-loader/src/qdrant_loader/core/__init__.py                                             2      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/async_ingestion_pipeline.py                           151     23    85%   93, 120, 141-145, 157-159, 169-179, 243-253, 270, 291, 358, 362
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/__init__.py                         8      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/atomic_manager.py                 132     26    80%   132-134, 139-145, 166, 174, 203, 211, 217, 222, 226-230, 243, 249, 257-261, 268-271
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/base.py                             4      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/context.py                         24      5    79%   65-72, 76, 80
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/enums.py                           18      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/models.py                          84      9    89%   33-34, 42-45, 77, 111, 127
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/neo4j_manager.py                  136     65    52%   29, 35, 60, 65-70, 78, 80, 83-86, 93-98, 110-112, 116-126, 142-146, 156, 159, 167-183, 189-203, 223-239
+packages/qdrant-loader/src/qdrant_loader/core/atomic_transactions/qdrant_manager.py                 114     53    54%   52, 58-63, 73, 75, 78-81, 88-93, 103-105, 109-125, 139-141, 153, 156, 162-173, 177-183, 190, 196, 200-212
+packages/qdrant-loader/src/qdrant_loader/core/attachment_downloader.py                              151     22    85%   122-132, 144, 208-209, 226-234, 260-265, 267-274, 387-393, 405-406
+packages/qdrant-loader/src/qdrant_loader/core/chunking/__init__.py                                    2      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/chunking/chunking_service.py                           60      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/chunking/progress_tracker.py                           36      7    81%   37, 52-53, 60, 66, 103, 110
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/__init__.py                           7      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/base_strategy.py                    159      6    96%   14, 283-284, 294, 318, 326
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/code_strategy.py                    343     64    81%   15-18, 136, 163, 166, 172-174, 188-191, 195, 206-209, 213-215, 236, 240, 317-320, 378, 380, 396, 419-422, 428-430, 449-452, 458, 469, 471, 529, 616, 620, 643, 678-681, 685-686, 700, 737, 771-775, 791-793, 801-804, 809, 847-853, 876-878
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/default_strategy.py                 138     31    78%   71, 100-104, 108, 126-127, 142, 149-150, 153, 165, 177-179, 182, 193, 205-207, 210, 221, 231-235, 285-286, 334-336
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/html_strategy.py                    351     19    95%   224, 250, 273, 283, 287, 376-378, 382, 674-675, 753-755, 759, 771-772, 835-836
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/json_strategy.py                    316      8    97%   16, 197, 199, 204, 238, 637-638, 657
+packages/qdrant-loader/src/qdrant_loader/core/chunking/strategy/markdown_strategy.py                331     49    85%   18, 246-247, 262-285, 343, 345, 347, 372-376, 382, 392, 396-418, 427, 437-440, 466, 505-509, 550-551, 556-560, 592, 772
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/__init__.py                         9      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/detector.py                        43     31    28%   42-85, 106-138, 149
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/merge_strategies.py               289    202    30%   65, 109-113, 117, 121, 165-203, 216-252, 262-295, 299-304, 308-317, 321-335, 339-349, 380-410, 414-428, 460-511, 517-531, 541-566, 570-579, 583-597, 601-611, 643-667
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/models.py                          95     19    80%   63-64, 68-70, 74, 86, 124-126, 135-139, 143-144, 148, 157
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/persistence.py                     70     39    44%   35-55, 86-106, 135-155, 168, 186, 195-196, 234-235, 251-252
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/resolvers.py                      197    162    18%   67-96, 100-109, 113-125, 129-141, 145-156, 160-168, 173-188, 192-221, 225-254, 258-337, 341-431, 438, 451-484, 490-501, 521-540, 548-549, 554
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/statistics.py                      56     30    46%   27, 31, 35, 39, 76-105, 144-162, 169-173, 182
+packages/qdrant-loader/src/qdrant_loader/core/conflict_resolution/system.py                          92     50    46%   72-90, 104-125, 151-171, 194, 200-203, 213, 217, 222, 227, 238, 246
+packages/qdrant-loader/src/qdrant_loader/core/document.py                                           128     11    91%   54, 71-103, 205-208, 304
+packages/qdrant-loader/src/qdrant_loader/core/embedding/__init__.py                                   2      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/embedding/embedding_service.py                        175     45    74%   91-102, 108, 124-135, 153-155, 162, 177, 182-185, 208-226, 231, 249-255, 282, 335-358, 368-375, 381-382, 435
+packages/qdrant-loader/src/qdrant_loader/core/embedding_service.py                                   26      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/entity_extractor.py                                   655    524    20%   67-69, 74, 189-224, 229-233, 244-269, 293-345, 363-430, 451-481, 510-573, 601-676, 690-802, 825-879, 908-958, 972-1009, 1023-1024, 1035-1046, 1055-1069, 1073-1075, 1083-1090, 1107-1117, 1128-1248, 1270-1333, 1351-1385, 1397-1401, 1411-1412, 1416-1439, 1450-1456, 1464, 1485-1525, 1530-1536, 1554-1592, 1606-1651, 1662-1674, 1692-1755, 1773-1822
+packages/qdrant-loader/src/qdrant_loader/core/file_conversion/__init__.py                             7      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/file_conversion/conversion_config.py                   19      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/file_conversion/exceptions.py                          32      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/file_conversion/file_converter.py                     143      2    99%   68, 110
+packages/qdrant-loader/src/qdrant_loader/core/file_conversion/file_detector.py                       79      6    92%   217-218, 227-230
+packages/qdrant-loader/src/qdrant_loader/core/graphiti_temporal_integration.py                      262     36    86%   200-201, 256, 296, 300, 385-387, 398, 414-416, 447-449, 471-473, 491-493, 514, 557-559, 582-584, 616-617, 625-627, 643-645
+packages/qdrant-loader/src/qdrant_loader/core/init_collection.py                                     24      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/managers/__init__.py                                    7      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/managers/graphiti_manager.py                          259    214    17%   56-57, 61, 72-89, 100-119, 123-161, 165-175, 180, 185-189, 194, 199, 226-255, 278-299, 317-352, 370-393, 410-434, 452-476, 484-506, 528-573, 591-640, 648-688, 699-744
+packages/qdrant-loader/src/qdrant_loader/core/managers/id_mapping_manager.py                        394    294    25%   90, 103-104, 108-111, 127-147, 159-186, 194-202, 220, 259-298, 355-357, 388-413, 419-420, 433-435, 442-461, 466-485, 490-508, 526-550, 572-603, 623-658, 676-713, 724-741, 750-768, 772-790, 806-868, 884-920, 924-945, 960-1014, 1018-1027, 1033-1038, 1042, 1046-1047, 1051-1077
+packages/qdrant-loader/src/qdrant_loader/core/managers/neo4j_manager.py                             676    439    35%   60, 109-117, 149, 192-201, 253-254, 258, 264-265, 278-284, 290-292, 308-313, 315-320, 328-336, 367, 376-385, 387-392, 419, 461, 500, 515-519, 530, 536-538, 547, 579-591, 605-606, 629, 637-638, 648-654, 663-664, 673-675, 680, 793-831, 842-883, 891-930, 938-990, 998-1058, 1071-1130, 1138, 1256-1278, 1292-1334, 1345-1387, 1405-1486, 1497-1541, 1552-1602, 1620-1686, 1708-1790, 1798-1915, 1919-1932, 1950, 1968, 1976-2003
+packages/qdrant-loader/src/qdrant_loader/core/managers/project_manager.py                           151     36    76%   24, 77, 130, 144, 166-176, 238-246, 264-269, 316-323, 348-349, 365-390
+packages/qdrant-loader/src/qdrant_loader/core/managers/qdrant_manager.py                            150     46    69%   197-222, 230-252, 315-335, 344-365, 373-400
+packages/qdrant-loader/src/qdrant_loader/core/managers/temporal_manager.py                          739    296    60%   132, 180, 190-194, 235, 262-276, 296-327, 374-388, 394-396, 415-418, 428-458, 466-488, 496, 528, 530, 540, 543-562, 587, 592, 626-637, 644, 677, 682, 687, 692, 697, 700-728, 746, 765, 770, 772, 777, 782, 801-853, 865, 882, 896-901, 968, 999, 1001, 1013-1029, 1035-1054, 1126, 1144, 1192-1257, 1277-1279, 1330-1356, 1373-1374, 1391, 1437-1476, 1491-1492, 1504-1507, 1552-1606, 1622, 1634, 1686-1701, 1760-1809, 1840-1844, 1870, 1902, 1947-1950, 1975-1987, 2018-2019, 2048-2063, 2143-2145, 2187-2188
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/__init__.py                                  4      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/batch_summary.py                            44      8    82%   71, 73, 77-84, 97, 105
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/ingestion_metrics.py                       178     13    93%   125-126, 181-182, 196, 202, 213, 286-287, 361-364, 467-468
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/processing_stats.py                         42     12    71%   60-73, 85-97
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/prometheus_metrics.py                       31     13    58%   37-52, 60-61
+packages/qdrant-loader/src/qdrant_loader/core/monitoring/resource_monitor.py                         27      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/__init__.py                   6      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/classifier.py               124    103    17%   24, 52-84, 93-132, 142-178, 186-207, 215-230, 243-271, 275-281, 287-305
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/manager.py                   41      1    98%   17
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/priority_manager.py          51     24    53%   13, 57-69, 84, 92-104, 119-124, 138-142, 152-164
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/types.py                     72      5    93%   106-110
+packages/qdrant-loader/src/qdrant_loader/core/operation_differentiation/validator.py                156    130    17%   19, 77-149, 158-179, 188-215, 224-250, 259-276, 285-297, 306-320, 329-342, 351-374, 383-399, 408-418, 426-433
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/__init__.py                                   10      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/config.py                                     11      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/document_pipeline.py                          77     62    19%   44-130, 138-166
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/factory.py                                    54     11    80%   58-59, 63, 122-147
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/orchestrator.py                              131     28    79%   83, 97-111, 166-196, 241-245
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/resource_manager.py                          102      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/source_filter.py                              33      2    94%   45, 63
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/source_processor.py                           35     22    37%   42-93
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/__init__.py                            6      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/base_worker.py                        13      2    85%   40-41
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/chunking_worker.py                   108      6    94%   79-82, 171-172, 181-182
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/embedding_worker.py                   82      7    91%   51-54, 73, 147-150
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/entity_extraction_worker.py           97     84    13%   34-36, 47-94, 111-207, 220-250
+packages/qdrant-loader/src/qdrant_loader/core/pipeline/workers/upsert_worker.py                      76      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/prompts/__init__.py                                     3      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/prompts/entity_prompts.py                             127     46    64%   62, 75-82, 86, 90, 327, 331, 335, 360-390, 394-403, 407-420, 426-454, 458-467, 471-475, 479-484
+packages/qdrant-loader/src/qdrant_loader/core/prompts/prompt_testing.py                             153     95    38%   18, 51, 83, 125-130, 134-135, 139-153, 157-212, 227-261, 269-279, 289-342, 356-363, 367-382, 390-411, 421-426, 430-431, 437-507
+packages/qdrant-loader/src/qdrant_loader/core/state/__init__.py                                       4      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/state/document_state_manager.py                        50      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/state/exceptions.py                                     9      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/state/models.py                                        96      1    99%   36
+packages/qdrant-loader/src/qdrant_loader/core/state/state_change_detector.py                         65     40    38%   38-42, 46-47, 51-52, 62-113, 117-124, 130, 137-140, 159-180, 193, 197, 205
+packages/qdrant-loader/src/qdrant_loader/core/state/state_manager.py                                396    116    71%   47, 61-62, 81-83, 95-98, 110-111, 135-159, 164, 205-209, 214-233, 282-289, 334-368, 407, 438-446, 475, 483-488, 520-525, 532, 553, 606-615, 631-632, 691-701, 760-765, 807-818, 841-846, 872-877, 881-884
+packages/qdrant-loader/src/qdrant_loader/core/sync/__init__.py                                        8      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/sync/bidirectional_sync_engine.py                     366    170    54%   204-205, 239-240, 243, 247, 256, 259-263, 271, 275-287, 295-301, 305-335, 345-353, 359-367, 372-380, 384-402, 406-420, 424-452, 462-490, 500-535, 546-565, 575-591, 597-622, 632-651, 657-666, 782-783
+packages/qdrant-loader/src/qdrant_loader/core/sync/conflict_monitor.py                              336     40    88%   311, 405-407, 421, 456, 476-478, 494-498, 510, 534-535, 547, 555, 608-612, 645-648, 653-654, 665-666, 674-678, 856-880
+packages/qdrant-loader/src/qdrant_loader/core/sync/enhanced_event_system.py                         205     34    83%   13-17, 160-162, 174, 176, 185, 188-194, 222-224, 398-399, 414-415, 464-469, 504-513, 531-537, 544-545
+packages/qdrant-loader/src/qdrant_loader/core/sync/event_system.py                                  480    395    18%   79, 103-123, 163-174, 178, 182-183, 187-203, 207-217, 223-306, 310-343, 347-369, 380-401, 418, 427-428, 449-460, 464, 468-469, 473-489, 493-503, 509-603, 607-640, 644-666, 678-713, 755-794, 798-819, 823-836, 840-855, 868-870, 878-880, 884-889, 894, 898-917, 921-958, 962-973, 977-988, 997-1033, 1037-1061
+packages/qdrant-loader/src/qdrant_loader/core/sync/handlers.py                                      143     66    54%   64, 67, 87-93, 116, 126, 133, 140, 146-162, 168-183, 192, 197, 225, 229-234, 240-244, 259, 270-273, 286-301, 315-356, 369-380, 419-441, 453
+packages/qdrant-loader/src/qdrant_loader/core/sync/operations.py                                     45      2    96%   75, 79
+packages/qdrant-loader/src/qdrant_loader/core/sync/processor.py                                      93     39    58%   12-17, 99-104, 118-133, 140, 160-166, 188-206, 212-217, 237-261, 276, 282-285
+packages/qdrant-loader/src/qdrant_loader/core/sync/types.py                                          16      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/sync/validation_integration.py                        142    119    16%   12-13, 38-49, 75-98, 117-156, 172-201, 220-254, 267-307, 320-339, 354-386, 400-422, 434-442, 453, 468-491
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/__init__.py                           6      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/btree_index.py                      177    150    15%   27-31, 35, 39, 43-52, 64-67, 71-77, 89-113, 119-133, 137-158, 173-191, 202-224, 235-251, 255-264, 268-274, 284-308, 312-317, 323-330, 334-337, 342-351
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/composite_index.py                  166    144    13%   28-39, 43-50, 68-104, 124-158, 172-192, 212-236, 251-283, 287, 291, 302-308, 323-356, 360-366, 372-382
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/index_manager.py                    218    192    12%   30-34, 45-71, 82-98, 116-146, 166-196, 218-263, 277-309, 331-367, 378-384, 390-398, 415-440, 444-449, 453-462, 466-481, 485-511, 515-520
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/index_types.py                      105      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/temporal_indexing/query_optimizer.py                  172    147    15%   27-29, 37-38, 46-48, 71-127, 138-150, 161-198, 209-252, 261-266, 277-303, 314-332, 336-343, 347-354, 360, 369-371, 378, 389-396, 400, 413-414
+packages/qdrant-loader/src/qdrant_loader/core/text_processing/semantic_analyzer.py                  109      2    98%   227, 236
+packages/qdrant-loader/src/qdrant_loader/core/text_processing/text_processor.py                      76      2    97%   143, 165
+packages/qdrant-loader/src/qdrant_loader/core/text_processing/topic_modeler.py                       75     27    64%   34-37, 50, 66-67, 76-77, 86-87, 93, 118, 148, 154-155, 164-190
+packages/qdrant-loader/src/qdrant_loader/core/types.py                                              116      7    94%   148-150, 161, 223-227
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/__init__.py                           9      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/event_integration.py                268    231    14%   13-15, 50-78, 82-98, 102-110, 114-128, 132-160, 164-187, 193-203, 207-217, 221-226, 232-238, 242-274, 278-304, 310-326, 330-358, 362-378, 382-399, 403-420, 424-440, 451-455, 464-469, 480-492, 514-549, 559-574, 582-621, 625-629, 637-645
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/integrator.py                       245    213    13%   14-15, 62-104, 108-126, 130-142, 146-158, 180-339, 359-450, 458, 487-500, 509-513, 522-527, 533-561, 575-592, 600-609, 618-630, 638-644, 660-666, 693-719, 725-726, 730
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/metrics.py                          248     35    86%   14-15, 158, 166-168, 337-338, 500-522, 530-536, 583-594, 602, 606-622, 630
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/models.py                           101      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/repair_handlers.py                  129     19    85%   132-136, 238-242, 271-274, 292-293, 309-310, 321, 323, 325
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/scanners.py                         308     56    82%   52-53, 156-157, 228, 249-250, 257, 289-290, 312, 320-326, 380-381, 400-401, 475, 489, 508-520, 532-533, 571-572, 589-590, 598-599, 608-609, 643, 661-662, 681-691, 718-719, 736-737, 761, 780-790
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/scheduler.py                        191    147    23%   65-71, 75-112, 116-135, 139-140, 144-162, 186-229, 233-250, 265-297, 308-319, 330-342, 353-365, 376-382, 390-398, 406, 410-411, 415
+packages/qdrant-loader/src/qdrant_loader/core/validation_repair/system.py                           125    102    18%   40-79, 87-141, 149-195, 201-220, 224, 232, 238, 244, 250, 256, 262, 268, 274-297
+packages/qdrant-loader/src/qdrant_loader/core/versioning/__init__.py                                  5      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/versioning/version_cleanup.py                          97     18    81%   61-62, 102-104, 120-122, 141-143, 158, 164-165, 186-187, 215-216
+packages/qdrant-loader/src/qdrant_loader/core/versioning/version_manager.py                          95      2    98%   263-264
+packages/qdrant-loader/src/qdrant_loader/core/versioning/version_operations.py                      160      5    97%   354, 378, 514-517
+packages/qdrant-loader/src/qdrant_loader/core/versioning/version_storage.py                         161      0   100%
+packages/qdrant-loader/src/qdrant_loader/core/versioning/version_types.py                           111      0   100%
+packages/qdrant-loader/src/qdrant_loader/main.py                                                      3      1    67%   11
+packages/qdrant-loader/src/qdrant_loader/monitoring/__init__.py                                       2      0   100%
+packages/qdrant-loader/src/qdrant_loader/monitoring/sync_monitoring_framework.py                    400     78    80%   267, 269-270, 279, 281-282, 291, 293-294, 310-319, 337-338, 353, 356, 390-391, 410-411, 413-414, 426-427, 444-445, 451-452, 470-471, 489-490, 509-510, 528-529, 547-548, 566-567, 586-587, 596-601, 610, 666-668, 695-698, 723, 725, 727, 729, 762, 770, 802, 816-857
+packages/qdrant-loader/src/qdrant_loader/performance/sync_performance_testing.py                    365     80    78%   208-251, 262-300, 397-398, 429-432, 480-493, 497-523, 551-552, 662, 666
+packages/qdrant-loader/src/qdrant_loader/schemas/__init__.py                                          3      0   100%
+packages/qdrant-loader/src/qdrant_loader/schemas/edges.py                                           138      0   100%
+packages/qdrant-loader/src/qdrant_loader/schemas/nodes.py                                           141      0   100%
+packages/qdrant-loader/src/qdrant_loader/schemas/registry.py                                        120      2    98%   135, 220
+packages/qdrant-loader/src/qdrant_loader/utils/__init__.py                                            0      0   100%
+packages/qdrant-loader/src/qdrant_loader/utils/logging.py                                           194     39    80%   13, 107-134, 140-141, 162-202, 204-205, 261, 269-276, 363, 378-382, 412-413, 432, 516-535
+packages/qdrant-loader/src/qdrant_loader/utils/timezone_utils.py                                    136     44    68%   97-99, 116, 125, 129, 134-135, 156, 163, 170, 175-176, 195, 202, 214-246, 284-285, 327-328, 348, 354, 357-358, 378, 387-388, 397-411
+packages/qdrant-loader/src/qdrant_loader/utils/version_check.py                                      76      4    95%   144-148
+website/build.py                                                                                    493     50    90%   376-377, 479-482, 556-557, 594, 726-728, 782, 796-797, 853, 909, 916-926, 939, 1011, 1145, 1160-1165, 1179-1190, 1203-1214, 1233, 1273, 1279, 1288, 1394-1395, 1457, 1499-1500
+website/check_links.py                                                                              125      0   100%
+-------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                             27870   9847    65%

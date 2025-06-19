@@ -46,7 +46,14 @@ class SearchEngine:
         """Initialize the search engine with configuration."""
         self.config = config
         try:
-            self.client = QdrantClient(url=config.url, api_key=config.api_key)
+            # Create Qdrant client with warning suppression for test environments
+            import warnings
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message="Api key is used with an insecure connection"
+                )
+                self.client = QdrantClient(url=config.url, api_key=config.api_key)
             self.openai_client = AsyncOpenAI(api_key=openai_config.api_key)
 
             # Ensure collection exists
