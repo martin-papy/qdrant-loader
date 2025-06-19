@@ -3,12 +3,14 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from qdrant_loader_mcp_server.search.enhanced_hybrid_search import (
+from qdrant_loader_mcp_server.search.enhanced_hybrid.models import (
     EnhancedSearchConfig,
     EnhancedSearchResult,
     FusionStrategy,
-    ResultFusionEngine,
     SearchMode,
+)
+from qdrant_loader_mcp_server.search.enhanced_hybrid.fusion_engine import (
+    ResultFusionEngine,
 )
 
 
@@ -338,7 +340,9 @@ class TestResultFusionEngine:
         # Results below threshold should be filtered out
         assert len(results) == 0 or all(r.combined_score >= 0.5 for r in results)
 
-    @patch("qdrant_loader_mcp_server.search.enhanced_hybrid_search.LoggingConfig")
+    @patch(
+        "qdrant_loader_mcp_server.search.enhanced_hybrid.fusion_engine.LoggingConfig"
+    )
     def test_fusion_error_handling(self, mock_logging, fusion_config):
         """Test error handling in fusion operations."""
         # Create engine with mocked logger

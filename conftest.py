@@ -77,6 +77,12 @@ def pytest_configure(config):
         "filterwarnings", "ignore:unclosed event loop.*:ResourceWarning"
     )
 
+    # Filter out qdrant_client SyntaxWarnings for invalid escape sequences
+    config.addinivalue_line(
+        "filterwarnings",
+        "ignore:invalid escape sequence.*:SyntaxWarning:qdrant_client.*",
+    )
+
     # Only add bs4 warning filter if BeautifulSoup4 is available
     try:
         import bs4

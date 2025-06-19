@@ -6,10 +6,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..search.enhanced_hybrid_search import (
-    EnhancedHybridSearchEngine,
-    SearchMode,
-)
+from ..search.enhanced_hybrid.engine import EnhancedHybridSearchEngine
+from ..search.enhanced_hybrid.models import SearchMode
 from .logging import LoggingConfig
 
 logger = LoggingConfig.get_logger(__name__)

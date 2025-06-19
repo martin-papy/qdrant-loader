@@ -52,7 +52,7 @@ class MCPHandler:
             Error response dict if invalid, None if valid
         """
         if fusion_strategy is not None:
-            from ..search.enhanced_hybrid_search import FusionStrategy
+            from ..search.enhanced_hybrid.models import FusionStrategy
 
             try:
                 FusionStrategy(fusion_strategy)
@@ -928,7 +928,7 @@ class MCPHandler:
         try:
             # Validate hybrid parameters if provided
             if mode is not None:
-                from ..search.enhanced_hybrid_search import SearchMode
+                from ..search.enhanced_hybrid.models import SearchMode
 
                 try:
                     SearchMode(mode)
@@ -966,7 +966,7 @@ class MCPHandler:
 
             # Validate fusion strategy if provided
             if fusion_strategy is not None:
-                from ..search.enhanced_hybrid_search import FusionStrategy
+                from ..search.enhanced_hybrid.models import FusionStrategy
 
                 try:
                     FusionStrategy(fusion_strategy)
@@ -1271,7 +1271,7 @@ class MCPHandler:
         limit = params.get("limit", 10)
 
         # Import SearchMode enum for validation
-        from ..search.enhanced_hybrid_search import SearchMode
+        from ..search.enhanced_hybrid import SearchMode
 
         # Validate mode parameter
         try:
@@ -1465,12 +1465,16 @@ class MCPHandler:
             ):
                 enhanced_engine = self.search_engine.enhanced_hybrid_search
 
-                # Check if graph search module is available
+                # Check if graph search module is available and functional
                 if (
-                    hasattr(enhanced_engine, "graph_module")
-                    and enhanced_engine.graph_module
+                    hasattr(enhanced_engine, "graph_search")
+                    and enhanced_engine.graph_search
+                    and (
+                        enhanced_engine.graph_search.neo4j_manager is not None
+                        or enhanced_engine.graph_search.graphiti_manager is not None
+                    )
                 ):
-                    graph_module = enhanced_engine.graph_module
+                    graph_module = enhanced_engine.graph_search
 
                     # Perform relationship enrichment for each entity
                     enriched_entities = []
@@ -1487,6 +1491,7 @@ class MCPHandler:
                                 max_depth=max_depth,
                                 include_relationships=True,
                                 include_temporal=include_temporal,
+                                use_graphiti=True,
                             )
 
                             # Filter by relationship types if specified
@@ -1743,7 +1748,7 @@ class MCPHandler:
         try:
             # Validate hybrid parameters if provided (reuse validation from basic search)
             if mode is not None:
-                from ..search.enhanced_hybrid_search import SearchMode
+                from ..search.enhanced_hybrid import SearchMode
 
                 try:
                     SearchMode(mode)
@@ -1781,7 +1786,7 @@ class MCPHandler:
 
             # Validate fusion strategy if provided
             if fusion_strategy is not None:
-                from ..search.enhanced_hybrid_search import FusionStrategy
+                from ..search.enhanced_hybrid import FusionStrategy
 
                 try:
                     FusionStrategy(fusion_strategy)
@@ -2031,7 +2036,7 @@ class MCPHandler:
         try:
             # Validate hybrid parameters if provided (reuse validation from basic search)
             if mode is not None:
-                from ..search.enhanced_hybrid_search import SearchMode
+                from ..search.enhanced_hybrid import SearchMode
 
                 try:
                     SearchMode(mode)
@@ -2069,7 +2074,7 @@ class MCPHandler:
 
             # Validate fusion strategy if provided
             if fusion_strategy is not None:
-                from ..search.enhanced_hybrid_search import FusionStrategy
+                from ..search.enhanced_hybrid import FusionStrategy
 
                 try:
                     FusionStrategy(fusion_strategy)

@@ -10,9 +10,10 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from ..config import OpenAIConfig, QdrantConfig
 from ..graphiti import is_graphiti_available
 from ..utils.logging import LoggingConfig
-from .enhanced_hybrid_search import (
-    EnhancedHybridSearchEngine,
+from .enhanced_hybrid.engine import EnhancedHybridSearchEngine
+from .enhanced_hybrid.models import (
     EnhancedSearchConfig,
+    FusionStrategy,
     SearchMode,
 )
 from .exceptions import (
@@ -221,8 +222,6 @@ class SearchEngine:
                 # Handle fusion strategy if provided
                 original_strategy = None
                 if fusion_strategy is not None:
-                    from .enhanced_hybrid_search import FusionStrategy
-
                     strategy_map = {
                         "weighted_sum": FusionStrategy.WEIGHTED_SUM,
                         "reciprocal_rank_fusion": FusionStrategy.RECIPROCAL_RANK_FUSION,
@@ -409,8 +408,6 @@ class SearchEngine:
             return dict.fromkeys(strategies, basic_results)
 
         try:
-            from .enhanced_hybrid_search import FusionStrategy
-
             # Map strategy names to enum values
             strategy_map = {
                 "weighted_sum": FusionStrategy.WEIGHTED_SUM,
