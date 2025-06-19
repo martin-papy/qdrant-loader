@@ -301,7 +301,10 @@ async def test_handle_unknown_tool(mcp_handler):
 
 @pytest.mark.asyncio
 async def test_tools_list_contains_all_ten_tools(mcp_handler):
-    """Test that tools/list returns all eleven tools (5 search + 4 graph operation + 1 capabilities + 1 fusion benchmark tool)."""
+    """Test that tools/list returns all eleven tools.
+
+    (5 search + 4 graph operation + 1 capabilities + 1 fusion benchmark tool)
+    """
     request = {
         "jsonrpc": "2.0",
         "method": "tools/list",

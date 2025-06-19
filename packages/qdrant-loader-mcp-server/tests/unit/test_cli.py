@@ -215,7 +215,7 @@ class TestAsyncFunctions:
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch("asyncio.all_tasks") as mock_all_tasks,
             patch("asyncio.current_task") as mock_current_task,
-            patch("asyncio.gather", side_effect=mock_gather_error) as mock_gather,
+            patch("asyncio.gather", side_effect=mock_gather_error),
         ):
 
             mock_logger = MagicMock()
@@ -257,10 +257,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch.dict(os.environ, {}, clear=True),
         ):
 
@@ -287,10 +285,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -331,10 +327,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -378,10 +372,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -423,9 +415,7 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,

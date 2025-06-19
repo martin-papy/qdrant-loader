@@ -1,12 +1,10 @@
 """Shared test fixtures and configuration for MCP server tests."""
 
-import os
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from dotenv import load_dotenv
 
 # Add the src directory to Python path for imports
 src_path = Path(__file__).parent.parent / "src"

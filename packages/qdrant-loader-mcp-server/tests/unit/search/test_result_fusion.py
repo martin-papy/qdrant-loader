@@ -446,14 +446,12 @@ class TestResultFusionEngine:
         assert all(result.combined_score > 0 for result in mmr_results)
 
         # Verify MMR promotes diversity (different content)
-        content_similarity_low = True
         for i in range(len(mmr_results) - 1):
             similarity = fusion_engine._calculate_content_similarity(
                 mmr_results[i], mmr_results[i + 1]
             )
-            if similarity > 0.8:  # High similarity threshold
-                content_similarity_low = False
-                break
+            # MMR should promote diversity (low similarity between consecutive results)
+            assert similarity <= 0.8  # High similarity threshold
 
         # Test score boosting effects
         boosted_results = fusion_engine.apply_score_boosting(graph_results.copy())

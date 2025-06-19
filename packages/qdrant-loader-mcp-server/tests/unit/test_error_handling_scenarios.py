@@ -697,16 +697,14 @@ class TestErrorSimulationScenarios:
 
             assert "error" in response
             assert "Hybrid search operation failed" in response["error"]["message"]
-            # The original HybridSearchError gets wrapped, so the failed components will be different
+            # The original HybridSearchError gets wrapped, so failed components differ
             assert (
                 "basic_hybrid_search"
                 in response["error"]["data"]["details"]["failed_components"]
             )
             # Check that the original error message is preserved
-            assert (
-                "Graph search failed but vector search succeeded"
-                in response["error"]["data"]["details"]["original_error"]
-            )
+            original_error = response["error"]["data"]["details"]["original_error"]
+            assert "Graph search failed but vector search succeeded" in original_error
 
 
 if __name__ == "__main__":
