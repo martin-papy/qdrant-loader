@@ -1,0 +1,112 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Context7 Documentation Check Rule
+
+## **Always Check Documentation First**
+
+Before writing, modifying, or refactoring any code, you **MUST** use the Context7 MCP server to check the latest documentation for:
+
+- **Libraries and frameworks** being used
+- **APIs and services** being integrated
+- **Tools and utilities** being implemented
+- **Best practices** for the technology stack
+
+## **Required Workflow**
+
+1. **Identify Dependencies**
+   - Determine which libraries, frameworks, or APIs the code will use
+   - Look for import statements, package.json dependencies, requirements.txt, etc.
+
+2. **Resolve Library IDs**
+   - Use `mcp_context7_resolve-library-id` to get the correct Context7-compatible library ID
+   - Example: `libraryName: "fastapi"` → `/tiangolo/fastapi`
+
+3. **Fetch Latest Documentation**
+   - Use `mcp_context7_get-library-docs` with the resolved library ID
+   - Focus documentation on the specific topic you're working on
+   - Use appropriate token limits (default: 10000, increase for complex topics)
+
+4. **Apply Documentation Insights**
+   - Follow the latest patterns and best practices from the documentation
+   - Use current API signatures and method names
+   - Implement recommended error handling and configuration patterns
+
+## **Examples**
+
+### ✅ DO: Check Documentation Before Implementation
+
+```python
+# Before implementing FastAPI endpoints, check latest docs:
+# 1. mcp_context7_resolve-library-id: "fastapi"
+# 2. mcp_context7_get-library-docs: "/tiangolo/fastapi", topic: "routing"
+# 3. Apply current patterns from documentation
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+# Using current FastAPI patterns from latest docs
+app = FastAPI(title="My API", version="1.0.0")
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    # Current error handling pattern from docs
+    if item_id < 1:
+        raise HTTPException(status_code=400, detail="Invalid item ID")
+    return {"item_id": item_id}
+```
+
+### ❌ DON'T: Write Code Without Checking Documentation
+
+```python
+# This might use outdated patterns or deprecated methods
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+def read_item(item_id: int):
+    # Potentially outdated error handling
+    return {"item_id": item_id}
+```
+
+## **When to Check Documentation**
+
+- **New feature implementation** - Always check relevant library docs
+- **API integration** - Verify current API patterns and authentication methods
+- **Dependency updates** - Check for breaking changes and new best practices
+- **Bug fixes** - Ensure fix follows current recommended patterns
+- **Code reviews** - Verify implementations match latest documentation
+
+## **Documentation Focus Areas**
+
+- **Installation and setup** procedures
+- **Authentication and authorization** patterns
+- **Error handling** best practices
+- **Configuration** options and environment variables
+- **Performance optimization** recommendations
+- **Security** considerations and updates
+- **Migration guides** for version changes
+
+## **Integration with Development Workflow**
+
+This rule integrates with [dev_workflow.mdc](mdc:qdrant-loader/.cursor/rules/dev_workflow.mdc):
+
+1. **Before starting any task** - Check documentation for relevant technologies
+2. **During implementation** - Reference documentation for specific patterns
+3. **Before marking tasks complete** - Verify implementation follows current best practices
+4. **During code review** - Ensure documentation patterns are followed
+
+## **Benefits**
+
+- **Avoid deprecated patterns** and outdated implementations
+- **Use latest features** and performance improvements
+- **Follow current security** best practices
+- **Reduce debugging time** by using proven patterns
+- **Maintain code quality** with up-to-date standards
+
+---
+
+**Remember**: Documentation changes frequently. Always check the latest version before coding to ensure your implementation is current and follows best practices.

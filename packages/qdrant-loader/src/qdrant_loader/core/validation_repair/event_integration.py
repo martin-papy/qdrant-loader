@@ -155,6 +155,31 @@ class ValidationEventIntegrator:
 
         # Subscribe to enhanced sync event system
         if self.enhanced_sync_system:
+            # Get the base sync event system for event subscriptions
+            base_sync_system = self.enhanced_sync_system.base_sync_system
+            if base_sync_system:
+                # Subscribe to data ingestion events
+                base_sync_system.add_event_handler(
+                    "qdrant.create", self._on_data_ingested
+                )
+                base_sync_system.add_event_handler(
+                    "qdrant.update", self._on_data_ingested
+                )
+
+                # Subscribe to entity extraction events
+                base_sync_system.add_event_handler(
+                    "neo4j.create", self._on_entity_extracted
+                )
+                base_sync_system.add_event_handler(
+                    "neo4j.update", self._on_entity_extracted
+                )
+
+                logger.info("Subscribed to enhanced sync system's base event system")
+            else:
+                logger.warning(
+                    "Enhanced sync system has no base sync system for event integration"
+                )
+
             # The enhanced system will automatically trigger validation through
             # the ValidationIntegrationManager, so we mainly listen for completion events
             logger.info("Enhanced sync system integration available")
