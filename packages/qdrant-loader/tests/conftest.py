@@ -3,6 +3,7 @@
 This module contains pytest fixtures that are shared across qdrant-loader package tests.
 """
 
+import logging
 import os
 import shutil
 import sys
@@ -10,6 +11,7 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
+import structlog
 from dotenv import load_dotenv
 from qdrant_client.http import models
 
@@ -19,6 +21,53 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from qdrant_loader.config import get_settings, initialize_multi_file_config
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_logging_for_tests():
+    """Configure logging to work properly with pytest's caplog fixture."""
+    # Reset structlog configuration to work with standard logging
+    structlog.reset_defaults()
+
+    # Configure structlog to use standard library logging
+    structlog.configure(
+        processors=[
+            structlog.stdlib.filter_by_level,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="ISO"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
+
+    # Configure standard logging to work with pytest caplog
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        force=True,  # Override any existing configuration
+    )
+
+    # Ensure all our loggers use the standard logging
+    for logger_name in [
+        "qdrant_loader",
+        "qdrant_loader.core",
+        "qdrant_loader.core.validation_repair",
+    ]:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.DEBUG)
+
+    yield
+
+    # Reset after tests
+    structlog.reset_defaults()
 
 
 @pytest.fixture(scope="session", autouse=True)

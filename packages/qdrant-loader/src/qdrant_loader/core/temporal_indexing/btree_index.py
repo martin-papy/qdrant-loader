@@ -141,6 +141,10 @@ class TemporalBTreeIndex(TemporalIndex):
 
         mid_index = len(full_child.keys) // 2
 
+        # Save middle key and value before modifying the child
+        middle_key = full_child.keys[mid_index]
+        middle_value = full_child.values[mid_index]
+
         # Move half the keys to new child
         new_child.keys = full_child.keys[mid_index + 1 :]
         new_child.values = full_child.values[mid_index + 1 :]
@@ -153,8 +157,8 @@ class TemporalBTreeIndex(TemporalIndex):
             full_child.children = full_child.children[: mid_index + 1]
 
         # Insert middle key into parent
-        parent.keys.insert(child_index, full_child.keys[mid_index])
-        parent.values.insert(child_index, full_child.values[mid_index])
+        parent.keys.insert(child_index, middle_key)
+        parent.values.insert(child_index, middle_value)
         parent.children.insert(child_index + 1, new_child)
 
     async def range_query(
