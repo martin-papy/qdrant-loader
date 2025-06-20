@@ -267,7 +267,7 @@ class TestValidationRepairSystemIntegratorLifecycle:
 
     @pytest.mark.asyncio
     async def test_initialize_already_initialized(
-        self, mock_validation_repair_system, mock_settings, caplog
+        self, mock_validation_repair_system, mock_settings
     ):
         """Test initialization when already initialized."""
         integrator = ValidationRepairSystemIntegrator(
@@ -276,20 +276,16 @@ class TestValidationRepairSystemIntegratorLifecycle:
         )
         integrator._initialized = True
 
-        # Ensure we capture WARNING level logs
-        with caplog.at_level(logging.WARNING):
+        # Mock the logger to verify warning was called
+        with patch(
+            "qdrant_loader.core.validation_repair.integrator.logger"
+        ) as mock_logger:
             await integrator.initialize()
 
-        # Check for the warning message in log records
-        warning_messages = [
-            record.message
-            for record in caplog.records
-            if record.levelno >= logging.WARNING
-        ]
-        assert any(
-            "ValidationRepairSystemIntegrator already initialized" in msg
-            for msg in warning_messages
-        ), f"Expected warning message not found. Captured messages: {warning_messages}"
+        # Verify that the warning method was called with the expected message
+        mock_logger.warning.assert_called_once_with(
+            "ValidationRepairSystemIntegrator already initialized"
+        )
 
     @pytest.mark.asyncio
     async def test_initialize_with_event_system_integration(
@@ -351,7 +347,7 @@ class TestValidationRepairSystemIntegratorLifecycle:
 
     @pytest.mark.asyncio
     async def test_start_already_running(
-        self, mock_validation_repair_system, mock_settings, caplog
+        self, mock_validation_repair_system, mock_settings
     ):
         """Test starting when already running."""
         integrator = ValidationRepairSystemIntegrator(
@@ -361,20 +357,16 @@ class TestValidationRepairSystemIntegratorLifecycle:
         integrator._initialized = True
         integrator._running = True
 
-        # Ensure we capture WARNING level logs
-        with caplog.at_level(logging.WARNING):
+        # Mock the logger to verify warning was called
+        with patch(
+            "qdrant_loader.core.validation_repair.integrator.logger"
+        ) as mock_logger:
             await integrator.start()
 
-        # Check for the warning message in log records
-        warning_messages = [
-            record.message
-            for record in caplog.records
-            if record.levelno >= logging.WARNING
-        ]
-        assert any(
-            "ValidationRepairSystemIntegrator already running" in msg
-            for msg in warning_messages
-        ), f"Expected warning message not found. Captured messages: {warning_messages}"
+        # Verify that the warning method was called with the expected message
+        mock_logger.warning.assert_called_once_with(
+            "ValidationRepairSystemIntegrator already running"
+        )
 
     @pytest.mark.asyncio
     async def test_stop_success(
@@ -487,7 +479,7 @@ class TestEventSystemIntegration:
 
     @pytest.mark.asyncio
     async def test_setup_event_system_integration_no_base_system(
-        self, mock_validation_repair_system, mock_settings, caplog
+        self, mock_validation_repair_system, mock_settings
     ):
         """Test event system integration setup with no base system."""
         mock_enhanced_sync_system = MagicMock()
@@ -499,20 +491,16 @@ class TestEventSystemIntegration:
             enhanced_sync_system=mock_enhanced_sync_system,
         )
 
-        # Ensure we capture WARNING level logs
-        with caplog.at_level(logging.WARNING):
+        # Mock the logger to verify warning was called
+        with patch(
+            "qdrant_loader.core.validation_repair.integrator.logger"
+        ) as mock_logger:
             await integrator._setup_event_system_integration()
 
-        # Check for the warning message in log records
-        warning_messages = [
-            record.message
-            for record in caplog.records
-            if record.levelno >= logging.WARNING
-        ]
-        assert any(
-            "No base sync system available for event integration" in msg
-            for msg in warning_messages
-        ), f"Expected warning message not found. Captured messages: {warning_messages}"
+        # Verify that the warning method was called with the expected message
+        mock_logger.warning.assert_called_once_with(
+            "No base sync system available for event integration"
+        )
 
     @pytest.mark.asyncio
     async def test_setup_event_system_integration_partial_flags(

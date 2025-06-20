@@ -192,17 +192,33 @@ class OperationClassifier:
 
             # Calculate frequency (operations per hour)
             if len(history) > 1:
-                time_span = (
-                    datetime.now(UTC) - datetime.fromisoformat(history[0]["timestamp"])
-                ).total_seconds() / 3600
-                characteristics.operation_frequency = len(history) / max(time_span, 1.0)
+                try:
+                    time_span = (
+                        datetime.now(UTC)
+                        - datetime.fromisoformat(history[0]["timestamp"])
+                    ).total_seconds() / 3600
+                    characteristics.operation_frequency = len(history) / max(
+                        time_span, 1.0
+                    )
+                except (ValueError, KeyError, TypeError):
+                    # Handle invalid timestamp formats gracefully
+                    characteristics.operation_frequency = 0.0
 
             # Calculate success rate
             successful = sum(1 for h in history if h.get("success", True))
             characteristics.success_rate = successful / len(history)
 
             # Calculate average duration
-            durations = [h.get("duration", 0) for h in history if h.get("duration")]
+            durations = []
+            for h in history:
+                duration = h.get("duration")
+                if duration is not None:
+                    try:
+                        durations.append(float(duration))
+                    except (ValueError, TypeError):
+                        # Skip invalid duration values
+                        pass
+
             if durations:
                 characteristics.average_duration = sum(durations) / len(durations)
 
