@@ -189,7 +189,14 @@ def _is_retryable_exception(exception: Exception) -> bool:
 
     # Some transaction errors are retryable
     if isinstance(exception, TransactionError):
+        # Check both str() and args for the error message
         error_msg = str(exception).lower()
+        if not error_msg and exception.args:
+            error_msg = str(exception.args[0]).lower()
+        # Also check the message attribute if available
+        if not error_msg and hasattr(exception, "message") and exception.message:
+            error_msg = str(exception.message).lower()
+
         retryable_transaction_errors = [
             "deadlock",
             "lock",
