@@ -8,6 +8,7 @@ import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from typing import Any
+import logging
 
 import pytest
 
@@ -275,9 +276,20 @@ class TestValidationRepairSystemIntegratorLifecycle:
         )
         integrator._initialized = True
 
-        await integrator.initialize()
+        # Ensure we capture WARNING level logs
+        with caplog.at_level(logging.WARNING):
+            await integrator.initialize()
 
-        assert "ValidationRepairSystemIntegrator already initialized" in caplog.text
+        # Check for the warning message in log records
+        warning_messages = [
+            record.message
+            for record in caplog.records
+            if record.levelno >= logging.WARNING
+        ]
+        assert any(
+            "ValidationRepairSystemIntegrator already initialized" in msg
+            for msg in warning_messages
+        ), f"Expected warning message not found. Captured messages: {warning_messages}"
 
     @pytest.mark.asyncio
     async def test_initialize_with_event_system_integration(
@@ -349,9 +361,20 @@ class TestValidationRepairSystemIntegratorLifecycle:
         integrator._initialized = True
         integrator._running = True
 
-        await integrator.start()
+        # Ensure we capture WARNING level logs
+        with caplog.at_level(logging.WARNING):
+            await integrator.start()
 
-        assert "ValidationRepairSystemIntegrator already running" in caplog.text
+        # Check for the warning message in log records
+        warning_messages = [
+            record.message
+            for record in caplog.records
+            if record.levelno >= logging.WARNING
+        ]
+        assert any(
+            "ValidationRepairSystemIntegrator already running" in msg
+            for msg in warning_messages
+        ), f"Expected warning message not found. Captured messages: {warning_messages}"
 
     @pytest.mark.asyncio
     async def test_stop_success(
@@ -476,9 +499,20 @@ class TestEventSystemIntegration:
             enhanced_sync_system=mock_enhanced_sync_system,
         )
 
-        await integrator._setup_event_system_integration()
+        # Ensure we capture WARNING level logs
+        with caplog.at_level(logging.WARNING):
+            await integrator._setup_event_system_integration()
 
-        assert "No base sync system available for event integration" in caplog.text
+        # Check for the warning message in log records
+        warning_messages = [
+            record.message
+            for record in caplog.records
+            if record.levelno >= logging.WARNING
+        ]
+        assert any(
+            "No base sync system available for event integration" in msg
+            for msg in warning_messages
+        ), f"Expected warning message not found. Captured messages: {warning_messages}"
 
     @pytest.mark.asyncio
     async def test_setup_event_system_integration_partial_flags(
