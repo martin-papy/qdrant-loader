@@ -156,7 +156,7 @@ class ValidationScheduler:
 
         # Update last run time
         if job_id in self._job_info:
-            self._job_info[job_id].last_run_time = datetime.utcnow()
+            self._job_info[job_id].last_run_time = datetime.now()
 
         # Remove from active jobs
         self._active_jobs.discard(job_id)
@@ -211,7 +211,7 @@ class ValidationScheduler:
                 name=name or f"Validation Job {job_id}",
                 schedule_type=schedule_type,
                 schedule_config=schedule_config or {},
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(),
             )
 
             # Update next run time

@@ -766,7 +766,7 @@ class TestEntityExtractor:
                     {
                         "source": "John Doe",
                         "target": "TechCorp",
-                        "type": "WORKS_AT",
+                        "type": "belongs_to",  # Use valid RelationshipType enum value
                         "confidence": 0.9,
                         "evidence": "John Doe works at TechCorp",
                     }
@@ -970,7 +970,12 @@ class TestEntityExtractor:
 
         assert isinstance(result, ExtractionResult)
         assert len(result.entities) == 2
-        assert result.episode_id == "episode-123"
+        # When episode creation fails, episode_id should be None
+        assert result.episode_id is None
+        # But entities should still be extracted via fallback search
+        entity_names = [e.name for e in result.entities]
+        assert "John Doe" in entity_names
+        assert "TechCorp" in entity_names
 
     # Configuration Edge Cases
     def test_extraction_config_validation(self):
