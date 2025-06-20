@@ -6,8 +6,8 @@ including LLM client settings, embedder configuration, and operational parameter
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class GraphitiLLMConfig(BaseModel):
@@ -97,9 +97,7 @@ class GraphitiConfig(BaseSettings):
         default=False, description="Enable debug logging for Graphiti operations"
     )
 
-    class Config:
-        env_prefix = "GRAPHITI_"
-        case_sensitive = False
+    model_config = SettingsConfigDict(env_prefix="GRAPHITI_", case_sensitive=False)
 
     @field_validator("llm", mode="before")
     @classmethod
