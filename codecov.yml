@@ -1,0 +1,190 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+codecov:
+  # Require CI to pass before posting coverage reports
+  require_ci_to_pass: true
+  
+  # Wait for CI to finish before processing coverage
+  max_report_age: 24
+  
+  # Disable codecov status checks if needed
+  disable_default_path_fixes: false
+  
+  # Archive coverage data for branches
+  archive:
+    range: "1..100"
+
+# Coverage report settings
+coverage:
+  # Set precision for coverage percentages
+  precision: 2
+  
+  # Round coverage to nearest integer
+  round: down
+  
+  # Coverage range settings
+  range: "70...100"
+  
+  # Status settings
+  status:
+    # Project level coverage
+    project:
+      default:
+        # Set target coverage percentage
+        target: 80%
+        # Allow coverage to drop by this amount
+        threshold: 5%
+        # Only post status if coverage changes
+        if_ci_failed: error
+        # Require coverage on new code
+        if_not_found: success
+        # Only consider these file types
+        only_pulls: false
+      
+      # Separate status for loader package
+      loader:
+        target: 85%
+        threshold: 3%
+        paths:
+          - packages/qdrant-loader/src/
+        flags:
+          - loader
+      
+      # Separate status for MCP server
+      mcp:
+        target: 80%
+        threshold: 3%
+        paths:
+          - packages/qdrant-loader-mcp-server/src/
+        flags:
+          - mcp
+      
+      # Separate status for website
+      website:
+        target: 75%
+        threshold: 5%
+        paths:
+          - website/
+        flags:
+          - website
+    
+    # Patch level coverage (for new code in PRs)
+    patch:
+      default:
+        target: 80%
+        threshold: 10%
+        if_ci_failed: error
+        if_not_found: success
+        only_pulls: true
+      
+      loader:
+        target: 85%
+        threshold: 5%
+        paths:
+          - packages/qdrant-loader/src/
+        flags:
+          - loader
+        only_pulls: true
+      
+      mcp:
+        target: 80%
+        threshold: 5%
+        paths:
+          - packages/qdrant-loader-mcp-server/src/
+        flags:
+          - mcp
+        only_pulls: true
+
+# Comment settings for PR/commit comments
+comment:
+  # Layout of the comment
+  layout: "diff, flags, files"
+  
+  # Behavior settings
+  behavior: default
+  
+  # Require changes to post comment
+  require_changes: true
+  
+  # Require coverage to post comment
+  require_base: false
+  
+  # Show coverage of specific components
+  show_carryforward_flags: true
+
+# Flags to organize coverage reports
+flags:
+  loader:
+    paths:
+      - packages/qdrant-loader/src/
+    carryforward: true
+  
+  mcp:
+    paths:
+      - packages/qdrant-loader-mcp-server/src/
+    carryforward: true
+  
+  website:
+    paths:
+      - website/
+    carryforward: true
+
+# File and path settings
+ignore:
+  - "tests/"
+  - "**/*test*"
+  - "**/*Test*"
+  - "**/test_*"
+  - "**/__pycache__/**"
+  - "**/venv/**"
+  - "**/env/**"
+  - "**/node_modules/**"
+  - "docs/"
+  - "*.md"
+  - "*.rst"
+  - "*.txt"
+  - "**/*.cfg"
+  - "**/*.ini"
+  - "**/setup.py"
+  - "**/conftest.py"
+  - "htmlcov*/"
+  - "metrics/"
+  - ".git/"
+  - "build/"
+  - "dist/"
+
+# Fixes for path handling
+fixes:
+  - "packages/qdrant-loader/::"
+  - "packages/qdrant-loader-mcp-server/::"
+  - "website/::"
+
+# GitHub integration settings
+github_checks:
+  annotations: true
+
+# Parsing settings
+parsers:
+  gcov:
+    branch_detection:
+      conditional: true
+      loop: true
+      method: false
+      macro: false
+
+# Notification settings (can be customized per team preferences)
+notify:
+  # Slack notifications (requires setup)
+  # slack:
+  #   default:
+  #     url: "secret:slack_webhook_url"
+  #     threshold: 1%
+  #     message: "Coverage changed for {{owner}}/{{repo}}"
+  
+  # Email notifications (requires setup)
+  # email:
+  #   default:
+  #     to:
+  #       - "team@example.com"
+  #     threshold: 5% 

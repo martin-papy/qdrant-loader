@@ -344,11 +344,40 @@ jobs:
           find coverage-artifacts/ -name "*.xml" -exec cp {} . \;
           ls -la *.xml || echo "No XML files found"
 
-      - name: Codecov
+      - name: Upload loader coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage-loader.xml
+          flags: loader
+          name: loader-coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload MCP server coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage-mcp.xml
+          flags: mcp
+          name: mcp-coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload website coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage-website.xml
+          flags: website
+          name: website-coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage-loader.xml,./coverage-mcp.xml,./coverage-website.xml
           fail_ci_if_error: true
           verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
