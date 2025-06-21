@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import pytest
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
@@ -46,7 +46,7 @@ class TestFileProcessor:
     def base_config(self):
         """Create a base configuration for testing."""
         return GitRepoConfig(
-            base_url=HttpUrl("https://github.com/test/repo.git"),
+            base_url=AnyUrl("https://github.com/test/repo.git"),
             branch="main",
             file_types=["*.md", "*.txt"],
             token="test_token",

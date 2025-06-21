@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from git import Repo
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
@@ -24,7 +24,7 @@ class TestGitConnector:
     def mock_config(self):
         """Fixture providing a mock Git repository configuration."""
         return GitRepoConfig(
-            base_url=HttpUrl("https://github.com/test/repo.git"),
+            base_url=AnyUrl("https://github.com/test/repo.git"),
             branch="main",
             file_types=["*.md", "*.txt"],
             token="test_token",
@@ -108,7 +108,7 @@ class TestGitConnector:
         """Test error handling in the Git connector."""
         # Test invalid repository URL
         invalid_config = GitRepoConfig(
-            base_url=HttpUrl("https://invalid-url.com/nonexistent.git"),
+            base_url=AnyUrl("https://invalid-url.com/nonexistent.git"),
             branch="main",
             file_types=[".md"],
             token="test_token",

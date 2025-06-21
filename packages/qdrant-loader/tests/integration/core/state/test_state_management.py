@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import StateManagementConfig
@@ -61,7 +61,7 @@ class TestFileConversionStateTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/document.pdf"),
+            base_url=AnyUrl("http://test.com/document.pdf"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 1
@@ -97,7 +97,7 @@ class TestFileConversionStateTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/document.pdf"),
+            base_url=AnyUrl("http://test.com/document.pdf"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 1
@@ -126,7 +126,7 @@ class TestFileConversionStateTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/document.txt"),
+            base_url=AnyUrl("http://test.com/document.txt"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 1
@@ -164,7 +164,7 @@ class TestAttachmentStateTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/attachment.pdf"),
+            base_url=AnyUrl("http://test.com/attachment.pdf"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 1
@@ -204,7 +204,7 @@ class TestAttachmentStateTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/attachment_0.pdf"),
+            base_url=AnyUrl("http://test.com/attachment_0.pdf"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 3
@@ -238,7 +238,7 @@ class TestConversionMetricsTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/document"),
+            base_url=AnyUrl("http://test.com/document"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 1
@@ -269,7 +269,7 @@ class TestConversionMetricsTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/document_0"),
+            base_url=AnyUrl("http://test.com/document_0"),
         )
         records = await state_manager.get_document_state_records(source_config)
         assert len(records) == 3
@@ -309,7 +309,7 @@ class TestConversionMetricsTracking:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/converted.pdf"),
+            base_url=AnyUrl("http://test.com/converted.pdf"),
         )
         records = await state_manager.get_document_state_records(source_config)
         converted_records = [record for record in records if record.is_converted]
@@ -380,7 +380,7 @@ class TestStateManagementIntegration:
         source_config = SourceConfig(
             source_type="test_source_type",
             source="test_source",
-            base_url=HttpUrl("http://test.com/regular.txt"),
+            base_url=AnyUrl("http://test.com/regular.txt"),
         )
         all_records = await state_manager.get_document_state_records(source_config)
         assert len(all_records) == 3

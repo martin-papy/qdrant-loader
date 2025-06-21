@@ -117,7 +117,7 @@ class DocumentPipeline:
 
             return result
 
-        except Exception:
+        except Exception as e:
             total_duration = time.time() - start_time
             logger.error(
                 f"❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
@@ -161,6 +161,9 @@ class DocumentPipeline:
                 f"{relationship_count} total relationships extracted"
             )
 
+        except asyncio.CancelledError:
+            logger.warning("⚠️ Entity extraction was cancelled")
+            # Don't re-raise CancelledError, let the main pipeline continue
         except Exception as e:
             logger.error(f"❌ Entity extraction processing failed: {e}", exc_info=True)
             raise

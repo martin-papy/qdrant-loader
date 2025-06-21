@@ -8,7 +8,7 @@ from aiohttp import (
     ClientConnectionError,
     ClientResponseError,
 )
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.exceptions import (
@@ -66,7 +66,7 @@ def publicdocs_config() -> PublicDocsSourceConfig:
     return PublicDocsSourceConfig(
         source_type=SourceType.PUBLICDOCS,
         source="test_docs",
-        base_url=HttpUrl("https://test.docs.com/"),
+        base_url=AnyUrl("https://test.docs.com/"),
         version="1.0",
         content_type="html",
         path_pattern="*",  # Allow all paths except excluded ones

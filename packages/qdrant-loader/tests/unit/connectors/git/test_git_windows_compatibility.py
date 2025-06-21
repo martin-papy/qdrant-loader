@@ -6,7 +6,7 @@ from datetime import datetime, UTC
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.connector import GitConnector
@@ -20,7 +20,7 @@ class TestGitConnectorWindowsCompatibility:
     def mock_config(self):
         """Create a mock Git configuration."""
         return GitRepoConfig(
-            base_url=HttpUrl("https://github.com/test/repo.git"),
+            base_url=AnyUrl("https://github.com/test/repo.git"),
             branch="main",
             file_types=["*.md", "*.txt", "*.py"],
             token="test_token",

@@ -4,7 +4,7 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 from requests.exceptions import HTTPError
 
 from qdrant_loader.config.types import SourceType
@@ -20,7 +20,7 @@ from qdrant_loader.core.document import Document
 def jira_cloud_config():
     """Create a Jira Cloud configuration fixture."""
     return JiraProjectConfig(
-        base_url=HttpUrl("https://test.atlassian.net"),
+        base_url=AnyUrl("https://test.atlassian.net"),
         deployment_type=JiraDeploymentType.CLOUD,
         project_key="TEST",
         source="test-jira",
@@ -36,7 +36,7 @@ def jira_cloud_config():
 def jira_datacenter_config():
     """Create a Jira Data Center configuration fixture."""
     return JiraProjectConfig(
-        base_url=HttpUrl("https://jira.company.com"),
+        base_url=AnyUrl("https://jira.company.com"),
         deployment_type=JiraDeploymentType.DATACENTER,
         project_key="TEST",
         source="test-jira",
@@ -146,7 +146,7 @@ class TestJiraConnector:
                 ValueError, match="Email is required for Jira Cloud deployment"
             ):
                 JiraProjectConfig(
-                    base_url=HttpUrl("https://test.atlassian.net"),
+                    base_url=AnyUrl("https://test.atlassian.net"),
                     deployment_type=JiraDeploymentType.CLOUD,
                     project_key="TEST",
                     source="test-jira",
@@ -164,7 +164,7 @@ class TestJiraConnector:
                 match="Personal Access Token is required for Jira Data Center/Server deployment",
             ):
                 JiraProjectConfig(
-                    base_url=HttpUrl("https://jira.company.com"),
+                    base_url=AnyUrl("https://jira.company.com"),
                     deployment_type=JiraDeploymentType.DATACENTER,
                     project_key="TEST",
                     source="test-jira",
@@ -315,7 +315,7 @@ class TestJiraConnector:
         """Test automatic deployment type detection."""
         # Test Cloud detection
         cloud_config = JiraProjectConfig(
-            base_url=HttpUrl("https://test.atlassian.net"),
+            base_url=AnyUrl("https://test.atlassian.net"),
             project_key="TEST",
             source="test-jira",
             source_type=SourceType.JIRA,
@@ -327,7 +327,7 @@ class TestJiraConnector:
 
         # Test Data Center detection
         datacenter_config = JiraProjectConfig(
-            base_url=HttpUrl("https://jira.company.com"),
+            base_url=AnyUrl("https://jira.company.com"),
             deployment_type=JiraDeploymentType.DATACENTER,
             project_key="TEST",
             source="test-jira",

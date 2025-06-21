@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import git
 import pytest
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
@@ -26,7 +26,7 @@ class TestGitMetadataExtractor:
     def base_config(self, temp_dir):
         """Create a base configuration for testing."""
         return GitRepoConfig(
-            base_url=HttpUrl("https://github.com/test/repo.git"),
+            base_url=AnyUrl("https://github.com/test/repo.git"),
             branch="main",
             file_types=["*.md", "*.txt"],
             token="test_token",

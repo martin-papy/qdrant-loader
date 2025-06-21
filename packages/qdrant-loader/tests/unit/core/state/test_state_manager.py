@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import pytest_asyncio
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
@@ -258,7 +258,7 @@ async def test_get_document_state_records(state_manager, sample_document):
 
     # Get records
     source_config = SourceConfig(
-        source_type="test", source="test-source", base_url=HttpUrl("http://test.com")
+        source_type="test", source="test-source", base_url=AnyUrl("http://test.com")
     )
     records = await state_manager.get_document_state_records(source_config)
 
@@ -292,7 +292,7 @@ async def test_get_document_state_records_since(state_manager, sample_document):
 
     # Get records since the timestamp
     source_config = SourceConfig(
-        source_type="test", source="test-source", base_url=HttpUrl("http://test.com")
+        source_type="test", source="test-source", base_url=AnyUrl("http://test.com")
     )
     records = await state_manager.get_document_state_records(source_config, since=since)
 

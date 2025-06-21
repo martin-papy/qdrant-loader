@@ -388,6 +388,8 @@ class TestEventSubscriptionSetup:
         mock_integrator.add_event_handler = Mock()
 
         integrator = ValidationEventIntegrator(validation_integrator=mock_integrator)
+        mock_integrator.add_event_handler = Mock()
+
         integrator.validation_integrator = None  # type: ignore
 
         # Should not raise an exception
@@ -491,7 +493,7 @@ class TestBatchValidationLogic:
             integrator, "_trigger_batch_validation", new_callable=AsyncMock
         ) as mock_trigger:
             await integrator._handle_pending_validation()
-            mock_trigger.assert_called_once()
+            mock_trigger.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_handle_pending_validation_start_timer(
@@ -522,7 +524,7 @@ class TestBatchValidationLogic:
             integrator, "_trigger_batch_validation", new_callable=AsyncMock
         ) as mock_trigger:
             await integrator._delayed_validation_trigger()
-            mock_trigger.assert_called_once()
+            mock_trigger.assert_awaited_once()
             assert integrator._batch_validation_timer is None
 
     @pytest.mark.asyncio
@@ -559,7 +561,7 @@ class TestBatchValidationLogic:
         await integrator._trigger_batch_validation()
 
         # Should not call validation integrator
-        mock_validation_integrator.trigger_validation.assert_not_called()
+        mock_validation_integrator.trigger_validation.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_trigger_batch_validation_success(self, mock_validation_integrator):

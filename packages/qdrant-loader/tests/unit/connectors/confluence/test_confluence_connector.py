@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import requests
-from pydantic import HttpUrl
+from pydantic import AnyUrl
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.confluence.config import (
@@ -35,7 +35,7 @@ def config():
     return ConfluenceSpaceConfig(
         source="test-confluence",
         source_type=SourceType.CONFLUENCE,
-        base_url=HttpUrl("https://test.atlassian.net"),
+        base_url=AnyUrl("https://test.atlassian.net"),
         deployment_type=ConfluenceDeploymentType.CLOUD,
         space_key="TEST",
         content_types=["page", "blogpost"],
@@ -82,7 +82,7 @@ class TestConfluenceConnector:
                 ConfluenceSpaceConfig(
                     source="test-confluence",
                     source_type=SourceType.CONFLUENCE,
-                    base_url=HttpUrl("https://test.atlassian.net"),
+                    base_url=AnyUrl("https://test.atlassian.net"),
                     deployment_type=ConfluenceDeploymentType.CLOUD,
                     space_key="TEST",
                     content_types=["page", "blogpost"],
