@@ -348,7 +348,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage-loader.xml
+          files: ./coverage-loader.xml
           flags: loader
           name: loader-coverage
           fail_ci_if_error: false
@@ -358,7 +358,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage-mcp.xml
+          files: ./coverage-mcp.xml
           flags: mcp
           name: mcp-coverage
           fail_ci_if_error: false
@@ -368,7 +368,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage-website.xml
+          files: ./coverage-website.xml
           flags: website
           name: website-coverage
           fail_ci_if_error: false
