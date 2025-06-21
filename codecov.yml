@@ -11,9 +11,7 @@ codecov:
   # Disable codecov status checks if needed
   disable_default_path_fixes: false
   
-  # Archive coverage data for branches
-  archive:
-    range: "1..100"
+
 
 # Coverage report settings
 coverage:
@@ -372,18 +370,4 @@ parsers:
       method: false
       macro: false
 
-# Notification settings (can be customized per team preferences)
-notify:
-  # Slack notifications (requires setup)
-  # slack:
-  #   default:
-  #     url: "secret:slack_webhook_url"
-  #     threshold: 1%
-  #     message: "Coverage changed for {{owner}}/{{repo}}"
-  
-  # Email notifications (requires setup)
-  # email:
-  #   default:
-  #     to:
-  #       - "team@example.com"
-  #     threshold: 5% 
+# Notification settings can be configured in the Codecov UI 
