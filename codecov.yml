@@ -42,32 +42,43 @@ coverage:
         # Only consider these file types
         only_pulls: false
       
-      # Separate status for loader package
-      loader:
+      # Flag-specific status checks for core loader
+      loader-unit:
         target: 85%
         threshold: 3%
-        paths:
-          - packages/qdrant-loader/src/
         flags:
-          - loader
+          - loader-unit
+        if_not_found: success
       
-      # Separate status for MCP server
-      mcp:
+      loader-integration:
+        target: 80%
+        threshold: 5%
+        flags:
+          - loader-integration
+        if_not_found: success
+      
+      # Flag-specific status checks for MCP server
+      mcp-unit:
         target: 80%
         threshold: 3%
-        paths:
-          - packages/qdrant-loader-mcp-server/src/
         flags:
-          - mcp
+          - mcp-unit
+        if_not_found: success
       
-      # Separate status for website
+      mcp-integration:
+        target: 75%
+        threshold: 5%
+        flags:
+          - mcp-integration
+        if_not_found: success
+      
+      # Flag-specific status for website
       website:
         target: 75%
         threshold: 5%
-        paths:
-          - website/
         flags:
           - website
+        if_not_found: success
     
     # Patch level coverage (for new code in PRs)
     patch:
@@ -78,28 +89,215 @@ coverage:
         if_not_found: success
         only_pulls: true
       
-      loader:
+      # Patch coverage for specific flags
+      loader-patch:
         target: 85%
         threshold: 5%
-        paths:
-          - packages/qdrant-loader/src/
         flags:
-          - loader
+          - loader-unit
+          - loader-integration
         only_pulls: true
       
-      mcp:
+      mcp-patch:
         target: 80%
         threshold: 5%
-        paths:
-          - packages/qdrant-loader-mcp-server/src/
         flags:
-          - mcp
+          - mcp-unit
+          - mcp-integration
         only_pulls: true
+
+# Recommended: Automatic Flag Management
+flag_management:
+  default_rules:
+    # Default rules inherited by all flags
+    carryforward: true
+    statuses:
+      - type: project
+        target: auto
+        threshold: 5%
+      - type: patch
+        target: 80%
+        threshold: 10%
+        only_pulls: true
+  
+  individual_flags:
+    # Core loader package flags
+    - name: loader-unit
+      paths:
+        - packages/qdrant-loader/src/**
+      carryforward: true
+      statuses:
+        - type: project
+          target: 85%
+          threshold: 3%
+        - type: patch
+          target: 85%
+          threshold: 5%
+    
+    - name: loader-integration
+      paths:
+        - packages/qdrant-loader/src/**
+      carryforward: true
+      statuses:
+        - type: project
+          target: 80%
+          threshold: 5%
+        - type: patch
+          target: 80%
+          threshold: 8%
+    
+    # MCP server package flags
+    - name: mcp-unit
+      paths:
+        - packages/qdrant-loader-mcp-server/src/**
+      carryforward: true
+      statuses:
+        - type: project
+          target: 80%
+          threshold: 3%
+        - type: patch
+          target: 80%
+          threshold: 5%
+    
+    - name: mcp-integration
+      paths:
+        - packages/qdrant-loader-mcp-server/src/**
+      carryforward: true
+      statuses:
+        - type: project
+          target: 75%
+          threshold: 5%
+        - type: patch
+          target: 75%
+          threshold: 8%
+    
+    # Website and documentation
+    - name: website
+      paths:
+        - website/**
+      carryforward: true
+      statuses:
+        - type: project
+          target: 75%
+          threshold: 5%
+        - type: patch
+          target: 70%
+          threshold: 10%
+    
+    # End-to-end tests (optional, for when you have e2e tests)
+    - name: e2e
+      paths:
+        - packages/qdrant-loader/src/**
+        - packages/qdrant-loader-mcp-server/src/**
+      carryforward: false  # E2E tests should run fresh
+      statuses:
+        - type: project
+          target: 70%
+          threshold: 10%
+
+# Component management for flexible coverage organization
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: 80%
+        threshold: 5%
+        branches:
+          - "!main"
+      - type: patch
+        target: 80%
+        threshold: 10%
+        only_pulls: true
+  
+  individual_components:
+    # Core loader package
+    - component_id: qdrant_loader_core
+      name: "Qdrant Loader Core"
+      paths:
+        - packages/qdrant-loader/src/**
+      flag_regexes:
+        - "loader.*"
+      statuses:
+        - type: project
+          target: 85%
+          threshold: 3%
+        - type: patch
+          target: 85%
+          threshold: 5%
+    
+    # MCP server package
+    - component_id: mcp_server
+      name: "MCP Server"
+      paths:
+        - packages/qdrant-loader-mcp-server/src/**
+      flag_regexes:
+        - "mcp.*"
+      statuses:
+        - type: project
+          target: 80%
+          threshold: 3%
+        - type: patch
+          target: 80%
+          threshold: 5%
+    
+    # Website and documentation
+    - component_id: website_docs
+      name: "Website & Documentation"
+      paths:
+        - website/**
+      flag_regexes:
+        - "website"
+      statuses:
+        - type: project
+          target: 75%
+          threshold: 5%
+        - type: patch
+          target: 70%
+          threshold: 10%
+    
+    # Configuration files across packages
+    - component_id: configuration
+      name: "Configuration"
+      paths:
+        - "**/conf/**"
+        - "**/config/**"
+        - "**/*config*.py"
+        - "**/*settings*.py"
+    
+    # Data processing components
+    - component_id: data_processing
+      name: "Data Processing"
+      paths:
+        - "**/loaders/**"
+        - "**/processors/**"
+        - "**/extractors/**"
+        - "**/*loader*.py"
+        - "**/*processor*.py"
+        - "**/*extractor*.py"
+    
+    # CLI and interfaces
+    - component_id: interfaces
+      name: "CLI & Interfaces"
+      paths:
+        - "**/cli/**"
+        - "**/commands/**"
+        - "**/*cli*.py"
+        - "**/*command*.py"
+        - "**/main.py"
+    
+    # Utilities and helpers
+    - component_id: utilities
+      name: "Utilities & Helpers"
+      paths:
+        - "**/utils/**"
+        - "**/helpers/**"
+        - "**/*util*.py"
+        - "**/*helper*.py"
 
 # Comment settings for PR/commit comments
 comment:
-  # Layout of the comment
-  layout: "diff, flags, files"
+  # Layout of the comment - now includes components
+  layout: "header, diff, flags, components, files"
   
   # Behavior settings
   behavior: default
@@ -113,7 +311,8 @@ comment:
   # Show coverage of specific components
   show_carryforward_flags: true
 
-# Flags to organize coverage reports
+# Legacy flags section (kept for backward compatibility)
+# Note: The flag_management section above is the recommended approach
 flags:
   loader:
     paths:
