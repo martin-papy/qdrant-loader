@@ -345,6 +345,7 @@ jobs:
           ls -la *.xml || echo "No XML files found"
 
       - name: Upload loader coverage to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -354,6 +355,7 @@ jobs:
           verbose: true
 
       - name: Upload MCP server coverage to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -363,6 +365,7 @@ jobs:
           verbose: true
 
       - name: Upload website coverage to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -372,6 +375,7 @@ jobs:
           verbose: true
 
       - name: Upload combined coverage to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
