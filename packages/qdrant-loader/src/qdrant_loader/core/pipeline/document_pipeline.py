@@ -41,19 +41,19 @@ class DocumentPipeline:
         Returns:
             PipelineResult with processing statistics
         """
-        logger.info(f"⚙️ Processing {len(documents)} documents through pipeline")
+        logger.info(f"Processing {len(documents)} documents through pipeline")
         start_time = time.time()
 
         try:
             # Step 1: Chunk documents
-            logger.info("🔄 Starting chunking phase...")
+            logger.info("Starting chunking phase...")
             chunking_start = time.time()
             chunks_iter = self.chunking_worker.process_documents(documents)
 
             # Step 2: Generate embeddings
-            logger.info("🔄 Chunking completed, transitioning to embedding phase...")
+            logger.info("Chunking completed, transitioning to embedding phase...")
             chunking_duration = time.time() - chunking_start
-            logger.info(f"⏱️ Chunking phase took {chunking_duration:.2f} seconds")
+            logger.info(f"Chunking phase took {chunking_duration:.2f} seconds")
 
             embedding_start = time.time()
             embedded_chunks_iter = self.embedding_worker.process_chunks(chunks_iter)
@@ -61,7 +61,7 @@ class DocumentPipeline:
             # Step 3: Entity extraction (parallel with embedding if enabled)
             if self.entity_extraction_worker:
                 logger.info(
-                    "🔄 Starting entity extraction phase (parallel with embedding)..."
+                    "Starting entity extraction phase (parallel with embedding)..."
                 )
                 entity_extraction_start = time.time()
 
@@ -72,7 +72,7 @@ class DocumentPipeline:
                 )
 
             # Step 4: Upsert to Qdrant
-            logger.info("🔄 Embedding phase ready, starting upsert phase...")
+            logger.info("Embedding phase ready, starting upsert phase...")
 
             # Add timeout for the entire pipeline to prevent indefinite hanging
             try:
@@ -81,7 +81,7 @@ class DocumentPipeline:
                     timeout=3600.0,  # 1 hour timeout for the entire pipeline
                 )
             except TimeoutError:
-                logger.error("❌ Pipeline timed out after 1 hour")
+                logger.error("Pipeline timed out after 1 hour")
                 result = PipelineResult()
                 result.error_count = len(documents)
                 result.errors = ["Pipeline timed out after 1 hour"]
@@ -95,23 +95,23 @@ class DocumentPipeline:
                     )  # 5 minute timeout for entity extraction
                     entity_extraction_duration = time.time() - entity_extraction_start
                     logger.info(
-                        f"⏱️ Entity extraction phase took {entity_extraction_duration:.2f} seconds"
+                        f"Entity extraction phase took {entity_extraction_duration:.2f} seconds"
                     )
                 except TimeoutError:
-                    logger.warning("⚠️ Entity extraction timed out after 5 minutes")
+                    logger.warning("Entity extraction timed out after 5 minutes")
                     entity_extraction_task.cancel()
                 except Exception as e:
-                    logger.error(f"❌ Entity extraction failed: {e}")
+                    logger.error(f"Entity extraction failed: {e}")
 
             total_duration = time.time() - start_time
             embedding_duration = time.time() - embedding_start
 
             logger.info(
-                f"⏱️ Embedding + Upsert phase took {embedding_duration:.2f} seconds"
+                f"Embedding + Upsert phase took {embedding_duration:.2f} seconds"
             )
-            logger.info(f"⏱️ Total pipeline duration: {total_duration:.2f} seconds")
+            logger.info(f"Total pipeline duration: {total_duration:.2f} seconds")
             logger.info(
-                f"✅ Pipeline completed: {result.success_count} chunks processed, "
+                f"Pipeline completed: {result.success_count} chunks processed, "
                 f"{result.error_count} errors"
             )
 
@@ -120,7 +120,7 @@ class DocumentPipeline:
         except Exception as e:
             total_duration = time.time() - start_time
             logger.error(
-                f"❌ Document pipeline failed after {total_duration:.2f} seconds: {e}",
+                f"Document pipeline failed after {total_duration:.2f} seconds: {e}",
                 exc_info=True,
             )
             # Return a result with error information
@@ -157,13 +157,13 @@ class DocumentPipeline:
                     )
 
             logger.info(
-                f"✅ Entity extraction completed: {entity_count} total entities, "
+                f"Entity extraction completed: {entity_count} total entities, "
                 f"{relationship_count} total relationships extracted"
             )
 
         except asyncio.CancelledError:
-            logger.warning("⚠️ Entity extraction was cancelled")
+            logger.warning("Entity extraction was cancelled")
             # Don't re-raise CancelledError, let the main pipeline continue
         except Exception as e:
-            logger.error(f"❌ Entity extraction processing failed: {e}", exc_info=True)
+            logger.error(f"Entity extraction processing failed: {e}", exc_info=True)
             raise
