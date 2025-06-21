@@ -1151,8 +1151,8 @@ class EntityExtractor:
             Dictionary containing extraction statistics
         """
         cache_hit_rate = (
-            self._stats["cache_hits"]
-            / (self._stats["cache_hits"] + self._stats["cache_misses"])
+            (self._stats["cache_hits"]
+            / (self._stats["cache_hits"] + self._stats["cache_misses"]))
             if (self._stats["cache_hits"] + self._stats["cache_misses"]) > 0
             else 0.0
         )

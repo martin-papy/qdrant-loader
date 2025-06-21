@@ -439,6 +439,10 @@ class TestEventHandling:
         integrator._running = True
         integrator.auto_validation_enabled = True
 
+        # Mock the task to avoid creating actual async task
+        mock_task = AsyncMock()
+        mock_create_task.return_value = mock_task
+
         integrator._on_data_ingested(sample_change_event)
 
         assert len(integrator._pending_events) == 1
@@ -456,6 +460,10 @@ class TestEventHandling:
         )
         integrator._running = True
         integrator.auto_validation_enabled = True
+
+        # Mock the task to avoid creating actual async task
+        mock_task = AsyncMock()
+        mock_create_task.return_value = mock_task
 
         # Modify event to be Neo4j entity extraction
         sample_change_event.database_type = DatabaseType.NEO4J
@@ -509,8 +517,15 @@ class TestBatchValidationLogic:
         integrator._pending_events = [ChangeEvent(event_id="event_1")]
 
         with patch("asyncio.create_task") as mock_create_task:
+            # Mock the task to avoid creating actual async task
+            mock_task = AsyncMock()
+            mock_create_task.return_value = mock_task
+            
             await integrator._handle_pending_validation()
             mock_create_task.assert_called_once()
+            
+            # Verify the timer was set
+            assert integrator._batch_validation_timer == mock_task
 
     @pytest.mark.asyncio
     async def test_delayed_validation_trigger_success(self, mock_validation_integrator):

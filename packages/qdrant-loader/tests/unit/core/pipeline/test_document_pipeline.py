@@ -350,14 +350,6 @@ class TestDocumentPipeline:
     ):
         """Test pipeline timeout handling."""
 
-        async def slow_upsert(embedded_chunks_iter):
-            await asyncio.sleep(10)  # Longer than timeout
-            return PipelineResult()
-
-        pipeline_without_entity_extraction.upsert_worker.process_embedded_chunks = (
-            slow_upsert
-        )
-
         # Patch the timeout to be very short for testing
         with patch(
             "qdrant_loader.core.pipeline.document_pipeline.asyncio.wait_for"

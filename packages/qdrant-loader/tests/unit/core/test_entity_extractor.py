@@ -16,6 +16,7 @@ This test suite covers:
 import asyncio
 import json
 import pytest
+import pytest_asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from typing import Any
@@ -74,8 +75,8 @@ class TestEntityExtractor:
             enable_background_processing=False,  # Disable for testing
         )
 
-    @pytest.fixture
-    def entity_extractor(
+    @pytest_asyncio.fixture
+    async def entity_extractor(
         self, mock_graphiti_manager, extraction_config, mock_prompt_manager
     ):
         """Create an EntityExtractor instance for testing."""
@@ -84,7 +85,9 @@ class TestEntityExtractor:
             config=extraction_config,
             prompt_manager=mock_prompt_manager,
         )
-        return extractor
+        yield extractor
+        # Cleanup after test
+        await extractor.shutdown()
 
     @pytest.fixture
     def sample_entities(self):
@@ -144,7 +147,8 @@ class TestEntityExtractor:
         return [node1, node2]
 
     # Configuration and Initialization Tests
-    def test_entity_extractor_initialization(
+    @pytest.mark.asyncio
+    async def test_entity_extractor_initialization(
         self, mock_graphiti_manager, extraction_config
     ):
         """Test EntityExtractor initialization."""
@@ -158,8 +162,12 @@ class TestEntityExtractor:
         assert extractor.prompt_manager is not None
         assert isinstance(extractor._stats, dict)
         assert extractor._stats["total_extractions"] == 0
+        
+        # Cleanup
+        await extractor.shutdown()
 
-    def test_entity_extractor_initialization_with_defaults(self, mock_graphiti_manager):
+    @pytest.mark.asyncio
+    async def test_entity_extractor_initialization_with_defaults(self, mock_graphiti_manager):
         """Test EntityExtractor initialization with default config."""
         # Create config with background processing disabled for testing
         config = ExtractionConfig(enable_background_processing=False)
@@ -171,6 +179,9 @@ class TestEntityExtractor:
         assert extractor.config is not None
         assert isinstance(extractor.config, ExtractionConfig)
         assert extractor.prompt_manager is not None
+        
+        # Cleanup
+        await extractor.shutdown()
 
     # Basic Entity Extraction Tests
     @pytest.mark.asyncio
@@ -286,22 +297,25 @@ class TestEntityExtractor:
         self, mock_graphiti_manager, sample_graphiti_nodes
     ):
         """Test entity extraction with caching disabled."""
-        config = ExtractionConfig(enable_caching=False)
+        config = ExtractionConfig(enable_caching=False, enable_background_processing=False)
         extractor = EntityExtractor(mock_graphiti_manager, config)
 
-        text = "Test content"
-        mock_graphiti_manager.add_episode.return_value = "episode-123"
-        mock_graphiti_manager.get_entities_from_episode.return_value = (
-            sample_graphiti_nodes
-        )
+        try:
+            text = "Test content"
+            mock_graphiti_manager.add_episode.return_value = "episode-123"
+            mock_graphiti_manager.get_entities_from_episode.return_value = (
+                sample_graphiti_nodes
+            )
 
-        await extractor.extract_entities(text)
-        await extractor.extract_entities(text)
+            await extractor.extract_entities(text)
+            await extractor.extract_entities(text)
 
-        # No cache hits since caching is disabled
-        stats = extractor.get_statistics()
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 2
+            # No cache hits since caching is disabled
+            stats = extractor.get_statistics()
+            assert stats["cache_hits"] == 0
+            assert stats["cache_misses"] == 2
+        finally:
+            await extractor.shutdown()
 
     def test_cache_key_generation(self, entity_extractor):
         """Test cache key generation."""

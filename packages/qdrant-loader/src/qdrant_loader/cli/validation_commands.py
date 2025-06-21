@@ -28,6 +28,16 @@ from .core import (
     validate_workspace_flags,
 )
 
+# Import managers for module-level access (tests expect these to be accessible)
+from ..core.managers import IDMappingManager, Neo4jManager, QdrantManager
+
+# Import validation classes for module-level access (tests expect these to be accessible)
+from ..core.validation_repair import (
+    ValidationRepairSystem,
+    ValidationRepairSystemIntegrator,
+    ValidationIssue,
+)
+
 
 @click.group(name="validation")
 def validation_group():
@@ -183,7 +193,12 @@ def validate_graph(
             echo("✅ Validation completed successfully")
 
     except Exception as e:
-        logger.error("Validation failed", error=str(e))
+        # Ensure logger is available in error case
+        try:
+            logger = get_logger()
+            logger.error("Validation failed", error=str(e))
+        except:
+            pass
         raise ClickException(f"Graph validation failed: {str(e)}") from e
 
 
@@ -362,7 +377,12 @@ def repair_inconsistencies(
             raise ClickException("All repair operations failed")
 
     except Exception as e:
-        logger.error("Repair operation failed", error=str(e))
+        # Ensure logger is available in error case
+        try:
+            logger = get_logger()
+            logger.error("Repair operation failed", error=str(e))
+        except:
+            pass
         raise ClickException(f"Repair operation failed: {str(e)}") from e
 
 
@@ -502,7 +522,12 @@ def schedule_validation(
             raise ClickException(f"Failed to configure scheduler: {result['error']}")
 
     except Exception as e:
-        logger.error("Schedule configuration failed", error=str(e))
+        # Ensure logger is available in error case
+        try:
+            logger = get_logger()
+            logger.error("Schedule configuration failed", error=str(e))
+        except:
+            pass
         raise ClickException(
             f"Failed to configure scheduled validation: {str(e)}"
         ) from e
@@ -638,7 +663,12 @@ def validation_status(
                     )
 
     except Exception as e:
-        logger.error("Status retrieval failed", error=str(e))
+        # Ensure logger is available in error case
+        try:
+            logger = get_logger()
+            logger.error("Status retrieval failed", error=str(e))
+        except:
+            pass
         raise ClickException(f"Failed to retrieve validation status: {str(e)}") from e
 
 
@@ -654,15 +684,6 @@ async def _run_validation(
     timeout: int,
 ):
     """Run validation operation asynchronously."""
-    from qdrant_loader.core.validation_repair import (
-        ValidationRepairSystem,
-        ValidationRepairSystemIntegrator,
-    )
-    from qdrant_loader.core.managers import (
-        IDMappingManager,
-        Neo4jManager,
-        QdrantManager,
-    )
 
     # Initialize the base managers first (they don't depend on each other)
     neo4j_manager = Neo4jManager(settings)
@@ -716,16 +737,6 @@ async def _run_repairs(
     max_repairs: Optional[int],
 ):
     """Run repair operations asynchronously."""
-    from qdrant_loader.core.validation_repair import (
-        ValidationRepairSystem,
-        ValidationRepairSystemIntegrator,
-        ValidationIssue,
-    )
-    from qdrant_loader.core.managers import (
-        IDMappingManager,
-        Neo4jManager,
-        QdrantManager,
-    )
 
     # Initialize the base managers first
     neo4j_manager = Neo4jManager(settings)
@@ -804,15 +815,6 @@ async def _get_validation_status(
     status_filter: Optional[str],
 ):
     """Get validation system status asynchronously."""
-    from qdrant_loader.core.validation_repair import (
-        ValidationRepairSystem,
-        ValidationRepairSystemIntegrator,
-    )
-    from qdrant_loader.core.managers import (
-        IDMappingManager,
-        Neo4jManager,
-        QdrantManager,
-    )
 
     # Initialize the base managers first
     neo4j_manager = Neo4jManager(settings)
@@ -908,16 +910,7 @@ async def _configure_scheduled_validation(
 ) -> dict:
     """Configure scheduled validation asynchronously."""
     from datetime import datetime
-    from qdrant_loader.core.validation_repair import (
-        ValidationRepairSystem,
-        ValidationRepairSystemIntegrator,
-        ValidationScheduler,
-    )
-    from qdrant_loader.core.managers import (
-        Neo4jManager,
-        QdrantManager,
-        IDMappingManager,
-    )
+    from qdrant_loader.core.validation_repair import ValidationScheduler
     from qdrant_loader.config.validation import ValidationConfig
 
     try:

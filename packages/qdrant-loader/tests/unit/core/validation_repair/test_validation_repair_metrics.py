@@ -129,11 +129,11 @@ class TestValidationMetricsCollector:
         assert len(collector._validation_history) == 0
         assert len(collector._repair_history) == 0
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
-    def test_init_custom_settings(self, mock_statsd_client):
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
+    def test_init_custom_settings(self, mock_statsd_module):
         """Test ValidationMetricsCollector initialization with custom settings."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(
             enable_prometheus=False,
@@ -148,17 +148,17 @@ class TestValidationMetricsCollector:
         assert collector.statsd_host == "custom-host"
         assert collector.statsd_port == 9125
         assert collector.metrics_retention_hours == 48
-        mock_statsd_client.assert_called_once_with(host="custom-host", port=9125)
+        mock_statsd_module.StatsClient.assert_called_once_with(host="custom-host", port=9125)
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
-    def test_init_with_statsd_client_creation(self, mock_statsd_client):
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
+    def test_init_with_statsd_client_creation(self, mock_statsd_module):
         """Test StatsD client creation when enabled."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(enable_statsd=True)
 
-        mock_statsd_client.assert_called_once_with(host="localhost", port=8125)
+        mock_statsd_module.StatsClient.assert_called_once_with(host="localhost", port=8125)
         assert collector._statsd_client == mock_client_instance
 
     # Test record_validation_started method
@@ -199,13 +199,13 @@ class TestValidationMetricsCollector:
         assert metrics_collector_prometheus_disabled._active_validations_count == 1
         assert len(metrics_collector_prometheus_disabled._validation_history) == 1
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
     def test_record_validation_started_with_statsd(
-        self, mock_statsd_client, metrics_collector_with_statsd
+        self, mock_statsd_module, metrics_collector_with_statsd
     ):
         """Test validation start recording with StatsD enabled."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         # Reinitialize to create StatsD client
         collector = ValidationMetricsCollector(enable_statsd=True)
@@ -303,13 +303,13 @@ class TestValidationMetricsCollector:
         record = metrics_collector._validation_history[0]
         assert record["status"] == "failed"
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
     def test_record_validation_completed_with_statsd(
-        self, mock_statsd_client, sample_validation_report
+        self, mock_statsd_module, sample_validation_report
     ):
         """Test validation completion recording with StatsD."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(enable_statsd=True)
         collector._statsd_client = mock_client_instance
@@ -425,11 +425,11 @@ class TestValidationMetricsCollector:
         assert record["status"] == "running"
         assert isinstance(record["start_time"], datetime)
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
-    def test_record_repair_started_with_statsd(self, mock_statsd_client):
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
+    def test_record_repair_started_with_statsd(self, mock_statsd_module):
         """Test repair start recording with StatsD."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(enable_statsd=True)
         collector._statsd_client = mock_client_instance
@@ -519,13 +519,13 @@ class TestValidationMetricsCollector:
         assert metrics_collector._stats["successful_repairs"] == 0
         assert metrics_collector._stats["failed_repairs"] == 0
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
     def test_record_repair_completed_with_statsd(
-        self, mock_statsd_client, sample_repair_results
+        self, mock_statsd_module, sample_repair_results
     ):
         """Test repair completion recording with StatsD."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(enable_statsd=True)
         collector._statsd_client = mock_client_instance
@@ -567,11 +567,11 @@ class TestValidationMetricsCollector:
         assert record["error"] == error_message
         assert record["duration_seconds"] == duration_seconds
 
-    @patch("qdrant_loader.core.validation_repair.metrics.statsd.StatsClient")
-    def test_record_repair_failed_with_statsd(self, mock_statsd_client):
+    @patch("qdrant_loader.core.validation_repair.metrics.statsd")
+    def test_record_repair_failed_with_statsd(self, mock_statsd_module):
         """Test repair failure recording with StatsD."""
         mock_client_instance = MagicMock()
-        mock_statsd_client.return_value = mock_client_instance
+        mock_statsd_module.StatsClient.return_value = mock_client_instance
 
         collector = ValidationMetricsCollector(enable_statsd=True)
         collector._statsd_client = mock_client_instance

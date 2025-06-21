@@ -947,9 +947,13 @@ class TestValidationScheduler:
             await asyncio.sleep(0.1)
             scheduler._active_jobs.clear()
 
-        asyncio.create_task(complete_jobs())
+        # Start the task and ensure it's awaited
+        task = asyncio.create_task(complete_jobs())
 
         # Should complete when jobs are done
         await scheduler._wait_for_jobs_completion()
+
+        # Ensure the completion task is done
+        await task
 
         assert len(scheduler._active_jobs) == 0
