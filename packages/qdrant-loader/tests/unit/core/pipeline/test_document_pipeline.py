@@ -522,26 +522,34 @@ class TestDocumentPipeline:
 
     @pytest.mark.asyncio
     async def test_logging_verification(
-        self, pipeline_without_entity_extraction, sample_documents, caplog
+        self, pipeline_without_entity_extraction, sample_documents
     ):
-        """Test that appropriate logging messages are generated."""
-        with caplog.at_level("INFO"):
+        """Test that appropriate logging methods are called during pipeline execution."""
+        with patch("qdrant_loader.core.pipeline.document_pipeline.logger") as mock_logger:
             await pipeline_without_entity_extraction.process_documents(sample_documents)
 
-        # Check for key log messages
-        log_messages = [record.message for record in caplog.records]
-
-        assert any(
-            f"Processing {len(sample_documents)} documents through pipeline" in msg
-            for msg in log_messages
-        )
-        assert any("Starting chunking phase" in msg for msg in log_messages)
-        assert any(
-            "Chunking completed, transitioning to embedding phase" in msg
-            for msg in log_messages
-        )
-        assert any("Embedding phase ready, starting upsert phase" in msg for msg in log_messages)
-        assert any("Pipeline completed:" in msg for msg in log_messages)
+            # Verify that logger.info was called with expected messages
+            info_calls = [call for call in mock_logger.info.call_args_list]
+            
+            # Extract the actual message strings from the calls
+            info_messages = []
+            for call in info_calls:
+                args, kwargs = call
+                if args:
+                    info_messages.append(str(args[0]))
+            
+            # Check for key log messages
+            assert any(
+                f"Processing {len(sample_documents)} documents through pipeline" in msg
+                for msg in info_messages
+            )
+            assert any("Starting chunking phase" in msg for msg in info_messages)
+            assert any(
+                "Chunking completed, transitioning to embedding phase" in msg
+                for msg in info_messages
+            )
+            assert any("Embedding phase ready, starting upsert phase" in msg for msg in info_messages)
+            assert any("Pipeline completed:" in msg for msg in info_messages)
 
     @pytest.mark.asyncio
     async def test_timing_measurements(
