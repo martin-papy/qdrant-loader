@@ -72,11 +72,11 @@ class TestValidationCommands:
         assert result.exit_code == 0
         assert "✅ Validation completed successfully" in result.output
 
-    @patch("qdrant_loader.cli.validation_commands.asyncio.run")
+    @patch("qdrant_loader.cli.validation_commands._run_validation")
     @patch("qdrant_loader.cli.validation_commands.get_logger")
     @patch("qdrant_loader.cli.validation_commands.validate_workspace_flags")
     def test_validate_graph_error_handling(
-        self, mock_validate_flags, mock_get_logger, mock_asyncio_run, cli_runner
+        self, mock_validate_flags, mock_get_logger, mock_run_validation, cli_runner
     ):
         """Test error handling in validate_graph."""
         from qdrant_loader.cli.validation_commands import validate_graph
@@ -89,8 +89,8 @@ class TestValidationCommands:
         
         assert result.exit_code == 1
         assert "Graph validation failed: Test error" in result.output
-        # Ensure asyncio.run was not called since validation_workspace_flags failed early
-        mock_asyncio_run.assert_not_called()
+        # Ensure _run_validation was not called since validation_workspace_flags failed early
+        mock_run_validation.assert_not_called()
 
 class TestAsyncHelperFunctions:
     """Test async helper functions with simple mocking."""

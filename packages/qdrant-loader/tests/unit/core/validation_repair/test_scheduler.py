@@ -258,8 +258,8 @@ class TestValidationScheduler:
     async def test_context_manager(self, scheduler):
         """Test scheduler as async context manager."""
         with (
-            patch.object(scheduler, "start") as mock_start,
-            patch.object(scheduler, "stop") as mock_stop,
+            patch.object(scheduler, "start", new_callable=AsyncMock) as mock_start,
+            patch.object(scheduler, "stop", new_callable=AsyncMock) as mock_stop,
         ):
 
             async with scheduler as ctx:
