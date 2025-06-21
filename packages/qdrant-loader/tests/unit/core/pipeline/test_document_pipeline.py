@@ -532,17 +532,15 @@ class TestDocumentPipeline:
         log_messages = [record.message for record in caplog.records]
 
         assert any(
-            "Processing 2 documents through pipeline" in msg for msg in log_messages
+            f"⚙️ Processing {len(sample_documents)} documents through pipeline" in msg
+            for msg in log_messages
         )
         assert any("Starting chunking phase" in msg for msg in log_messages)
         assert any(
             "Chunking completed, transitioning to embedding phase" in msg
             for msg in log_messages
         )
-        assert any(
-            "Embedding phase ready, starting upsert phase" in msg
-            for msg in log_messages
-        )
+        assert any("Embedding phase ready, starting upsert phase" in msg for msg in log_messages)
         assert any("Pipeline completed" in msg for msg in log_messages)
 
     @pytest.mark.asyncio

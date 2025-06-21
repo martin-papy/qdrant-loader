@@ -86,9 +86,10 @@ clean: ## Clean build artifacts
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	rm -rf packages/*/dist/
 	rm -rf packages/*/build/
-	rm -rf htmlcov/
+	rm -rf htmlcov*
 	rm -rf .coverage
 	rm -rf .pytest_cache/
+	rm -rf coverage*
 
 # Docker commands
 docker-up: ## Start all services (production mode)
