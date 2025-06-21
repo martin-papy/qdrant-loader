@@ -164,7 +164,7 @@ jobs:
       - name: Run loader tests and generate coverage reports
         run: |
           cd packages/qdrant-loader
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --junitxml=../../junit-loader.xml --cov-report=html:../../htmlcov-loader -v
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --junitxml=../../junit-loader.xml --cov-report=html:../../htmlcov-loader -o junit_family=legacy -v
 
       - name: Upload loader coverage artifact
         uses: actions/upload-artifact@v4
@@ -195,7 +195,7 @@ jobs:
       - name: Run MCP server tests and generate coverage reports
         run: |
           cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --junitxml=../../junit-mcp.xml --cov-report=html:../../htmlcov-mcp -v
+          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --junitxml=../../junit-mcp.xml --cov-report=html:../../htmlcov-mcp -o junit_family=legacy -v
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
@@ -244,7 +244,7 @@ jobs:
         run: |
           # Add website directory to Python path and run tests
           export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
-          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing  --junitxml=junit-website.xml -v
+          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website --cov-report=term-missing  --junitxml=junit-website.xml -o junit_family=legacy -v
 
       - name: Upload website test coverage artifact
         uses: actions/upload-artifact@v4
