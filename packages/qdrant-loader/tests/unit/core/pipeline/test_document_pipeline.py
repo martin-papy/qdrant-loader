@@ -535,13 +535,13 @@ class TestDocumentPipeline:
             f"⚙️ Processing {len(sample_documents)} documents through pipeline" in msg
             for msg in log_messages
         )
-        assert any("Starting chunking phase" in msg for msg in log_messages)
+        assert any("🔄 Starting chunking phase" in msg for msg in log_messages)
         assert any(
-            "Chunking completed, transitioning to embedding phase" in msg
+            "🔄 Chunking completed, transitioning to embedding phase" in msg
             for msg in log_messages
         )
-        assert any("Embedding phase ready, starting upsert phase" in msg for msg in log_messages)
-        assert any("Pipeline completed" in msg for msg in log_messages)
+        assert any("🔄 Embedding phase ready, starting upsert phase" in msg for msg in log_messages)
+        assert any("✅ Pipeline completed:" in msg for msg in log_messages)
 
     @pytest.mark.asyncio
     async def test_timing_measurements(
