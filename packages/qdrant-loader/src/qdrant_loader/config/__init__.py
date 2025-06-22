@@ -250,12 +250,20 @@ class ThreadSafeSettingsManager:
             try:
                 # Determine the correct config directory based on workspace format
                 if workspace_config.is_multi_file:
+                    if workspace_config.config_dir is None:
+                        raise ValueError(
+                            f"Multi-file workspace format detected but config_dir is None in workspace: {workspace_config.workspace_path}"
+                        )
                     config_dir = workspace_config.config_dir
                     logger.debug("Using multi-file config directory", config_dir=str(config_dir))
                 else:
                     # For legacy single-file format, use workspace root
                     config_dir = workspace_config.workspace_path
                     logger.debug("Using legacy workspace root as config directory", config_dir=str(config_dir))
+
+                # Ensure config_dir is a Path object (should always be the case, but being defensive)
+                if not isinstance(config_dir, Path):
+                    raise ValueError(f"config_dir must be a Path object, got {type(config_dir)}: {config_dir}")
 
                 # Load configuration from appropriate directory with selective loading support
                 new_settings = Settings.from_multi_file(

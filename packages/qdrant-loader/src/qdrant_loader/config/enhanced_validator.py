@@ -69,6 +69,14 @@ class EnhancedDomainValidator:
                 self._validate_fine_tuning_domain(
                     config_data, file_path, error_collector
                 )
+            elif domain == "metadata-extraction":
+                self._validate_metadata_extraction_domain(
+                    config_data, file_path, error_collector
+                )
+            elif domain == "validation":
+                self._validate_validation_domain(
+                    config_data, file_path, error_collector
+                )
             else:
                 logger.warning(f"Unknown domain: {domain}")
 
@@ -164,6 +172,62 @@ class EnhancedDomainValidator:
                 message=f"Unexpected error during fine-tuning validation: {str(e)}",
                 severity=ValidationSeverity.CRITICAL,
                 remediation="Check fine-tuning.yaml file format and structure",
+            )
+
+    def _validate_metadata_extraction_domain(
+        self,
+        config_data: dict[str, Any],
+        file_path: Path | None,
+        error_collector: ValidationErrorCollector,
+    ) -> None:
+        """Validate metadata-extraction domain configuration."""
+        context = DomainValidationContext("metadata-extraction", file_path, error_collector)
+
+        try:
+            # First, validate with Pydantic model
+            try:
+                validated_config = self.base_validator.validate_metadata_extraction(config_data)
+            except ValidationError as e:
+                error_collector.add_pydantic_error(e, "metadata-extraction", file_path)
+                return
+
+            # Enhanced metadata-extraction-specific validation
+            # For now, we use the flexible MetadataExtractionConfig which accepts any structure
+            # Additional validation can be added here as needed
+
+        except Exception as e:
+            context.add_error(
+                message=f"Unexpected error during metadata-extraction validation: {str(e)}",
+                severity=ValidationSeverity.CRITICAL,
+                remediation="Check metadata-extraction.yaml file format and structure",
+            )
+
+    def _validate_validation_domain(
+        self,
+        config_data: dict[str, Any],
+        file_path: Path | None,
+        error_collector: ValidationErrorCollector,
+    ) -> None:
+        """Validate validation domain configuration."""
+        context = DomainValidationContext("validation", file_path, error_collector)
+
+        try:
+            # First, validate with Pydantic model
+            try:
+                validated_config = self.base_validator.validate_validation(config_data)
+            except ValidationError as e:
+                error_collector.add_pydantic_error(e, "validation", file_path)
+                return
+
+            # Enhanced validation-specific validation
+            # For now, we use the flexible ValidationConfig which accepts any structure
+            # Additional validation can be added here as needed
+
+        except Exception as e:
+            context.add_error(
+                message=f"Unexpected error during validation validation: {str(e)}",
+                severity=ValidationSeverity.CRITICAL,
+                remediation="Check validation.yaml file format and structure",
             )
 
     def _validate_qdrant_config(

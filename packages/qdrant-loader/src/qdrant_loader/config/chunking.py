@@ -26,3 +26,14 @@ class ChunkingConfig(BaseModel):
         if v >= chunk_size:
             raise ValueError("Chunk overlap must be less than chunk size")
         return v
+
+    def to_dict(self) -> dict[str, int]:
+        """Convert chunking configuration to dictionary.
+
+        Returns:
+            Dictionary representation of the configuration
+        """
+        return {
+            "chunk_size": self.chunk_size,
+            "chunk_overlap": self.chunk_overlap,
+        }

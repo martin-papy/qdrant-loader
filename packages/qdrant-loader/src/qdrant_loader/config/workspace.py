@@ -43,7 +43,8 @@ class WorkspaceConfig:
             if not self.config_dir or not self.config_dir.exists():
                 raise ValueError(f"Config directory not found in workspace: {self.config_dir}")
             
-            # Check for required domain config files
+            # Check for required core domain config files
+            # Optional files (metadata-extraction.yaml, validation.yaml) are not required
             required_files = ["connectivity.yaml", "projects.yaml", "fine-tuning.yaml"]
             missing_files = []
             for file_name in required_files:
@@ -52,7 +53,21 @@ class WorkspaceConfig:
             
             if missing_files:
                 raise ValueError(
-                    f"Missing domain configuration files in {self.config_dir}: {', '.join(missing_files)}"
+                    f"Missing required domain configuration files in {self.config_dir}: {', '.join(missing_files)}"
+                )
+                
+            # Log optional files if they exist
+            optional_files = ["metadata-extraction.yaml", "validation.yaml"]
+            found_optional = []
+            for file_name in optional_files:
+                if (self.config_dir / file_name).exists():
+                    found_optional.append(file_name)
+            
+            if found_optional:
+                logger.debug(
+                    "Found optional configuration files",
+                    files=found_optional,
+                    config_dir=str(self.config_dir)
                 )
         else:
             # Legacy single-file mode
@@ -99,7 +114,8 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
     config_dir_final = None
     
     if config_dir.exists() and config_dir.is_dir():
-        # Check if all required domain files exist
+        # Check if all required core domain files exist
+        # Optional files are not required for multi-file format detection
         required_files = ["connectivity.yaml", "projects.yaml", "fine-tuning.yaml"]
         all_files_exist = all((config_dir / file_name).exists() for file_name in required_files)
         
@@ -108,7 +124,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
             config_dir_final = config_dir
             logger.debug("Detected multi-file configuration format", config_dir=str(config_dir))
         else:
-            # Config directory exists but missing files - check for legacy format
+            # Config directory exists but missing required files - check for legacy format
             if legacy_config_path.exists():
                 config_path = legacy_config_path
                 logger.debug("Detected legacy configuration format", config_path=str(legacy_config_path))
@@ -116,7 +132,7 @@ def setup_workspace(workspace_path: Path) -> WorkspaceConfig:
                 # Neither format is complete
                 missing_files = [f for f in required_files if not (config_dir / f).exists()]
                 raise ValueError(
-                    f"Incomplete configuration found. Config directory exists but missing files: {', '.join(missing_files)}. "
+                    f"Incomplete configuration found. Config directory exists but missing required files: {', '.join(missing_files)}. "
                     f"Either complete the multi-file configuration or use legacy config.yaml format."
                 )
     else:

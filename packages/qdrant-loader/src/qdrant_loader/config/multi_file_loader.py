@@ -34,18 +34,30 @@ class ConfigDomain:
     CONNECTIVITY = "connectivity"
     PROJECTS = "projects"
     FINE_TUNING = "fine-tuning"
+    METADATA_EXTRACTION = "metadata-extraction"
+    VALIDATION = "validation"
 
-    ALL_DOMAINS = {CONNECTIVITY, PROJECTS, FINE_TUNING}
+    # Core domains required for basic functionality
+    CORE_DOMAINS = {CONNECTIVITY, PROJECTS, FINE_TUNING}
+    
+    # Optional domains that enhance functionality
+    OPTIONAL_DOMAINS = {METADATA_EXTRACTION, VALIDATION}
+    
+    # All available domains
+    ALL_DOMAINS = CORE_DOMAINS | OPTIONAL_DOMAINS
 
     # Predefined domain combinations for common use cases
     MINIMAL = {CONNECTIVITY}  # Database connections only
     BASIC = {CONNECTIVITY, PROJECTS}  # Basic operations without fine-tuning
-    FULL = ALL_DOMAINS  # All domains (default)
+    STANDARD = CORE_DOMAINS  # All core domains (default)
+    FULL = ALL_DOMAINS  # All domains including optional ones
 
     # Domain dependencies - which domains are required for specific operations
     DOMAIN_DEPENDENCIES = {
         PROJECTS: {CONNECTIVITY},  # Projects require connectivity
         FINE_TUNING: set(),  # Fine-tuning is independent
+        METADATA_EXTRACTION: set(),  # Metadata extraction is independent
+        VALIDATION: set(),  # Validation is independent
     }
 
     @classmethod
@@ -74,10 +86,10 @@ class ConfigDomain:
         """Get a predefined domain combination by name.
 
         Args:
-            name: Name of the predefined combination ('minimal', 'basic', 'full')
+            name: Name of the predefined combination
 
         Returns:
-            Set of domain names
+            Set of domain names in the combination
 
         Raises:
             ValueError: If the combination name is not recognized
@@ -85,6 +97,7 @@ class ConfigDomain:
         combinations = {
             "minimal": cls.MINIMAL,
             "basic": cls.BASIC,
+            "standard": cls.STANDARD,
             "full": cls.FULL,
         }
 
@@ -94,35 +107,42 @@ class ConfigDomain:
                 f"Unknown domain combination '{name}'. Available: {available}"
             )
 
-        return combinations[name.lower()].copy()
+        return combinations[name.lower()]
 
     @classmethod
     def resolve_domains(
-        cls, domains: set[str] | None = None, preset: str | None = None
+        cls, domains: set[str] | None = None, preset: str | None = None, use_case: str | None = None
     ) -> set[str]:
-        """Resolve domains from either explicit set or preset name.
+        """Resolve the final set of domains to load.
 
         Args:
-            domains: Explicit set of domains
-            preset: Preset name ('minimal', 'basic', 'full')
+            domains: Explicit set of domains to load
+            preset: Predefined domain combination name
+            use_case: Use case identifier for automatic domain selection
 
         Returns:
-            Resolved set of domains
+            Set of domain names to load
 
         Raises:
-            ValueError: If both domains and preset are provided, or if preset is invalid
+            ValueError: If domain validation fails
         """
         if domains is not None and preset is not None:
-            raise ValueError("Cannot specify both 'domains' and 'preset' parameters")
+            raise ValueError("Cannot specify both explicit domains and preset")
 
         if preset is not None:
-            return cls.get_predefined_combination(preset)
+            resolved_domains = cls.get_predefined_combination(preset)
+        elif domains is not None:
+            resolved_domains = domains.copy()
+        else:
+            # Default to standard domains (core functionality)
+            resolved_domains = cls.STANDARD.copy()
 
-        if domains is not None:
-            return domains.copy()
+        # Validate domain combination
+        is_valid, errors = cls.validate_domain_combination(resolved_domains)
+        if not is_valid:
+            raise ValueError(f"Invalid domain combination: {'; '.join(errors)}")
 
-        # Default to full configuration
-        return cls.FULL.copy()
+        return resolved_domains
 
     @classmethod
     def get_use_case_domains(cls, use_case: str) -> set[str]:
@@ -218,7 +238,15 @@ class MultiFileConfigLoader:
                 domains=list(resolved_domains),
             )
         else:
-            resolved_domains = ConfigDomain.resolve_domains(domains, preset)
+            resolved_domains = ConfigDomain.resolve_domains(domains, preset, use_case)
+
+        # Step 1.1: Auto-discover optional domains if they exist
+        # This allows optional files to be loaded automatically when present
+        all_discovered_files = self._discover_config_files(config_dir, ConfigDomain.ALL_DOMAINS)
+        for optional_domain in ConfigDomain.OPTIONAL_DOMAINS:
+            if optional_domain in all_discovered_files and optional_domain not in resolved_domains:
+                resolved_domains.add(optional_domain)
+                logger.debug(f"Auto-discovered optional domain: {optional_domain}")
 
         # Step 2: Validate domain combination
         is_valid, missing_deps = ConfigDomain.validate_domain_combination(
@@ -421,6 +449,14 @@ class MultiFileConfigLoader:
                         validated_config = self.domain_validator.validate_fine_tuning(
                             raw_config
                         )
+                    elif domain == ConfigDomain.METADATA_EXTRACTION:
+                        validated_config = self.domain_validator.validate_metadata_extraction(
+                            raw_config
+                        )
+                    elif domain == ConfigDomain.VALIDATION:
+                        validated_config = self.domain_validator.validate_validation(
+                            raw_config
+                        )
                     else:
                         logger.warning(f"Unknown domain: {domain}, skipping validation")
                         validated_config = raw_config
@@ -524,6 +560,14 @@ class MultiFileConfigLoader:
                     )
                 elif domain == ConfigDomain.FINE_TUNING:
                     validated_config = self.domain_validator.validate_fine_tuning(
+                        raw_config
+                    )
+                elif domain == ConfigDomain.METADATA_EXTRACTION:
+                    validated_config = self.domain_validator.validate_metadata_extraction(
+                        raw_config
+                    )
+                elif domain == ConfigDomain.VALIDATION:
+                    validated_config = self.domain_validator.validate_validation(
                         raw_config
                     )
                 else:

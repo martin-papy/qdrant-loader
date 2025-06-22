@@ -447,25 +447,59 @@ class FineTuningConfig(BaseConfig):
     def to_dict(self) -> dict[str, Any]:
         """Convert fine-tuning configuration to dictionary."""
         return {
-            "chunking": {
-                "chunk_size": self.chunking.chunk_size,
-                "chunk_overlap": self.chunking.chunk_overlap,
-            },
-            "file_conversion": {
-                "max_file_size": self.file_conversion.max_file_size,
-                "conversion_timeout": self.file_conversion.conversion_timeout,
-                "markitdown": {
-                    "enable_llm_descriptions": self.file_conversion.markitdown.enable_llm_descriptions,
-                    "llm_model": self.file_conversion.markitdown.llm_model,
-                    "llm_endpoint": self.file_conversion.markitdown.llm_endpoint,
-                    "llm_api_key": self.file_conversion.markitdown.llm_api_key,
-                },
-            },
+            "chunking": self.chunking.to_dict(),
+            "file_conversion": self.file_conversion.to_dict(),
             "text_processing": self.text_processing.model_dump(),
             "chunking_limits": self.chunking_limits.model_dump(),
             "entity_extraction": self.entity_extraction.model_dump(),
             "performance": self.performance.model_dump(),
         }
+
+
+class MetadataExtractionConfig(BaseConfig):
+    """Configuration for metadata extraction settings and strategies.
+
+    This model validates the metadata-extraction.yaml configuration file.
+    """
+
+    # Store the raw configuration as-is for now
+    # This allows the system to load the file without requiring
+    # detailed Pydantic models for every metadata extraction option
+    metadata_extraction: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Metadata extraction configuration settings"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert metadata extraction configuration to dictionary.
+
+        Returns:
+            Dictionary representation of the configuration
+        """
+        return self.metadata_extraction
+
+
+class ValidationConfig(BaseConfig):
+    """Configuration for validation rules and repair strategies.
+
+    This model validates the validation.yaml configuration file.
+    """
+
+    # Store the raw configuration as-is for now
+    # This allows the system to load the file without requiring
+    # detailed Pydantic models for every validation option
+    validation: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Validation and repair configuration settings"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert validation configuration to dictionary.
+
+        Returns:
+            Dictionary representation of the configuration
+        """
+        return self.validation
 
 
 class DomainConfigValidator:
@@ -564,7 +598,7 @@ class DomainConfigValidator:
         """Validate fine-tuning configuration data.
 
         Args:
-            data: Raw configuration data from fine-tuning.yaml
+            data: Raw fine-tuning configuration data
 
         Returns:
             Validated FineTuningConfig instance
@@ -573,3 +607,33 @@ class DomainConfigValidator:
             ValidationError: If validation fails
         """
         return FineTuningConfig(**data)
+
+    @staticmethod
+    def validate_metadata_extraction(data: dict[str, Any]) -> MetadataExtractionConfig:
+        """Validate metadata extraction configuration data.
+
+        Args:
+            data: Raw metadata extraction configuration data
+
+        Returns:
+            Validated MetadataExtractionConfig instance
+
+        Raises:
+            ValidationError: If validation fails
+        """
+        return MetadataExtractionConfig(**data)
+
+    @staticmethod
+    def validate_validation(data: dict[str, Any]) -> ValidationConfig:
+        """Validate validation configuration data.
+
+        Args:
+            data: Raw validation configuration data
+
+        Returns:
+            Validated ValidationConfig instance
+
+        Raises:
+            ValidationError: If validation fails
+        """
+        return ValidationConfig(**data)

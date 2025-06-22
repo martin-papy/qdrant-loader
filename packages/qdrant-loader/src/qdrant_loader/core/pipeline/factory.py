@@ -11,6 +11,7 @@ from qdrant_loader.core.managers import GraphitiManager, QdrantManager
 from qdrant_loader.core.monitoring.ingestion_metrics import IngestionMonitor
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.core.types import EntityType
 
 from .config import PipelineConfig
 from .document_pipeline import DocumentPipeline
@@ -131,13 +132,42 @@ class PipelineComponentsFactory:
                 )
 
             # Create GraphitiManager
+            # Get OpenAI API key from the loaded configuration
+            openai_api_key = (
+                settings.global_config.graphiti.llm.api_key
+                or settings.global_config.graphiti.embedder.api_key
+            )
+            
+            if not openai_api_key:
+                logger.error("OpenAI API key not found in configuration")
+                raise ValueError(
+                    "OpenAI API key is required for Graphiti entity extraction. "
+                    "Configure it in graphiti.llm.api_key or graphiti.embedder.api_key"
+                )
+            
             graphiti_manager = GraphitiManager(
                 neo4j_config=settings.global_config.neo4j,
                 graphiti_config=settings.global_config.graphiti,
+                openai_api_key=openai_api_key,
             )
 
+            # Note: GraphitiManager will be initialized asynchronously during pipeline initialization
+
             # Create EntityExtractor with default configuration
-            extraction_config = ExtractionConfig()
+            # Enable common entity types for software development contexts
+            extraction_config = ExtractionConfig(
+                enabled_entity_types=[
+                    EntityType.PERSON,        # Individual people mentioned in documents
+                    EntityType.ORGANIZATION,  # Companies, teams, departments
+                    EntityType.PROJECT,       # Software projects, features, initiatives
+                    EntityType.TECHNOLOGY,    # Programming languages, frameworks, tools
+                    EntityType.SERVICE,       # Microservices, APIs, web services
+                    EntityType.CONCEPT,       # Architectural patterns, methodologies
+                ],
+                confidence_threshold=0.7,  # Reasonable confidence threshold
+                batch_size=5,  # Process entities in smaller batches for better performance
+                max_text_length=8000,  # Limit text length for better processing
+            )
             entity_extractor = EntityExtractor(
                 graphiti_manager=graphiti_manager,
                 config=extraction_config,

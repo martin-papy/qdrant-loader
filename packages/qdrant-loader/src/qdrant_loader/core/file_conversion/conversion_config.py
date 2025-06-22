@@ -1,6 +1,7 @@
 """Configuration models for file conversion settings."""
 
 from pydantic import BaseModel, Field
+from typing import Any
 
 
 class MarkItDownConfig(BaseModel):
@@ -61,6 +62,23 @@ class FileConversionConfig(BaseModel):
             True if file size is allowed, False otherwise
         """
         return file_size <= self.max_file_size
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert file conversion configuration to dictionary.
+
+        Returns:
+            Dictionary representation of the configuration
+        """
+        return {
+            "max_file_size": self.max_file_size,
+            "conversion_timeout": self.conversion_timeout,
+            "markitdown": {
+                "enable_llm_descriptions": self.markitdown.enable_llm_descriptions,
+                "llm_model": self.markitdown.llm_model,
+                "llm_endpoint": self.markitdown.llm_endpoint,
+                "llm_api_key": self.markitdown.llm_api_key,
+            },
+        }
 
 
 class ConnectorFileConversionConfig(BaseModel):

@@ -40,6 +40,7 @@ class AsyncIngestionPipeline:
         queue_size: int = 1000,
         upsert_batch_size: int | None = None,
         enable_metrics: bool = False,
+        enable_entity_extraction: bool | None = None,  # None = auto-detect from Graphiti config
         metrics_dir: Path | None = None,  # New parameter for workspace support
         validation_integrator=None,  # Optional validation integrator
     ):
@@ -56,6 +57,7 @@ class AsyncIngestionPipeline:
             queue_size: Queue size for workers
             upsert_batch_size: Batch size for upserts
             enable_metrics: Whether to enable metrics server
+            enable_entity_extraction: Whether to enable entity extraction
             metrics_dir: Custom metrics directory (for workspace support)
             validation_integrator: Optional validation integrator for automatic validation
         """
@@ -70,6 +72,28 @@ class AsyncIngestionPipeline:
             )
 
         # Create pipeline configuration
+        # Auto-enable entity extraction if Graphiti is configured and enabled
+        auto_enable_entity_extraction = (
+            settings.global_config
+            and hasattr(settings.global_config, "graphiti")
+            and settings.global_config.graphiti
+            and settings.global_config.graphiti.enabled
+        )
+        
+        # Determine final entity extraction setting
+        final_enable_entity_extraction = auto_enable_entity_extraction if enable_entity_extraction is None else enable_entity_extraction
+        
+        if final_enable_entity_extraction:
+            if enable_entity_extraction is None:
+                logger.info("🔗 Entity extraction auto-enabled (Graphiti is configured and enabled)")
+            else:
+                logger.info("🔗 Entity extraction manually enabled")
+        else:
+            if auto_enable_entity_extraction and enable_entity_extraction is False:
+                logger.info("🔗 Entity extraction manually disabled (despite Graphiti being configured)")
+            else:
+                logger.debug("🔗 Entity extraction disabled (Graphiti not configured or not enabled)")
+        
         self.pipeline_config = PipelineConfig(
             max_chunk_workers=max_chunk_workers,
             max_embed_workers=max_embed_workers,
@@ -77,6 +101,7 @@ class AsyncIngestionPipeline:
             queue_size=queue_size,
             upsert_batch_size=upsert_batch_size,
             enable_metrics=enable_metrics,
+            enable_entity_extraction=final_enable_entity_extraction,
         )
 
         # Create resource manager
@@ -174,6 +199,26 @@ class AsyncIngestionPipeline:
                 else:
                     logger.error("State manager session factory is not available")
                     raise RuntimeError("State manager session factory is not available")
+
+            # Initialize GraphitiManager if entity extraction is enabled
+            if (
+                self.components.document_pipeline.entity_extraction_worker 
+                and hasattr(self.components.document_pipeline.entity_extraction_worker, 'entity_extractor')
+                and hasattr(self.components.document_pipeline.entity_extraction_worker.entity_extractor, 'graphiti_manager')
+            ):
+                graphiti_manager = self.components.document_pipeline.entity_extraction_worker.entity_extractor.graphiti_manager
+                if not graphiti_manager.is_initialized:
+                    logger.info("Initializing GraphitiManager for entity extraction...")
+                    try:
+                        await graphiti_manager.initialize()
+                        logger.info("GraphitiManager initialization completed successfully")
+                    except Exception as e:
+                        logger.error(f"Failed to initialize GraphitiManager: {e}", exc_info=True)
+                        raise RuntimeError(f"Failed to initialize GraphitiManager: {e}")
+                else:
+                    logger.debug("GraphitiManager already initialized")
+            else:
+                logger.debug("Entity extraction not enabled or GraphitiManager not found")
         except Exception as e:
             logger.error(f"Pipeline initialization failed: {e}", exc_info=True)
             raise

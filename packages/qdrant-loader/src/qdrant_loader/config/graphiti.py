@@ -127,12 +127,14 @@ class GraphitiConfig(BaseSettings):
             "llm": {
                 "provider": self.llm.provider,
                 "model": self.llm.model,
+                "api_key": self.llm.api_key,
                 "max_tokens": self.llm.max_tokens,
                 "temperature": self.llm.temperature,
             },
             "embedder": {
                 "provider": self.embedder.provider,
                 "model": self.embedder.model,
+                "api_key": self.embedder.api_key,
                 "dimensions": self.embedder.dimensions,
                 "batch_size": self.embedder.batch_size,
             },
