@@ -105,13 +105,18 @@ class TestQdrantChangeDetector:
         mock_qdrant_manager._ensure_client_connected.assert_called()
 
     @pytest.mark.asyncio
-    async def test_start_monitoring_already_started(self, detector, caplog):
+    async def test_start_monitoring_already_started(self, detector, mock_qdrant_manager):
         """Test start monitoring when already started."""
         detector._monitoring = True
+        initial_poll_time = detector._last_poll_time
 
         await detector.start_monitoring()
 
-        assert "QDrant monitoring already started" in caplog.text
+        # Verify behavior: monitoring remains True and no initialization occurs
+        assert detector._monitoring is True
+        assert detector._last_poll_time == initial_poll_time  # Should not change
+        # Should not call _ensure_client_connected since already monitoring
+        mock_qdrant_manager._ensure_client_connected.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_stop_monitoring(self, detector):
