@@ -131,7 +131,7 @@ class TestWorkspaceConfig:
             config_file.write_text("projects: {}")
 
             # Test the workspace configuration setup
-            from qdrant_loader.cli.core import WorkspaceConfig
+            from qdrant_loader.config.workspace import WorkspaceConfig
 
             config = WorkspaceConfig(
                 workspace_path=workspace_root,
