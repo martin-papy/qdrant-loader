@@ -81,13 +81,23 @@ class ConfigMigrator:
         domain_configs = self._split_into_domains(legacy_config)
 
         if dry_run:
+            config_dir = output_dir / "config"
+            would_create_files = [
+                str(config_dir / f"{domain}.yaml")
+                for domain in domain_configs.keys()
+            ]
+            
+            # Add .env file to the list if it exists
+            env_file = output_dir / ".env"
+            if env_file.exists():
+                would_create_files.append(str(config_dir / ".env"))
+            
             return {
                 "dry_run": True,
                 "domain_configs": domain_configs,
-                "would_create_files": [
-                    str(output_dir / f"{domain}.yaml")
-                    for domain in domain_configs.keys()
-                ],
+                "would_create_files": would_create_files,
+                "would_create_config_dir": str(config_dir),
+                "would_delete_legacy_config": str(legacy_config_path),
             }
 
         # Create backup if requested
@@ -97,7 +107,7 @@ class ConfigMigrator:
 
         try:
             # Execute migration
-            created_files = self._execute_migration(domain_configs, output_dir, force)
+            created_files = self._execute_migration(domain_configs, output_dir, force, legacy_config_path)
 
             migration_results = {
                 "success": True,
@@ -151,6 +161,9 @@ class ConfigMigrator:
             # Split global section into domains
             for key, value in global_config.items():
                 if key in ["qdrant", "neo4j", "embedding", "state_management"]:
+                    # Special handling for embedding configuration
+                    if key == "embedding":
+                        value = self._enhance_embedding_config(value)
                     domain_configs[ConfigDomain.CONNECTIVITY][key] = value
                 elif key in ["chunking", "file_conversion"]:
                     domain_configs[ConfigDomain.FINE_TUNING][key] = value
@@ -179,6 +192,82 @@ class ConfigMigrator:
         )
         return domain_configs
 
+    def _enhance_embedding_config(self, embedding_config: dict[str, Any]) -> dict[str, Any]:
+        """Enhance embedding configuration with required provider field."""
+        if not isinstance(embedding_config, dict):
+            return embedding_config
+
+        # Make a copy to avoid modifying the original
+        enhanced_config = embedding_config.copy()
+
+        # If provider is already set, don't override it
+        if "provider" in enhanced_config:
+            return enhanced_config
+
+        # Detect provider based on endpoint and model
+        provider = self._detect_embedding_provider(enhanced_config)
+        if provider:
+            enhanced_config["provider"] = provider
+            logger.info(
+                "Added missing embedding provider during migration",
+                provider=provider,
+                detected_from=self._get_detection_source(enhanced_config),
+            )
+        else:
+            # Default to OpenAI if we can't detect
+            enhanced_config["provider"] = "openai"
+            logger.warning(
+                "Could not detect embedding provider, defaulting to 'openai'",
+                config_keys=list(enhanced_config.keys()),
+            )
+
+        return enhanced_config
+
+    def _detect_embedding_provider(self, config: dict[str, Any]) -> str | None:
+        """Detect embedding provider from configuration."""
+        # Check endpoint URL
+        endpoint = config.get("endpoint", "").lower()
+        if "openai" in endpoint or "api.openai.com" in endpoint:
+            return "openai"
+        elif "anthropic" in endpoint:
+            return "anthropic"
+        elif "huggingface" in endpoint or "hf.co" in endpoint:
+            return "huggingface"
+        elif "localhost" in endpoint or "127.0.0.1" in endpoint:
+            # Likely local deployment
+            model = config.get("model", "").lower()
+            if "openai" in model or "text-embedding" in model:
+                return "openai"
+            elif "bge" in model or "baai" in model:
+                return "huggingface"
+
+        # Check model name patterns
+        model = config.get("model", "").lower()
+        if model.startswith("text-embedding"):
+            return "openai"
+        elif model.startswith("baai/") or "bge" in model:
+            return "huggingface"
+
+        # Check API key patterns
+        api_key = config.get("api_key", "")
+        if isinstance(api_key, str):
+            api_key_lower = api_key.lower()
+            if "openai" in api_key_lower:
+                return "openai"
+            elif "anthropic" in api_key_lower:
+                return "anthropic"
+
+        return None
+
+    def _get_detection_source(self, config: dict[str, Any]) -> str:
+        """Get description of what was used to detect the provider."""
+        sources = []
+        if "endpoint" in config:
+            sources.append(f"endpoint='{config['endpoint']}'")
+        if "model" in config:
+            sources.append(f"model='{config['model']}'")
+        return ", ".join(sources) if sources else "default detection"
+
     def _create_backup(self, config_path: Path) -> Path:
         """Create a backup of the legacy configuration file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -193,13 +282,19 @@ class ConfigMigrator:
         return backup_path
 
     def _execute_migration(
-        self, domain_configs: dict[str, dict[str, Any]], output_dir: Path, force: bool
+        self, domain_configs: dict[str, dict[str, Any]], output_dir: Path, force: bool, legacy_config_path: Path
     ) -> list[str]:
         """Execute the configuration migration."""
         created_files = []
 
+        # Create config subdirectory
+        config_dir = output_dir / "config"
+        config_dir.mkdir(exist_ok=True)
+        logger.info("Created config directory", path=str(config_dir))
+
+        # Write domain configuration files to config directory
         for domain, config_data in domain_configs.items():
-            output_file = output_dir / f"{domain}.yaml"
+            output_file = config_dir / f"{domain}.yaml"
 
             # Check for conflicts
             if output_file.exists() and not force:
@@ -239,6 +334,32 @@ class ConfigMigrator:
                 raise ConfigMigrationError(
                     f"Failed to write {domain} configuration: {e}"
                 ) from e
+
+        # Move .env file to config directory if it exists
+        env_file = output_dir / ".env"
+        if env_file.exists():
+            target_env_file = config_dir / ".env"
+            if target_env_file.exists() and not force:
+                raise ConfigMigrationError(
+                    f"Environment file already exists in config directory: {target_env_file}. Use --force to overwrite."
+                )
+            
+            shutil.move(str(env_file), str(target_env_file))
+            created_files.append(str(target_env_file))
+            logger.info("Moved environment file to config directory", 
+                       from_path=str(env_file), 
+                       to_path=str(target_env_file))
+
+        # Delete the original legacy config file after successful migration
+        try:
+            legacy_config_path.unlink()
+            logger.info("Deleted legacy configuration file", path=str(legacy_config_path))
+        except Exception as e:
+            logger.warning(
+                "Failed to delete legacy configuration file", 
+                path=str(legacy_config_path), 
+                error=str(e)
+            )
 
         return created_files
 

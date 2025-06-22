@@ -254,9 +254,9 @@ class TestLegacyConfigDetector:
             assert "force_migration_command" in guidance
 
             assert str(config_file) in guidance["legacy_file"]
-            assert "migrate-config" in guidance["dry_run_command"]
+            assert "migrate" in guidance["dry_run_command"]
             assert "--dry-run" in guidance["dry_run_command"]
-            assert "migrate-config" in guidance["migration_command"]
+            assert "migrate" in guidance["migration_command"]
             assert "--force" in guidance["force_migration_command"]
 
         finally:

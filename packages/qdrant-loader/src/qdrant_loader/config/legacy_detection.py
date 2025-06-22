@@ -217,9 +217,9 @@ class LegacyConfigDetector:
         guidance = {
             "legacy_file": str(legacy_config_path),
             "output_dir": str(suggested_output_dir),
-            "dry_run_command": f"qdrant-loader migrate-config --legacy-config {legacy_config_path} --output-dir {suggested_output_dir} --dry-run",
-            "migration_command": f"qdrant-loader migrate-config --legacy-config {legacy_config_path} --output-dir {suggested_output_dir}",
-            "force_migration_command": f"qdrant-loader migrate-config --legacy-config {legacy_config_path} --output-dir {suggested_output_dir} --force",
+            "dry_run_command": f"qdrant-loader migrate config {legacy_config_path} --output-dir {suggested_output_dir} --dry-run",
+            "migration_command": f"qdrant-loader migrate config {legacy_config_path} --output-dir {suggested_output_dir}",
+            "force_migration_command": f"qdrant-loader migrate config {legacy_config_path} --output-dir {suggested_output_dir} --force",
         }
 
         return guidance

@@ -175,69 +175,85 @@ def load_config_with_workspace(
         )
 
         if workspace_config:
-            # Workspace mode - check for legacy configs in workspace
-            get_logger().debug("Loading configuration in workspace mode")
+            # Workspace mode
+            get_logger().debug("Loading configuration in workspace mode", is_multi_file=workspace_config.is_multi_file)
 
-            # Check for legacy configuration in workspace directory
-            is_legacy, legacy_config_path, reason = detect_legacy_configuration(
-                search_dir=workspace_config.workspace_path
-            )
+            if workspace_config.is_multi_file:
+                # New multi-file format - load directly from config directory
+                get_logger().debug("Loading multi-file configuration from config directory", 
+                                 config_dir=str(workspace_config.config_dir))
 
-            if is_legacy and legacy_config_path:
-                # Legacy configuration detected in workspace
-                guidance = get_migration_guidance(
-                    legacy_config_path,
-                    suggested_output_dir=workspace_config.workspace_path,
+                # Parse domains if provided
+                domains_set = None
+                if domains:
+                    domains_set = {d.strip() for d in domains.split(",") if d.strip()}
+
+                # Use multi-file configuration loading with selective domains
+                from qdrant_loader.config import initialize_multi_file_config_with_workspace
+
+                initialize_multi_file_config_with_workspace(
+                    workspace_config=workspace_config,
+                    domains=domains_set,
+                    skip_validation=skip_validation,
+                    preset=preset,
+                    use_case=use_case,
+                    measure_performance=measure_performance,
+                )
+            else:
+                # Legacy single-file format - check if migration is needed
+                get_logger().debug("Loading legacy single-file configuration")
+
+                # Check for legacy configuration in workspace directory
+                is_legacy, legacy_config_path, reason = detect_legacy_configuration(
+                    search_dir=workspace_config.workspace_path
                 )
 
-                get_logger().warning(
-                    "Legacy configuration detected in workspace",
-                    file=str(legacy_config_path),
-                    workspace=str(workspace_config.workspace_path),
-                    reason=reason,
+                if is_legacy and legacy_config_path:
+                    # Legacy configuration detected in workspace
+                    guidance = get_migration_guidance(
+                        legacy_config_path,
+                        suggested_output_dir=workspace_config.workspace_path,
+                    )
+
+                    get_logger().warning(
+                        "Legacy configuration detected in workspace",
+                        file=str(legacy_config_path),
+                        workspace=str(workspace_config.workspace_path),
+                        reason=reason,
+                    )
+
+                    # Display helpful migration message
+                    echo("⚠️  Legacy Configuration Detected in Workspace")
+                    echo("=" * 55)
+                    echo(f"Workspace: {workspace_config.workspace_path}")
+                    echo(f"Legacy config: {legacy_config_path}")
+                    echo(f"Reason: {reason}")
+                    echo()
+                    echo("🔄 Migration Required")
+                    echo(
+                        "The configuration format has been updated to use domain-specific files:"
+                    )
+                    echo("  • connectivity.yaml (database connections, LLM providers)")
+                    echo("  • projects.yaml (project definitions, data sources)")
+                    echo("  • fine-tuning.yaml (processing parameters, performance tuning)")
+                    echo()
+                    echo("📋 Migration Commands:")
+                    echo(f"  Preview migration: {guidance['dry_run_command']}")
+                    echo(f"  Migrate config:    {guidance['migration_command']}")
+                    echo()
+                    echo("💡 Run the preview command first to see what will be migrated.")
+
+                    raise ClickException(
+                        "Legacy configuration detected in workspace. Please migrate to the new format using the commands above."
+                    )
+
+                # Use legacy workspace config loading
+                from qdrant_loader.config import initialize_config_with_workspace
+
+                initialize_config_with_workspace(
+                    workspace_config=workspace_config,
+                    skip_validation=skip_validation,
                 )
-
-                # Display helpful migration message
-                echo("⚠️  Legacy Configuration Detected in Workspace")
-                echo("=" * 55)
-                echo(f"Workspace: {workspace_config.workspace_path}")
-                echo(f"Legacy config: {legacy_config_path}")
-                echo(f"Reason: {reason}")
-                echo()
-                echo("🔄 Migration Required")
-                echo(
-                    "The configuration format has been updated to use domain-specific files:"
-                )
-                echo("  • connectivity.yaml (database connections, LLM providers)")
-                echo("  • projects.yaml (project definitions, data sources)")
-                echo("  • fine-tuning.yaml (processing parameters, performance tuning)")
-                echo()
-                echo("📋 Migration Commands:")
-                echo(f"  Preview migration: {guidance['dry_run_command']}")
-                echo(f"  Migrate config:    {guidance['migration_command']}")
-                echo()
-                echo("💡 Run the preview command first to see what will be migrated.")
-
-                raise ClickException(
-                    "Legacy configuration detected in workspace. Please migrate to the new format using the commands above."
-                )
-
-            # Parse domains if provided
-            domains_set = None
-            if domains:
-                domains_set = {d.strip() for d in domains.split(",") if d.strip()}
-
-            # Use multi-file configuration loading with selective domains
-            from qdrant_loader.config import initialize_multi_file_config_with_workspace
-
-            initialize_multi_file_config_with_workspace(
-                workspace_config=workspace_config,
-                domains=domains_set,
-                skip_validation=skip_validation,
-                preset=preset,
-                use_case=use_case,
-                measure_performance=measure_performance,
-            )
         else:
             # Traditional mode
             get_logger().debug("Loading configuration in traditional mode")

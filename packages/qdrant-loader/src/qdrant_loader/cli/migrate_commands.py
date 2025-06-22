@@ -25,11 +25,10 @@ def migrate_group():
 
 
 @migrate_group.command(name="config")
-@click.option(
-    "--legacy-config",
+@click.argument(
+    "legacy_config",
     type=ClickPath(exists=True, path_type=Path),
     required=True,
-    help="Path to the legacy configuration file to migrate.",
 )
 @click.option(
     "--output-dir",
@@ -68,15 +67,17 @@ def migrate_config(
     - projects.yaml (project definitions, data sources)
     - fine-tuning.yaml (processing parameters, performance tuning)
 
+    LEGACY_CONFIG: Path to the legacy configuration file to migrate.
+
     Examples:
         # Dry run to see what would be migrated
-        qdrant-loader migrate config --legacy-config config.yaml --dry-run
+        qdrant-loader migrate config config.yaml --dry-run
 
         # Migrate with backup (default)
-        qdrant-loader migrate config --legacy-config config.yaml --output-dir ./new-config
+        qdrant-loader migrate config config.yaml --output-dir ./new-config
 
         # Force overwrite existing files
-        qdrant-loader migrate config --legacy-config config.yaml --force
+        qdrant-loader migrate config config.yaml --force
     """
     # Setup logging
     setup_logging(log_level)
@@ -114,6 +115,10 @@ def migrate_config(
             echo(f"Output directory: {output_dir}")
             echo()
 
+            if "would_create_config_dir" in results:
+                echo(f"📁 Config directory that would be created: {results['would_create_config_dir']}")
+                echo()
+
             if "domain_configs" in results:
                 echo("📁 Domain configurations that would be created:")
                 for domain, config_data in results["domain_configs"].items():
@@ -124,6 +129,10 @@ def migrate_config(
                 echo("📄 Files that would be created:")
                 for file_path in results["would_create_files"]:
                     echo(f"  • {file_path}")
+                echo()
+
+            if "would_delete_legacy_config" in results:
+                echo(f"🗑️  Legacy config that would be deleted: {results['would_delete_legacy_config']}")
                 echo()
 
             echo("💡 Run without --dry-run to perform the actual migration.")
@@ -139,16 +148,23 @@ def migrate_config(
                 echo(f"💾 Backup created: {results['backup_path']}")
                 echo()
 
+            echo(f"📁 Config directory created: {output_dir}/config")
+            echo()
+
             if "created_files" in results:
                 echo("📄 Created configuration files:")
                 for file_path in results["created_files"]:
                     echo(f"  • {file_path}")
                 echo()
 
+            echo(f"🗑️  Deleted legacy config: {legacy_config}")
+            echo()
+
             echo(
                 "🎉 Your configuration has been successfully migrated to the new format!"
             )
             echo("   You can now use the new domain-specific configuration files.")
+            echo("   All configuration files are now organized in the config/ directory.")
 
     except Exception as e:
         logger.error("Migration failed", error=str(e))
