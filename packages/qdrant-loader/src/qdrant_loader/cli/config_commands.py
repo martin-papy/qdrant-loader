@@ -468,7 +468,9 @@ def config_command(
     """Display current configuration (backward compatibility command)."""
     # This is the same as show_config but registered as a standalone command
     # for backward compatibility with the original CLI
-    show_config(
+    ctx = click.get_current_context()
+    ctx.invoke(
+        show_config,
         workspace=workspace,
         log_level=log_level,
         config=config,
