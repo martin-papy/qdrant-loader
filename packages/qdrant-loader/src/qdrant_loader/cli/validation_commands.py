@@ -865,38 +865,7 @@ async def _get_validation_status(
         pass
 
 
-# Backward compatibility command (single command without group)
-@click.command(name="validate")
-@WORKSPACE_OPTION
-@LOG_LEVEL_OPTION
-@CONFIG_OPTION
-@ENV_OPTION
-def validate_command(
-    workspace: Path | None,
-    log_level: str,
-    config: Path | None,
-    env: Path | None,
-):
-    """Quick validation command (backward compatibility).
 
-    This is a simplified validation command that runs basic validation
-    with default settings for backward compatibility.
-    """
-    # Delegate to the full validate-graph command with defaults
-    ctx = click.get_current_context()
-    ctx.invoke(
-        validate_graph,
-        workspace=workspace,
-        log_level=log_level,
-        config=config,
-        env=env,
-        scanners=None,
-        max_entities=None,
-        auto_repair=False,
-        output=None,
-        timeout=300,
-        validation_id=None,
-    )
 
 
 async def _configure_scheduled_validation(
