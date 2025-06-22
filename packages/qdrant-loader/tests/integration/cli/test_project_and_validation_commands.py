@@ -172,8 +172,8 @@ class TestValidationCommands:
     """Test validation and repair commands."""
 
     def test_validate_help(self, cli_runner: CliRunner, cli_app):
-        """Test validate command help."""
-        result = cli_runner.invoke(cli_app, ["validate", "--help"])
+        """Test validation validate-graph command help."""
+        result = cli_runner.invoke(cli_app, ["validation", "validate-graph", "--help"])
 
         assert result.exit_code == 0
         assert "validate" in result.output.lower()
@@ -183,16 +183,16 @@ class TestValidationCommands:
     ):
         """Test configuration validation."""
         result = cli_runner.invoke(
-            cli_app, ["validate", "--workspace", str(workspace_with_config)]
+            cli_app, ["validation", "validate-graph", "--workspace", str(workspace_with_config)]
         )
 
-        # Should validate configuration
+        # Should validate configuration (may fail due to missing databases, but should not crash)
         assert result.output.strip()
 
-    def test_validate_connections(
+    def test_validate_with_scanners(
         self, cli_runner: CliRunner, cli_app, workspace_with_config: Path
     ):
-        """Test connection validation."""
+        """Test validation with specific scanners."""
         with (
             patch(
                 "qdrant_loader.core.managers.qdrant_manager.QdrantManager"
@@ -212,20 +212,22 @@ class TestValidationCommands:
             result = cli_runner.invoke(
                 cli_app,
                 [
-                    "validate",
+                    "validation",
+                    "validate-graph",
                     "--workspace",
                     str(workspace_with_config),
-                    "--connections",
+                    "--scanners",
+                    "missing_mappings,orphaned_records",
                 ],
             )
 
-            # Should validate connections
+            # Should validate with specific scanners
             assert result.output.strip()
 
-    def test_validate_data_integrity(
+    def test_validate_with_auto_repair(
         self, cli_runner: CliRunner, cli_app, workspace_with_config: Path
     ):
-        """Test data integrity validation."""
+        """Test validation with auto-repair."""
         with patch(
             "qdrant_loader.core.managers.qdrant_manager.QdrantManager"
         ) as mock_qdrant:
@@ -234,16 +236,22 @@ class TestValidationCommands:
 
             result = cli_runner.invoke(
                 cli_app,
-                ["validate", "--workspace", str(workspace_with_config), "--data"],
+                [
+                    "validation", 
+                    "validate-graph", 
+                    "--workspace", 
+                    str(workspace_with_config), 
+                    "--auto-repair"
+                ],
             )
 
-            # Should validate data integrity
+            # Should validate with auto-repair enabled
             assert result.output.strip()
 
-    def test_validate_all(
+    def test_validate_with_max_entities(
         self, cli_runner: CliRunner, cli_app, workspace_with_config: Path
     ):
-        """Test comprehensive validation."""
+        """Test validation with entity limit."""
         with (
             patch(
                 "qdrant_loader.core.managers.qdrant_manager.QdrantManager"
@@ -261,10 +269,17 @@ class TestValidationCommands:
 
             result = cli_runner.invoke(
                 cli_app,
-                ["validate", "--workspace", str(workspace_with_config), "--all"],
+                [
+                    "validation", 
+                    "validate-graph", 
+                    "--workspace", 
+                    str(workspace_with_config), 
+                    "--max-entities", 
+                    "100"
+                ],
             )
 
-            # Should perform comprehensive validation
+            # Should perform validation with entity limit
             assert result.output.strip()
 
 
@@ -533,7 +548,7 @@ class TestCommandIntegration:
 
         # Step 3: Validate configuration
         result3 = cli_runner.invoke(
-            cli_app, ["validate", "--workspace", str(temp_workspace), "--config"]
+            cli_app, ["validation", "validate-graph", "--workspace", str(temp_workspace)]
         )
         assert result3.output.strip()
 
@@ -588,7 +603,7 @@ class TestCommandErrorIntegration:
         commands = [
             ["project", "status", "--workspace", invalid_workspace],
             ["config", "show", "--workspace", invalid_workspace],
-            ["validate", "--workspace", invalid_workspace],
+            ["validation", "validate-graph", "--workspace", invalid_workspace],
         ]
 
         for cmd in commands:

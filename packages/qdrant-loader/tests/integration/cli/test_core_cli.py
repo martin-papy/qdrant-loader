@@ -24,7 +24,7 @@ class TestCoreCLI:
         assert "project" in result.output
         assert "migrate" in result.output
         assert "export" in result.output
-        assert "validate" in result.output
+        assert "validation" in result.output  # validation group, not standalone validate
 
     def test_cli_version_display(self, cli_runner: CliRunner, cli_app):
         """Test that CLI version is displayed correctly."""
@@ -98,12 +98,12 @@ class TestCLISubcommands:
         assert result.exit_code == 0
         assert "export" in result.output.lower()
 
-    def test_validate_subcommand_help(self, cli_runner: CliRunner, cli_app):
-        """Test validate subcommand help."""
-        result = cli_runner.invoke(cli_app, ["validate", "--help"])
+    def test_validation_subcommand_help(self, cli_runner: CliRunner, cli_app):
+        """Test validation subcommand help."""
+        result = cli_runner.invoke(cli_app, ["validation", "--help"])
 
         assert result.exit_code == 0
-        assert "validate" in result.output.lower()
+        assert "validation" in result.output.lower()
 
 
 class TestCLIErrorHandling:
