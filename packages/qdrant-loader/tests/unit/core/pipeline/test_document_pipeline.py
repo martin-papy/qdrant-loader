@@ -431,12 +431,12 @@ class TestDocumentPipeline:
         """Test entity extraction processing with error."""
 
         async def failing_process_documents(docs):
-            raise Exception("Entity extraction failed")
-            yield  # Unreachable but makes it an async generator
+            # Make this an async generator that raises immediately
+            if True:  # Always raise
+                raise Exception("Entity extraction failed")
+            yield  # This makes it a generator but is never reached
 
-        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = (
-            failing_process_documents
-        )
+        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = failing_process_documents
 
         # Should raise the exception
         with pytest.raises(Exception, match="Entity extraction failed"):
@@ -496,12 +496,12 @@ class TestDocumentPipeline:
         """Test handling of CancelledError during entity extraction."""
 
         async def cancelling_entity_extraction(docs):
-            raise asyncio.CancelledError()
-            yield  # Unreachable but makes it an async generator
+            # Make this an async generator that raises immediately
+            if True:  # Always raise
+                raise asyncio.CancelledError()
+            yield  # This makes it a generator but is never reached
 
-        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = (
-            cancelling_entity_extraction
-        )
+        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = cancelling_entity_extraction
 
         result = await pipeline_with_entity_extraction.process_documents(
             sample_documents
