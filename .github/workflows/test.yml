@@ -173,6 +173,7 @@ jobs:
           path: |
             htmlcov-loader
             coverage-loader.xml
+            junit-loader.xml
           retention-days: 30
 
   test-mcp-server:
@@ -213,6 +214,7 @@ jobs:
           path: |
             htmlcov-mcp
             coverage-mcp.xml
+            junit-mcp.xml
           retention-days: 30
 
   test-website:
@@ -254,6 +256,7 @@ jobs:
           path: |
             htmlcov-website
             coverage-website.xml
+            junit-website.xml
           retention-days: 30
 
   test-summary:
@@ -350,6 +353,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: loader
+          files: junit-loader.xml
           name: loader-coverage
           fail_ci_if_error: false
           verbose: true
@@ -360,6 +364,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: mcp
+          files: junit-mcp.xml
           name: mcp-coverage
           fail_ci_if_error: false
           verbose: true
@@ -370,6 +375,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: website
+          files: junit-website.xml
           name: website-coverage
           fail_ci_if_error: false
           verbose: true
@@ -379,5 +385,6 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: junit-loader.xml,junit-mcp.xml,junit-website.xml
           fail_ci_if_error: true
           verbose: true
