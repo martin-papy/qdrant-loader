@@ -47,14 +47,16 @@ def create_cli():
     """
     # Import command groups lazily to avoid slow startup
     from .config_commands import config_command, config_group
+    from .daemon_commands import daemon_group
     from .export_commands import export_config_command, export_group
     from .ingest_commands import ingest_command, ingest_group, init_command
-    from .migrate_commands import migrate_config_command, migrate_group
+    from .migrate_commands import migrate_group
     from .project_commands import project_group
     from .validation_commands import validate_command, validation_group
 
     # Add all command groups to the main CLI
     cli.add_command(config_group)
+    cli.add_command(daemon_group)
     cli.add_command(ingest_group)
     cli.add_command(migrate_group)
     cli.add_command(export_group)
@@ -66,7 +68,6 @@ def create_cli():
     cli.add_command(config_command)
     cli.add_command(ingest_command)
     cli.add_command(init_command)
-    cli.add_command(migrate_config_command)
     cli.add_command(export_config_command)
     cli.add_command(validate_command)
 

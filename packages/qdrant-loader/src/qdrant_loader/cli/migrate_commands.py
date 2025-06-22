@@ -155,44 +155,4 @@ def migrate_config(
         raise ClickException(f"Configuration migration failed: {e}") from e
 
 
-# For backward compatibility, also register the migrate-config command directly
-@click.command(name="migrate-config")
-@click.option(
-    "--legacy-config",
-    type=ClickPath(exists=True, path_type=Path),
-    required=True,
-    help="Path to the legacy configuration file to migrate.",
-)
-@click.option(
-    "--output-dir",
-    type=ClickPath(path_type=Path),
-    help="Directory where the new configuration files will be created. Defaults to the same directory as the legacy config.",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Show what would be migrated without creating files.",
-)
-@click.option(
-    "--backup/--no-backup",
-    default=True,
-    help="Create a backup of the legacy configuration file before migration.",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    help="Overwrite existing configuration files if they exist.",
-)
-@LOG_LEVEL_OPTION
-def migrate_config_command(
-    legacy_config: Path,
-    output_dir: Path | None,
-    dry_run: bool,
-    backup: bool,
-    force: bool,
-    log_level: str,
-):
-    """Migrate legacy configuration file to new domain-specific format (backward compatibility command)."""
-    # This is the same as migrate_config but registered as a standalone command
-    # for backward compatibility with the original CLI
-    migrate_config(legacy_config, output_dir, dry_run, backup, force, log_level)
+
