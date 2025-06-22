@@ -646,9 +646,16 @@ class MultiFileConfigLoader:
 
         # Check for connectivity requirements
         if ConfigDomain.CONNECTIVITY in requested_domains:
-            if "qdrant" not in config:
+            # Check for qdrant configuration - it could be at top level or under 'global'
+            qdrant_config = None
+            if "qdrant" in config:
+                qdrant_config = config["qdrant"]
+            elif "global" in config and isinstance(config["global"], dict):
+                qdrant_config = config["global"].get("qdrant")
+            
+            if not qdrant_config:
                 errors.append("QDrant configuration is required in connectivity domain")
-            elif not config["qdrant"].get("url"):
+            elif not self._has_valid_value(qdrant_config.get("url")):
                 errors.append("QDrant URL is required in connectivity configuration")
 
         # Check for projects requirements
@@ -664,6 +671,32 @@ class MultiFileConfigLoader:
             raise ValueError(
                 f"Minimum configuration validation failed: {'; '.join(errors)}"
             )
+
+    def _has_valid_value(self, value: Any) -> bool:
+        """Check if a configuration value is valid (either has a value or is an environment variable).
+        
+        Args:
+            value: Configuration value to check
+            
+        Returns:
+            True if value is valid (not None/empty) or is an environment variable pattern
+        """
+        if value is None:
+            return False
+        
+        if isinstance(value, str):
+            # Empty string is invalid
+            if not value.strip():
+                return False
+            # Environment variable patterns are considered valid
+            # ${VAR_NAME} or ${VAR_NAME:-default}
+            if value.strip().startswith("${") and value.strip().endswith("}"):
+                return True
+            # Non-empty string is valid
+            return True
+        
+        # Non-string, non-None values are valid
+        return True
 
     @staticmethod
     def _substitute_env_vars(data: Any) -> Any:
