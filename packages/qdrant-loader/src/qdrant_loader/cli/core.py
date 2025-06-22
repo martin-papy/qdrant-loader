@@ -435,7 +435,7 @@ async def cancel_all_tasks():
 WORKSPACE_OPTION = click.option(
     "--workspace",
     type=ClickPath(path_type=Path),
-    help="Workspace directory containing config.yaml and .env files. All output will be stored here.",
+    help="Workspace directory. Supports both legacy (config.yaml) and new multi-file (config/ directory with connectivity.yaml, projects.yaml, fine-tuning.yaml) formats. All output will be stored here.",
 )
 
 CONFIG_OPTION = click.option(

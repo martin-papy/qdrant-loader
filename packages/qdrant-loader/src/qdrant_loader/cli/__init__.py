@@ -49,7 +49,7 @@ def create_cli():
     from .config_commands import config_command, config_group
     from .daemon_commands import daemon_group
     from .export_commands import export_group
-    from .ingest_commands import ingest_command, ingest_group, init_command
+    from .ingest_commands import ingest_group
     from .migrate_commands import migrate_group
     from .project_commands import project_group
     from .validation_commands import validation_group
@@ -63,11 +63,8 @@ def create_cli():
     cli.add_command(project_group)
     cli.add_command(validation_group)
 
-    # Add backward compatibility commands directly to the main CLI
-    # These maintain the original command structure for existing users
+    # Add backward compatibility command for config only (doesn't conflict with groups)
     cli.add_command(config_command)
-    cli.add_command(ingest_command)
-    cli.add_command(init_command)
 
     return cli
 
