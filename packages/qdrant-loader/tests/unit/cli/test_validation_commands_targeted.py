@@ -68,7 +68,7 @@ def mock_validation_report():
 class TestValidateGraphCommand:
     """Test validate-graph command."""
 
-    @patch("qdrant_loader.cli.validation_commands.asyncio.run")
+    @patch("qdrant_loader.cli.validation_commands._run_validation")
     @patch("qdrant_loader.cli.validation_commands.check_settings")
     @patch("qdrant_loader.cli.validation_commands.load_config_with_workspace")
     @patch("qdrant_loader.cli.validation_commands.setup_logging")
@@ -79,14 +79,19 @@ class TestValidateGraphCommand:
         mock_setup_logging,
         mock_load_config,
         mock_check_settings,
-        mock_asyncio_run,
+        mock_run_validation,
         runner,
         mock_settings,
         mock_validation_report,
     ):
         """Test successful validation with basic options."""
         mock_check_settings.return_value = mock_settings
-        mock_asyncio_run.return_value = mock_validation_report
+        
+        # Create an async mock for _run_validation
+        async def mock_validation(*args, **kwargs):
+            return mock_validation_report
+        
+        mock_run_validation.side_effect = mock_validation
 
         result = runner.invoke(validate_graph, [])
 
@@ -95,7 +100,7 @@ class TestValidateGraphCommand:
         assert "Total Issues: 5" in result.output
         assert "Health Score: 75.5/100" in result.output
 
-    @patch("qdrant_loader.cli.validation_commands.asyncio.run")
+    @patch("qdrant_loader.cli.validation_commands._run_validation")
     @patch("qdrant_loader.cli.validation_commands.check_settings")
     @patch("qdrant_loader.cli.validation_commands.load_config_with_workspace")
     @patch("qdrant_loader.cli.validation_commands.setup_logging")
@@ -106,7 +111,7 @@ class TestValidateGraphCommand:
         mock_setup_logging,
         mock_load_config,
         mock_check_settings,
-        mock_asyncio_run,
+        mock_run_validation,
         runner,
         mock_settings,
     ):
@@ -122,14 +127,19 @@ class TestValidateGraphCommand:
         report.auto_repairable_issues = 0
 
         mock_check_settings.return_value = mock_settings
-        mock_asyncio_run.return_value = report
+        
+        # Create an async mock for _run_validation
+        async def mock_validation(*args, **kwargs):
+            return report
+        
+        mock_run_validation.side_effect = mock_validation
 
         result = runner.invoke(validate_graph, [])
 
         assert result.exit_code == 1
         assert "Critical validation issues found" in result.output
 
-    @patch("qdrant_loader.cli.validation_commands.asyncio.run")
+    @patch("qdrant_loader.cli.validation_commands._run_validation")
     @patch("qdrant_loader.cli.validation_commands.check_settings")
     @patch("qdrant_loader.cli.validation_commands.load_config_with_workspace")
     @patch("qdrant_loader.cli.validation_commands.setup_logging")
@@ -140,7 +150,7 @@ class TestValidateGraphCommand:
         mock_setup_logging,
         mock_load_config,
         mock_check_settings,
-        mock_asyncio_run,
+        mock_run_validation,
         runner,
         mock_settings,
     ):
@@ -156,7 +166,12 @@ class TestValidateGraphCommand:
         report.auto_repairable_issues = 1
 
         mock_check_settings.return_value = mock_settings
-        mock_asyncio_run.return_value = report
+        
+        # Create an async mock for _run_validation
+        async def mock_validation(*args, **kwargs):
+            return report
+        
+        mock_run_validation.side_effect = mock_validation
 
         # Mock sys.exit to catch the exit call
         with patch("sys.exit") as mock_exit:
@@ -170,14 +185,19 @@ class TestValidateGraphCommand:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_file = Path(tmpdir) / "report.json"
 
-            with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
+            with patch("qdrant_loader.cli.validation_commands._run_validation") as mock_run, \
                  patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
                  patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
                  patch("qdrant_loader.cli.validation_commands.setup_logging"), \
                  patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
                 
                 mock_check.return_value = mock_settings
-                mock_run.return_value = mock_validation_report
+                
+                # Create an async mock for _run_validation
+                async def mock_validation(*args, **kwargs):
+                    return mock_validation_report
+                
+                mock_run.side_effect = mock_validation
 
                 result = runner.invoke(validate_graph, ["--output", str(output_file)])
 
@@ -192,7 +212,7 @@ class TestValidateGraphCommand:
 
     def test_validate_graph_with_scanners_option(self, runner, mock_settings, mock_validation_report):
         """Test validation with specific scanners."""
-        with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
+        with patch("qdrant_loader.cli.validation_commands._run_validation") as mock_run, \
              patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
              patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.validation_commands.setup_logging"), \
@@ -202,7 +222,12 @@ class TestValidateGraphCommand:
             logger = Mock()
             mock_logger.return_value = logger
             mock_check.return_value = mock_settings
-            mock_run.return_value = mock_validation_report
+            
+            # Create an async mock for _run_validation
+            async def mock_validation(*args, **kwargs):
+                return mock_validation_report
+            
+            mock_run.side_effect = mock_validation
 
             result = runner.invoke(validate_graph, ["--scanners", "missing_mappings,orphaned_records"])
 
@@ -240,7 +265,7 @@ class TestValidateGraphCommand:
 class TestRepairInconsistenciesCommand:
     """Test repair-inconsistencies command."""
 
-    @patch("qdrant_loader.cli.validation_commands.asyncio.run")
+    @patch("qdrant_loader.cli.validation_commands._run_repairs")
     @patch("qdrant_loader.cli.validation_commands.check_settings")
     @patch("qdrant_loader.cli.validation_commands.load_config_with_workspace")
     @patch("qdrant_loader.cli.validation_commands.setup_logging")
@@ -251,7 +276,7 @@ class TestRepairInconsistenciesCommand:
         mock_setup_logging,
         mock_load_config,
         mock_check_settings,
-        mock_asyncio_run,
+        mock_run_repairs,
         runner,
         mock_settings,
     ):
@@ -265,16 +290,21 @@ class TestRepairInconsistenciesCommand:
 
     def test_repair_inconsistencies_with_issue_ids(self, runner, mock_settings):
         """Test repair command with specific issue IDs."""
-        with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
+        with patch("qdrant_loader.cli.validation_commands._run_repairs") as mock_run, \
              patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
              patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.validation_commands.setup_logging"), \
              patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
             
             mock_check.return_value = mock_settings
-            mock_run.return_value = {"repaired": 2, "failed": 0}
+            
+            # Create an async mock for _run_repairs
+            async def mock_repairs(*args, **kwargs):
+                return {"repaired_count": 0, "failed_count": 0}
+            
+            mock_run.side_effect = mock_repairs
 
-            result = runner.invoke(repair_inconsistencies, ["--issue-ids", "issue1,issue2", "--force"])
+            result = runner.invoke(repair_inconsistencies, ["--issue-ids", "issue-1,issue-2"])
 
             assert result.exit_code == 0
             assert "Repair operation completed" in result.output

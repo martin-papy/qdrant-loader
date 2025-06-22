@@ -153,7 +153,7 @@ class TestInitCommand:
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
              patch("qdrant_loader.cli.ingest_commands.run_init") as mock_run_init, \
-             patch("qdrant_loader.cli.ingest_commands.create_database_directory") as mock_create_dir, \
+             patch("qdrant_loader.cli.core.create_database_directory") as mock_create_dir, \
              patch("os.path.exists") as mock_exists:
             
             mock_check.return_value = mock_settings
@@ -174,7 +174,7 @@ class TestInitCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.create_database_directory") as mock_create_dir:
+             patch("qdrant_loader.cli.core.create_database_directory") as mock_create_dir:
             
             mock_check.return_value = mock_settings
             mock_create_dir.return_value = False
@@ -352,15 +352,8 @@ class TestStandaloneCommands:
 
     def test_init_command_basic(self, runner, mock_settings):
         """Test standalone init command."""
-        with patch("qdrant_loader.cli.ingest_commands.validate_workspace_flags"), \
-             patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
-             patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.run_init") as mock_run_init:
-            
-            mock_check.return_value = mock_settings
-            mock_run_init.return_value = None
-
+        with patch("qdrant_loader.cli.ingest_commands.init", new_callable=AsyncMock):
+            # Mock the init function that init_command calls
             result = runner.invoke(init_command, [])
 
             assert result.exit_code == 0

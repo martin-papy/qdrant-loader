@@ -48,21 +48,29 @@ class TestSetupWorkspace:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
             
+            # Create necessary config file
+            config_file = workspace_path / "config.yaml"
+            config_file.write_text("projects: {}")
+            
             result = setup_workspace(workspace_path)
             
             assert result is not None
-            assert result.workspace_root == workspace_path
+            assert result.workspace_path == workspace_path.resolve()
 
     def test_setup_workspace_new_directory(self):
         """Test setup workspace with new directory creation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
+            workspace_path.mkdir()
             
-            with patch("click.confirm", return_value=True):
-                result = setup_workspace(workspace_path)
+            # Create necessary config file
+            config_file = workspace_path / "config.yaml"
+            config_file.write_text("projects: {}")
+            
+            result = setup_workspace(workspace_path)
                 
             assert result is not None
-            assert result.workspace_root == workspace_path
+            assert result.workspace_path == workspace_path.resolve()
             assert workspace_path.exists()
 
     def test_setup_workspace_creation_declined(self):
@@ -118,14 +126,25 @@ class TestWorkspaceConfig:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
             
+            # Create necessary files for workspace
+            config_file = workspace_root / "config.yaml"
+            config_file.write_text("projects: {}")
+            
             # Test the workspace configuration setup
             from qdrant_loader.cli.core import WorkspaceConfig
             
-            config = WorkspaceConfig(workspace_root)
+            config = WorkspaceConfig(
+                workspace_path=workspace_root,
+                config_path=config_file,
+                env_path=None,
+                logs_path=workspace_root / "logs" / "qdrant-loader.log",
+                metrics_path=workspace_root / "metrics",
+                database_path=workspace_root / "data" / "qdrant-loader.db"
+            )
             
-            assert config.workspace_root == workspace_root
-            assert config.config_file == workspace_root / "config.yaml"
-            assert config.env_file == workspace_root / ".env"
+            assert config.workspace_path == workspace_root.resolve()
+            assert config.config_path == config_file
+            assert config.env_path is None
 
 
 class TestErrorHandling:
@@ -136,11 +155,13 @@ class TestErrorHandling:
         # Create a path that would cause permission error
         test_path = Path("/root/no_permission_dir")
         
+        from click.exceptions import ClickException
+        
         with patch("click.confirm", return_value=True), \
              patch("pathlib.Path.mkdir", side_effect=PermissionError("Permission denied")):
             
-            result = create_database_directory(test_path)
-            assert result is False
+            with pytest.raises(ClickException, match="Failed to create directory: Permission denied"):
+                create_database_directory(test_path)
 
     def test_setup_workspace_mkdir_error(self):
         """Test workspace setup with mkdir error."""

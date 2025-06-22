@@ -15,6 +15,9 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
+# Import WorkspaceConfig for tests
+from qdrant_loader.config.workspace import WorkspaceConfig
+
 # Global logger instance - initialized lazily
 logger = None
 

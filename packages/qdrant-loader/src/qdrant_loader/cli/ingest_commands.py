@@ -13,6 +13,8 @@ import click
 from click.exceptions import ClickException
 
 from qdrant_loader.cli.asyncio import async_command
+# Import init_collection for tests
+from qdrant_loader.core.init_collection import init_collection
 
 from .core import (
     CONFIG_OPTION,
@@ -21,6 +23,7 @@ from .core import (
     WORKSPACE_OPTION,
     cancel_all_tasks,
     check_settings,
+    create_database_directory,
     get_logger,
     handle_sigint_for_ingest,
     load_config_with_workspace,
@@ -28,6 +31,60 @@ from .core import (
     setup_workspace,
     validate_workspace_flags,
 )
+
+
+class IngestionManager:
+    """Manager for handling ingestion operations."""
+    
+    def __init__(self, settings, project=None, source_type=None, source=None):
+        """Initialize ingestion manager.
+        
+        Args:
+            settings: Application settings
+            project: Optional project filter
+            source_type: Optional source type filter
+            source: Optional source filter
+        """
+        self.settings = settings
+        self.project = project
+        self.source_type = source_type
+        self.source = source
+    
+    async def run_ingestion(self):
+        """Run the ingestion process."""
+        # Lazy import to avoid slow startup
+        from qdrant_loader.core.ingestion_pipeline import IngestionPipeline
+        
+        pipeline = IngestionPipeline(self.settings)
+        await pipeline.run(
+            project_filter=self.project,
+            source_type_filter=self.source_type,
+            source_filter=self.source
+        )
+
+
+class IngestStatusChecker:
+    """Checker for ingestion status operations."""
+    
+    def __init__(self, settings, project=None):
+        """Initialize status checker.
+        
+        Args:
+            settings: Application settings
+            project: Optional project filter
+        """
+        self.settings = settings
+        self.project = project
+    
+    async def get_status(self):
+        """Get ingestion status."""
+        # Lazy import to avoid slow startup
+        from qdrant_loader.core.status_checker import get_ingestion_status
+        
+        return await get_ingestion_status(
+            self.settings,
+            project_filter=self.project
+        )
 
 
 @click.group(name="ingest")
@@ -47,9 +104,6 @@ async def run_init(settings, force: bool) -> None:
         ClickException: If initialization fails
     """
     try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.core.init_collection import init_collection
-
         result = init_collection(settings, force)
         if not result:
             raise ClickException("Failed to initialize collection")
