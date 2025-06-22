@@ -6,7 +6,7 @@ Focuses on uncovered error paths, edge cases, and command flows.
 import asyncio
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, mock_open, patch
 
 import pytest
 from click.testing import CliRunner
@@ -46,7 +46,7 @@ class TestRunInitFunction:
         mock_settings = MagicMock()
         mock_settings.qdrant_collection_name = "test_collection"
 
-        with patch("qdrant_loader.core.init_collection.init_collection") as mock_init, \
+        with patch("qdrant_loader.cli.ingest_commands.init_collection") as mock_init, \
              patch("qdrant_loader.cli.ingest_commands.get_logger") as mock_logger:
             
             mock_init.return_value = True
@@ -64,7 +64,7 @@ class TestRunInitFunction:
         mock_settings = MagicMock()
         mock_settings.qdrant_collection_name = "test_collection"
 
-        with patch("qdrant_loader.core.init_collection.init_collection") as mock_init, \
+        with patch("qdrant_loader.cli.ingest_commands.init_collection") as mock_init, \
              patch("qdrant_loader.cli.ingest_commands.get_logger") as mock_logger:
             
             mock_init.return_value = True
@@ -241,12 +241,17 @@ class TestRunIngestCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestionManager") as mock_manager:
+             patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager, \
+             patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline") as mock_pipeline:
             
             mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_instance.run_ingestion = AsyncMock()
-            mock_manager.return_value = mock_instance
+            mock_qdrant_instance = Mock()
+            mock_qdrant_manager.return_value = mock_qdrant_instance
+            
+            mock_pipeline_instance = AsyncMock()
+            mock_pipeline_instance.process_documents = AsyncMock()
+            mock_pipeline_instance.cleanup = AsyncMock()
+            mock_pipeline.return_value = mock_pipeline_instance
 
             result = runner.invoke(run_ingest, [])
 
@@ -258,12 +263,17 @@ class TestRunIngestCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestionManager") as mock_manager:
+             patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager, \
+             patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline") as mock_pipeline:
             
             mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_instance.run_ingestion = AsyncMock()
-            mock_manager.return_value = mock_instance
+            mock_qdrant_instance = Mock()
+            mock_qdrant_manager.return_value = mock_qdrant_instance
+            
+            mock_pipeline_instance = AsyncMock()
+            mock_pipeline_instance.process_documents = AsyncMock()
+            mock_pipeline_instance.cleanup = AsyncMock()
+            mock_pipeline.return_value = mock_pipeline_instance
 
             result = runner.invoke(run_ingest, ["--project", "test_project"])
 
@@ -275,13 +285,18 @@ class TestRunIngestCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestionManager") as mock_manager, \
+             patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager, \
+             patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline") as mock_pipeline, \
              patch("cProfile.Profile") as mock_profiler:
             
             mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_instance.run_ingestion = AsyncMock()
-            mock_manager.return_value = mock_instance
+            mock_qdrant_instance = Mock()
+            mock_qdrant_manager.return_value = mock_qdrant_instance
+            
+            mock_pipeline_instance = AsyncMock()
+            mock_pipeline_instance.process_documents = AsyncMock()
+            mock_pipeline_instance.cleanup = AsyncMock()
+            mock_pipeline.return_value = mock_pipeline_instance
             
             mock_prof_instance = MagicMock()
             mock_profiler.return_value = mock_prof_instance
@@ -303,11 +318,22 @@ class TestCheckStatusCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestStatusChecker") as mock_checker:
+             patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager:
             
+            # Configure mock settings
+            mock_settings.projects_config = Mock()
+            mock_settings.projects_config.projects = {}
             mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_checker.return_value = mock_instance
+            
+            mock_qdrant_instance = Mock()
+            mock_client = Mock()
+            mock_qdrant_instance._ensure_client_connected.return_value = mock_client
+            mock_qdrant_manager.return_value = mock_qdrant_instance
+            
+            # Mock collections response
+            mock_collections = Mock()
+            mock_collections.collections = []
+            mock_client.get_collections.return_value = mock_collections
 
             result = runner.invoke(check_status, [])
 
@@ -319,11 +345,28 @@ class TestCheckStatusCommand:
              patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
              patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
              patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestStatusChecker") as mock_checker:
+             patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager:
             
+            # Configure mock settings with project
+            mock_settings.projects_config = Mock()
+            mock_settings.projects_config.projects = {
+                "test_project": Mock(
+                    display_name="Test Project",
+                    description="Test description",
+                    sources={}
+                )
+            }
             mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_checker.return_value = mock_instance
+            
+            mock_qdrant_instance = Mock()
+            mock_client = Mock()
+            mock_qdrant_instance._ensure_client_connected.return_value = mock_client
+            mock_qdrant_manager.return_value = mock_qdrant_instance
+            
+            # Mock collections response
+            mock_collections = Mock()
+            mock_collections.collections = []
+            mock_client.get_collections.return_value = mock_collections
 
             result = runner.invoke(check_status, ["--project", "test_project"])
 
@@ -335,20 +378,14 @@ class TestStandaloneCommands:
 
     def test_ingest_command_basic(self, runner, mock_settings):
         """Test standalone ingest command."""
-        with patch("qdrant_loader.cli.ingest_commands.validate_workspace_flags"), \
-             patch("qdrant_loader.cli.ingest_commands.setup_logging"), \
-             patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.ingest_commands.IngestionManager") as mock_manager:
-            
-            mock_check.return_value = mock_settings
-            mock_instance = MagicMock()
-            mock_instance.run_ingestion = AsyncMock()
-            mock_manager.return_value = mock_instance
+        with patch("qdrant_loader.cli.ingest_commands.run_ingest", new_callable=AsyncMock) as mock_run_ingest:
+            # Mock the run_ingest function that ingest_command calls
+            mock_run_ingest.return_value = None
 
             result = runner.invoke(ingest_command, [])
 
             assert result.exit_code == 0
+            mock_run_ingest.assert_called_once()
 
     def test_init_command_basic(self, runner, mock_settings):
         """Test standalone init command."""

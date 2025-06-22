@@ -259,8 +259,9 @@ class TestRunInit:
         """Test successful initialization."""
         mock_settings = Mock()
         mock_settings.qdrant_collection_name = "test_collection"
-
-        with patch("qdrant_loader.core.init_collection.init_collection") as mock_init:
+        
+        # Mock at the right level where run_init imports it
+        with patch("qdrant_loader.cli.ingest_commands.init_collection") as mock_init:
             mock_init.return_value = True
             await run_init(mock_settings, False)
             mock_init.assert_called_once_with(mock_settings, False)
