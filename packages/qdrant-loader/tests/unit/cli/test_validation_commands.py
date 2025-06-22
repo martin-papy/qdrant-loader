@@ -1,14 +1,16 @@
 """Test validation commands with simplified approach."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from click.testing import CliRunner
-import json
+
 
 @pytest.fixture
 def cli_runner():
     """Provide CLI runner for testing commands."""
     return CliRunner()
+
 
 @pytest.fixture
 def mock_settings():
@@ -25,6 +27,7 @@ def mock_settings():
     settings.retry_delay_multiplier = 2.0
     settings.retry_delay_jitter_factor = 0.1
     return settings
+
 
 class TestValidationCommands:
     """Test validation commands with simplified mocking."""
@@ -48,12 +51,12 @@ class TestValidationCommands:
     ):
         """Test successful validation."""
         from qdrant_loader.cli.validation_commands import validate_graph
-        
+
         # Setup mocks
         mock_check_settings.return_value = mock_settings
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
-        
+
         # Mock validation report
         mock_report = Mock()
         mock_report.to_dict.return_value = {"test": "report"}
@@ -64,11 +67,11 @@ class TestValidationCommands:
         mock_report.info_issues = 0
         mock_report.system_health_score = 100.0
         mock_report.auto_repairable_issues = 0
-        
+
         mock_asyncio_run.return_value = mock_report
 
         result = cli_runner.invoke(validate_graph)
-        
+
         assert result.exit_code == 0
         assert "✅ Validation completed successfully" in result.output
 
@@ -80,17 +83,18 @@ class TestValidationCommands:
     ):
         """Test error handling in validate_graph."""
         from qdrant_loader.cli.validation_commands import validate_graph
-        
+
         mock_validate_flags.side_effect = Exception("Test error")
         mock_logger = Mock()
         mock_get_logger.return_value = mock_logger
 
         result = cli_runner.invoke(validate_graph)
-        
+
         assert result.exit_code == 1
         assert "Graph validation failed: Test error" in result.output
         # Ensure _run_validation was not called since validation_workspace_flags failed early
         mock_run_validation.assert_not_called()
+
 
 class TestAsyncHelperFunctions:
     """Test async helper functions with simple mocking."""
@@ -99,19 +103,27 @@ class TestAsyncHelperFunctions:
     async def test_run_validation_function(self, mock_settings):
         """Test _run_validation async function."""
         from qdrant_loader.cli.validation_commands import _run_validation
-        
-        with patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant, \
-             patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j, \
-             patch("qdrant_loader.cli.validation_commands.IDMappingManager") as mock_id_mapping, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystem") as mock_system, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator") as mock_integrator_class:
-            
+
+        with (
+            patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant,
+            patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j,
+            patch(
+                "qdrant_loader.cli.validation_commands.IDMappingManager"
+            ) as mock_id_mapping,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystem"
+            ) as mock_system,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator"
+            ) as mock_integrator_class,
+        ):
+
             # Setup mock instances
             mock_qdrant.return_value = Mock()
             mock_neo4j.return_value = Mock()
             mock_id_mapping.return_value = Mock()
             mock_system.return_value = Mock()
-            
+
             # Setup integrator
             mock_integrator = AsyncMock()
             mock_integrator_class.return_value = mock_integrator
@@ -130,13 +142,14 @@ class TestAsyncHelperFunctions:
             assert result == mock_report
             mock_integrator.trigger_validation.assert_called_once()
 
+
 class TestValidationGroup:
     """Test validation command group."""
 
     def test_validation_group_help(self, cli_runner):
         """Test validation group help."""
         from qdrant_loader.cli.validation_commands import validation_group
-        
+
         result = cli_runner.invoke(validation_group, ["--help"])
         assert result.exit_code == 0
-        assert "Validation and repair commands" in result.output 
+        assert "Validation and repair commands" in result.output

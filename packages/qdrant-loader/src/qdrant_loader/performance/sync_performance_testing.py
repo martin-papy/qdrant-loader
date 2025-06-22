@@ -19,7 +19,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 import psutil
-
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
 from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager
 from qdrant_loader.core.managers.neo4j_manager import Neo4jManager

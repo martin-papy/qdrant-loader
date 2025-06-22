@@ -7,7 +7,6 @@ including graph validation, repair execution, scheduling, and status monitoring.
 import asyncio
 import json
 from pathlib import Path
-from typing import Optional
 
 import click
 from click.exceptions import ClickException
@@ -15,6 +14,15 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 
+# Import managers for module-level access (tests expect these to be accessible)
+from ..core.managers import IDMappingManager, Neo4jManager, QdrantManager
+
+# Import validation classes for module-level access (tests expect these to be accessible)
+from ..core.validation_repair import (
+    ValidationIssue,
+    ValidationRepairSystem,
+    ValidationRepairSystemIntegrator,
+)
 from .core import (
     CONFIG_OPTION,
     ENV_OPTION,
@@ -26,16 +34,6 @@ from .core import (
     setup_logging,
     setup_workspace,
     validate_workspace_flags,
-)
-
-# Import managers for module-level access (tests expect these to be accessible)
-from ..core.managers import IDMappingManager, Neo4jManager, QdrantManager
-
-# Import validation classes for module-level access (tests expect these to be accessible)
-from ..core.validation_repair import (
-    ValidationRepairSystem,
-    ValidationRepairSystemIntegrator,
-    ValidationIssue,
 )
 
 
@@ -82,16 +80,16 @@ def validation_group():
     help="Custom validation ID for tracking. If not provided, one will be generated.",
 )
 def validate_graph(
-    workspace: Optional[Path],
+    workspace: Path | None,
     log_level: str,
-    config: Optional[Path],
-    env: Optional[Path],
-    scanners: Optional[str],
-    max_entities: Optional[int],
+    config: Path | None,
+    env: Path | None,
+    scanners: str | None,
+    max_entities: int | None,
     auto_repair: bool,
-    output: Optional[Path],
+    output: Path | None,
     timeout: int,
-    validation_id: Optional[str],
+    validation_id: str | None,
 ):
     """Trigger immediate validation of the knowledge graph.
 
@@ -172,7 +170,7 @@ def validate_graph(
             echo(json.dumps(report_dict, indent=2))
 
         # Print summary
-        echo(f"\n📈 Summary:")
+        echo("\n📈 Summary:")
         echo(f"  Total Issues: {report.total_issues}")
         echo(f"  Critical: {report.critical_issues}")
         echo(f"  Error: {report.error_issues}")
@@ -238,16 +236,16 @@ def validate_graph(
     help="Custom repair operation ID for tracking.",
 )
 def repair_inconsistencies(
-    workspace: Optional[Path],
+    workspace: Path | None,
     log_level: str,
-    config: Optional[Path],
-    env: Optional[Path],
-    report: Optional[Path],
-    issue_ids: Optional[str],
-    max_repairs: Optional[int],
+    config: Path | None,
+    env: Path | None,
+    report: Path | None,
+    issue_ids: str | None,
+    max_repairs: int | None,
     dry_run: bool,
     force: bool,
-    repair_id: Optional[str],
+    repair_id: str | None,
 ):
     """Repair validation issues found in the knowledge graph.
 
@@ -295,7 +293,7 @@ def repair_inconsistencies(
 
         if report:
             # Load issues from validation report
-            with open(report, "r") as f:
+            with open(report) as f:
                 report_data = json.load(f)
 
             # Extract issues from report
@@ -363,7 +361,7 @@ def repair_inconsistencies(
 
         # Show results
         successful_repairs = sum(1 for r in repair_results if r.get("success", False))
-        echo(f"\n📈 Repair Results:")
+        echo("\n📈 Repair Results:")
         echo(f"  Total Attempted: {len(repair_results)}")
         echo(f"  Successful: {successful_repairs}")
         echo(f"  Failed: {len(repair_results) - successful_repairs}")
@@ -421,13 +419,13 @@ def repair_inconsistencies(
     help="Enable or disable scheduled validation.",
 )
 def schedule_validation(
-    workspace: Optional[Path],
+    workspace: Path | None,
     log_level: str,
-    config: Optional[Path],
-    env: Optional[Path],
+    config: Path | None,
+    env: Path | None,
     interval: str,
-    time: Optional[str],
-    day: Optional[str],
+    time: str | None,
+    day: str | None,
     auto_repair: bool,
     enable: bool,
 ):
@@ -554,12 +552,12 @@ def schedule_validation(
     help="Output status information in JSON format.",
 )
 def validation_status(
-    workspace: Optional[Path],
+    workspace: Path | None,
     log_level: str,
-    config: Optional[Path],
-    env: Optional[Path],
-    history: Optional[int],
-    filter_status: Optional[str],
+    config: Path | None,
+    env: Path | None,
+    history: int | None,
+    filter_status: str | None,
     json_output: bool,
 ):
     """Display validation system status and history.
@@ -626,7 +624,7 @@ def validation_status(
 
             # Statistics
             stats = status_info.get("statistics", {})
-            echo(f"\n📈 Statistics:")
+            echo("\n📈 Statistics:")
             echo(f"  Total Validations: {stats.get('total_validations', 0)}")
             echo(f"  Successful: {stats.get('successful_validations', 0)}")
             echo(f"  Failed: {stats.get('failed_validations', 0)}")
@@ -636,7 +634,7 @@ def validation_status(
             # Last validation
             last_validation = status_info.get("last_validation")
             if last_validation:
-                echo(f"\n🕐 Last Validation:")
+                echo("\n🕐 Last Validation:")
                 echo(f"  Report ID: {last_validation.get('report_id', 'unknown')}")
                 echo(f"  Generated: {last_validation.get('generated_at', 'unknown')}")
                 echo(
@@ -677,9 +675,9 @@ def validation_status(
 
 async def _run_validation(
     settings,
-    validation_id: Optional[str],
-    scanners: Optional[list[str]],
-    max_entities: Optional[int],
+    validation_id: str | None,
+    scanners: list[str] | None,
+    max_entities: int | None,
     auto_repair: bool,
     timeout: int,
 ):
@@ -733,8 +731,8 @@ async def _run_validation(
 async def _run_repairs(
     settings,
     issues: list,
-    repair_id: Optional[str],
-    max_repairs: Optional[int],
+    repair_id: str | None,
+    max_repairs: int | None,
 ):
     """Run repair operations asynchronously."""
 
@@ -811,8 +809,8 @@ async def _run_repairs(
 
 async def _get_validation_status(
     settings,
-    history_limit: Optional[int],
-    status_filter: Optional[str],
+    history_limit: int | None,
+    status_filter: str | None,
 ):
     """Get validation system status asynchronously."""
 
@@ -874,10 +872,10 @@ async def _get_validation_status(
 @CONFIG_OPTION
 @ENV_OPTION
 def validate_command(
-    workspace: Optional[Path],
+    workspace: Path | None,
     log_level: str,
-    config: Optional[Path],
-    env: Optional[Path],
+    config: Path | None,
+    env: Path | None,
 ):
     """Quick validation command (backward compatibility).
 
@@ -904,14 +902,15 @@ def validate_command(
 async def _configure_scheduled_validation(
     settings,
     interval: str,
-    time: Optional[str],
-    day: Optional[str],
+    time: str | None,
+    day: str | None,
     auto_repair: bool,
 ) -> dict:
     """Configure scheduled validation asynchronously."""
     from datetime import datetime
-    from qdrant_loader.core.validation_repair import ValidationScheduler
+
     from qdrant_loader.config.validation import ValidationConfig
+    from qdrant_loader.core.validation_repair import ValidationScheduler
 
     try:
         # Initialize managers

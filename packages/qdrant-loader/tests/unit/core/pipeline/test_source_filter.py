@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-
 from qdrant_loader.config import SourcesConfig
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.pipeline.source_filter import SourceFilter

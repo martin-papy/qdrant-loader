@@ -8,7 +8,7 @@ web-specific metadata.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup, Tag
@@ -45,8 +45,8 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         self.domain = urlparse(base_url).netloc
 
     def _extract_author_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract author information from HTML meta tags and content.
 
         Args:
@@ -80,8 +80,8 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return authors if authors else None
 
     def _extract_timestamp_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extract timestamp information from meta tags and content.
 
         Args:
@@ -115,8 +115,8 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return timestamps if timestamps else None
 
     def _extract_relationship_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract web hierarchy and navigation relationships.
 
         Args:
@@ -150,8 +150,8 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return relationships if relationships else None
 
     def _extract_cross_reference_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract internal and external links as cross-references.
 
         Args:
@@ -189,8 +189,8 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return cross_references if cross_references else None
 
     def _extract_source_specific_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extract web-specific metadata.
 
         Args:
@@ -234,7 +234,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
         return metadata if metadata else None
 
-    def extract_metadata(self, url: str, content: str) -> Dict[str, Any]:
+    def extract_metadata(self, url: str, content: str) -> dict[str, Any]:
         """Main entry point for metadata extraction from PublicDocs connector.
 
         Args:
@@ -258,7 +258,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return {"enhanced_metadata": metadata} if metadata else {}
 
     # Helper methods for author extraction
-    def _extract_authors_from_meta(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    def _extract_authors_from_meta(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
         """Extract authors from HTML meta tags."""
         authors = []
 
@@ -291,7 +291,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_authors_from_content(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract authors from content patterns."""
         authors = []
 
@@ -324,7 +324,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_authors_from_structured_data(
         self, soup: BeautifulSoup
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract authors from structured data (JSON-LD, microdata)."""
         authors = []
 
@@ -364,7 +364,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return authors
 
     # Helper methods for timestamp extraction
-    def _extract_timestamps_from_meta(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _extract_timestamps_from_meta(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Extract timestamps from meta tags."""
         timestamps = {}
 
@@ -405,7 +405,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_timestamps_from_content(
         self, soup: BeautifulSoup, url: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract timestamps from content."""
         timestamps = {}
 
@@ -445,7 +445,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_timestamps_from_structured_data(
         self, soup: BeautifulSoup
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract timestamps from structured data."""
         timestamps = {}
 
@@ -511,7 +511,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
     # Helper methods for relationship extraction
     def _extract_navigation_relationships(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract navigation hierarchy relationships."""
         relationships = []
 
@@ -543,7 +543,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_breadcrumb_relationships(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract breadcrumb hierarchy relationships."""
         relationships = []
 
@@ -589,7 +589,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_toc_relationships(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract table of contents relationships."""
         relationships = []
 
@@ -640,7 +640,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
     # Helper methods for cross-reference extraction
     def _extract_internal_links(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract internal links as cross-references."""
         cross_references = []
 
@@ -672,7 +672,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_external_links(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract external links as cross-references."""
         cross_references = []
 
@@ -703,7 +703,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_file_links(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract links to files (PDFs, docs, etc.)."""
         cross_references = []
 
@@ -743,7 +743,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_anchor_links(
         self, soup: BeautifulSoup, url: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract internal anchor/fragment links."""
         cross_references = []
 
@@ -768,7 +768,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
         return cross_references[:15]  # Limit anchor links
 
     # Helper methods for HTML and content analysis
-    def _extract_html_metadata(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _extract_html_metadata(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Extract HTML meta information."""
         metadata = {}
 
@@ -814,7 +814,7 @@ class PublicDocsRelationshipExtractor(BaseMetadataExtractor):
 
         return metadata
 
-    def _extract_content_analysis(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _extract_content_analysis(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Extract content analysis metadata."""
         metadata = {}
 

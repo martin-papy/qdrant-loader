@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.fusion_engine import (
     ResultFusionEngine,
 )

@@ -61,11 +61,11 @@ class ConfluenceConnector(BaseConnector):
         if self.enable_enhanced_metadata:
             try:
                 # Lazy import to avoid circular dependencies
-                from qdrant_loader.connectors.metadata.base import (
-                    MetadataExtractionConfig,
-                )
                 from qdrant_loader.connectors.confluence.relationship_extractor import (
                     ConfluenceRelationshipExtractor,
+                )
+                from qdrant_loader.connectors.metadata.base import (
+                    MetadataExtractionConfig,
                 )
 
                 # Create metadata extraction config with sensible defaults

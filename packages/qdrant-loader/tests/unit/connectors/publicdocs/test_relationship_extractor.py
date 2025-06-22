@@ -5,9 +5,9 @@ Comprehensive test suite covering HTML parsing, metadata extraction,
 author detection, timestamp parsing, relationship extraction, and error handling.
 """
 
-import pytest
 from unittest.mock import patch
 
+import pytest
 from qdrant_loader.connectors.metadata.base import MetadataExtractionConfig
 from qdrant_loader.connectors.publicdocs.relationship_extractor import (
     PublicDocsRelationshipExtractor,

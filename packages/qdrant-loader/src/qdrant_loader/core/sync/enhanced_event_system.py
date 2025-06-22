@@ -6,14 +6,10 @@ operations with operation-specific handling for CREATE, UPDATE, and DELETE.
 """
 
 import asyncio
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from ..graphiti_temporal_integration import GraphitiTemporalIntegration
-    from ..operation_differentiation import (
-        OperationCharacteristics,
-    )
     from .conflict_monitor import SyncConflictMonitor
 
 from ...utils.logging import LoggingConfig
@@ -482,7 +478,7 @@ class EnhancedSyncEventSystem:
                         logger.debug(
                             f"Got operation {operation.operation_id} from legacy queue"
                         )
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         logger.debug("Operation processor timeout, continuing...")
                         continue
 

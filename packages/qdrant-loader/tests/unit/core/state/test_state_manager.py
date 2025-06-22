@@ -11,12 +11,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 import pytest_asyncio
 from pydantic import AnyUrl
-from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 from qdrant_loader.config.source_config import SourceConfig
-from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
+from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import DatabaseError
 from qdrant_loader.core.state.state_manager import StateManager
+from sqlalchemy.exc import OperationalError as SQLAlchemyOperationalError
 
 
 @pytest.fixture
@@ -147,8 +147,8 @@ async def test_update_last_ingestion(state_manager):
 
     # Verify the update worked by checking the record exists
     async with state_manager._session_factory() as session:
-        from sqlalchemy import select
         from qdrant_loader.core.state.models import IngestionHistory
+        from sqlalchemy import select
 
         result = await session.execute(
             select(IngestionHistory).where(

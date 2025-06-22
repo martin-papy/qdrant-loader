@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from .sources import SourcesConfig
 

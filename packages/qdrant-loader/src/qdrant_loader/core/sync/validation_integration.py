@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from ...config.validation import ValidationConfig
 from ...utils.logging import LoggingConfig
-from .event_system import ChangeEvent, ChangeType, DatabaseType
+from .event_system import ChangeEvent, ChangeType
 from .operations import EnhancedSyncOperation
 from .types import SyncOperationType
 
@@ -278,7 +278,7 @@ class ValidationIntegrationManager:
 
                     if self.config.log_validation_events:
                         logger.info(
-                            f"Validation completed successfully",
+                            "Validation completed successfully",
                             validation_key=validation_key,
                             retry_count=retry_count,
                         )
@@ -355,7 +355,7 @@ class ValidationIntegrationManager:
             self._stats["auto_repairs_triggered"] += 1
 
             logger.info(
-                f"Triggering auto-repair for validation issues",
+                "Triggering auto-repair for validation issues",
                 validation_key=validation_key,
                 issues_found=validation_result.total_issues,
             )
@@ -377,7 +377,7 @@ class ValidationIntegrationManager:
                 if successful_repairs > 0:
                     self._stats["auto_repairs_completed"] += 1
                     logger.info(
-                        f"Auto-repair completed successfully",
+                        "Auto-repair completed successfully",
                         validation_key=validation_key,
                         repairs_successful=successful_repairs,
                     )

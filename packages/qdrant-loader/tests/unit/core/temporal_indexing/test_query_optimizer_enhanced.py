@@ -1,19 +1,17 @@
 """Enhanced tests for temporal query optimizer focusing on edge cases and missed coverage."""
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from qdrant_loader.core.temporal_indexing.query_optimizer import TemporalQueryOptimizer
+import pytest
 from qdrant_loader.core.temporal_indexing.index_types import (
     IndexType,
-    IndexStatus,
     TemporalIndex,
     TemporalIndexConfig,
     TemporalIndexStatistics,
     TemporalQueryHint,
-    TemporalQueryPlan,
 )
+from qdrant_loader.core.temporal_indexing.query_optimizer import TemporalQueryOptimizer
 
 
 class TestTemporalQueryOptimizerEnhanced:

@@ -10,7 +10,6 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-
 from qdrant_loader.config import (
     ThreadSafeSettingsManager,
     _settings_manager,

@@ -1,12 +1,13 @@
 """Focused tests to boost MCP handler coverage."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.processor import QueryProcessor
-from qdrant_loader_mcp_server.search.models import SearchResult
 from qdrant_loader_mcp_server.search.exceptions import SearchEngineError
+from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.processor import QueryProcessor
 
 
 class TestMCPHandlerCoverageBoost:

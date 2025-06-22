@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from openai import AsyncOpenAI
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.models import (
     EnhancedSearchConfig,
     EnhancedSearchResult,

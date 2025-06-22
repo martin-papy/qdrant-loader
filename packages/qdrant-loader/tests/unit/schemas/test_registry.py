@@ -1,37 +1,24 @@
 """Tests for schema registry."""
 
-import pytest
-from unittest.mock import patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
-from graphiti_core.nodes import EntityNode
+import pytest
 from graphiti_core.edges import EntityEdge
+from graphiti_core.nodes import EntityNode
 from pydantic import Field
-
-from qdrant_loader.schemas.registry import (
-    SchemaRegistry,
-    get_schema_registry,
-    register_custom_schema,
-    create_document_node,
-    create_contains_edge,
+from qdrant_loader.schemas.edges import (
+    ContainsEdge,
 )
 from qdrant_loader.schemas.nodes import (
     DocumentNode,
-    SourceNode,
-    ConceptNode,
-    PersonNode,
-    OrganizationNode,
-    ProjectNode,
-    ChunkNode,
 )
-from qdrant_loader.schemas.edges import (
-    DocumentRelationshipEdge,
-    ContainsEdge,
-    ReferencesEdge,
-    AuthoredByEdge,
-    BelongsToEdge,
-    RelatedToEdge,
-    DerivedFromEdge,
+from qdrant_loader.schemas.registry import (
+    SchemaRegistry,
+    create_contains_edge,
+    create_document_node,
+    get_schema_registry,
+    register_custom_schema,
 )
 
 

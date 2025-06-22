@@ -6,22 +6,18 @@ This file focuses on the Priority #1 item from the Testing Coverage Plan:
 - Focus areas: Error handling, method validation, complex tool operations
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.exceptions import (
     SearchEngineError,
-    QdrantConnectionError,
-    Neo4jConnectionError,
-    OpenAIEmbeddingError,
-    SearchConfigurationError,
 )
 
 
 class TestMCPHandlerMissingCoverage:
     """Test class targeting specific uncovered lines in MCP handler."""
-    
+
     @pytest.fixture
     def handler(self):
         """Create handler with mocked dependencies."""
@@ -37,9 +33,9 @@ class TestMCPHandlerMissingCoverage:
             "jsonrpc": "2.0",
             "id": "test-1",
             "method": ["invalid_method_type"],  # Not a string
-            "params": {}
+            "params": {},
         }
-        
+
         response = await handler.handle_request(request)
         assert response["error"]["code"] == -32600
         assert "valid JSON-RPC 2.0 request" in response["error"]["data"]
@@ -53,29 +49,28 @@ class TestMCPHandlerMissingCoverage:
             "method": "tools/call",
             "params": {
                 "name": "enrich_with_relationships",
-                "arguments": {
-                    "entity_ids": [],  # Empty list
-                    "max_depth": 2
-                }
-            }
+                "arguments": {"entity_ids": [], "max_depth": 2},  # Empty list
+            },
         }
-        
+
         response = await handler.handle_request(request)
         assert response["error"]["code"] == -32602
         assert "entity_ids cannot be empty" in response["error"]["data"]
 
     @pytest.mark.asyncio
-    async def test_handle_enrich_with_relationships_graph_search_available(self, handler):
+    async def test_handle_enrich_with_relationships_graph_search_available(
+        self, handler
+    ):
         """Test lines 1467-1550 - graph search available path."""
         # Mock enhanced search engine with graph search
         enhanced_engine = AsyncMock()
         graph_search = AsyncMock()
-        
+
         # Mock the graph search module structure
         graph_search.neo4j_manager = AsyncMock()
         graph_search.graphiti_manager = AsyncMock()
         graph_search.search = AsyncMock()
-        
+
         # Mock search results
         mock_result = MagicMock()
         mock_result.id = "entity_1"
@@ -87,13 +82,13 @@ class TestMCPHandlerMissingCoverage:
         mock_result.temporal_relevance = 0.9
         mock_result.combined_score = 0.85
         mock_result.entity_ids = ["entity_2", "entity_3"]
-        
+
         graph_search.search.return_value = [mock_result]
         enhanced_engine.graph_search = graph_search
-        
+
         # Setup the search engine to have enhanced hybrid search
         handler.search_engine.enhanced_hybrid_search = enhanced_engine
-        
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
@@ -106,18 +101,18 @@ class TestMCPHandlerMissingCoverage:
                     "include_centrality": True,
                     "include_temporal": True,
                     "relationship_types": ["RELATED_TO"],
-                    "limit": 20
-                }
-            }
+                    "limit": 20,
+                },
+            },
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         # Verify successful response structure
         assert "result" in response
         assert "enriched_entities" in response["result"]
         assert len(response["result"]["enriched_entities"]) == 1
-        
+
         # Verify the graph search was called correctly
         graph_search.search.assert_called_once()
         call_args = graph_search.search.call_args
@@ -126,34 +121,33 @@ class TestMCPHandlerMissingCoverage:
         assert call_args[1]["max_depth"] == 2
 
     @pytest.mark.asyncio
-    async def test_handle_enrich_with_relationships_entity_processing_error(self, handler):
+    async def test_handle_enrich_with_relationships_entity_processing_error(
+        self, handler
+    ):
         """Test lines 1550-1570 - entity processing error handling."""
         # Mock enhanced search engine with graph search that throws an error
         enhanced_engine = AsyncMock()
         graph_search = AsyncMock()
-        
+
         graph_search.neo4j_manager = AsyncMock()
         graph_search.graphiti_manager = AsyncMock()
         graph_search.search = AsyncMock(side_effect=Exception("Processing error"))
-        
+
         enhanced_engine.graph_search = graph_search
         handler.search_engine.enhanced_hybrid_search = enhanced_engine
-        
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
             "method": "tools/call",
             "params": {
                 "name": "enrich_with_relationships",
-                "arguments": {
-                    "entity_ids": ["entity_1"],
-                    "max_depth": 2
-                }
-            }
+                "arguments": {"entity_ids": ["entity_1"], "max_depth": 2},
+            },
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         # Should handle the error gracefully and include error in response
         assert "result" in response
         enriched_entities = response["result"]["enriched_entities"]
@@ -162,29 +156,28 @@ class TestMCPHandlerMissingCoverage:
         assert "Processing error" in enriched_entities[0]["error"]
 
     @pytest.mark.asyncio
-    async def test_handle_enrich_with_relationships_no_graph_search_fallback(self, handler):
+    async def test_handle_enrich_with_relationships_no_graph_search_fallback(
+        self, handler
+    ):
         """Test lines 1620-1630 - graph search unavailable fallback."""
         # Mock enhanced search engine without graph search capability
         enhanced_engine = AsyncMock()
         enhanced_engine.graph_search = None  # No graph search available
-        
+
         handler.search_engine.enhanced_hybrid_search = enhanced_engine
-        
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
             "method": "tools/call",
             "params": {
                 "name": "enrich_with_relationships",
-                "arguments": {
-                    "entity_ids": ["entity_1"],
-                    "max_depth": 2
-                }
-            }
+                "arguments": {"entity_ids": ["entity_1"], "max_depth": 2},
+            },
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         # Should use content-based fallback
         assert "result" in response
         assert "Graph Search Unavailable" in response["result"]["content"][0]["text"]
@@ -193,36 +186,36 @@ class TestMCPHandlerMissingCoverage:
     async def test_handle_enrich_with_relationships_no_enhanced_search(self, handler):
         """Test lines 1680-1688 - no enhanced search engine available."""
         # Remove enhanced search capability entirely
-        delattr(handler.search_engine, 'enhanced_hybrid_search')
-        
+        delattr(handler.search_engine, "enhanced_hybrid_search")
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
             "method": "tools/call",
             "params": {
                 "name": "enrich_with_relationships",
-                "arguments": {
-                    "entity_ids": ["entity_1"],
-                    "max_depth": 2
-                }
-            }
+                "arguments": {"entity_ids": ["entity_1"], "max_depth": 2},
+            },
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         # Should indicate enhanced search is not available
         assert "result" in response
-        assert "Enhanced Search Engine Unavailable" in response["result"]["content"][0]["text"]
+        assert (
+            "Enhanced Search Engine Unavailable"
+            in response["result"]["content"][0]["text"]
+        )
 
     @pytest.mark.asyncio
     async def test_handle_enrich_relationships_filtering_by_type(self, handler):
         """Test relationship type filtering logic in lines 1488-1495."""
         enhanced_engine = AsyncMock()
         graph_search = AsyncMock()
-        
+
         graph_search.neo4j_manager = AsyncMock()
         graph_search.graphiti_manager = AsyncMock()
-        
+
         # Mock multiple results with different relationship types
         mock_result1 = MagicMock()
         mock_result1.id = "entity_1"
@@ -234,7 +227,7 @@ class TestMCPHandlerMissingCoverage:
         mock_result1.temporal_relevance = 0.9
         mock_result1.combined_score = 0.85
         mock_result1.entity_ids = ["entity_2"]
-        
+
         mock_result2 = MagicMock()
         mock_result2.id = "entity_2"
         mock_result2.content = "Content 2"
@@ -245,11 +238,11 @@ class TestMCPHandlerMissingCoverage:
         mock_result2.temporal_relevance = 0.8
         mock_result2.combined_score = 0.75
         mock_result2.entity_ids = ["entity_3"]
-        
+
         graph_search.search.return_value = [mock_result1, mock_result2]
         enhanced_engine.graph_search = graph_search
         handler.search_engine.enhanced_hybrid_search = enhanced_engine
-        
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
@@ -259,13 +252,13 @@ class TestMCPHandlerMissingCoverage:
                 "arguments": {
                     "entity_ids": ["entity_1"],
                     "relationship_types": ["RELATED_TO"],  # Filter for specific type
-                    "max_depth": 2
-                }
-            }
+                    "max_depth": 2,
+                },
+            },
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         # Should only include the result with matching relationship type
         enriched_entity = response["result"]["enriched_entities"][0]
         assert enriched_entity["relationship_count"] == 1  # Only one match
@@ -275,11 +268,13 @@ class TestMCPHandlerMissingCoverage:
     async def test_validation_fusion_strategy_invalid_enum(self, handler):
         """Test lines 54-70 - invalid fusion strategy validation."""
         # Need to mock the capabilities properly
-        handler.search_engine.get_capabilities = AsyncMock(return_value={
-            "enhanced_hybrid_search": True,
-            "fusion_strategies": ["basic", "rrf", "weighted"]
-        })
-        
+        handler.search_engine.get_capabilities = AsyncMock(
+            return_value={
+                "enhanced_hybrid_search": True,
+                "fusion_strategies": ["basic", "rrf", "weighted"],
+            }
+        )
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
@@ -288,11 +283,11 @@ class TestMCPHandlerMissingCoverage:
                 "name": "enhanced_search",
                 "arguments": {
                     "query": "test query",
-                    "fusion_strategy": "INVALID_STRATEGY"  # Invalid enum value
-                }
-            }
+                    "fusion_strategy": "INVALID_STRATEGY",  # Invalid enum value
+                },
+            },
         }
-        
+
         response = await handler.handle_request(request)
         # The error occurs during enhanced search processing, not validation
         assert response["error"]["code"] == -32603
@@ -305,10 +300,10 @@ class TestMCPHandlerMissingCoverage:
         request = {
             "jsonrpc": "2.0",
             "method": "some_notification",
-            "params": {}
+            "params": {},
             # No "id" field - this is a notification
         }
-        
+
         response = await handler.handle_request(request)
         assert response == {}  # Should return empty dict for notifications
 
@@ -321,20 +316,20 @@ class TestMCPHandlerMissingCoverage:
                 message="Test search error",
                 error_code="TEST_ERROR",
                 details={"component": "test"},
-                recoverable=True
+                recoverable=True,
             )
         )
-        
+
         request = {
             "jsonrpc": "2.0",
             "id": "test-1",
             "method": "search",
-            "params": {"query": "test"}
+            "params": {"query": "test"},
         }
-        
+
         response = await handler.handle_request(request)
-        
+
         assert response["error"]["code"] == -32603
         assert "Search error" in response["error"]["message"]
         assert "error_code" in response["error"]["data"]
-        assert response["error"]["data"]["error_code"] == "TEST_ERROR" 
+        assert response["error"]["data"]["error_code"] == "TEST_ERROR"

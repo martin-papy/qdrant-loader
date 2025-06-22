@@ -13,23 +13,17 @@ This test suite covers:
 - Context manager functionality
 """
 
-import asyncio
-import json
-import time
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from typing import Any
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
-from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
 from qdrant_loader.config.graphiti import (
     GraphitiConfig,
-    GraphitiLLMConfig,
     GraphitiEmbedderConfig,
+    GraphitiLLMConfig,
     GraphitiOperationalConfig,
 )
 from qdrant_loader.config.neo4j import Neo4jConfig
+from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
 
 
 class TestGraphitiManager:

@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli import create_cli
 from qdrant_loader.cli.core import (
     check_for_updates,
@@ -259,7 +258,7 @@ class TestRunInit:
         """Test successful initialization."""
         mock_settings = Mock()
         mock_settings.qdrant_collection_name = "test_collection"
-        
+
         # Mock at the right level where run_init imports it
         with patch("qdrant_loader.cli.ingest_commands.init_collection") as mock_init:
             mock_init.return_value = True

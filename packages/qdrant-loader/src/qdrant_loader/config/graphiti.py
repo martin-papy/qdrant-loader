@@ -6,7 +6,7 @@ including LLM client settings, embedder configuration, and operational parameter
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

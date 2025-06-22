@@ -5,7 +5,6 @@ import tempfile
 
 import pytest
 from pydantic import AnyUrl
-
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.git.config import GitRepoConfig
 from qdrant_loader.connectors.git.file_processor import FileProcessor

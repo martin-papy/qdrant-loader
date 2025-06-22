@@ -77,11 +77,11 @@ class JiraConnector(BaseConnector):
         if config.enable_enhanced_metadata:
             try:
                 # Lazy import to avoid circular dependencies
-                from qdrant_loader.connectors.metadata.base import (
-                    MetadataExtractionConfig,
-                )
                 from qdrant_loader.connectors.jira.relationship_extractor import (
                     JiraRelationshipExtractor,
+                )
+                from qdrant_loader.connectors.metadata.base import (
+                    MetadataExtractionConfig,
                 )
 
                 metadata_config = MetadataExtractionConfig()

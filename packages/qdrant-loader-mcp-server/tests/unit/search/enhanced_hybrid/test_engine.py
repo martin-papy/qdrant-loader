@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.engine import (
     EnhancedHybridSearchEngine,
 )

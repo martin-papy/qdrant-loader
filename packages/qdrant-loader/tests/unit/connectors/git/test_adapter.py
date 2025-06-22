@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 
 import git
 import pytest
-
 from qdrant_loader.connectors.git.adapter import GitPythonAdapter
 
 

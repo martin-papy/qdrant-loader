@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-
 from qdrant_loader.config.migration import (
     ConfigMigrationError,
     ConfigMigrator,

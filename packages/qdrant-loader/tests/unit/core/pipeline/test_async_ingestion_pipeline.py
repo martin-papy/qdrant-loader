@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline
 from qdrant_loader.core.document import Document

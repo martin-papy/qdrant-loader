@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.sync.event_system import ChangeEvent, ChangeType, DatabaseType
 from qdrant_loader.core.types import EntityType
 from qdrant_loader.core.validation_repair.event_integration import (
@@ -91,8 +90,8 @@ def sample_validation_report():
 
     # Add some sample issues
     from qdrant_loader.core.validation_repair.models import (
-        ValidationIssue,
         ValidationCategory,
+        ValidationIssue,
         ValidationSeverity,
     )
 
@@ -520,10 +519,10 @@ class TestBatchValidationLogic:
             # Mock the task to avoid creating actual async task
             mock_task = AsyncMock()
             mock_create_task.return_value = mock_task
-            
+
             await integrator._handle_pending_validation()
             mock_create_task.assert_called_once()
-            
+
             # Verify the timer was set
             assert integrator._batch_validation_timer == mock_task
 

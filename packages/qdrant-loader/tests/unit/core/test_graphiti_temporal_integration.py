@@ -4,22 +4,21 @@ This module tests the Graphiti temporal integration functionality including
 episodic processing, temporal edge invalidation, and document versioning.
 """
 
-import pytest
 import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from graphiti_core.nodes import EpisodeType
-
 from qdrant_loader.core.graphiti_temporal_integration import (
     GraphitiTemporalIntegration,
     GraphitiTemporalOperation,
     GraphitiTemporalOperationType,
 )
-from qdrant_loader.core.types import EntityType
 from qdrant_loader.core.managers import MappingType
 from qdrant_loader.core.sync import EnhancedSyncOperation
 from qdrant_loader.core.sync.types import SyncOperationType
+from qdrant_loader.core.types import EntityType
 
 
 class TestGraphitiTemporalOperationType:

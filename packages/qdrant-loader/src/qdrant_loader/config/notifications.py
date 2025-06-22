@@ -4,7 +4,7 @@ This module defines configuration for notification settings, channels,
 and notification policies for validation and repair events.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import Field
 
@@ -20,11 +20,11 @@ class NotificationChannelConfig(BaseConfig):
         description="Type of notification channel (email, slack, webhook, log)"
     )
 
-    endpoint: Optional[str] = Field(
+    endpoint: str | None = Field(
         default=None, description="Endpoint URL for webhook/API-based channels"
     )
 
-    credentials: Dict[str, str] = Field(
+    credentials: dict[str, str] = Field(
         default_factory=dict, description="Credentials for the notification channel"
     )
 
@@ -40,11 +40,11 @@ class NotificationChannelConfig(BaseConfig):
         default=30, description="Timeout for notification delivery"
     )
 
-    rate_limit_per_hour: Optional[int] = Field(
+    rate_limit_per_hour: int | None = Field(
         default=None, description="Maximum notifications per hour (None for unlimited)"
     )
 
-    custom_parameters: Dict[str, Any] = Field(
+    custom_parameters: dict[str, Any] = Field(
         default_factory=dict, description="Channel-specific custom parameters"
     )
 
@@ -68,7 +68,7 @@ class NotificationTemplateConfig(BaseConfig):
         default=False, description="Include metadata in notifications"
     )
 
-    custom_fields: Dict[str, str] = Field(
+    custom_fields: dict[str, str] = Field(
         default_factory=dict, description="Custom fields to include in notifications"
     )
 
@@ -81,7 +81,7 @@ class NotificationSettingsConfig(BaseConfig):
         default=True, description="Enable notifications globally"
     )
 
-    default_channels: List[str] = Field(
+    default_channels: list[str] = Field(
         default_factory=lambda: ["log"], description="Default notification channels"
     )
 
@@ -98,7 +98,7 @@ class NotificationSettingsConfig(BaseConfig):
     )
 
     # Notification channels
-    channels: Dict[str, NotificationChannelConfig] = Field(
+    channels: dict[str, NotificationChannelConfig] = Field(
         default_factory=lambda: {
             "log": NotificationChannelConfig(
                 enabled=True,
@@ -143,7 +143,7 @@ class NotificationSettingsConfig(BaseConfig):
     )
 
     # Event-specific notification settings
-    validation_events: Dict[str, Any] = Field(
+    validation_events: dict[str, Any] = Field(
         default_factory=lambda: {
             "validation_started": {
                 "enabled": False,
@@ -173,7 +173,7 @@ class NotificationSettingsConfig(BaseConfig):
         description="Notification settings for validation events",
     )
 
-    repair_events: Dict[str, Any] = Field(
+    repair_events: dict[str, Any] = Field(
         default_factory=lambda: {
             "repair_started": {
                 "enabled": False,
@@ -204,7 +204,7 @@ class NotificationSettingsConfig(BaseConfig):
         description="Notification settings for repair events",
     )
 
-    system_events: Dict[str, Any] = Field(
+    system_events: dict[str, Any] = Field(
         default_factory=lambda: {
             "system_health_degraded": {
                 "enabled": True,
@@ -235,7 +235,7 @@ class NotificationSettingsConfig(BaseConfig):
     )
 
     # Notification templates
-    templates: Dict[str, NotificationTemplateConfig] = Field(
+    templates: dict[str, NotificationTemplateConfig] = Field(
         default_factory=lambda: {
             "validation_completed": NotificationTemplateConfig(
                 subject_template="Validation Completed - {total_issues} issues found",
@@ -291,7 +291,7 @@ Report ID: {report_id}
     )
 
     # Escalation settings
-    escalation_settings: Dict[str, Any] = Field(
+    escalation_settings: dict[str, Any] = Field(
         default_factory=lambda: {
             "enabled": True,
             "escalation_delay_minutes": 30,
@@ -308,7 +308,7 @@ Report ID: {report_id}
 
     def get_channel_config(
         self, channel_name: str
-    ) -> Optional[NotificationChannelConfig]:
+    ) -> NotificationChannelConfig | None:
         """Get configuration for a specific notification channel.
 
         Args:
@@ -319,7 +319,7 @@ Report ID: {report_id}
         """
         return self.channels.get(channel_name)
 
-    def get_enabled_channels(self) -> List[str]:
+    def get_enabled_channels(self) -> list[str]:
         """Get list of enabled notification channel names.
 
         Returns:
@@ -329,7 +329,7 @@ Report ID: {report_id}
 
     def get_template_config(
         self, template_name: str
-    ) -> Optional[NotificationTemplateConfig]:
+    ) -> NotificationTemplateConfig | None:
         """Get configuration for a specific notification template.
 
         Args:
@@ -365,7 +365,7 @@ Report ID: {report_id}
 
         return bool(event_config and event_config.get("enabled", False))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary."""
         return {
             "global_enabled": self.global_enabled,

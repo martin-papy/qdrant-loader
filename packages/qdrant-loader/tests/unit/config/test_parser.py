@@ -1,7 +1,6 @@
 """Tests for configuration parser."""
 
 import pytest
-
 from qdrant_loader.config.parser import MultiProjectConfigParser
 from qdrant_loader.config.validator import ConfigValidator
 

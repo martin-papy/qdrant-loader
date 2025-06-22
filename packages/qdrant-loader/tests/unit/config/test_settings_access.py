@@ -2,30 +2,30 @@
 Unit tests for the settings_access module.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+import pytest
 from qdrant_loader.config.settings_access import (
-    ConfigAccessor,
-    NetworkLimits,
-    TextProcessingLimits,
+    CacheLimits,
     ChunkingLimits,
+    ConfigAccessor,
     EntityExtractionLimits,
+    NetworkLimits,
     PerformanceLimits,
     PipelineLimits,
     SearchLimits,
-    CacheLimits,
-    WorkerLimits,
     ServerLimits,
-    get_chunk_size,
+    TextProcessingLimits,
+    WorkerLimits,
     get_chunk_overlap,
-    get_qdrant_url,
-    get_qdrant_collection_name,
-    get_openai_api_key,
+    get_chunk_size,
+    get_neo4j_database,
+    get_neo4j_password,
     get_neo4j_uri,
     get_neo4j_user,
-    get_neo4j_password,
-    get_neo4j_database,
+    get_openai_api_key,
+    get_qdrant_collection_name,
+    get_qdrant_url,
 )
 
 

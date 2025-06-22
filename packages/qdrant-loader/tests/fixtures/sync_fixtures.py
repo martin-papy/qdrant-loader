@@ -13,7 +13,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from qdrant_loader.config import ConfigurationManager
 from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
 from qdrant_loader.core.managers.neo4j_manager import Neo4jManager

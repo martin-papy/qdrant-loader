@@ -1,9 +1,9 @@
 """Unit tests for the metadata_extraction configuration module."""
 
-import pytest
-from pydantic import ValidationError
 from typing import Any, cast
 
+import pytest
+from pydantic import ValidationError
 from qdrant_loader.config.metadata_extraction import (
     AuthorExtractionConfig,
     AuthorExtractionMethod,

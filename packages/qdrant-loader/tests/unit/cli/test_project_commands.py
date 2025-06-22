@@ -7,7 +7,6 @@ from unittest.mock import Mock, patch
 import pytest
 from click.exceptions import ClickException
 from click.testing import CliRunner
-
 from qdrant_loader.cli.project_commands import (
     _get_all_sources_from_config,
     _initialize_project_contexts_from_config,
@@ -62,7 +61,9 @@ class TestSetupProjectManager:
                 "qdrant_loader.config.initialize_multi_file_config_with_workspace"
             ) as mock_init_config,
             patch("qdrant_loader.config.get_settings") as mock_get_settings,
-            patch("qdrant_loader.core.managers.project_manager.ProjectManager") as mock_pm,
+            patch(
+                "qdrant_loader.core.managers.project_manager.ProjectManager"
+            ) as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -114,7 +115,9 @@ class TestSetupProjectManager:
                 "qdrant_loader.cli.project_commands.load_config_with_workspace"
             ) as mock_load_config,
             patch("qdrant_loader.config.get_settings") as mock_get_settings,
-            patch("qdrant_loader.core.managers.project_manager.ProjectManager") as mock_pm,
+            patch(
+                "qdrant_loader.core.managers.project_manager.ProjectManager"
+            ) as mock_pm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,

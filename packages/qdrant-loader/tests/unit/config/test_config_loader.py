@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 
 import pytest
-
 from qdrant_loader.config import get_settings, initialize_multi_file_config
 from qdrant_loader.config.validation_errors import ConfigValidationError
 

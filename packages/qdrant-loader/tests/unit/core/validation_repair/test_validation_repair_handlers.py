@@ -1,19 +1,17 @@
 """Comprehensive tests for RepairHandlers class."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
 
-from qdrant_loader.core.validation_repair.repair_handlers import RepairHandlers
-from qdrant_loader.core.validation_repair.models import (
-    ValidationIssue,
-    ValidationCategory,
-    ValidationSeverity,
-    RepairAction,
-    RepairResult,
-)
+import pytest
 from qdrant_loader.core.managers import IDMapping, MappingStatus, MappingType
 from qdrant_loader.core.types import EntityType
+from qdrant_loader.core.validation_repair.models import (
+    RepairAction,
+    ValidationCategory,
+    ValidationIssue,
+    ValidationSeverity,
+)
+from qdrant_loader.core.validation_repair.repair_handlers import RepairHandlers
 
 
 class TestRepairHandlers:

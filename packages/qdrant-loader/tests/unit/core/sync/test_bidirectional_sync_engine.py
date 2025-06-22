@@ -5,14 +5,11 @@ with proper mocking of external dependencies.
 """
 
 import asyncio
-import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from qdrant_client.http.models import PointStruct
-
-from qdrant_loader.core.managers import IDMapping, MappingStatus, MappingType
+from qdrant_loader.core.managers import IDMapping, MappingType
 from qdrant_loader.core.sync.bidirectional_sync_engine import (
     BidirectionalSyncEngine,
     SyncBatch,

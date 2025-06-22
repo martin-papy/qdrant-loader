@@ -11,13 +11,10 @@ This test suite covers:
 - Error handling and edge cases
 """
 
-import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from typing import Any
+from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.core.managers.id_mapping_manager import (
     IDMapping,
     IDMappingManager,

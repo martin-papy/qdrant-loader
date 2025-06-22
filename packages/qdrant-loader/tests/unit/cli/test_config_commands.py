@@ -1,13 +1,11 @@
 """Tests for CLI configuration commands."""
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 from click.testing import CliRunner
-
 from qdrant_loader.cli.config_commands import (
     check_config,
     config_command,

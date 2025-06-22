@@ -1,27 +1,23 @@
 """Simple delete sync test that bypasses the atomic transaction system."""
 
-import asyncio
 import uuid
-from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-
-from qdrant_loader.core.managers.id_mapping_manager import MappingType
-from qdrant_loader.core.sync.handlers import SyncOperationHandlers
-from qdrant_loader.core.sync.operations import EnhancedSyncOperation
-from qdrant_loader.core.sync.types import SyncOperationType
-from qdrant_loader.core.sync.event_system import DatabaseType
-from qdrant_loader.core.types import EntityType
+from qdrant_loader.core.atomic_transactions.context import TransactionContext
 from qdrant_loader.core.atomic_transactions.enums import OperationType
 from qdrant_loader.core.atomic_transactions.models import (
     DatabaseOperation,
     DistributedTransaction,
-    CompensationAction,
 )
-from qdrant_loader.core.atomic_transactions.context import TransactionContext
+from qdrant_loader.core.managers.id_mapping_manager import MappingType
+from qdrant_loader.core.sync.event_system import DatabaseType
+from qdrant_loader.core.sync.handlers import SyncOperationHandlers
+from qdrant_loader.core.sync.operations import EnhancedSyncOperation
+from qdrant_loader.core.sync.types import SyncOperationType
+from qdrant_loader.core.types import EntityType
 
 
 class MockTransactionContext(TransactionContext):
@@ -171,7 +167,7 @@ class TestSimpleDeleteSync:
             len(neo4j_delete_ops) == 1
         ), f"Expected 1 Neo4j delete operation, got {len(neo4j_delete_ops)}"
 
-        print(f"✅ Delete operations added successfully:")
+        print("✅ Delete operations added successfully:")
         print(f"   QDrant operations: {len(tx_context.qdrant_operations)}")
         print(f"   Neo4j operations: {len(tx_context.neo4j_operations)}")
         print(f"   QDrant delete entity_id: {qdrant_delete_ops[0]['entity_id']}")

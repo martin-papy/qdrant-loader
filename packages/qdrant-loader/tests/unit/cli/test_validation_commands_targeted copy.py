@@ -3,7 +3,6 @@
 Focuses on uncovered error paths, edge cases, and main command flows.
 """
 
-import asyncio
 import json
 import tempfile
 from pathlib import Path
@@ -11,18 +10,11 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 from click.testing import CliRunner
-
 from qdrant_loader.cli.validation_commands import (
-    _run_validation,
-    _run_repairs,
-    _get_validation_status,
-    _configure_scheduled_validation,
     repair_inconsistencies,
     schedule_validation,
     validate_graph,
     validation_status,
-    ValidationIssue,
-    ValidationRepairSystem,
 )
 
 
@@ -95,17 +87,25 @@ class TestValidateGraphCommand:
         assert result.exit_code == 0
         assert "Validation completed successfully" in result.output
 
-    def test_validate_graph_with_output_file_success(self, runner, mock_settings, mock_success_report):
+    def test_validate_graph_with_output_file_success(
+        self, runner, mock_settings, mock_success_report
+    ):
         """Test validation with output file option."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_file = Path(tmpdir) / "report.json"
 
-            with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
-                 patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
-                 patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-                 patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-                 patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
-                
+            with (
+                patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run,
+                patch(
+                    "qdrant_loader.cli.validation_commands.check_settings"
+                ) as mock_check,
+                patch(
+                    "qdrant_loader.cli.validation_commands.load_config_with_workspace"
+                ),
+                patch("qdrant_loader.cli.validation_commands.setup_logging"),
+                patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+            ):
+
                 mock_check.return_value = mock_settings
                 mock_run.return_value = mock_success_report
 
@@ -127,12 +127,14 @@ class TestValidateGraphCommand:
         report.system_health_score = 85.0
         report.auto_repairable_issues = 3
 
-        with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
-             patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-             patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
-            
+        with (
+            patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run,
+            patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check,
+            patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.validation_commands.setup_logging"),
+            patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+        ):
+
             mock_check.return_value = mock_settings
             mock_run.return_value = report
 
@@ -141,22 +143,30 @@ class TestValidateGraphCommand:
             assert result.exit_code == 0
             assert "Auto-repairable Issues: 3" in result.output
 
-    def test_validate_graph_with_scanners_parsing(self, runner, mock_settings, mock_success_report):
+    def test_validate_graph_with_scanners_parsing(
+        self, runner, mock_settings, mock_success_report
+    ):
         """Test validation with scanners option parsing."""
-        with patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run, \
-             patch("qdrant_loader.cli.validation_commands.check_settings"), \
-             patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-             patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"), \
-             patch("qdrant_loader.cli.validation_commands.get_logger") as mock_logger:
-            
+        with (
+            patch("qdrant_loader.cli.validation_commands.asyncio.run") as mock_run,
+            patch("qdrant_loader.cli.validation_commands.check_settings"),
+            patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.validation_commands.setup_logging"),
+            patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+            patch("qdrant_loader.cli.validation_commands.get_logger") as mock_logger,
+        ):
+
             logger = Mock()
             mock_logger.return_value = logger
             mock_run.return_value = mock_success_report
 
-            result = runner.invoke(validate_graph, ["--scanners", "missing_mappings,orphaned_records"])
+            result = runner.invoke(
+                validate_graph, ["--scanners", "missing_mappings,orphaned_records"]
+            )
 
-            logger.info.assert_any_call("Using specific scanners: ['missing_mappings', 'orphaned_records']")
+            logger.info.assert_any_call(
+                "Using specific scanners: ['missing_mappings', 'orphaned_records']"
+            )
 
 
 class TestRepairInconsistenciesCommand:
@@ -175,21 +185,37 @@ class TestRepairInconsistenciesCommand:
             report_file = Path(tmpdir) / "report.json"
             report_data = {
                 "issues": [
-                    {"issue_id": "issue-1", "title": "Missing mapping", "type": "missing_mapping"},
-                    {"issue_id": "issue-2", "title": "Orphaned record", "type": "orphaned_record"}
+                    {
+                        "issue_id": "issue-1",
+                        "title": "Missing mapping",
+                        "type": "missing_mapping",
+                    },
+                    {
+                        "issue_id": "issue-2",
+                        "title": "Orphaned record",
+                        "type": "orphaned_record",
+                    },
                 ]
             }
             with open(report_file, "w") as f:
                 json.dump(report_data, f)
 
-            with patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
-                 patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-                 patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-                 patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
-                
+            with (
+                patch(
+                    "qdrant_loader.cli.validation_commands.check_settings"
+                ) as mock_check,
+                patch(
+                    "qdrant_loader.cli.validation_commands.load_config_with_workspace"
+                ),
+                patch("qdrant_loader.cli.validation_commands.setup_logging"),
+                patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+            ):
+
                 mock_check.return_value = mock_settings
 
-                result = runner.invoke(repair_inconsistencies, ["--report", str(report_file), "--dry-run"])
+                result = runner.invoke(
+                    repair_inconsistencies, ["--report", str(report_file), "--dry-run"]
+                )
 
                 assert result.exit_code == 0
                 assert "Dry run mode" in result.output
@@ -204,35 +230,49 @@ class TestRepairInconsistenciesCommand:
             with open(report_file, "w") as f:
                 json.dump(report_data, f)
 
-            with patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
-                 patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-                 patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-                 patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
-                
+            with (
+                patch(
+                    "qdrant_loader.cli.validation_commands.check_settings"
+                ) as mock_check,
+                patch(
+                    "qdrant_loader.cli.validation_commands.load_config_with_workspace"
+                ),
+                patch("qdrant_loader.cli.validation_commands.setup_logging"),
+                patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+            ):
+
                 mock_check.return_value = mock_settings
 
-                result = runner.invoke(repair_inconsistencies, ["--report", str(report_file)])
+                result = runner.invoke(
+                    repair_inconsistencies, ["--report", str(report_file)]
+                )
 
                 assert result.exit_code == 0
                 assert "No issues found to repair" in result.output
 
     def test_repair_inconsistencies_issue_ids_no_report(self, runner, mock_settings):
         """Test repair with issue IDs but no report."""
-        with patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check, \
-             patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-             patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"), \
-             patch("qdrant_loader.cli.validation_commands.get_logger") as mock_logger:
-            
+        with (
+            patch("qdrant_loader.cli.validation_commands.check_settings") as mock_check,
+            patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.validation_commands.setup_logging"),
+            patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+            patch("qdrant_loader.cli.validation_commands.get_logger") as mock_logger,
+        ):
+
             logger = Mock()
             mock_logger.return_value = logger
             mock_check.return_value = mock_settings
 
-            result = runner.invoke(repair_inconsistencies, ["--issue-ids", "issue1,issue2"])
+            result = runner.invoke(
+                repair_inconsistencies, ["--issue-ids", "issue1,issue2"]
+            )
 
             assert result.exit_code == 0
             assert "No issues found to repair" in result.output
-            logger.warning.assert_called_once_with("Specific issue ID repair requires a validation report")
+            logger.warning.assert_called_once_with(
+                "Specific issue ID repair requires a validation report"
+            )
 
 
 class TestScheduleValidationCommand:
@@ -240,15 +280,19 @@ class TestScheduleValidationCommand:
 
     def test_schedule_validation_weekly_missing_day(self, runner):
         """Test scheduling weekly validation without day specified."""
-        with patch("qdrant_loader.cli.validation_commands.check_settings"), \
-             patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"), \
-             patch("qdrant_loader.cli.validation_commands.setup_logging"), \
-             patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"):
+        with (
+            patch("qdrant_loader.cli.validation_commands.check_settings"),
+            patch("qdrant_loader.cli.validation_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.validation_commands.setup_logging"),
+            patch("qdrant_loader.cli.validation_commands.validate_workspace_flags"),
+        ):
 
             result = runner.invoke(schedule_validation, ["--interval", "weekly"])
 
             assert result.exit_code == 1
-            assert "Day of week must be specified for weekly validation" in result.output
+            assert (
+                "Day of week must be specified for weekly validation" in result.output
+            )
 
 
 class TestValidationStatusCommand:
@@ -289,37 +333,47 @@ class TestAsyncFunctions:
         """Test _run_validation async function with timeout."""
         mock_settings = MagicMock()
         mock_settings.qdrant_collection_name = "test"
-        
-        with patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j, \
-             patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant, \
-             patch("qdrant_loader.cli.validation_commands.IDMappingManager") as mock_id_mapping, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystem") as mock_validation, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator") as mock_integrator, \
-             patch("qdrant_loader.config.get_global_config") as mock_global_config, \
-             patch("qdrant_loader.config.get_settings") as mock_get_settings:
-            
+
+        with (
+            patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j,
+            patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant,
+            patch(
+                "qdrant_loader.cli.validation_commands.IDMappingManager"
+            ) as mock_id_mapping,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystem"
+            ) as mock_validation,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator"
+            ) as mock_integrator,
+            patch("qdrant_loader.config.get_global_config") as mock_global_config,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
+        ):
+
             # Mock the settings manager
             mock_get_settings.return_value = MagicMock()
             mock_global_config.return_value = MagicMock()
-            
+
             # Mock all the manager instances
             mock_neo4j_instance = MagicMock()
             mock_neo4j.return_value = mock_neo4j_instance
-            
+
             mock_qdrant_instance = MagicMock()
             mock_qdrant.return_value = mock_qdrant_instance
-            
+
             mock_id_mapping_instance = MagicMock()
             mock_id_mapping.return_value = mock_id_mapping_instance
-            
+
             mock_validation_instance = MagicMock()
             mock_validation.return_value = mock_validation_instance
-            
+
             mock_integrator_instance = MagicMock()
             mock_integrator_instance.initialize = AsyncMock()
             mock_integrator_instance.start = AsyncMock()
             mock_integrator_instance.stop = AsyncMock()
-            mock_integrator_instance.trigger_validation = AsyncMock(return_value={"status": "success"})
+            mock_integrator_instance.trigger_validation = AsyncMock(
+                return_value={"status": "success"}
+            )
             mock_integrator.return_value = mock_integrator_instance
 
             from qdrant_loader.cli.validation_commands import _run_validation
@@ -330,7 +384,7 @@ class TestAsyncFunctions:
                 scanners=["scanner1"],
                 max_entities=100,
                 auto_repair=False,
-                timeout=60
+                timeout=60,
             )
 
             assert result == {"status": "success"}
@@ -340,32 +394,40 @@ class TestAsyncFunctions:
     async def test_run_repairs_with_max_repairs(self):
         """Test _run_repairs async function with max repairs."""
         mock_settings = MagicMock()
-        
-        with patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j, \
-             patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant, \
-             patch("qdrant_loader.cli.validation_commands.IDMappingManager") as mock_id_mapping, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystem") as mock_validation, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator") as mock_integrator, \
-             patch("qdrant_loader.config.get_global_config") as mock_global_config, \
-             patch("qdrant_loader.config.get_settings") as mock_get_settings:
-            
+
+        with (
+            patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j,
+            patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant,
+            patch(
+                "qdrant_loader.cli.validation_commands.IDMappingManager"
+            ) as mock_id_mapping,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystem"
+            ) as mock_validation,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator"
+            ) as mock_integrator,
+            patch("qdrant_loader.config.get_global_config") as mock_global_config,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
+        ):
+
             # Mock the settings manager
             mock_get_settings.return_value = MagicMock()
             mock_global_config.return_value = MagicMock()
-            
+
             # Mock all the manager instances
             mock_neo4j_instance = MagicMock()
             mock_neo4j.return_value = mock_neo4j_instance
-            
+
             mock_qdrant_instance = MagicMock()
             mock_qdrant.return_value = mock_qdrant_instance
-            
+
             mock_id_mapping_instance = MagicMock()
             mock_id_mapping.return_value = mock_id_mapping_instance
-            
+
             mock_validation_instance = MagicMock()
             mock_validation.return_value = mock_validation_instance
-            
+
             mock_integrator_instance = MagicMock()
             mock_integrator_instance.initialize = AsyncMock()
             mock_integrator_instance.start = AsyncMock()
@@ -376,17 +438,25 @@ class TestAsyncFunctions:
             mock_repair_result.action_taken = MagicMock()
             mock_repair_result.action_taken.value = "repaired"
             mock_repair_result.error_message = None
-            mock_integrator_instance.repair_issues = AsyncMock(return_value=[mock_repair_result])
+            mock_integrator_instance.repair_issues = AsyncMock(
+                return_value=[mock_repair_result]
+            )
             mock_integrator.return_value = mock_integrator_instance
 
             from qdrant_loader.cli.validation_commands import _run_repairs
 
-            issues = [{"issue_id": "test_issue", "title": "Test Issue", "description": "Test description"}]
+            issues = [
+                {
+                    "issue_id": "test_issue",
+                    "title": "Test Issue",
+                    "description": "Test description",
+                }
+            ]
             result = await _run_repairs(
                 settings=mock_settings,
                 issues=issues,
                 repair_id="test_repair",
-                max_repairs=1
+                max_repairs=1,
             )
 
             assert len(result) == 1
@@ -397,45 +467,55 @@ class TestAsyncFunctions:
     async def test_get_validation_status_with_filters(self):
         """Test _get_validation_status async function with filters."""
         mock_settings = MagicMock()
-        
-        with patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j, \
-             patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant, \
-             patch("qdrant_loader.cli.validation_commands.IDMappingManager") as mock_id_mapping, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystem") as mock_validation, \
-             patch("qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator") as mock_integrator, \
-             patch("qdrant_loader.config.get_global_config") as mock_global_config, \
-             patch("qdrant_loader.config.get_settings") as mock_get_settings:
-            
+
+        with (
+            patch("qdrant_loader.cli.validation_commands.Neo4jManager") as mock_neo4j,
+            patch("qdrant_loader.cli.validation_commands.QdrantManager") as mock_qdrant,
+            patch(
+                "qdrant_loader.cli.validation_commands.IDMappingManager"
+            ) as mock_id_mapping,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystem"
+            ) as mock_validation,
+            patch(
+                "qdrant_loader.cli.validation_commands.ValidationRepairSystemIntegrator"
+            ) as mock_integrator,
+            patch("qdrant_loader.config.get_global_config") as mock_global_config,
+            patch("qdrant_loader.config.get_settings") as mock_get_settings,
+        ):
+
             # Mock the settings manager
             mock_get_settings.return_value = MagicMock()
             mock_global_config.return_value = MagicMock()
-            
+
             # Mock all the manager instances
             mock_neo4j_instance = MagicMock()
             mock_neo4j.return_value = mock_neo4j_instance
-            
+
             mock_qdrant_instance = MagicMock()
             mock_qdrant.return_value = mock_qdrant_instance
-            
+
             mock_id_mapping_instance = MagicMock()
             mock_id_mapping.return_value = mock_id_mapping_instance
-            
+
             mock_validation_instance = MagicMock()
             mock_validation.return_value = mock_validation_instance
-            
+
             mock_integrator_instance = MagicMock()
             mock_integrator_instance.initialize = AsyncMock()
-            mock_integrator_instance.get_validation_status = AsyncMock(return_value={"status": "idle", "history": []})
+            mock_integrator_instance.get_validation_status = AsyncMock(
+                return_value={"status": "idle", "history": []}
+            )
             mock_integrator.return_value = mock_integrator_instance
 
             # Mock the actual function to avoid the MagicMock issue
-            with patch("qdrant_loader.cli.validation_commands._get_validation_status") as mock_get_status:
+            with patch(
+                "qdrant_loader.cli.validation_commands._get_validation_status"
+            ) as mock_get_status:
                 mock_get_status.return_value = {"status": "idle", "history": []}
-                
+
                 result = await mock_get_status(
-                    settings=mock_settings,
-                    history_limit=10,
-                    status_filter="completed"
+                    settings=mock_settings, history_limit=10, status_filter="completed"
                 )
 
                 assert result["status"] == "idle"
@@ -444,19 +524,23 @@ class TestAsyncFunctions:
     async def test_configure_scheduled_validation_with_all_params(self):
         """Test _configure_scheduled_validation async function."""
         mock_settings = MagicMock()
-        
+
         # Mock the async function to return expected result
-        with patch("qdrant_loader.cli.validation_commands._configure_scheduled_validation") as mock_configure:
+        with patch(
+            "qdrant_loader.cli.validation_commands._configure_scheduled_validation"
+        ) as mock_configure:
             mock_configure.return_value = {"status": "scheduled", "interval": "weekly"}
 
-            from qdrant_loader.cli.validation_commands import _configure_scheduled_validation
+            from qdrant_loader.cli.validation_commands import (
+                _configure_scheduled_validation,
+            )
 
             result = await _configure_scheduled_validation(
                 settings=mock_settings,
                 interval="weekly",
                 time="02:00",
                 day="monday",
-                auto_repair=True
+                auto_repair=True,
             )
 
-            assert result == {"status": "scheduled", "interval": "weekly"} 
+            assert result == {"status": "scheduled", "interval": "weekly"}

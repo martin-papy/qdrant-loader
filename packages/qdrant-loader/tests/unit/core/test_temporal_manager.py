@@ -13,7 +13,6 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
-
 from qdrant_loader.core.managers.temporal_manager import (
     TemporalManager,
     TemporalQuery,

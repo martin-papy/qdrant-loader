@@ -5,23 +5,19 @@ This test suite focuses on the core functionality that can be tested
 without complex integration dependencies.
 """
 
-import asyncio
 import json
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock, patch
-from typing import Any
 
+import pytest
 from qdrant_loader.core.entity_extractor import (
     EntityExtractor,
+    ExtractedEntity,
     ExtractionConfig,
     ExtractionResult,
-    ExtractedEntity,
-    ExtractedRelationship,
 )
-from qdrant_loader.core.types import EntityType, RelationshipType
-from qdrant_loader.core.prompts.entity_prompts import PromptDomain, EntityPromptManager
 from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
+from qdrant_loader.core.types import EntityType, RelationshipType
 
 
 class TestEntityExtractorFocused:
@@ -128,7 +124,7 @@ class TestEntityExtractorFocused:
     async def test_extract_entities_with_reference_time(self, entity_extractor):
         """Test entity extraction with reference time."""
         text = "Test content"
-        ref_time = datetime.now(timezone.utc)
+        ref_time = datetime.now(UTC)
 
         result = await entity_extractor.extract_entities(text, reference_time=ref_time)
 

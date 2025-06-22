@@ -6,19 +6,17 @@ for validation workflows and integration with other system components.
 """
 
 import asyncio
-import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from .metrics import ValidationMetricsCollector
     from .event_integration import ValidationEventIntegrator
+    from .metrics import ValidationMetricsCollector
 
 from ...config import Settings
 from ...utils.logging import LoggingConfig
-from ..managers import IDMappingManager, Neo4jManager, QdrantManager
 from ..sync.enhanced_event_system import EnhancedSyncEventSystem
-from .models import ValidationReport, ValidationIssue, RepairResult
+from .models import RepairResult, ValidationIssue, ValidationReport
 from .system import ValidationRepairSystem
 
 logger = LoggingConfig.get_logger(__name__)
@@ -36,7 +34,7 @@ class ValidationRepairSystemIntegrator:
         self,
         validation_repair_system: ValidationRepairSystem,
         settings: Settings,
-        enhanced_sync_system: Optional[EnhancedSyncEventSystem] = None,
+        enhanced_sync_system: EnhancedSyncEventSystem | None = None,
         metrics_collector: Optional["ValidationMetricsCollector"] = None,
         event_integrator: Optional["ValidationEventIntegrator"] = None,
         auto_validation_enabled: bool = True,
@@ -83,7 +81,7 @@ class ValidationRepairSystemIntegrator:
         # Validation state tracking
         self._active_validations: dict[str, dict] = {}
         self._validation_history: list[dict] = []
-        self._last_validation_report: Optional[ValidationReport] = None
+        self._last_validation_report: ValidationReport | None = None
 
         # Statistics
         self._stats = {
@@ -159,11 +157,11 @@ class ValidationRepairSystemIntegrator:
 
     async def trigger_validation(
         self,
-        validation_id: Optional[str] = None,
-        scanners: Optional[list[str]] = None,
-        max_entities_per_scanner: Optional[int] = None,
+        validation_id: str | None = None,
+        scanners: list[str] | None = None,
+        max_entities_per_scanner: int | None = None,
         auto_repair: bool = False,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> ValidationReport:
         """Trigger a validation operation.
 
@@ -277,7 +275,7 @@ class ValidationRepairSystemIntegrator:
             logger.info(f"Validation {validation_id} completed successfully")
             return report
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"Validation {validation_id} timed out")
             validation_context["status"] = "timeout"
             validation_context["end_time"] = datetime.now(UTC)
@@ -341,9 +339,9 @@ class ValidationRepairSystemIntegrator:
     async def repair_issues(
         self,
         issues: list[ValidationIssue],
-        repair_id: Optional[str] = None,
-        max_repairs: Optional[int] = None,
-        metadata: Optional[dict] = None,
+        repair_id: str | None = None,
+        max_repairs: int | None = None,
+        metadata: dict | None = None,
     ) -> list[RepairResult]:
         """Repair validation issues.
 
@@ -472,8 +470,8 @@ class ValidationRepairSystemIntegrator:
 
     async def get_validation_history(
         self,
-        limit: Optional[int] = None,
-        status_filter: Optional[str] = None,
+        limit: int | None = None,
+        status_filter: str | None = None,
     ) -> list[dict]:
         """Get validation history.
 

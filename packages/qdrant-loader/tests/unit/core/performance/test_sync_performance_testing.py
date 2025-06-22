@@ -8,7 +8,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.sync.event_system import DatabaseType
 from qdrant_loader.core.sync.operations import EnhancedSyncOperation
 from qdrant_loader.core.sync.types import SyncOperationType

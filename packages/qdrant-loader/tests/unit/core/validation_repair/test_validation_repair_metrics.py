@@ -1,18 +1,17 @@
 """Comprehensive tests for ValidationMetricsCollector class."""
 
-import pytest
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
-from datetime import datetime, UTC, timedelta
-from typing import Any, Dict
 
+import pytest
 from qdrant_loader.core.validation_repair.metrics import ValidationMetricsCollector
 from qdrant_loader.core.validation_repair.models import (
-    ValidationIssue,
-    ValidationCategory,
-    ValidationSeverity,
     RepairAction,
     RepairResult,
+    ValidationCategory,
+    ValidationIssue,
     ValidationReport,
+    ValidationSeverity,
 )
 
 
@@ -148,7 +147,9 @@ class TestValidationMetricsCollector:
         assert collector.statsd_host == "custom-host"
         assert collector.statsd_port == 9125
         assert collector.metrics_retention_hours == 48
-        mock_statsd_module.StatsClient.assert_called_once_with(host="custom-host", port=9125)
+        mock_statsd_module.StatsClient.assert_called_once_with(
+            host="custom-host", port=9125
+        )
 
     @patch("qdrant_loader.core.validation_repair.metrics.statsd")
     def test_init_with_statsd_client_creation(self, mock_statsd_module):
@@ -158,7 +159,9 @@ class TestValidationMetricsCollector:
 
         collector = ValidationMetricsCollector(enable_statsd=True)
 
-        mock_statsd_module.StatsClient.assert_called_once_with(host="localhost", port=8125)
+        mock_statsd_module.StatsClient.assert_called_once_with(
+            host="localhost", port=8125
+        )
         assert collector._statsd_client == mock_client_instance
 
     # Test record_validation_started method

@@ -1,11 +1,9 @@
 import pytest
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.models import (
     EnhancedSearchConfig,
     EnhancedSearchResult,
     FusionStrategy,
     QueryWeights,
-    RerankingStrategy,
     SearchMode,
     validate_query_weights,
 )

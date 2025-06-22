@@ -3,14 +3,14 @@
 from unittest.mock import Mock, patch
 
 import pytest
+from qdrant_loader_mcp_server.search.enhanced_hybrid.fusion_engine import (
+    ResultFusionEngine,
+)
 from qdrant_loader_mcp_server.search.enhanced_hybrid.models import (
     EnhancedSearchConfig,
     EnhancedSearchResult,
     FusionStrategy,
     SearchMode,
-)
-from qdrant_loader_mcp_server.search.enhanced_hybrid.fusion_engine import (
-    ResultFusionEngine,
 )
 
 

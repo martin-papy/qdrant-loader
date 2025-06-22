@@ -10,7 +10,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from qdrant_loader.core.conflict_resolution import (
     ConflictRecord,
     ConflictStatus,

@@ -1,17 +1,17 @@
 """Comprehensive tests for OperationPriorityManager."""
 
-import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
+import pytest
 from qdrant_loader.core.operation_differentiation.priority_manager import (
     OperationPriorityManager,
 )
 from qdrant_loader.core.operation_differentiation.types import (
     OperationCharacteristics,
-    OperationPriority,
     OperationComplexity,
     OperationImpact,
+    OperationPriority,
 )
 from qdrant_loader.core.sync.types import SyncOperationType
 
@@ -819,7 +819,7 @@ class TestComplexScenarios:
             characteristics.append(char)
 
         # Queue all operations
-        for op, char in zip(operations, characteristics):
+        for op, char in zip(operations, characteristics, strict=False):
             await priority_manager.queue_operation(op, char)
 
         # Process operations up to concurrent limit

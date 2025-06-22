@@ -7,7 +7,6 @@ from unittest.mock import MagicMock
 import pytest
 import pytest_asyncio
 from pydantic import AnyUrl
-
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import StateManagementConfig
 from qdrant_loader.core.document import Document

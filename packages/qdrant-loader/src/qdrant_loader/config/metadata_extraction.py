@@ -6,7 +6,7 @@ framework with advanced settings.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -58,7 +58,7 @@ class AuthorExtractionConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable author extraction")
 
-    methods: List[AuthorExtractionMethod] = Field(
+    methods: list[AuthorExtractionMethod] = Field(
         default=[AuthorExtractionMethod.HYBRID],
         description="Methods to use for author extraction",
     )
@@ -88,7 +88,7 @@ class AuthorExtractionConfig(BaseModel):
     )
 
     # Content analysis settings
-    content_analysis: Dict[str, Any] = Field(
+    content_analysis: dict[str, Any] = Field(
         default_factory=lambda: {
             "search_patterns": [
                 r"(?i)author[:\s]+([^\n\r]+)",
@@ -128,7 +128,7 @@ class TimestampExtractionConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable timestamp extraction")
 
-    methods: List[TimestampExtractionMethod] = Field(
+    methods: list[TimestampExtractionMethod] = Field(
         default=[TimestampExtractionMethod.HYBRID],
         description="Methods to use for timestamp extraction",
     )
@@ -158,7 +158,7 @@ class TimestampExtractionConfig(BaseModel):
     )
 
     # Content parsing settings
-    content_parsing: Dict[str, Any] = Field(
+    content_parsing: dict[str, Any] = Field(
         default_factory=lambda: {
             "date_patterns": [
                 r"(?i)date[:\s]+(\d{4}[-/]\d{1,2}[-/]\d{1,2})",
@@ -176,7 +176,7 @@ class TimestampExtractionConfig(BaseModel):
     )
 
     # Timezone handling
-    default_timezone: Optional[str] = Field(
+    default_timezone: str | None = Field(
         default="UTC",
         description="Default timezone for timestamps without timezone info",
     )
@@ -191,7 +191,7 @@ class RelationshipExtractionConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable relationship extraction")
 
-    methods: List[RelationshipExtractionMethod] = Field(
+    methods: list[RelationshipExtractionMethod] = Field(
         default=[RelationshipExtractionMethod.HYBRID],
         description="Methods to use for relationship extraction",
     )
@@ -222,7 +222,7 @@ class RelationshipExtractionConfig(BaseModel):
     )
 
     # Content link analysis
-    content_links: Dict[str, Any] = Field(
+    content_links: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_internal_links": True,
             "extract_external_links": False,
@@ -239,7 +239,7 @@ class RelationshipExtractionConfig(BaseModel):
     )
 
     # Directory structure analysis
-    directory_structure: Dict[str, Any] = Field(
+    directory_structure: dict[str, Any] = Field(
         default_factory=lambda: {
             "max_depth": 10,
             "include_parent_child": True,
@@ -252,7 +252,7 @@ class RelationshipExtractionConfig(BaseModel):
     )
 
     # Semantic analysis settings
-    semantic_analysis: Dict[str, Any] = Field(
+    semantic_analysis: dict[str, Any] = Field(
         default_factory=lambda: {
             "enabled": False,
             "similarity_threshold": 0.7,
@@ -328,7 +328,7 @@ class CrossReferenceExtractionConfig(BaseModel):
     )
 
     # Pattern matching
-    mention_patterns: List[str] = Field(
+    mention_patterns: list[str] = Field(
         default_factory=lambda: [
             r"@([a-zA-Z0-9_-]+)",  # @mentions
             r"#([a-zA-Z0-9_-]+)",  # #hashtags
@@ -339,7 +339,7 @@ class CrossReferenceExtractionConfig(BaseModel):
         description="Patterns for detecting mentions",
     )
 
-    citation_patterns: List[str] = Field(
+    citation_patterns: list[str] = Field(
         default_factory=lambda: [
             r"\[(\d+)\]",  # Numbered citations
             r"\[([^\]]+,\s*\d{4})\]",  # Author, year citations
@@ -357,7 +357,7 @@ class SourceSpecificExtractionConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable source-specific extraction")
 
     # Git-specific settings
-    git: Dict[str, Any] = Field(
+    git: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_commit_info": True,
             "extract_branch_info": True,
@@ -373,7 +373,7 @@ class SourceSpecificExtractionConfig(BaseModel):
     )
 
     # Confluence-specific settings
-    confluence: Dict[str, Any] = Field(
+    confluence: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_space_info": True,
             "extract_page_hierarchy": True,
@@ -390,7 +390,7 @@ class SourceSpecificExtractionConfig(BaseModel):
     )
 
     # JIRA-specific settings
-    jira: Dict[str, Any] = Field(
+    jira: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_issue_hierarchy": True,
             "extract_linked_issues": True,
@@ -408,7 +408,7 @@ class SourceSpecificExtractionConfig(BaseModel):
     )
 
     # LocalFile-specific settings
-    localfile: Dict[str, Any] = Field(
+    localfile: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_filesystem_metadata": True,
             "extract_file_permissions": False,
@@ -425,7 +425,7 @@ class SourceSpecificExtractionConfig(BaseModel):
     )
 
     # PublicDocs-specific settings
-    publicdocs: Dict[str, Any] = Field(
+    publicdocs: dict[str, Any] = Field(
         default_factory=lambda: {
             "extract_html_metadata": True,
             "extract_seo_metadata": True,
@@ -517,7 +517,7 @@ class QualityConfig(BaseModel):
     )
 
     # Completeness requirements
-    required_fields: List[str] = Field(
+    required_fields: list[str] = Field(
         default_factory=lambda: [
             "content_length",
             "content_type",
@@ -548,7 +548,7 @@ class QualityConfig(BaseModel):
         default=True, description="Remove potentially sensitive data"
     )
 
-    sensitive_patterns: List[str] = Field(
+    sensitive_patterns: list[str] = Field(
         default_factory=lambda: [
             r"\b\d{3}-\d{2}-\d{4}\b",  # SSN
             r"\b\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\b",  # Credit card
@@ -623,7 +623,7 @@ class MetadataExtractionConfig(BaseConfig):
         default=50, description="Maximum cross-references (legacy)"
     )
 
-    def get_strategy_config(self) -> Dict[str, Any]:
+    def get_strategy_config(self) -> dict[str, Any]:
         """Get configuration based on the selected strategy."""
         if self.strategy == ExtractionStrategy.MINIMAL:
             return {
@@ -691,7 +691,7 @@ class MetadataExtractionConfig(BaseConfig):
             include_system_metadata=self.include_system_metadata,
         )
 
-    def validate_config(self) -> List[str]:
+    def validate_config(self) -> list[str]:
         """Validate the configuration and return any warnings."""
         warnings = []
 

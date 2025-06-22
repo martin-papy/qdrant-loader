@@ -5,10 +5,9 @@ including automated cleanup, archival, and validation functionality.
 """
 
 import asyncio
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from qdrant_loader.core.versioning import (
     VersionConfig,
     VersionStatistics,

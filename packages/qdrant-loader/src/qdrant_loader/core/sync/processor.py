@@ -41,7 +41,7 @@ class SyncOperationProcessor:
         operation_timeout_seconds: int = 300,
         enable_operation_differentiation: bool = True,
         enable_graphiti_temporal_features: bool = True,
-        validation_integration_manager: Optional[ValidationIntegrationManager] = None,
+        validation_integration_manager: ValidationIntegrationManager | None = None,
     ):
         """Initialize the operation processor.
 

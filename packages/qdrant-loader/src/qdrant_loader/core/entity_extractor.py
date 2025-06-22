@@ -223,7 +223,7 @@ class EntityExtractor:
                     self._current_progress.in_progress_tasks -= 1
                     self._task_queue.task_done()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Timeout waiting for task - continue to check shutdown
                 continue
             except asyncio.CancelledError:
@@ -1151,8 +1151,10 @@ class EntityExtractor:
             Dictionary containing extraction statistics
         """
         cache_hit_rate = (
-            (self._stats["cache_hits"]
-            / (self._stats["cache_hits"] + self._stats["cache_misses"]))
+            (
+                self._stats["cache_hits"]
+                / (self._stats["cache_hits"] + self._stats["cache_misses"])
+            )
             if (self._stats["cache_hits"] + self._stats["cache_misses"]) > 0
             else 0.0
         )
@@ -1579,7 +1581,7 @@ class EntityExtractor:
                     asyncio.gather(*self._background_workers, return_exceptions=True),
                     timeout=5.0,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Background workers did not shutdown within timeout")
 
         # Cancel any remaining active tasks

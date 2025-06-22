@@ -1,7 +1,8 @@
 """Tests for advanced MCP handler tools to increase coverage."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.processor import QueryProcessor

@@ -5,18 +5,18 @@ retrieving, and querying version data in Neo4j.
 """
 
 import json
-import pytest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from qdrant_loader.core.versioning import (
     VersionConfig,
     VersionMetadata,
+    VersionOperation,
     VersionSnapshot,
     VersionStatistics,
     VersionStatus,
     VersionType,
-    VersionOperation,
 )
 from qdrant_loader.core.versioning.version_storage import VersionStorage
 

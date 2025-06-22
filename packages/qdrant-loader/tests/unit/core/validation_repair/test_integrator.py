@@ -5,24 +5,20 @@ including integration with event systems, metrics collection, and repair workflo
 """
 
 import asyncio
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any
-import logging
 
 import pytest
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.validation_repair.integrator import (
     ValidationRepairSystemIntegrator,
 )
 from qdrant_loader.core.validation_repair.models import (
-    ValidationReport,
-    ValidationIssue,
-    ValidationCategory,
-    ValidationSeverity,
-    RepairResult,
     RepairAction,
+    RepairResult,
+    ValidationCategory,
+    ValidationIssue,
+    ValidationReport,
+    ValidationSeverity,
 )
 from qdrant_loader.core.validation_repair.system import ValidationRepairSystem
 

@@ -1,10 +1,6 @@
 """Tests for validation repair models."""
 
-import uuid
 from datetime import UTC, datetime
-from unittest.mock import Mock
-
-import pytest
 
 from qdrant_loader.core.types import EntityType
 from qdrant_loader.core.validation_repair.models import (

@@ -4,7 +4,7 @@ This module defines configuration for validation rules, scanner behavior,
 and validation thresholds for different types of validation checks.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import Field
 
@@ -16,7 +16,7 @@ class ScannerConfig(BaseConfig):
 
     enabled: bool = Field(default=True, description="Enable this scanner")
 
-    max_entities: Optional[int] = Field(
+    max_entities: int | None = Field(
         default=None, description="Maximum entities to scan (None for unlimited)"
     )
 
@@ -30,7 +30,7 @@ class ScannerConfig(BaseConfig):
         description="Enable automatic repair for issues found by this scanner",
     )
 
-    scan_interval_hours: Optional[int] = Field(
+    scan_interval_hours: int | None = Field(
         default=None, description="Automatic scan interval in hours (None to disable)"
     )
 
@@ -38,7 +38,7 @@ class ScannerConfig(BaseConfig):
         default=300, description="Timeout for scanner execution"
     )
 
-    custom_parameters: Dict[str, Any] = Field(
+    custom_parameters: dict[str, Any] = Field(
         default_factory=dict, description="Scanner-specific custom parameters"
     )
 
@@ -47,7 +47,7 @@ class ValidationRulesConfig(BaseConfig):
     """Configuration for validation rules and scanner behavior."""
 
     # Global scanner settings
-    global_max_entities: Optional[int] = Field(
+    global_max_entities: int | None = Field(
         default=10000, description="Global maximum entities to scan per scanner"
     )
 
@@ -173,7 +173,7 @@ class ValidationRulesConfig(BaseConfig):
     )
 
     # Validation thresholds
-    health_score_thresholds: Dict[str, float] = Field(
+    health_score_thresholds: dict[str, float] = Field(
         default_factory=lambda: {
             "excellent": 95.0,
             "good": 85.0,
@@ -185,7 +185,7 @@ class ValidationRulesConfig(BaseConfig):
     )
 
     # Issue severity weights for health score calculation
-    severity_weights: Dict[str, int] = Field(
+    severity_weights: dict[str, int] = Field(
         default_factory=lambda: {
             "critical": 25,
             "error": 10,
@@ -196,7 +196,7 @@ class ValidationRulesConfig(BaseConfig):
     )
 
     # Auto-repair limits
-    auto_repair_limits: Dict[str, int] = Field(
+    auto_repair_limits: dict[str, int] = Field(
         default_factory=lambda: {
             "max_repairs_per_run": 100,
             "max_repairs_per_category": 50,
@@ -206,7 +206,7 @@ class ValidationRulesConfig(BaseConfig):
         description="Limits for automatic repair operations",
     )
 
-    def get_scanner_config(self, scanner_name: str) -> Optional[ScannerConfig]:
+    def get_scanner_config(self, scanner_name: str) -> ScannerConfig | None:
         """Get configuration for a specific scanner.
 
         Args:
@@ -217,7 +217,7 @@ class ValidationRulesConfig(BaseConfig):
         """
         return getattr(self, scanner_name, None)
 
-    def get_enabled_scanners(self) -> List[str]:
+    def get_enabled_scanners(self) -> list[str]:
         """Get list of enabled scanner names.
 
         Returns:
@@ -238,7 +238,7 @@ class ValidationRulesConfig(BaseConfig):
                 enabled_scanners.append(scanner_name)
         return enabled_scanners
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary."""
         return {
             "global_max_entities": self.global_max_entities,

@@ -9,9 +9,9 @@ from typing import Any
 from pydantic import Field
 
 from .base import BaseConfig
-from .validation_rules import ValidationRulesConfig
-from .repair_strategies import RepairStrategiesConfig
 from .notifications import NotificationSettingsConfig
+from .repair_strategies import RepairStrategiesConfig
+from .validation_rules import ValidationRulesConfig
 
 
 class ValidationConfig(BaseConfig):

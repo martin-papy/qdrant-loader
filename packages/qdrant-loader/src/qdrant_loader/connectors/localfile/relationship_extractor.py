@@ -10,7 +10,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from qdrant_loader.connectors.metadata.base import (
     BaseMetadataExtractor,
@@ -43,8 +43,8 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         self.base_path = base_path
 
     def _extract_author_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract author information from file system and content.
 
         Args:
@@ -90,8 +90,8 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         return authors if authors else None
 
     def _extract_timestamp_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extract timestamp information from file system and content.
 
         Args:
@@ -144,8 +144,8 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         return timestamps if timestamps else None
 
     def _extract_relationship_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract hierarchical and structural relationships.
 
         Args:
@@ -209,8 +209,8 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         return relationships if relationships else None
 
     def _extract_cross_reference_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> List[Dict[str, Any]] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
         """Extract cross-references and links within the content.
 
         Args:
@@ -262,8 +262,8 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         return cross_refs if cross_refs else None
 
     def _extract_source_specific_metadata(
-        self, content: str, context: Dict[str, Any]
-    ) -> Dict[str, Any] | None:
+        self, content: str, context: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Extract file-specific metadata.
 
         Args:
@@ -334,7 +334,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
         return metadata if metadata else None
 
-    def extract_metadata(self, file_path: str, content: str) -> Dict[str, Any]:
+    def extract_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         """Main entry point for metadata extraction from LocalFile connector.
 
         Args:
@@ -359,7 +359,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
     # Helper methods for content analysis
     def _extract_authors_from_content(
         self, content: str, file_path: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract author information from file content."""
         authors = []
 
@@ -389,7 +389,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_timestamps_from_content(
         self, content: str, file_path: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract timestamp information from file content."""
         timestamps = {}
 
@@ -417,7 +417,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_relationships_from_content(
         self, content: str, file_path: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract content-based relationships."""
         relationships = []
 
@@ -449,7 +449,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_file_references(
         self, content: str, file_ext: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract file path references from content."""
         cross_refs = []
 
@@ -477,7 +477,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
     def _extract_import_references(
         self, content: str, file_ext: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Extract import/include references for code files."""
         cross_refs = []
 
@@ -516,7 +516,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
         return cross_refs
 
-    def _extract_documentation_references(self, content: str) -> List[Dict[str, Any]]:
+    def _extract_documentation_references(self, content: str) -> list[dict[str, Any]]:
         """Extract references from documentation files."""
         cross_refs = []
 
@@ -568,7 +568,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
         }
         return ext_mapping.get(file_ext.lower(), "unknown")
 
-    def _extract_code_metadata(self, content: str, file_ext: str) -> Dict[str, Any]:
+    def _extract_code_metadata(self, content: str, file_ext: str) -> dict[str, Any]:
         """Extract metadata specific to source code files."""
         metadata = {}
 
@@ -607,7 +607,7 @@ class LocalFileRelationshipExtractor(BaseMetadataExtractor):
 
         return metadata
 
-    def _extract_doc_metadata(self, content: str) -> Dict[str, Any]:
+    def _extract_doc_metadata(self, content: str) -> dict[str, Any]:
         """Extract metadata specific to documentation files."""
         metadata = {}
 

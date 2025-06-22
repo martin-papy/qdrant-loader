@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-
 from qdrant_loader.config.legacy_detection import (
     LegacyConfigDetector,
     detect_legacy_configuration,

@@ -6,8 +6,9 @@ validation workflows.
 """
 
 import asyncio
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from ..sync.enhanced_event_system import EnhancedSyncEventSystem
@@ -15,8 +16,7 @@ if TYPE_CHECKING:
     from .integrator import ValidationRepairSystemIntegrator
 
 from ...utils.logging import LoggingConfig
-from ..sync.event_system import ChangeEvent, ChangeType, DatabaseType
-from ..types import EntityType
+from ..sync.event_system import ChangeEvent, DatabaseType
 from .metrics import ValidationMetricsCollector
 from .models import ValidationReport
 
@@ -31,7 +31,7 @@ class ValidationEventIntegrator:
         validation_integrator: "ValidationRepairSystemIntegrator",
         sync_event_system: Optional["SyncEventSystem"] = None,
         enhanced_sync_system: Optional["EnhancedSyncEventSystem"] = None,
-        metrics_collector: Optional[ValidationMetricsCollector] = None,
+        metrics_collector: ValidationMetricsCollector | None = None,
         auto_validation_enabled: bool = True,
         validation_delay_seconds: float = 5.0,
         batch_validation_threshold: int = 10,
@@ -59,7 +59,7 @@ class ValidationEventIntegrator:
         self._pending_events: list[ChangeEvent] = []
         self._event_handlers: dict[str, list[Callable]] = {}
         self._validation_triggers: dict[str, datetime] = {}
-        self._batch_validation_timer: Optional[asyncio.Task] = None
+        self._batch_validation_timer: asyncio.Task | None = None
 
         # Integration state
         self._initialized = False
@@ -520,10 +520,10 @@ class ValidationEventIntegrator:
 
     async def trigger_manual_validation(
         self,
-        validation_id: Optional[str] = None,
-        scanners: Optional[list[str]] = None,
+        validation_id: str | None = None,
+        scanners: list[str] | None = None,
         auto_repair: bool = False,
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ValidationReport:
         """Trigger a manual validation operation.
 

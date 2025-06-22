@@ -14,10 +14,7 @@ This test suite covers:
 - Health checks and monitoring
 """
 
-import time
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch, MagicMock, call, PropertyMock
-from typing import Any
+from unittest.mock import Mock, patch
 
 import pytest
 from neo4j.exceptions import (
@@ -30,13 +27,12 @@ from neo4j.exceptions import (
     TransactionError,
     TransientError,
 )
-
+from qdrant_loader.config.neo4j import Neo4jConfig
 from qdrant_loader.core.managers.neo4j_manager import (
     Neo4jManager,
-    retry_on_transient_failure,
     _is_retryable_exception,
+    retry_on_transient_failure,
 )
-from qdrant_loader.config.neo4j import Neo4jConfig
 
 
 class TestRetryableExceptions:

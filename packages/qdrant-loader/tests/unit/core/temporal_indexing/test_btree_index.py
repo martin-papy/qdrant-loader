@@ -1,9 +1,9 @@
 """Comprehensive tests for temporal B-tree index implementation."""
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
+import pytest
 from qdrant_loader.core.temporal_indexing.btree_index import (
     TemporalBTreeIndex,
     TemporalBTreeNode,

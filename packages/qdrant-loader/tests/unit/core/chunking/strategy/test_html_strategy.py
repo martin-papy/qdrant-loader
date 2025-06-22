@@ -4,7 +4,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bs4 import BeautifulSoup
-
 from qdrant_loader.config import Settings
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.core.chunking.strategy.html_strategy import (

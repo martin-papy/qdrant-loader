@@ -1,16 +1,16 @@
 """Fixed comprehensive tests for MCP handler functionality to increase coverage."""
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.processor import QueryProcessor
-from qdrant_loader_mcp_server.search.models import SearchResult
 from qdrant_loader_mcp_server.search.exceptions import (
-    SearchEngineError,
     QdrantConnectionError,
-    HybridSearchError,
+    SearchEngineError,
 )
+from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.processor import QueryProcessor
 
 
 class TestMCPHandlerComprehensiveFixed:

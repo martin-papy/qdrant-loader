@@ -176,7 +176,7 @@ class RerankingEngine:
             sentence_pairs = [[query, result.content] for result in results]
             scores = self.bge_reranker.compute_score(sentence_pairs)
 
-            for result, score in zip(results, scores):
+            for result, score in zip(results, scores, strict=False):
                 result.rerank_score = float(score)
 
             results.sort(key=lambda x: x.rerank_score, reverse=True)

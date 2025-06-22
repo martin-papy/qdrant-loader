@@ -48,18 +48,14 @@ class AuthorMetadata(BaseMetadata):
     avatar_url: str | None = Field(
         default=None, description="URL to author's avatar image"
     )
-    profile_url: str | None = Field(
-        default=None, description="URL to author's profile"
-    )
+    profile_url: str | None = Field(default=None, description="URL to author's profile")
 
 
 class TimestampMetadata(BaseMetadata):
     """Metadata about timestamps and temporal information."""
 
     type: MetadataType = Field(default=MetadataType.TIMESTAMP)
-    created_at: datetime | None = Field(
-        default=None, description="Creation timestamp"
-    )
+    created_at: datetime | None = Field(default=None, description="Creation timestamp")
     updated_at: datetime | None = Field(
         default=None, description="Last update timestamp"
     )
@@ -69,9 +65,7 @@ class TimestampMetadata(BaseMetadata):
     accessed_at: datetime | None = Field(
         default=None, description="Last access timestamp"
     )
-    archived_at: datetime | None = Field(
-        default=None, description="Archive timestamp"
-    )
+    archived_at: datetime | None = Field(default=None, description="Archive timestamp")
     version: str | None = Field(default=None, description="Version identifier")
 
 
@@ -160,9 +154,7 @@ class GitMetadata(BaseMetadata):
     branch: str | None = Field(default=None, description="Git branch name")
     tag: str | None = Field(default=None, description="Git tag")
     repository_url: str | None = Field(default=None, description="Repository URL")
-    file_path: str | None = Field(
-        default=None, description="File path in repository"
-    )
+    file_path: str | None = Field(default=None, description="File path in repository")
     commit_message: str | None = Field(default=None, description="Commit message")
     committer: AuthorMetadata | None = Field(
         default=None, description="Committer information"
@@ -206,12 +198,8 @@ class JiraMetadata(BaseMetadata):
     status: str | None = Field(default=None, description="Issue status")
     priority: str | None = Field(default=None, description="Issue priority")
     resolution: str | None = Field(default=None, description="Issue resolution")
-    reporter: AuthorMetadata | None = Field(
-        default=None, description="Issue reporter"
-    )
-    assignee: AuthorMetadata | None = Field(
-        default=None, description="Issue assignee"
-    )
+    reporter: AuthorMetadata | None = Field(default=None, description="Issue reporter")
+    assignee: AuthorMetadata | None = Field(default=None, description="Issue assignee")
     epic_key: str | None = Field(
         default=None, description="Epic key if issue is part of an epic"
     )

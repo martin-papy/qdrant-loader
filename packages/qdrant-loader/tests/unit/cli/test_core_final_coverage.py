@@ -1,12 +1,10 @@
 """Final targeted tests for CLI core module to reach 80% coverage."""
 
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-
 from qdrant_loader.cli.core import (
     create_database_directory,
     setup_workspace,
@@ -21,10 +19,10 @@ class TestCreateDatabaseDirectory:
         """Test successful database directory creation."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_path = Path(temp_dir) / "new_db_dir"
-            
+
             with patch("click.confirm", return_value=True):
                 result = create_database_directory(test_path)
-                
+
             assert result is True
             assert test_path.exists()
 
@@ -32,10 +30,10 @@ class TestCreateDatabaseDirectory:
         """Test database directory creation when user declines."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_path = Path(temp_dir) / "new_db_dir"
-            
+
             with patch("click.confirm", return_value=False):
                 result = create_database_directory(test_path)
-                
+
             assert result is False
             assert not test_path.exists()
 
@@ -47,13 +45,13 @@ class TestSetupWorkspace:
         """Test setup workspace with existing directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
-            
+
             # Create necessary config file
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             result = setup_workspace(workspace_path)
-            
+
             assert result is not None
             assert result.workspace_path == workspace_path.resolve()
 
@@ -62,13 +60,13 @@ class TestSetupWorkspace:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
             workspace_path.mkdir()
-            
+
             # Create necessary config file
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             result = setup_workspace(workspace_path)
-                
+
             assert result is not None
             assert result.workspace_path == workspace_path.resolve()
             assert workspace_path.exists()
@@ -77,10 +75,10 @@ class TestSetupWorkspace:
         """Test setup workspace when directory creation is declined."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
-            
+
             with patch("click.confirm", return_value=False):
                 from click.exceptions import ClickException
-                
+
                 with pytest.raises(ClickException):
                     setup_workspace(workspace_path)
 
@@ -92,19 +90,21 @@ class TestValidateWorkspaceFlags:
         """Test validation fails when workspace used with config."""
         workspace = Path("/test/workspace")
         config = Path("/test/config.yaml")
-        
+
         from click.exceptions import ClickException
-        
-        with pytest.raises(ClickException, match="Cannot use --workspace with --config"):
+
+        with pytest.raises(
+            ClickException, match="Cannot use --workspace with --config"
+        ):
             validate_workspace_flags(workspace, config, None)
 
     def test_validate_workspace_flags_workspace_with_env(self):
         """Test validation fails when workspace used with env."""
         workspace = Path("/test/workspace")
         env = Path("/test/.env")
-        
+
         from click.exceptions import ClickException
-        
+
         with pytest.raises(ClickException, match="Cannot use --workspace with --env"):
             validate_workspace_flags(workspace, None, env)
 
@@ -125,23 +125,23 @@ class TestWorkspaceConfig:
         """Test WorkspaceConfig creation and properties."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_root = Path(temp_dir)
-            
+
             # Create necessary files for workspace
             config_file = workspace_root / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             # Test the workspace configuration setup
             from qdrant_loader.cli.core import WorkspaceConfig
-            
+
             config = WorkspaceConfig(
                 workspace_path=workspace_root,
                 config_path=config_file,
                 env_path=None,
                 logs_path=workspace_root / "logs" / "qdrant-loader.log",
                 metrics_path=workspace_root / "metrics",
-                database_path=workspace_root / "data" / "qdrant-loader.db"
+                database_path=workspace_root / "data" / "qdrant-loader.db",
             )
-            
+
             assert config.workspace_path == workspace_root.resolve()
             assert config.config_path == config_file
             assert config.env_path is None
@@ -154,24 +154,32 @@ class TestErrorHandling:
         """Test database directory creation with permission error."""
         # Create a path that would cause permission error
         test_path = Path("/root/no_permission_dir")
-        
+
         from click.exceptions import ClickException
-        
-        with patch("click.confirm", return_value=True), \
-             patch("pathlib.Path.mkdir", side_effect=PermissionError("Permission denied")):
-            
-            with pytest.raises(ClickException, match="Failed to create directory: Permission denied"):
+
+        with (
+            patch("click.confirm", return_value=True),
+            patch(
+                "pathlib.Path.mkdir", side_effect=PermissionError("Permission denied")
+            ),
+        ):
+
+            with pytest.raises(
+                ClickException, match="Failed to create directory: Permission denied"
+            ):
                 create_database_directory(test_path)
 
     def test_setup_workspace_mkdir_error(self):
         """Test workspace setup with mkdir error."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
-            
-            with patch("click.confirm", return_value=True), \
-                 patch("pathlib.Path.mkdir", side_effect=OSError("Disk full")):
-                
+
+            with (
+                patch("click.confirm", return_value=True),
+                patch("pathlib.Path.mkdir", side_effect=OSError("Disk full")),
+            ):
+
                 from click.exceptions import ClickException
-                
+
                 with pytest.raises(ClickException):
-                    setup_workspace(workspace_path) 
+                    setup_workspace(workspace_path)

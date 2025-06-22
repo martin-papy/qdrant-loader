@@ -1,8 +1,9 @@
+import uuid
+
 import pytest
 from qdrant_client import models
-from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
-import uuid
+from qdrant_loader.core.managers.qdrant_manager import QdrantManager
 
 
 @pytest.mark.asyncio

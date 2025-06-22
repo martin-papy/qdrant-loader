@@ -13,14 +13,13 @@ import asyncio
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-
+from qdrant_client.http import models
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
 from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
-from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager, MappingType
+from qdrant_loader.core.managers.id_mapping_manager import MappingType
 from qdrant_loader.core.operation_differentiation import (
     OperationDifferentiationManager,
 )
@@ -33,7 +32,6 @@ from qdrant_loader.core.sync.event_system import DatabaseType
 from qdrant_loader.core.sync.operations import EnhancedSyncOperation
 from qdrant_loader.core.sync.types import SyncOperationType
 from qdrant_loader.core.types import EntityType
-from qdrant_client.http import models
 
 
 class TestCrossDatabaseSync:
@@ -469,7 +467,7 @@ class TestCrossDatabaseSync:
                 with_vectors=False,
             )
             return result[0] if result else None
-        except Exception as e:
+        except Exception:
             return None
 
     async def _update_qdrant_document(

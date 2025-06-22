@@ -13,24 +13,21 @@ This test suite covers:
 - Background processing
 """
 
-import asyncio
 import json
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 import pytest_asyncio
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
-from typing import Any
-
 from qdrant_loader.core.entity_extractor import (
     EntityExtractor,
+    ExtractedEntity,
     ExtractionConfig,
     ExtractionResult,
-    ExtractedEntity,
-    ExtractedRelationship,
 )
-from qdrant_loader.core.types import EntityType, RelationshipType, TemporalInfo
-from qdrant_loader.core.prompts.entity_prompts import PromptDomain, EntityPromptManager
 from qdrant_loader.core.managers.graphiti_manager import GraphitiManager
+from qdrant_loader.core.prompts.entity_prompts import EntityPromptManager
+from qdrant_loader.core.types import EntityType, RelationshipType
 
 
 class TestEntityExtractor:
@@ -116,8 +113,8 @@ class TestEntityExtractor:
         node1.name = "John Doe"
         node1.uuid = "person-1"
         node1.id = "neo4j-123"
-        node1.created_at = datetime.now(timezone.utc)
-        node1.updated_at = datetime.now(timezone.utc)
+        node1.created_at = datetime.now(UTC)
+        node1.updated_at = datetime.now(UTC)
         node1.source = "test"
         node1.episode_id = "episode-123"
         node1.context = "Software engineer"
@@ -132,8 +129,8 @@ class TestEntityExtractor:
         node2.name = "TechCorp"
         node2.uuid = "org-1"
         node2.id = "neo4j-456"
-        node2.created_at = datetime.now(timezone.utc)
-        node2.updated_at = datetime.now(timezone.utc)
+        node2.created_at = datetime.now(UTC)
+        node2.updated_at = datetime.now(UTC)
         node2.source = "test"
         node2.episode_id = "episode-123"
         node2.context = "Technology company"
@@ -162,12 +159,14 @@ class TestEntityExtractor:
         assert extractor.prompt_manager is not None
         assert isinstance(extractor._stats, dict)
         assert extractor._stats["total_extractions"] == 0
-        
+
         # Cleanup
         await extractor.shutdown()
 
     @pytest.mark.asyncio
-    async def test_entity_extractor_initialization_with_defaults(self, mock_graphiti_manager):
+    async def test_entity_extractor_initialization_with_defaults(
+        self, mock_graphiti_manager
+    ):
         """Test EntityExtractor initialization with default config."""
         # Create config with background processing disabled for testing
         config = ExtractionConfig(enable_background_processing=False)
@@ -179,7 +178,7 @@ class TestEntityExtractor:
         assert extractor.config is not None
         assert isinstance(extractor.config, ExtractionConfig)
         assert extractor.prompt_manager is not None
-        
+
         # Cleanup
         await extractor.shutdown()
 
@@ -256,7 +255,7 @@ class TestEntityExtractor:
     async def test_extract_entities_with_reference_time(self, entity_extractor):
         """Test entity extraction with reference time."""
         text = "Test content"
-        ref_time = datetime.now(timezone.utc)
+        ref_time = datetime.now(UTC)
 
         entity_extractor.graphiti_manager.add_episode.return_value = "episode-123"
         entity_extractor.graphiti_manager.get_entities_from_episode.return_value = []
@@ -297,7 +296,9 @@ class TestEntityExtractor:
         self, mock_graphiti_manager, sample_graphiti_nodes
     ):
         """Test entity extraction with caching disabled."""
-        config = ExtractionConfig(enable_caching=False, enable_background_processing=False)
+        config = ExtractionConfig(
+            enable_caching=False, enable_background_processing=False
+        )
         extractor = EntityExtractor(mock_graphiti_manager, config)
 
         try:

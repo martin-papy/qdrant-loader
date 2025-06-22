@@ -8,7 +8,6 @@ and integration with atomic transactions and operation differentiation.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.managers import MappingType
 from qdrant_loader.core.operation_differentiation import (
     OperationCharacteristics,

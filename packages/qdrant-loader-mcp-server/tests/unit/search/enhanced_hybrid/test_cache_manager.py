@@ -1,7 +1,6 @@
 import time
 
 import pytest
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.cache_manager import CacheManager
 from qdrant_loader_mcp_server.search.enhanced_hybrid.models import (
     EnhancedSearchConfig,

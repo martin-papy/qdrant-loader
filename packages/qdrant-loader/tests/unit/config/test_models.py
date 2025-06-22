@@ -3,7 +3,6 @@
 from datetime import datetime
 
 import pytest
-
 from qdrant_loader.config.models import (
     ProjectConfig,
     ProjectContext,

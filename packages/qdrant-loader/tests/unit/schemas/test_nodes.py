@@ -1,17 +1,17 @@
 """Tests for custom node schemas."""
 
-import pytest
 from datetime import datetime
-from pydantic import ValidationError
 
+import pytest
+from pydantic import ValidationError
 from qdrant_loader.schemas.nodes import (
-    DocumentNode,
-    SourceNode,
-    ConceptNode,
-    PersonNode,
-    OrganizationNode,
-    ProjectNode,
     ChunkNode,
+    ConceptNode,
+    DocumentNode,
+    OrganizationNode,
+    PersonNode,
+    ProjectNode,
+    SourceNode,
 )
 
 

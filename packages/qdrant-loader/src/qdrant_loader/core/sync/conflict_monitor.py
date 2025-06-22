@@ -21,9 +21,9 @@ from ..conflict_resolution import (
 )
 from ..managers import IDMapping, IDMappingManager, Neo4jManager, QdrantManager
 from ..monitoring.ingestion_metrics import IngestionMonitor
-from .event_system import ChangeEvent, ChangeType, DatabaseType
 from ..types import EntityType
 from .enhanced_event_system import EnhancedSyncEventSystem, EnhancedSyncOperation
+from .event_system import ChangeEvent, ChangeType, DatabaseType
 from .types import SyncOperationStatus, SyncOperationType
 
 logger = LoggingConfig.get_logger(__name__)

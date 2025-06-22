@@ -1,23 +1,22 @@
 """Comprehensive tests for EntityExtractionWorker."""
 
 import asyncio
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.entity_extractor import (
     EntityExtractor,
     ExtractionResult,
-    ExtractionConfig,
 )
 from qdrant_loader.core.pipeline.workers.entity_extraction_worker import (
     EntityExtractionWorker,
 )
 from qdrant_loader.core.types import (
+    EntityType,
     ExtractedEntity,
     ExtractedRelationship,
-    EntityType,
     RelationshipType,
 )
 
@@ -43,7 +42,7 @@ class TestEntityExtractionWorker:
             content_type="text/plain",
             source_type="web",
             metadata={},
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
     @pytest.fixture

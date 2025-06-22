@@ -1,16 +1,17 @@
 """Priority coverage tests for MCP handler - targeting 195 missed lines."""
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.exceptions import (
-    SearchEngineError,
-    QdrantConnectionError,
-    Neo4jConnectionError,
-    OpenAIEmbeddingError,
-    HybridSearchError,
     FusionStrategyError,
     GraphitiError,
+    HybridSearchError,
+    Neo4jConnectionError,
+    OpenAIEmbeddingError,
+    QdrantConnectionError,
+    SearchEngineError,
 )
 
 

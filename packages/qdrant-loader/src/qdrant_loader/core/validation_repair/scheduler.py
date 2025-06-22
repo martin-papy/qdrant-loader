@@ -6,27 +6,25 @@ including job management, persistence, and conflict resolution.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from datetime import datetime
+from typing import Any
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.executors.asyncio import AsyncIOExecutor
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.events import (
-    EVENT_JOB_EXECUTED,
     EVENT_JOB_ERROR,
+    EVENT_JOB_EXECUTED,
     EVENT_JOB_MISSED,
     JobExecutionEvent,
 )
+from apscheduler.executors.asyncio import AsyncIOExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import BaseModel
 
 from ...config.validation import ValidationConfig
 from .integrator import ValidationRepairSystemIntegrator
-from .models import ValidationReport
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +35,13 @@ class ScheduledJobInfo(BaseModel):
     job_id: str
     name: str
     schedule_type: str  # 'interval' or 'cron'
-    schedule_config: Dict[str, Any]
-    next_run_time: Optional[datetime] = None
-    last_run_time: Optional[datetime] = None
+    schedule_config: dict[str, Any]
+    next_run_time: datetime | None = None
+    last_run_time: datetime | None = None
     is_active: bool = True
     created_at: datetime
     failure_count: int = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
 
 
 class ValidationScheduler:
@@ -53,7 +51,7 @@ class ValidationScheduler:
         self,
         validation_integrator: ValidationRepairSystemIntegrator,
         config: ValidationConfig,
-        job_store_url: Optional[str] = None,
+        job_store_url: str | None = None,
     ):
         """Initialize the validation scheduler.
 
@@ -65,9 +63,9 @@ class ValidationScheduler:
         self.validation_integrator = validation_integrator
         self.config = config
         self.job_store_url = job_store_url
-        self._scheduler: Optional[AsyncIOScheduler] = None
-        self._active_jobs: Set[str] = set()
-        self._job_info: Dict[str, ScheduledJobInfo] = {}
+        self._scheduler: AsyncIOScheduler | None = None
+        self._active_jobs: set[str] = set()
+        self._job_info: dict[str, ScheduledJobInfo] = {}
         self._shutdown_event = asyncio.Event()
 
     async def start(self) -> None:
@@ -126,7 +124,7 @@ class ValidationScheduler:
             )
             try:
                 await asyncio.wait_for(self._wait_for_jobs_completion(), timeout=60.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Timeout waiting for jobs to complete, forcing shutdown")
 
         # Shutdown scheduler
@@ -165,10 +163,10 @@ class ValidationScheduler:
         self,
         job_id: str,
         schedule_type: str = "daily",
-        schedule_config: Optional[Dict[str, Any]] = None,
-        scanners: Optional[List[str]] = None,
+        schedule_config: dict[str, Any] | None = None,
+        scanners: list[str] | None = None,
         auto_repair: bool = False,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> bool:
         """Schedule a validation job.
 
@@ -228,7 +226,7 @@ class ValidationScheduler:
             logger.error(f"Failed to schedule validation job {job_id}: {e}")
             return False
 
-    def _create_trigger(self, schedule_type: str, config: Dict[str, Any]) -> Any:
+    def _create_trigger(self, schedule_type: str, config: dict[str, Any]) -> Any:
         """Create an APScheduler trigger based on schedule type and config."""
         if schedule_type == "hourly":
             return IntervalTrigger(hours=1, **config)
@@ -252,7 +250,7 @@ class ValidationScheduler:
     async def _run_scheduled_validation(
         self,
         job_id: str,
-        scanners: Optional[List[str]] = None,
+        scanners: list[str] | None = None,
         auto_repair: bool = False,
     ) -> None:
         """Run a scheduled validation job.
@@ -287,7 +285,7 @@ class ValidationScheduler:
             else:
                 logger.warning(f"Scheduled validation {job_id} returned no report")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"Scheduled validation job {job_id} timed out")
             raise
         except Exception as e:
@@ -364,7 +362,7 @@ class ValidationScheduler:
             logger.error(f"Failed to resume validation job {job_id}: {e}")
             return False
 
-    def get_job_info(self, job_id: str) -> Optional[ScheduledJobInfo]:
+    def get_job_info(self, job_id: str) -> ScheduledJobInfo | None:
         """Get information about a scheduled job.
 
         Args:
@@ -381,7 +379,7 @@ class ValidationScheduler:
                 job_info.next_run_time = job.next_run_time
         return job_info
 
-    def list_jobs(self) -> List[ScheduledJobInfo]:
+    def list_jobs(self) -> list[ScheduledJobInfo]:
         """List all scheduled validation jobs.
 
         Returns:
@@ -397,7 +395,7 @@ class ValidationScheduler:
             jobs.append(job_info)
         return jobs
 
-    def get_active_jobs(self) -> Set[str]:
+    def get_active_jobs(self) -> set[str]:
         """Get the set of currently active job IDs.
 
         Returns:

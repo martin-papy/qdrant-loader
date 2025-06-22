@@ -12,7 +12,6 @@ from typing import Any, cast
 
 import pytest
 import pytest_asyncio
-
 from qdrant_loader.core.atomic_transactions import AtomicTransactionManager
 from qdrant_loader.core.conflict_resolution import ConflictResolutionSystem
 from qdrant_loader.core.entity_extractor import EntityExtractor, ExtractionConfig
@@ -27,7 +26,6 @@ from qdrant_loader.core.sync.conflict_monitor import (
     SyncMonitoringLevel,
 )
 from qdrant_loader.core.sync.enhanced_event_system import EnhancedSyncEventSystem
-from qdrant_client.http import models
 
 
 class TestEndToEndPipeline:
@@ -427,7 +425,7 @@ class TestEndToEndPipeline:
                 "payload": {"title": "Test Document"},
                 "vector": [0.1] * 384,
             }
-        except Exception as e:
+        except Exception:
             return None
 
     async def _get_neo4j_document(self, document_id: str) -> dict[str, Any] | None:
@@ -442,7 +440,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return result[0]["d"] if result else None
-        except Exception as e:
+        except Exception:
             return None
 
     async def _get_extracted_entities(self, document_id: str) -> list[dict[str, Any]]:
@@ -457,7 +455,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["e"] for record in result]
-        except Exception as e:
+        except Exception:
             return []
 
     async def _get_entity_relationships(self, document_id: str) -> list[dict[str, Any]]:
@@ -480,7 +478,7 @@ class TestEndToEndPipeline:
                 }
                 for record in result
             ]
-        except Exception as e:
+        except Exception:
             return []
 
     async def _get_document_version_history(
@@ -498,7 +496,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["prev"] for record in result]
-        except Exception as e:
+        except Exception:
             return []
 
     async def _get_temporal_relationships(
@@ -523,7 +521,7 @@ class TestEndToEndPipeline:
                 }
                 for record in result
             ]
-        except Exception as e:
+        except Exception:
             return []
 
     async def _get_temporal_nodes(self, document_id: str) -> list[dict[str, Any]]:
@@ -538,7 +536,7 @@ class TestEndToEndPipeline:
                 self.neo4j_manager.execute_query, query, {"document_id": document_id}
             )
             return [record["t"] for record in result]
-        except Exception as e:
+        except Exception:
             return []
 
     async def _get_graphiti_episodes(self, document_id: str) -> list[dict[str, Any]]:

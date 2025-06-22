@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-
 from qdrant_loader_mcp_server.search.enhanced_hybrid.graph_search import (
     GraphSearchModule,
 )

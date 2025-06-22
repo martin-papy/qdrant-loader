@@ -4,7 +4,6 @@ import logging
 from unittest.mock import Mock, patch
 
 import pytest
-
 from qdrant_loader.core.text_processing.semantic_analyzer import (
     SemanticAnalysisResult,
     SemanticAnalyzer,

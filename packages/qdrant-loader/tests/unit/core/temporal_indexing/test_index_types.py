@@ -1,11 +1,9 @@
 """Tests for temporal index types and data structures."""
 
-import uuid
 from datetime import UTC, datetime
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
-
 from qdrant_loader.core.temporal_indexing.index_types import (
     IndexStatus,
     IndexType,

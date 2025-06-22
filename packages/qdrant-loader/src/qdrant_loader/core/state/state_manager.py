@@ -6,12 +6,9 @@ import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import quote
 
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
@@ -179,7 +176,7 @@ class StateManager:
             self.logger.debug(f"About to create async engine with URL: {aiosqlite_url}")
 
             self._engine = create_async_engine(aiosqlite_url, **engine_args)
-            self.logger.debug(f"Async engine created successfully")
+            self.logger.debug("Async engine created successfully")
 
             # Create session factory
             self.logger.debug("Creating session factory")

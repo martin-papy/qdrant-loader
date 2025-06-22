@@ -1,17 +1,17 @@
 """Tests for custom edge schemas."""
 
-import pytest
 from datetime import datetime
-from pydantic import ValidationError
 
+import pytest
+from pydantic import ValidationError
 from qdrant_loader.schemas.edges import (
-    DocumentRelationshipEdge,
-    ContainsEdge,
-    ReferencesEdge,
     AuthoredByEdge,
     BelongsToEdge,
-    RelatedToEdge,
+    ContainsEdge,
     DerivedFromEdge,
+    DocumentRelationshipEdge,
+    ReferencesEdge,
+    RelatedToEdge,
 )
 
 

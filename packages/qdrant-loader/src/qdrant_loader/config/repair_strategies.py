@@ -4,7 +4,7 @@ This module defines configuration for repair strategies, repair handler behavior
 and repair operation policies for different types of validation issues.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import Field
 
@@ -48,7 +48,7 @@ class RepairHandlerConfig(BaseConfig):
         default=False, description="Create backup before performing repair"
     )
 
-    custom_parameters: Dict[str, Any] = Field(
+    custom_parameters: dict[str, Any] = Field(
         default_factory=dict, description="Handler-specific custom parameters"
     )
 
@@ -217,7 +217,7 @@ class RepairStrategiesConfig(BaseConfig):
     )
 
     # Repair policies
-    repair_policies: Dict[str, Any] = Field(
+    repair_policies: dict[str, Any] = Field(
         default_factory=lambda: {
             "auto_repair_severity_threshold": "warning",  # Auto-repair for warning and above
             "critical_issue_escalation": True,
@@ -230,7 +230,7 @@ class RepairStrategiesConfig(BaseConfig):
     )
 
     # Repair prioritization
-    repair_priorities: Dict[str, int] = Field(
+    repair_priorities: dict[str, int] = Field(
         default_factory=lambda: {
             "critical_data_loss": 10,
             "orphaned_records": 8,
@@ -245,7 +245,7 @@ class RepairStrategiesConfig(BaseConfig):
     )
 
     # Notification settings for repairs
-    repair_notifications: Dict[str, Any] = Field(
+    repair_notifications: dict[str, Any] = Field(
         default_factory=lambda: {
             "notify_on_start": False,
             "notify_on_completion": True,
@@ -259,7 +259,7 @@ class RepairStrategiesConfig(BaseConfig):
 
     def get_repair_handler_config(
         self, handler_name: str
-    ) -> Optional[RepairHandlerConfig]:
+    ) -> RepairHandlerConfig | None:
         """Get configuration for a specific repair handler.
 
         Args:
@@ -270,7 +270,7 @@ class RepairStrategiesConfig(BaseConfig):
         """
         return getattr(self, handler_name, None)
 
-    def get_enabled_handlers(self) -> List[str]:
+    def get_enabled_handlers(self) -> list[str]:
         """Get list of enabled repair handler names.
 
         Returns:
@@ -291,7 +291,7 @@ class RepairStrategiesConfig(BaseConfig):
                 enabled_handlers.append(handler_name)
         return enabled_handlers
 
-    def get_auto_executable_handlers(self) -> List[str]:
+    def get_auto_executable_handlers(self) -> list[str]:
         """Get list of repair handlers that can auto-execute.
 
         Returns:
@@ -304,7 +304,7 @@ class RepairStrategiesConfig(BaseConfig):
                 auto_handlers.append(handler_name)
         return auto_handlers
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a dictionary."""
         return {
             "global_max_repairs_per_run": self.global_max_repairs_per_run,

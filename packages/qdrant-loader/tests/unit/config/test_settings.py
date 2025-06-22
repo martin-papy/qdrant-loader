@@ -3,9 +3,9 @@ Unit tests for the main Settings class and its interactions.
 """
 
 import pytest
-from qdrant_loader.config import Settings, GlobalConfig
-from qdrant_loader.config.qdrant import QdrantConfig
+from qdrant_loader.config import GlobalConfig, Settings
 from qdrant_loader.config.neo4j import Neo4jConfig
+from qdrant_loader.config.qdrant import QdrantConfig
 
 
 def test_settings_initialization_with_minimal_config():

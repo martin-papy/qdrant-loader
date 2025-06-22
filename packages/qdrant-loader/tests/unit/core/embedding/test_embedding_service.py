@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 import openai
 import pytest
 from openai.types.create_embedding_response import CreateEmbeddingResponse
-
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.embedding.embedding_service import EmbeddingService

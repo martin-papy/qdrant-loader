@@ -3,7 +3,6 @@
 import os
 import signal
 import sys
-import tempfile
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
@@ -275,7 +274,7 @@ class FileConverter:
             with open(file_path, "rb") as f:
                 # Just try to read the first byte to check readability
                 f.read(1)
-        except (OSError, IOError, PermissionError):
+        except (OSError, PermissionError):
             raise FileAccessError(f"File is not readable: {file_path}")
 
         # Check if file is supported for conversion

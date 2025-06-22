@@ -1,10 +1,10 @@
 """Comprehensive tests for DocumentPipeline."""
 
 import asyncio
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, Mock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.pipeline.document_pipeline import DocumentPipeline
 from qdrant_loader.core.pipeline.workers.upsert_worker import PipelineResult
@@ -25,7 +25,7 @@ class TestDocumentPipeline:
                 content_type="text/plain",
                 source_type="web",
                 metadata={},
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ),
             Document(
                 title="Test Document 2",
@@ -35,7 +35,7 @@ class TestDocumentPipeline:
                 content_type="text/plain",
                 source_type="web",
                 metadata={},
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ),
         ]
 
@@ -80,9 +80,9 @@ class TestDocumentPipeline:
         """Create a mock EntityExtractionWorker with async generator."""
         from qdrant_loader.core.entity_extractor import ExtractionResult
         from qdrant_loader.core.types import (
+            EntityType,
             ExtractedEntity,
             ExtractedRelationship,
-            EntityType,
             RelationshipType,
         )
 
@@ -517,19 +517,21 @@ class TestDocumentPipeline:
         self, pipeline_without_entity_extraction, sample_documents
     ):
         """Test that appropriate logging methods are called during pipeline execution."""
-        with patch("qdrant_loader.core.pipeline.document_pipeline.logger") as mock_logger:
+        with patch(
+            "qdrant_loader.core.pipeline.document_pipeline.logger"
+        ) as mock_logger:
             await pipeline_without_entity_extraction.process_documents(sample_documents)
 
             # Verify that logger.info was called with expected messages
             info_calls = [call for call in mock_logger.info.call_args_list]
-            
+
             # Extract the actual message strings from the calls
             info_messages = []
             for call in info_calls:
                 args, kwargs = call
                 if args:
                     info_messages.append(str(args[0]))
-            
+
             # Check for key log messages
             assert any(
                 f"Processing {len(sample_documents)} documents through pipeline" in msg
@@ -540,7 +542,10 @@ class TestDocumentPipeline:
                 "Chunking completed, transitioning to embedding phase" in msg
                 for msg in info_messages
             )
-            assert any("Embedding phase ready, starting upsert phase" in msg for msg in info_messages)
+            assert any(
+                "Embedding phase ready, starting upsert phase" in msg
+                for msg in info_messages
+            )
             assert any("Pipeline completed:" in msg for msg in info_messages)
 
     @pytest.mark.asyncio

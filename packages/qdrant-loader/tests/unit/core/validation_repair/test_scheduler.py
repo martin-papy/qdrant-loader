@@ -5,28 +5,24 @@ including job management, persistence, event handling, and error scenarios.
 """
 
 import asyncio
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, call
-from typing import Dict, Any, List, Optional
+from unittest.mock import AsyncMock, Mock, patch
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+import pytest
+from apscheduler.events import JobExecutionEvent
 from apscheduler.executors.asyncio import AsyncIOExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.events import JobExecutionEvent, EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-
-from qdrant_loader.core.validation_repair.scheduler import (
-    ValidationScheduler,
-    ScheduledJobInfo,
-)
 from qdrant_loader.config.validation import ValidationConfig
 from qdrant_loader.core.validation_repair.integrator import (
     ValidationRepairSystemIntegrator,
 )
 from qdrant_loader.core.validation_repair.models import ValidationReport
+from qdrant_loader.core.validation_repair.scheduler import (
+    ScheduledJobInfo,
+    ValidationScheduler,
+)
 
 
 class TestScheduledJobInfo:
@@ -686,7 +682,7 @@ class TestValidationScheduler:
     ):
         """Test scheduled validation timeout."""
         mock_validation_integrator.trigger_validation.side_effect = (
-            asyncio.TimeoutError()
+            TimeoutError()
         )
 
         with pytest.raises(asyncio.TimeoutError):

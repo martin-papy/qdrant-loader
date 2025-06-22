@@ -4,19 +4,18 @@ This conftest.py ensures that test environment variables are loaded
 before any module-level configuration checks are performed.
 """
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
-
+from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager, MappingType
 from qdrant_loader.core.managers.neo4j_manager import Neo4jManager
 from qdrant_loader.core.managers.qdrant_manager import QdrantManager
-from qdrant_loader.core.managers.id_mapping_manager import IDMappingManager, MappingType
-from qdrant_loader.core.types import EntityType, TemporalInfo
-
+from qdrant_loader.core.types import EntityType
 
 # Load environment variables at import time
 tests_dir = Path(__file__).parent.parent

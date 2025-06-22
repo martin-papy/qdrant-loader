@@ -1,7 +1,6 @@
 import os
-import sys
 from datetime import UTC, datetime
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.connectors.metadata.base import MetadataExtractionConfig

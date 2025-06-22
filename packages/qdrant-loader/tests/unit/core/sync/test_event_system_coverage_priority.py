@@ -7,10 +7,8 @@ Focuses on testable components without async polling issues.
 import json
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
-
 from qdrant_loader.core.managers import MappingType
 from qdrant_loader.core.sync.event_system import (
     ChangeEvent,
@@ -26,7 +24,7 @@ class TestChangeEvent:
     def test_change_event_creation_defaults(self):
         """Test ChangeEvent creation with default values."""
         event = ChangeEvent()
-        
+
         assert event.event_id is not None
         assert isinstance(event.timestamp, datetime)
         assert event.change_type == ChangeType.UPDATE
@@ -224,7 +222,9 @@ class TestChangeEvent:
         assert event.entity_id is None
         assert event.affected_fields == set()
         assert event.metadata is None  # ChangeEvent preserves None for metadata
-        assert event.processing_errors is None  # ChangeEvent preserves None for processing_errors
+        assert (
+            event.processing_errors is None
+        )  # ChangeEvent preserves None for processing_errors
 
     def test_change_event_json_serialization(self):
         """Test ChangeEvent JSON serialization round-trip."""
@@ -414,7 +414,7 @@ class TestEventSystemUtilities:
             "list_value": [1, 2, 3],
             "dict_value": {"nested": "value"},
         }
-        
+
         event = ChangeEvent(metadata=metadata)
         assert event.metadata == metadata
 
@@ -446,7 +446,7 @@ class TestEventSystemUtilities:
             "list": [1, 2, 3],
             "nested": {"key": "old_nested_value"},
         }
-        
+
         new_data = {
             "string": "new_value",
             "number": 200,
@@ -483,7 +483,7 @@ class TestEventSystemUtilities:
         for entity_type in entity_types:
             event = ChangeEvent(entity_type=entity_type)
             assert event.entity_type == entity_type
-            
+
             # Test serialization/deserialization
             event_dict = event.to_dict()
             restored_event = ChangeEvent.from_dict(event_dict)
@@ -496,8 +496,8 @@ class TestEventSystemUtilities:
         for mapping_type in mapping_types:
             event = ChangeEvent(mapping_type=mapping_type)
             assert event.mapping_type == mapping_type
-            
+
             # Test serialization/deserialization
             event_dict = event.to_dict()
             restored_event = ChangeEvent.from_dict(event_dict)
-            assert restored_event.mapping_type == mapping_type 
+            assert restored_event.mapping_type == mapping_type

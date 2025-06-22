@@ -9,11 +9,10 @@ coverage from 88% to 95%+. It focuses on:
 - Rebuild and maintenance operations
 """
 
-import asyncio
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, AsyncMock, PropertyMock
+from unittest.mock import patch
 
+import pytest
 from qdrant_loader.core.temporal_indexing.composite_index import TemporalCompositeIndex
 from qdrant_loader.core.temporal_indexing.index_types import (
     IndexStatus,

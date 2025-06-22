@@ -10,19 +10,15 @@ coverage from 80% to 90%+. It focuses on:
 """
 
 import asyncio
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from qdrant_loader.core.temporal_indexing.index_manager import TemporalIndexManager
 from qdrant_loader.core.temporal_indexing.index_types import (
-    IndexStatus,
     IndexType,
     TemporalIndexConfig,
-    TemporalQueryHint,
 )
-from qdrant_loader.core.temporal_indexing.btree_index import TemporalBTreeIndex
-from qdrant_loader.core.temporal_indexing.composite_index import TemporalCompositeIndex
 
 
 class TestTemporalIndexManagerEnhanced:

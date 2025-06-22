@@ -1,10 +1,6 @@
 """Tests for version types and data structures."""
 
-import uuid
 from datetime import UTC, datetime
-from unittest.mock import patch
-
-import pytest
 
 from qdrant_loader.core.versioning.version_types import (
     VersionConfig,

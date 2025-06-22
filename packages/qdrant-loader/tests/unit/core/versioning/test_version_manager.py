@@ -5,10 +5,10 @@ all versioning operations using the modular versioning components.
 """
 
 import asyncio
-import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from qdrant_loader.core.versioning import (
     VersionConfig,
     VersionDiff,

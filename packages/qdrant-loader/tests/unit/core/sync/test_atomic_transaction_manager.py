@@ -9,7 +9,6 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-
 from qdrant_loader.core.atomic_transactions import (
     AtomicTransactionManager,
     CompensationAction,

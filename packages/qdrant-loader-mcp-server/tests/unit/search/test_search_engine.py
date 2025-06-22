@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.models import SearchResult
 from qdrant_loader_mcp_server.search.exceptions import QdrantConnectionError
+from qdrant_loader_mcp_server.search.models import SearchResult
 
 
 @pytest.fixture

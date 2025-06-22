@@ -1,20 +1,18 @@
 """Comprehensive tests for ValidationScanners class."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
-from qdrant_client.models import PointStruct
-from typing import Any, Dict, List
 
-from qdrant_loader.core.validation_repair.scanners import ValidationScanners
-from qdrant_loader.core.validation_repair.models import (
-    ValidationIssue,
-    ValidationCategory,
-    ValidationSeverity,
-    RepairAction,
-)
+import pytest
+from qdrant_client.models import PointStruct
 from qdrant_loader.core.managers import IDMapping, MappingStatus, MappingType
 from qdrant_loader.core.types import EntityType
+from qdrant_loader.core.validation_repair.models import (
+    RepairAction,
+    ValidationCategory,
+    ValidationIssue,
+    ValidationSeverity,
+)
+from qdrant_loader.core.validation_repair.scanners import ValidationScanners
 
 
 class TestValidationScanners:

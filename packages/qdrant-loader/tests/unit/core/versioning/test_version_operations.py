@@ -4,18 +4,13 @@ This module tests the core version operations including creation,
 retrieval, comparison, rollback, and snapshot functionality.
 """
 
-import hashlib
-import json
-import pytest
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from qdrant_loader.core.versioning import (
     VersionConfig,
-    VersionDiff,
     VersionMetadata,
     VersionOperation,
-    VersionSnapshot,
     VersionStatus,
     VersionType,
 )

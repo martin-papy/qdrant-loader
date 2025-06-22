@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-
 from qdrant_loader.core.operation_differentiation import (
     OperationCharacteristics,
     OperationComplexity,

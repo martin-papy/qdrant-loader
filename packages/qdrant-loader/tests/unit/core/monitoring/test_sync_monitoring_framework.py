@@ -8,7 +8,6 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from qdrant_loader.monitoring.sync_monitoring_framework import (
     Alert,
     AlertSeverity,
