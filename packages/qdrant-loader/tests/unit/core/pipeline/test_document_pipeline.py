@@ -436,7 +436,9 @@ class TestDocumentPipeline:
                 raise Exception("Entity extraction failed")
             yield  # This makes it a generator but is never reached
 
-        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = failing_process_documents
+        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = (
+            failing_process_documents
+        )
 
         # Should raise the exception
         with pytest.raises(Exception, match="Entity extraction failed"):
@@ -501,7 +503,9 @@ class TestDocumentPipeline:
                 raise asyncio.CancelledError()
             yield  # This makes it a generator but is never reached
 
-        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = cancelling_entity_extraction
+        pipeline_with_entity_extraction.entity_extraction_worker.process_documents = (
+            cancelling_entity_extraction
+        )
 
         result = await pipeline_with_entity_extraction.process_documents(
             sample_documents

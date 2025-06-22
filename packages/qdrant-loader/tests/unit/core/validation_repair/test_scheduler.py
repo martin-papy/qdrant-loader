@@ -681,9 +681,7 @@ class TestValidationScheduler:
         self, scheduler, mock_validation_integrator
     ):
         """Test scheduled validation timeout."""
-        mock_validation_integrator.trigger_validation.side_effect = (
-            TimeoutError()
-        )
+        mock_validation_integrator.trigger_validation.side_effect = TimeoutError()
 
         with pytest.raises(asyncio.TimeoutError):
             await scheduler._run_scheduled_validation(job_id="test_job")

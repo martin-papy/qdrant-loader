@@ -306,9 +306,7 @@ Report ID: {report_id}
         description="Escalation settings for critical notifications",
     )
 
-    def get_channel_config(
-        self, channel_name: str
-    ) -> NotificationChannelConfig | None:
+    def get_channel_config(self, channel_name: str) -> NotificationChannelConfig | None:
         """Get configuration for a specific notification channel.
 
         Args:

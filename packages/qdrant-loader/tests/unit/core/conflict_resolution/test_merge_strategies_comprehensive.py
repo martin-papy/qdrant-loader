@@ -10,20 +10,19 @@ Focus areas:
 - AdvancedMergeStrategy: merge_data orchestration.
 """
 
-import pytest
-import uuid
-from datetime import datetime, UTC
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
+import pytest
 from qdrant_loader.core.conflict_resolution.merge_strategies import (
-    FieldLevelMerger,
-    SemanticConflictDetector,
-    ThreeWayMerger,
     AdvancedMergeStrategy,
-    MergeStrategy,
     ConflictType,
+    FieldLevelMerger,
     MergeConflict,
     MergeResult,
+    MergeStrategy,
+    SemanticConflictDetector,
+    ThreeWayMerger,
 )
 
 
@@ -31,13 +30,16 @@ from qdrant_loader.core.conflict_resolution.merge_strategies import (
 def field_level_merger():
     return FieldLevelMerger()
 
+
 @pytest.fixture
 def semantic_conflict_detector():
     return SemanticConflictDetector()
 
+
 @pytest.fixture
 def three_way_merger(field_level_merger):
     return ThreeWayMerger(field_merger=field_level_merger)
+
 
 @pytest.fixture
 def advanced_merge_strategy():
@@ -69,32 +71,38 @@ class TestFieldLevelMerger:
         # Default behavior: if a field exists in both and it's a simple value, target's value is kept.
         # Source values for existing keys are effectively ignored unless resolution logic changes this.
         # New keys from source are added.
-        expected_merged = {"a": 0, "b": "old_value", "c": True} # Target's 'a' and 'b' win
+        expected_merged = {
+            "a": 0,
+            "b": "old_value",
+            "c": True,
+        }  # Target's 'a' and 'b' win
 
         result = await field_level_merger.merge_fields(source, target)
 
         assert result.success
         assert result.merged_data == expected_merged
         # A conflict should be reported because source had different values for 'a' and 'b'
-        assert len(result.conflicts) == 2 # One for 'a', one for 'b'
+        assert len(result.conflicts) == 2  # One for 'a', one for 'b'
         # Check one of the conflicts to ensure it's logged correctly
-        conflict_a = next(c for c in result.conflicts if c.field_path == 'a')
+        conflict_a = next(c for c in result.conflicts if c.field_path == "a")
         assert conflict_a.source_value == 1
         assert conflict_a.target_value == 0
         assert result.fields_merged == 3
 
     @pytest.mark.asyncio
-    async def test_merge_value_conflict_no_ancestor(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_value_conflict_no_ancestor(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test value conflict when source and target differ, no ancestor."""
         source = {"key": "source_val"}
         target = {"key": "target_val"}
-        
+
         # Expect target to win by default if no other rules
         expected_merged = {"key": "target_val"}
 
         result = await field_level_merger.merge_fields(source, target)
-        
-        assert result.success # Merge itself succeeds
+
+        assert result.success  # Merge itself succeeds
         assert result.merged_data == expected_merged
         assert len(result.conflicts) == 1
         conflict = result.conflicts[0]
@@ -106,14 +114,19 @@ class TestFieldLevelMerger:
         # By default, FieldLevelMerger might pick target, or last processed.
         # Let's assume it picks target and logs source as the conflicting one.
         # The default _resolve_field_conflict might set merged_data[field_path] = target_value
-        assert result.merged_data["key"] == "target_val" 
+        assert result.merged_data["key"] == "target_val"
 
     @pytest.mark.asyncio
-    async def test_merge_nested_data_no_conflict(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_nested_data_no_conflict(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merging of nested dictionaries. Expect a conflict at parent if structure changes by merge."""
         source = {"user": {"name": "Alice", "age": 30}}
         target = {"user": {"city": "New York"}, "status": "active"}
-        expected_merged = {"user": {"name": "Alice", "age": 30, "city": "New York"}, "status": "active"}
+        expected_merged = {
+            "user": {"name": "Alice", "age": 30, "city": "New York"},
+            "status": "active",
+        }
 
         result = await field_level_merger.merge_fields(source, target)
 
@@ -121,8 +134,10 @@ class TestFieldLevelMerger:
         assert result.merged_data == expected_merged
         # A conflict might be logged for 'user' because its value (the dict) changed by merging.
         # We care that the final content is correct and the leaf nodes didn't have direct value conflicts.
-        user_conflict = next((c for c in result.conflicts if c.field_path == 'user'), None)
-        assert user_conflict is not None # Expecting a conflict at 'user' level
+        user_conflict = next(
+            (c for c in result.conflicts if c.field_path == "user"), None
+        )
+        assert user_conflict is not None  # Expecting a conflict at 'user' level
         assert user_conflict.conflict_type == ConflictType.VALUE_CONFLICT
         # Ensure no conflicts for sub-fields like user.name, user.age, user.city
         assert not any(c.field_path == "user.name" for c in result.conflicts)
@@ -130,77 +145,103 @@ class TestFieldLevelMerger:
         assert not any(c.field_path == "user.city" for c in result.conflicts)
 
     @pytest.mark.asyncio
-    async def test_merge_nested_value_conflict(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_nested_value_conflict(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test value conflict in a nested field, focusing on the leaf conflict."""
         source = {"user": {"details": {"email": "source@example.com"}}}
         target = {"user": {"details": {"email": "target@example.com"}}}
-        expected_merged_data = {"user": {"details": {"email": "target@example.com"}}} # Assuming target wins by default
+        expected_merged_data = {
+            "user": {"details": {"email": "target@example.com"}}
+        }  # Assuming target wins by default
 
         result = await field_level_merger.merge_fields(source, target)
 
         assert result.success
         assert result.merged_data == expected_merged_data
-        
+
         # Check for the specific leaf conflict
-        leaf_conflict = next((c for c in result.conflicts if c.field_path == "user.details.email"), None)
+        leaf_conflict = next(
+            (c for c in result.conflicts if c.field_path == "user.details.email"), None
+        )
         assert leaf_conflict is not None, "Conflict at user.details.email not found"
         assert leaf_conflict.conflict_type == ConflictType.VALUE_CONFLICT
         assert leaf_conflict.source_value == "source@example.com"
         assert leaf_conflict.target_value == "target@example.com"
         # Ensure the number of conflicts for this specific path is 1
-        assert sum(1 for c in result.conflicts if c.field_path == "user.details.email") == 1
+        assert (
+            sum(1 for c in result.conflicts if c.field_path == "user.details.email")
+            == 1
+        )
 
     @pytest.mark.asyncio
-    async def test_merge_add_new_nested_structure(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_add_new_nested_structure(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test adding a completely new nested structure from source."""
         source = {"preferences": {"theme": "dark", "notifications": {"email": True}}}
         target = {"user": "ID123"}
-        expected_merged = {"user": "ID123", "preferences": {"theme": "dark", "notifications": {"email": True}}}
+        expected_merged = {
+            "user": "ID123",
+            "preferences": {"theme": "dark", "notifications": {"email": True}},
+        }
 
         result = await field_level_merger.merge_fields(source, target)
 
         assert result.success
         assert result.merged_data == expected_merged
         assert not result.conflicts
-        
+
     @pytest.mark.asyncio
     async def test_get_field_paths_utility(self, field_level_merger: FieldLevelMerger):
         """Test the _get_field_paths utility method."""
-        data = {"a": 1, "b": {"c": 2, "d": {"e": 3}}, "f": [1,2]}
+        data = {"a": 1, "b": {"c": 2, "d": {"e": 3}}, "f": [1, 2]}
         expected_paths = {"a", "b", "b.c", "b.d", "b.d.e", "f"}
-        
+
         # This method is not async
         paths = field_level_merger._get_field_paths(data)
         assert paths == expected_paths
 
     @pytest.mark.asyncio
-    async def test_get_set_nested_value_utility(self, field_level_merger: FieldLevelMerger):
+    async def test_get_set_nested_value_utility(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test _get_nested_value and _set_nested_value utilities."""
         data = {}
         # Test setting
         field_level_merger._set_nested_value(data, "user.profile.name", "John Doe")
         field_level_merger._set_nested_value(data, "user.profile.age", 30)
         field_level_merger._set_nested_value(data, "user.roles", ["admin", "editor"])
-        
+
         assert data == {
             "user": {
                 "profile": {"name": "John Doe", "age": 30},
-                "roles": ["admin", "editor"]
+                "roles": ["admin", "editor"],
             }
         }
 
         # Test getting
-        assert field_level_merger._get_nested_value(data, "user.profile.name") == "John Doe"
-        assert field_level_merger._get_nested_value(data, "user.roles") == ["admin", "editor"]
-        assert field_level_merger._get_nested_value(data, "non.existent.path") is None # Default behavior for missing path
+        assert (
+            field_level_merger._get_nested_value(data, "user.profile.name")
+            == "John Doe"
+        )
+        assert field_level_merger._get_nested_value(data, "user.roles") == [
+            "admin",
+            "editor",
+        ]
+        assert (
+            field_level_merger._get_nested_value(data, "non.existent.path") is None
+        )  # Default behavior for missing path
 
     @pytest.mark.asyncio
-    async def test_merge_with_ancestor_no_conflict(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_with_ancestor_no_conflict(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merge where source changes a value from ancestor, target is same as ancestor.
         Current behavior: target value (which is same as ancestor) is kept. Conflict is logged.
         """
-        source =   {"key": "source_new", "common": "value"}
-        target =   {"key": "ancestor_original", "common": "value"}
+        source = {"key": "source_new", "common": "value"}
+        target = {"key": "ancestor_original", "common": "value"}
         ancestor = {"key": "ancestor_original", "common": "value"}
         # Observed: target/ancestor value is kept
         expected_merged = {"key": "ancestor_original", "common": "value"}
@@ -218,19 +259,24 @@ class TestFieldLevelMerger:
         assert conflict.ancestor_value == "ancestor_original"
 
     @pytest.mark.asyncio
-    async def test_merge_with_ancestor_target_changed(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_with_ancestor_target_changed(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merge where target changes, source is same as ancestor. Expect conflict."""
-        source =   {"key": "ancestor_original", "common": "value"}
-        target =   {"key": "target_new", "common": "value"}
+        source = {"key": "ancestor_original", "common": "value"}
+        target = {"key": "target_new", "common": "value"}
         ancestor = {"key": "ancestor_original", "common": "value"}
-        expected_merged = {"key": "target_new", "common": "value"} # Target's change is kept
+        expected_merged = {
+            "key": "target_new",
+            "common": "value",
+        }  # Target's change is kept
 
         result = await field_level_merger.merge_fields(source, target, ancestor)
 
         assert result.success
         assert result.merged_data == expected_merged
         # A conflict is logged because source and target values for 'key' are different after merge consideration
-        assert len(result.conflicts) == 1 
+        assert len(result.conflicts) == 1
         conflict = result.conflicts[0]
         assert conflict.field_path == "key"
         assert conflict.source_value == "ancestor_original"
@@ -238,10 +284,12 @@ class TestFieldLevelMerger:
         assert conflict.ancestor_value == "ancestor_original"
 
     @pytest.mark.asyncio
-    async def test_merge_with_ancestor_both_changed_to_same(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_with_ancestor_both_changed_to_same(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merge where source and target change a value from ancestor to the SAME new value."""
-        source =   {"key": "both_new", "common": "value"}
-        target =   {"key": "both_new", "common": "value"}
+        source = {"key": "both_new", "common": "value"}
+        target = {"key": "both_new", "common": "value"}
         ancestor = {"key": "ancestor_original", "common": "value"}
         expected_merged = {"key": "both_new", "common": "value"}
 
@@ -249,16 +297,18 @@ class TestFieldLevelMerger:
 
         assert result.success
         assert result.merged_data == expected_merged
-        assert not result.conflicts # Both changed to the same, no conflict
+        assert not result.conflicts  # Both changed to the same, no conflict
 
     @pytest.mark.asyncio
-    async def test_merge_with_ancestor_true_conflict(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_with_ancestor_true_conflict(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merge where source and target BOTH change a value from ancestor to DIFFERENT new values."""
-        source =   {"key": "source_val"}
-        target =   {"key": "target_val"}
+        source = {"key": "source_val"}
+        target = {"key": "target_val"}
         ancestor = {"key": "ancestor_val"}
         # Default resolution for FieldLevelMerger might be to pick target's value
-        expected_merged = {"key": "target_val"} 
+        expected_merged = {"key": "target_val"}
 
         result = await field_level_merger.merge_fields(source, target, ancestor)
 
@@ -271,18 +321,20 @@ class TestFieldLevelMerger:
         assert conflict.source_value == "source_val"
         assert conflict.target_value == "target_val"
         assert conflict.ancestor_value == "ancestor_val"
-        
+
     @pytest.mark.asyncio
-    async def test_merge_different_types_conflict(self, field_level_merger: FieldLevelMerger):
+    async def test_merge_different_types_conflict(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test merge when source and target have different types for the same field."""
         source = {"data": [1, 2, 3]}  # List
-        target = {"data": {"a": 1}} # Dict
+        target = {"data": {"a": 1}}  # Dict
         # FieldLevelMerger might default to target's type or value.
         expected_merged = {"data": {"a": 1}}
 
         result = await field_level_merger.merge_fields(source, target)
 
-        assert result.success 
+        assert result.success
         assert result.merged_data == expected_merged
         assert len(result.conflicts) == 1
         conflict = result.conflicts[0]
@@ -298,12 +350,14 @@ class TestFieldLevelMerger:
         assert conflict.target_value == {"a": 1}
 
     @pytest.mark.asyncio
-    async def test_field_metadata_timestamp_resolution(self, field_level_merger: FieldLevelMerger):
+    async def test_field_metadata_timestamp_resolution(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test conflict resolution using timestamps from field_metadata."""
         source = {"item": "from_source"}
         target = {"item": "from_target"}
         ancestor = {"item": "from_ancestor"}
-        
+
         # Source is newer
         field_metadata = {
             "item": {
@@ -314,13 +368,17 @@ class TestFieldLevelMerger:
         # Expect source to win due to newer timestamp
         expected_merged_source_wins = {"item": "from_source"}
 
-        result_source_wins = await field_level_merger.merge_fields(source, target, ancestor, field_metadata)
-        
+        result_source_wins = await field_level_merger.merge_fields(
+            source, target, ancestor, field_metadata
+        )
+
         assert result_source_wins.success
         assert result_source_wins.merged_data == expected_merged_source_wins
-        assert len(result_source_wins.conflicts) == 1 # A conflict occurred
+        assert len(result_source_wins.conflicts) == 1  # A conflict occurred
         conflict1 = result_source_wins.conflicts[0]
-        assert conflict1.suggested_resolution == "from_source" # Assuming _resolve_field_conflict uses timestamp
+        assert (
+            conflict1.suggested_resolution == "from_source"
+        )  # Assuming _resolve_field_conflict uses timestamp
 
         # Target is newer
         field_metadata_target_newer = {
@@ -331,7 +389,9 @@ class TestFieldLevelMerger:
         }
         # Expect target to win
         expected_merged_target_wins = {"item": "from_target"}
-        result_target_wins = await field_level_merger.merge_fields(source, target, ancestor, field_metadata_target_newer)
+        result_target_wins = await field_level_merger.merge_fields(
+            source, target, ancestor, field_metadata_target_newer
+        )
 
         assert result_target_wins.success
         assert result_target_wins.merged_data == expected_merged_target_wins
@@ -340,7 +400,9 @@ class TestFieldLevelMerger:
         assert conflict2.suggested_resolution == "from_target"
 
     @pytest.mark.asyncio
-    async def test_field_metadata_priority_resolution(self, field_level_merger: FieldLevelMerger):
+    async def test_field_metadata_priority_resolution(
+        self, field_level_merger: FieldLevelMerger
+    ):
         """Test conflict resolution using field priorities from field_metadata by mocking resolve."""
         source_data = {"config": "source_setting"}
         target_data = {"config": "target_setting"}
@@ -350,7 +412,9 @@ class TestFieldLevelMerger:
         # It will be updated for each case (source wins, target wins)
         current_field_metadata = {}
 
-        async def mock_resolve_behavior(conflict: MergeConflict, merged_data: dict, result: MergeResult):
+        async def mock_resolve_behavior(
+            conflict: MergeConflict, merged_data: dict, result: MergeResult
+        ):
             if conflict.field_path == "config":
                 # Access the metadata relevant to the current test case via the shared dict
                 meta = current_field_metadata.get(conflict.field_path, {})
@@ -365,87 +429,126 @@ class TestFieldLevelMerger:
                     merged_data[conflict.field_path] = conflict.target_value
                     conflict.suggested_resolution = conflict.target_value
                     conflict.resolution_confidence = 0.9
-                else: 
-                    merged_data[conflict.field_path] = conflict.target_value # Default to target
+                else:
+                    merged_data[conflict.field_path] = (
+                        conflict.target_value
+                    )  # Default to target
                     conflict.suggested_resolution = conflict.target_value
-                    conflict.resolution_confidence = 0.5 
-            
+                    conflict.resolution_confidence = 0.5
+
             # If a conflict object was passed, we assume our mock resolves it.
             # The key is that _merge_field might not create/pass a conflict if metadata allows direct resolution.
-            if conflict in result.conflicts: # Only mark as resolved if it was formally logged
-                result.conflicts_resolved +=1
+            if (
+                conflict in result.conflicts
+            ):  # Only mark as resolved if it was formally logged
+                result.conflicts_resolved += 1
                 conflict.requires_manual_review = False
 
         # Case 1: Source has higher priority
         current_field_metadata.clear()
-        current_field_metadata.update({"config": {"source_priority": 10, "target_priority": 5}})
+        current_field_metadata.update(
+            {"config": {"source_priority": 10, "target_priority": 5}}
+        )
         expected_merged_source_wins = {"config": "source_setting"}
-        
-        with patch.object(field_level_merger, '_resolve_field_conflict', new=AsyncMock(side_effect=mock_resolve_behavior)) as mock_resolver_source_wins:
+
+        with patch.object(
+            field_level_merger,
+            "_resolve_field_conflict",
+            new=AsyncMock(side_effect=mock_resolve_behavior),
+        ) as mock_resolver_source_wins:
             result_source_wins = await field_level_merger.merge_fields(
                 source_data, target_data, ancestor_data, current_field_metadata
             )
-        
+
         assert result_source_wins.success
-        assert result_source_wins.merged_data == expected_merged_source_wins, "Source priority failed"
+        assert (
+            result_source_wins.merged_data == expected_merged_source_wins
+        ), "Source priority failed"
         # If _merge_field resolves directly using metadata, no formal conflict object might be created for _resolve_field_conflict.
         # The mock_resolver might be called for other general processing or if a conflict was unexpectedly created.
         # We primarily care that the merged_data is correct due to priority.
         # If a conflict *was* logged, our mock should have set suggested_resolution.
         if result_source_wins.conflicts:
-            conflict1 = next((c for c in result_source_wins.conflicts if c.field_path == "config"), None)
+            conflict1 = next(
+                (c for c in result_source_wins.conflicts if c.field_path == "config"),
+                None,
+            )
             if conflict1:
-                 assert conflict1.suggested_resolution == "source_setting"
+                assert conflict1.suggested_resolution == "source_setting"
         # We expect the resolution pathway to be hit, even if no specific conflict object for "config" is made
         # if _merge_field handles it directly. The mock_resolver could be called for the field regardless.
         # Let's ensure it was called at least once during the merge_fields process.
-        assert mock_resolver_source_wins.called, "Mock resolver not called for source priority case"
-
+        assert (
+            mock_resolver_source_wins.called
+        ), "Mock resolver not called for source priority case"
 
         # Case 2: Target has higher priority
         current_field_metadata.clear()
-        current_field_metadata.update({"config": {"source_priority": 5, "target_priority": 10}})
+        current_field_metadata.update(
+            {"config": {"source_priority": 5, "target_priority": 10}}
+        )
         expected_merged_target_wins = {"config": "target_setting"}
 
-        with patch.object(field_level_merger, '_resolve_field_conflict', new=AsyncMock(side_effect=mock_resolve_behavior)) as mock_resolver_target_wins:
+        with patch.object(
+            field_level_merger,
+            "_resolve_field_conflict",
+            new=AsyncMock(side_effect=mock_resolve_behavior),
+        ) as mock_resolver_target_wins:
             result_target_wins = await field_level_merger.merge_fields(
                 source_data, target_data, ancestor_data, current_field_metadata
             )
 
         assert result_target_wins.success
-        assert result_target_wins.merged_data == expected_merged_target_wins, "Target priority failed"
+        assert (
+            result_target_wins.merged_data == expected_merged_target_wins
+        ), "Target priority failed"
         if result_target_wins.conflicts:
-            conflict2 = next((c for c in result_target_wins.conflicts if c.field_path == "config"), None)
+            conflict2 = next(
+                (c for c in result_target_wins.conflicts if c.field_path == "config"),
+                None,
+            )
             if conflict2:
                 assert conflict2.suggested_resolution == "target_setting"
-        assert mock_resolver_target_wins.called, "Mock resolver not called for target priority case"
+        assert (
+            mock_resolver_target_wins.called
+        ), "Mock resolver not called for target priority case"
 
 
 class TestSemanticConflictDetector:
     """Tests for the SemanticConflictDetector class."""
 
     @pytest.mark.asyncio
-    async def test_no_semantic_conflicts_detected_identical_data(self, semantic_conflict_detector: SemanticConflictDetector):
+    async def test_no_semantic_conflicts_detected_identical_data(
+        self, semantic_conflict_detector: SemanticConflictDetector
+    ):
         """Test case where no semantic conflicts are found with identical data."""
         data1 = {"description": "A blue car", "price": 10000}
-        data2 = {"description": "A blue car", "price": 10000} # Identical data
-        
+        data2 = {"description": "A blue car", "price": 10000}  # Identical data
+
         # Assuming the method takes a single argument bundling the data to compare
         comparison_input = {"data_a": data1, "data_b": data2}
-        conflicts = await semantic_conflict_detector.detect_semantic_conflicts(comparison_input)
-        
+        conflicts = await semantic_conflict_detector.detect_semantic_conflicts(
+            comparison_input
+        )
+
         assert isinstance(conflicts, list), "Should return a list"
-        assert conflicts == [], "Identical data should not produce semantic conflicts by default"
+        assert (
+            conflicts == []
+        ), "Identical data should not produce semantic conflicts by default"
 
     @pytest.mark.asyncio
-    async def test_semantic_conflict_detection_runs_simple_case(self, semantic_conflict_detector: SemanticConflictDetector):
+    async def test_semantic_conflict_detection_runs_simple_case(
+        self, semantic_conflict_detector: SemanticConflictDetector
+    ):
         """Test that semantic conflict detection runs and returns a list (smoke test)."""
         data1 = {"category": "fruit", "item": "apple"}
         data2 = {"category": "vegetable", "item": "apple"}
 
         comparison_input = {"item_x": data1, "item_y": data2}
-        conflicts = await semantic_conflict_detector.detect_semantic_conflicts(comparison_input)
-        
+        conflicts = await semantic_conflict_detector.detect_semantic_conflicts(
+            comparison_input
+        )
+
         assert isinstance(conflicts, list), "Should return a list"
         # We cannot assert specific conflicts without knowing internal logic or mocking a real internal method/dependency.
         # For now, this test just ensures it runs. If it happens to find conflicts, that's okay.
@@ -462,43 +565,51 @@ class TestThreeWayMerger:
     async def test_three_way_merge_no_changes(self, three_way_merger: ThreeWayMerger):
         """All three (source, target, ancestor) are identical."""
         data = {"id": 1, "value": "original"}
-        result = await three_way_merger.three_way_merge(data.copy(), data.copy(), data.copy())
+        result = await three_way_merger.three_way_merge(
+            data.copy(), data.copy(), data.copy()
+        )
         assert result.success
         assert result.merged_data == data
         assert not result.conflicts
 
     @pytest.mark.asyncio
-    async def test_three_way_source_changes_target_same_as_ancestor(self, three_way_merger: ThreeWayMerger):
+    async def test_three_way_source_changes_target_same_as_ancestor(
+        self, three_way_merger: ThreeWayMerger
+    ):
         """Source changes, target matches ancestor. Expect source's change."""
         ancestor = {"key": "A", "common": "data"}
-        source =   {"key": "S", "common": "data"}
-        target =   {"key": "A", "common": "data"}
+        source = {"key": "S", "common": "data"}
+        target = {"key": "A", "common": "data"}
         expected = {"key": "S", "common": "data"}
-        
+
         result = await three_way_merger.three_way_merge(source, target, ancestor)
         assert result.success
         assert result.merged_data == expected
-        assert not result.conflicts # FieldLevelMerger handles this without conflict
+        assert not result.conflicts  # FieldLevelMerger handles this without conflict
 
     @pytest.mark.asyncio
-    async def test_three_way_target_changes_source_same_as_ancestor(self, three_way_merger: ThreeWayMerger):
+    async def test_three_way_target_changes_source_same_as_ancestor(
+        self, three_way_merger: ThreeWayMerger
+    ):
         """Target changes, source matches ancestor. Expect target's change."""
         ancestor = {"key": "A", "common": "data"}
-        source =   {"key": "A", "common": "data"}
-        target =   {"key": "T", "common": "data"}
+        source = {"key": "A", "common": "data"}
+        target = {"key": "T", "common": "data"}
         expected = {"key": "T", "common": "data"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
         assert result.success
         assert result.merged_data == expected
-        assert not result.conflicts # FieldLevelMerger handles this
+        assert not result.conflicts  # FieldLevelMerger handles this
 
     @pytest.mark.asyncio
-    async def test_three_way_both_change_to_same_new_value(self, three_way_merger: ThreeWayMerger):
+    async def test_three_way_both_change_to_same_new_value(
+        self, three_way_merger: ThreeWayMerger
+    ):
         """Source and Target change a field to the same new value."""
         ancestor = {"key": "A", "common": "data"}
-        source =   {"key": "NEW", "common": "data"}
-        target =   {"key": "NEW", "common": "data"}
+        source = {"key": "NEW", "common": "data"}
+        target = {"key": "NEW", "common": "data"}
         expected = {"key": "NEW", "common": "data"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
@@ -510,10 +621,10 @@ class TestThreeWayMerger:
     async def test_three_way_true_conflict(self, three_way_merger: ThreeWayMerger):
         """Source and Target change a field to different new values."""
         ancestor = {"key": "A", "common": "data"}
-        source =   {"key": "S", "common": "data"}
-        target =   {"key": "T", "common": "data"}
+        source = {"key": "S", "common": "data"}
+        target = {"key": "T", "common": "data"}
         # Actual behavior: Ancestor's value is kept in case of true conflict
-        expected_merged_data = {"key": "A", "common": "data"} 
+        expected_merged_data = {"key": "A", "common": "data"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
         assert result.success
@@ -529,8 +640,8 @@ class TestThreeWayMerger:
     async def test_three_way_source_adds_key(self, three_way_merger: ThreeWayMerger):
         """Source adds a new key."""
         ancestor = {"common": "data"}
-        source =   {"common": "data", "source_key": "S_VAL"}
-        target =   {"common": "data"}
+        source = {"common": "data", "source_key": "S_VAL"}
+        target = {"common": "data"}
         expected = {"common": "data", "source_key": "S_VAL"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
@@ -542,8 +653,8 @@ class TestThreeWayMerger:
     async def test_three_way_target_adds_key(self, three_way_merger: ThreeWayMerger):
         """Target adds a new key."""
         ancestor = {"common": "data"}
-        source =   {"common": "data"}
-        target =   {"common": "data", "target_key": "T_VAL"}
+        source = {"common": "data"}
+        target = {"common": "data", "target_key": "T_VAL"}
         expected = {"common": "data", "target_key": "T_VAL"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
@@ -552,39 +663,53 @@ class TestThreeWayMerger:
         assert not result.conflicts
 
     @pytest.mark.asyncio
-    async def test_three_way_source_deletes_key_target_unchanged(self, three_way_merger: ThreeWayMerger):
+    async def test_three_way_source_deletes_key_target_unchanged(
+        self, three_way_merger: ThreeWayMerger
+    ):
         """Source removes a key, target still has ancestor's version."""
         ancestor = {"key_to_delete": "A_VAL", "common": "data"}
-        source =   {"common": "data"} # key_to_delete is removed
-        target =   {"key_to_delete": "A_VAL", "common": "data"}
-        # Actual behavior: This scenario (source deletes, target has ancestor value) 
+        source = {"common": "data"}  # key_to_delete is removed
+        target = {"key_to_delete": "A_VAL", "common": "data"}
+        # Actual behavior: This scenario (source deletes, target has ancestor value)
         # results in the key being None in merged_data, and NO conflict is logged.
-        expected = {"key_to_delete": None, "common": "data"} 
+        expected = {"key_to_delete": None, "common": "data"}
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
         assert result.success
         assert result.merged_data == expected
-        # Actual behavior: This scenario (source deletes, target has ancestor value) 
+        # Actual behavior: This scenario (source deletes, target has ancestor value)
         # results in the key being None in merged_data, and NO conflict is logged.
-        assert len(result.conflicts) == 0 
+        assert len(result.conflicts) == 0
         # Removing previous assertions for conflict details as no conflict is expected here
 
     @pytest.mark.asyncio
-    async def test_three_way_nested_field_conflict(self, three_way_merger: ThreeWayMerger):
+    async def test_three_way_nested_field_conflict(
+        self, three_way_merger: ThreeWayMerger
+    ):
         """Test conflict in a nested field during three-way merge."""
-        ancestor = {"user": {"details": {"email": "ancestor@example.com"}, "status": "active"}}
-        source   = {"user": {"details": {"email": "source@example.com"}, "status": "active"}}
-        target   = {"user": {"details": {"email": "target@example.com"}, "status": "active"}}
+        ancestor = {
+            "user": {"details": {"email": "ancestor@example.com"}, "status": "active"}
+        }
+        source = {
+            "user": {"details": {"email": "source@example.com"}, "status": "active"}
+        }
+        target = {
+            "user": {"details": {"email": "target@example.com"}, "status": "active"}
+        }
         # Actual behavior: Ancestor's value is kept for the nested conflicting field.
-        expected_merged = {"user": {"details": {"email": "ancestor@example.com"}, "status": "active"}} 
+        expected_merged = {
+            "user": {"details": {"email": "ancestor@example.com"}, "status": "active"}
+        }
 
         result = await three_way_merger.three_way_merge(source, target, ancestor)
         assert result.success
         assert result.merged_data == expected_merged
-        
+
         # Expecting conflicts for user, user.details, and user.details.email from FieldLevelMerger perspective
         # but the most specific one is user.details.email
-        email_conflict = next((c for c in result.conflicts if c.field_path == "user.details.email"), None)
+        email_conflict = next(
+            (c for c in result.conflicts if c.field_path == "user.details.email"), None
+        )
         assert email_conflict is not None
         assert email_conflict.conflict_type == ConflictType.VALUE_CONFLICT
         assert email_conflict.source_value == "source@example.com"
@@ -596,14 +721,18 @@ class TestAdvancedMergeStrategy:
     """Tests for the AdvancedMergeStrategy class."""
 
     @pytest.mark.asyncio
-    async def test_advanced_merge_default_strategy_field_level(self, advanced_merge_strategy: AdvancedMergeStrategy):
+    async def test_advanced_merge_default_strategy_field_level(
+        self, advanced_merge_strategy: AdvancedMergeStrategy
+    ):
         """Test merge_data with default strategy (FIELD_LEVEL). Behaves like FieldLevelMerger."""
         source = {"a": 1, "b": "new"}
         target = {"a": 0, "c": True}
         # Expected from FieldLevelMerger (target 'a' wins, 'b' added, 'c' kept)
         expected_merged = {"a": 0, "b": "new", "c": True}
 
-        result = await advanced_merge_strategy.merge_data(source, target) # Default strategy
+        result = await advanced_merge_strategy.merge_data(
+            source, target
+        )  # Default strategy
 
         assert result.success
         assert result.merged_data == expected_merged
@@ -618,14 +747,22 @@ class TestAdvancedMergeStrategy:
         assert conflict.target_value == 0
 
     @pytest.mark.asyncio
-    async def test_advanced_merge_explicit_field_level(self, advanced_merge_strategy: AdvancedMergeStrategy):
+    async def test_advanced_merge_explicit_field_level(
+        self, advanced_merge_strategy: AdvancedMergeStrategy
+    ):
         """Test merge_data explicitly with FIELD_LEVEL strategy."""
         source = {"key1": "source_val", "key2": "shared"}
         target = {"key2": "target_val", "key3": "target_only"}
         # Expected: key1 from source, key2 from target (as target wins by default in FieldLevelMerger), key3 from target
-        expected_merged = {"key1": "source_val", "key2": "target_val", "key3": "target_only"}
-        
-        result = await advanced_merge_strategy.merge_data(source, target, strategy=MergeStrategy.FIELD_LEVEL)
+        expected_merged = {
+            "key1": "source_val",
+            "key2": "target_val",
+            "key3": "target_only",
+        }
+
+        result = await advanced_merge_strategy.merge_data(
+            source, target, strategy=MergeStrategy.FIELD_LEVEL
+        )
 
         assert result.success
         assert result.merged_data == expected_merged
@@ -635,14 +772,18 @@ class TestAdvancedMergeStrategy:
         assert result.conflicts[0].field_path == "key2"
 
     @pytest.mark.asyncio
-    async def test_advanced_merge_three_way_strategy_no_conflict(self, advanced_merge_strategy: AdvancedMergeStrategy):
+    async def test_advanced_merge_three_way_strategy_no_conflict(
+        self, advanced_merge_strategy: AdvancedMergeStrategy
+    ):
         """Test merge_data with THREE_WAY strategy, source change, no conflict."""
         ancestor = {"id": 1, "value": "A"}
-        source =   {"id": 1, "value": "S"}
-        target =   {"id": 1, "value": "A"}
+        source = {"id": 1, "value": "S"}
+        target = {"id": 1, "value": "A"}
         expected_merged = {"id": 1, "value": "S"}
 
-        result = await advanced_merge_strategy.merge_data(source, target, strategy=MergeStrategy.THREE_WAY, ancestor_data=ancestor)
+        result = await advanced_merge_strategy.merge_data(
+            source, target, strategy=MergeStrategy.THREE_WAY, ancestor_data=ancestor
+        )
 
         assert result.success
         assert result.merged_data == expected_merged
@@ -650,15 +791,19 @@ class TestAdvancedMergeStrategy:
         assert not result.conflicts
 
     @pytest.mark.asyncio
-    async def test_advanced_merge_three_way_strategy_with_conflict(self, advanced_merge_strategy: AdvancedMergeStrategy):
+    async def test_advanced_merge_three_way_strategy_with_conflict(
+        self, advanced_merge_strategy: AdvancedMergeStrategy
+    ):
         """Test merge_data with THREE_WAY strategy, resulting in a conflict."""
         ancestor = {"id": 1, "value": "A"}
-        source =   {"id": 1, "value": "S"}
-        target =   {"id": 1, "value": "T"}
+        source = {"id": 1, "value": "S"}
+        target = {"id": 1, "value": "T"}
         # Based on ThreeWayMerger tests, ancestor value is kept for true conflict.
-        expected_merged = {"id": 1, "value": "A"} 
+        expected_merged = {"id": 1, "value": "A"}
 
-        result = await advanced_merge_strategy.merge_data(source, target, strategy=MergeStrategy.THREE_WAY, ancestor_data=ancestor)
+        result = await advanced_merge_strategy.merge_data(
+            source, target, strategy=MergeStrategy.THREE_WAY, ancestor_data=ancestor
+        )
 
         assert result.success
         assert result.merged_data == expected_merged
@@ -670,4 +815,5 @@ class TestAdvancedMergeStrategy:
     # Placeholder for SEMANTIC_AWARE, PRIORITY_BASED, TIMESTAMP_BASED, CUSTOM_RULES
     # These would likely require more complex setup or mocking of dependencies (e.g., SemanticConflictDetector's actual logic)
 
-# End of tests 
+
+# End of tests

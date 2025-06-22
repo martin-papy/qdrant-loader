@@ -5,8 +5,6 @@ Focuses on major untested components: Change Detectors and SyncEventSystem.
 """
 
 import asyncio
-import json
-import sqlite3
 import tempfile
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -14,7 +12,12 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from qdrant_loader.core.managers import IDMappingManager, MappingType, Neo4jManager, QdrantManager
+from qdrant_loader.core.managers import (
+    IDMappingManager,
+    MappingType,
+    Neo4jManager,
+    QdrantManager,
+)
 from qdrant_loader.core.sync.event_system import (
     ChangeEvent,
     ChangeType,
@@ -34,20 +37,24 @@ class TestQdrantChangeDetector:
         """Mock QdrantManager for testing."""
         manager = MagicMock(spec=QdrantManager)
         manager.collection_name = "test_collection"
-        
+
         # Mock the client and its methods
         mock_client = MagicMock()
         manager._ensure_client_connected.return_value = mock_client
-        
+
         # Mock scroll method to return points
         mock_client.scroll.return_value = (
             [
-                MagicMock(id="point1", payload={"text": "content1"}, vector=[0.1, 0.2, 0.3]),
-                MagicMock(id="point2", payload={"text": "content2"}, vector=[0.4, 0.5, 0.6]),
+                MagicMock(
+                    id="point1", payload={"text": "content1"}, vector=[0.1, 0.2, 0.3]
+                ),
+                MagicMock(
+                    id="point2", payload={"text": "content2"}, vector=[0.4, 0.5, 0.6]
+                ),
             ],
             None,  # next_page_offset
         )
-        
+
         return manager
 
     @pytest.fixture
@@ -105,7 +112,9 @@ class TestQdrantChangeDetector:
         mock_qdrant_manager._ensure_client_connected.assert_called()
 
     @pytest.mark.asyncio
-    async def test_start_monitoring_already_started(self, detector, mock_qdrant_manager):
+    async def test_start_monitoring_already_started(
+        self, detector, mock_qdrant_manager
+    ):
         """Test start monitoring when already started."""
         detector._monitoring = True
         initial_poll_time = detector._last_poll_time
@@ -123,11 +132,11 @@ class TestQdrantChangeDetector:
         """Test stopping monitoring."""
         # Start monitoring first
         detector._monitoring = True
-        
+
         # Create an actual async task that we can cancel
         async def dummy_task():
             await asyncio.sleep(10)
-        
+
         detector._polling_task = asyncio.create_task(dummy_task())
 
         await detector.stop_monitoring()
@@ -186,7 +195,7 @@ class TestQdrantChangeDetector:
         detector._monitoring = True
         try:
             await asyncio.wait_for(detector._polling_loop(), timeout=0.1)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass  # Expected for infinite loop
 
         # Verify client was called during polling
@@ -249,7 +258,7 @@ class TestQdrantChangeDetector:
         point2.id = "point2"
         point2.payload = {"text": "different"}
         point2.vector = [0.4, 0.5, 0.6]
-        
+
         checksum3 = detector._calculate_point_checksum(point2)
         assert checksum1 != checksum3
 
@@ -261,11 +270,23 @@ class TestNeo4jChangeDetector:
     def mock_neo4j_manager(self):
         """Mock Neo4jManager for testing."""
         manager = MagicMock(spec=Neo4jManager)
-        # Mock execute methods  
+        # Mock execute methods
         manager.execute_write_query.return_value = None
         manager.execute_read_query.return_value = [
-            {"n": {"id": 1, "labels": ["Person"], "properties": {"name": "Alice", "age": 30}}},
-            {"n": {"id": 2, "labels": ["Person"], "properties": {"name": "Bob", "age": 25}}},
+            {
+                "n": {
+                    "id": 1,
+                    "labels": ["Person"],
+                    "properties": {"name": "Alice", "age": 30},
+                }
+            },
+            {
+                "n": {
+                    "id": 2,
+                    "labels": ["Person"],
+                    "properties": {"name": "Bob", "age": 25},
+                }
+            },
         ]
         return manager
 
@@ -317,11 +338,11 @@ class TestNeo4jChangeDetector:
     async def test_neo4j_stop_monitoring(self, neo4j_detector):
         """Test Neo4j stop monitoring."""
         neo4j_detector._monitoring = True
-        
+
         # Create an actual async task that we can cancel
         async def dummy_task():
             await asyncio.sleep(10)
-        
+
         neo4j_detector._polling_task = asyncio.create_task(dummy_task())
 
         await neo4j_detector.stop_monitoring()
@@ -365,7 +386,7 @@ class TestSyncEventSystem:
         qdrant_manager = AsyncMock(spec=QdrantManager)
         neo4j_manager = AsyncMock(spec=Neo4jManager)
         id_mapping_manager = AsyncMock(spec=IDMappingManager)
-        
+
         return qdrant_manager, neo4j_manager, id_mapping_manager
 
     @pytest.fixture
@@ -380,11 +401,17 @@ class TestSyncEventSystem:
     def event_system(self, mock_managers, temp_db_path):
         """Create SyncEventSystem instance."""
         qdrant_manager, neo4j_manager, id_mapping_manager = mock_managers
-        
+
         # Patch the detector classes to prevent actual background tasks
-        with patch('qdrant_loader.core.sync.event_system.QdrantChangeDetector') as mock_qdrant_detector_class, \
-             patch('qdrant_loader.core.sync.event_system.Neo4jChangeDetector') as mock_neo4j_detector_class:
-            
+        with (
+            patch(
+                "qdrant_loader.core.sync.event_system.QdrantChangeDetector"
+            ) as mock_qdrant_detector_class,
+            patch(
+                "qdrant_loader.core.sync.event_system.Neo4jChangeDetector"
+            ) as mock_neo4j_detector_class,
+        ):
+
             # Create mock detector instances
             mock_qdrant_detector = MagicMock()
             mock_qdrant_detector.start_monitoring = AsyncMock()
@@ -392,14 +419,14 @@ class TestSyncEventSystem:
             mock_qdrant_detector.get_recent_changes = AsyncMock(return_value=[])
             mock_qdrant_detector.add_event_callback = MagicMock()
             mock_qdrant_detector_class.return_value = mock_qdrant_detector
-            
+
             mock_neo4j_detector = MagicMock()
             mock_neo4j_detector.start_monitoring = AsyncMock()
             mock_neo4j_detector.stop_monitoring = AsyncMock()
             mock_neo4j_detector.get_recent_changes = AsyncMock(return_value=[])
             mock_neo4j_detector.add_event_callback = MagicMock()
             mock_neo4j_detector_class.return_value = mock_neo4j_detector
-            
+
             # Create system with mocked detectors
             system = SyncEventSystem(
                 qdrant_manager=qdrant_manager,
@@ -410,17 +437,17 @@ class TestSyncEventSystem:
                 max_event_queue_size=100,
                 enable_event_persistence=True,
             )
-            
+
             # Ensure no background tasks are running
             system._running = False
             system._processing_task = None
-            
+
             yield system
 
     def test_sync_event_system_initialization(self, event_system, mock_managers):
         """Test SyncEventSystem initialization."""
         qdrant_manager, neo4j_manager, id_mapping_manager = mock_managers
-        
+
         assert event_system.qdrant_manager == qdrant_manager
         assert event_system.neo4j_manager == neo4j_manager
         assert event_system.id_mapping_manager == id_mapping_manager
@@ -439,15 +466,21 @@ class TestSyncEventSystem:
     @pytest.mark.asyncio
     async def test_start_event_system(self, event_system):
         """Test starting the event system."""
-        with patch.object(event_system, '_ensure_event_table'), \
-             patch.object(event_system.qdrant_detector, 'start_monitoring') as mock_qdrant_start, \
-             patch.object(event_system.neo4j_detector, 'start_monitoring') as mock_neo4j_start, \
-             patch('asyncio.create_task') as mock_create_task:
-            
+        with (
+            patch.object(event_system, "_ensure_event_table"),
+            patch.object(
+                event_system.qdrant_detector, "start_monitoring"
+            ) as mock_qdrant_start,
+            patch.object(
+                event_system.neo4j_detector, "start_monitoring"
+            ) as mock_neo4j_start,
+            patch("asyncio.create_task") as mock_create_task,
+        ):
+
             # Mock create_task to prevent actual background processing
             mock_task = MagicMock()
             mock_create_task.return_value = mock_task
-            
+
             await event_system.start()
 
             assert event_system._running is True
@@ -460,17 +493,23 @@ class TestSyncEventSystem:
     async def test_stop_event_system(self, event_system):
         """Test stopping the event system."""
         event_system._running = True
-        
+
         # Create an actual asyncio Task that can be cancelled and awaited
         async def dummy_task():
             await asyncio.sleep(10)
-        
+
         mock_task = asyncio.create_task(dummy_task())
         event_system._processing_task = mock_task
-        
-        with patch.object(event_system.qdrant_detector, 'stop_monitoring') as mock_qdrant_stop, \
-             patch.object(event_system.neo4j_detector, 'stop_monitoring') as mock_neo4j_stop:
-            
+
+        with (
+            patch.object(
+                event_system.qdrant_detector, "stop_monitoring"
+            ) as mock_qdrant_stop,
+            patch.object(
+                event_system.neo4j_detector, "stop_monitoring"
+            ) as mock_neo4j_stop,
+        ):
+
             await event_system.stop()
 
             assert event_system._running is False
@@ -482,9 +521,9 @@ class TestSyncEventSystem:
     def test_add_event_handler(self, event_system):
         """Test adding event handlers."""
         handler = MagicMock()
-        
+
         event_system.add_event_handler("test_event", handler)
-        
+
         assert "test_event" in event_system._event_handlers
         assert handler in event_system._event_handlers["test_event"]
 
@@ -492,9 +531,9 @@ class TestSyncEventSystem:
         """Test removing event handlers."""
         handler = MagicMock()
         event_system._event_handlers["test_event"] = [handler]
-        
+
         event_system.remove_event_handler("test_event", handler)
-        
+
         assert handler not in event_system._event_handlers.get("test_event", [])
 
     @pytest.mark.asyncio
@@ -505,7 +544,7 @@ class TestSyncEventSystem:
             change_type=ChangeType.CREATE,
         )
 
-        with patch.object(event_system._event_queue, 'put') as mock_put:
+        with patch.object(event_system._event_queue, "put") as mock_put:
             await event_system.publish_event(event)
             mock_put.assert_called_once_with(event)
 
@@ -513,19 +552,21 @@ class TestSyncEventSystem:
     async def test_on_change_event(self, event_system):
         """Test change event callback."""
         event = ChangeEvent(entity_id="test_entity")
-        
-        with patch.object(event_system, 'publish_event') as mock_publish, \
-             patch('asyncio.create_task') as mock_create_task:
-            
+
+        with (
+            patch.object(event_system, "publish_event") as mock_publish,
+            patch("asyncio.create_task") as mock_create_task,
+        ):
+
             # Mock create_task to return a completed future
             mock_task = MagicMock()
             mock_create_task.return_value = mock_task
             mock_publish.return_value = asyncio.Future()
             mock_publish.return_value.set_result(None)
-            
+
             # Call the method - it should create a task but not hang
             event_system._on_change_event(event)
-            
+
             # Verify create_task was called
             mock_create_task.assert_called_once()
 
@@ -533,24 +574,26 @@ class TestSyncEventSystem:
     async def test_process_events(self, event_system):
         """Test event processing loop."""
         event = ChangeEvent(entity_id="test_entity")
-        
+
         # Mock the queue to return an event then raise CancelledError immediately
         mock_queue = AsyncMock()
         mock_queue.get.side_effect = [event, asyncio.CancelledError()]
         event_system._event_queue = mock_queue
         event_system._running = True
 
-        with patch.object(event_system, '_handle_event') as mock_handle, \
-             patch('asyncio.wait_for') as mock_wait_for:
-            
+        with (
+            patch.object(event_system, "_handle_event") as mock_handle,
+            patch("asyncio.wait_for") as mock_wait_for,
+        ):
+
             # Mock wait_for to return the event immediately, then raise CancelledError
             mock_wait_for.side_effect = [event, asyncio.CancelledError()]
-            
+
             try:
                 await event_system._process_events()
             except asyncio.CancelledError:
                 pass  # Expected when stopping
-            
+
             mock_handle.assert_called_once_with(event)
 
     @pytest.mark.asyncio
@@ -560,16 +603,16 @@ class TestSyncEventSystem:
             entity_id="test_entity",
             change_type=ChangeType.CREATE,
         )
-        
+
         # Use regular MagicMock since handlers are synchronous
         handler = MagicMock()
         # The event system uses a specific key format for handlers
         event_key = f"{event.database_type.value}.{event.change_type.value}"
         event_system._event_handlers[event_key] = [handler]
 
-        with patch.object(event_system, '_persist_event') as mock_persist:
+        with patch.object(event_system, "_persist_event") as mock_persist:
             await event_system._handle_event(event)
-            
+
             handler.assert_called_once_with(event)
             mock_persist.assert_called_once_with(event)
 
@@ -627,7 +670,7 @@ class TestSyncEventSystem:
         """Test system health check."""
         # Mock the Neo4j manager's test_connection method
         event_system.neo4j_manager.test_connection.return_value = True
-        
+
         health = await event_system.health_check()
 
         assert "healthy" in health
@@ -637,4 +680,4 @@ class TestSyncEventSystem:
         assert "queue_size" in health
         assert "events_processed" in health
         assert "events_failed" in health
-        assert "last_event_time" in health 
+        assert "last_event_time" in health
