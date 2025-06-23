@@ -78,53 +78,53 @@ jobs:
           fi
 
           # Replace environment variables with proper escaping
-          sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
-          sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
-          sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
-          sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
-          sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/.env.test
+          sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/config/.env.test
+          sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/config/.env.test
+          sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/config/.env.test
+          sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/config/.env.test
+          sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/config/.env.test
 
           # Neo4j configuration
-          sed -i "s|NEO4J_URI=.*|NEO4J_URI=${{ secrets.NEO4J_URI }}|g" tests/.env.test
-          sed -i "s|NEO4J_USER=.*|NEO4J_USER=${{ secrets.NEO4J_USER }}|g" tests/.env.test
-          sed -i "s|NEO4J_PASSWORD=.*|NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}|g" tests/.env.test
-          sed -i "s|NEO4J_DATABASE=.*|NEO4J_DATABASE=${{ secrets.NEO4J_DATABASE }}|g" tests/.env.test
+          sed -i "s|NEO4J_URI=.*|NEO4J_URI=${{ secrets.NEO4J_URI }}|g" tests/config/.env.test
+          sed -i "s|NEO4J_USER=.*|NEO4J_USER=${{ secrets.NEO4J_USER }}|g" tests/config/.env.test
+          sed -i "s|NEO4J_PASSWORD=.*|NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}|g" tests/config/.env.test
+          sed -i "s|NEO4J_DATABASE=.*|NEO4J_DATABASE=${{ secrets.NEO4J_DATABASE }}|g" tests/config/.env.test
 
           # Optional secrets - only replace if they exist
           if [ -n "${{ secrets.REPO_TOKEN }}" ]; then
-            sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/.env.test
+            sed -i "s|REPO_TOKEN=.*|REPO_TOKEN=${{ secrets.REPO_TOKEN }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.REPO_URL }}" ]; then
-            sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/.env.test
+            sed -i "s|REPO_URL=.*|REPO_URL=${{ secrets.REPO_URL }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.CONFLUENCE_TOKEN }}" ]; then
-            sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_TOKEN }}|g" tests/.env.test
+            sed -i "s|CONFLUENCE_TOKEN=.*|CONFLUENCE_TOKEN=${{ secrets.CONFLUENCE_TOKEN }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.CONFLUENCE_EMAIL }}" ]; then
-            sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/.env.test
+            sed -i "s|CONFLUENCE_EMAIL=.*|CONFLUENCE_EMAIL=${{ secrets.CONFLUENCE_EMAIL }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.CONFLUENCE_URL }}" ]; then
-            sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/.env.test
+            sed -i "s|CONFLUENCE_URL=.*|CONFLUENCE_URL=${{ secrets.CONFLUENCE_URL }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.CONFLUENCE_SPACE_KEY }}" ]; then
-            sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/.env.test
+            sed -i "s|CONFLUENCE_SPACE_KEY=.*|CONFLUENCE_SPACE_KEY=${{ secrets.CONFLUENCE_SPACE_KEY }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.JIRA_TOKEN }}" ]; then
-            sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/.env.test
+            sed -i "s|JIRA_TOKEN=.*|JIRA_TOKEN=${{ secrets.JIRA_TOKEN }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.JIRA_EMAIL }}" ]; then
-            sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/.env.test
+            sed -i "s|JIRA_EMAIL=.*|JIRA_EMAIL=${{ secrets.JIRA_EMAIL }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.JIRA_URL }}" ]; then
-            sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/.env.test
+            sed -i "s|JIRA_URL=.*|JIRA_URL=${{ secrets.JIRA_URL }}|g" tests/config/.env.test
           fi
           if [ -n "${{ secrets.JIRA_PROJECT_KEY }}" ]; then
-            sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/.env.test
+            sed -i "s|JIRA_PROJECT_KEY=.*|JIRA_PROJECT_KEY=${{ secrets.JIRA_PROJECT_KEY }}|g" tests/config/.env.test
           fi
 
           echo "Created .env.test file successfully"
           echo "Contents (with secrets masked):"
-          sed 's/=.*/=***/' tests/.env.test
+          sed 's/=.*/=***/' tests/config/.env.test
 
       - name: Verify test configuration files exist
         run: |
