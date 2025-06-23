@@ -13,6 +13,6 @@ file_conversion:
   
   markitdown:
     enable_llm_descriptions: false  # Disabled for tests
-    llm_model: "gpt-4o-mini"
-    llm_endpoint: "https://api.openai.com/v1"
-    llm_api_key: "${OPENAI_API_KEY}"
+    llm_model: "${MARKITDOWN_LLM_MODEL}"
+    llm_endpoint: "${MARKITDOWN_LLM_ENDPOINT}"
+    llm_api_key: "${MARKITDOWN_LLM_API_KEY}"
