@@ -184,9 +184,9 @@ class TestCrossServiceWorkflows:
         assert neo4j_manager is not None
         
         # Step 3: Test that configuration enables cross-service features
-        project = config.projects_config.projects["theorcs"]
-        assert project.project_id == "theorcs"
-        assert project.display_name == "TheORCS"
+        project = config.projects_config.projects["test-project"]
+        assert project.project_id == "test-project"
+        assert project.display_name == "Test Project"
 
     @pytest.mark.asyncio
     async def test_entity_extraction_to_storage_workflow(self, service_managers):

@@ -2,7 +2,7 @@
 # Minimal configuration for unit and integration tests
 
 projects:
-  theorcs:
+  test-project:
     project_id: "test-project"
     display_name: "Test Project"
     description: "Test Project"
@@ -81,7 +81,7 @@ projects:
       # Git repository sources
       git:
         # Example configuration for a public repository
-        theorcs:
+        test-git:
           base_url: "${REPO_URL}"  # Repository URL
           branch: "main"                             # Branch to process
           include_paths:                             # Paths to include (glob patterns)
@@ -104,7 +104,7 @@ projects:
 
       # Confluence documentation sources
       confluence:
-        theorcs:
+        test-confluence:
           base_url: "${CONFLUENCE_URL}"                  # Confluence instance URL
           space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
           content_types:                            # Types of content to process
@@ -117,7 +117,7 @@ projects:
 
       # JIRA issue tracking sources
       jira:
-        theorcs:
+        the orcs:
           base_url: "${JIRA_URL}"                   # JIRA instance URL
           deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
           project_key: "${JIRA_PROJECT_KEY}"        # Project to process
