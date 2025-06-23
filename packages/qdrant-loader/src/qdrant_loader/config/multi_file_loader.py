@@ -323,12 +323,12 @@ class MultiFileConfigLoader:
                 duration_ms=f"{(time.time() - merge_start) * 1000:.2f}",
             )
 
-        # Step 8: Process environment variables
+        # Step 8: Process environment variables (already done per-domain, but may need final pass)
         env_sub_start = time.time() if measure_performance else None
         merged_config = self._substitute_env_vars(merged_config)
         if measure_performance and env_sub_start is not None:
             logger.debug(
-                "Environment substitution time",
+                "Environment substitution time (final pass)",
                 duration_ms=f"{(time.time() - env_sub_start) * 1000:.2f}",
             )
 
@@ -434,6 +434,9 @@ class MultiFileConfigLoader:
             if domain in domain_files:
                 # Load raw configuration data
                 raw_config = self._load_domain_file(domain_files[domain])
+                
+                # Substitute environment variables BEFORE validation
+                raw_config = self._substitute_env_vars(raw_config)
 
                 # Validate using domain-specific model
                 try:
@@ -501,6 +504,8 @@ class MultiFileConfigLoader:
             if domain in domain_files:
                 try:
                     raw_config = self._load_domain_file(domain_files[domain])
+                    # Substitute environment variables BEFORE validation
+                    raw_config = self._substitute_env_vars(raw_config)
                     domain_configs[domain] = raw_config
                     logger.debug(f"Loaded raw configuration for {domain}")
                 except Exception as e:
