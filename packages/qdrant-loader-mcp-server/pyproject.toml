@@ -107,6 +107,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-v",
+    "-ra",
     "-W ignore::RuntimeWarning",
 ]
 filterwarnings = [
