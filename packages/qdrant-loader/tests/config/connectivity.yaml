@@ -13,7 +13,7 @@ embedding:
   provider: "${EMBEDDING_PROVIDER}"  # Embedding provider to use. Could be openai, anthropic, etc.
   api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
   batch_size: 100                  # Number of chunks to process in one batch
-  vector_size: 1536                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
+  vector_size: ${EMBEDDING_VECTOR_SIZE}                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
   tokenizer: "${EMBEDDING_TOKENIZER:-none}"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
   max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
   max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
@@ -31,6 +31,35 @@ neo4j:
   connection_acquisition_timeout: 10  # Shorter timeout for tests
   trusted_certificates: "TRUST_ALL_CERTIFICATES"
   encrypted: false
+
+# Graphiti Knowledge Graph Configuration
+# Enables advanced knowledge graph capabilities for document relationships
+# Set enabled: true to activate Graphiti features (requires Neo4j configuration)
+graphiti:
+  enabled: true
+  debug_mode: false
+  
+  # LLM Configuration for Graphiti
+  llm:
+    provider: "${GRAPHITI_LLM_PROVIDER}"  # openai, anthropic, etc.
+    model: "${GRAPHITI_LLM_MODEL}"
+    max_tokens: 4000
+    temperature: 0.1
+    api_key: "${GRAPHITI_LLM_API_KEY}"  # Set via environment variable
+    endpoint: "${GRAPHITI_LLM_ENDPOINT}"  # LLM endpoint
+  
+  # Embedder Configuration
+  embedder:
+    provider: "${EMBEDDER_PROVIDER}"
+    model: "${EMBEDDER_MODEL}"
+    dimensions: null  # Use model default
+    api_key: "${EMBEDDER_API_KEY}"  # Set via environment variable
+    endpoint: "${EMBEDDER_ENDPOINT}"  # Embedder endpoint
+
+  
+  # Operational Settings
+  operational:
+    timeout_seconds: 30
 
 # State management configuration for tests
 state_management:
