@@ -11,6 +11,7 @@ embedding:
   endpoint: "${EMBEDDING_ENDPOINT}" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
   model: "${EMBEDDING_MODEL}"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
   provider: "${EMBEDDING_PROVIDER}"  # Embedding provider to use. Could be openai, anthropic, etc.
+  api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
   batch_size: 100                  # Number of chunks to process in one batch
   vector_size: 1536                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
   tokenizer: "${EMBEDDING_TOKENIZER:-none}"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.

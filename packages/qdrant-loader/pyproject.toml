@@ -120,3 +120,20 @@ dev = [
 where = [
     "src",
 ]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests (may be slow)",
+    "unit: marks tests as unit tests",
+    "slow: marks tests as slow",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning:click.parser",
+    "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning:spacy.cli._util",
+    "ignore:Importing 'parser.split_arg_string' is deprecated:DeprecationWarning:weasel.util.config",
+]

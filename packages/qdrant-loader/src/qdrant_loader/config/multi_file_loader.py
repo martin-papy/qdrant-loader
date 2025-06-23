@@ -47,7 +47,7 @@ class ConfigDomain:
     ALL_DOMAINS = CORE_DOMAINS | OPTIONAL_DOMAINS
 
     # Predefined domain combinations for common use cases
-    MINIMAL = {CONNECTIVITY}  # Database connections only
+    MINIMAL = {CONNECTIVITY, PROJECTS}  # Database connections and basic project config
     BASIC = {CONNECTIVITY, PROJECTS}  # Basic operations without fine-tuning
     STANDARD = CORE_DOMAINS  # All core domains (default)
     FULL = ALL_DOMAINS  # All domains including optional ones
@@ -156,11 +156,11 @@ class ConfigDomain:
         """
         use_cases = {
             "config_validation": cls.BASIC,  # Skip fine-tuning for faster validation
-            "config_export": {cls.PROJECTS},  # Only need projects for export
+            "config_export": {cls.PROJECTS, cls.CONNECTIVITY},  # Projects + connectivity for export
             "basic_ingestion": cls.BASIC,  # Skip fine-tuning for basic ingestion
             "full_processing": cls.FULL,  # All domains for complete processing
             "migration": cls.FULL,  # All domains for migration
-            "status_check": cls.MINIMAL,  # Only connectivity for status
+            "status_check": cls.MINIMAL,  # Connectivity + projects for status
         }
 
         return use_cases.get(use_case, cls.FULL).copy()

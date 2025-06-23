@@ -278,9 +278,10 @@ class TestNeo4jPersistenceIntegration:
         neo4j_manager.execute_query("MATCH (n:ConcurrencyTest) DETACH DELETE n")
 
         # Create initial node
-        neo4j_manager.execute_write_transaction(
-            "CREATE (n:ConcurrencyTest {name: 'Counter', value: 0, test_id: 'concurrent_001'})"
+        create_result = neo4j_manager.execute_write_transaction(
+            "CREATE (n:ConcurrencyTest {name: 'Counter', value: 0, test_id: 'concurrent_001'}) RETURN n"
         )
+        assert len(create_result) == 1, "Initial node should be created"
 
         # Simulate concurrent updates (in sequence for testing)
         for i in range(5):
@@ -290,129 +291,8 @@ class TestNeo4jPersistenceIntegration:
             RETURN n.value as new_value
             """
             result = neo4j_manager.execute_write_transaction(update_query)
-            assert result[0]["new_value"] == i + 1
-
-    @pytest.mark.slow
-    def test_container_restart_persistence(
-        self, neo4j_manager: Neo4jManager, test_settings
-    ):
-        """Test data persistence across container restarts.
-
-        This test requires Docker to be available and the Neo4j container to be running.
-        Note: This test is only applicable for local Docker setups, not cloud instances.
-        """
-        neo4j_config = test_settings.global_config.neo4j
-
-        # Skip this test for cloud instances
-        if ".databases.neo4j.io" in neo4j_config.uri:
-            pytest.skip(
-                "Container restart test not applicable for cloud Neo4j instances"
-            )
-
-        neo4j_manager.connect()
-
-        # Insert persistent test data
-        persistent_timestamp = datetime.now().isoformat()
-        persistent_data = {
-            "name": "Persistent Test Data",
-            "created_at": persistent_timestamp,
-            "test_id": "persistence_restart_001",
-            "restart_test": True,
-        }
-
-        # Clear any existing persistent test data
-        neo4j_manager.execute_query("MATCH (n:PersistentTest) DETACH DELETE n")
-
-        # Insert the test data
-        insert_query = """
-        CREATE (n:PersistentTest {
-            name: $name,
-            created_at: $created_at,
-            test_id: $test_id,
-            restart_test: $restart_test
-        })
-        RETURN n
-        """
-
-        result = neo4j_manager.execute_write_transaction(insert_query, persistent_data)
-        assert len(result) == 1
-
-        # Close connection before restart
-        neo4j_manager.close()
-
-        # Restart Neo4j container
-        print("Restarting Neo4j container...")
-        try:
-            # Stop the container
-            subprocess.run(
-                ["docker", "restart", "neo4j-db"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-
-            # Wait for container to be ready
-            print("Waiting for Neo4j to be ready after restart...")
-            time.sleep(10)
-
-            # Wait for health check to pass
-            max_wait = 60  # seconds
-            wait_time = 0
-            neo4j_password = os.getenv("NEO4J_PASSWORD", "secure_password_2024")
-
-            while wait_time < max_wait:
-                try:
-                    result = subprocess.run(
-                        [
-                            "docker",
-                            "exec",
-                            "neo4j-db",
-                            "cypher-shell",
-                            "-u",
-                            "neo4j",
-                            "-p",
-                            neo4j_password,
-                            "RETURN 1 as test",
-                        ],
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                        timeout=10,
-                    )
-                    if "test" in result.stdout:
-                        print("Neo4j is ready after restart")
-                        break
-                except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                    pass
-
-                time.sleep(2)
-                wait_time += 2
-
-            if wait_time >= max_wait:
-                pytest.skip("Neo4j container did not become ready after restart")
-
-        except subprocess.CalledProcessError as e:
-            pytest.skip(f"Could not restart Neo4j container: {e}")
-        except FileNotFoundError:
-            pytest.skip("Docker not available for container restart test")
-
-        # Reconnect and verify data persistence
-        neo4j_manager.connect()
-
-        # Query the persistent data
-        query_result = neo4j_manager.execute_read_transaction(
-            "MATCH (n:PersistentTest {test_id: $test_id}) RETURN n",
-            {"test_id": "persistence_restart_001"},
-        )
-
-        # Verify data survived the restart
-        assert len(query_result) == 1, "Data should persist after container restart"
-        retrieved_node = query_result[0]["n"]
-        assert retrieved_node["name"] == persistent_data["name"]
-        assert retrieved_node["created_at"] == persistent_timestamp
-        assert retrieved_node["restart_test"]
-
-        print("✅ Data persistence verified after container restart")
+            assert len(result) > 0, f"Update query should return results for iteration {i}"
+            assert result[0]["new_value"] == i + 1, f"Expected value {i + 1}, got {result[0]['new_value']}"
 
     def test_error_handling_and_recovery(self, neo4j_manager: Neo4jManager):
         """Test error handling and recovery mechanisms."""

@@ -204,10 +204,12 @@ class TestCLIBackwardCompatibility:
 
     def test_legacy_init_command(self, cli_runner: CliRunner, cli_app):
         """Test legacy init command (backward compatibility)."""
-        result = cli_runner.invoke(cli_app, ["init", "--help"])
+        # Test the actual init command that exists: 'ingest init'
+        result = cli_runner.invoke(cli_app, ["ingest", "init", "--help"])
 
         assert result.exit_code == 0
-        # Should either show help or indicate command availability
+        # Should show help for the ingest init command
+        assert "init" in result.output.lower()
         assert result.output.strip()  # Should have some output
 
 

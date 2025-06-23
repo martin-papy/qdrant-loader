@@ -481,7 +481,12 @@ class PublicDocsConnector(BaseConnector):
         for code_block in code_blocks:
             code_text = code_block.text
             if code_text:  # Only process non-empty code blocks
-                new_code = BeautifulSoup(f"\n```\n{code_text}\n```\n", "html.parser")
+                # Filter XML parsing warning for code blocks that are not XML
+                import warnings
+                from bs4 import XMLParsedAsHTMLWarning
+                with warnings.catch_warnings():
+                    warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+                    new_code = BeautifulSoup(f"\n```\n{code_text}\n```\n", "html.parser")
                 if new_code.string:  # Ensure we have a valid string to replace with
                     code_block.replace_with(new_code.string)  # type: ignore[arg-type]
 
