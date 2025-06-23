@@ -151,13 +151,6 @@ jobs:
             exit 1
           fi
 
-          # Check if legacy config exists for backward compatibility
-          if [ -f "tests/config/config.test.yaml" ]; then
-            echo "✅ Legacy config.test.yaml found for backward compatibility"
-          else
-            echo "⚠️  Legacy config.test.yaml not found (may not be needed)"
-          fi
-
           echo "Configuration verification completed successfully"
           echo "Environment variables will be substituted at runtime by the config loader"
 

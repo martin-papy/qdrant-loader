@@ -9,9 +9,7 @@ import pytest
 from click.testing import CliRunner
 from qdrant_loader.cli.ingest_commands import (
     check_status,
-    ingest_command,
     init,
-    init_command,
     run_ingest,
     run_init,
 )
@@ -370,22 +368,40 @@ class TestStandaloneCommands:
 
     def test_ingest_command_basic(self, runner, mock_settings):
         """Test standalone ingest command."""
-        with patch(
-            "qdrant_loader.cli.ingest_commands.run_ingest", new_callable=AsyncMock
-        ) as mock_run_ingest:
-            # Mock the run_ingest function that ingest_command calls
-            mock_run_ingest.return_value = None
+        with (
+            patch("qdrant_loader.cli.ingest_commands.validate_workspace_flags"),
+            patch("qdrant_loader.cli.ingest_commands.setup_logging"),
+            patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check,
+            patch("qdrant_loader.core.managers.qdrant_manager.QdrantManager") as mock_qdrant_manager,
+            patch("qdrant_loader.core.async_ingestion_pipeline.AsyncIngestionPipeline") as mock_pipeline,
+        ):
+            mock_check.return_value = mock_settings
+            mock_qdrant_instance = Mock()
+            mock_qdrant_manager.return_value = mock_qdrant_instance
 
-            result = runner.invoke(ingest_command, [])
+            mock_pipeline_instance = AsyncMock()
+            mock_pipeline_instance.process_documents = AsyncMock()
+            mock_pipeline_instance.cleanup = AsyncMock()
+            mock_pipeline.return_value = mock_pipeline_instance
+
+            result = runner.invoke(run_ingest, [])
 
             assert result.exit_code == 0
-            mock_run_ingest.assert_called_once()
 
     def test_init_command_basic(self, runner, mock_settings):
         """Test standalone init command."""
-        with patch("qdrant_loader.cli.ingest_commands.init", new_callable=AsyncMock):
-            # Mock the init function that init_command calls
-            result = runner.invoke(init_command, [])
+        with (
+            patch("qdrant_loader.cli.ingest_commands.validate_workspace_flags"),
+            patch("qdrant_loader.cli.ingest_commands.setup_logging"),
+            patch("qdrant_loader.cli.ingest_commands.load_config_with_workspace"),
+            patch("qdrant_loader.cli.ingest_commands.check_settings") as mock_check,
+            patch("qdrant_loader.cli.ingest_commands.run_init") as mock_run_init,
+        ):
+            mock_check.return_value = mock_settings
+            mock_run_init.return_value = None
+
+            result = runner.invoke(init, [])
 
             assert result.exit_code == 0
 
