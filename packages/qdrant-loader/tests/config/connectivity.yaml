@@ -50,11 +50,11 @@ graphiti:
   
   # Embedder Configuration
   embedder:
-    provider: "${EMBEDDER_PROVIDER}"
-    model: "${EMBEDDER_MODEL}"
+    provider: "${GRAPHITI_EMBEDDER_PROVIDER}"
+    model: "${GRAPHITI_EMBEDDER_MODEL}"
     dimensions: null  # Use model default
-    api_key: "${EMBEDDER_API_KEY}"  # Set via environment variable
-    endpoint: "${EMBEDDER_ENDPOINT}"  # Embedder endpoint
+    api_key: "${GRAPHITI_EMBEDDER_API_KEY}"  # Set via environment variable
+    endpoint: "${GRAPHITI_EMBEDDER_ENDPOINT}"  # Embedder endpoint
 
   
   # Operational Settings

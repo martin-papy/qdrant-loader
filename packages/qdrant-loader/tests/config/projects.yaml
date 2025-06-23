@@ -3,9 +3,9 @@
 
 projects:
   theorcs:
-    project_id: "theorcs"
-    display_name: "TheORCS"
-    description: "TheORCS Online Roleplay System"
+    project_id: "test-project"
+    display_name: "Test Project"
+    description: "Test Project"
     sources:
       # Public documentation sources (websites, documentation)
       publicdocs:
@@ -82,7 +82,7 @@ projects:
       git:
         # Example configuration for a public repository
         theorcs:
-          base_url: "https://github.com/martin-papy/theorcs-v5.git"  # Repository URL
+          base_url: "${REPO_URL}"  # Repository URL
           branch: "main"                             # Branch to process
           include_paths:                             # Paths to include (glob patterns)
             - "docs/**"
@@ -105,8 +105,8 @@ projects:
       # Confluence documentation sources
       confluence:
         theorcs:
-          base_url: "https://theorcs.atlassian.net/wiki"                  # Confluence instance URL
-          space_key: "THEORCS"      # Space to process
+          base_url: "${CONFLUENCE_URL}"                  # Confluence instance URL
+          space_key: "${CONFLUENCE_SPACE_KEY}"      # Space to process
           content_types:                            # Types of content to process
             - "page"
             - "blogpost"
@@ -118,9 +118,9 @@ projects:
       # JIRA issue tracking sources
       jira:
         theorcs:
-          base_url: "https://theorcs.atlassian.net"                   # JIRA instance URL
+          base_url: "${JIRA_URL}"                   # JIRA instance URL
           deployment_type: "cloud"                  # Deployment type: cloud, datacenter, or server
-          project_key: "THEORCS"        # Project to process
+          project_key: "${JIRA_PROJECT_KEY}"        # Project to process
           requests_per_minute: 60                   # Rate limit for API calls
           page_size: 50                             # Number of issues per API request
           process_attachments: true                 # Whether to process issue attachments
