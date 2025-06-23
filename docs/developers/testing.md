@@ -13,7 +13,7 @@ QDrant Loader uses a multi-layered testing approach with pytest as the primary t
 
 ### Testing Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Testing Framework (pytest)              │
 ├─────────────────────────────────────────────────────────────┤
@@ -40,7 +40,7 @@ QDrant Loader uses a multi-layered testing approach with pytest as the primary t
 
 The project follows a structured approach to unit testing with clear separation by module:
 
-```
+```text
 packages/qdrant-loader/tests/
 ├── unit/
 │   ├── cli/                    # CLI command tests

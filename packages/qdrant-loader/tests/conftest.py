@@ -84,7 +84,7 @@ def setup_test_environment():
     config_dir = tests_dir / "config"
     if config_dir.exists() and (config_dir / "connectivity.yaml").exists():
         # Use multi-file configuration
-        env_path = tests_dir / ".env.test"
+        env_path = config_dir / ".env.test"  # Look for .env.test in config directory
         load_dotenv(env_path, override=True)
         initialize_multi_file_config(
             config_dir,
@@ -126,7 +126,7 @@ def setup_test_environment():
             yaml.dump(fine_tuning_config, f)
 
         # Load environment variables and initialize
-        env_path = tests_dir / ".env.test"
+        env_path = config_dir / ".env.test"  # Look for .env.test in config directory
         load_dotenv(env_path, override=True)
         initialize_multi_file_config(
             config_dir,

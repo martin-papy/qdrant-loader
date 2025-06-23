@@ -1,0 +1,1 @@
+"""Configuration integration tests package.""" 

@@ -145,6 +145,7 @@ filterwarnings = [
     "ignore:Api key is used with an insecure connection:UserWarning",
     "ignore:Remove.*format_exc_info.*from your processor chain.*:UserWarning:structlog.*",
 ]
+asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
