@@ -276,11 +276,11 @@ class TestCrossServiceWorkflows:
         config = service_managers['config']
         
         # Verify configuration enables proper service coordination
-        project_config = config.projects_config.projects["theorcs"]
+        project_config = config.projects_config.projects["test-project"]
         
         # Test that project configuration has valid fields (not processing which doesn't exist)
-        assert project_config.project_id == "theorcs"
-        assert project_config.display_name == "TheORCS"
+        assert project_config.project_id == "test-project"
+        assert project_config.display_name == "Test Project"
         assert project_config.description is not None
         
         # Test that global configuration is accessible to all services
@@ -437,9 +437,9 @@ class TestWorkflowErrorPropagation:
         )
         
         # Verify project configuration is loaded (not processing which doesn't exist)
-        project_config = config.projects_config.projects["theorcs"]
-        assert project_config.project_id == "theorcs"
-        assert project_config.display_name == "TheORCS"
+        project_config = config.projects_config.projects["test-project"]
+        assert project_config.project_id == "test-project"
+        assert project_config.display_name == "Test Project"
         
         # Services should initialize with these configurations
         settings = create_settings_from_config(config)
