@@ -93,13 +93,13 @@ jobs:
           # EMBEDDING SERVICE CONFIGURATION
           # =============================================================================
           
-          # Embedding Provider Settings - Use OpenAI as default for tests
-          sed -i "s|EMBEDDING_PROVIDER=.*|EMBEDDING_PROVIDER=openai|g" tests/config/.env.test
-          sed -i "s|EMBEDDING_ENDPOINT=.*|EMBEDDING_ENDPOINT=https://api.openai.com/v1|g" tests/config/.env.test
-          sed -i "s|EMBEDDING_MODEL=.*|EMBEDDING_MODEL=text-embedding-3-small|g" tests/config/.env.test
-          sed -i "s|EMBEDDING_TOKENIZER=.*|EMBEDDING_TOKENIZER=cl100k_base|g" tests/config/.env.test
-          sed -i "s|EMBEDDING_VECTOR_SIZE=.*|EMBEDDING_VECTOR_SIZE=1536|g" tests/config/.env.test
-          sed -i "s|EMBEDDING_API_KEY=.*|EMBEDDING_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/config/.env.test
+          # Embedding Provider Settings
+          sed -i "s|EMBEDDING_PROVIDER=.*|EMBEDDING_PROVIDER=${{ secrets.EMBEDDING_PROVIDER }}|g" tests/config/.env.test
+          sed -i "s|EMBEDDING_ENDPOINT=.*|EMBEDDING_ENDPOINT=${{ secrets.EMBEDDING_ENDPOINT }}|g" tests/config/.env.test
+          sed -i "s|EMBEDDING_MODEL=.*|EMBEDDING_MODEL=${{ secrets.EMBEDDING_MODEL }}|g" tests/config/.env.test
+          sed -i "s|EMBEDDING_TOKENIZER=.*|EMBEDDING_TOKENIZER=${{ secrets.EMBEDDING_TOKENIZER }}|g" tests/config/.env.test
+          sed -i "s|EMBEDDING_VECTOR_SIZE=.*|EMBEDDING_VECTOR_SIZE=${{ secrets.EMBEDDING_VECTOR_SIZE }}|g" tests/config/.env.test
+          sed -i "s|EMBEDDING_API_KEY=.*|EMBEDDING_API_KEY=${{ secrets.EMBEDDING_API_KEY }}|g" tests/config/.env.test
 
           # =============================================================================
           # NEO4J CONFIGURATION
@@ -115,47 +115,47 @@ jobs:
           # GRAPHITI CONFIGURATION
           # =============================================================================
           
-          # Graphiti LLM Configuration - Use OpenAI as default for tests
-          sed -i "s|GRAPHITI_LLM_PROVIDER=.*|GRAPHITI_LLM_PROVIDER=openai|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_LLM_MODEL=.*|GRAPHITI_LLM_MODEL=gpt-4o-mini|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_LLM_API_KEY=.*|GRAPHITI_LLM_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_LLM_ENDPOINT=.*|GRAPHITI_LLM_ENDPOINT=https://api.openai.com/v1|g" tests/config/.env.test
+          # Graphiti LLM Configuration
+          sed -i "s|GRAPHITI_LLM_PROVIDER=.*|GRAPHITI_LLM_PROVIDER=${{ secrets.GRAPHITI_LLM_PROVIDER }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_LLM_MODEL=.*|GRAPHITI_LLM_MODEL=${{ secrets.GRAPHITI_LLM_MODEL }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_LLM_API_KEY=.*|GRAPHITI_LLM_API_KEY=${{ secrets.GRAPHITI_LLM_API_KEY }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_LLM_ENDPOINT=.*|GRAPHITI_LLM_ENDPOINT=${{ secrets.GRAPHITI_LLM_ENDPOINT }}|g" tests/config/.env.test
 
-          # Graphiti Embedder Configuration - Use OpenAI as default for tests
-          sed -i "s|GRAPHITI_EMBEDDER_PROVIDER=.*|GRAPHITI_EMBEDDER_PROVIDER=openai|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_EMBEDDER_MODEL=.*|GRAPHITI_EMBEDDER_MODEL=text-embedding-3-small|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_EMBEDDER_API_KEY=.*|GRAPHITI_EMBEDDER_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/config/.env.test
-          sed -i "s|GRAPHITI_EMBEDDER_ENDPOINT=.*|GRAPHITI_EMBEDDER_ENDPOINT=https://api.openai.com/v1|g" tests/config/.env.test
+          # Graphiti Embedder Configuration
+          sed -i "s|GRAPHITI_EMBEDDER_PROVIDER=.*|GRAPHITI_EMBEDDER_PROVIDER=${{ secrets.GRAPHITI_EMBEDDER_PROVIDER }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_EMBEDDER_MODEL=.*|GRAPHITI_EMBEDDER_MODEL=${{ secrets.GRAPHITI_EMBEDDER_MODEL }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_EMBEDDER_API_KEY=.*|GRAPHITI_EMBEDDER_API_KEY=${{ secrets.GRAPHITI_EMBEDDER_API_KEY }}|g" tests/config/.env.test
+          sed -i "s|GRAPHITI_EMBEDDER_ENDPOINT=.*|GRAPHITI_EMBEDDER_ENDPOINT=${{ secrets.GRAPHITI_EMBEDDER_ENDPOINT }}|g" tests/config/.env.test
 
           # =============================================================================
           # FILE CONVERSION CONFIGURATION
           # =============================================================================
           
-          # MarkItDown LLM Configuration - Use OpenAI as default for tests
-          sed -i "s|MARKITDOWN_LLM_MODEL=.*|MARKITDOWN_LLM_MODEL=gpt-4o-mini|g" tests/config/.env.test  
-          sed -i "s|MARKITDOWN_LLM_ENDPOINT=.*|MARKITDOWN_LLM_ENDPOINT=https://api.openai.com/v1|g" tests/config/.env.test
-          sed -i "s|MARKITDOWN_LLM_API_KEY=.*|MARKITDOWN_LLM_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/config/.env.test
+          # MarkItDown LLM Configuration
+          sed -i "s|MARKITDOWN_LLM_MODEL=.*|MARKITDOWN_LLM_MODEL=${{ secrets.MARKITDOWN_LLM_MODEL }}|g" tests/config/.env.test  
+          sed -i "s|MARKITDOWN_LLM_ENDPOINT=.*|MARKITDOWN_LLM_ENDPOINT=${{ secrets.MARKITDOWN_LLM_ENDPOINT }}|g" tests/config/.env.test
+          sed -i "s|MARKITDOWN_LLM_API_KEY=.*|MARKITDOWN_LLM_API_KEY=${{ secrets.MARKITDOWN_LLM_API_KEY }}|g" tests/config/.env.test
 
           # =============================================================================
           # STATE MANAGEMENT CONFIGURATION
           # =============================================================================
           
-          # State Database Configuration - Use in-memory for tests
-          sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=:memory:|g" tests/config/.env.test
+          # State Database Configuration
+          sed -i "s|STATE_DB_PATH=.*|STATE_DB_PATH=${{ secrets.STATE_DB_PATH }}|g" tests/config/.env.test
 
           # =============================================================================
           # VALIDATION ENGINE CONFIGURATION
           # =============================================================================
           
-          # Notification Configuration - Set test defaults
-          sed -i "s|SMTP_SERVER=.*|SMTP_SERVER=localhost|g" tests/config/.env.test
-          sed -i "s|NOTIFICATION_FROM_EMAIL=.*|NOTIFICATION_FROM_EMAIL=notif@localhost|g" tests/config/.env.test
-          sed -i "s|ADMIN_EMAIL=.*|ADMIN_EMAIL=admin@localhost|g" tests/config/.env.test
-          sed -i "s|SLACK_WEBHOOK_URL=.*|SLACK_WEBHOOK_URL=None|g" tests/config/.env.test
-          sed -i "s|WEBHOOK_ENDPOINT=.*|WEBHOOK_ENDPOINT=None|g" tests/config/.env.test
-          sed -i "s|WEBHOOK_TOKEN=.*|WEBHOOK_TOKEN=None|g" tests/config/.env.test
-          sed -i "s|MANAGER_EMAIL=.*|MANAGER_EMAIL=manager@localhost|g" tests/config/.env.test
-          sed -i "s|DIRECTOR_EMAIL=.*|DIRECTOR_EMAIL=director@localhost|g" tests/config/.env.test
+          # Notification Configuration
+          sed -i "s|SMTP_SERVER=.*|SMTP_SERVER=${{ secrets.SMTP_SERVER }}|g" tests/config/.env.test
+          sed -i "s|NOTIFICATION_FROM_EMAIL=.*|NOTIFICATION_FROM_EMAIL=${{ secrets.NOTIFICATION_FROM_EMAIL }}|g" tests/config/.env.test
+          sed -i "s|ADMIN_EMAIL=.*|ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}|g" tests/config/.env.test
+          sed -i "s|SLACK_WEBHOOK_URL=.*|SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}|g" tests/config/.env.test
+          sed -i "s|WEBHOOK_ENDPOINT=.*|WEBHOOK_ENDPOINT=${{ secrets.WEBHOOK_ENDPOINT }}|g" tests/config/.env.test
+          sed -i "s|WEBHOOK_TOKEN=.*|WEBHOOK_TOKEN=${{ secrets.WEBHOOK_TOKEN }}|g" tests/config/.env.test
+          sed -i "s|MANAGER_EMAIL=.*|MANAGER_EMAIL=${{ secrets.MANAGER_EMAIL }}|g" tests/config/.env.test
+          sed -i "s|DIRECTOR_EMAIL=.*|DIRECTOR_EMAIL=${{ secrets.DIRECTOR_EMAIL }}|g" tests/config/.env.test
 
           # =============================================================================
           # TEST DATA SOURCES - Optional secrets
