@@ -1,0 +1,34 @@
+# Test metadata extraction configuration
+# Minimal configuration for unit and integration tests
+
+# Enhanced metadata extraction settings for tests
+metadata_extraction:
+  enabled: false  # Disabled by default for faster tests
+  strategy: "standard"  # Use standard strategy for tests
+  
+  # Author extraction settings for tests
+  authors:
+    enabled: true
+    extract_display_names: true
+    fallback_to_system_user: true
+    
+  # Cross-reference extraction for tests
+  cross_references:
+    enabled: true
+    max_references_per_document: 10  # Limited for tests
+    
+  # Relationship extraction for tests
+  relationships:
+    enabled: false  # Disabled for faster tests
+    max_relationships_per_document: 5
+    
+  # Timestamp extraction for tests
+  timestamps:
+    enabled: true
+    extract_creation_time: true
+    extract_modification_time: true
+    
+  # Source-specific metadata for tests
+  source_metadata:
+    enabled: true
+    preserve_original_metadata: true 

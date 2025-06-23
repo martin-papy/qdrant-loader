@@ -107,7 +107,7 @@ class ConfigDomain:
                 f"Unknown domain combination '{name}'. Available: {available}"
             )
 
-        return combinations[name.lower()]
+        return combinations[name.lower()].copy()
 
     @classmethod
     def resolve_domains(

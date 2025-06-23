@@ -21,10 +21,12 @@ class TestWorkspaceConfig:
         workspace_config = WorkspaceConfig(
             workspace_path=tmp_path,
             config_path=config_file,
+            config_dir=None,
             env_path=env_file,
             logs_path=tmp_path / "logs.log",
             metrics_path=tmp_path / "metrics",
             database_path=tmp_path / "db.sqlite",
+            is_multi_file=False,
         )
 
         assert workspace_config.workspace_path == tmp_path.resolve()
@@ -39,10 +41,12 @@ class TestWorkspaceConfig:
             WorkspaceConfig(
                 workspace_path=non_existent,
                 config_path=config_file,
+                config_dir=None,
                 env_path=None,
                 logs_path=non_existent / "logs.log",
                 metrics_path=non_existent / "metrics",
                 database_path=non_existent / "db.sqlite",
+                is_multi_file=False,
             )
 
     def test_workspace_config_validation_no_config(self, tmp_path):
@@ -54,10 +58,12 @@ class TestWorkspaceConfig:
             WorkspaceConfig(
                 workspace_path=tmp_path,
                 config_path=config_file,
+                config_dir=None,
                 env_path=None,
                 logs_path=tmp_path / "logs.log",
                 metrics_path=tmp_path / "metrics",
                 database_path=tmp_path / "db.sqlite",
+                is_multi_file=False,
             )
 
 

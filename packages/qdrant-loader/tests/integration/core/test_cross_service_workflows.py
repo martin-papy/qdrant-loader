@@ -188,6 +188,7 @@ class TestCrossServiceWorkflows:
         assert project.project_id == "theorcs"
         assert project.display_name == "TheORCS"
 
+    @pytest.mark.asyncio
     async def test_entity_extraction_to_storage_workflow(self, service_managers):
         """Test entity extraction workflow that stores results in both Qdrant and Neo4j."""
         qdrant_manager = service_managers['qdrant']
@@ -245,6 +246,7 @@ class TestCrossServiceWorkflows:
         assert hasattr(qdrant_manager, 'connect')
         assert hasattr(neo4j_manager, '_driver')  # Neo4jManager uses _driver (private)
 
+    @pytest.mark.asyncio
     async def test_id_mapping_cross_service_consistency(self, service_managers):
         """Test ID mapping consistency across Qdrant and Neo4j services."""
         qdrant_manager = service_managers['qdrant']

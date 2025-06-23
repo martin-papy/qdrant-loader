@@ -136,10 +136,12 @@ class TestWorkspaceConfig:
             config = WorkspaceConfig(
                 workspace_path=workspace_root,
                 config_path=config_file,
+                config_dir=None,
                 env_path=None,
                 logs_path=workspace_root / "logs" / "qdrant-loader.log",
                 metrics_path=workspace_root / "metrics",
                 database_path=workspace_root / "data" / "qdrant-loader.db",
+                is_multi_file=False,
             )
 
             assert config.workspace_path == workspace_root.resolve()

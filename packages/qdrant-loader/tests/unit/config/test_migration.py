@@ -211,15 +211,18 @@ class TestConfigMigrator:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
+            # Create a dummy legacy config file for the test
+            legacy_config_file = output_dir / "legacy_config.yaml"
+            legacy_config_file.write_text("# dummy legacy config")
             created_files = self.migrator._execute_migration(
-                domain_configs, output_dir, force=False
+                domain_configs, output_dir, force=False, legacy_config_path=legacy_config_file
             )
 
             # Check that files were created
             assert len(created_files) == len(domain_configs)
 
             for domain in domain_configs.keys():
-                expected_file = output_dir / f"{domain}.yaml"
+                expected_file = output_dir / "config" / f"{domain}.yaml"
                 assert str(expected_file) in created_files
                 assert expected_file.exists()
 
@@ -236,16 +239,22 @@ class TestConfigMigrator:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
 
-            # Create an existing file
-            existing_file = output_dir / f"{ConfigDomain.CONNECTIVITY}.yaml"
+            # Create an existing file in the config subdirectory
+            config_dir = output_dir / "config"
+            config_dir.mkdir(exist_ok=True)
+            existing_file = config_dir / f"{ConfigDomain.CONNECTIVITY}.yaml"
             existing_file.touch()
 
+            # Create a dummy legacy config file for the test
+            legacy_config_file = output_dir / "legacy_config.yaml"
+            legacy_config_file.write_text("# dummy legacy config")
+            
             # Should raise error when force=False
             with pytest.raises(
                 ConfigMigrationError, match="Output file already exists"
             ):
                 self.migrator._execute_migration(
-                    domain_configs, output_dir, force=False
+                    domain_configs, output_dir, force=False, legacy_config_path=legacy_config_file
                 )
 
     def test_execute_migration_file_exists_with_force(self, sample_legacy_config):
@@ -256,12 +265,17 @@ class TestConfigMigrator:
             output_dir = Path(temp_dir)
 
             # Create an existing file
-            existing_file = output_dir / f"{ConfigDomain.CONNECTIVITY}.yaml"
+            existing_file = output_dir / "config" / f"{ConfigDomain.CONNECTIVITY}.yaml"
+            existing_file.parent.mkdir(exist_ok=True)
             existing_file.write_text("existing content")
+
+            # Create a dummy legacy config file for the test
+            legacy_config_file = output_dir / "legacy_config.yaml"
+            legacy_config_file.write_text("# dummy legacy config")
 
             # Should succeed when force=True
             created_files = self.migrator._execute_migration(
-                domain_configs, output_dir, force=True
+                domain_configs, output_dir, force=True, legacy_config_path=legacy_config_file
             )
 
             assert str(existing_file) in created_files
@@ -471,12 +485,16 @@ class TestEdgeCases:
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
+            
+            # Create a dummy legacy config file for the test
+            legacy_config_file = output_dir / "legacy_config.yaml"
+            legacy_config_file.write_text("# dummy legacy config")
 
             with pytest.raises(
                 ConfigMigrationError, match="Failed to write .* configuration"
             ):
                 self.migrator._execute_migration(
-                    domain_configs, output_dir, force=False
+                    domain_configs, output_dir, force=False, legacy_config_path=legacy_config_file
                 )
 
     def teardown_method(self):
