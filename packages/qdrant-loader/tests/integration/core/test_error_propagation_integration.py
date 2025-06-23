@@ -52,10 +52,19 @@ class TestErrorPropagationIntegration:
     @pytest.mark.asyncio
     async def test_graphiti_initialization_error_propagation(self, valid_config):
         """Test that GraphitiManager initialization errors propagate correctly through the system."""
+        from copy import deepcopy
+        
+        # Create a modified config with NO API keys to force validation error
+        modified_config = deepcopy(valid_config.global_config)
+        if hasattr(modified_config, 'graphiti') and modified_config.graphiti:
+            # Clear ALL possible API key sources
+            modified_config.graphiti.llm.api_key = None
+            modified_config.graphiti.embedder.api_key = None
+        
         # Test OpenAI API key validation failure
         manager = GraphitiManager(
             neo4j_config=valid_config.global_config.neo4j,
-            graphiti_config=valid_config.global_config.graphiti if hasattr(valid_config.global_config, 'graphiti') else None,
+            graphiti_config=modified_config.graphiti if hasattr(modified_config, 'graphiti') else None,
             openai_api_key=None  # Force API key failure
         )
         

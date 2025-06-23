@@ -3,17 +3,17 @@
 
 # QDrant vector database configuration for tests
 qdrant:
-  url: "${QDRANT_URL}"
-  api_key: "${QDRANT_API_KEY}"
-  collection_name: "${QDRANT_COLLECTION_NAME}"
+  url: "${QDRANT_URL:-http://localhost:6333}"
+  api_key: "${QDRANT_API_KEY:-}"
+  collection_name: "${QDRANT_COLLECTION_NAME:-test_collection}"
 
 embedding:
-  endpoint: "${EMBEDDING_ENDPOINT}" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
-  model: "${EMBEDDING_MODEL}"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
-  provider: "${EMBEDDING_PROVIDER}"  # Embedding provider to use. Could be openai, anthropic, etc.
-  api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
+  endpoint: "${EMBEDDING_ENDPOINT:-https://api.openai.com/v1}" # Optionnal. Defines the endpoint to use for embedding. Defaults to OpenAI endpoint.
+  model: "${EMBEDDING_MODEL:-text-embedding-3-small}"  # Embedding model to use. Could be BAAI/bge-small-en-v1.5 (exemple for local use) or text-embedding-3-small (for OpenAI use)
+  provider: "${EMBEDDING_PROVIDER:-openai}"  # Embedding provider to use. Could be openai, anthropic, etc.
+  api_key: "${OPENAI_API_KEY:-test-key}"     # API key for the embedding service (required for OpenAI models)
   batch_size: 100                  # Number of chunks to process in one batch
-  vector_size: ${EMBEDDING_VECTOR_SIZE}                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
+  vector_size: ${EMBEDDING_VECTOR_SIZE:-1536}                # Optionnal. Vector size for the embedding model (384 for BAAI/bge-small-en-v1.5, 1536 for OpenAI text-embedding-3-small)
   tokenizer: "${EMBEDDING_TOKENIZER:-none}"         # Optionnal. Tokenizer to use for token counting. Use 'cl100k_base' for OpenAI models or 'none' for other models.
   max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
   max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
@@ -22,10 +22,10 @@ embedding:
 # Neo4j Configuration for tests (optional)
 # Only needed when testing Graphiti features
 neo4j:
-  uri: "${NEO4J_URI}"
-  user: "${NEO4J_USER}"
-  password: "${NEO4J_PASSWORD}"
-  database: "${NEO4J_DATABASE}"
+  uri: "${NEO4J_URI:-bolt://localhost:7687}"
+  user: "${NEO4J_USER:-neo4j}"
+  password: "${NEO4J_PASSWORD:-test-password}"
+  database: "${NEO4J_DATABASE:-neo4j}"
   max_connection_lifetime: 300  # Shorter for tests
   max_connection_pool_size: 5   # Smaller pool for tests
   connection_acquisition_timeout: 10  # Shorter timeout for tests
@@ -41,20 +41,20 @@ graphiti:
   
   # LLM Configuration for Graphiti
   llm:
-    provider: "${GRAPHITI_LLM_PROVIDER}"  # openai, anthropic, etc.
-    model: "${GRAPHITI_LLM_MODEL}"
+    provider: "${GRAPHITI_LLM_PROVIDER:-openai}"  # openai, anthropic, etc.
+    model: "${GRAPHITI_LLM_MODEL:-gpt-4o-mini}"
     max_tokens: 4000
     temperature: 0.1
-    api_key: "${GRAPHITI_LLM_API_KEY}"  # Set via environment variable
-    endpoint: "${GRAPHITI_LLM_ENDPOINT}"  # LLM endpoint
+    api_key: "${GRAPHITI_LLM_API_KEY:-test-key}"  # Set via environment variable
+    endpoint: "${GRAPHITI_LLM_ENDPOINT:-https://api.openai.com/v1}"  # LLM endpoint
   
   # Embedder Configuration
   embedder:
-    provider: "${GRAPHITI_EMBEDDER_PROVIDER}"
-    model: "${GRAPHITI_EMBEDDER_MODEL}"
+    provider: "${GRAPHITI_EMBEDDER_PROVIDER:-openai}"
+    model: "${GRAPHITI_EMBEDDER_MODEL:-text-embedding-3-small}"
     dimensions: null  # Use model default
-    api_key: "${GRAPHITI_EMBEDDER_API_KEY}"  # Set via environment variable
-    endpoint: "${GRAPHITI_EMBEDDER_ENDPOINT}"  # Embedder endpoint
+    api_key: "${GRAPHITI_EMBEDDER_API_KEY:-test-key}"  # Set via environment variable
+    endpoint: "${GRAPHITI_EMBEDDER_ENDPOINT:-https://api.openai.com/v1}"  # Embedder endpoint
 
   
   # Operational Settings
