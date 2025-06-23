@@ -41,7 +41,7 @@ jobs:
       - name: Create .env.test file for loader
         run: |
           cd packages/qdrant-loader
-          cp tests/.env.test.template tests/.env.test
+          cp tests/config/.env.test.template tests/config/.env.test
 
           # Check if required secrets are set
           if [ -z "${{ secrets.QDRANT_URL }}" ]; then
