@@ -337,15 +337,52 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     "path": list(current_path),
                 }
             )
-        # Ensure each section has proper metadata
+        
+        # NEW: Check if sections are too large and split them
+        chunk_size = self.settings.global_config.chunking.chunk_size
+        final_sections = []
+        
         for section in sections:
+            if len(section["content"]) > chunk_size:
+                # Split large section into smaller chunks
+                self.logger.debug(
+                    f"Section too large ({len(section['content'])} chars), splitting into smaller chunks",
+                    extra={
+                        "section_title": section.get("title", "Unknown"),
+                        "section_size": len(section["content"]),
+                        "chunk_size_limit": chunk_size,
+                    },
+                )
+                
+                # Split the large section
+                sub_chunks = self._split_large_section(section["content"], chunk_size)
+                
+                # Create metadata for each sub-chunk
+                for i, sub_chunk in enumerate(sub_chunks):
+                    sub_section = {
+                        "content": sub_chunk,
+                        "level": section["level"],
+                        "title": f"{section['title']} (Part {i+1})" if section.get("title") else f"Part {i+1}",
+                        "path": section["path"],
+                        "parent_section": section.get("title", "Unknown"),
+                        "sub_chunk_index": i,
+                        "total_sub_chunks": len(sub_chunks),
+                    }
+                    final_sections.append(sub_section)
+            else:
+                # Section is already small enough
+                final_sections.append(section)
+        
+        # Ensure each section has proper metadata
+        for section in final_sections:
             if "level" not in section:
                 section["level"] = 0
             if "title" not in section:
                 section["title"] = self._extract_section_title(section["content"])
             if "path" not in section:
                 section["path"] = []
-        return sections
+        
+        return final_sections
 
     def _split_large_section(self, content: str, max_size: int) -> list[str]:
         """Split a large section into smaller chunks while preserving markdown structure.
@@ -360,18 +397,22 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         chunks = []
         current_chunk = ""
 
-        # Safety limit to prevent infinite loops
-        MAX_CHUNKS_PER_SECTION = 100
+        # Calculate dynamic safety limit based on configuration
+        # Allow up to 50% of max_chunks_per_document for a single section
+        max_chunks_per_section = min(
+            self.settings.global_config.chunking.max_chunks_per_document // 2,
+            1000  # Absolute maximum to prevent runaway chunking
+        )
 
         # Split by paragraphs first
         paragraphs = re.split(r"\n\s*\n", content)
 
         for para in paragraphs:
-            # Safety check
-            if len(chunks) >= MAX_CHUNKS_PER_SECTION:
-                logger.warning(
-                    f"Reached maximum chunks per section limit ({MAX_CHUNKS_PER_SECTION}). "
-                    f"Section may be truncated."
+            # Safety check with dynamic limit
+            if len(chunks) >= max_chunks_per_section:
+                self.logger.warning(
+                    f"Reached maximum chunks per section limit ({max_chunks_per_section}). "
+                    f"Section may be truncated. Consider increasing chunk_size or max_chunks_per_document in config."
                 )
                 break
 
@@ -387,21 +428,21 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     current_chunk = ""
 
                     for sentence in sentences:
-                        # Safety check
-                        if len(chunks) >= MAX_CHUNKS_PER_SECTION:
+                        # Safety check with dynamic limit
+                        if len(chunks) >= max_chunks_per_section:
                             break
 
                         # If sentence itself is too large, split by words
                         if len(sentence) > max_size:
                             words = sentence.split()
                             for word in words:
-                                # Safety check
-                                if len(chunks) >= MAX_CHUNKS_PER_SECTION:
+                                # Safety check with dynamic limit
+                                if len(chunks) >= max_chunks_per_section:
                                     break
 
                                 # Handle extremely long words by truncating them
                                 if len(word) > max_size:
-                                    logger.warning(
+                                    self.logger.warning(
                                         f"Word longer than max_size ({len(word)} > {max_size}), truncating: {word[:50]}..."
                                     )
                                     word = (
@@ -432,12 +473,13 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
 
-        # Final safety check
-        if len(chunks) > MAX_CHUNKS_PER_SECTION:
-            logger.warning(
-                f"Generated {len(chunks)} chunks for section, limiting to {MAX_CHUNKS_PER_SECTION}"
+        # Final safety check with dynamic limit
+        if len(chunks) > max_chunks_per_section:
+            self.logger.warning(
+                f"Generated {len(chunks)} chunks for section, limiting to {max_chunks_per_section}. "
+                f"Consider increasing chunk_size or max_chunks_per_document in config."
             )
-            chunks = chunks[:MAX_CHUNKS_PER_SECTION]
+            chunks = chunks[:max_chunks_per_section]
 
         return chunks
 
@@ -454,7 +496,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         Returns:
             Dictionary containing processing results
         """
-        logger.debug(
+        self.logger.debug(
             "Processing chunk",
             chunk_index=chunk_index,
             total_chunks=total_chunks,
@@ -466,7 +508,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             return self._processed_chunks[chunk]
 
         # Perform semantic analysis
-        logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
+        self.logger.debug("Starting semantic analysis for chunk", chunk_index=chunk_index)
         analysis_result = self.semantic_analyzer.analyze_text(
             chunk, doc_id=f"chunk_{chunk_index}"
         )
@@ -482,7 +524,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         }
         self._processed_chunks[chunk] = results
 
-        logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
+        self.logger.debug("Completed semantic analysis for chunk", chunk_index=chunk_index)
         return results
 
     def _extract_section_title(self, chunk: str) -> str:
@@ -509,6 +551,26 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             return title
 
         return "Untitled Section"
+
+    def _estimate_chunk_count(self, content: str) -> int:
+        """Estimate the number of chunks that will be generated.
+        
+        Args:
+            content: The content to estimate chunks for
+            
+        Returns:
+            int: Estimated number of chunks
+        """
+        chunk_size = self.settings.global_config.chunking.chunk_size
+        
+        # Simple estimation: total chars / chunk_size
+        # This is approximate since we split by paragraphs and have overlap
+        estimated = len(content) // chunk_size
+        
+        # Add some buffer for overlap and paragraph boundaries
+        estimated = int(estimated * 1.2)  # 20% buffer
+        
+        return max(1, estimated)  # At least 1 chunk
 
     def shutdown(self):
         """Shutdown the thread pool executor."""
@@ -540,30 +602,42 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             len(document.content),
             file_name,
         )
+        
+        # Provide user guidance on expected chunk count
+        estimated_chunks = self._estimate_chunk_count(document.content)
+        self.logger.info(
+            f"Processing document: {document.title} ({len(document.content):,} chars)",
+            extra={
+                "estimated_chunks": estimated_chunks,
+                "chunk_size": self.settings.global_config.chunking.chunk_size,
+                "max_chunks_allowed": self.settings.global_config.chunking.max_chunks_per_document,
+            }
+        )
 
         try:
             # Split text into semantic chunks
-            logger.debug("Parsing document structure")
+            self.logger.debug("Parsing document structure")
             chunks_metadata = self._split_text(document.content)
 
             if not chunks_metadata:
                 self.progress_tracker.finish_chunking(document.id, 0, "markdown")
                 return []
 
-            # Safety limit to prevent excessive chunking
-            MAX_CHUNKS_PER_DOCUMENT = 500
-            if len(chunks_metadata) > MAX_CHUNKS_PER_DOCUMENT:
-                logger.warning(
-                    f"Document generated {len(chunks_metadata)} chunks, limiting to {MAX_CHUNKS_PER_DOCUMENT}. "
-                    f"Document may be truncated. Document: {document.title}"
+            # Apply configuration-driven safety limit
+            max_chunks = self.settings.global_config.chunking.max_chunks_per_document
+            if len(chunks_metadata) > max_chunks:
+                self.logger.warning(
+                    f"Document generated {len(chunks_metadata)} chunks, limiting to {max_chunks} per config. "
+                    f"Consider increasing max_chunks_per_document in config or using larger chunk_size. "
+                    f"Document: {document.title}"
                 )
-                chunks_metadata = chunks_metadata[:MAX_CHUNKS_PER_DOCUMENT]
+                chunks_metadata = chunks_metadata[:max_chunks]
 
             # Create chunk documents
             chunked_docs = []
             for i, chunk_meta in enumerate(chunks_metadata):
                 chunk_content = chunk_meta["content"]
-                logger.debug(
+                self.logger.debug(
                     f"Processing chunk {i+1}/{len(chunks_metadata)}",
                     extra={
                         "chunk_size": len(chunk_content),
@@ -580,6 +654,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     total_chunks=len(chunks_metadata),
                     skip_nlp=False,
                 )
+                
+                # Set unique chunk ID (critical for Qdrant storage)
+                chunk_doc.id = Document.generate_chunk_id(document.id, i)
 
                 # Add markdown-specific metadata
                 chunk_doc.metadata.update(chunk_meta)
@@ -603,7 +680,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 topic_analysis = self._analyze_topic(chunk_content)
                 chunk_doc.metadata["topic_analysis"] = topic_analysis
 
-                logger.debug(
+                self.logger.debug(
                     "Created chunk document",
                     extra={
                         "chunk_id": chunk_doc.id,
@@ -619,7 +696,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 document.id, len(chunked_docs), "markdown"
             )
 
-            logger.info(
+            self.logger.info(
                 f"Markdown chunking completed for document: {document.title}",
                 extra={
                     "document_id": document.id,
@@ -652,7 +729,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         Returns:
             List of chunked documents
         """
-        logger.info("Using fallback chunking strategy for document")
+        self.logger.info("Using fallback chunking strategy for document")
 
         # Simple chunking implementation based on fixed size
         chunk_size = self.settings.global_config.chunking.chunk_size
@@ -685,6 +762,8 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 chunk_index=i,
                 total_chunks=len(chunks),
             )
+            # Set unique chunk ID (critical for Qdrant storage)
+            chunk_doc.id = Document.generate_chunk_id(document.id, i)
             chunked_docs.append(chunk_doc)
 
         return chunked_docs
