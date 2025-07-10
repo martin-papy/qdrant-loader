@@ -18,6 +18,12 @@ class ChunkingConfig(BaseModel):
         ge=0,
         title="Chunk Overlap",
     )
+    max_chunks_per_document: int = Field(
+        default=1000,
+        description="Maximum number of chunks per document (safety limit)",
+        gt=0,
+        title="Max Chunks Per Document",
+    )
 
     @field_validator("chunk_overlap")
     def validate_chunk_overlap(cls, v: int, info: ValidationInfo) -> int:

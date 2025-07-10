@@ -1,5 +1,28 @@
 # Release Notes
 
+## Version 0.4.11 - July 10, 2025
+
+### 🐛 Bug Fixes
+
+#### File Processing & Chunking
+
+- **Fixed file size detection limits**: Increased default file size limits to handle larger documents (docx, xlsx files up to 5MB)
+- **Resolved MarkdownChunkingStrategy issues**: Fixed chunking strategy to respect `chunk_size` configuration instead of only splitting on H1 headers
+- **Fixed unique chunk ID generation**: Resolved issue where chunks from same document had identical IDs, causing overwrites in Qdrant storage
+- **Enhanced chunk count management**: Replaced hard-coded chunk limits with configurable `max_chunks_per_document` setting
+
+#### Configuration Management
+
+- **Improved chunking configuration**: Added `max_chunks_per_document` parameter for better control over document processing
+- **Cleaned up redundant settings**: Removed conflicting `max_document_size` parameter to maintain clean separation between file size and chunk count limits
+- **Enhanced error messages**: Added actionable configuration advice when chunk limits are reached
+
+#### Processing Pipeline
+
+- **Fixed content truncation**: Eliminated "maximum chunks per section limit" warnings by making limits dynamic based on user configuration
+- **Improved chunk estimation**: Added better user guidance for optimal chunk count configuration
+- **Enhanced section handling**: Made section limits dynamic (50% of max_chunks_per_document)
+
 ## Version 0.4.10 - June 18, 2025
 
 ### 🐛 Bug Fixes
