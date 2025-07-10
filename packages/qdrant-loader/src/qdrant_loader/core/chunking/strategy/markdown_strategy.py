@@ -395,8 +395,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             List of content chunks
         """
         chunks = []
-        current_chunk = ""
-
+        
         # Calculate dynamic safety limit based on configuration
         # Allow up to 50% of max_chunks_per_document for a single section
         max_chunks_per_section = min(
@@ -406,80 +405,88 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         # Split by paragraphs first
         paragraphs = re.split(r"\n\s*\n", content)
-
+        
+        # Flatten paragraphs into manageable text units
+        text_units = []
         for para in paragraphs:
-            # Safety check with dynamic limit
-            if len(chunks) >= max_chunks_per_section:
-                self.logger.warning(
-                    f"Reached maximum chunks per section limit ({max_chunks_per_section}). "
-                    f"Section may be truncated. Consider increasing chunk_size or max_chunks_per_document in config."
-                )
-                break
-
-            # If adding this paragraph would exceed max_size
-            if len(current_chunk) + len(para) + 2 > max_size:  # +2 for newlines
-                # If current chunk is not empty, save it
-                if current_chunk.strip():
-                    chunks.append(current_chunk.strip())
-
-                # If paragraph itself is too large, split by sentences
-                if len(para) > max_size:
-                    sentences = re.split(r"(?<=[.!?])\s+", para)
-                    current_chunk = ""
-
-                    for sentence in sentences:
-                        # Safety check with dynamic limit
-                        if len(chunks) >= max_chunks_per_section:
-                            break
-
-                        # If sentence itself is too large, split by words
-                        if len(sentence) > max_size:
-                            words = sentence.split()
-                            for word in words:
-                                # Safety check with dynamic limit
-                                if len(chunks) >= max_chunks_per_section:
-                                    break
-
-                                # Handle extremely long words by truncating them
-                                if len(word) > max_size:
-                                    self.logger.warning(
-                                        f"Word longer than max_size ({len(word)} > {max_size}), truncating: {word[:50]}..."
-                                    )
-                                    word = (
-                                        word[: max_size - 10] + "..."
-                                    )  # Truncate with ellipsis
-
-                                if len(current_chunk) + len(word) + 1 > max_size:
-                                    if (
-                                        current_chunk.strip()
-                                    ):  # Only add non-empty chunks
-                                        chunks.append(current_chunk.strip())
-                                    current_chunk = word + " "
-                                else:
-                                    current_chunk += word + " "
-                        # Normal sentence handling
-                        elif len(current_chunk) + len(sentence) + 1 > max_size:
-                            if current_chunk.strip():  # Only add non-empty chunks
-                                chunks.append(current_chunk.strip())
-                            current_chunk = sentence + " "
-                        else:
-                            current_chunk += sentence + " "
-                else:
-                    current_chunk = para + "\n\n"
+            para = para.strip()
+            if not para:
+                continue
+            
+            # If paragraph is too large, split by sentences
+            if len(para) > max_size:
+                sentences = re.split(r"(?<=[.!?])\s+", para)
+                text_units.extend([s.strip() for s in sentences if s.strip()])
             else:
-                current_chunk += para + "\n\n"
+                text_units.append(para)
 
-        # Add the last chunk if not empty
-        if current_chunk.strip():
-            chunks.append(current_chunk.strip())
+        # Build chunks with overlap
+        i = 0
+        while i < len(text_units) and len(chunks) < max_chunks_per_section:
+            current_chunk = ""
+            units_in_chunk = 0
+            
+            # Build the current chunk
+            j = i
+            while j < len(text_units):
+                unit = text_units[j]
+                
+                # Check if adding this unit would exceed max_size
+                if current_chunk and len(current_chunk) + len(unit) + 2 > max_size:
+                    break
+                    
+                # Add unit to chunk
+                if current_chunk:
+                    current_chunk += "\n\n" + unit
+                else:
+                    current_chunk = unit
+                
+                units_in_chunk += 1
+                j += 1
+            
+            # Add chunk if it has content
+            if current_chunk.strip():
+                chunks.append(current_chunk.strip())
+            
+            # Calculate overlap and advance position
+            if units_in_chunk > 0:
+                # When overlap is 0, advance by all units to avoid any overlap
+                if self.chunk_overlap == 0:
+                    advance = units_in_chunk
+                else:
+                    # Calculate how many characters of overlap we want
+                    overlap_chars = min(self.chunk_overlap, len(current_chunk) // 4)  # Max 25% overlap
+                    
+                    # Find a good overlap point by counting back from the end
+                    if overlap_chars > 0 and len(current_chunk) > overlap_chars:
+                        # Count how many text units should be included in overlap
+                        overlap_units = 0
+                        overlap_size = 0
+                        for k in range(j - 1, i - 1, -1):  # Go backwards
+                            unit_size = len(text_units[k])
+                            if overlap_size + unit_size <= overlap_chars:
+                                overlap_size += unit_size
+                                overlap_units += 1
+                            else:
+                                break
+                        
+                        # Advance by total units minus overlap units, ensuring progress
+                        advance = max(1, units_in_chunk - overlap_units)
+                    else:
+                        # No overlap possible, advance by all units
+                        advance = max(1, units_in_chunk)
+                
+                i += advance
+            else:
+                # Safety: ensure we make progress even if no units were added
+                i += 1
 
-        # Final safety check with dynamic limit
-        if len(chunks) > max_chunks_per_section:
+        # Handle remaining units if we hit the chunk limit
+        if i < len(text_units) and len(chunks) >= max_chunks_per_section:
             self.logger.warning(
-                f"Generated {len(chunks)} chunks for section, limiting to {max_chunks_per_section}. "
-                f"Consider increasing chunk_size or max_chunks_per_document in config."
+                f"Reached maximum chunks per section limit ({max_chunks_per_section}). "
+                f"Section may be truncated. Consider increasing chunk_size or max_chunks_per_document in config."
             )
-            chunks = chunks[:max_chunks_per_section]
 
         return chunks
 

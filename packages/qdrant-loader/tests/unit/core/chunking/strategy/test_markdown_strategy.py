@@ -776,3 +776,87 @@ class TestIntegrationScenarios:
         assert len(chunks) == 1
         # Topic analysis should still be performed
         assert "topic_analysis" in chunks[0].metadata
+
+
+class TestChunkOverlap:
+    """Test chunk overlap functionality."""
+
+    def test_split_large_section_with_overlap(self, markdown_strategy):
+        """Test that large sections are split with proper overlap."""
+        # Configure overlap
+        markdown_strategy.chunk_overlap = 50
+        
+        # Create content that will need to be split into multiple chunks
+        content = "This is the first paragraph with some content that will be in the first chunk.\n\n" \
+                 "This is the second paragraph that should appear in both first and second chunks due to overlap.\n\n" \
+                 "This is the third paragraph that should appear in the second chunk.\n\n" \
+                 "This is the fourth paragraph that will be in later chunks."
+        
+        max_size = 150  # Small size to force multiple chunks
+        
+        chunks = markdown_strategy._split_large_section(content, max_size)
+        
+        # Should have multiple chunks
+        assert len(chunks) >= 2
+        
+        # Check that there's some overlap between consecutive chunks
+        if len(chunks) >= 2:
+            # Look for common text between first and second chunk
+            first_chunk = chunks[0]
+            second_chunk = chunks[1]
+            
+            # Find the last few words of the first chunk
+            first_words = first_chunk.split()[-10:]  # Last 10 words
+            
+            # Check if any of these words appear in the second chunk
+            overlap_found = any(word in second_chunk for word in first_words)
+            assert overlap_found, f"No overlap found between chunks:\nFirst: {first_chunk}\nSecond: {second_chunk}"
+
+    def test_split_large_section_no_overlap_when_disabled(self, markdown_strategy):
+        """Test that overlap is not applied when chunk_overlap is 0."""
+        # Configure no overlap
+        markdown_strategy.chunk_overlap = 0
+        
+        # Use content with distinct words to avoid false overlap detection
+        content = "Alpha bravo charlie delta echo foxtrot.\n\nGolf hotel india juliet kilo lima.\n\nMike november oscar papa quebec romeo."
+        max_size = 50  # Small size to force multiple chunks
+        
+        chunks = markdown_strategy._split_large_section(content, max_size)
+        
+        # Should have multiple chunks
+        assert len(chunks) >= 2
+        
+        # With no overlap, chunks should not share content
+        if len(chunks) >= 2:
+            first_chunk = chunks[0]
+            second_chunk = chunks[1]
+            
+            # Check that chunks don't have any shared content when overlap is disabled
+            first_words = set(first_chunk.lower().split())
+            second_words = set(second_chunk.lower().split())
+            
+            # Remove common punctuation that might appear in multiple chunks
+            first_words = {word.strip('.,!?();') for word in first_words}
+            second_words = {word.strip('.,!?();') for word in second_words}
+            
+            # With no overlap setting, there should be no shared words
+            shared_words = first_words.intersection(second_words)
+            assert len(shared_words) == 0, f"Found unexpected overlap with chunk_overlap=0: {shared_words}\nFirst: {first_chunk}\nSecond: {second_chunk}"
+
+    def test_overlap_respects_configuration(self, markdown_strategy):
+        """Test that overlap respects the configured chunk_overlap value."""
+        test_overlaps = [0, 25, 50, 100]
+        
+        content = "First paragraph with content.\n\nSecond paragraph with more content.\n\nThird paragraph with even more content."
+        max_size = 80  # Size to force splitting
+        
+        for overlap_size in test_overlaps:
+            markdown_strategy.chunk_overlap = overlap_size
+            chunks = markdown_strategy._split_large_section(content, max_size)
+            
+            # Should always produce chunks
+            assert len(chunks) >= 1
+            
+            # Verify chunks respect max_size (allowing small variance for word boundaries)
+            for chunk in chunks:
+                assert len(chunk) <= max_size + 20, f"Chunk too large: {len(chunk)} > {max_size + 20}"

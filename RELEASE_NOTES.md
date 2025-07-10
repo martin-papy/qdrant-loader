@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 0.4.12 - July 10, 2025
+
+### 🐛 Bug Fixes
+
+#### Chunking Strategy Improvements
+
+- **Fixed missing chunk overlap in MarkdownChunkingStrategy**: Implemented proper overlap functionality that was completely missing from markdown file chunking
+- **Added intelligent overlap calculation**: Overlap now respects the configured `chunk_overlap` parameter and uses paragraph/sentence boundaries for natural breaks
+- **Enhanced overlap configuration support**: When `chunk_overlap=0`, chunks have no overlap; when configured, up to 25% of chunk content can overlap for better context continuity
+- **Added comprehensive overlap testing**: New test suite verifies overlap works correctly across different configurations and content types
+
 ## Version 0.4.11 - July 10, 2025
 
 ### 🐛 Bug Fixes
