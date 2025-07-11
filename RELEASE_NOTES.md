@@ -1,5 +1,25 @@
 # Release Notes
 
+## Version 0.4.13 - July 11, 2025
+
+### ✨ New Features
+
+#### Excel File Chunking Improvements
+
+- **Enhanced Excel-to-markdown chunking**: Improved MarkdownChunkingStrategy to properly handle Excel files converted to markdown by MarkItDown
+- **Sheet-aware sectioning**: Excel files now split on H2 headers (sheet names) instead of treating the entire file as one "Preamble" section
+- **Table-aware chunking**: Added specialized `_split_excel_sheet_content` method that preserves table structure when splitting large sheets
+- **Intelligent content detection**: Automatically detects converted Excel files based on `original_file_type` metadata and applies appropriate chunking rules
+- **Backward compatibility**: Regular markdown files continue to use H1-only sectioning, maintaining existing behavior
+- **Comprehensive testing**: Added 3 new test cases covering Excel chunking scenarios and ensuring regular markdown files are unaffected
+
+#### Technical Improvements
+
+- **Context-aware splitting**: Different header level thresholds based on file type (H1 for markdown, H1+H2 for Excel)
+- **Enhanced metadata tracking**: Added `is_excel_sheet` metadata to identify Excel-derived chunks
+- **Table boundary preservation**: Smart table detection prevents breaking tables in the middle when chunking
+- **Document reference management**: Added proper cleanup of document references to prevent memory leaks
+
 ## Version 0.4.12 - July 10, 2025
 
 ### 🐛 Bug Fixes
