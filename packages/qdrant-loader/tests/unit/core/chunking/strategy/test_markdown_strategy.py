@@ -860,3 +860,148 @@ class TestChunkOverlap:
             # Verify chunks respect max_size (allowing small variance for word boundaries)
             for chunk in chunks:
                 assert len(chunk) <= max_size + 20, f"Chunk too large: {len(chunk)} > {max_size + 20}"
+
+
+class TestExcelChunkingImprovements:
+    """Test improvements for Excel file chunking."""
+
+    def test_excel_file_splits_on_h2_headers(self, markdown_strategy):
+        """Test that Excel files split on H2 headers (sheet names)."""
+        # Simulate what MarkItDown produces for an Excel file with multiple sheets
+        excel_content = """## Sheet1
+
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Data 1   | Data 2   | Data 3   |
+| Data 4   | Data 5   | Data 6   |
+
+## Sheet2
+
+| Product  | Price | Quantity |
+|----------|-------|----------|
+| Item A   | $10   | 5        |
+| Item B   | $20   | 3        |
+
+## Summary
+
+Total revenue: $90
+Items sold: 8
+"""
+
+        # Create a document with Excel metadata
+        document = Document(
+            title="Test Excel File",
+            content=excel_content,
+            content_type="md",
+            metadata={
+                "conversion_method": "markitdown",
+                "original_file_type": "xlsx",
+                "original_filename": "test.xlsx",
+            },
+            source_type="localfile",
+            source="test",
+            url="file:///test.xlsx",
+        )
+
+        # Chunk the document
+        chunks = markdown_strategy.chunk_document(document)
+
+        # Should have 3 chunks (one for each sheet)
+        assert len(chunks) >= 3
+
+        # Verify chunks contain appropriate content
+        chunk_contents = [chunk.content for chunk in chunks]
+        
+        # Check that we have separate chunks for each sheet
+        sheet1_chunk = next((chunk for chunk in chunk_contents if "Sheet1" in chunk), None)
+        sheet2_chunk = next((chunk for chunk in chunk_contents if "Sheet2" in chunk), None)
+        summary_chunk = next((chunk for chunk in chunk_contents if "Summary" in chunk), None)
+
+        assert sheet1_chunk is not None, "Sheet1 should be in its own chunk"
+        assert sheet2_chunk is not None, "Sheet2 should be in its own chunk" 
+        assert summary_chunk is not None, "Summary should be in its own chunk"
+
+        # Verify metadata
+        for chunk in chunks:
+            assert chunk.metadata.get("original_file_type") == "xlsx"
+            assert "is_excel_sheet" in chunk.metadata
+
+    def test_excel_table_aware_splitting(self, markdown_strategy):
+        """Test that Excel content splits tables properly."""
+        # Large Excel content that needs splitting
+        large_table = """## Sales Data
+
+| Product | Q1 Sales | Q2 Sales | Q3 Sales | Q4 Sales |
+|---------|----------|----------|----------|----------|
+""" + "\n".join([f"| Product {i} | ${i*100} | ${i*120} | ${i*110} | ${i*130} |" 
+                 for i in range(1, 100)]) + """
+
+## Analysis
+
+This is some analysis text that follows the large table.
+"""
+
+        document = Document(
+            title="Large Excel File",
+            content=large_table,
+            content_type="md", 
+            metadata={
+                "conversion_method": "markitdown",
+                "original_file_type": "xlsx",
+                "original_filename": "large.xlsx",
+            },
+            source_type="localfile",
+            source="test",
+            url="file:///large.xlsx",
+        )
+
+        chunks = markdown_strategy.chunk_document(document)
+
+        # Should have multiple chunks due to large table
+        assert len(chunks) > 1
+
+        # Verify table structure is preserved in chunks
+        for chunk in chunks:
+            content = chunk.content
+            if "|" in content:  # This chunk contains table data
+                lines = content.split("\n")
+                table_lines = [line for line in lines if "|" in line]
+                if len(table_lines) > 1:
+                    # Should have header and separator if it's a complete table fragment
+                    assert any("Product" in line for line in table_lines[:2]), \
+                        "Table chunks should preserve headers where possible"
+
+    def test_regular_markdown_unchanged(self, markdown_strategy):
+        """Test that regular markdown files still work as before."""
+        regular_content = """# Main Title
+
+This is regular markdown content.
+
+## Section 1
+
+Some content here.
+
+## Section 2
+
+More content here.
+"""
+
+        document = Document(
+            title="Regular Markdown",
+            content=regular_content,
+            content_type="md",
+            metadata={},  # No conversion metadata
+            source_type="git",
+            source="test-repo",
+            url="file:///test-repo/test.md",
+        )
+
+        chunks = markdown_strategy.chunk_document(document)
+
+        # Should only split on H1 headers (regular behavior)
+        assert len(chunks) == 1  # All content in one chunk since only H1 creates sections
+
+        # Verify the content
+        assert "Main Title" in chunks[0].content
+        assert "Section 1" in chunks[0].content
+        assert "Section 2" in chunks[0].content

@@ -285,7 +285,11 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         return merged
 
     def _split_text(self, text: str) -> list[dict[str, Any]]:
-        """Split text into chunks at level 0 (title) and level 1 headers only.
+        """Split text into chunks based on headers, with special handling for converted files.
+        
+        For regular markdown files: splits on H1 headers only
+        For converted files (especially Excel): also splits on H2 headers to respect sheet boundaries
+        
         Returns list of dictionaries with chunk text and metadata.
         """
         structure = self._parse_document_structure(text)
@@ -295,10 +299,21 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         current_title = None
         current_path = []
 
+        # Check if this is a converted Excel file that needs special handling
+        is_converted_excel = hasattr(self, '_current_document') and \
+                           self._current_document and \
+                           self._current_document.metadata.get("original_file_type") == "xlsx"
+        
+        # For converted Excel files, also split on H2 headers (sheet names)
+        # For regular markdown, only split on H1 headers
+        split_levels = {1} if not is_converted_excel else {1, 2}
+
         for item in structure:
             if item["type"] == "header":
                 level = item["level"]
-                if level == 1 or (level == 0 and not sections):
+                
+                # Create new section for split levels or first header (level 0)
+                if level in split_levels or (level == 0 and not sections):
                     # Save previous section if exists
                     if current_section is not None:
                         sections.append(
@@ -307,6 +322,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                                 "level": current_level,
                                 "title": current_title,
                                 "path": list(current_path),
+                                "is_excel_sheet": is_converted_excel and level == 2,
                             }
                         )
                     # Start new section
@@ -325,8 +341,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     # If no section started yet, treat as preamble
                     current_section = item["text"] + "\n"
                     current_level = 0
-                    current_title = "Preamble"
+                    current_title = "Preamble" if not is_converted_excel else "Sheet Data"
                     current_path = []
+                    
         # Add the last section
         if current_section is not None:
             sections.append(
@@ -335,10 +352,11 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     "level": current_level,
                     "title": current_title,
                     "path": list(current_path),
+                    "is_excel_sheet": is_converted_excel and current_level == 2,
                 }
             )
         
-        # NEW: Check if sections are too large and split them
+        # Check if sections are too large and split them
         chunk_size = self.settings.global_config.chunking.chunk_size
         final_sections = []
         
@@ -351,11 +369,15 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                         "section_title": section.get("title", "Unknown"),
                         "section_size": len(section["content"]),
                         "chunk_size_limit": chunk_size,
+                        "is_excel_sheet": section.get("is_excel_sheet", False),
                     },
                 )
                 
-                # Split the large section
-                sub_chunks = self._split_large_section(section["content"], chunk_size)
+                # For Excel sheets, use table-aware splitting
+                if section.get("is_excel_sheet", False):
+                    sub_chunks = self._split_excel_sheet_content(section["content"], chunk_size)
+                else:
+                    sub_chunks = self._split_large_section(section["content"], chunk_size)
                 
                 # Create metadata for each sub-chunk
                 for i, sub_chunk in enumerate(sub_chunks):
@@ -367,6 +389,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                         "parent_section": section.get("title", "Unknown"),
                         "sub_chunk_index": i,
                         "total_sub_chunks": len(sub_chunks),
+                        "is_excel_sheet": section.get("is_excel_sheet", False),
                     }
                     final_sections.append(sub_section)
             else:
@@ -381,6 +404,8 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 section["title"] = self._extract_section_title(section["content"])
             if "path" not in section:
                 section["path"] = []
+            if "is_excel_sheet" not in section:
+                section["is_excel_sheet"] = False
         
         return final_sections
 
@@ -484,8 +509,118 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Handle remaining units if we hit the chunk limit
         if i < len(text_units) and len(chunks) >= max_chunks_per_section:
             self.logger.warning(
-                f"Reached maximum chunks per section limit ({max_chunks_per_section}). "
-                f"Section may be truncated. Consider increasing chunk_size or max_chunks_per_document in config."
+                f"Section reached maximum chunks limit ({max_chunks_per_section}), truncating remaining content",
+                extra={
+                    "remaining_units": len(text_units) - i,
+                    "max_chunks_per_section": max_chunks_per_section,
+                },
+            )
+
+        return chunks
+
+    def _split_excel_sheet_content(self, content: str, max_size: int) -> list[str]:
+        """Split Excel sheet content into chunks, preserving table structure where possible.
+
+        Args:
+            content: Excel sheet content to split
+            max_size: Maximum chunk size
+
+        Returns:
+            List of content chunks
+        """
+        chunks = []
+        
+        # Calculate dynamic safety limit
+        max_chunks_per_section = min(
+            self.settings.global_config.chunking.max_chunks_per_document // 2,
+            1000
+        )
+
+        # Split content into logical units: headers, tables, and text blocks
+        logical_units = []
+        lines = content.split("\n")
+        current_unit = []
+        in_table = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Detect table boundaries
+            is_table_line = bool(re.match(r"^\|.*\|$", line)) or bool(re.match(r"^[|-\s:]+$", line))
+            
+            if is_table_line and not in_table:
+                # Starting a new table
+                if current_unit:
+                    logical_units.append("\n".join(current_unit))
+                    current_unit = []
+                in_table = True
+                current_unit.append(line)
+            elif not is_table_line and in_table:
+                # Ending a table
+                if current_unit:
+                    logical_units.append("\n".join(current_unit))
+                    current_unit = []
+                in_table = False
+                if line:  # Don't add empty lines
+                    current_unit.append(line)
+            else:
+                # Continue current unit
+                if line or current_unit:  # Don't start with empty lines
+                    current_unit.append(line)
+        
+        # Add final unit
+        if current_unit:
+            logical_units.append("\n".join(current_unit))
+
+        # Group logical units into chunks
+        i = 0
+        while i < len(logical_units) and len(chunks) < max_chunks_per_section:
+            current_chunk = ""
+            units_in_chunk = 0
+            
+            # Build the current chunk
+            j = i
+            while j < len(logical_units):
+                unit = logical_units[j]
+                
+                # Check if adding this unit would exceed max_size
+                if current_chunk and len(current_chunk) + len(unit) + 2 > max_size:
+                    break
+                    
+                # Add unit to chunk
+                if current_chunk:
+                    current_chunk += "\n\n" + unit
+                else:
+                    current_chunk = unit
+                
+                units_in_chunk += 1
+                j += 1
+            
+            # Add chunk if it has content
+            if current_chunk.strip():
+                chunks.append(current_chunk.strip())
+            
+            # Calculate overlap and advance position
+            if units_in_chunk > 0:
+                if self.chunk_overlap == 0:
+                    advance = units_in_chunk
+                else:
+                    # For Excel content, use more conservative overlap (preserve table boundaries)
+                    overlap_units = min(1, units_in_chunk // 2)  # At most 1 unit overlap
+                    advance = max(1, units_in_chunk - overlap_units)
+                
+                i += advance
+            else:
+                i += 1
+
+        # Handle remaining units if we hit the chunk limit
+        if i < len(logical_units) and len(chunks) >= max_chunks_per_section:
+            self.logger.warning(
+                f"Excel sheet reached maximum chunks limit ({max_chunks_per_section}), truncating remaining content",
+                extra={
+                    "remaining_units": len(logical_units) - i,
+                    "max_chunks_per_section": max_chunks_per_section,
+                },
             )
 
         return chunks
@@ -610,6 +745,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             file_name,
         )
         
+        # Store current document reference for use in _split_text
+        self._current_document = document
+        
         # Provide user guidance on expected chunk count
         estimated_chunks = self._estimate_chunk_count(document.content)
         self.logger.info(
@@ -726,6 +864,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 document.id, f"Markdown parsing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
+        finally:
+            # Clear current document reference
+            self._current_document = None
 
     def _fallback_chunking(self, document: Document) -> list[Document]:
         """Simple fallback chunking when the main strategy fails.
