@@ -546,7 +546,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
             line = line.strip()
             
             # Detect table boundaries
-            is_table_line = bool(re.match(r"^\|.*\|$", line)) or bool(re.match(r"^[|-\s:]+$", line))
+            is_table_line = bool(re.match(r"^\|.*\|$", line)) or bool(re.match(r"^[|\-\s:]+$", line))
             
             if is_table_line and not in_table:
                 # Starting a new table
@@ -571,6 +571,33 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Add final unit
         if current_unit:
             logical_units.append("\n".join(current_unit))
+
+        # Split large logical units that exceed max_size
+        split_logical_units = []
+        for unit in logical_units:
+            if len(unit) > max_size:
+                # Split large unit by lines to preserve table structure
+                lines = unit.split('\n')
+                current_sub_unit = []
+                
+                for line in lines:
+                    # Check if adding this line would exceed max_size
+                    test_unit = '\n'.join(current_sub_unit + [line])
+                    if current_sub_unit and len(test_unit) > max_size:
+                        # Save current sub-unit and start new one
+                        split_logical_units.append('\n'.join(current_sub_unit))
+                        current_sub_unit = [line]
+                    else:
+                        current_sub_unit.append(line)
+                
+                # Add the last sub-unit
+                if current_sub_unit:
+                    split_logical_units.append('\n'.join(current_sub_unit))
+            else:
+                split_logical_units.append(unit)
+        
+        # Use the split logical units
+        logical_units = split_logical_units
 
         # Group logical units into chunks
         i = 0
