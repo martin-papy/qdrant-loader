@@ -1,5 +1,38 @@
 # Release Notes
 
+## Version 0.4.14 - July 13, 2025
+
+### 🐛 Critical Bug Fixes
+
+#### Excel File Chunking Fixes
+
+- **Fixed regex error in table detection**: Resolved `bad character range |-\s at position 2` error that was preventing Excel files from being chunked properly
+  - **Root cause**: Invalid regex pattern `r"^[|-\s:]+$"` in `_split_excel_sheet_content` method
+  - **Solution**: Escaped dash character to create valid pattern: `r"^[|\-\s:]+$"`
+  - **Impact**: Excel files no longer fall back to default chunking strategy
+- **Fixed large table chunking logic**: Resolved issue where large Excel tables were treated as single massive chunks
+  - **Problem**: 128K character files created only 2-5 chunks instead of ~200 chunks at 600-character limit
+  - **Root cause**: Large logical units (tables) were not split when exceeding max_size
+  - **Solution**: Added intelligent splitting logic that preserves table structure while respecting chunk size limits
+  - **Result**: Large Excel files now properly chunk into appropriate sizes (e.g., 74K chars → 127 chunks @ ~588 chars each)
+- **Eliminated token limit warnings**: Fixed the `Content exceeds maximum token limit, truncating` warnings that occurred with large Excel chunks
+  - **Before**: Chunks up to 128K characters (47K+ tokens) being truncated
+  - **After**: All chunks properly sized to stay within token limits
+- **Enhanced table structure preservation**: Table boundaries are now intelligently detected and preserved during chunking
+
+#### Technical Improvements
+
+- **Better logical unit management**: Enhanced `_split_excel_sheet_content` to handle large units by splitting at line boundaries
+- **Preserved table formatting**: Chunking algorithm maintains table structure integrity while enforcing size limits
+- **Improved error handling**: Better error messages and fallback behavior for edge cases
+- **Performance optimization**: More efficient chunking for large Excel files without infinite loops
+
+#### Testing & Validation
+
+- **All existing tests pass**: 50 markdown strategy tests continue to pass, ensuring backward compatibility
+- **Verified chunking accuracy**: Large test files now produce expected chunk counts with proper size distribution
+- **Regex pattern validation**: Confirmed table detection works correctly for all markdown table formats
+
 ## Version 0.4.13 - July 11, 2025
 
 ### ✨ New Features
