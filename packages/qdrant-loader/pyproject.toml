@@ -112,3 +112,33 @@ dev = [
 where = [
     "src",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::DeprecationWarning:spacy.*",
+    "ignore::DeprecationWarning:weasel.*",
+    "ignore::UserWarning:structlog.*",
+    "ignore::bs4.XMLParsedAsHTMLWarning",
+    "ignore:unclosed transport.*:ResourceWarning",
+    "ignore:unclosed event loop.*:ResourceWarning",
+    "ignore:coroutine.*was never awaited:RuntimeWarning",
+    "ignore:Couldn't find ffmpeg or avconv.*:RuntimeWarning:pydub.*",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_default_fixture_loop_scope = "function"
