@@ -2,18 +2,16 @@
 
 ## Version 0.4.15 - July 22, 2025
 
-### 🐛 Critical Bug Fixes
+### 🚀 Major Improvements
 
-#### Chunking Strategy Consistency
+#### Chunking Strategy Overhaul
 
-- **Fixed chunking strategy inconsistency**: Resolved major discrepancy where `DefaultChunkingStrategy` and `MarkdownChunkingStrategy` interpreted `chunk_size` parameter differently
-  - **Problem**: Default strategy used token-based chunking (600 tokens ≈ 2,400-3,000 chars) vs markdown strategy's character-based chunking (600 chars)
-  - **Impact**: This caused 4-5x difference in chunk counts between strategies for the same configuration
-  - **Solution**: Modified `DefaultChunkingStrategy` to always use character-based chunking for consistency
-  - **Tokenizer role**: Tokenizer now only used for smart boundary detection (avoiding mid-word splits) while respecting character-based size limits
-- **Enhanced boundary detection**: Improved word/token boundary detection while maintaining character-based sizing
-- **Updated documentation**: Clarified that all chunking strategies now consistently use character-based `chunk_size` interpretation
-- **Comprehensive testing**: Added integration tests to verify consistency between strategies and prevent regression
+- **Fixed critical chunking inconsistency**: All strategies now use character-based `chunk_size` (was mixed token/character interpretation causing 4-5x chunk count differences)
+- **Markdown strategy modularization**: Complete refactor into focused components (DocumentParser, SectionSplitter, MetadataExtractor, ChunkProcessor) for better maintainability
+- **Enhanced hierarchical metadata**: Added intelligent section analysis with HeaderAnalysis and SectionMetadata for richer document context
+- **Smart split level detection**: Automatic optimization of header split levels based on document structure and type
+- **Improved boundary detection**: Tokenizer now used for word/token boundaries while respecting character-based limits
+- **Comprehensive testing**: Added integration tests ensuring strategy consistency and preventing regression
 
 ## Version 0.4.14 - July 13, 2025
 
