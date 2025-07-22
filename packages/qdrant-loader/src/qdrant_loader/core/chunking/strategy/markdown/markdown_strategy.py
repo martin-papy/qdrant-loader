@@ -129,9 +129,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                     section_title = self.document_parser.extract_section_title(chunk_content)
                 chunk_meta["section_title"] = section_title
 
-                # Enrich metadata using the metadata extractor
-                enriched_metadata = self.metadata_extractor.extract_all_metadata(
-                    chunk_content, chunk_meta
+                # 🔥 ENHANCED: Use hierarchical metadata extraction
+                enriched_metadata = self.metadata_extractor.extract_hierarchical_metadata(
+                    chunk_content, chunk_meta, document
                 )
 
                 # Create chunk document using the chunk processor
