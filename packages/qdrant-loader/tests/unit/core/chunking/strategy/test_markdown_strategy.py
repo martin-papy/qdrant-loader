@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
 from qdrant_loader.config.qdrant import QdrantConfig
-from qdrant_loader.core.chunking.strategy.markdown_strategy import (
-    MarkdownChunkingStrategy,
+from qdrant_loader.core.chunking.strategy.markdown import MarkdownChunkingStrategy
+from qdrant_loader.core.chunking.strategy.markdown.document_parser import (
     Section,
     SectionType,
 )
@@ -903,8 +903,21 @@ Items sold: 8
             url="file:///test.xlsx",
         )
 
-        # Chunk the document
-        chunks = markdown_strategy.chunk_document(document)
+        # Mock the semantic analyzer to avoid errors
+        with patch.object(
+            markdown_strategy.semantic_analyzer, "analyze_text"
+        ) as mock_analyze:
+            mock_analyze.return_value = Mock(
+                entities=[],
+                topics=["general"],
+                key_phrases=["test"],
+                pos_tags=[],
+                dependencies=[],
+                document_similarity=0.5,
+            )
+            
+            # Chunk the document
+            chunks = markdown_strategy.chunk_document(document)
 
         # Should have 3 chunks (one for each sheet)
         assert len(chunks) >= 3
