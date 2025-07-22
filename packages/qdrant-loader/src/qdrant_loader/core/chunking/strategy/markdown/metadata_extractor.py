@@ -169,6 +169,77 @@ class MetadataExtractor:
 
         return metadata
 
+    def extract_hierarchical_metadata(self, chunk_content: str, chunk_meta: dict[str, Any], document_context) -> dict[str, Any]:
+        """Extract rich hierarchical metadata following JIRA pattern.
+
+        Args:
+            chunk_content: The chunk content
+            chunk_meta: Existing chunk metadata  
+            document_context: Original document for context
+
+        Returns:
+            Enhanced metadata with hierarchical relationships
+        """
+        metadata = self.extract_all_metadata(chunk_content, chunk_meta)
+        
+        # 🔥 JIRA-style relationship metadata
+        metadata.update({
+            "parent_document_id": document_context.id,
+            "parent_document_title": document_context.title,
+            "parent_document_url": document_context.url,
+            
+            # Enhanced hierarchical context
+            "section_breadcrumb": " > ".join(chunk_meta.get("path", []) + [chunk_meta.get("title", "")]),
+            "section_depth": len(chunk_meta.get("path", [])) + 1,
+            "section_anchor": self._generate_anchor(chunk_meta.get("title", "")),
+            
+            # Content type analysis
+            "content_type_analysis": {
+                "has_code_blocks": bool(re.search(r"```", chunk_content)),
+                "has_tables": bool(re.search(r"\|.*\|", chunk_content)),
+                "has_images": bool(re.search(r"!\[.*?\]\(.*?\)", chunk_content)),
+                "has_links": bool(re.search(r"\[.*?\]\(.*?\)", chunk_content)),
+                "word_count": len(chunk_content.split()),
+                "char_count": len(chunk_content),
+                "estimated_read_time": max(1, len(chunk_content.split()) // 200),  # minutes
+                "paragraph_count": len([p for p in chunk_content.split('\n\n') if p.strip()]),
+            },
+            
+            # Document hierarchy for search filtering
+            "document_hierarchy": chunk_meta.get("path", []) + [chunk_meta.get("title", "")],
+            
+            # Section type classification
+            "section_type": f"h{chunk_meta.get('level', 0)}" if chunk_meta.get('level', 0) > 0 else "content",
+            "section_level": chunk_meta.get("level", 0),
+            "section_title": chunk_meta.get("title", ""),
+            
+            # Excel-specific metadata
+            "is_excel_sheet": chunk_meta.get("is_excel_sheet", False),
+            
+            # Navigation hints (to be enhanced by caller with sibling info)
+            "has_subsections": False,  # Will be updated by caller
+            "total_subsections": 0,    # Will be updated by caller
+        })
+        
+        return metadata
+
+    def _generate_anchor(self, title: str) -> str:
+        """Generate URL anchor from section title.
+        
+        Args:
+            title: Section title
+            
+        Returns:
+            URL-safe anchor string
+        """
+        if not title:
+            return ""
+            
+        # Convert to lowercase, replace spaces and special chars with hyphens
+        anchor = re.sub(r'[^\w\s-]', '', title.lower())
+        anchor = re.sub(r'[-\s]+', '-', anchor)
+        return anchor.strip('-')
+
     def extract_section_title(self, chunk: str) -> str:
         """Extract section title from a chunk.
 

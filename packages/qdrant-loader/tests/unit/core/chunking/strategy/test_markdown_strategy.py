@@ -1011,10 +1011,27 @@ More content here.
 
         chunks = markdown_strategy.chunk_document(document)
 
-        # Should only split on H1 headers (regular behavior)
-        assert len(chunks) == 1  # All content in one chunk since only H1 creates sections
+        # 🔥 ENHANCED: Now uses granular splitting for better search quality
+        # Small document with 1 H1 + 2 H2s → Creates 3 semantic chunks
+        assert len(chunks) == 3  # Granular splitting: H1 + 2 H2 sections
+        
+        # Verify the chunks are semantic sections
+        assert chunks[0].metadata["section_type"] == "h1"
+        assert chunks[0].metadata["section_title"] == "Main Title"
+        assert chunks[1].metadata["section_type"] == "h2" 
+        assert chunks[1].metadata["section_title"] == "Section 1"
+        assert chunks[2].metadata["section_type"] == "h2"
+        assert chunks[2].metadata["section_title"] == "Section 2"
 
-        # Verify the content
+        # Verify each chunk contains its own section content
         assert "Main Title" in chunks[0].content
-        assert "Section 1" in chunks[0].content
-        assert "Section 2" in chunks[0].content
+        assert "This is regular markdown content" in chunks[0].content
+        assert "Section 1" not in chunks[0].content  # H2s are now separate chunks
+        
+        assert "Section 1" in chunks[1].content
+        assert "Some content here" in chunks[1].content
+        assert "Main Title" not in chunks[1].content  # H1 is separate
+        
+        assert "Section 2" in chunks[2].content  
+        assert "More content here" in chunks[2].content
+        assert "Main Title" not in chunks[2].content  # H1 is separate
