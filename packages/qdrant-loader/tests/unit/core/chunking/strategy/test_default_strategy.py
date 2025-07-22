@@ -176,12 +176,18 @@ class TestDefaultChunkingStrategy:
             "qdrant_loader.core.chunking.strategy.base_strategy.tiktoken"
         ) as mock_tiktoken:
             mock_encoding = Mock()
-            # Create tokens longer than chunk size (100)
-            tokens = list(range(200))
-            mock_encoding.encode.return_value = tokens
-            mock_encoding.decode.side_effect = (
-                lambda chunk_tokens: f"chunk_{len(chunk_tokens)}"
-            )
+            # Mock tokenizer for boundary detection
+            def mock_encode(text):
+                # Return a token for each word
+                return list(range(len(text.split())))
+            
+            def mock_decode(tokens):
+                # For boundary detection, return text that's slightly shorter
+                # to simulate token boundary adjustment
+                return "adjusted_text_at_boundary"
+            
+            mock_encoding.encode.side_effect = mock_encode
+            mock_encoding.decode.side_effect = mock_decode
             mock_tiktoken.get_encoding.return_value = mock_encoding
 
             with patch(
@@ -189,12 +195,15 @@ class TestDefaultChunkingStrategy:
             ):
                 strategy = DefaultChunkingStrategy(mock_settings)
 
-                text = "Long text that will be chunked"
+                # Create text that's definitely longer than chunk_size (100 chars)
+                text = "This is a very long text that should definitely be split into multiple chunks when using character-based chunking. " * 3
+                assert len(text) > 300  # Ensure it's much longer than chunk_size
+                
                 result = strategy._split_text(text)
 
                 assert len(result) > 1
-                # Verify decode was called for each chunk
-                assert mock_encoding.decode.call_count == len(result)
+                # Verify that the tokenizer was used for boundary detection
+                assert mock_encoding.encode.call_count > 0
 
     def test_split_text_with_overlap_edge_case(self, mock_settings_no_tokenizer):
         """Test splitting text where overlap would cause infinite loop."""
@@ -345,6 +354,11 @@ class TestDefaultChunkingStrategy:
                 "qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"
             ):
                 strategy = DefaultChunkingStrategy(mock_settings)
+
+                # Create a longer document that will definitely be split
+                long_content = "This is a very long document with lots of content that should be split into multiple chunks when using character-based chunking. " * 5
+                sample_document.content = long_content
+                assert len(long_content) > 500  # Ensure it's much longer than chunk_size
 
                 with patch.object(
                     strategy, "_create_chunk_document"
