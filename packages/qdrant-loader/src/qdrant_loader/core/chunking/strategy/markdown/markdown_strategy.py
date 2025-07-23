@@ -135,8 +135,12 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 )
 
                 # Create chunk document using the chunk processor
-                # Skip NLP for small documents to avoid semantic analyzer issues
-                skip_nlp = len(chunk_content) < 100
+                # 🔥 FIX: Skip NLP for small documents or documents that might cause LDA issues
+                skip_nlp = (
+                    len(chunk_content) < 100 or  # Too short
+                    len(chunk_content.split()) < 20 or  # Too few words
+                    chunk_content.count('\n') < 3  # Too simple structure
+                )
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,

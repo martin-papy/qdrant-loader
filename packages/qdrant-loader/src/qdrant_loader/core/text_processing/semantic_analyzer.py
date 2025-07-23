@@ -219,47 +219,58 @@ class SemanticAnalyzer:
         Returns:
             List of topic dictionaries
         """
-        # Preprocess text
-        processed_text = preprocess_string(text)
+        try:
+            # Preprocess text
+            processed_text = preprocess_string(text)
+            
+            # Skip topic extraction for very short texts
+            if len(processed_text) < 5:
+                self.logger.debug("Text too short for topic extraction")
+                return [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
 
-        # Create or update dictionary
-        if self.dictionary is None:
-            self.dictionary = corpora.Dictionary([processed_text])
-        else:
-            self.dictionary.add_documents([processed_text])
-
-        # Create corpus
-        corpus = [self.dictionary.doc2bow(processed_text)]
-
-        # Train or update LDA model
-        if self.lda_model is None:
-            self.lda_model = LdaModel(
+            # 🔥 FIX: Create fresh model for each analysis to avoid dimension mismatches
+            # This prevents the "index out of bounds" error when dictionary size changes
+            temp_dictionary = corpora.Dictionary([processed_text])
+            corpus = [temp_dictionary.doc2bow(processed_text)]
+            
+            # Create a fresh LDA model for this specific text
+            temp_lda_model = LdaModel(
                 corpus,
-                num_topics=self.num_topics,
+                num_topics=min(self.num_topics, len(processed_text) // 2),  # Ensure reasonable topic count
                 passes=self.passes,
-                id2word=self.dictionary,
-            )
-        else:
-            self.lda_model.update(corpus)
-
-        # Get topics
-        topics = []
-        for topic_id, topic in self.lda_model.print_topics():
-            # Parse topic terms
-            terms = []
-            for term in topic.split("+"):
-                weight, word = term.strip().split("*")
-                terms.append({"term": word.strip('"'), "weight": float(weight)})
-
-            topics.append(
-                {
-                    "id": topic_id,
-                    "terms": terms,
-                    "coherence": self._calculate_topic_coherence(terms),
-                }
+                id2word=temp_dictionary,
+                random_state=42,  # For reproducibility
+                alpha='auto',
+                eta='auto'
             )
 
-        return topics
+            # Get topics
+            topics = []
+            for topic_id, topic in temp_lda_model.print_topics():
+                # Parse topic terms
+                terms = []
+                for term in topic.split("+"):
+                    try:
+                        weight, word = term.strip().split("*")
+                        terms.append({"term": word.strip('"'), "weight": float(weight)})
+                    except ValueError:
+                        # Skip malformed terms
+                        continue
+
+                topics.append(
+                    {
+                        "id": topic_id,
+                        "terms": terms,
+                        "coherence": self._calculate_topic_coherence(terms),
+                    }
+                )
+
+            return topics if topics else [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
+            
+        except Exception as e:
+            self.logger.warning(f"Topic extraction failed: {e}", exc_info=True)
+            # Return fallback topic
+            return [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
 
     def _extract_key_phrases(self, doc: Doc) -> list[str]:
         """Extract key phrases from text.
