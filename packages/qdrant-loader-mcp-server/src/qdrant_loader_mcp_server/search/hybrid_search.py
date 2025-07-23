@@ -18,7 +18,7 @@ logger = LoggingConfig.get_logger(__name__)
 
 @dataclass
 class HybridSearchResult:
-    """Container for hybrid search results."""
+    """Container for hybrid search results with comprehensive metadata."""
 
     score: float
     text: str
@@ -54,6 +54,72 @@ class HybridSearchResult:
     mime_type: str | None = None
     attachment_author: str | None = None
     attachment_context: str | None = None
+
+    # 🔥 NEW: Section-level intelligence
+    section_title: str | None = None
+    section_type: str | None = None  # e.g., "h1", "h2", "content"
+    section_level: int | None = None
+    section_anchor: str | None = None
+    section_breadcrumb: str | None = None
+    section_depth: int | None = None
+
+    # 🔥 NEW: Content analysis
+    has_code_blocks: bool = False
+    has_tables: bool = False
+    has_images: bool = False
+    has_links: bool = False
+    word_count: int | None = None
+    char_count: int | None = None
+    estimated_read_time: int | None = None  # minutes
+    paragraph_count: int | None = None
+
+    # 🔥 NEW: Semantic analysis (NLP results)
+    entities: list[dict | str] = None
+    topics: list[dict | str] = None
+    key_phrases: list[dict | str] = None
+    pos_tags: list[dict] = None
+
+    # 🔥 NEW: Navigation context
+    previous_section: str | None = None
+    next_section: str | None = None
+    sibling_sections: list[str] = None
+    subsections: list[str] = None
+    document_hierarchy: list[str] = None
+
+    # 🔥 NEW: Chunking context
+    chunk_index: int | None = None
+    total_chunks: int | None = None
+    chunking_strategy: str | None = None
+
+    # 🔥 NEW: File conversion intelligence
+    original_file_type: str | None = None
+    conversion_method: str | None = None
+    is_excel_sheet: bool = False
+    is_converted: bool = False
+
+    # 🔥 NEW: Cross-references and enhanced context
+    cross_references: list[dict] = None
+    topic_analysis: dict | None = None
+    content_type_context: str | None = None  # Human-readable content description
+
+    def __post_init__(self):
+        """Initialize default values for list fields."""
+        if self.entities is None:
+            self.entities = []
+        if self.topics is None:
+            self.topics = []
+        if self.key_phrases is None:
+            self.key_phrases = []
+        if self.pos_tags is None:
+            self.pos_tags = []
+        if self.sibling_sections is None:
+            self.sibling_sections = []
+        if self.subsections is None:
+            self.subsections = []
+        if self.document_hierarchy is None:
+            self.document_hierarchy = []
+        if self.cross_references is None:
+            self.cross_references = []
 
 
 class HybridSearchEngine:
@@ -111,6 +177,13 @@ class HybridSearchEngine:
             "API": ["interface", "endpoints", "REST"],
             "database": ["DB", "data storage", "persistence"],
             "security": ["auth", "authentication", "authorization"],
+            # 🔥 NEW: Content-type aware expansions
+            "code": ["implementation", "function", "method", "class"],
+            "documentation": ["docs", "guide", "manual", "instructions"],
+            "config": ["configuration", "settings", "setup"],
+            "table": ["data", "spreadsheet", "excel", "csv"],
+            "image": ["screenshot", "diagram", "chart", "visual"],
+            "link": ["reference", "url", "external", "connection"],
         }
 
     async def _expand_query(self, query: str) -> str:
@@ -201,10 +274,14 @@ class HybridSearchEngine:
                     source_url=result.source_url,
                     file_path=result.file_path,
                     repo_name=result.repo_name,
+                    
+                    # Project information
                     project_id=result.project_id,
                     project_name=result.project_name,
                     project_description=result.project_description,
                     collection_name=result.collection_name,
+                    
+                    # Basic hierarchy and attachment (existing)
                     parent_id=result.parent_id,
                     parent_title=result.parent_title,
                     breadcrumb_text=result.breadcrumb_text,
@@ -220,6 +297,53 @@ class HybridSearchEngine:
                     mime_type=result.mime_type,
                     attachment_author=result.attachment_author,
                     attachment_context=result.attachment_context,
+                    
+                    # 🔥 NEW: Section-level intelligence
+                    section_title=result.section_title,
+                    section_type=result.section_type,
+                    section_level=result.section_level,
+                    section_anchor=result.section_anchor,
+                    section_breadcrumb=result.section_breadcrumb,
+                    section_depth=result.section_depth,
+                    
+                    # 🔥 NEW: Content analysis
+                    has_code_blocks=result.has_code_blocks,
+                    has_tables=result.has_tables,
+                    has_images=result.has_images,
+                    has_links=result.has_links,
+                    word_count=result.word_count,
+                    char_count=result.char_count,
+                    estimated_read_time=result.estimated_read_time,
+                    paragraph_count=result.paragraph_count,
+                    
+                    # 🔥 NEW: Semantic analysis
+                    entities=result.entities,
+                    topics=result.topics,
+                    key_phrases=result.key_phrases,
+                    pos_tags=result.pos_tags,
+                    
+                    # 🔥 NEW: Navigation context
+                    previous_section=result.previous_section,
+                    next_section=result.next_section,
+                    sibling_sections=result.sibling_sections,
+                    subsections=result.subsections,
+                    document_hierarchy=result.document_hierarchy,
+                    
+                    # 🔥 NEW: Chunking context
+                    chunk_index=result.chunk_index,
+                    total_chunks=result.total_chunks,
+                    chunking_strategy=result.chunking_strategy,
+                    
+                    # 🔥 NEW: File conversion intelligence
+                    original_file_type=result.original_file_type,
+                    conversion_method=result.conversion_method,
+                    is_excel_sheet=result.is_excel_sheet,
+                    is_converted=result.is_converted,
+                    
+                    # 🔥 NEW: Cross-references and enhanced context
+                    cross_references=result.cross_references,
+                    topic_analysis=result.topic_analysis,
+                    content_type_context=result.content_type_context,
                 )
                 for result in combined_results
             ]
@@ -254,7 +378,121 @@ class HybridSearchEngine:
         ):
             context["probable_intent"] = "architecture"
 
+        # 🔥 NEW: Analyze content type preferences
+        if any(term in lower_query for term in ["code", "function", "implementation", "script"]):
+            context["prefers_code"] = True
+        if any(term in lower_query for term in ["table", "data", "excel", "spreadsheet"]):
+            context["prefers_tables"] = True
+        if any(term in lower_query for term in ["image", "diagram", "screenshot", "visual"]):
+            context["prefers_images"] = True
+        if any(term in lower_query for term in ["documentation", "docs", "guide", "manual"]):
+            context["prefers_docs"] = True
+
         return context
+
+    def _boost_score_with_metadata(
+        self, base_score: float, metadata_info: dict, query_context: dict
+    ) -> float:
+        """Boost search scores based on rich metadata context.
+        
+        Args:
+            base_score: The original combined score
+            metadata_info: Rich metadata extracted from document
+            query_context: Analyzed query context
+            
+        Returns:
+            Boosted score incorporating metadata relevance
+        """
+        boosted_score = base_score
+        boost_factor = 0.0
+
+        # 🔥 Content type relevance boosting
+        if query_context.get("prefers_code") and metadata_info.get("has_code_blocks"):
+            boost_factor += 0.15
+        
+        if query_context.get("prefers_tables") and metadata_info.get("has_tables"):
+            boost_factor += 0.12
+            
+        if query_context.get("prefers_images") and metadata_info.get("has_images"):
+            boost_factor += 0.10
+            
+        if query_context.get("prefers_docs") and not metadata_info.get("has_code_blocks"):
+            boost_factor += 0.08
+
+        # 🔥 Section level relevance (higher level = more important)
+        section_level = metadata_info.get("section_level")
+        if section_level:
+            if section_level <= 2:  # H1, H2 are more important
+                boost_factor += 0.10
+            elif section_level <= 3:  # H3 moderately important  
+                boost_factor += 0.05
+
+        # 🔥 Content quality indicators
+        word_count = metadata_info.get("word_count", 0)
+        if word_count > 100:  # Substantial content
+            boost_factor += 0.05
+        if word_count > 500:  # Very detailed content
+            boost_factor += 0.05
+
+        # 🔥 Converted file boosting (often contains rich content)
+        if metadata_info.get("is_converted") and metadata_info.get("original_file_type") in ["docx", "xlsx", "pdf"]:
+            boost_factor += 0.08
+
+        # 🔥 Excel sheet specific boosting for data queries
+        if metadata_info.get("is_excel_sheet") and any(
+            term in " ".join(query_context.get("keywords", [])) 
+            for term in ["data", "table", "sheet", "excel", "csv"]
+        ):
+            boost_factor += 0.12
+
+        # 🔥 Semantic entity relevance
+        entities = metadata_info.get("entities", [])
+        if entities:
+            query_keywords = set(query_context.get("keywords", []))
+            # Handle both string and dictionary entity formats
+            entity_texts = set()
+            for entity in entities:
+                if isinstance(entity, str):
+                    entity_texts.add(entity.lower())
+                elif isinstance(entity, dict):
+                    # Handle entity dictionaries (e.g., {"text": "GitHub API", "type": "PRODUCT"})
+                    if "text" in entity:
+                        entity_texts.add(str(entity["text"]).lower())
+                    elif "entity" in entity:
+                        entity_texts.add(str(entity["entity"]).lower())
+                    else:
+                        # If it's a dict but no obvious text field, convert to string
+                        entity_texts.add(str(entity).lower())
+            
+            # Check if query keywords match extracted entities
+            if query_keywords.intersection(entity_texts):
+                boost_factor += 0.10
+
+        # 🔥 Topic relevance
+        topics = metadata_info.get("topics", [])
+        if topics:
+            query_keywords = set(query_context.get("keywords", []))
+            # Handle both string and dictionary topic formats
+            topic_texts = set()
+            for topic in topics:
+                if isinstance(topic, str):
+                    topic_texts.add(topic.lower())
+                elif isinstance(topic, dict):
+                    # Handle topic dictionaries (e.g., {"text": "authentication", "weight": 0.8})
+                    if "text" in topic:
+                        topic_texts.add(str(topic["text"]).lower())
+                    elif "topic" in topic:
+                        topic_texts.add(str(topic["topic"]).lower())
+                    else:
+                        # If it's a dict but no obvious text field, convert to string
+                        topic_texts.add(str(topic).lower())
+            
+            if query_keywords.intersection(topic_texts):
+                boost_factor += 0.08
+
+        # Apply boost (cap at reasonable maximum)
+        boost_factor = min(boost_factor, 0.4)  # Maximum 40% boost
+        return boosted_score * (1 + boost_factor)
 
     async def _vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
@@ -386,14 +624,18 @@ class HybridSearchEngine:
 
             if combined_score >= self.min_score:
                 # Extract hierarchy information
-                hierarchy_info = self._extract_metadata_info(metadata)
+                metadata_info = self._extract_metadata_info(metadata)
 
                 # Extract project information
                 project_info = self._extract_project_info(metadata)
 
+                boosted_score = self._boost_score_with_metadata(
+                    combined_score, metadata_info, query_context
+                )
+
                 combined_results.append(
                     HybridSearchResult(
-                        score=combined_score,
+                        score=boosted_score,
                         text=text,
                         source_type=info["source_type"],
                         source_title=metadata.get("title", ""),
@@ -402,25 +644,76 @@ class HybridSearchEngine:
                         repo_name=metadata.get("repository_name"),
                         vector_score=info["vector_score"],
                         keyword_score=info["keyword_score"],
+                        
+                        # Project information
                         project_id=project_info["project_id"],
                         project_name=project_info["project_name"],
                         project_description=project_info["project_description"],
                         collection_name=project_info["collection_name"],
-                        parent_id=hierarchy_info["parent_id"],
-                        parent_title=hierarchy_info["parent_title"],
-                        breadcrumb_text=hierarchy_info["breadcrumb_text"],
-                        depth=hierarchy_info["depth"],
-                        children_count=hierarchy_info["children_count"],
-                        hierarchy_context=hierarchy_info["hierarchy_context"],
-                        is_attachment=hierarchy_info["is_attachment"],
-                        parent_document_id=hierarchy_info["parent_document_id"],
-                        parent_document_title=hierarchy_info["parent_document_title"],
-                        attachment_id=hierarchy_info["attachment_id"],
-                        original_filename=hierarchy_info["original_filename"],
-                        file_size=hierarchy_info["file_size"],
-                        mime_type=hierarchy_info["mime_type"],
-                        attachment_author=hierarchy_info["attachment_author"],
-                        attachment_context=hierarchy_info["attachment_context"],
+                        
+                        # Basic hierarchy and attachment (existing)
+                        parent_id=metadata_info["parent_id"],
+                        parent_title=metadata_info["parent_title"],
+                        breadcrumb_text=metadata_info["breadcrumb_text"],
+                        depth=metadata_info["depth"],
+                        children_count=metadata_info["children_count"],
+                        hierarchy_context=metadata_info["hierarchy_context"],
+                        is_attachment=metadata_info["is_attachment"],
+                        parent_document_id=metadata_info["parent_document_id"],
+                        parent_document_title=metadata_info["parent_document_title"],
+                        attachment_id=metadata_info["attachment_id"],
+                        original_filename=metadata_info["original_filename"],
+                        file_size=metadata_info["file_size"],
+                        mime_type=metadata_info["mime_type"],
+                        attachment_author=metadata_info["attachment_author"],
+                        attachment_context=metadata_info["attachment_context"],
+                        
+                        # 🔥 NEW: Section-level intelligence
+                        section_title=metadata_info["section_title"],
+                        section_type=metadata_info["section_type"],
+                        section_level=metadata_info["section_level"],
+                        section_anchor=metadata_info["section_anchor"],
+                        section_breadcrumb=metadata_info["section_breadcrumb"],
+                        section_depth=metadata_info["section_depth"],
+                        
+                        # 🔥 NEW: Content analysis
+                        has_code_blocks=metadata_info["has_code_blocks"],
+                        has_tables=metadata_info["has_tables"],
+                        has_images=metadata_info["has_images"],
+                        has_links=metadata_info["has_links"],
+                        word_count=metadata_info["word_count"],
+                        char_count=metadata_info["char_count"],
+                        estimated_read_time=metadata_info["estimated_read_time"],
+                        paragraph_count=metadata_info["paragraph_count"],
+                        
+                        # 🔥 NEW: Semantic analysis
+                        entities=metadata_info["entities"],
+                        topics=metadata_info["topics"],
+                        key_phrases=metadata_info["key_phrases"],
+                        pos_tags=metadata_info["pos_tags"],
+                        
+                        # 🔥 NEW: Navigation context
+                        previous_section=metadata_info["previous_section"],
+                        next_section=metadata_info["next_section"],
+                        sibling_sections=metadata_info["sibling_sections"],
+                        subsections=metadata_info["subsections"],
+                        document_hierarchy=metadata_info["document_hierarchy"],
+                        
+                        # 🔥 NEW: Chunking context
+                        chunk_index=metadata_info["chunk_index"],
+                        total_chunks=metadata_info["total_chunks"],
+                        chunking_strategy=metadata_info["chunking_strategy"],
+                        
+                        # 🔥 NEW: File conversion intelligence
+                        original_file_type=metadata_info["original_file_type"],
+                        conversion_method=metadata_info["conversion_method"],
+                        is_excel_sheet=metadata_info["is_excel_sheet"],
+                        is_converted=metadata_info["is_converted"],
+                        
+                        # 🔥 NEW: Cross-references and enhanced context
+                        cross_references=metadata_info["cross_references"],
+                        topic_analysis=metadata_info["topic_analysis"],
+                        content_type_context=metadata_info["content_type_context"],
                     )
                 )
 
@@ -429,15 +722,17 @@ class HybridSearchEngine:
         return combined_results[:limit]
 
     def _extract_metadata_info(self, metadata: dict) -> dict:
-        """Extract hierarchy and attachment information from document metadata.
+        """Extract comprehensive metadata information from document metadata.
 
         Args:
             metadata: Document metadata
 
         Returns:
-            Dictionary with hierarchy and attachment information
+            Dictionary with all available metadata information
         """
-        # Extract hierarchy information
+        # 🔥 ENHANCED: Extract ALL the rich metadata we store
+        
+        # Basic hierarchy information (existing)
         hierarchy_info = {
             "parent_id": metadata.get("parent_id"),
             "parent_title": metadata.get("parent_title"),
@@ -471,7 +766,7 @@ class HybridSearchEngine:
             if context_parts:
                 hierarchy_info["hierarchy_context"] = " | ".join(context_parts)
 
-        # Extract attachment information
+        # Basic attachment information (existing)
         attachment_info = {
             "is_attachment": metadata.get("is_attachment", False),
             "parent_document_id": metadata.get("parent_document_id"),
@@ -480,8 +775,7 @@ class HybridSearchEngine:
             "original_filename": metadata.get("original_filename"),
             "file_size": metadata.get("file_size"),
             "mime_type": metadata.get("mime_type"),
-            "attachment_author": metadata.get("attachment_author")
-            or metadata.get("author"),
+            "attachment_author": metadata.get("attachment_author") or metadata.get("author"),
             "attachment_context": None,
         }
 
@@ -514,8 +808,99 @@ class HybridSearchEngine:
             if context_parts:
                 attachment_info["attachment_context"] = " | ".join(context_parts)
 
-        # Combine both hierarchy and attachment info
-        return {**hierarchy_info, **attachment_info}
+        # 🔥 NEW: Section-level intelligence
+        section_info = {
+            "section_title": metadata.get("section_title"),
+            "section_type": metadata.get("section_type"),
+            "section_level": metadata.get("section_level"),
+            "section_anchor": metadata.get("section_anchor"),
+            "section_breadcrumb": metadata.get("section_breadcrumb"),
+            "section_depth": metadata.get("section_depth"),
+        }
+
+        # 🔥 NEW: Content analysis from content_type_analysis
+        content_analysis = metadata.get("content_type_analysis", {})
+        content_info = {
+            "has_code_blocks": content_analysis.get("has_code_blocks", False),
+            "has_tables": content_analysis.get("has_tables", False),
+            "has_images": content_analysis.get("has_images", False),
+            "has_links": content_analysis.get("has_links", False),
+            "word_count": content_analysis.get("word_count"),
+            "char_count": content_analysis.get("char_count"),
+            "estimated_read_time": content_analysis.get("estimated_read_time"),
+            "paragraph_count": content_analysis.get("paragraph_count"),
+        }
+
+        # Generate content type context
+        content_types = []
+        if content_info["has_code_blocks"]:
+            content_types.append("Code")
+        if content_info["has_tables"]:
+            content_types.append("Tables")
+        if content_info["has_images"]:
+            content_types.append("Images")
+        if content_info["has_links"]:
+            content_types.append("Links")
+
+        content_type_context = None
+        if content_types:
+            content_type_context = f"Contains: {', '.join(content_types)}"
+            if content_info["word_count"]:
+                content_type_context += f" | {content_info['word_count']} words"
+            if content_info["estimated_read_time"]:
+                content_type_context += f" | ~{content_info['estimated_read_time']}min read"
+
+        # 🔥 NEW: Semantic analysis (NLP results)
+        semantic_info = {
+            "entities": metadata.get("entities", []),
+            "topics": metadata.get("topics", []),
+            "key_phrases": metadata.get("key_phrases", []),
+            "pos_tags": metadata.get("pos_tags", []),
+            "topic_analysis": metadata.get("topic_analysis"),
+        }
+
+        # 🔥 NEW: Navigation context
+        navigation_info = {
+            "previous_section": metadata.get("previous_section"),
+            "next_section": metadata.get("next_section"),
+            "sibling_sections": metadata.get("sibling_sections", []),
+            "subsections": metadata.get("subsections", []),
+            "document_hierarchy": metadata.get("document_hierarchy", []),
+        }
+
+        # 🔥 NEW: Chunking context
+        chunking_info = {
+            "chunk_index": metadata.get("chunk_index"),
+            "total_chunks": metadata.get("total_chunks"),
+            "chunking_strategy": metadata.get("chunking_strategy"),
+        }
+
+        # 🔥 NEW: File conversion intelligence
+        conversion_info = {
+            "original_file_type": metadata.get("original_file_type"),
+            "conversion_method": metadata.get("conversion_method"),
+            "is_excel_sheet": metadata.get("is_excel_sheet", False),
+            "is_converted": metadata.get("is_converted", False),
+        }
+
+        # 🔥 NEW: Cross-references
+        cross_reference_info = {
+            "cross_references": metadata.get("cross_references", []),
+        }
+
+        # Combine all metadata
+        return {
+            **hierarchy_info,
+            **attachment_info,
+            **section_info,
+            **content_info,
+            **semantic_info,
+            **navigation_info,
+            **chunking_info,
+            **conversion_info,
+            **cross_reference_info,
+            "content_type_context": content_type_context,
+        }
 
     def _extract_project_info(self, metadata: dict) -> dict:
         """Extract project information from document metadata.
