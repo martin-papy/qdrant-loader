@@ -493,6 +493,34 @@ class SectionSplitter:
                 extra={"h1_count": header_analysis.h1}
             )
             return {1}
+        elif header_analysis.h1 == 0 and header_analysis.h2 == 0 and header_analysis.h3 >= 1:
+            # 🔥 FIX: Converted documents often have only H3+ headers
+            logger.info(
+                "Detected document with H3+ headers only (likely converted DOCX) - applying H3+ splitting",
+                extra={
+                    "h1_count": header_analysis.h1,
+                    "h2_count": header_analysis.h2, 
+                    "h3_count": header_analysis.h3,
+                    "h4_count": header_analysis.h4,
+                    "total_headers": header_analysis.total_headers,
+                }
+            )
+            # 🔥 ENHANCED: Intelligent H3/H4 splitting based on document structure
+            if header_analysis.h3 == 1 and header_analysis.h4 >= 3:
+                # Single H3 with multiple H4s (common DOCX pattern) - split on both
+                return {3, 4}
+            elif header_analysis.h3 >= 3:
+                # Multiple H3s - split on H3 primarily, H4 if many
+                if header_analysis.h4 >= 8:
+                    return {3, 4}
+                else:
+                    return {3}
+            elif header_analysis.total_headers >= 8:
+                # Many headers total - split on H3 and H4
+                return {3, 4}
+            else:
+                # Default - split on H3 only
+                return {3}
         elif header_analysis.total_headers <= 3:
             # Very small document - minimal splitting
             logger.info(

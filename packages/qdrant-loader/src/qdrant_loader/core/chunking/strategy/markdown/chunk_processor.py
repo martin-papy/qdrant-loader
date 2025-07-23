@@ -106,7 +106,6 @@ class ChunkProcessor:
         """
         # Create base chunk document
         chunk_doc = Document(
-            id=Document.generate_chunk_id(original_doc.id, chunk_index),
             content=chunk_content,
             title=f"{original_doc.title} - Chunk {chunk_index + 1}",
             source=original_doc.source,
@@ -115,6 +114,9 @@ class ChunkProcessor:
             content_type=original_doc.content_type,
             metadata=original_doc.metadata.copy(),
         )
+        
+        # 🔥 FIX: Manually assign chunk ID (following pattern from other strategies)
+        chunk_doc.id = Document.generate_chunk_id(original_doc.id, chunk_index)
 
         # Add chunk-specific metadata
         chunk_doc.metadata.update(chunk_metadata)
