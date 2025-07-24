@@ -1221,11 +1221,55 @@ class HybridSearchEngine:
                 content_type_context += f" | ~{content_info['estimated_read_time']}min read"
 
         # 🔥 NEW: Semantic analysis (NLP results)
+        # Convert spaCy tuples to expected formats for Pydantic validation
+        raw_entities = metadata.get("entities", [])
+        raw_topics = metadata.get("topics", [])
+        raw_key_phrases = metadata.get("key_phrases", [])
+        raw_pos_tags = metadata.get("pos_tags", [])
+        
+        # Convert entities from tuples [(text, label)] to dicts [{"text": text, "label": label}]
+        entities = []
+        for entity in raw_entities:
+            if isinstance(entity, (list, tuple)) and len(entity) >= 2:
+                entities.append({"text": str(entity[0]), "label": str(entity[1])})
+            elif isinstance(entity, str):
+                entities.append(entity)  # Keep strings as-is
+            elif isinstance(entity, dict):
+                entities.append(entity)  # Keep dicts as-is
+        
+        # Convert topics from tuples to dicts
+        topics = []
+        for topic in raw_topics:
+            if isinstance(topic, (list, tuple)) and len(topic) >= 2:
+                topics.append({"text": str(topic[0]), "score": float(topic[1]) if isinstance(topic[1], (int, float)) else str(topic[1])})
+            elif isinstance(topic, str):
+                topics.append(topic)  # Keep strings as-is
+            elif isinstance(topic, dict):
+                topics.append(topic)  # Keep dicts as-is
+        
+        # Convert key_phrases from tuples to dicts
+        key_phrases = []
+        for phrase in raw_key_phrases:
+            if isinstance(phrase, (list, tuple)) and len(phrase) >= 2:
+                key_phrases.append({"text": str(phrase[0]), "score": float(phrase[1]) if isinstance(phrase[1], (int, float)) else str(phrase[1])})
+            elif isinstance(phrase, str):
+                key_phrases.append(phrase)  # Keep strings as-is
+            elif isinstance(phrase, dict):
+                key_phrases.append(phrase)  # Keep dicts as-is
+        
+        # Convert pos_tags from tuples [(token, tag)] to dicts [{"token": token, "tag": tag}]
+        pos_tags = []
+        for pos_tag in raw_pos_tags:
+            if isinstance(pos_tag, (list, tuple)) and len(pos_tag) >= 2:
+                pos_tags.append({"token": str(pos_tag[0]), "tag": str(pos_tag[1])})
+            elif isinstance(pos_tag, dict):
+                pos_tags.append(pos_tag)  # Keep dicts as-is
+        
         semantic_info = {
-            "entities": metadata.get("entities", []),
-            "topics": metadata.get("topics", []),
-            "key_phrases": metadata.get("key_phrases", []),
-            "pos_tags": metadata.get("pos_tags", []),
+            "entities": entities,
+            "topics": topics,
+            "key_phrases": key_phrases,
+            "pos_tags": pos_tags,
             "topic_analysis": metadata.get("topic_analysis"),
         }
 
