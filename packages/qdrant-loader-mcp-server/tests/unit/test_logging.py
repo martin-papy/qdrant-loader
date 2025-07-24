@@ -85,8 +85,9 @@ def test_logging_config_setup_basic():
     # Reset logging config
     LoggingConfig._initialized = False
 
-    # Test basic setup
-    LoggingConfig.setup(level="DEBUG", format="console")
+    # Test basic setup with environment variable override cleared
+    with patch.dict(os.environ, {"MCP_LOG_LEVEL": "DEBUG"}, clear=False):
+        LoggingConfig.setup(level="DEBUG", format="console")
 
     assert LoggingConfig._initialized is True
     assert LoggingConfig._current_config == ("DEBUG", "console", None, True)
@@ -98,7 +99,9 @@ def test_logging_config_setup_with_file():
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
         try:
-            LoggingConfig.setup(level="INFO", format="json", file=tmp_file.name)
+            # Set environment variable to match expected level
+            with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
+                LoggingConfig.setup(level="INFO", format="json", file=tmp_file.name)
 
             assert LoggingConfig._initialized is True
             assert LoggingConfig._current_config == (
@@ -147,8 +150,10 @@ def test_logging_config_setup_invalid_level():
     """Test logging configuration with invalid level."""
     LoggingConfig._initialized = False
 
-    with pytest.raises(ValueError, match="Invalid log level"):
-        LoggingConfig.setup(level="INVALID_LEVEL")
+    # Clear environment variable to ensure the parameter is used
+    with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INVALID_LEVEL"}, clear=False):
+        with pytest.raises(ValueError, match="Invalid log level"):
+            LoggingConfig.setup(level="INVALID_LEVEL")
 
 
 def test_logging_config_get_logger():
@@ -239,13 +244,17 @@ def test_logging_config_reset_and_reconfigure():
     """Test that logging can be reset and reconfigured."""
     LoggingConfig._initialized = False
 
-    # First configuration
-    LoggingConfig.setup(level="INFO", format="console")
-    assert LoggingConfig._current_config is not None
-    assert LoggingConfig._current_config[0] == "INFO"
+    # Use explicit environment variables to ensure test behavior
+    with patch.dict(os.environ, {}, clear=False):
+        # First configuration
+        with patch.dict(os.environ, {"MCP_LOG_LEVEL": "INFO"}, clear=False):
+            LoggingConfig.setup(level="INFO", format="console")
+        assert LoggingConfig._current_config is not None
+        assert LoggingConfig._current_config[0] == "INFO"
 
-    # Second configuration should override
-    LoggingConfig.setup(level="DEBUG", format="json")
-    assert LoggingConfig._current_config is not None
-    assert LoggingConfig._current_config[0] == "DEBUG"
-    assert LoggingConfig._current_config[1] == "json"
+        # Second configuration should override
+        with patch.dict(os.environ, {"MCP_LOG_LEVEL": "DEBUG"}, clear=False):
+            LoggingConfig.setup(level="DEBUG", format="json")
+        assert LoggingConfig._current_config is not None
+        assert LoggingConfig._current_config[0] == "DEBUG"
+        assert LoggingConfig._current_config[1] == "json"

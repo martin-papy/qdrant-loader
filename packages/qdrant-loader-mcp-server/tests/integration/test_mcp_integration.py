@@ -13,7 +13,7 @@ from qdrant_loader_mcp_server.search.processor import QueryProcessor
 async def integration_handler():
     """Create an MCP handler with real components but mocked external services."""
     # Mock external services
-    mock_qdrant_client = MagicMock()
+    mock_qdrant_client = AsyncMock()
     mock_openai_client = AsyncMock()
 
     # Mock search results
@@ -28,6 +28,13 @@ async def integration_handler():
 
     mock_qdrant_client.search.return_value = [search_result1]
     mock_qdrant_client.scroll.return_value = ([search_result1], None)
+    
+    # Mock collections response for get_collections
+    collections_response = MagicMock()
+    collections_response.collections = []
+    mock_qdrant_client.get_collections.return_value = collections_response
+    mock_qdrant_client.create_collection.return_value = None
+    mock_qdrant_client.close.return_value = None
 
     # Mock OpenAI responses
     embedding_response = MagicMock()

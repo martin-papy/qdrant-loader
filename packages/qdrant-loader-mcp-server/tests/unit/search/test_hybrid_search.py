@@ -14,7 +14,7 @@ from qdrant_loader_mcp_server.search.models import SearchResult
 @pytest.fixture
 def mock_qdrant_client():
     """Create a mock Qdrant client."""
-    client = MagicMock()
+    client = AsyncMock()
 
     # Create mock search results
     search_result1 = MagicMock()
@@ -75,6 +75,14 @@ def mock_qdrant_client():
         [scroll_result1, scroll_result2, scroll_result3],
         None,
     )
+    
+    # Mock collection operations
+    collections_response = MagicMock()
+    collections_response.collections = []
+    client.get_collections.return_value = collections_response
+    client.create_collection.return_value = None
+    client.close.return_value = None
+    
     return client
 
 
