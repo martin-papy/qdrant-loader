@@ -228,25 +228,38 @@ class SemanticAnalyzer:
                 self.logger.debug("Text too short for topic extraction")
                 return [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
 
-            # 🔥 FIX: Create fresh model for each analysis to avoid dimension mismatches
-            # This prevents the "index out of bounds" error when dictionary size changes
-            temp_dictionary = corpora.Dictionary([processed_text])
-            corpus = [temp_dictionary.doc2bow(processed_text)]
+            # If we have existing models, use and update them
+            if self.dictionary is not None and self.lda_model is not None:
+                # Add new documents to existing dictionary
+                self.dictionary.add_documents([processed_text])
+                
+                # Create corpus for the new text
+                corpus = [self.dictionary.doc2bow(processed_text)]
+                
+                # Update existing LDA model
+                self.lda_model.update(corpus)
+                
+                # Use the updated model for topic extraction
+                current_lda_model = self.lda_model
+            else:
+                # Create fresh models for first use or when models aren't available
+                temp_dictionary = corpora.Dictionary([processed_text])
+                corpus = [temp_dictionary.doc2bow(processed_text)]
 
-            # Create a fresh LDA model for this specific text
-            temp_lda_model = LdaModel(
-                corpus,
-                num_topics=min(self.num_topics, len(processed_text) // 2),  # Ensure reasonable topic count
-                passes=self.passes,
-                id2word=temp_dictionary,
-                random_state=42,  # For reproducibility
-                alpha='auto',
-                eta='auto'
-            )
+                # Create a fresh LDA model for this specific text
+                current_lda_model = LdaModel(
+                    corpus,
+                    num_topics=min(self.num_topics, len(processed_text) // 2),  # Ensure reasonable topic count
+                    passes=self.passes,
+                    id2word=temp_dictionary,
+                    random_state=42,  # For reproducibility
+                    alpha='auto',
+                    eta='auto'
+                )
 
             # Get topics
             topics = []
-            for topic_id, topic in temp_lda_model.print_topics():
+            for topic_id, topic in current_lda_model.print_topics():
                 # Parse topic terms
                 terms = []
                 for term in topic.split("+"):

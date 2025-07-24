@@ -315,6 +315,7 @@ class TestAsyncIngestionPipeline:
                 source_type="git",
                 source="test_repo",
                 project_id=None,
+                force=False,
             )
 
             # Verify metrics were handled
@@ -377,7 +378,7 @@ class TestAsyncIngestionPipeline:
             mock_monitor.start_batch.assert_called_once_with(
                 "document_batch",
                 batch_size=2,
-                metadata={"source_type": "git", "source": None, "project_id": None},
+                metadata={"source_type": "git", "source": None, "project_id": None, "force": False},
             )
             mock_monitor.end_batch.assert_called_once_with("document_batch", 2, 0, [])
 
