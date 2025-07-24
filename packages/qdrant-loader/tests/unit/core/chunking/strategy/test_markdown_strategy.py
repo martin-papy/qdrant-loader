@@ -914,10 +914,10 @@ Items sold: 8
                 pos_tags=[],
                 dependencies=[],
                 document_similarity=0.5,
-            )
-            
-            # Chunk the document
-            chunks = markdown_strategy.chunk_document(document)
+        )
+
+        # Chunk the document
+        chunks = markdown_strategy.chunk_document(document)
 
         # Should have 3 chunks (one for each sheet)
         assert len(chunks) >= 3

@@ -222,7 +222,7 @@ class SemanticAnalyzer:
         try:
             # Preprocess text
             processed_text = preprocess_string(text)
-            
+
             # Skip topic extraction for very short texts
             if len(processed_text) < 5:
                 self.logger.debug("Text too short for topic extraction")
@@ -232,7 +232,7 @@ class SemanticAnalyzer:
             # This prevents the "index out of bounds" error when dictionary size changes
             temp_dictionary = corpora.Dictionary([processed_text])
             corpus = [temp_dictionary.doc2bow(processed_text)]
-            
+
             # Create a fresh LDA model for this specific text
             temp_lda_model = LdaModel(
                 corpus,
