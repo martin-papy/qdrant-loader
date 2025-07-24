@@ -29,6 +29,7 @@ def mock_settings():
     semantic_analysis_config = Mock()
     semantic_analysis_config.num_topics = 5
     semantic_analysis_config.lda_passes = 10
+    semantic_analysis_config.spacy_model = "en_core_web_sm"
 
     # Mock embedding config
     embedding_config = Mock()
@@ -119,9 +120,15 @@ public class Calculator {
 class TestCodeChunkingStrategy:
     """Test CodeChunkingStrategy functionality."""
 
+    @patch("spacy.load")
     @patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer")
-    def test_initialization(self, mock_semantic_analyzer, mock_settings):
+    def test_initialization(self, mock_semantic_analyzer, mock_spacy_load, mock_settings):
         """Test strategy initialization."""
+        # Setup spacy mock
+        mock_nlp = Mock()
+        mock_nlp.pipe_names = []
+        mock_spacy_load.return_value = mock_nlp
+        
         strategy = CodeChunkingStrategy(mock_settings)
 
         assert strategy is not None

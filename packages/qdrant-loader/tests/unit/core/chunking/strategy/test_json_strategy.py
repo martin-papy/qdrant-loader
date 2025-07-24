@@ -37,9 +37,15 @@ def mock_settings():
     semantic_analysis_config = Mock()
     semantic_analysis_config.num_topics = 5
     semantic_analysis_config.lda_passes = 10
+    semantic_analysis_config.spacy_model = "en_core_web_sm"
+    
+    # Mock embedding config
+    embedding_config = Mock()
+    embedding_config.tokenizer = "cl100k_base"
 
     global_config.chunking = chunking_config
     global_config.semantic_analysis = semantic_analysis_config
+    global_config.embedding = embedding_config
     settings.global_config = global_config
 
     return settings
@@ -48,7 +54,15 @@ def mock_settings():
 @pytest.fixture
 def json_strategy(mock_settings):
     """Create a JSON chunking strategy instance."""
-    with patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer"):
+    with (
+        patch("qdrant_loader.core.text_processing.semantic_analyzer.SemanticAnalyzer"),
+        patch("spacy.load") as mock_spacy_load,
+    ):
+        # Setup spacy mock
+        mock_nlp = Mock()
+        mock_nlp.pipe_names = []
+        mock_spacy_load.return_value = mock_nlp
+        
         return JSONChunkingStrategy(mock_settings)
 
 
