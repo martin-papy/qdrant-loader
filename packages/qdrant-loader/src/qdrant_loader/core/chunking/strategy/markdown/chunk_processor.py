@@ -27,7 +27,7 @@ class ChunkProcessor:
         
         # Initialize semantic analyzer
         self.semantic_analyzer = SemanticAnalyzer(
-            spacy_model="en_core_web_sm",
+            spacy_model=settings.global_config.semantic_analysis.spacy_model,
             num_topics=settings.global_config.semantic_analysis.num_topics,
             passes=settings.global_config.semantic_analysis.lda_passes,
         )

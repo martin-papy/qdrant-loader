@@ -1,6 +1,7 @@
 """Semantic analysis module for text processing."""
 
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,7 +32,7 @@ class SemanticAnalyzer:
 
     def __init__(
         self,
-        spacy_model: str = "en_core_web_sm",
+        spacy_model: str = "en_core_web_md",
         num_topics: int = 5,
         passes: int = 10,
         min_topic_freq: int = 2,
@@ -321,6 +322,10 @@ class SemanticAnalyzer:
         doc = self.nlp(text)
 
         for doc_id, cached_result in self._doc_cache.items():
+            # Check if cached_result has entities and the first entity has context
+            if not cached_result.entities or not cached_result.entities[0].get("context"):
+                continue
+                
             cached_doc = self.nlp(cached_result.entities[0]["context"])
             similarity = doc.similarity(cached_doc)
             similarities[doc_id] = float(similarity)

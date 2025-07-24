@@ -113,11 +113,15 @@ class TestWarningCapture:
 
         original_handler = warnings.showwarning
 
-        with capture_openpyxl_warnings(mock_logger, file_path):
-            # Simulate a non-openpyxl warning
-            warnings.showwarning(
-                "Some other warning", UserWarning, "/path/to/other/module.py", 100
-            )
+        # Capture the test warning to prevent it from appearing in test output
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("always")
+            
+            with capture_openpyxl_warnings(mock_logger, file_path):
+                # Simulate a non-openpyxl warning
+                warnings.showwarning(
+                    "Some other warning", UserWarning, "/path/to/other/module.py", 100
+                )
 
         # Verify our logger was not called
         mock_logger.info.assert_not_called()
