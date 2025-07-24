@@ -12,6 +12,7 @@ from rank_bm25 import BM25Okapi
 
 from ..utils.logging import LoggingConfig
 from .models import SearchResult
+from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -164,7 +165,10 @@ class HybridSearchEngine:
         self.alpha = alpha
         self.logger = LoggingConfig.get_logger(__name__)
 
-        # Common query expansions for frequently used terms
+        # 🔥 NEW: Initialize spaCy query analyzer for intelligent query processing
+        self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_md")
+
+        # Enhanced query expansions leveraging spaCy semantic understanding
         self.query_expansions = {
             "product requirements": [
                 "PRD",
@@ -187,22 +191,62 @@ class HybridSearchEngine:
         }
 
     async def _expand_query(self, query: str) -> str:
-        """Expand query with related terms for better matching."""
-        expanded_query = query
-        lower_query = query.lower()
-
-        for key, expansions in self.query_expansions.items():
-            if key.lower() in lower_query:
-                expansion_terms = " ".join(expansions)
-                expanded_query = f"{query} {expansion_terms}"
+        """🔥 ENHANCED: Expand query with spaCy semantic understanding and related terms."""
+        # Use spaCy analyzer for intelligent query expansion
+        try:
+            query_analysis = self.spacy_analyzer.analyze_query_semantic(query)
+            
+            # Start with original query
+            expanded_query = query
+            
+            # Add semantic keywords for broader matching
+            if query_analysis.semantic_keywords:
+                # Add top semantic keywords
+                semantic_terms = " ".join(query_analysis.semantic_keywords[:3])
+                expanded_query = f"{query} {semantic_terms}"
+            
+            # Add main concepts for concept-based expansion
+            if query_analysis.main_concepts:
+                concept_terms = " ".join(query_analysis.main_concepts[:2])
+                expanded_query = f"{expanded_query} {concept_terms}"
+            
+            # Legacy expansion logic as fallback
+            lower_query = query.lower()
+            for key, expansions in self.query_expansions.items():
+                if key.lower() in lower_query:
+                    expansion_terms = " ".join(expansions[:2])  # Limit to avoid over-expansion
+                    expanded_query = f"{expanded_query} {expansion_terms}"
+                    break
+            
+            if expanded_query != query:
                 self.logger.debug(
-                    "Expanded query",
+                    "🔥 spaCy-enhanced query expansion",
                     original_query=query,
                     expanded_query=expanded_query,
+                    semantic_keywords=query_analysis.semantic_keywords[:3],
+                    main_concepts=query_analysis.main_concepts[:2],
                 )
-                break
-
-        return expanded_query
+            
+            return expanded_query
+            
+        except Exception as e:
+            self.logger.warning(f"spaCy expansion failed, using fallback: {e}")
+            # Fallback to original expansion logic
+            expanded_query = query
+            lower_query = query.lower()
+            
+            for key, expansions in self.query_expansions.items():
+                if key.lower() in lower_query:
+                    expansion_terms = " ".join(expansions)
+                    expanded_query = f"{query} {expansion_terms}"
+                    self.logger.debug(
+                        "Expanded query (fallback)",
+                        original_query=query,
+                        expanded_query=expanded_query,
+                    )
+                    break
+            
+            return expanded_query
 
     async def _get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI."""
@@ -353,7 +397,77 @@ class HybridSearchEngine:
             raise
 
     def _analyze_query(self, query: str) -> dict[str, Any]:
-        """Analyze query to determine intent and context."""
+        """🔥 ENHANCED: Analyze query using spaCy NLP instead of regex patterns."""
+        try:
+            # Use spaCy analyzer for comprehensive query analysis
+            query_analysis = self.spacy_analyzer.analyze_query_semantic(query)
+            
+            # Create enhanced query context using spaCy analysis
+            context = {
+                # Basic query characteristics
+                "is_question": query_analysis.is_question,
+                "is_broad": len(query.split()) < 5,
+                "is_specific": len(query.split()) > 7,
+                "is_technical": query_analysis.is_technical,
+                "complexity_score": query_analysis.complexity_score,
+                
+                # spaCy-powered intent detection
+                "probable_intent": query_analysis.intent_signals.get("primary_intent", "informational"),
+                "intent_confidence": query_analysis.intent_signals.get("confidence", 0.0),
+                "linguistic_features": query_analysis.intent_signals.get("linguistic_features", {}),
+                
+                # Enhanced keyword extraction using spaCy
+                "keywords": query_analysis.semantic_keywords,
+                "entities": [entity[0] for entity in query_analysis.entities],  # Extract entity text
+                "entity_types": [entity[1] for entity in query_analysis.entities],  # Extract entity labels
+                "main_concepts": query_analysis.main_concepts,
+                "pos_patterns": query_analysis.pos_patterns,
+                
+                # Store query analysis for later use
+                "spacy_analysis": query_analysis,
+            }
+            
+            # Enhanced content type preference detection using spaCy
+            semantic_keywords_set = set(query_analysis.semantic_keywords)
+            
+            # Code preference detection
+            code_keywords = {"code", "function", "implementation", "script", "method", "class", "api"}
+            if semantic_keywords_set.intersection(code_keywords):
+                context["prefers_code"] = True
+            
+            # Table/data preference detection  
+            table_keywords = {"table", "data", "excel", "spreadsheet", "csv", "sheet"}
+            if semantic_keywords_set.intersection(table_keywords):
+                context["prefers_tables"] = True
+            
+            # Image preference detection
+            image_keywords = {"image", "diagram", "screenshot", "visual", "chart", "graph"}
+            if semantic_keywords_set.intersection(image_keywords):
+                context["prefers_images"] = True
+            
+            # Documentation preference detection
+            doc_keywords = {"documentation", "doc", "guide", "manual", "instruction", "help"}
+            if semantic_keywords_set.intersection(doc_keywords):
+                context["prefers_docs"] = True
+            
+            self.logger.debug(
+                "🔥 spaCy query analysis completed",
+                intent=context["probable_intent"],
+                confidence=context["intent_confidence"],
+                entities_found=len(query_analysis.entities),
+                keywords_extracted=len(query_analysis.semantic_keywords),
+                processing_time_ms=query_analysis.processing_time_ms,
+            )
+            
+            return context
+            
+        except Exception as e:
+            self.logger.warning(f"spaCy analysis failed, using fallback: {e}")
+            # Fallback to original regex-based analysis
+            return self._analyze_query_fallback(query)
+    
+    def _analyze_query_fallback(self, query: str) -> dict[str, Any]:
+        """Fallback query analysis using original regex patterns."""
         context = {
             "is_question": bool(
                 re.search(r"\?|what|how|why|when|who|where", query.lower())
@@ -378,7 +492,7 @@ class HybridSearchEngine:
         ):
             context["probable_intent"] = "architecture"
 
-        # 🔥 NEW: Analyze content type preferences
+        # Content type preferences (original logic)
         if any(term in lower_query for term in ["code", "function", "implementation", "script"]):
             context["prefers_code"] = True
         if any(term in lower_query for term in ["table", "data", "excel", "spreadsheet"]):
@@ -393,20 +507,11 @@ class HybridSearchEngine:
     def _boost_score_with_metadata(
         self, base_score: float, metadata_info: dict, query_context: dict
     ) -> float:
-        """Boost search scores based on rich metadata context.
-        
-        Args:
-            base_score: The original combined score
-            metadata_info: Rich metadata extracted from document
-            query_context: Analyzed query context
-            
-        Returns:
-            Boosted score incorporating metadata relevance
-        """
+        """🔥 ENHANCED: Boost search scores using spaCy semantic analysis and metadata context."""
         boosted_score = base_score
         boost_factor = 0.0
 
-        # 🔥 Content type relevance boosting
+        # 🔥 Content type relevance boosting (enhanced)
         if query_context.get("prefers_code") and metadata_info.get("has_code_blocks"):
             boost_factor += 0.15
         
@@ -445,53 +550,88 @@ class HybridSearchEngine:
         ):
             boost_factor += 0.12
 
-        # 🔥 Semantic entity relevance
-        entities = metadata_info.get("entities", [])
-        if entities:
-            query_keywords = set(query_context.get("keywords", []))
-            # Handle both string and dictionary entity formats
-            entity_texts = set()
-            for entity in entities:
-                if isinstance(entity, str):
-                    entity_texts.add(entity.lower())
-                elif isinstance(entity, dict):
-                    # Handle entity dictionaries (e.g., {"text": "GitHub API", "type": "PRODUCT"})
-                    if "text" in entity:
-                        entity_texts.add(str(entity["text"]).lower())
-                    elif "entity" in entity:
-                        entity_texts.add(str(entity["entity"]).lower())
-                    else:
-                        # If it's a dict but no obvious text field, convert to string
-                        entity_texts.add(str(entity).lower())
+        # 🔥 NEW: spaCy-powered semantic entity relevance
+        if "spacy_analysis" in query_context:
+            spacy_analysis = query_context["spacy_analysis"]
             
-            # Check if query keywords match extracted entities
-            if query_keywords.intersection(entity_texts):
-                boost_factor += 0.10
+            # Enhanced entity matching using spaCy similarity
+            entities = metadata_info.get("entities", [])
+            if entities and spacy_analysis.entities:
+                max_entity_similarity = 0.0
+                for entity in entities:
+                    entity_text = entity if isinstance(entity, str) else entity.get("text", str(entity))
+                    similarity = self.spacy_analyzer.semantic_similarity_matching(
+                        spacy_analysis, entity_text
+                    )
+                    max_entity_similarity = max(max_entity_similarity, similarity)
+                
+                # Apply semantic entity boost based on similarity
+                if max_entity_similarity > 0.6:  # High similarity
+                    boost_factor += 0.15
+                elif max_entity_similarity > 0.4:  # Medium similarity
+                    boost_factor += 0.10
+                elif max_entity_similarity > 0.2:  # Low similarity
+                    boost_factor += 0.05
+            
+            # Enhanced topic relevance using spaCy
+            topics = metadata_info.get("topics", [])
+            if topics and spacy_analysis.main_concepts:
+                max_topic_similarity = 0.0
+                for topic in topics:
+                    topic_text = topic if isinstance(topic, str) else topic.get("text", str(topic))
+                    for concept in spacy_analysis.main_concepts:
+                        similarity = self.spacy_analyzer.semantic_similarity_matching(
+                            spacy_analysis, f"{topic_text} {concept}"
+                        )
+                        max_topic_similarity = max(max_topic_similarity, similarity)
+                
+                # Apply semantic topic boost
+                if max_topic_similarity > 0.5:
+                    boost_factor += 0.12
+                elif max_topic_similarity > 0.3:
+                    boost_factor += 0.08
+        
+        else:
+            # Fallback to original entity/topic matching
+            entities = metadata_info.get("entities", [])
+            if entities:
+                query_keywords = set(query_context.get("keywords", []))
+                entity_texts = set()
+                for entity in entities:
+                    if isinstance(entity, str):
+                        entity_texts.add(entity.lower())
+                    elif isinstance(entity, dict):
+                        if "text" in entity:
+                            entity_texts.add(str(entity["text"]).lower())
+                        elif "entity" in entity:
+                            entity_texts.add(str(entity["entity"]).lower())
+                        else:
+                            entity_texts.add(str(entity).lower())
+                
+                if query_keywords.intersection(entity_texts):
+                    boost_factor += 0.10
 
-        # 🔥 Topic relevance
-        topics = metadata_info.get("topics", [])
-        if topics:
-            query_keywords = set(query_context.get("keywords", []))
-            # Handle both string and dictionary topic formats
-            topic_texts = set()
-            for topic in topics:
-                if isinstance(topic, str):
-                    topic_texts.add(topic.lower())
-                elif isinstance(topic, dict):
-                    # Handle topic dictionaries (e.g., {"text": "authentication", "weight": 0.8})
-                    if "text" in topic:
-                        topic_texts.add(str(topic["text"]).lower())
-                    elif "topic" in topic:
-                        topic_texts.add(str(topic["topic"]).lower())
-                    else:
-                        # If it's a dict but no obvious text field, convert to string
-                        topic_texts.add(str(topic).lower())
-            
-            if query_keywords.intersection(topic_texts):
-                boost_factor += 0.08
+            # Original topic relevance
+            topics = metadata_info.get("topics", [])
+            if topics:
+                query_keywords = set(query_context.get("keywords", []))
+                topic_texts = set()
+                for topic in topics:
+                    if isinstance(topic, str):
+                        topic_texts.add(topic.lower())
+                    elif isinstance(topic, dict):
+                        if "text" in topic:
+                            topic_texts.add(str(topic["text"]).lower())
+                        elif "topic" in topic:
+                            topic_texts.add(str(topic["topic"]).lower())
+                        else:
+                            topic_texts.add(str(topic).lower())
+                
+                if query_keywords.intersection(topic_texts):
+                    boost_factor += 0.08
 
         # Apply boost (cap at reasonable maximum)
-        boost_factor = min(boost_factor, 0.4)  # Maximum 40% boost
+        boost_factor = min(boost_factor, 0.5)  # Maximum 50% boost (increased from 40%)
         return boosted_score * (1 + boost_factor)
 
     async def _vector_search(
