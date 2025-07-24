@@ -178,6 +178,7 @@ async def test_pipeline_project_specific_processing(
             source_type=None,
             source=None,
             project_id="project-1",
+            force=False,
         )
 
         # Verify result

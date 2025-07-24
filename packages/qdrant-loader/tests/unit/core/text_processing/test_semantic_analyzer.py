@@ -282,8 +282,8 @@ class TestSemanticAnalyzer:
         with (
             patch("spacy.load", return_value=mock_nlp),
             patch(
-                "gensim.parsing.preprocessing.preprocess_string",
-                return_value=["apple", "company"],
+                "qdrant_loader.core.text_processing.semantic_analyzer.preprocess_string",
+                return_value=["apple", "company", "technology", "innovation", "business"],
             ),
         ):
 
