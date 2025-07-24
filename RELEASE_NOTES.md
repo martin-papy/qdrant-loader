@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.4.15 - July 22, 2025
+
+### 🚀 Major Improvements
+
+#### Chunking Strategy Overhaul
+
+- **Fixed critical chunking inconsistency**: All strategies now use character-based `chunk_size` (was mixed token/character interpretation causing 4-5x chunk count differences)
+- **Markdown strategy modularization**: Complete refactor into focused components (DocumentParser, SectionSplitter, MetadataExtractor, ChunkProcessor) for better maintainability
+- **Enhanced hierarchical metadata**: Added intelligent section analysis with HeaderAnalysis and SectionMetadata for richer document context
+- **Smart split level detection**: Automatic optimization of header split levels based on document structure and type
+- **Improved boundary detection**: Tokenizer now used for word/token boundaries while respecting character-based limits
+- **Comprehensive testing**: Added integration tests ensuring strategy consistency and preventing regression
+
 ## Version 0.4.14 - July 13, 2025
 
 ### 🐛 Critical Bug Fixes

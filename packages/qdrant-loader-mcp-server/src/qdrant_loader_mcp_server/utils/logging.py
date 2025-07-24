@@ -131,7 +131,6 @@ class LoggingConfig:
             structlog.stdlib.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.CallsiteParameterAdder(
                 [
@@ -143,8 +142,11 @@ class LoggingConfig:
         ]
 
         if format == "json":
+            # JSON format needs explicit exception formatting
+            processors.append(structlog.processors.format_exc_info)
             processors.append(structlog.processors.JSONRenderer())
         else:
+            # Console renderer handles exception formatting itself
             processors.append(structlog.dev.ConsoleRenderer(colors=True))
 
         # Configure structlog

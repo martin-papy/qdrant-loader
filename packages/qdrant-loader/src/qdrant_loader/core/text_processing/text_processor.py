@@ -37,8 +37,9 @@ class TextProcessor:
             nltk.download("stopwords")
 
         # Load spaCy model with optimized settings
+        spacy_model = settings.global_config.semantic_analysis.spacy_model
         try:
-            self.nlp = spacy.load("en_core_web_sm")
+            self.nlp = spacy.load(spacy_model)
             # Optimize spaCy pipeline for speed
             # Select only essential components for faster processing
             if "parser" in self.nlp.pipe_names:
@@ -48,9 +49,9 @@ class TextProcessor:
                 ]
                 self.nlp.select_pipes(enable=essential_pipes)
         except OSError:
-            logger.info("Downloading spaCy model...")
-            download("en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+            logger.info(f"Downloading spaCy model {spacy_model}...")
+            download(spacy_model)
+            self.nlp = spacy.load(spacy_model)
             if "parser" in self.nlp.pipe_names:
                 # Keep only essential components: tokenizer, tagger, ner (exclude parser)
                 essential_pipes = [

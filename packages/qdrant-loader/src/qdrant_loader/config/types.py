@@ -81,6 +81,7 @@ class SemanticAnalysisConfigDict(TypedDict):
 
     num_topics: int
     lda_passes: int
+    spacy_model: str
 
 
 class MarkItDownConfigDict(TypedDict):

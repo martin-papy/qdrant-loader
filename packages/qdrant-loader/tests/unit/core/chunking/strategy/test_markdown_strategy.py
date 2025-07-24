@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import pytest
 from qdrant_loader.config import GlobalConfig, SemanticAnalysisConfig, Settings
 from qdrant_loader.config.qdrant import QdrantConfig
-from qdrant_loader.core.chunking.strategy.markdown_strategy import (
-    MarkdownChunkingStrategy,
+from qdrant_loader.core.chunking.strategy.markdown import MarkdownChunkingStrategy
+from qdrant_loader.core.chunking.strategy.markdown.document_parser import (
     Section,
     SectionType,
 )
@@ -903,6 +903,19 @@ Items sold: 8
             url="file:///test.xlsx",
         )
 
+        # Mock the semantic analyzer to avoid errors
+        with patch.object(
+            markdown_strategy.semantic_analyzer, "analyze_text"
+        ) as mock_analyze:
+            mock_analyze.return_value = Mock(
+                entities=[],
+                topics=["general"],
+                key_phrases=["test"],
+                pos_tags=[],
+                dependencies=[],
+                document_similarity=0.5,
+        )
+
         # Chunk the document
         chunks = markdown_strategy.chunk_document(document)
 
@@ -998,10 +1011,27 @@ More content here.
 
         chunks = markdown_strategy.chunk_document(document)
 
-        # Should only split on H1 headers (regular behavior)
-        assert len(chunks) == 1  # All content in one chunk since only H1 creates sections
+        # 🔥 ENHANCED: Now uses granular splitting for better search quality
+        # Small document with 1 H1 + 2 H2s → Creates 3 semantic chunks
+        assert len(chunks) == 3  # Granular splitting: H1 + 2 H2 sections
+        
+        # Verify the chunks are semantic sections
+        assert chunks[0].metadata["section_type"] == "h1"
+        assert chunks[0].metadata["section_title"] == "Main Title"
+        assert chunks[1].metadata["section_type"] == "h2" 
+        assert chunks[1].metadata["section_title"] == "Section 1"
+        assert chunks[2].metadata["section_type"] == "h2"
+        assert chunks[2].metadata["section_title"] == "Section 2"
 
-        # Verify the content
+        # Verify each chunk contains its own section content
         assert "Main Title" in chunks[0].content
-        assert "Section 1" in chunks[0].content
-        assert "Section 2" in chunks[0].content
+        assert "This is regular markdown content" in chunks[0].content
+        assert "Section 1" not in chunks[0].content  # H2s are now separate chunks
+        
+        assert "Section 1" in chunks[1].content
+        assert "Some content here" in chunks[1].content
+        assert "Main Title" not in chunks[1].content  # H1 is separate
+        
+        assert "Section 2" in chunks[2].content  
+        assert "More content here" in chunks[2].content
+        assert "Main Title" not in chunks[2].content  # H1 is separate

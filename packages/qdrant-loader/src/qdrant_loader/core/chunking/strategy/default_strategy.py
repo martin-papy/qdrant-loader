@@ -1,4 +1,10 @@
-"""Default chunking strategy for text documents."""
+"""Default chunking strategy for text documents.
+
+This strategy uses character-based chunking for consistency with other strategies.
+When a tokenizer is available, it's used for better boundary detection to avoid
+splitting in the middle of tokens, but the chunk size limits are still based on
+character count.
+"""
 
 import re
 
@@ -16,7 +22,14 @@ MAX_CHUNKS_TO_PROCESS = 1000
 
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
-    """Default text chunking strategy using simple text splitting."""
+    """Default text chunking strategy using character-based splitting.
+    
+    This strategy splits text into chunks based on character count, ensuring
+    consistency with other chunking strategies like the markdown strategy.
+    When a tokenizer is available, it's used to find better split boundaries
+    (avoiding splits in the middle of tokens/words), but the size limits
+    are always based on character count.
+    """
 
     def __init__(self, settings: Settings):
         super().__init__(settings)
@@ -29,12 +42,13 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             chunk_overlap=self.chunk_overlap,
             tokenizer=self.tokenizer,
             has_encoding=self.encoding is not None,
+            chunking_method="character-based" + (" with token boundary detection" if self.encoding is not None else ""),
         )
 
         # Warn about suspiciously small chunk sizes
         if self.chunk_size < 100:
             logger.warning(
-                f"Very small chunk_size detected: {self.chunk_size}. "
+                f"Very small chunk_size detected: {self.chunk_size} characters. "
                 f"This may cause performance issues and excessive chunking. "
                 f"Consider using a larger value (e.g., 1000-1500 characters)."
             )
@@ -58,7 +72,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             return self._split_text_without_tokenizer(text)
 
     def _split_text_with_tokenizer(self, text: str) -> list[str]:
-        """Split text using tokenizer for accurate token counting.
+        """Split text using tokenizer for accurate token boundary detection but character-based sizing.
 
         Args:
             text: The text to split
@@ -70,41 +84,76 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
             # Fallback to character-based chunking
             return self._split_text_without_tokenizer(text)
 
-        tokens = self.encoding.encode(text)
-
-        if len(tokens) <= self.chunk_size:
+        # Use character-based size limit (consistent with markdown strategy)
+        if len(text) <= self.chunk_size:
             return [text]
 
         chunks = []
-        start = 0
-
-        while start < len(tokens) and len(chunks) < MAX_CHUNKS_TO_PROCESS:
-            # Calculate end position
-            end = min(start + self.chunk_size, len(tokens))
-
-            # Extract chunk tokens
-            chunk_tokens = tokens[start:end]
-
-            # Decode tokens back to text
-            chunk_text = self.encoding.decode(chunk_tokens)
+        start_char = 0
+        
+        while start_char < len(text) and len(chunks) < MAX_CHUNKS_TO_PROCESS:
+            # Calculate end position based on character count
+            end_char = min(start_char + self.chunk_size, len(text))
+            
+            # Get the chunk text
+            chunk_text = text[start_char:end_char]
+            
+            # If we're not at the end of the text, try to find a good token boundary
+            # to avoid splitting in the middle of words/tokens
+            if end_char < len(text):
+                # Try to encode/decode to find a clean token boundary
+                try:
+                    # Get tokens for the chunk
+                    tokens = self.encoding.encode(chunk_text)
+                    
+                    # If the chunk ends mid-token, back up to the last complete token
+                    # by decoding and checking if we get the same text
+                    decoded_text = self.encoding.decode(tokens)
+                    if len(decoded_text) < len(chunk_text):
+                        # The last token was incomplete, use the decoded text
+                        chunk_text = decoded_text
+                        end_char = start_char + len(chunk_text)
+                    
+                    # Alternatively, try to find a word boundary near the target end
+                    remaining_chars = self.chunk_size - len(chunk_text)
+                    if remaining_chars > 0 and end_char < len(text):
+                        # Look ahead a bit to find a word boundary
+                        lookahead_end = min(end_char + min(100, remaining_chars), len(text))
+                        lookahead_text = text[end_char:lookahead_end]
+                        
+                        # Find the first word boundary (space, newline, punctuation)
+                        import re
+                        word_boundary_match = re.search(r'[\s\n\.\!\?\;]', lookahead_text)
+                        if word_boundary_match:
+                            boundary_pos = word_boundary_match.start()
+                            end_char = end_char + boundary_pos + 1
+                            chunk_text = text[start_char:end_char]
+                
+                except Exception:
+                    # If tokenizer operations fail, stick with character-based splitting
+                    pass
+            
             chunks.append(chunk_text)
 
-            # Move start position forward, accounting for overlap
-            # Ensure we always make progress by advancing at least 1 token
-            advance = max(1, self.chunk_size - self.chunk_overlap)
-            start += advance
+            # Calculate overlap in characters and move start position forward
+            if self.chunk_overlap > 0 and end_char < len(text):
+                # Calculate how much to advance (chunk_size - overlap)
+                advance = max(1, self.chunk_size - self.chunk_overlap)
+                start_char += advance
+            else:
+                # No overlap, advance by full chunk size
+                start_char = end_char
 
-            # If we're near the end and the remaining tokens are small, include them in the last chunk
-            if start < len(tokens) and (len(tokens) - start) <= self.chunk_overlap:
-                # Create final chunk with remaining tokens
-                final_chunk_tokens = tokens[start:]
-                if final_chunk_tokens:  # Only add if there are tokens
-                    final_chunk_text = self.encoding.decode(final_chunk_tokens)
+            # If we're near the end and the remaining text is small, include it in the last chunk
+            if start_char < len(text) and (len(text) - start_char) <= self.chunk_overlap:
+                # Create final chunk with remaining text
+                final_chunk_text = text[start_char:]
+                if final_chunk_text.strip():  # Only add if there's meaningful content
                     chunks.append(final_chunk_text)
                 break
 
         # Log warning if we hit the chunk limit
-        if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start < len(tokens):
+        if len(chunks) >= MAX_CHUNKS_TO_PROCESS and start_char < len(text):
             logger.warning(
                 f"Reached maximum chunk limit of {MAX_CHUNKS_TO_PROCESS}. "
                 f"Document may be truncated."
