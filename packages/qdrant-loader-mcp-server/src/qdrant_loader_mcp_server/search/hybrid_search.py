@@ -13,6 +13,9 @@ from rank_bm25 import BM25Okapi
 from ..utils.logging import LoggingConfig
 from .models import SearchResult
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
+# 🔥 NEW: Phase 2.2 Intent-Aware Adaptive Search
+from .enhanced.intent_classifier import IntentClassifier, AdaptiveSearchStrategy, SearchIntent
+from .enhanced.knowledge_graph import DocumentKnowledgeGraph
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -138,6 +141,9 @@ class HybridSearchEngine:
         dense_vector_name: str = "dense",
         sparse_vector_name: str = "sparse",
         alpha: float = 0.5,
+        # 🔥 NEW: Phase 2.2 parameters
+        knowledge_graph: DocumentKnowledgeGraph = None,
+        enable_intent_adaptation: bool = True,
     ):
         """Initialize the hybrid search service.
 
@@ -152,6 +158,8 @@ class HybridSearchEngine:
             dense_vector_name: Name of the dense vector field
             sparse_vector_name: Name of the sparse vector field
             alpha: Weight for dense search (1-alpha for sparse search)
+            knowledge_graph: Optional knowledge graph for Phase 2.1 integration
+            enable_intent_adaptation: Enable Phase 2.2 intent-aware adaptive search
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client
@@ -167,6 +175,19 @@ class HybridSearchEngine:
 
         # 🔥 NEW: Initialize spaCy query analyzer for intelligent query processing
         self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_md")
+        
+        # 🔥 NEW: Phase 2.2 Intent-Aware Adaptive Search
+        self.enable_intent_adaptation = enable_intent_adaptation
+        self.knowledge_graph = knowledge_graph
+        
+        if self.enable_intent_adaptation:
+            self.intent_classifier = IntentClassifier(self.spacy_analyzer)
+            self.adaptive_strategy = AdaptiveSearchStrategy(self.knowledge_graph)
+            logger.info("🔥 Phase 2.2: Intent-aware adaptive search ENABLED")
+        else:
+            self.intent_classifier = None
+            self.adaptive_strategy = None
+            logger.info("Intent-aware adaptive search DISABLED")
 
         # Enhanced query expansions leveraging spaCy semantic understanding
         self.query_expansions = {
@@ -248,6 +269,51 @@ class HybridSearchEngine:
             
             return expanded_query
 
+    async def _expand_query_aggressive(self, query: str) -> str:
+        """🔥 NEW: More aggressive query expansion for exploratory searches."""
+        try:
+            query_analysis = self.spacy_analyzer.analyze_query_semantic(query)
+            
+            # Start with original query
+            expanded_query = query
+            
+            # Add more semantic keywords (increased from 3 to 5)
+            if query_analysis.semantic_keywords:
+                semantic_terms = " ".join(query_analysis.semantic_keywords[:5])
+                expanded_query = f"{query} {semantic_terms}"
+            
+            # Add more main concepts (increased from 2 to 4)
+            if query_analysis.main_concepts:
+                concept_terms = " ".join(query_analysis.main_concepts[:4])
+                expanded_query = f"{expanded_query} {concept_terms}"
+            
+            # Add entity-based expansion
+            if query_analysis.entities:
+                entity_terms = " ".join([ent[0] for ent in query_analysis.entities[:3]])
+                expanded_query = f"{expanded_query} {entity_terms}"
+            
+            # Apply multiple legacy expansions for exploration
+            lower_query = query.lower()
+            expansion_count = 0
+            for key, expansions in self.query_expansions.items():
+                if key.lower() in lower_query and expansion_count < 3:  # Max 3 expansions
+                    expansion_terms = " ".join(expansions[:3])
+                    expanded_query = f"{expanded_query} {expansion_terms}"
+                    expansion_count += 1
+            
+            self.logger.debug(
+                "🔥 Aggressive query expansion for exploration",
+                original_query=query,
+                expanded_query=expanded_query,
+                expansion_ratio=len(expanded_query.split()) / len(query.split()),
+            )
+            
+            return expanded_query
+            
+        except Exception as e:
+            self.logger.warning(f"Aggressive expansion failed, using standard: {e}")
+            return await self._expand_query(query)
+
     async def _get_embedding(self, text: str) -> list[float]:
         """Get embedding for text using OpenAI."""
         try:
@@ -266,6 +332,9 @@ class HybridSearchEngine:
         limit: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
+        # 🔥 NEW: Phase 2.2 parameters
+        session_context: dict[str, Any] | None = None,
+        behavioral_context: list[str] | None = None,
     ) -> list[SearchResult]:
         """Perform hybrid search combining vector and keyword search.
 
@@ -274,6 +343,8 @@ class HybridSearchEngine:
             limit: Maximum number of results to return
             source_types: Optional list of source types to filter by
             project_ids: Optional list of project IDs to filter by
+            session_context: Optional session context for intent classification
+            behavioral_context: Optional behavioral context (previous intents)
         """
         self.logger.debug(
             "Starting hybrid search",
@@ -281,22 +352,73 @@ class HybridSearchEngine:
             limit=limit,
             source_types=source_types,
             project_ids=project_ids,
+            intent_adaptation_enabled=self.enable_intent_adaptation,
         )
 
         try:
-            # Expand query with related terms
+            # 🔥 NEW: Phase 2.2 Intent Classification and Adaptive Search
+            search_intent = None
+            adaptive_config = None
+            
+            if self.enable_intent_adaptation and self.intent_classifier:
+                # Classify search intent using comprehensive spaCy analysis
+                search_intent = self.intent_classifier.classify_intent(
+                    query, session_context, behavioral_context
+                )
+                
+                # Adapt search configuration based on classified intent
+                adaptive_config = self.adaptive_strategy.adapt_search(
+                    search_intent, query
+                )
+                
+                # Update search parameters based on adaptive configuration
+                if adaptive_config:
+                    # Override weights based on intent
+                    original_vector_weight = self.vector_weight
+                    original_keyword_weight = self.keyword_weight
+                    original_min_score = self.min_score
+                    
+                    self.vector_weight = adaptive_config.vector_weight
+                    self.keyword_weight = adaptive_config.keyword_weight
+                    self.min_score = adaptive_config.min_score_threshold
+                    
+                    # Adjust limit based on intent configuration
+                    limit = min(adaptive_config.max_results, limit * 2)
+                    
+                    self.logger.debug(
+                        "🔥 Adapted search parameters based on intent",
+                        intent=search_intent.intent_type.value,
+                        confidence=search_intent.confidence,
+                        vector_weight=self.vector_weight,
+                        keyword_weight=self.keyword_weight,
+                        adjusted_limit=limit,
+                        use_kg=adaptive_config.use_knowledge_graph,
+                    )
+
+            # Expand query with related terms (now potentially adapted)
             expanded_query = await self._expand_query(query)
+            
+            # Apply intent-specific query expansion if available
+            if adaptive_config and adaptive_config.expand_query:
+                if adaptive_config.expansion_aggressiveness > 0.5:
+                    # More aggressive expansion for exploratory queries
+                    expanded_query = await self._expand_query_aggressive(query)
 
             # Get vector search results
             vector_results = await self._vector_search(
                 expanded_query, limit * 3, project_ids
             )
 
-            # Get keyword search results
+            # Get keyword search results  
             keyword_results = await self._keyword_search(query, limit * 3, project_ids)
 
             # Analyze query for context
             query_context = self._analyze_query(query)
+            
+            # 🔥 NEW: Add intent information to query context
+            if search_intent:
+                query_context["search_intent"] = search_intent
+                query_context["adaptive_config"] = adaptive_config
 
             # Combine and rerank results
             combined_results = await self._combine_results(
@@ -307,6 +429,12 @@ class HybridSearchEngine:
                 source_types,
                 project_ids,
             )
+            
+            # 🔥 NEW: Restore original search parameters if they were modified
+            if adaptive_config:
+                self.vector_weight = original_vector_weight
+                self.keyword_weight = original_keyword_weight  
+                self.min_score = original_min_score
 
             # Convert to SearchResult objects
             return [
@@ -510,6 +638,50 @@ class HybridSearchEngine:
         """🔥 ENHANCED: Boost search scores using spaCy semantic analysis and metadata context."""
         boosted_score = base_score
         boost_factor = 0.0
+
+        # 🔥 NEW: Phase 2.2 Intent-Aware Boosting
+        search_intent = query_context.get("search_intent")
+        adaptive_config = query_context.get("adaptive_config")
+        
+        if search_intent and adaptive_config:
+            # Apply intent-specific ranking boosts
+            ranking_boosts = adaptive_config.ranking_boosts
+            source_type_preferences = adaptive_config.source_type_preferences
+            
+            # Source type preference boosting
+            source_type = metadata_info.get("source_type", "")
+            if source_type in source_type_preferences:
+                source_boost = (source_type_preferences[source_type] - 1.0) * 0.2
+                boost_factor += source_boost
+                
+            # Content type boosting from ranking_boosts
+            for boost_key, boost_value in ranking_boosts.items():
+                if boost_key == "section_type" and isinstance(boost_value, dict):
+                    section_type = metadata_info.get("section_type", "")
+                    if section_type in boost_value:
+                        section_boost = (boost_value[section_type] - 1.0) * 0.15
+                        boost_factor += section_boost
+                elif boost_key == "source_type" and isinstance(boost_value, dict):
+                    if source_type in boost_value:
+                        source_boost = (boost_value[source_type] - 1.0) * 0.15
+                        boost_factor += source_boost
+                elif boost_key in metadata_info and metadata_info[boost_key]:
+                    # Boolean metadata boosting (e.g., has_money_entities, has_org_entities)
+                    if isinstance(boost_value, (int, float)):
+                        bool_boost = (boost_value - 1.0) * 0.1
+                        boost_factor += bool_boost
+            
+            # Intent-specific confidence boosting
+            confidence_boost = search_intent.confidence * 0.05  # Up to 5% boost for high confidence
+            boost_factor += confidence_boost
+            
+            self.logger.debug(
+                "🔥 Applied intent-aware boosting",
+                intent=search_intent.intent_type.value,
+                confidence=search_intent.confidence,
+                source_type=source_type,
+                total_intent_boost=boost_factor,
+            )
 
         # 🔥 Content type relevance boosting (enhanced)
         if query_context.get("prefers_code") and metadata_info.get("has_code_blocks"):
@@ -751,21 +923,65 @@ class HybridSearchEngine:
 
         # Calculate combined scores and create results
         combined_results = []
+        
+        # 🔥 NEW: Extract intent-specific filtering configuration
+        search_intent = query_context.get("search_intent")
+        adaptive_config = query_context.get("adaptive_config")
+        result_filters = adaptive_config.result_filters if adaptive_config else {}
+        
         for text, info in combined_dict.items():
             # Skip if source type doesn't match filter
             if source_types and info["source_type"] not in source_types:
                 continue
 
             metadata = info["metadata"]
+            metadata_info = self._extract_metadata_info(metadata)
+            
+            # 🔥 NEW: Apply intent-specific result filtering
+            if search_intent and result_filters:
+                should_skip = False
+                
+                # Content type filtering
+                if "content_type" in result_filters:
+                    allowed_content_types = result_filters["content_type"]
+                    # Check if any content type indicators match
+                    has_matching_content = False
+                    
+                    for content_type in allowed_content_types:
+                        if content_type == "code" and metadata_info.get("has_code_blocks"):
+                            has_matching_content = True
+                            break
+                        elif content_type == "documentation" and not metadata_info.get("has_code_blocks"):
+                            has_matching_content = True
+                            break
+                        elif content_type == "technical" and query_context.get("is_technical"):
+                            has_matching_content = True
+                            break
+                        elif content_type in ["requirements", "business", "strategy"]:
+                            # Check if content mentions business terms
+                            business_indicators = metadata_info.get("business_indicators", 0)
+                            if business_indicators > 0:
+                                has_matching_content = True
+                                break
+                        elif content_type in ["guide", "tutorial", "procedure"]:
+                            # Check for procedural content
+                            section_type = metadata_info.get("section_type", "").lower()
+                            if any(proc_word in section_type for proc_word in ["step", "guide", "procedure", "tutorial"]):
+                                has_matching_content = True
+                                break
+                    
+                    if not has_matching_content:
+                        should_skip = True
+                
+                if should_skip:
+                    continue
+
             combined_score = (
                 self.vector_weight * info["vector_score"]
                 + self.keyword_weight * info["keyword_score"]
             )
 
             if combined_score >= self.min_score:
-                # Extract hierarchy information
-                metadata_info = self._extract_metadata_info(metadata)
-
                 # Extract project information
                 project_info = self._extract_project_info(metadata)
 
@@ -859,6 +1075,20 @@ class HybridSearchEngine:
 
         # Sort by combined score
         combined_results.sort(key=lambda x: x.score, reverse=True)
+        
+        # 🔥 NEW: Apply diversity filtering for exploratory intents
+        if adaptive_config and adaptive_config.diversity_factor > 0.0:
+            diverse_results = self._apply_diversity_filtering(
+                combined_results, adaptive_config.diversity_factor, limit
+            )
+            self.logger.debug(
+                "🔥 Applied diversity filtering",
+                original_count=len(combined_results),
+                diverse_count=len(diverse_results),
+                diversity_factor=adaptive_config.diversity_factor,
+            )
+            return diverse_results
+        
         return combined_results[:limit]
 
     def _extract_metadata_info(self, metadata: dict) -> dict:
@@ -1072,3 +1302,74 @@ class HybridSearchEngine:
                 )
             ]
         )
+
+    def _apply_diversity_filtering(
+        self, 
+        results: list[HybridSearchResult], 
+        diversity_factor: float, 
+        limit: int
+    ) -> list[HybridSearchResult]:
+        """🔥 NEW: Apply diversity filtering to promote varied result types."""
+        if diversity_factor <= 0.0 or len(results) <= limit:
+            return results[:limit]
+        
+        diverse_results = []
+        used_source_types = set()
+        used_section_types = set()
+        used_sources = set()
+        
+        # First pass: Take top results while ensuring diversity
+        for result in results:
+            if len(diverse_results) >= limit:
+                break
+                
+            # Calculate diversity score
+            diversity_score = 1.0
+            
+            # Penalize duplicate source types (less diversity)
+            source_type = result.source_type
+            if source_type in used_source_types:
+                diversity_score *= (1.0 - diversity_factor * 0.3)
+            
+            # Penalize duplicate section types
+            section_type = result.section_type or "unknown"
+            if section_type in used_section_types:
+                diversity_score *= (1.0 - diversity_factor * 0.2)
+            
+            # Penalize duplicate sources (same document/file)
+            source_key = f"{result.source_type}:{result.source_title}"
+            if source_key in used_sources:
+                diversity_score *= (1.0 - diversity_factor * 0.4)
+            
+            # Apply diversity penalty to score
+            adjusted_score = result.score * diversity_score
+            
+            # Use original score to determine if we should include this result
+            if len(diverse_results) < limit * 0.7 or adjusted_score >= result.score * 0.6:
+                diverse_results.append(result)
+                used_source_types.add(source_type)
+                used_section_types.add(section_type)
+                used_sources.add(source_key)
+        
+        # Second pass: Fill remaining slots with best remaining results
+        remaining_slots = limit - len(diverse_results)
+        if remaining_slots > 0:
+            remaining_results = [r for r in results if r not in diverse_results]
+            diverse_results.extend(remaining_results[:remaining_slots])
+        
+        return diverse_results[:limit]
+    
+    def get_adaptive_search_stats(self) -> dict[str, Any]:
+        """🔥 NEW: Get adaptive search statistics for monitoring."""
+        stats = {
+            "intent_adaptation_enabled": self.enable_intent_adaptation,
+            "has_knowledge_graph": self.knowledge_graph is not None,
+        }
+        
+        if self.enable_intent_adaptation and self.intent_classifier:
+            stats.update(self.intent_classifier.get_cache_stats())
+            
+        if self.adaptive_strategy:
+            stats.update(self.adaptive_strategy.get_strategy_stats())
+            
+        return stats

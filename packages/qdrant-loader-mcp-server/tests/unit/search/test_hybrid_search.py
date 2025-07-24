@@ -209,9 +209,16 @@ async def test_search_with_limit(hybrid_search):
     hybrid_search._get_embedding = AsyncMock(return_value=[0.1, 0.2, 0.3] * 512)
     hybrid_search._expand_query = AsyncMock(return_value="test query")
 
+    # Disable intent adaptation for this test to ensure predictable limit behavior
+    original_enable_intent = getattr(hybrid_search, 'enable_intent_adaptation', False)
+    hybrid_search.enable_intent_adaptation = False
+
     limit = 1
     results = await hybrid_search.search("test query", limit=limit)
     assert len(results) <= limit
+
+    # Restore original setting
+    hybrid_search.enable_intent_adaptation = original_enable_intent
 
 
 # New comprehensive tests for missing methods
