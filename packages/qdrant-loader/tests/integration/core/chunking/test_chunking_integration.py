@@ -32,16 +32,31 @@ class TestChunkingIntegration:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 100
+        settings.global_config.semantic_analysis = Mock()
+        settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
         return settings
 
     @pytest.fixture
     def chunking_service(self, mock_global_config, mock_settings):
         """Create a chunking service instance."""
         with (
-            patch("qdrant_loader.core.chunking.chunking_service.Path"),
+            patch("qdrant_loader.core.chunking.chunking_service.Path") as mock_path,
             patch("qdrant_loader.core.chunking.chunking_service.IngestionMonitor"),
             patch("qdrant_loader.core.chunking.chunking_service.LoggingConfig"),
+            patch("spacy.load") as mock_spacy_load,
         ):
+            # Setup Path mocks
+            mock_cwd_path = Mock()
+            mock_metrics_dir = Mock()
+            mock_cwd_path.__truediv__ = Mock(return_value=mock_metrics_dir)
+            mock_path.cwd.return_value = mock_cwd_path
+            mock_metrics_dir.absolute.return_value = "/test/metrics"
+            
+            # Setup spacy mock
+            mock_nlp = Mock()
+            mock_nlp.pipe_names = []
+            mock_spacy_load.return_value = mock_nlp
+            
             return ChunkingService(mock_global_config, mock_settings)
 
     def test_converted_file_uses_markdown_strategy(self, chunking_service):

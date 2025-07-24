@@ -15,10 +15,10 @@ class TestAsyncIngestionPipeline:
 
     def _setup_path_mocks(self, mock_path):
         """Helper method to properly setup Path mocks."""
-        mock_path_instance = MagicMock()
-        mock_path.cwd.return_value = mock_path_instance
+        mock_cwd_path = MagicMock()
         mock_metrics_dir = MagicMock()
-        mock_path_instance.__truediv__.return_value = mock_metrics_dir
+        mock_cwd_path.__truediv__ = MagicMock(return_value=mock_metrics_dir)
+        mock_path.cwd.return_value = mock_cwd_path
         mock_metrics_dir.mkdir = Mock()
         mock_metrics_dir.absolute.return_value = "/test/metrics"
         return mock_metrics_dir
@@ -96,10 +96,10 @@ class TestAsyncIngestionPipeline:
             mock_resource_manager_instance = Mock()
             mock_resource_manager.return_value = mock_resource_manager_instance
 
-            mock_path_instance = MagicMock()
-            mock_path.cwd.return_value = mock_path_instance
+            mock_cwd_path = MagicMock()
             mock_metrics_dir = MagicMock()
-            mock_path_instance.__truediv__.return_value = mock_metrics_dir
+            mock_cwd_path.__truediv__ = MagicMock(return_value=mock_metrics_dir)
+            mock_path.cwd.return_value = mock_cwd_path
             mock_metrics_dir.mkdir = Mock()
             mock_metrics_dir.absolute.return_value = "/test/metrics"
 
