@@ -37,7 +37,7 @@ async def test_search_engine_initialization(
     """Test search engine initialization."""
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -63,7 +63,7 @@ async def test_search_engine_initialization_failure(
 ):
     """Test search engine initialization failure."""
     with patch(
-        "qdrant_loader_mcp_server.search.engine.QdrantClient",
+        "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
         side_effect=Exception("Connection failed"),
     ):
         with pytest.raises(RuntimeError, match="Failed to connect to Qdrant server"):
@@ -90,7 +90,7 @@ async def test_search_engine_search(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -128,7 +128,7 @@ async def test_search_engine_cleanup(
     """Test search engine cleanup."""
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -157,7 +157,7 @@ async def test_search_engine_collection_creation(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -186,7 +186,7 @@ async def test_search_engine_collection_exists(
 
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(

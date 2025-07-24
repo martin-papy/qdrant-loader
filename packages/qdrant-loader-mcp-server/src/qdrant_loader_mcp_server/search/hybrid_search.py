@@ -16,6 +16,13 @@ from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 # 🔥 NEW: Phase 2.2 Intent-Aware Adaptive Search
 from .enhanced.intent_classifier import IntentClassifier, AdaptiveSearchStrategy, SearchIntent
 from .enhanced.knowledge_graph import DocumentKnowledgeGraph
+# 🔥 NEW: Phase 1.2 Topic-Driven Search Chaining  
+from .enhanced.topic_search_chain import (
+    TopicSearchChainGenerator, 
+    TopicSearchChain, 
+    ChainStrategy,
+    TopicChainLink
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -188,6 +195,14 @@ class HybridSearchEngine:
             self.intent_classifier = None
             self.adaptive_strategy = None
             logger.info("Intent-aware adaptive search DISABLED")
+        
+        # 🔥 NEW: Phase 1.2 Topic-Driven Search Chaining
+        self.topic_chain_generator = TopicSearchChainGenerator(
+            self.spacy_analyzer, 
+            self.knowledge_graph
+        )
+        self._topic_chains_initialized = False
+        logger.info("🔥 Phase 1.2: Topic-driven search chaining ENABLED")
 
         # Enhanced query expansions leveraging spaCy semantic understanding
         self.query_expansions = {
@@ -523,6 +538,170 @@ class HybridSearchEngine:
         except Exception as e:
             self.logger.error("Error in hybrid search", error=str(e), query=query)
             raise
+    
+    async def generate_topic_search_chain(
+        self,
+        query: str,
+        strategy: ChainStrategy = ChainStrategy.MIXED_EXPLORATION,
+        max_links: int = 5,
+        initialize_from_search: bool = True
+    ) -> TopicSearchChain:
+        """🔥 NEW: Generate a topic-driven search chain for progressive content discovery.
+        
+        Args:
+            query: Original search query
+            strategy: Strategy for chain generation
+            max_links: Maximum number of links in the chain
+            initialize_from_search: Whether to initialize topic relationships from search results
+            
+        Returns:
+            TopicSearchChain with progressive queries for exploration
+        """
+        self.logger.debug(
+            "Generating topic search chain",
+            query=query,
+            strategy=strategy.value,
+            max_links=max_links
+        )
+        
+        try:
+            # Initialize topic relationships from search results if needed
+            if initialize_from_search and not self._topic_chains_initialized:
+                await self._initialize_topic_relationships(query)
+            
+            # Generate the topic search chain
+            topic_chain = self.topic_chain_generator.generate_search_chain(
+                original_query=query,
+                strategy=strategy,
+                max_links=max_links
+            )
+            
+            self.logger.info(
+                "Topic search chain generated successfully",
+                chain_length=len(topic_chain.chain_links),
+                strategy=strategy.value,
+                topics_covered=topic_chain.total_topics_covered,
+                discovery_potential=f"{topic_chain.estimated_discovery_potential:.2f}",
+                generation_time=f"{topic_chain.generation_time_ms:.1f}ms"
+            )
+            
+            return topic_chain
+            
+        except Exception as e:
+            self.logger.error("Error generating topic search chain", error=str(e), query=query)
+            raise
+    
+    async def execute_topic_chain_search(
+        self,
+        topic_chain: TopicSearchChain,
+        results_per_link: int = 3,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> dict[str, list[SearchResult]]:
+        """🔥 NEW: Execute searches for all links in a topic chain.
+        
+        Args:
+            topic_chain: The topic search chain to execute
+            results_per_link: Number of results to return per chain link
+            source_types: Optional source type filters
+            project_ids: Optional project ID filters
+            
+        Returns:
+            Dictionary mapping chain link queries to their search results
+        """
+        self.logger.debug(
+            "Executing topic chain search",
+            chain_length=len(topic_chain.chain_links),
+            results_per_link=results_per_link
+        )
+        
+        chain_results = {}
+        
+        try:
+            # Execute search for original query
+            original_results = await self.search(
+                query=topic_chain.original_query,
+                limit=results_per_link,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            chain_results[topic_chain.original_query] = original_results
+            
+            # Execute search for each chain link
+            for link in topic_chain.chain_links:
+                try:
+                    link_results = await self.search(
+                        query=link.query,
+                        limit=results_per_link,
+                        source_types=source_types,
+                        project_ids=project_ids
+                    )
+                    chain_results[link.query] = link_results
+                    
+                    self.logger.debug(
+                        "Executed chain link search",
+                        query=link.query,
+                        results_count=len(link_results),
+                        topic_focus=link.topic_focus,
+                        exploration_type=link.exploration_type
+                    )
+                    
+                except Exception as e:
+                    self.logger.warning(
+                        "Failed to execute chain link search",
+                        query=link.query,
+                        error=str(e)
+                    )
+                    chain_results[link.query] = []
+            
+            total_results = sum(len(results) for results in chain_results.values())
+            self.logger.info(
+                "Topic chain search execution completed",
+                total_queries=len(chain_results),
+                total_results=total_results,
+                original_query=topic_chain.original_query
+            )
+            
+            return chain_results
+            
+        except Exception as e:
+            self.logger.error("Error executing topic chain search", error=str(e))
+            raise
+    
+    async def _initialize_topic_relationships(self, sample_query: str) -> None:
+        """Initialize topic relationships from a sample search to bootstrap topic chaining."""
+        try:
+            # Perform a broad search to get diverse results for topic relationship mapping
+            sample_results = await self.search(
+                query=sample_query,
+                limit=20,  # Get more results for better topic coverage
+                source_types=None,
+                project_ids=None
+            )
+            
+            if sample_results:
+                # Initialize topic relationships from the sample results
+                self.topic_chain_generator.initialize_from_results(sample_results)
+                self._topic_chains_initialized = True
+                
+                self.logger.info(
+                    "Topic relationships initialized from search results",
+                    sample_query=sample_query,
+                    sample_results_count=len(sample_results)
+                )
+            else:
+                self.logger.warning(
+                    "No search results available for topic relationship initialization",
+                    sample_query=sample_query
+                )
+                
+        except Exception as e:
+            self.logger.error(
+                "Failed to initialize topic relationships",
+                error=str(e),
+                sample_query=sample_query
+            )
+            # Don't raise - topic chaining can still work with limited relationships
 
     def _analyze_query(self, query: str) -> dict[str, Any]:
         """🔥 ENHANCED: Analyze query using spaCy NLP instead of regex patterns."""
@@ -814,7 +993,7 @@ class HybridSearchEngine:
 
         search_params = models.SearchParams(hnsw_ef=128, exact=False)
 
-        results = self.qdrant_client.search(
+        results = await self.qdrant_client.search(
             collection_name=self.collection_name,
             query_vector=query_embedding,
             limit=limit,
@@ -841,7 +1020,7 @@ class HybridSearchEngine:
         self, query: str, limit: int, project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """Perform keyword search using BM25."""
-        scroll_results = self.qdrant_client.scroll(
+        scroll_results = await self.qdrant_client.scroll(
             collection_name=self.collection_name,
             limit=10000,
             with_payload=True,
