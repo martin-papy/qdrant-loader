@@ -25,6 +25,11 @@ class SemanticAnalysisConfig(BaseConfig):
     )
 
     lda_passes: int = Field(default=10, description="Number of passes for LDA training")
+    
+    spacy_model: str = Field(
+        default="en_core_web_md", 
+        description="spaCy model to use for text processing. Options: en_core_web_sm (15MB, no vectors), en_core_web_md (50MB, 20k vectors), en_core_web_lg (750MB, 514k vectors)"
+    )
 
 
 class GlobalConfig(BaseConfig):
@@ -72,6 +77,7 @@ class GlobalConfig(BaseConfig):
             "semantic_analysis": {
                 "num_topics": self.semantic_analysis.num_topics,
                 "lda_passes": self.semantic_analysis.lda_passes,
+                "spacy_model": self.semantic_analysis.spacy_model,
             },
             "sources": self.sources.to_dict(),
             "state_management": self.state_management.to_dict(),

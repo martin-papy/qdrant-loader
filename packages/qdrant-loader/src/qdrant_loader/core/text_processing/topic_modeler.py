@@ -13,15 +13,17 @@ logger = LoggingConfig.get_logger(__name__)
 class TopicModeler:
     """Handles batched LDA topic modeling for document analysis."""
 
-    def __init__(self, num_topics: int = 3, passes: int = 10):
+    def __init__(self, num_topics: int = 3, passes: int = 10, spacy_model: str = "en_core_web_md"):
         """Initialize the topic modeler.
 
         Args:
             num_topics: Number of topics to extract
             passes: Number of passes for LDA training
+            spacy_model: spaCy model to use for text preprocessing
         """
         self.num_topics = num_topics
         self.passes = passes
+        self.spacy_model = spacy_model
         self.dictionary = None
         self.lda_model = None
         self._cached_topics = {}  # Cache for topic inference results
@@ -29,11 +31,11 @@ class TopicModeler:
 
         # Initialize spaCy for text preprocessing
         try:
-            self.nlp = spacy.load("en_core_web_sm")
+            self.nlp = spacy.load(spacy_model)
         except OSError:
-            logger.info("Downloading spaCy model...")
-            download("en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+            logger.info(f"Downloading spaCy model {spacy_model}...")
+            download(spacy_model)
+            self.nlp = spacy.load(spacy_model)
 
     def _preprocess_text(self, text: str) -> list[str]:
         """Preprocess text for topic modeling.

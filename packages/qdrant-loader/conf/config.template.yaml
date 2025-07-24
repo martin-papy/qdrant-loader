@@ -61,6 +61,16 @@ global_config:
     max_tokens_per_request: 8000     # Maximum total tokens per API request (leave buffer below model limit)
     max_tokens_per_chunk: 8000       # Maximum tokens per individual chunk (should match model's context limit)
 
+  # Semantic analysis configuration
+  # Controls text processing and topic extraction
+  semantic_analysis:
+    num_topics: 3                    # Number of topics to extract using LDA
+    lda_passes: 10                   # Number of passes for LDA training
+    spacy_model: "en_core_web_md"    # spaCy model for text processing
+                                     # Options: en_core_web_sm (15MB, no vectors)
+                                     #          en_core_web_md (50MB, 20k vectors) - recommended
+                                     #          en_core_web_lg (750MB, 514k vectors)
+
   # State management configuration
   # Controls how document ingestion state is tracked
   state_management:
