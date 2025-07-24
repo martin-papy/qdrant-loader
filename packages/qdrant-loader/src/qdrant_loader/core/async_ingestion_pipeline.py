@@ -170,6 +170,7 @@ class AsyncIngestionPipeline:
         source_type: str | None = None,
         source: str | None = None,
         project_id: str | None = None,
+        force: bool = False,
     ) -> list[Document]:
         """Process documents from all configured sources.
 
@@ -178,6 +179,7 @@ class AsyncIngestionPipeline:
             source_type: Filter by source type
             source: Filter by specific source name
             project_id: Process documents for a specific project
+            force: Force processing of all documents, bypassing change detection
 
         Returns:
             List of processed documents
@@ -194,6 +196,7 @@ class AsyncIngestionPipeline:
                 "source_type": source_type,
                 "source": source,
                 "project_id": project_id,
+                "force": force,
             },
         )
 
@@ -206,6 +209,7 @@ class AsyncIngestionPipeline:
                 source_type=source_type,
                 source=source,
                 project_id=project_id,
+                force=force,
             )
 
             # Update metrics (maintained for compatibility)
@@ -217,6 +221,7 @@ class AsyncIngestionPipeline:
                         "source_type": source_type,
                         "source": source,
                         "project_id": project_id,
+                        "force": force,
                     },
                 )
                 # Note: Success/error counts are handled internally by the new architecture

@@ -132,7 +132,7 @@ class TestSemanticAnalyzer:
             assert analyzer.lda_model is None
             assert analyzer.dictionary is None
             assert analyzer._doc_cache == {}
-            mock_load.assert_called_once_with("en_core_web_sm")
+            mock_load.assert_called_once_with("en_core_web_md")
 
     def test_initialization_custom_params(self):
         """Test SemanticAnalyzer initialization with custom parameters."""
@@ -166,7 +166,7 @@ class TestSemanticAnalyzer:
             analyzer = SemanticAnalyzer()
 
             assert analyzer.nlp == mock_nlp
-            mock_download.assert_called_once_with("en_core_web_sm")
+            mock_download.assert_called_once_with("en_core_web_md")
             assert mock_load.call_count == 2
 
     def test_analyze_text_basic(self, mock_nlp, mock_doc):
@@ -282,8 +282,8 @@ class TestSemanticAnalyzer:
         with (
             patch("spacy.load", return_value=mock_nlp),
             patch(
-                "gensim.parsing.preprocessing.preprocess_string",
-                return_value=["apple", "company"],
+                "qdrant_loader.core.text_processing.semantic_analyzer.preprocess_string",
+                return_value=["apple", "company", "technology", "innovation", "business"],
             ),
         ):
 

@@ -463,6 +463,11 @@ async def _cancel_all_tasks():
     default=False,
     help="Run the ingestion under cProfile and save output to 'profile.out' (for performance analysis).",
 )
+@option(
+    "--force",
+    is_flag=True,
+    help="Force processing of all documents, bypassing change detection. Warning: May significantly increase processing time and costs.",
+)
 @async_command
 async def ingest(
     workspace: Path | None,
@@ -473,6 +478,7 @@ async def ingest(
     source: str | None,
     log_level: str,
     profile: bool,
+    force: bool,
 ):
     """Ingest documents from configured sources.
 
@@ -491,6 +497,9 @@ async def ingest(
 
       # Ingest specific source from specific project
       qdrant-loader ingest --project my-project --source-type git --source my-repo
+
+      # Force processing of all documents (bypass change detection)
+      qdrant-loader ingest --force
     """
     try:
         # Lazy import to avoid slow startup
@@ -536,6 +545,7 @@ async def ingest(
                     project_id=project,
                     source_type=source_type,
                     source=source,
+                    force=force,
                 )
             finally:
                 # Ensure proper cleanup of the async pipeline

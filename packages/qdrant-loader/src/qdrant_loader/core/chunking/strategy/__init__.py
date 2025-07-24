@@ -12,7 +12,7 @@ from qdrant_loader.core.chunking.strategy.default_strategy import (
 )
 from qdrant_loader.core.chunking.strategy.html_strategy import HTMLChunkingStrategy
 from qdrant_loader.core.chunking.strategy.json_strategy import JSONChunkingStrategy
-from qdrant_loader.core.chunking.strategy.markdown_strategy import (
+from qdrant_loader.core.chunking.strategy.markdown import (
     MarkdownChunkingStrategy,
 )
 

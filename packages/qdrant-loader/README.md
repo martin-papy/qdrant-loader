@@ -361,7 +361,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Install in development mode
-pip install -e packages/qdrant-loader[dev]
+pip install -e "packages/qdrant-loader[dev]"
 
 # Run tests
 pytest packages/qdrant-loader/tests/

@@ -25,7 +25,12 @@ def mock_settings():
     chunking_config.chunk_size = 1000
     chunking_config.chunk_overlap = 100
 
+    # Mock semantic analysis config
+    semantic_analysis_config = Mock()
+    semantic_analysis_config.spacy_model = "en_core_web_md"
+
     global_config.chunking = chunking_config
+    global_config.semantic_analysis = semantic_analysis_config
     settings.global_config = global_config
 
     return settings
@@ -67,7 +72,7 @@ class TestTextProcessor:
         processor = TextProcessor(mock_settings)
 
         # Verify spaCy model loading
-        mock_spacy_load.assert_called_once_with("en_core_web_sm")
+        mock_spacy_load.assert_called_once_with("en_core_web_md")
         assert processor.nlp == self.mock_nlp
 
         # Verify pipeline optimization
@@ -104,7 +109,7 @@ class TestTextProcessor:
         processor = TextProcessor(mock_settings)
 
         # Verify model download was triggered
-        mock_download.assert_called_once_with("en_core_web_sm")
+        mock_download.assert_called_once_with("en_core_web_md")
         assert mock_spacy_load.call_count == 2
         assert processor.nlp == self.mock_nlp
 

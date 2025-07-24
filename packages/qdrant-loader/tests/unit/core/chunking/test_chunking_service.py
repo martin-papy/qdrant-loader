@@ -37,6 +37,8 @@ class TestChunkingService:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 100
+        settings.global_config.semantic_analysis = Mock()
+        settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
         return settings
 
     @pytest.fixture
@@ -75,17 +77,23 @@ class TestChunkingService:
             patch(
                 "qdrant_loader.core.chunking.chunking_service.LoggingConfig"
             ) as mock_logging,
+            patch("spacy.load") as mock_spacy_load,
         ):
 
             # Setup mocks
-            mock_path_instance = MagicMock()
-            mock_path.cwd.return_value = mock_path_instance
+            mock_cwd_path = MagicMock()
             mock_metrics_dir = MagicMock()
-            mock_path_instance.__truediv__.return_value = mock_metrics_dir
+            mock_cwd_path.__truediv__ = MagicMock(return_value=mock_metrics_dir)
+            mock_path.cwd.return_value = mock_cwd_path
             mock_metrics_dir.absolute.return_value = "/test/metrics"
 
             mock_logger = Mock()
             mock_logging.get_logger.return_value = mock_logger
+            
+            # Mock spacy
+            mock_nlp = Mock()
+            mock_nlp.pipe_names = []  # Empty pipe names to avoid processing
+            mock_spacy_load.return_value = mock_nlp
 
             # Create service
             service = ChunkingService(mock_global_config, mock_settings)

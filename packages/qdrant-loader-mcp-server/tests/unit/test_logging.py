@@ -46,9 +46,13 @@ def test_application_filter():
         ("some.other.module", False),
     ]
 
+    # Use a simple class instead of MagicMock to avoid async confusion
+    class TestRecord:
+        def __init__(self, name):
+            self.name = name
+
     for name, expected in test_cases:
-        record = MagicMock()
-        record.name = name
+        record = TestRecord(name)
         assert filter_instance.filter(record) is expected
 
 
