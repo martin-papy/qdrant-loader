@@ -557,8 +557,14 @@ class TestCLICommand:
         # Mock config to raise exception
         mock_config_class.side_effect = Exception("Config error")
 
-        # Mock event loop
-        mock_loop = MagicMock()
+        # Mock event loop - use a simple class to avoid async confusion
+        class MockLoop:
+            def close(self):
+                pass
+            def run_until_complete(self, coro):
+                pass
+        
+        mock_loop = MockLoop()
         mock_new_event_loop.return_value = mock_loop
 
         runner = CliRunner()

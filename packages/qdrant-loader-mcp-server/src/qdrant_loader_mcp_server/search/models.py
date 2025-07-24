@@ -111,6 +111,10 @@ class SearchResult(BaseModel):
 
     def get_hierarchy_info(self) -> str | None:
         """Get formatted hierarchy information for display."""
+        # Only return hierarchy info for Confluence sources
+        if self.source_type != "confluence":
+            return None
+            
         # 🔥 ENHANCED: Include section hierarchy
         parts = []
         

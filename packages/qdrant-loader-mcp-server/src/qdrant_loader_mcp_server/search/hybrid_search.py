@@ -421,14 +421,14 @@ class HybridSearchEngine:
 
         # 🔥 Section level relevance (higher level = more important)
         section_level = metadata_info.get("section_level")
-        if section_level:
+        if section_level is not None:
             if section_level <= 2:  # H1, H2 are more important
                 boost_factor += 0.10
             elif section_level <= 3:  # H3 moderately important  
                 boost_factor += 0.05
 
         # 🔥 Content quality indicators
-        word_count = metadata_info.get("word_count", 0)
+        word_count = metadata_info.get("word_count") or 0
         if word_count > 100:  # Substantial content
             boost_factor += 0.05
         if word_count > 500:  # Very detailed content
