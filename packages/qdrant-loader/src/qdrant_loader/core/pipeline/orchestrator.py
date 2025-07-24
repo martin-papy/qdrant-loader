@@ -54,6 +54,7 @@ class PipelineOrchestrator:
         source_type: str | None = None,
         source: str | None = None,
         project_id: str | None = None,
+        force: bool = False,
     ) -> list[Document]:
         """Main entry point for document processing.
 
@@ -62,6 +63,7 @@ class PipelineOrchestrator:
             source_type: Filter by source type
             source: Filter by specific source name
             project_id: Process documents for a specific project
+            force: Force processing of all documents, bypassing change detection
 
         Returns:
             List of processed documents
@@ -108,7 +110,7 @@ class PipelineOrchestrator:
                     )
 
                 logger.debug("Processing all projects")
-                return await self._process_all_projects(source_type, source)
+                return await self._process_all_projects(source_type, source, force)
 
             # Check if filtered config is empty
             if source_type and not any(
@@ -131,14 +133,17 @@ class PipelineOrchestrator:
                 logger.info("✅ No documents found from sources")
                 return []
 
-            # Detect changes in documents
-            documents = await self._detect_document_changes(
-                documents, filtered_config, current_project_id
-            )
+            # Detect changes in documents (bypass if force=True)
+            if force:
+                logger.warning(f"🔄 Force mode enabled: bypassing change detection, processing all {len(documents)} documents")
+            else:
+                documents = await self._detect_document_changes(
+                    documents, filtered_config, current_project_id
+                )
 
-            if not documents:
-                logger.info("✅ No new or updated documents to process")
-                return []
+                if not documents:
+                    logger.info("✅ No new or updated documents to process")
+                    return []
 
             # Process documents through the pipeline
             result = await self.components.document_pipeline.process_documents(
@@ -160,7 +165,7 @@ class PipelineOrchestrator:
             raise
 
     async def _process_all_projects(
-        self, source_type: str | None = None, source: str | None = None
+        self, source_type: str | None = None, source: str | None = None, force: bool = False
     ) -> list[Document]:
         """Process documents from all configured projects."""
         if not self.project_manager:
@@ -178,6 +183,7 @@ class PipelineOrchestrator:
                     project_id=project_id,
                     source_type=source_type,
                     source=source,
+                    force=force,
                 )
                 all_documents.extend(project_documents)
                 logger.debug(
