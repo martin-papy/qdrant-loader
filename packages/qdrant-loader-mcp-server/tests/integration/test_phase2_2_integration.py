@@ -20,8 +20,8 @@ class TestPhase2_2Integration:
     @pytest.fixture
     def mock_qdrant_client(self):
         """Create a mock Qdrant client."""
-        client = Mock()
-        client.search.return_value = [
+        client = AsyncMock()
+        client.search = AsyncMock(return_value=[
             Mock(score=0.9, payload={
                 "content": "FastAPI OAuth 2.0 authentication implementation guide",
                 "source_type": "git",
@@ -46,9 +46,9 @@ class TestPhase2_2Integration:
                     "topics": ["requirements", "security"]
                 }
             }),
-        ]
+        ])
         
-        client.scroll.return_value = ([
+        client.scroll = AsyncMock(return_value=([
             Mock(payload={
                 "content": "FastAPI OAuth 2.0 authentication implementation guide",
                 "source_type": "git",
@@ -59,7 +59,14 @@ class TestPhase2_2Integration:
                 "source_type": "confluence",
                 "metadata": {"title": "Auth Requirements"}
             }),
-        ], None)
+        ], None))
+        
+        # Mock collection operations for SearchEngine initialization
+        collections_response = MagicMock()
+        collections_response.collections = []
+        client.get_collections = AsyncMock(return_value=collections_response)
+        client.create_collection = AsyncMock(return_value=None)
+        client.close = AsyncMock(return_value=None)
         
         return client
     

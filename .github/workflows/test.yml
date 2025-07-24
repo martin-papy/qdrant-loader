@@ -181,15 +181,43 @@ jobs:
           pip install -e packages/qdrant-loader[dev]
           pip install -e packages/qdrant-loader-mcp-server[dev]
 
+      - name: Create .env.test file for MCP server
+        run: |
+          cd packages/qdrant-loader-mcp-server
+          cp tests/.env.test.template tests/.env.test
+          
+          # Check if required secrets are set
+          if [ -z "${{ secrets.QDRANT_URL }}" ]; then
+            echo "Error: QDRANT_URL secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.QDRANT_API_KEY }}" ]; then
+            echo "Error: QDRANT_API_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.QDRANT_COLLECTION_NAME }}" ]; then
+            echo "Error: QDRANT_COLLECTION_NAME secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "Error: OPENAI_API_KEY secret is not set"
+            exit 1
+          fi
+          
+          # Replace environment variables with secrets for integration tests
+          sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
+          sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
+          sed -i "s|QDRANT_COLLECTION_NAME=.*|QDRANT_COLLECTION_NAME=${{ secrets.QDRANT_COLLECTION_NAME }}|g" tests/.env.test
+          sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
+          
+          echo "Created .env.test file for MCP server successfully"
+          echo "Contents (with secrets masked):"
+          sed 's/=.*/=***/' tests/.env.test
+
       - name: Run MCP server tests and generate coverage reports
         run: |
           cd packages/qdrant-loader-mcp-server
           python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --cov-report=html:../../htmlcov-mcp -v
-        env:
-          QDRANT_URL: ${{ secrets.QDRANT_URL }}
-          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          QDRANT_COLLECTION_NAME: ${{ secrets.QDRANT_COLLECTION_NAME }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Upload MCP server coverage artifact
         uses: actions/upload-artifact@v4

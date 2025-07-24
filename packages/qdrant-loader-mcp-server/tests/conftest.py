@@ -38,7 +38,7 @@ def setup_test_environment():
 @pytest.fixture
 def mock_qdrant_client():
     """Create a mock Qdrant client."""
-    client = MagicMock()
+    client = AsyncMock()
 
     # Mock search results
     search_result1 = MagicMock()

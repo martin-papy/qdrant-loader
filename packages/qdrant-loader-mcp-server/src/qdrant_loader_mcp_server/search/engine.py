@@ -281,3 +281,150 @@ class SearchEngine:
         except Exception as e:
             self.logger.error("Topic chain search workflow failed", error=str(e), query=query)
             raise
+    
+    # ============================================================================
+    # 🔥 Phase 1.3: Dynamic Faceted Search Interface Methods
+    # ============================================================================
+    
+    async def search_with_facets(
+        self,
+        query: str,
+        limit: int = 5,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
+        facet_filters: list[dict] | None = None,
+    ) -> dict:
+        """
+        🔥 Phase 1.3: Perform faceted search with dynamic facet generation.
+        
+        Returns search results with generated facets for interactive filtering.
+        
+        Args:
+            query: Search query
+            limit: Maximum number of results to return
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            facet_filters: Optional list of facet filters to apply
+            
+        Returns:
+            Dictionary containing:
+            - results: List of search results
+            - facets: List of generated facets with counts
+            - total_results: Total results before facet filtering
+            - filtered_count: Results after facet filtering
+            - applied_filters: Currently applied facet filters
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Convert facet filter dictionaries to FacetFilter objects if provided
+            filter_objects = []
+            if facet_filters:
+                from .enhanced.faceted_search import FacetFilter, FacetType
+                for filter_dict in facet_filters:
+                    facet_type = FacetType(filter_dict["facet_type"])
+                    filter_objects.append(FacetFilter(
+                        facet_type=facet_type,
+                        values=filter_dict["values"],
+                        operator=filter_dict.get("operator", "OR")
+                    ))
+            
+            faceted_results = await self.hybrid_search.search_with_facets(
+                query=query,
+                limit=limit,
+                source_types=source_types,
+                project_ids=project_ids,
+                facet_filters=filter_objects,
+                generate_facets=True
+            )
+            
+            # Convert to MCP-friendly format
+            return {
+                "results": faceted_results.results,
+                "facets": [
+                    {
+                        "type": facet.facet_type.value,
+                        "name": facet.name,
+                        "display_name": facet.display_name,
+                        "description": facet.description,
+                        "values": [
+                            {
+                                "value": fv.value,
+                                "count": fv.count,
+                                "display_name": fv.display_name,
+                                "description": fv.description
+                            }
+                            for fv in facet.get_top_values(10)
+                        ]
+                    }
+                    for facet in faceted_results.facets
+                ],
+                "total_results": faceted_results.total_results,
+                "filtered_count": faceted_results.filtered_count,
+                "applied_filters": [
+                    {
+                        "facet_type": f.facet_type.value,
+                        "values": f.values,
+                        "operator": f.operator
+                    }
+                    for f in faceted_results.applied_filters
+                ],
+                "generation_time_ms": faceted_results.generation_time_ms
+            }
+            
+        except Exception as e:
+            self.logger.error("Faceted search failed", error=str(e), query=query)
+            raise
+    
+    async def get_facet_suggestions(
+        self,
+        query: str,
+        current_filters: list[dict] | None = None,
+        limit: int = 20
+    ) -> list[dict]:
+        """
+        🔥 Phase 1.3: Get facet refinement suggestions based on current search.
+        
+        Args:
+            query: Current search query
+            current_filters: Currently applied facet filters
+            limit: Number of results to analyze for suggestions
+            
+        Returns:
+            List of facet refinement suggestions with impact estimates
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # First get current search results
+            current_results = await self.hybrid_search.search(
+                query=query,
+                limit=limit,
+                source_types=None,
+                project_ids=None
+            )
+            
+            # Convert filter dictionaries to FacetFilter objects
+            filter_objects = []
+            if current_filters:
+                from .enhanced.faceted_search import FacetFilter, FacetType
+                for filter_dict in current_filters:
+                    facet_type = FacetType(filter_dict["facet_type"])
+                    filter_objects.append(FacetFilter(
+                        facet_type=facet_type,
+                        values=filter_dict["values"],
+                        operator=filter_dict.get("operator", "OR")
+                    ))
+            
+            suggestions = self.hybrid_search.suggest_facet_refinements(
+                current_results=current_results,
+                current_filters=filter_objects
+            )
+            
+            return suggestions
+            
+        except Exception as e:
+            self.logger.error("Facet suggestions failed", error=str(e), query=query)
+            raise

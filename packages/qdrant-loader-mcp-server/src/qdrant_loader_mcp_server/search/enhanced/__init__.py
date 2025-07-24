@@ -4,6 +4,7 @@ This module contains advanced search intelligence including:
 - Knowledge graph construction and traversal (Phase 2.1) ✅
 - Intent-aware adaptive search strategies (Phase 2.2) ✅
 - Topic-driven search chaining (Phase 1.2) ✅
+- Dynamic faceted search interface (Phase 1.3) ✅
 - Cross-document relationship analysis
 - Multi-hop reasoning capabilities
 """
@@ -36,6 +37,17 @@ from .topic_search_chain import (
     TopicSearchChainGenerator
 )
 
+# 🔥 NEW: Phase 1.3 Dynamic Faceted Search Interface
+from .faceted_search import (
+    FacetType,
+    FacetValue,
+    Facet,
+    FacetFilter,
+    FacetedSearchResults,
+    DynamicFacetGenerator,
+    FacetedSearchEngine
+)
+
 __all__ = [
     # Phase 2.1: Knowledge Graph
     "KnowledgeGraph",
@@ -59,5 +71,14 @@ __all__ = [
     "TopicChainLink",
     "TopicSearchChain", 
     "TopicRelationshipMap",
-    "TopicSearchChainGenerator"
+    "TopicSearchChainGenerator",
+    
+    # Phase 1.3: Dynamic Faceted Search Interface
+    "FacetType",
+    "FacetValue",
+    "Facet",
+    "FacetFilter",
+    "FacetedSearchResults",
+    "DynamicFacetGenerator",
+    "FacetedSearchEngine"
 ] 

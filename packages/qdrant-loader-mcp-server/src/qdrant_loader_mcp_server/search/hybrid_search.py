@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -22,6 +23,14 @@ from .enhanced.topic_search_chain import (
     TopicSearchChain, 
     ChainStrategy,
     TopicChainLink
+)
+# 🔥 NEW: Phase 1.3 Dynamic Faceted Search Interface
+from .enhanced.faceted_search import (
+    FacetType,
+    FacetFilter,
+    FacetedSearchResults,
+    DynamicFacetGenerator,
+    FacetedSearchEngine
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -203,6 +212,10 @@ class HybridSearchEngine:
         )
         self._topic_chains_initialized = False
         logger.info("🔥 Phase 1.2: Topic-driven search chaining ENABLED")
+        
+        # 🔥 NEW: Phase 1.3 Dynamic Faceted Search Interface
+        self.faceted_search_engine = FacetedSearchEngine()
+        logger.info("🔥 Phase 1.3: Dynamic faceted search interface ENABLED")
 
         # Enhanced query expansions leveraging spaCy semantic understanding
         self.query_expansions = {
@@ -1596,3 +1609,129 @@ class HybridSearchEngine:
             stats.update(self.adaptive_strategy.get_strategy_stats())
             
         return stats
+    
+    # ============================================================================
+    # 🔥 Phase 1.3: Dynamic Faceted Search Interface Methods
+    # ============================================================================
+    
+    async def search_with_facets(
+        self,
+        query: str,
+        limit: int = 5,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None,
+        facet_filters: list[FacetFilter] | None = None,
+        generate_facets: bool = True,
+        session_context: dict[str, Any] | None = None,
+        behavioral_context: list[str] | None = None,
+    ) -> FacetedSearchResults:
+        """
+        🔥 Phase 1.3: Perform faceted search with dynamic facet generation.
+        
+        Args:
+            query: Search query
+            limit: Maximum number of results
+            source_types: Optional source type filters
+            project_ids: Optional project ID filters  
+            facet_filters: Optional facet filters to apply
+            generate_facets: Whether to generate facets from results
+            session_context: Optional session context for intent classification
+            behavioral_context: Optional behavioral context
+            
+        Returns:
+            FacetedSearchResults with results and generated facets
+        """
+        start_time = datetime.now()
+        
+        try:
+            # First, perform regular search (potentially with larger limit for faceting)
+            search_limit = max(limit * 2, 50) if generate_facets else limit
+            
+            search_results = await self.search(
+                query=query,
+                limit=search_limit,
+                source_types=source_types,
+                project_ids=project_ids,
+                session_context=session_context,
+                behavioral_context=behavioral_context
+            )
+            
+            # Generate faceted results
+            faceted_results = self.faceted_search_engine.generate_faceted_results(
+                results=search_results,
+                applied_filters=facet_filters or []
+            )
+            
+            # Limit final results
+            faceted_results.results = faceted_results.results[:limit]
+            faceted_results.filtered_count = len(faceted_results.results)
+            
+            search_time = (datetime.now() - start_time).total_seconds() * 1000
+            
+            self.logger.info(
+                "Faceted search completed",
+                query=query,
+                total_results=faceted_results.total_results,
+                filtered_results=faceted_results.filtered_count,
+                facet_count=len(faceted_results.facets),
+                active_filters=len(faceted_results.applied_filters),
+                search_time_ms=round(search_time, 2)
+            )
+            
+            return faceted_results
+            
+        except Exception as e:
+            self.logger.error("Error in faceted search", query=query, error=str(e))
+            raise
+    
+    def apply_facet_filters(
+        self,
+        results: list[SearchResult],
+        filters: list[FacetFilter]
+    ) -> list[SearchResult]:
+        """
+        🔥 Phase 1.3: Apply facet filters to search results.
+        
+        Args:
+            results: Search results to filter
+            filters: Facet filters to apply
+            
+        Returns:
+            Filtered search results
+        """
+        return self.faceted_search_engine.apply_facet_filters(results, filters)
+    
+    def generate_facets(
+        self,
+        results: list[SearchResult]
+    ) -> list:
+        """
+        🔥 Phase 1.3: Generate dynamic facets from search results.
+        
+        Args:
+            results: Search results to analyze
+            
+        Returns:
+            List of generated facets
+        """
+        return self.faceted_search_engine.facet_generator.generate_facets(results)
+    
+    def suggest_facet_refinements(
+        self,
+        current_results: list[SearchResult],
+        current_filters: list[FacetFilter]
+    ) -> list[dict[str, Any]]:
+        """
+        🔥 Phase 1.3: Suggest facet refinements based on current results.
+        
+        Args:
+            current_results: Current search results
+            current_filters: Currently applied filters
+            
+        Returns:
+            List of suggested refinements with impact estimates
+        """
+        return self.faceted_search_engine.suggest_refinements(
+            current_results, 
+            current_filters
+        )
