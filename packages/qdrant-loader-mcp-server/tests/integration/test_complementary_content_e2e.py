@@ -481,26 +481,26 @@ class TestComplementaryContentE2E:
         shared_entities_count = real_complementary_finder._get_shared_entities_count(target_doc, business_doc)
         print(f"Shared entities (tech + business): {has_shared_entities}, count: {shared_entities_count}")
         
-        # Test content complexity
-        different_complexity = real_complementary_finder._has_different_content_complexity(target_doc, business_doc)
-        print(f"Different complexity (tech + business): {different_complexity}")
+        # Test new algorithm features
+        different_doc_types = real_complementary_finder._has_different_document_types(target_doc, business_doc)
+        print(f"Different document types (tech + business): {different_doc_types}")
         
-        # Test complementary content types
-        complementary_score = real_complementary_finder._get_complementary_content_type_score(target_doc, business_doc)
-        print(f"Complementary content type score (tech + business): {complementary_score}")
+        # Test abstraction levels
+        abstraction_gap = real_complementary_finder._calculate_abstraction_gap(target_doc, business_doc)
+        print(f"Abstraction gap (tech + business): {abstraction_gap}")
         
-        # Test title complementary score
-        title_score = real_complementary_finder._get_title_complementary_score(target_doc, api_doc)
-        print(f"Title complementary score (tech + api): {title_score}")
+        # Test cross-functional relationships
+        cross_functional = real_complementary_finder._has_cross_functional_relationship(target_doc, business_doc)
+        print(f"Cross-functional relationship (tech + business): {cross_functional}")
         
         # Assertions
         assert isinstance(has_shared_topics, bool)
         assert isinstance(shared_topics_count, int)
         assert isinstance(has_shared_entities, bool)
         assert isinstance(shared_entities_count, int)
-        assert isinstance(different_complexity, bool)
-        assert isinstance(complementary_score, float)
-        assert isinstance(title_score, float)
+        assert isinstance(different_doc_types, bool)
+        assert isinstance(abstraction_gap, int)
+        assert isinstance(cross_functional, bool)
 
     def test_fallback_scoring_mechanism(self, real_complementary_finder, sample_documents):
         """Test the fallback scoring mechanism specifically."""
