@@ -1440,10 +1440,12 @@ class MCPHandler:
             formatted += f"• Document 1: {doc1}\n"
             formatted += f"• Document 2: {doc2}\n\n"
 
-        suggestions = conflicts.get("resolution_suggestions", [])
+        suggestions = conflicts.get("resolution_suggestions", {})
         if suggestions:
             formatted += "💡 **Resolution Suggestions:**\n"
-            for suggestion in suggestions[:3]:
+            # Convert dict values to list and take first 3
+            suggestion_list = list(suggestions.values())[:3]
+            for suggestion in suggestion_list:
                 formatted += f"• {suggestion}\n"
 
         return formatted

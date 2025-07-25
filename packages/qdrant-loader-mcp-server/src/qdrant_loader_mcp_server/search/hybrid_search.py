@@ -1887,10 +1887,12 @@ class HybridSearchEngine:
             return []
         
         try:
-            return self.cross_document_engine.complementary_finder.find_complementary_content(
+            complementary_content = self.cross_document_engine.complementary_finder.find_complementary_content(
                 target_document,
                 documents
-            )[:max_recommendations]
+            )
+            # Get top recommendations using the proper method
+            return complementary_content.get_top_recommendations(max_recommendations)
         except Exception as e:
             self.logger.error("Error finding complementary content", error=str(e))
             raise
