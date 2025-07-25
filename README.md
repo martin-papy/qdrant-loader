@@ -5,20 +5,20 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Release Notes v0.4.15](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (July 22, 2025)
+📋 **[Release Notes v0.5.0](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (July 25, 2025)
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
 
 ## 🎯 What is QDrant Loader?
 
-QDrant Loader is a powerful data ingestion and retrieval system that bridges the gap between your technical content and AI development tools. It collects, processes, and vectorizes content from multiple sources, then provides intelligent search capabilities through a Model Context Protocol (MCP) server.
+QDrant Loader is a data ingestion and retrieval system that collects content from multiple sources, processes and vectorizes it, then provides intelligent search capabilities through a Model Context Protocol (MCP) server for AI development tools.
 
 **Perfect for:**
 
-- 🤖 **AI-powered development** with Cursor, Windsurf, and GitHub Copilot
-- 📚 **Knowledge base creation** from scattered documentation
-- 🔍 **Intelligent code assistance** with contextual documentation
-- 🏢 **Enterprise content integration** from Confluence, JIRA, and Git repositories
+- 🤖 **AI-powered development** with Cursor, Windsurf, and other MCP-compatible tools
+- 📚 **Knowledge base creation** from technical documentation
+- 🔍 **Intelligent code assistance** with contextual information
+- 🏢 **Enterprise content integration** from multiple data sources
 
 ## 📦 Packages
 
@@ -33,24 +33,25 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 **Key Features:**
 
 - **Multi-source connectors**: Git, Confluence (Cloud & Data Center), JIRA (Cloud & Data Center), Public Docs, Local Files
-- **Advanced file conversion**: 20+ file types including PDF, Office docs, images with AI-powered processing
-- **Intelligent chunking**: Smart document processing with metadata extraction
+- **File conversion**: PDF, Office docs (Word, Excel, PowerPoint), images, audio, EPUB, ZIP, and more using MarkItDown
+- **Smart chunking**: Intelligent document processing with metadata extraction and hierarchical context
 - **Incremental updates**: Change detection and efficient synchronization
+- **Multi-project support**: Organize sources into projects with shared collections
 - **Flexible embeddings**: OpenAI, local models, and custom endpoints
 
 ### 🔌 [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
 
 _AI development integration layer_
 
-Model Context Protocol server providing RAG capabilities to AI development tools.
+Model Context Protocol server providing search capabilities to AI development tools.
 
 **Key Features:**
 
-- **MCP protocol compliance**: Full integration with Cursor, Windsurf, and Claude Desktop
-- **Advanced search tools**: Semantic, hierarchy-aware, and attachment-focused search
-- **Confluence intelligence**: Deep understanding of page hierarchies and relationships
-- **File attachment support**: Comprehensive attachment discovery with parent document context
-- **Real-time processing**: Streaming responses for large result sets
+- **MCP protocol compliance**: Integration with Cursor, Windsurf, and Claude Desktop
+- **Advanced search tools**: Semantic search, hierarchy-aware search, and attachment discovery
+- **Cross-document intelligence**: Document similarity, clustering, and relationship analysis
+- **Confluence support**: Understanding of page hierarchies and attachment relationships
+- **Real-time processing**: Efficient search with result streaming
 
 ## 🚀 Quick Start
 
@@ -70,14 +71,13 @@ pip install qdrant-loader-mcp-server  # MCP server only
 1. **Create a workspace**
 
    ```bash
-   mkdir my-qdrant-workspace && cd my-qdrant-workspace
+   mkdir my-workspace && cd my-workspace
    ```
 
-2. **Download configuration templates**
+2. **Initialize workspace with templates**
 
    ```bash
-   curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
-   curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
+   qdrant-loader --workspace . init
    ```
 
 3. **Configure your environment** (edit `.env`)
@@ -91,17 +91,29 @@ pip install qdrant-loader-mcp-server  # MCP server only
 4. **Configure data sources** (edit `config.yaml`)
 
    ```yaml
-   sources:
-     git:
-       - url: "https://github.com/your-org/your-repo.git"
-         branch: "main"
+   global_config:
+     qdrant:
+       url: "http://localhost:6333"
+       collection_name: "my_docs"
+     embedding:
+       model: "text-embedding-3-small"
+       api_key: "${OPENAI_API_KEY}"
+
+   projects:
+     my-project:
+       project_id: "my-project"
+       sources:
+         git:
+           docs-repo:
+             base_url: "https://github.com/your-org/your-repo.git"
+             branch: "main"
+             file_types: ["*.md", "*.rst"]
    ```
 
 5. **Load your data**
 
    ```bash
-   qdrant-loader --workspace . init
-   qdrant-loader --workspace . ingest
+   qdrant-loader ingest --workspace .
    ```
 
 6. **Start the MCP server**
@@ -110,13 +122,9 @@ pip install qdrant-loader-mcp-server  # MCP server only
    mcp-qdrant-loader
    ```
 
-**🎉 You're ready!** Your content is now searchable through AI development tools.
+## 🔧 Integration with Cursor
 
-## 🔧 Integration Examples
-
-### Cursor IDE Integration
-
-Add to `.cursor/mcp.json`:
+Add to your Cursor settings (`.cursor/mcp.json`):
 
 ```json
 {
@@ -126,97 +134,60 @@ Add to `.cursor/mcp.json`:
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_COLLECTION_NAME": "my_docs",
-        "OPENAI_API_KEY": "your_key",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
+        "OPENAI_API_KEY": "your_key"
       }
     }
   }
 }
 ```
 
-### Example Queries in Cursor
+**Example queries in Cursor:**
 
 - _"Find documentation about authentication in our API"_
 - _"Show me examples of error handling patterns"_
 - _"What are the deployment requirements for this service?"_
 - _"Find all attachments related to database schema"_
 
-## 📁 Project Structure
-
-```text
-qdrant-loader/
-├── packages/
-│   ├── qdrant-loader/           # Core data ingestion package
-│   └── qdrant-loader-mcp-server/ # MCP server for AI integration
-├── docs/                        # Comprehensive documentation
-├── website/                     # Documentation website generator
-└── README.md                   # This file
-```
-
 ## 📚 Documentation
 
 ### 🚀 Getting Started
+- **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
+- **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
+- **[Core Concepts](./docs/getting-started/core-concepts.md)** - Understanding the system
 
-- **[What is QDrant Loader?](./docs/getting-started/what-is-qdrant-loader.md)** - Project overview and use cases
-- **[Installation Guide](./docs/getting-started/installation.md)** - Complete installation instructions
-- **[Quick Start](./docs/getting-started/quick-start.md)** - 5-minute getting started guide
-- **[Core Concepts](./docs/getting-started/core-concepts.md)** - Vector databases and embeddings explained
-
-### 👥 For Users
-
-- **[User Documentation](./docs/users/)** - Comprehensive user guides
-- **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA, and more
-- **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - PDF, Office docs, images processing
-- **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI development integration
+### 👥 User Guides
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
+- **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
+- **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
+- **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
-### 🛠️ For Developers
-
-- **[Developer Documentation](./docs/developers/)** - Architecture and contribution guides
-- **[Architecture](./docs/developers/architecture/)** - System design and components
+### 🛠️ Developer Resources
+- **[Architecture](./docs/developers/architecture/)** - System design overview
 - **[Testing](./docs/developers/testing/)** - Testing guide and best practices
-- **[Deployment](./docs/developers/deployment/)** - Deployment guide and configurations
-- **[Extending](./docs/developers/extending/)** - Custom data sources and processors
-
-### 📦 Package Documentation
-
-- **[QDrant Loader Package](./packages/qdrant-loader/)** - Core loader documentation
-- **[MCP Server Package](./packages/qdrant-loader-mcp-server/)** - MCP server documentation
-- **[Website Generator](./website/)** - Documentation website
+- **[Contributing](./CONTRIBUTING.md)** - Development setup and guidelines
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details on:
+We welcome contributions! See our [Contributing Guide](./CONTRIBUTING.md) for:
 
-- Setting up the development environment
+- Development environment setup
 - Code style and standards
 - Pull request process
-- Issue reporting guidelines
 
 ### Quick Development Setup
 
 ```bash
-# Clone the repository
+# Clone and setup
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# Install in development mode
+# Install packages in development mode
 pip install -e "packages/qdrant-loader[dev]"
 pip install -e "packages/qdrant-loader-mcp-server[dev]"
 
-# Run tests
-pytest
 ```
-
-## 🆘 Support
-
-- **[Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
-- **[Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community discussions and Q&A
-- **[Documentation](./docs/)** - Comprehensive guides and references
 
 ## 📄 License
 
@@ -224,4 +195,4 @@ This project is licensed under the GNU GPLv3 - see the [LICENSE](LICENSE) file f
 
 ---
 
-**Ready to supercharge your AI development workflow?** Start with our [Quick Start Guide](./docs/getting-started/quick-start.md) or explore the [complete documentation](./docs/).
+**Ready to get started?** Check out our [Quick Start Guide](./docs/getting-started/quick-start.md) or browse the [complete documentation](./docs/).
