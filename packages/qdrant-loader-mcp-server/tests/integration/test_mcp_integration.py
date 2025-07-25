@@ -324,7 +324,7 @@ async def test_detect_document_conflicts_mcp_integration(integration_handler):
                 ("doc1", "doc2", {"type": "contradictory_information"})
             ],
             "conflict_categories": {"contradictory_information": [("doc1", "doc2")]},
-            "resolution_suggestions": ["Review both documents for consistency"],
+            "resolution_suggestions": {"contradictory_information": "Review both documents for consistency"},
             "query_metadata": {
                 "original_query": "user management policies",
                 "document_count": 5
