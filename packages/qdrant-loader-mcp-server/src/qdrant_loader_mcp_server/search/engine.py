@@ -1,5 +1,7 @@
 """Search engine service for the MCP server."""
 
+from typing import Any
+
 from openai import AsyncOpenAI
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
@@ -10,6 +12,8 @@ from .hybrid_search import HybridSearchEngine
 from .models import SearchResult
 # 🔥 NEW: Import Phase 1.2 topic chaining components
 from .enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
+# 🔥 NEW: Import Phase 2.3 cross-document intelligence components
+from .enhanced.cross_document_intelligence import SimilarityMetric, ClusteringStrategy
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -427,4 +431,312 @@ class SearchEngine:
             
         except Exception as e:
             self.logger.error("Facet suggestions failed", error=str(e), query=query)
+            raise
+    
+    # 🔥 Phase 2.3: Cross-Document Intelligence MCP Interface
+    
+    async def analyze_document_relationships(
+        self,
+        query: str,
+        limit: int = 20,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> dict[str, Any]:
+        """
+        🔥 Phase 2.3: Analyze relationships between documents from search results.
+        
+        Args:
+            query: Search query to get documents for analysis
+            limit: Maximum number of documents to analyze
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            
+        Returns:
+            Comprehensive cross-document relationship analysis
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Get documents for analysis
+            documents = await self.hybrid_search.search(
+                query=query,
+                limit=limit,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            if len(documents) < 2:
+                return {
+                    "error": "Need at least 2 documents for relationship analysis",
+                    "document_count": len(documents)
+                }
+            
+            # Perform cross-document analysis
+            analysis = await self.hybrid_search.analyze_document_relationships(documents)
+            
+            # Add query metadata
+            analysis["query_metadata"] = {
+                "original_query": query,
+                "document_count": len(documents),
+                "source_types": source_types,
+                "project_ids": project_ids
+            }
+            
+            return analysis
+            
+        except Exception as e:
+            self.logger.error("Document relationship analysis failed", error=str(e), query=query)
+            raise
+    
+    async def find_similar_documents(
+        self,
+        target_query: str,
+        comparison_query: str,
+        similarity_metrics: list[str] | None = None,
+        max_similar: int = 5,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        🔥 Phase 2.3: Find documents similar to a target document.
+        
+        Args:
+            target_query: Query to find the target document
+            comparison_query: Query to get documents to compare against
+            similarity_metrics: Similarity metrics to use
+            max_similar: Maximum number of similar documents to return
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            
+        Returns:
+            List of similar documents with similarity scores
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Get target document (first result from target query)
+            target_results = await self.hybrid_search.search(
+                query=target_query,
+                limit=1,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            if not target_results:
+                return []
+            
+            target_document = target_results[0]
+            
+            # Get comparison documents
+            comparison_documents = await self.hybrid_search.search(
+                query=comparison_query,
+                limit=20,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            # Convert string metrics to SimilarityMetric enums
+            metrics = None
+            if similarity_metrics:
+                metrics = [SimilarityMetric(metric) for metric in similarity_metrics]
+            
+            # Find similar documents
+            similar_docs = await self.hybrid_search.find_similar_documents(
+                target_document=target_document,
+                documents=comparison_documents,
+                similarity_metrics=metrics,
+                max_similar=max_similar
+            )
+            
+            return similar_docs
+            
+        except Exception as e:
+            self.logger.error("Similar documents search failed", error=str(e))
+            raise
+    
+    async def detect_document_conflicts(
+        self,
+        query: str,
+        limit: int = 15,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> dict[str, Any]:
+        """
+        🔥 Phase 2.3: Detect conflicts between documents.
+        
+        Args:
+            query: Search query to get documents for conflict analysis
+            limit: Maximum number of documents to analyze
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            
+        Returns:
+            Conflict analysis with detected conflicts and resolution suggestions
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Get documents for conflict analysis
+            documents = await self.hybrid_search.search(
+                query=query,
+                limit=limit,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            if len(documents) < 2:
+                return {
+                    "conflicts": [],
+                    "resolution_suggestions": [],
+                    "message": "Need at least 2 documents for conflict detection",
+                    "document_count": len(documents)
+                }
+            
+            # Detect conflicts
+            conflicts = await self.hybrid_search.detect_document_conflicts(documents)
+            
+            # Add query metadata
+            conflicts["query_metadata"] = {
+                "original_query": query,
+                "document_count": len(documents),
+                "source_types": source_types,
+                "project_ids": project_ids
+            }
+            
+            return conflicts
+            
+        except Exception as e:
+            self.logger.error("Conflict detection failed", error=str(e), query=query)
+            raise
+    
+    async def find_complementary_content(
+        self,
+        target_query: str,
+        context_query: str,
+        max_recommendations: int = 5,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        🔥 Phase 2.3: Find content that complements a target document.
+        
+        Args:
+            target_query: Query to find the target document
+            context_query: Query to get contextual documents
+            max_recommendations: Maximum number of recommendations
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            
+        Returns:
+            List of complementary documents with recommendation reasons
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Get target document
+            target_results = await self.hybrid_search.search(
+                query=target_query,
+                limit=1,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            if not target_results:
+                return []
+            
+            target_document = target_results[0]
+            
+            # Get context documents
+            context_documents = await self.hybrid_search.search(
+                query=context_query,
+                limit=20,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            # Find complementary content
+            complementary = await self.hybrid_search.find_complementary_content(
+                target_document=target_document,
+                documents=context_documents,
+                max_recommendations=max_recommendations
+            )
+            
+            return complementary
+            
+        except Exception as e:
+            self.logger.error("Complementary content search failed", error=str(e))
+            raise
+    
+    async def cluster_documents(
+        self,
+        query: str,
+        strategy: str = "mixed_features",
+        max_clusters: int = 10,
+        min_cluster_size: int = 2,
+        limit: int = 25,
+        source_types: list[str] | None = None,
+        project_ids: list[str] | None = None
+    ) -> dict[str, Any]:
+        """
+        🔥 Phase 2.3: Cluster documents based on similarity and relationships.
+        
+        Args:
+            query: Search query to get documents for clustering
+            strategy: Clustering strategy (mixed_features, entity_based, topic_based, project_based)
+            max_clusters: Maximum number of clusters to create
+            min_cluster_size: Minimum size for a cluster
+            limit: Maximum number of documents to cluster
+            source_types: Optional list of source types to filter by
+            project_ids: Optional list of project IDs to filter by
+            
+        Returns:
+            Document clusters with metadata and relationships
+        """
+        if not self.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+        
+        try:
+            # Get documents for clustering
+            documents = await self.hybrid_search.search(
+                query=query,
+                limit=limit,
+                source_types=source_types,
+                project_ids=project_ids
+            )
+            
+            if len(documents) < min_cluster_size:
+                return {
+                    "clusters": [],
+                    "clustering_metadata": {
+                        "message": f"Need at least {min_cluster_size} documents for clustering",
+                        "document_count": len(documents)
+                    }
+                }
+            
+            # Convert strategy string to enum
+            clustering_strategy = ClusteringStrategy(strategy)
+            
+            # Cluster documents
+            cluster_results = await self.hybrid_search.cluster_documents(
+                documents=documents,
+                strategy=clustering_strategy,
+                max_clusters=max_clusters,
+                min_cluster_size=min_cluster_size
+            )
+            
+            # Add query metadata
+            cluster_results["clustering_metadata"].update({
+                "original_query": query,
+                "source_types": source_types,
+                "project_ids": project_ids
+            })
+            
+            return cluster_results
+            
+        except Exception as e:
+            self.logger.error("Document clustering failed", error=str(e), query=query)
             raise

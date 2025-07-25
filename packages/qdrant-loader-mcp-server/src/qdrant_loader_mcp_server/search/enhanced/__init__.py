@@ -5,7 +5,7 @@ This module contains advanced search intelligence including:
 - Intent-aware adaptive search strategies (Phase 2.2) ✅
 - Topic-driven search chaining (Phase 1.2) ✅
 - Dynamic faceted search interface (Phase 1.3) ✅
-- Cross-document relationship analysis
+- Cross-document relationship analysis (Phase 2.3) ✅
 - Multi-hop reasoning capabilities
 """
 
@@ -48,6 +48,23 @@ from .faceted_search import (
     FacetedSearchEngine
 )
 
+# 🔥 NEW: Phase 2.3 Cross-Document Intelligence
+from .cross_document_intelligence import (
+    SimilarityMetric,
+    RelationshipType as CrossDocRelationshipType,
+    ClusteringStrategy,
+    DocumentSimilarity,
+    DocumentCluster,
+    CitationNetwork,
+    ConflictAnalysis,
+    DocumentSimilarityCalculator,
+    DocumentClusterAnalyzer,
+    CitationNetworkAnalyzer,
+    ComplementaryContentFinder,
+    ConflictDetector,
+    CrossDocumentIntelligenceEngine
+)
+
 __all__ = [
     # Phase 2.1: Knowledge Graph
     "KnowledgeGraph",
@@ -80,5 +97,20 @@ __all__ = [
     "FacetFilter",
     "FacetedSearchResults",
     "DynamicFacetGenerator",
-    "FacetedSearchEngine"
+    "FacetedSearchEngine",
+    
+    # Phase 2.3: Cross-Document Intelligence
+    "SimilarityMetric",
+    "CrossDocRelationshipType", 
+    "ClusteringStrategy",
+    "DocumentSimilarity",
+    "DocumentCluster",
+    "CitationNetwork",
+    "ConflictAnalysis",
+    "DocumentSimilarityCalculator",
+    "DocumentClusterAnalyzer",
+    "CitationNetworkAnalyzer",
+    "ComplementaryContentFinder",
+    "ConflictDetector",
+    "CrossDocumentIntelligenceEngine"
 ] 

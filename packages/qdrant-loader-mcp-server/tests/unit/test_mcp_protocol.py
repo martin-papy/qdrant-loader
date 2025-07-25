@@ -108,14 +108,20 @@ async def test_handle_initialize(mcp_handler):
 
 @pytest.mark.asyncio
 async def test_handle_list_tools(mcp_handler):
-    """Test handling tools/list request."""
-    request = {"jsonrpc": "2.0", "method": "tools/list", "params": {}, "id": 2}
+    """Test listing available MCP tools."""
+    request = {
+        "jsonrpc": "2.0",
+        "method": "tools/list",
+        "id": 1,
+    }
+
     response = await mcp_handler.handle_request(request)
+
     assert response["jsonrpc"] == "2.0"
-    assert response["id"] == 2
+    assert response["id"] == 1
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 3
+    assert len(response["result"]["tools"]) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
     assert "description" in tool

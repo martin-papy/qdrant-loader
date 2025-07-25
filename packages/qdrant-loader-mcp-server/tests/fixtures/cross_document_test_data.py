@@ -13,8 +13,8 @@ def create_authentication_docs() -> List[SearchResult]:
             source_type="confluence",
             source_title="OAuth 2.0 Implementation Guide",
             source_url="https://docs.company.com/oauth-guide",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "OAuth 2.0", "label": "TECHNOLOGY"},
                 {"text": "JWT", "label": "TECHNOLOGY"}, 
@@ -45,8 +45,8 @@ def create_authentication_docs() -> List[SearchResult]:
             source_type="git",
             source_title="JWT Node.js Implementation",
             source_url="https://github.com/company/auth-service/jwt-impl.js",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "JWT", "label": "TECHNOLOGY"},
                 {"text": "Node.js", "label": "TECHNOLOGY"},
@@ -69,14 +69,14 @@ def create_authentication_docs() -> List[SearchResult]:
         
         SearchResult(
             score=0.88,
-            text="MYA Health mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
+            text="Healthcare mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
             source_type="confluence",
-            source_title="MYA Mobile Auth Requirements",
+            source_title="Mobile Healthcare Auth Requirements",
             source_url="https://docs.company.com/mobile-auth-req",
-            project_id="MyaHealth", 
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform", 
+            project_name="Healthcare Platform",
             entities=[
-                {"text": "MYA Health", "label": "ORG"},
+                {"text": "Healthcare Platform", "label": "ORG"},
                 {"text": "mobile application", "label": "PRODUCT"},
                 {"text": "biometric login", "label": "FEATURE"},
                 {"text": "social OAuth", "label": "FEATURE"}
@@ -106,8 +106,8 @@ def create_database_docs() -> List[SearchResult]:
             source_type="confluence",
             source_title="User Database Schema Design",
             source_url="https://docs.company.com/db-schema",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform", 
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform", 
             entities=[
                 {"text": "database schema", "label": "DESIGN"},
                 {"text": "user management", "label": "SYSTEM"},
@@ -130,12 +130,12 @@ def create_database_docs() -> List[SearchResult]:
         
         SearchResult(
             score=0.82,
-            text="Microservices architecture patterns for MYA Health platform including service mesh configuration, API gateway setup, and inter-service communication protocols using REST and GraphQL.",
+            text="Microservices architecture patterns for healthcare platform including service mesh configuration, API gateway setup, and inter-service communication protocols using REST and GraphQL.",
             source_type="confluence",
             source_title="Microservices Architecture Overview",
             source_url="https://docs.company.com/microservices-arch",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "microservices", "label": "ARCHITECTURE"},
                 {"text": "service mesh", "label": "PATTERN"},
@@ -163,12 +163,12 @@ def create_conflicting_docs() -> List[SearchResult]:
     return [
         SearchResult(
             score=0.88,
-            text="MYA Health mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
+            text="Healthcare mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
             source_type="confluence",
-            source_title="MYA Mobile Auth Requirements",
+            source_title="Mobile Healthcare Auth Requirements",
             source_url="https://docs.company.com/mobile-auth-req",
-            project_id="MyaHealth", 
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform", 
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "token expiry", "label": "POLICY"},
                 {"text": "24 hours", "label": "DURATION"}
@@ -190,8 +190,8 @@ def create_conflicting_docs() -> List[SearchResult]:
             source_type="confluence",
             source_title="Q4 Security Audit Report", 
             source_url="https://docs.company.com/security-audit-q4",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "security audit", "label": "PROCESS"},
                 {"text": "token expiry", "label": "POLICY"},
@@ -217,12 +217,12 @@ def create_cross_project_docs() -> List[SearchResult]:
     return [
         SearchResult(
             score=0.78,
-            text="Enterprise OAuth implementation patterns and security best practices from the ProposAI project. Includes lessons learned and recommended token management strategies for multi-tenant applications.",
+            text="Enterprise OAuth implementation patterns and security best practices from the business platform project. Includes lessons learned and recommended token management strategies for multi-tenant applications.",
             source_type="confluence",
-            source_title="ProposAI OAuth Lessons Learned",
-            source_url="https://docs.company.com/proposai-oauth",
-            project_id="ProposAI",
-            project_name="ProposAI Platform",
+            source_title="Business Platform OAuth Lessons Learned",
+            source_url="https://docs.company.com/business-platform-oauth",
+            project_id="business_platform",
+            project_name="Business Platform",
             entities=[
                 {"text": "OAuth", "label": "TECHNOLOGY"},
                 {"text": "multi-tenant", "label": "ARCHITECTURE"},
@@ -240,17 +240,17 @@ def create_cross_project_docs() -> List[SearchResult]:
             word_count=1200,
             estimated_read_time=6,
             depth=1,
-            breadcrumb_text="Projects > ProposAI > Architecture"
+            breadcrumb_text="Projects > Business Platform > Architecture"
         ),
         
         SearchResult(
             score=0.75,
-            text="React Native authentication components for MYA Health mobile app. Includes biometric authentication integration, social login buttons, and secure token storage using device keychain.",
+            text="React Native authentication components for healthcare mobile app. Includes biometric authentication integration, social login buttons, and secure token storage using device keychain.",
             source_type="git",
             source_title="React Native Auth Components",
-            source_url="https://github.com/company/mya-mobile/auth-components",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            source_url="https://github.com/company/healthcare-mobile/auth-components",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "React Native", "label": "FRAMEWORK"},
                 {"text": "biometric authentication", "label": "FEATURE"},
@@ -282,8 +282,8 @@ def create_tutorial_docs() -> List[SearchResult]:
             source_type="confluence",
             source_title="Authentication Integration Tutorial",
             source_url="https://docs.company.com/auth-tutorial",
-            project_id="MyaHealth",
-            project_name="MYA Health Platform",
+            project_id="healthcare_platform",
+            project_name="Healthcare Platform",
             entities=[
                 {"text": "tutorial", "label": "CONTENT"},
                 {"text": "OAuth flow", "label": "PROCESS"},
@@ -326,7 +326,7 @@ def create_minimal_test_dataset() -> List[SearchResult]:
             source_type="confluence",
             source_title="OAuth Guide",
             source_url="https://docs.company.com/oauth",
-            project_id="MyaHealth",
+            project_id="healthcare_platform",
             entities=[{"text": "OAuth", "label": "TECHNOLOGY"}],
             topics=[{"text": "authentication", "score": 0.9}]
         ),
@@ -336,7 +336,7 @@ def create_minimal_test_dataset() -> List[SearchResult]:
             source_type="git", 
             source_title="JWT Implementation",
             source_url="https://github.com/company/jwt",
-            project_id="MyaHealth",
+            project_id="healthcare_platform",
             entities=[{"text": "JWT", "label": "TECHNOLOGY"}],
             topics=[{"text": "implementation", "score": 0.8}]
         )
