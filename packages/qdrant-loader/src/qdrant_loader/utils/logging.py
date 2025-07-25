@@ -496,6 +496,10 @@ class LoggingConfig:
             "markitdown",  # File conversion
             "httpcore",  # HTTP client debug logs
             "httpx",  # HTTP client debug logs
+            "gensim",  # Topic modeling library
+            "gensim.models",  # LDA model training logs
+            "gensim.models.ldamodel",  # Specific LDA training logs
+            "gensim.corpora",  # Dictionary and corpus logs
         ]
 
         for logger_name in noisy_loggers:
