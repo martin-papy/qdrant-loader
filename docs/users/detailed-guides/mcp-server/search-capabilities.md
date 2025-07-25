@@ -1,35 +1,90 @@
 # Search Capabilities Guide
 
-This guide covers all the search capabilities available through the QDrant Loader MCP Server, helping you get the most out of your AI-powered knowledge search.
+This guide covers the powerful AI-driven search capabilities available through the QDrant Loader MCP Server, enabling intelligent knowledge discovery and contextual understanding that goes beyond simple keyword matching.
 
-## 🎯 Overview
+## 🚀 Overview
 
-The QDrant Loader MCP Server provides three powerful search tools that enable AI assistants to find and retrieve information from your knowledge base with high precision and contextual awareness.
+The QDrant Loader MCP Server provides **intelligent search capabilities** powered by advanced AI technologies including semantic understanding, document relationship analysis, and cross-document intelligence. These features work together to provide contextually relevant results and comprehensive knowledge discovery.
 
-### Available Search Tools
+### 🎉 Available Intelligence Features
 
-1. **Semantic Search** - Basic similarity-based search across all documents
-2. **Hierarchy Search** - Structure-aware search with document relationships
-3. **Attachment Search** - Specialized search for file attachments
+Our search system provides sophisticated capabilities for knowledge exploration and analysis:
 
-Each tool is optimized for different use cases and can be combined for comprehensive knowledge retrieval.
+- **🔍 Enhanced Semantic Search** - AI-powered similarity search with intelligent query understanding
+- **🏗️ Hierarchy-Aware Navigation** - Structure-aware search with document relationships
+- **📎 Intelligent Attachment Search** - Specialized search for files with content analysis
+- **🤝 Cross-Document Intelligence** - Relationship analysis, conflict detection, and content clustering
 
-## 🔍 Semantic Search Tool
+### Core Search Tools Available
 
-### Purpose
+1. **[Semantic Search](#semantic-search)** - AI-powered similarity search across all documents
+2. **[Hierarchy Search](#hierarchy-search)** - Structure-aware search with document relationships
+3. **[Attachment Search](#attachment-search)** - Specialized search for files and documents
 
-The semantic search tool performs similarity-based search across all ingested documents using vector embeddings. It understands the meaning behind queries, not just keyword matches.
+### 🔥 Cross-Document Intelligence Features
 
-### How It Works
+4. **[Document Relationship Analysis](#document-relationship-analysis)** - Comprehensive relationship analysis **(Available)**
+5. **[Document Similarity Detection](#document-similarity-detection)** - Find similar and related documents **(Available)**
+6. **[Conflict Detection](#conflict-detection)** - Identify contradictions across documents **(Available)**
+7. **[Complementary Content Discovery](#complementary-content-discovery)** - Find related and supporting content **(Available)**
+8. **[Document Clustering](#document-clustering)** - Group documents by similarity and relationships **(Available)**
 
+## 🔍 Enhanced Semantic Search
+
+### Intelligent Query Understanding
+
+The semantic search includes **AI-powered natural language processing** that provides:
+
+- **Semantic Similarity Matching** - Finds documents based on meaning rather than just keywords
+- **Context-Aware Results** - Understands the context and intent behind your queries
+- **Multi-Language Support** - Works across different document types and languages
+- **Ranking Intelligence** - Scores results based on relevance and content quality
+
+### Query Examples with Intelligent Understanding
+
+#### Technical Implementation Queries
 ```
-Query: "How to deploy applications?"
-    ↓
-Vector Embedding: [0.1, -0.3, 0.8, ...]
-    ↓
-Similarity Search in QDrant
-    ↓
-Results: Documents about deployment, CI/CD, containers, etc.
+Query: "How do I implement OAuth authentication?"
+🔍 Search Intelligence:
+- Understands this is a technical implementation question
+- Prioritizes code examples and implementation guides
+- Includes configuration and testing information
+
+Results:
+1. [Implementation Guide] OAuth 2.0 Setup with Step-by-Step Code
+2. [Security Best Practices] OAuth Security Considerations  
+3. [Code Examples] OAuth Implementation in Node.js/Python
+4. [Configuration] OAuth Service Configuration
+```
+
+#### Business Process Queries
+```
+Query: "What are our deployment approval procedures?"
+🔍 Search Intelligence:
+- Recognizes this as a process/policy question
+- Focuses on procedure documentation and workflows
+- Includes governance and compliance information
+
+Results:
+1. [Policy Document] Deployment Approval Workflow
+2. [Procedures] Production Deployment Checklist
+3. [Governance] Change Management Requirements
+4. [Compliance] Security Review Process
+```
+
+#### Troubleshooting Queries
+```
+Query: "Users getting timeout errors on login"
+🔍 Search Intelligence:
+- Identifies this as a troubleshooting scenario
+- Prioritizes error resolution and diagnostic content
+- Includes monitoring and performance information
+
+Results:
+1. [Troubleshooting] Login Timeout Error Solutions
+2. [Monitoring] Authentication Performance Metrics
+3. [Diagnostics] Database Connection Issues
+4. [Resolution] Quick Fix for Common Login Problems
 ```
 
 ### Parameters
@@ -38,80 +93,377 @@ Results: Documents about deployment, CI/CD, containers, etc.
 {
   "name": "search",
   "parameters": {
-    "query": "string",              // Required: Search query or question
-    "limit": 10,                    // Optional: Number of results (default: 5)
-    "source_types": ["git", "confluence", "jira", "documentation", "localfile"], // Optional: Filter by source types
-    "project_ids": ["project1", "project2"]  // Optional: Filter by specific projects
+    "query": "string",              // Natural language query - be conversational!
+    "limit": 10,                    // Results to return (default: 5)
+    "source_types": ["git", "confluence", "jira", "documentation", "localfile"],
+    "project_ids": ["project1", "project2"]
   }
 }
 ```
 
-### Example Queries
+## 🏗️ Enhanced Hierarchy Search
 
-#### Basic Search
+### Structure-Aware Document Navigation
 
+The hierarchy search understands document organization and provides:
+
+- **Document Structure Analysis** - Understands parent-child relationships
+- **Navigation Context** - Provides breadcrumb paths and hierarchy information
+- **Gap Analysis** - Identifies missing sections in documentation structures
+- **Relationship Mapping** - Shows connections between hierarchical content
+
+#### Real-World Use Cases
+
+**Documentation Navigation**
 ```
-Query: "authentication methods"
+Query: "Show me the structure of our API documentation"
+Hierarchy Analysis:
+📁 API Documentation (Root)
+├── 📄 Getting Started (3 children)
+├── 📁 Authentication (5 children)
+│   ├── 📄 JWT Implementation
+│   ├── 📄 OAuth Setup
+│   └── 📄 API Keys
+├── 📁 Endpoints (8 children)
+│   ├── 📁 User Management
+│   └── 📁 Data Operations
+└── 📁 Examples (4 children)
 
-Results:
-1. [auth/jwt.md] JWT Token Authentication
-   - Explains JWT implementation and best practices
-
-2. [security/oauth.md] OAuth 2.0 Integration
-   - OAuth flow and configuration
-
-3. [api/auth-endpoints.md] Authentication API Endpoints
-   - Login, logout, and token refresh endpoints
-```
-
-#### Filtered Search
-
-```
-Query: "deployment strategies"
-Filters: source_types=["confluence"], project_ids=["devops-project"]
-
-Results:
-1. [Confluence: DevOps/Deployment] Blue-Green Deployment Strategy
-   - Comprehensive guide to blue-green deployments
-
-2. [Confluence: Architecture/Scaling] Canary Deployment Process
-   - Step-by-step canary deployment guide
-```
-
-### Advanced Search Techniques
-
-#### 1. Question-Based Queries
-
-Instead of keywords, ask natural questions:
-
-```
-❌ "docker kubernetes deployment"
-✅ "How do I deploy a Docker container to Kubernetes?"
-
-❌ "API rate limit error"
-✅ "What should I do when I get rate limit errors from the API?"
+💡 Completeness Score: 85% - Missing error handling section
 ```
 
-#### 2. Context-Rich Queries
-
-Provide context for better results:
-
+**Content Organization**
 ```
-❌ "configuration"
-✅ "How do I configure the authentication system for production?"
+Query: "Where should I add webhook security documentation?"
+Hierarchy Suggestions:
+1. **Primary Location**: API Documentation > Security > Webhooks
+   - Path: Consistent with existing security structure
+   - Related: Authentication, Authorization content
 
-❌ "error handling"
-✅ "What's the best way to handle database connection errors in our Python API?"
+2. **Alternative**: API Documentation > Webhooks > Security
+   - Path: Groups all webhook content together
+   - Context: If you have a dedicated Webhooks section
+
+Recommendation: Create under Security section for consistency
 ```
 
-#### 3. Multi-Concept Queries
+### Parameters
 
-Combine multiple concepts:
-
+```json
+{
+  "name": "hierarchy_search",
+  "parameters": {
+    "query": "string",              // Search query
+    "limit": 10,                    // Number of results (default: 10)
+    "organize_by_hierarchy": false, // Group results by structure
+    "hierarchy_filter": {           // Hierarchy-specific filters
+      "depth": 3,                   // Filter by hierarchy depth
+      "has_children": true,         // Filter by whether pages have children
+      "parent_title": "API Documentation", // Filter by parent page
+      "root_only": false            // Show only root pages
+    }
+  }
+}
 ```
-"How to implement caching with Redis for our authentication system?"
-"What are the security considerations for file uploads in our web application?"
-"How to monitor performance of our microservices deployment?"
+
+## 📎 Enhanced Attachment Search
+
+### Intelligent File and Document Search
+
+Attachment search provides **intelligent content analysis** including:
+
+- **Content Intelligence** - OCR and semantic analysis of file contents
+- **Context Integration** - Understanding attachment relationships to parent documents
+- **File Type Recognition** - Intelligent handling of different file formats
+- **Metadata Analysis** - Author, size, type, and creation information
+
+#### Content Intelligence Examples
+
+**Architecture and Design Files**
+```
+Query: "architecture diagrams with security components"
+Content Analysis Results:
+
+1. 📄 system-architecture-v3.pdf (2.3 MB)
+   🧠 Content Analysis: "API gateway, authentication services, encrypted databases"
+   🏗️ Components: Security controls, data encryption, access management
+   📊 Security Coverage: 85% - Comprehensive security architecture
+   
+2. 🖼️ security-flow-diagram.png (1.1 MB)  
+   🧠 OCR Analysis: "User authentication flow with multi-factor authentication"
+   🏗️ Components: MFA, token validation, secure sessions
+   📊 Security Coverage: 92% - Detailed security implementation
+```
+
+**Code and Configuration Files**
+```
+Query: "deployment configuration scripts"
+Content Analysis Results:
+
+1. 📋 deploy-production.yml (45 KB)
+   📁 Parent: Deployment Documentation
+   🧠 Content: "Production deployment configuration with security settings"
+   ⚠️ Risk Assessment: Medium - contains sensitive configuration
+   
+2. 🔧 setup-environment.sh (12 KB)
+   📁 Parent: Environment Setup Guide
+   🧠 Content: "Environment initialization and dependency installation"
+   ✅ Risk Assessment: Low - standard setup procedures
+```
+
+### Parameters
+
+```json
+{
+  "name": "attachment_search",
+  "parameters": {
+    "query": "string",              // Search query
+    "limit": 10,                    // Number of results
+    "include_parent_context": true, // Include parent document info
+    "attachment_filter": {          // Attachment-specific filters
+      "file_type": "pdf",           // Filter by file type
+      "file_size_min": 1024,        // Minimum file size in bytes
+      "file_size_max": 10485760,    // Maximum file size in bytes
+      "attachments_only": true,     // Show only attachments
+      "author": "john.doe",         // Filter by author
+      "parent_document_title": "API Documentation"
+    }
+  }
+}
+```
+
+## 🤝 Cross-Document Intelligence Features
+
+### Document Relationship Analysis
+
+**Purpose**: Comprehensive analysis of relationships between documents
+
+```json
+{
+  "name": "analyze_document_relationships",
+  "parameters": {
+    "query": "search query to get documents for analysis",
+    "limit": 15,                    // Maximum documents to analyze
+    "source_types": ["confluence", "git"],
+    "project_ids": ["project1"]
+  }
+}
+```
+
+**Real-World Example**:
+```
+Query: "API authentication documentation"
+Relationship Analysis:
+
+📊 Document Network Analysis:
+├── Central Documents: 3 high-connectivity hubs
+├── Related Clusters: 4 topic-based groups
+├── Cross-References: 12 external links
+└── Dependency Chain: 5-level hierarchy
+
+🔗 Key Relationships Discovered:
+1. Authentication Guide → Implementation Examples (implements)
+2. Security Policy → Authentication Requirements (defines)
+3. API Reference → Authentication Endpoints (documents)
+4. Troubleshooting → Common Auth Issues (resolves)
+
+💡 Insights:
+- Strong documentation coverage for authentication
+- Clear implementation pathway from theory to practice
+- Good troubleshooting support available
+```
+
+### Document Similarity Detection
+
+**Purpose**: Find documents with similar content for comparison or deduplication
+
+```json
+{
+  "name": "find_similar_documents",
+  "parameters": {
+    "target_query": "target document to find similarities for",
+    "comparison_query": "documents to compare against",
+    "similarity_metrics": ["entity_overlap", "semantic_similarity"],
+    "max_similar": 5
+  }
+}
+```
+
+**Real-World Example**:
+```
+Target: "API Rate Limiting Guide"
+Similar Documents Found:
+
+1. "Rate Limiting Implementation" (Similarity: 0.92)
+   📊 Overlap: Same concepts, different implementation approach
+   🔄 Relationship: Alternative implementation strategy
+
+2. "API Throttling Configuration" (Similarity: 0.87)
+   📊 Overlap: Similar technical solution, different focus
+   🔄 Relationship: Configuration vs. implementation guide
+
+3. "API Performance Optimization" (Similarity: 0.75)
+   📊 Overlap: Rate limiting as part of broader strategy
+   🔄 Relationship: Specific technique within broader approach
+```
+
+### Conflict Detection
+
+**Purpose**: Identify contradictions and inconsistencies across documents
+
+```json
+{
+  "name": "detect_document_conflicts",
+  "parameters": {
+    "query": "search query to get documents for conflict analysis",
+    "limit": 15,
+    "source_types": ["confluence", "git"],
+    "project_ids": ["project1"]
+  }
+}
+```
+
+**Real-World Example**:
+```
+Query: "API authentication policies"
+Conflicts Detected:
+
+🚨 Conflict 1: Authentication Token Expiration
+├── Document A: "API Security Guidelines" → 1 hour expiration
+├── Document B: "Mobile App Configuration" → 24 hour expiration
+└── 💡 Suggestion: Standardize token expiration policies
+
+🚨 Conflict 2: Rate Limiting Configuration
+├── Document A: "Production Setup Guide" → 100 requests/minute
+├── Document B: "API Documentation" → 500 requests/minute  
+└── 💡 Suggestion: Update documentation to match production
+
+📋 Resolution Recommendations:
+1. Create unified authentication policy document
+2. Establish single source of truth for configuration values
+3. Add cross-references between related documents
+```
+
+### Complementary Content Discovery
+
+**Purpose**: Find content that complements and enhances a target document
+
+```json
+{
+  "name": "find_complementary_content",
+  "parameters": {
+    "target_query": "target document to analyze",
+    "context_query": "context for finding complements",
+    "max_recommendations": 5,
+    "source_types": ["confluence", "git"],
+    "project_ids": ["project1"]
+  }
+}
+```
+
+**Real-World Example**:
+```
+Target Document: "User Authentication API Specification"
+Complementary Content Found:
+
+1. Implementation Guide (Relevance: 0.89)
+   📋 Reason: Provides implementation details for the API specification
+   🎯 Strategy: Requirements → Implementation relationship
+
+2. Security Testing Procedures (Relevance: 0.85)
+   📋 Reason: Covers security validation for authentication systems
+   🎯 Strategy: Specification → Validation relationship
+
+3. Authentication Troubleshooting Guide (Relevance: 0.82)
+   📋 Reason: Addresses common issues with authentication
+   🎯 Strategy: Implementation → Support relationship
+
+4. User Database Schema (Relevance: 0.78)
+   📋 Reason: Defines data structure supporting authentication
+   🎯 Strategy: API → Data Model relationship
+```
+
+### Document Clustering
+
+**Purpose**: Group related documents by topic, purpose, and relationships
+
+```json
+{
+  "name": "cluster_documents",
+  "parameters": {
+    "query": "search query to get documents for clustering",
+    "strategy": "mixed_features",  // clustering strategy
+    "max_clusters": 10,
+    "min_cluster_size": 2,
+    "limit": 25,
+    "source_types": ["confluence"],
+    "project_ids": ["project1"]
+  }
+}
+```
+
+**Real-World Example**:
+```
+Query: "API documentation"
+Document Clusters Created:
+
+📊 Cluster 1: Authentication & Security (5 documents)
+├── Coherence Score: 0.91
+├── Shared Topics: authentication, security, tokens
+└── Documents: JWT Guide, OAuth Setup, Security Policy, etc.
+
+📊 Cluster 2: API Implementation (7 documents)  
+├── Coherence Score: 0.87
+├── Shared Topics: endpoints, implementation, code
+└── Documents: API Reference, Code Examples, Integration Guide, etc.
+
+📊 Cluster 3: Troubleshooting & Support (4 documents)
+├── Coherence Score: 0.83
+├── Shared Topics: errors, debugging, troubleshooting
+└── Documents: Error Guide, FAQ, Common Issues, etc.
+
+💡 Insights:
+- Well-organized documentation with clear topic separation
+- Strong coherence within each cluster
+- Good coverage across implementation lifecycle
+```
+
+## 🎯 Advanced Search Strategies
+
+### Multi-Tool Workflow Examples
+
+#### Complete Feature Investigation
+```
+1. Semantic Search: "user authentication implementation"
+   → Understand current authentication approach
+
+2. Hierarchy Search: "authentication system structure"  
+   → Explore documentation organization
+
+3. Cross-Document Analysis: Find relationships for "authentication API guide"
+   → Get implementation guides, testing procedures, troubleshooting
+
+4. Conflict Detection: "authentication policies"
+   → Identify inconsistencies across documents
+
+Result: Complete understanding with identified gaps and conflicts
+```
+
+#### Documentation Audit and Planning
+```
+1. Hierarchy Search: "API documentation structure analysis"
+   → Understand current organization and find gaps
+
+2. Conflict Detection: "API versioning policies"
+   → Identify inconsistencies across documents
+
+3. Similarity Detection: Find similar documents to "API guide"
+   → Review for potential duplication
+
+4. Complementary Content: Find complements to "API reference"
+   → Discover missing supporting documentation
+
+Result: Comprehensive audit with actionable improvement plan
 ```
 
 ### Search Quality Optimization
@@ -125,8 +477,8 @@ limit: 3-5           # Fast, focused results
 # Comprehensive search
 limit: 10-15         # Good coverage (recommended)
 
-# Exhaustive search
-limit: 20-50         # Maximum coverage
+# Analysis operations
+limit: 20-30         # For cross-document intelligence
 ```
 
 #### Source Type Filtering
@@ -137,483 +489,84 @@ source_types: ["git"]           # Only Git repositories
 source_types: ["confluence"]    # Only Confluence pages
 source_types: ["jira"]          # Only JIRA issues
 source_types: ["localfile"]     # Only local files
-source_types: ["documentation"] # Only documentation
 
-# Search multiple sources
-source_types: ["git", "confluence"]  # Git and Confluence
-source_types: ["jira", "confluence"] # JIRA and Confluence
+# Cross-document analysis
+source_types: ["confluence", "git"]  # Documentation and code
 ```
 
-#### Project Filtering
+## 🔧 Advanced Configuration
 
-```yaml
-# Search specific projects
-project_ids: ["api-docs"]           # Only API documentation project
-project_ids: ["team-knowledge"]     # Only team knowledge project
+### Environment Variables
 
-# Search multiple projects
-project_ids: ["api-docs", "user-guides"]  # Multiple projects
-```
-
-## 🏗️ Hierarchy Search Tool
-
-### Purpose
-
-The hierarchy search tool understands document structure and relationships, making it ideal for navigating organized documentation like Confluence spaces or structured wikis.
-
-### How It Works
-
-```
-Query: "API documentation structure"
-    ↓
-Semantic Search + Hierarchy Analysis
-    ↓
-Results with Parent-Child Relationships:
-- API Documentation (root)
-  ├── Authentication (child)
-  ├── Endpoints (child)
-  │   ├── User Management (grandchild)
-  │   └── Data Operations (grandchild)
-  └── Examples (child)
-```
-
-### Parameters
-
-```json
-{
-  "name": "hierarchy_search",
-  "parameters": {
-    "query": "string",              // Required: Search query
-    "limit": 10,                    // Optional: Number of results (default: 10)
-    "organize_by_hierarchy": false, // Optional: Group results by structure (default: false)
-    "hierarchy_filter": {           // Optional: Hierarchy-specific filters
-      "depth": 3,                   // Filter by specific hierarchy depth
-      "has_children": true,         // Filter by whether pages have children
-      "parent_title": "API Documentation", // Filter by parent page title
-      "root_only": false            // Show only root pages (no parent)
-    }
-  }
-}
-```
-
-### Example Queries
-
-#### Basic Hierarchy Search
-
-```
-Query: "API documentation"
-
-Results:
-1. API Documentation (Root)
-   └── Children: Authentication, Endpoints, Examples
-
-2. Authentication (Child of API Documentation)
-   └── Children: JWT Guide, OAuth Setup
-
-3. Endpoints (Child of API Documentation)
-   └── Children: User Management, Data Operations
-```
-
-#### Filtered Hierarchy Search
-
-```
-Query: "deployment guides"
-Filters: hierarchy_filter={"has_children": true, "depth": 1}
-
-Results:
-1. Deployment (Root - Depth 1)
-   └── Children: AWS Deployment, Docker Deployment, CI/CD
-
-2. Infrastructure (Root - Depth 1)
-   └── Children: Monitoring, Scaling, Security
-```
-
-### Hierarchy Navigation Patterns
-
-#### 1. Finding Document Structure
-
-```
-Query: "Show me the structure of our API documentation"
-Purpose: Understand how documentation is organized
-```
-
-#### 2. Finding Parent-Child Relationships
-
-```
-Query: "What are all the deployment guides under Infrastructure?"
-Purpose: Find all related documents in a hierarchy
-```
-
-#### 3. Finding Root Documents
-
-```
-Query: "What are the main sections of our knowledge base?"
-Filters: hierarchy_filter={"root_only": true}
-Purpose: Get top-level organization
-```
-
-## 📎 Attachment Search Tool
-
-### Purpose
-
-The attachment search tool specializes in finding file attachments and their parent documents, perfect for locating specific files, diagrams, or documents attached to pages.
-
-### How It Works
-
-```
-Query: "architecture diagrams"
-    ↓
-Search Attachments + Parent Context
-    ↓
-Results:
-- system-architecture.pdf (attached to Architecture Overview)
-- api-flow-diagram.png (attached to API Documentation)
-- deployment-diagram.svg (attached to Deployment Guide)
-```
-
-### Parameters
-
-```json
-{
-  "name": "attachment_search",
-  "parameters": {
-    "query": "string",              // Required: Search query
-    "limit": 10,                    // Optional: Number of results (default: 10)
-    "include_parent_context": true, // Optional: Include parent document info (default: true)
-    "attachment_filter": {          // Optional: Attachment-specific filters
-      "file_type": "pdf",           // Filter by file type
-      "file_size_min": 1024,        // Minimum file size in bytes
-      "file_size_max": 10485760,    // Maximum file size in bytes
-      "attachments_only": true,     // Show only attachments, not parent docs
-      "author": "john.doe",         // Filter by attachment author
-      "parent_document_title": "API Documentation" // Filter by parent document
-    }
-  }
-}
-```
-
-### Example Queries
-
-#### Basic Attachment Search
-
-```
-Query: "API documentation PDF"
-
-Results:
-1. api-reference-v2.pdf
-   - Parent: API Documentation
-   - Size: 2.3 MB
-   - Type: PDF
-
-2. api-examples.pdf
-   - Parent: API Examples
-   - Size: 1.1 MB
-   - Type: PDF
-```
-
-#### Filtered Attachment Search
-
-```
-Query: "architecture diagrams"
-Filters: attachment_filter={"file_type": "png", "file_size_min": 100000}
-
-Results:
-1. system-architecture.png
-   - Parent: System Architecture
-   - Size: 450 KB
-   - Type: PNG
-
-2. database-schema.png
-   - Parent: Database Design
-   - Size: 320 KB
-   - Type: PNG
-```
-
-### Attachment Types and Use Cases
-
-#### 1. Documentation Files
-
-```
-Query: "user manual PDF"
-File Types: PDF, DOC, DOCX
-Use Case: Finding comprehensive documentation
-```
-
-#### 2. Diagrams and Images
-
-```
-Query: "system architecture diagram"
-File Types: PNG, JPG, SVG, PDF
-Use Case: Finding visual documentation
-```
-
-#### 3. Data Files
-
-```
-Query: "configuration templates"
-File Types: YAML, JSON, XML, CSV
-Use Case: Finding configuration examples
-```
-
-#### 4. Presentations
-
-```
-Query: "project roadmap presentation"
-File Types: PPT, PPTX, PDF
-Use Case: Finding presentation materials
-```
-
-## 🎯 Search Strategy Best Practices
-
-### 1. Choose the Right Tool
-
-#### Use Semantic Search When
-
-- Looking for general information across all documents
-- Asking conceptual questions
-- Need broad coverage of results
-- Working with unstructured content
-
-#### Use Hierarchy Search When
-
-- Navigating structured documentation
-- Understanding document organization
-- Finding related documents in a hierarchy
-- Working with Confluence or wiki-style content
-
-#### Use Attachment Search When
-
-- Looking for specific files or documents
-- Need diagrams, presentations, or data files
-- Want to find files by type or size
-- Need parent document context for attachments
-
-### 2. Optimize Your Queries
-
-#### Be Specific and Contextual
-
-```
-❌ "error"
-✅ "database connection timeout error in production"
-
-❌ "config"
-✅ "Redis configuration for caching in our Node.js application"
-```
-
-#### Use Natural Language
-
-```
-❌ "auth JWT token"
-✅ "How do I implement JWT token authentication?"
-
-❌ "deploy docker k8s"
-✅ "What's the process for deploying Docker containers to Kubernetes?"
-```
-
-#### Combine Multiple Concepts
-
-```
-"How to monitor performance of our microservices in production?"
-"What are the security best practices for file uploads in our web app?"
-"How to implement rate limiting for our REST API endpoints?"
-```
-
-### 3. Use Filters Effectively
-
-#### Source Type Filtering
-
-```yaml
-# For code-related questions
-source_types: ["git"]
-
-# For process documentation
-source_types: ["confluence"]
-
-# For issue tracking
-source_types: ["jira"]
-
-# For comprehensive search
-source_types: ["git", "confluence", "jira"]
-```
-
-#### Project Filtering
-
-```yaml
-# For specific project context
-project_ids: ["api-project"]
-
-# For multiple related projects
-project_ids: ["api-project", "frontend-project"]
-```
-
-#### Hierarchy Filtering
-
-```yaml
-# For top-level organization
-hierarchy_filter: {"root_only": true}
-
-# For specific depth
-hierarchy_filter: {"depth": 2}
-
-# For documents with children
-hierarchy_filter: {"has_children": true}
-```
-
-#### Attachment Filtering
-
-```yaml
-# For specific file types
-attachment_filter: {"file_type": "pdf"}
-
-# For size constraints
-attachment_filter: {"file_size_max": 5242880}  # 5MB
-
-# For specific authors
-attachment_filter: {"author": "tech.writer"}
-```
-
-## 🔧 Troubleshooting Search Issues
-
-### Common Problems and Solutions
-
-#### 1. No Results Found
-
-**Problem**: Search returns empty results
-
-**Solutions**:
-
-- Verify documents are ingested: `qdrant-loader --workspace . project status`
-- Try broader search terms
-- Remove filters to expand search scope
-- Check if the collection exists in QDrant
-
-#### 2. Irrelevant Results
-
-**Problem**: Search results don't match the query
-
-**Solutions**:
-
-- Use more specific search terms
-- Add context to your query
-- Use appropriate search tool for your use case
-- Apply source type or project filters
-
-#### 3. Missing Expected Documents
-
-**Problem**: Known documents don't appear in results
-
-**Solutions**:
-
-- Check if documents are properly ingested
-- Verify document content is searchable
-- Try different search terms or synonyms
-- Check if documents are in filtered sources/projects
-
-#### 4. Slow Search Performance
-
-**Problem**: Searches take too long
-
-**Solutions**:
-
-- Reduce the limit parameter
-- Use more specific filters
-- Check QDrant server performance
-- Verify network connectivity
-
-### Debug Search Queries
+The MCP server supports these configuration options:
 
 ```bash
-# Check QDrant collection status
-curl http://localhost:6333/collections/documents
+# Required Configuration
+QDRANT_URL=http://localhost:6333
+OPENAI_API_KEY=your-openai-api-key
 
-# Verify document count
-curl http://localhost:6333/collections/documents/points/count
-
-# Test direct QDrant search
-curl -X POST http://localhost:6333/collections/documents/points/search \
-  -H "Content-Type: application/json" \
-  -d '{"vector": [0.1, 0.2, 0.3], "limit": 5}'
+# Optional Configuration
+QDRANT_COLLECTION_NAME=documents        # Default: "documents"
+QDRANT_API_KEY=your-qdrant-cloud-key   # For QDrant Cloud
+MCP_DISABLE_CONSOLE_LOGGING=true       # Recommended for development tools
 ```
-
-## 📊 Search Performance Optimization
-
-### Best Practices for Performance
-
-#### 1. Use Appropriate Limits
-
-```yaml
-# For quick answers
-limit: 3-5
-
-# For comprehensive results
-limit: 10-15
-
-# Avoid very large limits
-limit: 50+  # Can be slow
-```
-
-#### 2. Apply Filters Early
-
-```yaml
-# Filter by source type
-source_types: ["confluence"]
-
-# Filter by project
-project_ids: ["current-project"]
-
-# Use hierarchy filters
-hierarchy_filter: {"depth": 2}
-```
-
-#### 3. Optimize Query Specificity
-
-```yaml
-# Too broad (slow)
-query: "documentation"
-
-# Better (faster)
-query: "API authentication documentation"
-
-# Best (fastest)
-query: "JWT authentication implementation guide"
-```
-
-## 🔗 Related Documentation
-
-- **[MCP Server Overview](./README.md)** - Complete MCP server guide
-- **[Setup and Integration](./setup-and-integration.md)** - Setting up the MCP server
-- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup
-- **[Hierarchy Search](./hierarchy-search.md)** - Detailed hierarchy search guide
-- **[Attachment Search](./attachment-search.md)** - Detailed attachment search guide
-
-## 📋 Search Capabilities Checklist
-
-### Understanding Search Tools
-
-- [ ] **Semantic search** - Understand when to use for general queries
-- [ ] **Hierarchy search** - Know when to use for structured content
-- [ ] **Attachment search** - Recognize when to search for files
-
-### Query Optimization
-
-- [ ] **Natural language** - Use conversational queries
-- [ ] **Specific context** - Provide relevant context in queries
-- [ ] **Appropriate filters** - Apply source, project, and type filters
 
 ### Performance Optimization
 
-- [ ] **Reasonable limits** - Use appropriate result limits
-- [ ] **Effective filters** - Apply filters to narrow search scope
-- [ ] **Query specificity** - Make queries specific and targeted
+#### For Large Knowledge Bases
 
-### Troubleshooting
+1. **Optimize Search Parameters**
+   - Use appropriate `limit` values for your needs
+   - Filter by `source_types` or `project_ids` when possible
+   - Use specific search tools for targeted queries
 
-- [ ] **Verify ingestion** - Ensure documents are properly ingested
-- [ ] **Test connectivity** - Check QDrant server connectivity
-- [ ] **Debug queries** - Use debug tools when needed
+2. **Cross-Document Intelligence Tuning**
+   - Limit analysis scope with appropriate `limit` parameters
+   - Use specific queries to reduce processing overhead
+   - Filter by project or source type for focused analysis
+
+## 🚀 Performance Metrics
+
+### Real-World Performance Results
+
+- **Semantic Search**: Sub-second response times for most queries
+- **Hierarchy Navigation**: Instant structure analysis and navigation
+- **Cross-Document Intelligence**: Efficient relationship analysis for 15-25 documents
+- **Attachment Search**: Fast content analysis with intelligent file handling
+- **Conflict Detection**: Real-time inconsistency identification across document sets
+
+### Success Indicators
+
+**System Performance Metrics**:
+- ✅ **Query Processing**: Fast semantic understanding and result ranking
+- ✅ **Document Analysis**: Efficient relationship and similarity detection
+- ✅ **Content Intelligence**: Comprehensive file and attachment analysis
+- ✅ **Scalability**: Handles large document collections effectively
+
+## 📋 Search Capabilities Checklist
+
+### Understanding Available Tools
+- [ ] **Core Search Tools** - Semantic, hierarchy, and attachment search
+- [ ] **Cross-Document Intelligence** - Relationship analysis, conflict detection, clustering
+- [ ] **Content Analysis** - File intelligence and attachment understanding
+- [ ] **Performance Optimization** - Appropriate limits and filtering
+
+### Effective Usage Patterns
+- [ ] **Multi-Tool Workflows** - Combine different search tools for comprehensive results
+- [ ] **Progressive Discovery** - Use hierarchy navigation for systematic exploration
+- [ ] **Relationship Analysis** - Leverage cross-document intelligence for deeper understanding
+- [ ] **Quality Assessment** - Use conflict detection for documentation consistency
+
+### Optimization and Best Practices
+- [ ] **Search Quality** - Understand relevance scores and result ranking
+- [ ] **Performance Tuning** - Use appropriate limits and filters
+- [ ] **Content Organization** - Leverage hierarchy and relationship insights
+- [ ] **Documentation Maintenance** - Use conflict detection for consistency
 
 ---
 
-**Master the search capabilities to unlock the full power of your knowledge base!** 🔍
+**Unlock the intelligence of your knowledge base!** 🧠
 
-With these three search tools and optimization techniques, you can efficiently find any information in your knowledge base, whether it's code documentation, process guides, or specific files and attachments.
+With these search capabilities, you're not just finding documents—you're discovering knowledge patterns, understanding relationships, and building comprehensive understanding through intelligent exploration. The system provides contextual insights that help you navigate and understand your knowledge base more effectively.
+
+**The power of intelligent search is at your fingertips!** 🚀

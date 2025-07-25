@@ -16,7 +16,7 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 │   └── qdrant-loader.log
 ├── metrics/             # Performance metrics
 └── data/                # State database
-    └── state.db
+    └── qdrant-loader.db
 ```
 
 ### Benefits of Workspace Mode
@@ -128,6 +128,9 @@ qdrant-loader --workspace . ingest --source-type git
 
 # Process specific source within a project
 qdrant-loader --workspace . ingest --project docs-project --source docs-repo
+
+# Force processing of all documents (bypass change detection)
+qdrant-loader --workspace . ingest --force
 ```
 
 ### Configuration Management
@@ -136,14 +139,23 @@ qdrant-loader --workspace . ingest --project docs-project --source docs-repo
 # Show current configuration
 qdrant-loader --workspace . config
 
-# Validate configuration
-qdrant-loader project --workspace . validate
-
 # List all projects
 qdrant-loader project --workspace . list
 
 # Show project status
 qdrant-loader project --workspace . status
+
+# Show status for specific project
+qdrant-loader project --workspace . status --project-id docs-project
+
+# Validate project configurations
+qdrant-loader project --workspace . validate
+
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id docs-project
+
+# Output in JSON format
+qdrant-loader project --workspace . list --format json
 ```
 
 ## 📁 Project Management
@@ -171,6 +183,9 @@ qdrant-loader project --workspace . status --project-id docs-project
 
 # Validate project configurations
 qdrant-loader project --workspace . validate
+
+# Validate specific project
+qdrant-loader project --workspace . validate --project-id docs-project
 
 # Output in JSON format
 qdrant-loader project --workspace . list --format json
@@ -311,7 +326,7 @@ global_config:
       timeout: 30
 ```
 
-In workspace mode, the state database is automatically created as `state.db` in a data directory within workspace directory.
+In workspace mode, the state database is automatically created as `qdrant-loader.db` in the `data/` directory within the workspace.
 
 ## 📊 Workspace Structure
 
@@ -324,9 +339,9 @@ my-qdrant-workspace/
 ├── logs/                    # Application logs
 │   └── qdrant-loader.log
 ├── metrics/                 # Performance metrics
-│   └── ingestion_metrics.json
+│   └── ingestion_metrics_YYYYMMDD_HHMMSS.json
 └── data/
-    └── state.db             # Processing state database
+    └── qdrant-loader.db     # Processing state database
 ```
 
 ### Log Files
@@ -347,7 +362,7 @@ Performance metrics are stored in the `metrics/` directory:
 
 ## 🔗 MCP Server Integration
 
-The MCP server currently uses environment variables for configuration and does not support workspace mode directly. You need to configure it using environment variables:
+The MCP server uses environment variables for configuration and does not currently support workspace mode directly. You need to configure it using environment variables:
 
 ```json
 {
@@ -358,7 +373,8 @@ The MCP server currently uses environment variables for configuration and does n
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_API_KEY": "your-api-key",
         "QDRANT_COLLECTION_NAME": "my_documents",
-        "OPENAI_API_KEY": "your-openai-key"
+        "OPENAI_API_KEY": "your-openai-key",
+        "MCP_DISABLE_CONSOLE_LOGGING": "true"
       }
     }
   }
@@ -373,14 +389,16 @@ The MCP server requires these environment variables:
 - **QDRANT_API_KEY**: API key for QDrant authentication (optional)
 - **QDRANT_COLLECTION_NAME**: Name of the collection to use (default: "documents")
 - **OPENAI_API_KEY**: OpenAI API key for embeddings (required)
-- **MCP_DISABLE_CONSOLE_LOGGING**: Set to "true" to disable console logging (optional)
+- **MCP_DISABLE_CONSOLE_LOGGING**: Set to "true" to disable console logging (recommended for Cursor)
+- **MCP_LOG_LEVEL**: Logging level (optional, default: "INFO")
+- **MCP_LOG_FILE**: Log file path (optional)
 
 ### Current Limitations
 
 - The MCP server does not support the `--workspace` flag
 - Configuration must be done through environment variables
-- The `--config` option exists but is not currently implemented
-- Project-aware search is not yet available in the MCP server
+- The `--config` option exists in the CLI but is not currently implemented
+- Project-aware search filtering is not yet available in the MCP server
 
 ### Future Workspace Integration
 
