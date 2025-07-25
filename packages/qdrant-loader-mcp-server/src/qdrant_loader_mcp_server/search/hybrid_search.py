@@ -167,8 +167,6 @@ class HybridSearchEngine:
         # 🔥 NEW: Phase 2.2 parameters
         knowledge_graph: DocumentKnowledgeGraph = None,
         enable_intent_adaptation: bool = True,
-        # 🔥 NEW: Phase 2.3 parameters
-        enable_cross_document_intelligence: bool = True,
     ):
         """Initialize the hybrid search service.
 
@@ -185,7 +183,7 @@ class HybridSearchEngine:
             alpha: Weight for dense search (1-alpha for sparse search)
             knowledge_graph: Optional knowledge graph for Phase 2.1 integration
             enable_intent_adaptation: Enable Phase 2.2 intent-aware adaptive search
-            enable_cross_document_intelligence: Enable Phase 2.3 cross-document intelligence
+
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client
@@ -227,18 +225,12 @@ class HybridSearchEngine:
         self.faceted_search_engine = FacetedSearchEngine()
         logger.info("🔥 Phase 1.3: Dynamic faceted search interface ENABLED")
         
-        # 🔥 NEW: Phase 2.3 Cross-Document Intelligence
-        self.enable_cross_document_intelligence = enable_cross_document_intelligence
-        
-        if self.enable_cross_document_intelligence:
-            self.cross_document_engine = CrossDocumentIntelligenceEngine(
-                self.spacy_analyzer,
-                self.knowledge_graph
-            )
-            logger.info("🔥 Phase 2.3: Cross-document intelligence ENABLED")
-        else:
-            self.cross_document_engine = None
-            logger.info("Cross-document intelligence DISABLED")
+        # Cross-Document Intelligence (always enabled)
+        self.cross_document_engine = CrossDocumentIntelligenceEngine(
+            self.spacy_analyzer,
+            self.knowledge_graph
+        )
+        logger.info("Cross-document intelligence ENABLED")
 
         # Enhanced query expansions leveraging spaCy semantic understanding
         self.query_expansions = {
@@ -1774,10 +1766,6 @@ class HybridSearchEngine:
         Returns:
             Comprehensive analysis including clusters, similarities, and conflicts
         """
-        if not self.enable_cross_document_intelligence or not self.cross_document_engine:
-            self.logger.warning("Cross-document intelligence is disabled")
-            return {"error": "Cross-document intelligence not enabled"}
-        
         try:
             return self.cross_document_engine.analyze_document_relationships(documents)
         except Exception as e:
@@ -1803,10 +1791,6 @@ class HybridSearchEngine:
         Returns:
             List of similar documents with similarity scores
         """
-        if not self.enable_cross_document_intelligence or not self.cross_document_engine:
-            self.logger.warning("Cross-document intelligence is disabled")
-            return []
-        
         try:
             similarity_calculator = self.cross_document_engine.similarity_calculator
             similar_docs = []
@@ -1849,10 +1833,6 @@ class HybridSearchEngine:
         Returns:
             Conflict analysis with detected conflicts and resolution suggestions
         """
-        if not self.enable_cross_document_intelligence or not self.cross_document_engine:
-            self.logger.warning("Cross-document intelligence is disabled")
-            return {"conflicts": [], "resolution_suggestions": []}
-        
         try:
             conflict_analysis = self.cross_document_engine.conflict_detector.detect_conflicts(documents)
             # Convert ConflictAnalysis object to dictionary format
@@ -1882,10 +1862,6 @@ class HybridSearchEngine:
         Returns:
             List of complementary documents with recommendation reasons
         """
-        if not self.enable_cross_document_intelligence or not self.cross_document_engine:
-            self.logger.warning("Cross-document intelligence is disabled")
-            return []
-        
         try:
             complementary_content = self.cross_document_engine.complementary_finder.find_complementary_content(
                 target_document,
@@ -1916,10 +1892,6 @@ class HybridSearchEngine:
         Returns:
             Document clusters with metadata and relationships
         """
-        if not self.enable_cross_document_intelligence or not self.cross_document_engine:
-            self.logger.warning("Cross-document intelligence is disabled")
-            return {"clusters": [], "clustering_metadata": {}}
-        
         try:
             clusters = self.cross_document_engine.cluster_analyzer.create_clusters(
                 documents,

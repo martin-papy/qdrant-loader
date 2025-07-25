@@ -918,81 +918,333 @@ class ComplementaryContentFinder:
     
     def _calculate_complementary_score(self, target_doc: SearchResult, 
                                      candidate_doc: SearchResult) -> Tuple[float, str]:
-        """Calculate how complementary a candidate document is to the target."""
-        score_factors = []
-        reasons = []
+        """Calculate how complementary a candidate document is to the target.
         
+        Redesigned algorithm that prioritizes intra-project relationships while
+        maintaining intelligent inter-project discovery capabilities.
+        """
         self.logger.info(f"=== Scoring {candidate_doc.source_title} against {target_doc.source_title} ===")
         
-        # 1. Documents with shared topics but different source types (high value)
-        has_shared_topics = self._has_shared_topics(target_doc, candidate_doc)
-        different_source_types = target_doc.source_type != candidate_doc.source_type
+        same_project = (target_doc.project_id == candidate_doc.project_id)
+        self.logger.info(f"Project context: target={target_doc.project_id}, candidate={candidate_doc.project_id}, same_project={same_project}")
         
-        self.logger.info(f"Source types: target={target_doc.source_type}, candidate={candidate_doc.source_type}, different={different_source_types}")
-        self.logger.info(f"Has shared topics: {has_shared_topics}")
-        
-        if (different_source_types and has_shared_topics):
-            shared_topics = self._get_shared_topics_count(target_doc, candidate_doc)
-            score = min(0.8, 0.4 + (shared_topics * 0.1))  # 0.4-0.8 based on topic overlap
-            score_factors.append(score)
-            reasons.append(f"Different source types, {shared_topics} shared topics")
-            self.logger.info(f"✓ Score factor 1: {score} - Different source types, {shared_topics} shared topics")
-        
-        # 2. Documents with shared entities but different project contexts
-        if (target_doc.project_id != candidate_doc.project_id and 
-            self._has_shared_entities(target_doc, candidate_doc)):
-            shared_entities = self._get_shared_entities_count(target_doc, candidate_doc)
-            score = min(0.7, 0.3 + (shared_entities * 0.1))  # 0.3-0.7 based on entity overlap
-            score_factors.append(score)
-            reasons.append(f"Cross-project insights, {shared_entities} shared entities")
-        
-        # 3. Different content complexity but related content
-        if self._has_different_content_complexity(target_doc, candidate_doc):
-            if self._has_shared_topics(target_doc, candidate_doc) or self._has_shared_entities(target_doc, candidate_doc):
-                score_factors.append(0.6)
-                reasons.append("Different complexity levels, related content")
-        
-        # 4. Complementary content types (technical + business, requirements + implementation)
-        complementary_type_score = self._get_complementary_content_type_score(target_doc, candidate_doc)
-        if complementary_type_score > 0:
-            score_factors.append(complementary_type_score)
-            reasons.append("Complementary content types")
-        
-        # 5. Sequential or hierarchical relationship
-        if self._has_sequential_relationship(target_doc, candidate_doc):
-            score_factors.append(0.5)
-            reasons.append("Sequential relationship")
-        
-        # 6. Related keywords in titles/content that suggest complementary value
-        title_complement_score = self._get_title_complementary_score(target_doc, candidate_doc)
-        if title_complement_score > 0:
-            score_factors.append(title_complement_score)
-            reasons.append("Complementary title keywords")
-        
-        # Calculate final score
-        if score_factors:
-            # Use weighted average instead of max to consider multiple factors
-            final_score = sum(score_factors) / len(score_factors)
-            # Boost score if multiple factors contribute
-            if len(score_factors) > 1:
-                final_score = min(0.9, final_score * 1.2)
-            primary_reason = reasons[score_factors.index(max(score_factors))]
-            self.logger.info(f"✓ Final score from {len(score_factors)} factors: {final_score:.3f}")
+        if same_project:
+            # Prioritize intra-project relationships
+            score, reason = self._score_intra_project_complementary(target_doc, candidate_doc)
+            
+            # Boost for high topic relevance within project
+            if score > 0 and self._has_high_topic_overlap(target_doc, candidate_doc):
+                boosted_score = min(0.95, score * 1.2)
+                self.logger.info(f"✓ Intra-project topic boost: {score:.3f} → {boosted_score:.3f}")
+                score = boosted_score
+                reason = f"{reason} (high topic relevance)"
+                
         else:
-            # Fallback: Basic content similarity
-            self.logger.info("No advanced factors found, trying fallback scoring...")
-            fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
-            if fallback_score > 0:
-                final_score = fallback_score
-                primary_reason = "Basic content similarity"
-                self.logger.info(f"✓ Fallback score: {final_score:.3f}")
-            else:
-                final_score = 0.0
-                primary_reason = "No complementary relationship found"
-                self.logger.info("✗ No relationship found")
+            # Evaluate inter-project relationships
+            score, reason = self._score_inter_project_complementary(target_doc, candidate_doc)
+            
+            # Apply cross-project penalty (inter-project content is less immediately useful)
+            if score > 0:
+                adjusted_score = score * 0.8
+                self.logger.info(f"✓ Inter-project penalty applied: {score:.3f} → {adjusted_score:.3f}")
+                score = adjusted_score
+                reason = f"Inter-project: {reason}"
         
-        self.logger.info(f"Final complementary score: {final_score:.3f} for {candidate_doc.source_title} - {primary_reason}")
+        self.logger.info(f"Final complementary score: {score:.3f} for {candidate_doc.source_title} - {reason}")
+        return score, reason
+    
+    def _score_intra_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+        """Score complementary relationships within the same project."""
+        factors = []
+        
+        # A. Requirements ↔ Implementation Chain
+        if self._is_requirements_implementation_pair(target_doc, candidate_doc):
+            factors.append((0.85, "Requirements-implementation chain"))
+            self.logger.info("✓ Found requirements-implementation pair")
+            
+        # B. Abstraction Level Differences  
+        abstraction_gap = self._calculate_abstraction_gap(target_doc, candidate_doc)
+        if abstraction_gap > 0:
+            score = 0.7 + (abstraction_gap * 0.1)
+            factors.append((score, f"Different abstraction levels (gap: {abstraction_gap})"))
+            self.logger.info(f"✓ Abstraction gap: {abstraction_gap} → score: {score:.3f}")
+            
+        # C. Cross-Functional Perspectives
+        if self._has_cross_functional_relationship(target_doc, candidate_doc):
+            factors.append((0.75, "Cross-functional perspectives"))
+            self.logger.info("✓ Cross-functional relationship detected")
+            
+        # D. Topic Overlap with Different Document Types
+        if (self._has_shared_topics(target_doc, candidate_doc) and 
+            self._has_different_document_types(target_doc, candidate_doc)):
+            shared_topics = self._get_shared_topics_count(target_doc, candidate_doc)
+            score = min(0.65, 0.35 + (shared_topics * 0.1))
+            factors.append((score, f"Same topics, different document types ({shared_topics} topics)"))
+            self.logger.info(f"✓ Topic overlap with different doc types: {score:.3f}")
+        
+        return self._calculate_weighted_score(factors)
+    
+    def _score_inter_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+        """Score complementary relationships between different projects."""
+        factors = []
+        
+        # A. Similar Challenges/Solutions
+        if self._has_similar_challenges(target_doc, candidate_doc):
+            factors.append((0.8, "Similar challenges/solutions"))
+            self.logger.info("✓ Similar challenges detected")
+            
+        # B. Domain Expertise Transfer
+        if self._has_transferable_domain_knowledge(target_doc, candidate_doc):
+            factors.append((0.75, "Transferable domain knowledge"))
+            self.logger.info("✓ Transferable domain knowledge")
+            
+        # C. Architectural Patterns
+        if self._has_reusable_architecture_patterns(target_doc, candidate_doc):
+            factors.append((0.7, "Reusable architecture patterns"))
+            self.logger.info("✓ Architecture patterns detected")
+            
+        # D. Shared Technologies/Standards
+        if self._has_shared_technologies(target_doc, candidate_doc):
+            shared_count = self._get_shared_technologies_count(target_doc, candidate_doc)
+            score = min(0.6, 0.3 + (shared_count * 0.1))
+            factors.append((score, f"Shared technologies ({shared_count} common)"))
+            self.logger.info(f"✓ Shared technologies: {score:.3f}")
+        
+        return self._calculate_weighted_score(factors)
+    
+    def _calculate_weighted_score(self, factors: List[Tuple[float, str]]) -> Tuple[float, str]:
+        """Calculate weighted score from multiple factors."""
+        if not factors:
+            return self._enhanced_fallback_scoring(None, None)  # Will implement fallback
+        
+        # Use the highest scoring factor as primary, but consider multiple factors
+        factors.sort(key=lambda x: x[0], reverse=True)
+        primary_score, primary_reason = factors[0]
+        
+        # Boost if multiple factors contribute
+        if len(factors) > 1:
+            secondary_boost = sum(score for score, _ in factors[1:]) * 0.1
+            final_score = min(0.95, primary_score + secondary_boost)
+            primary_reason = f"{primary_reason} (+{len(factors)-1} other factors)"
+        else:
+            final_score = primary_score
+            
         return final_score, primary_reason
+    
+    def _is_requirements_implementation_pair(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Detect if documents form a requirements -> implementation chain."""
+        req_keywords = ["requirements", "specification", "user story", "feature", "functional"]
+        impl_keywords = ["implementation", "technical", "architecture", "api", "code", "development"]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        doc1_is_req = any(keyword in title1 for keyword in req_keywords)
+        doc1_is_impl = any(keyword in title1 for keyword in impl_keywords)
+        doc2_is_req = any(keyword in title2 for keyword in req_keywords)
+        doc2_is_impl = any(keyword in title2 for keyword in impl_keywords)
+        
+        # One is requirements, other is implementation
+        return ((doc1_is_req and doc2_is_impl) or (doc1_is_impl and doc2_is_req)) and \
+               (self._has_shared_topics(doc1, doc2) or self._has_shared_entities(doc1, doc2))
+    
+    def _calculate_abstraction_gap(self, doc1: SearchResult, doc2: SearchResult) -> int:
+        """Calculate difference in abstraction levels (0-3).
+        0: Same level, 3: Maximum gap (e.g., epic vs implementation detail)
+        """
+        level1 = self._get_abstraction_level(doc1)
+        level2 = self._get_abstraction_level(doc2)
+        return abs(level1 - level2)
+    
+    def _get_abstraction_level(self, doc: SearchResult) -> int:
+        """Determine abstraction level of document (0=highest, 3=lowest)."""
+        title = doc.source_title.lower()
+        
+        # Level 0: High-level business/strategy
+        if any(keyword in title for keyword in ["strategy", "vision", "overview", "executive", "business case"]):
+            return 0
+            
+        # Level 1: Requirements/features  
+        if any(keyword in title for keyword in ["requirements", "features", "user story", "epic", "specification"]):
+            return 1
+            
+        # Level 2: Design/architecture
+        if any(keyword in title for keyword in ["design", "architecture", "workflow", "process", "wireframe"]):
+            return 2
+            
+        # Level 3: Implementation details
+        if any(keyword in title for keyword in ["implementation", "code", "api", "technical", "development", "configuration"]):
+            return 3
+            
+        # Default to middle level
+        return 2
+    
+    def _has_cross_functional_relationship(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Detect business + technical, feature + security, etc."""
+        business_keywords = ["business", "user", "requirements", "workflow", "process", "feature"]
+        technical_keywords = ["technical", "architecture", "api", "implementation", "code", "development"]
+        security_keywords = ["security", "authentication", "authorization", "compliance", "audit"]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        # Business + Technical
+        if (any(k in title1 for k in business_keywords) and any(k in title2 for k in technical_keywords)) or \
+           (any(k in title2 for k in business_keywords) and any(k in title1 for k in technical_keywords)):
+            return True
+        
+        # Feature + Security
+        if (any(k in title1 for k in ["feature", "functionality"]) and any(k in title2 for k in security_keywords)) or \
+           (any(k in title2 for k in ["feature", "functionality"]) and any(k in title1 for k in security_keywords)):
+            return True
+        
+        return False
+    
+    def _has_different_document_types(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents are of different types based on content and title."""
+        type1 = self._classify_document_type(doc1)
+        type2 = self._classify_document_type(doc2)
+        return type1 != type2
+    
+    def _classify_document_type(self, doc: SearchResult) -> str:
+        """Classify document as: user_story, technical_spec, architecture, compliance, testing, etc."""
+        title = doc.source_title.lower()
+        
+        # Check more specific categories first to avoid conflicts
+        if any(keyword in title for keyword in ["security", "compliance", "audit", "policy"]):
+            return "compliance"
+        elif any(keyword in title for keyword in ["test", "testing", "qa", "quality"]):
+            return "testing"
+        elif any(keyword in title for keyword in ["user story", "epic", "feature"]):
+            return "user_story"
+        elif any(keyword in title for keyword in ["technical", "specification", "api", "implementation"]):
+            return "technical_spec"
+        elif any(keyword in title for keyword in ["architecture", "design", "system"]):
+            return "architecture"
+        elif any(keyword in title for keyword in ["workflow", "process", "procedure"]):
+            return "process"
+        elif any(keyword in title for keyword in ["requirement"]):  # More general, check last
+            return "user_story"
+        else:
+            return "general"
+    
+    def _has_high_topic_overlap(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have high topic overlap (>= 3 shared topics)."""
+        return self._get_shared_topics_count(doc1, doc2) >= 3
+    
+    def _has_similar_challenges(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Identify common challenge patterns (auth, scalability, compliance)."""
+        challenge_patterns = [
+            ["authentication", "login", "auth", "signin"],
+            ["scalability", "performance", "optimization", "scale"],
+            ["compliance", "regulation", "audit", "governance"],
+            ["integration", "api", "interface", "connection"],
+            ["security", "privacy", "protection", "safety"],
+            ["migration", "upgrade", "transition", "conversion"]
+        ]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        for pattern in challenge_patterns:
+            if (any(keyword in title1 for keyword in pattern) and 
+                any(keyword in title2 for keyword in pattern)):
+                return True
+        
+        return False
+    
+    def _has_transferable_domain_knowledge(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check for transferable domain expertise between projects."""
+        # This is a simplified implementation - could be enhanced with NLP
+        domain_keywords = [
+            ["healthcare", "medical", "patient", "clinical"],
+            ["finance", "payment", "banking", "financial"],
+            ["ecommerce", "retail", "shopping", "commerce"],
+            ["education", "learning", "student", "academic"],
+            ["iot", "device", "sensor", "embedded"],
+            ["mobile", "app", "ios", "android"]
+        ]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        for domain in domain_keywords:
+            if (any(keyword in title1 for keyword in domain) and 
+                any(keyword in title2 for keyword in domain)):
+                return True
+        
+        return False
+    
+    def _has_reusable_architecture_patterns(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Identify architectural patterns that are reusable across projects."""
+        architecture_patterns = [
+            ["microservices", "service", "microservice"],
+            ["api", "rest", "graphql", "endpoint"],
+            ["database", "data", "storage", "persistence"],
+            ["authentication", "auth", "identity", "oauth"],
+            ["messaging", "queue", "event", "pub-sub"],
+            ["cache", "caching", "redis", "memory"],
+            ["monitoring", "logging", "observability", "metrics"]
+        ]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        for pattern in architecture_patterns:
+            if (any(keyword in title1 for keyword in pattern) and 
+                any(keyword in title2 for keyword in pattern)):
+                return True
+        
+        return False
+    
+    def _has_shared_technologies(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Identify shared technologies, frameworks, standards."""
+        tech_patterns = [
+            ["react", "angular", "vue", "frontend"],
+            ["node", "python", "java", "golang"],
+            ["docker", "kubernetes", "container"],
+            ["aws", "azure", "gcp", "cloud"],
+            ["postgres", "mysql", "mongodb", "database"],
+            ["jwt", "oauth", "saml", "authentication"],
+            ["rest", "graphql", "grpc", "api"]
+        ]
+        
+        title1 = doc1.source_title.lower()
+        title2 = doc2.source_title.lower()
+        
+        for tech in tech_patterns:
+            if (any(keyword in title1 for keyword in tech) and 
+                any(keyword in title2 for keyword in tech)):
+                return True
+        
+        return False
+    
+    def _get_shared_technologies_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
+        """Count shared technologies between documents."""
+        # Simplified implementation based on title analysis
+        tech_keywords = ["react", "angular", "vue", "node", "python", "java", "docker", 
+                        "kubernetes", "aws", "azure", "postgres", "mysql", "jwt", "oauth"]
+        
+        title1_words = set(doc1.source_title.lower().split())
+        title2_words = set(doc2.source_title.lower().split())
+        
+        shared_tech = 0
+        for tech in tech_keywords:
+            if tech in title1_words and tech in title2_words:
+                shared_tech += 1
+        
+        return shared_tech
+    
+    def _enhanced_fallback_scoring(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+        """Enhanced fallback when advanced algorithms don't apply."""
+        if target_doc is None or candidate_doc is None:
+            return 0.0, "No complementary relationship found"
+        
+        fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
+        if fallback_score > 0:
+            return fallback_score, "Basic content similarity"
+        else:
+            return 0.0, "No complementary relationship found"
     
     def _calculate_fallback_score(self, target_doc: SearchResult, candidate_doc: SearchResult) -> float:
         """Fallback scoring for when advanced methods don't find relationships."""
@@ -1032,29 +1284,7 @@ class ComplementaryContentFinder:
         topics2 = self.similarity_calculator._extract_topic_texts(doc2.topics)
         return len(set(topics1) & set(topics2)) > 0
     
-    def _has_different_content_types(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents have different content characteristics."""
-        features1 = (doc1.has_code_blocks, doc1.has_tables, doc1.has_images)
-        features2 = (doc2.has_code_blocks, doc2.has_tables, doc2.has_images)
-        return features1 != features2
-    
-    def _has_hierarchical_relationship(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents are hierarchically related."""
-        return (doc1.breadcrumb_text and doc2.breadcrumb_text and
-                any(part in doc2.breadcrumb_text for part in doc1.breadcrumb_text.split(" > ")))
-    
-    def _is_prerequisite_content(self, target_doc: SearchResult, candidate_doc: SearchResult) -> bool:
-        """Check if candidate is prerequisite content for target."""
-        # Simple heuristic: lower level content with shared entities
-        if (candidate_doc.depth is not None and target_doc.depth is not None and
-            candidate_doc.depth < target_doc.depth and
-            self._has_shared_entities(target_doc, candidate_doc)):
-            return True
-        
-        # Check for introductory content patterns
-        intro_keywords = ["introduction", "overview", "getting started", "basics", "fundamentals"]
-        candidate_title_lower = candidate_doc.source_title.lower()
-        return any(keyword in candidate_title_lower for keyword in intro_keywords)
+
     
     def _get_shared_topics_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
         """Get the count of shared topics between documents."""
@@ -1115,65 +1345,7 @@ class ComplementaryContentFinder:
         
         return score
     
-    def _has_sequential_relationship(self, target_doc: SearchResult, candidate_doc: SearchResult) -> bool:
-        """Check if documents have a sequential relationship."""
-        # Check depth hierarchy
-        if (target_doc.depth is not None and candidate_doc.depth is not None and
-            abs(target_doc.depth - candidate_doc.depth) == 1):
-            return self._has_hierarchical_relationship(target_doc, candidate_doc)
-        
-        # Check for sequential keywords
-        sequential_keywords = [
-            ("introduction", "implementation"),
-            ("overview", "details"),
-            ("getting started", "advanced"),
-            ("basics", "configuration"),
-            ("setup", "usage"),
-            ("phase 1", "phase 2"),
-            ("part 1", "part 2")
-        ]
-        
-        target_title = target_doc.source_title.lower()
-        candidate_title = candidate_doc.source_title.lower()
-        
-        for first, second in sequential_keywords:
-            if (first in target_title and second in candidate_title) or \
-               (second in target_title and first in candidate_title):
-                return True
-        
-        return False
-    
-    def _get_title_complementary_score(self, target_doc: SearchResult, candidate_doc: SearchResult) -> float:
-        """Calculate complementary score based on title analysis."""
-        target_title = target_doc.source_title.lower()
-        candidate_title = candidate_doc.source_title.lower()
-        
-        # Complementary keyword pairs
-        complementary_pairs = [
-            ("frontend", "backend"),
-            ("client", "server"),
-            ("user", "admin"),
-            ("mobile", "web"),
-            ("design", "implementation"),
-            ("planning", "execution"),
-            ("theory", "practice"),
-            ("overview", "detailed"),
-            ("security", "functionality"),
-            ("testing", "development")
-        ]
-        
-        for word1, word2 in complementary_pairs:
-            if (word1 in target_title and word2 in candidate_title) or \
-               (word2 in target_title and word1 in candidate_title):
-                return 0.5
-        
-        return 0.0
-    
-    def _has_similar_timeframe(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents are from similar timeframe."""
-        # This would require timestamp information from the documents
-        # For now, return False as we don't have reliable timestamp data
-        return False
+
 
 
 class ConflictDetector:
