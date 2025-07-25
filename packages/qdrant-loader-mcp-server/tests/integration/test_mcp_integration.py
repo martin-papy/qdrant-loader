@@ -13,7 +13,7 @@ from qdrant_loader_mcp_server.search.processor import QueryProcessor
 async def integration_handler():
     """Create an MCP handler with real components but mocked external services."""
     # Mock external services
-    mock_qdrant_client = MagicMock()
+    mock_qdrant_client = AsyncMock()
     mock_openai_client = AsyncMock()
 
     # Mock search results
@@ -28,6 +28,13 @@ async def integration_handler():
 
     mock_qdrant_client.search.return_value = [search_result1]
     mock_qdrant_client.scroll.return_value = ([search_result1], None)
+    
+    # Mock collections response for get_collections
+    collections_response = MagicMock()
+    collections_response.collections = []
+    mock_qdrant_client.get_collections.return_value = collections_response
+    mock_qdrant_client.create_collection.return_value = None
+    mock_qdrant_client.close.return_value = None
 
     # Mock OpenAI responses
     embedding_response = MagicMock()
@@ -56,7 +63,7 @@ async def integration_handler():
     # Patch external dependencies
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.QdrantClient",
+            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(
@@ -165,9 +172,10 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
     tools_response = await integration_handler.handle_request(tools_request)
     assert tools_response["jsonrpc"] == "2.0"
     assert tools_response["id"] == 2
+    # Check that we have the expected tools available
     assert "result" in tools_response
     assert "tools" in tools_response["result"]
-    assert len(tools_response["result"]["tools"]) == 3
+    assert len(tools_response["result"]["tools"]) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
 
 
 @pytest.mark.asyncio
@@ -210,3 +218,237 @@ async def test_search_empty_results(integration_handler):
         assert "result" in response
         assert "content" in response["result"]
         assert response["result"]["isError"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_cross_document_intelligence_mcp_integration(integration_handler):
+    """Test Phase 2.3 cross-document intelligence through MCP interface."""
+    
+    # Test document relationship analysis
+    with patch.object(integration_handler.search_engine, "analyze_document_relationships") as mock_analyze:
+        # Mock successful analysis response
+        mock_analyze.return_value = {
+            "summary": {
+                "total_documents": 5,
+                "clusters_found": 2,
+                "citation_relationships": 3,
+                "conflicts_detected": 1
+            },
+            "document_clusters": [],
+            "citation_network": {"nodes": [], "edges": []},
+            "complementary_content": {},
+            "conflict_analysis": {"conflicting_pairs": []},
+            "similarity_insights": {},
+            "query_metadata": {
+                "original_query": "authentication system",
+                "document_count": 5
+            }
+        }
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": "analyze_document_relationships",
+            "params": {
+                "query": "authentication system",
+                "limit": 10,
+                "project_ids": ["MyaHealth"]
+            },
+            "id": 10,
+        }
+
+        response = await integration_handler.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 10
+        assert "result" in response
+        assert response["result"]["isError"] is False
+        
+        # Verify the method was called with correct parameters
+        mock_analyze.assert_called_once_with(
+            query="authentication system",
+            limit=10,
+            source_types=None,
+            project_ids=["MyaHealth"]
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration  
+async def test_find_similar_documents_mcp_integration(integration_handler):
+    """Test finding similar documents through MCP interface."""
+    
+    with patch.object(integration_handler.search_engine, "find_similar_documents") as mock_similar:
+        # Mock similar documents response
+        mock_similar.return_value = [
+            {
+                "document": {"id": "doc1", "title": "OAuth Implementation"},
+                "similarity_score": 0.85,
+                "metric_scores": {"entity_overlap": 0.8, "topic_overlap": 0.9},
+                "similarity_reasons": ["shared authentication entities"]
+            }
+        ]
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": "find_similar_documents",
+            "params": {
+                "target_query": "OAuth authentication",
+                "comparison_query": "authentication security",
+                "similarity_metrics": ["entity_overlap", "topic_overlap"],
+                "max_similar": 3
+            },
+            "id": 11,
+        }
+
+        response = await integration_handler.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 11
+        assert "result" in response
+        assert response["result"]["isError"] is False
+        
+        # Verify the method was called
+        mock_similar.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_detect_document_conflicts_mcp_integration(integration_handler):
+    """Test conflict detection through MCP interface."""
+    
+    with patch.object(integration_handler.search_engine, "detect_document_conflicts") as mock_conflicts:
+        # Mock conflict detection response
+        mock_conflicts.return_value = {
+            "conflicting_pairs": [
+                ("doc1", "doc2", {"type": "contradictory_information"})
+            ],
+            "conflict_categories": {"contradictory_information": [("doc1", "doc2")]},
+            "resolution_suggestions": {"contradictory_information": "Review both documents for consistency"},
+            "query_metadata": {
+                "original_query": "user management policies",
+                "document_count": 5
+            }
+        }
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": "detect_document_conflicts",
+            "params": {
+                "query": "user management policies",
+                "limit": 8,
+                "project_ids": ["MyaHealth", "ProposAI"]
+            },
+            "id": 12,
+        }
+
+        response = await integration_handler.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 12
+        assert "result" in response
+        assert response["result"]["isError"] is False
+        
+        # Verify the method was called with correct parameters
+        mock_conflicts.assert_called_once_with(
+            query="user management policies",
+            limit=8,
+            source_types=None,
+            project_ids=["MyaHealth", "ProposAI"]
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_cluster_documents_mcp_integration(integration_handler):
+    """Test document clustering through MCP interface."""
+    
+    with patch.object(integration_handler.search_engine, "cluster_documents") as mock_cluster:
+        # Mock clustering response
+        mock_cluster.return_value = {
+            "clusters": [
+                {
+                    "id": "cluster_1",
+                    "documents": [],
+                    "centroid_topics": ["authentication", "security"],
+                    "shared_entities": ["OAuth", "JWT"],
+                    "coherence_score": 0.75,
+                    "cluster_summary": "Authentication and security documents"
+                }
+            ],
+            "clustering_metadata": {
+                "strategy": "mixed_features",
+                "total_clusters": 1,
+                "total_documents": 5,
+                "original_query": "system design documentation"
+            }
+        }
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": "cluster_documents",
+            "params": {
+                "query": "system design documentation",
+                "strategy": "mixed_features",
+                "max_clusters": 5,
+                "min_cluster_size": 2,
+                "limit": 15
+            },
+            "id": 13,
+        }
+
+        response = await integration_handler.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 13
+        assert "result" in response
+        assert response["result"]["isError"] is False
+        
+        # Verify the method was called with correct parameters
+        mock_cluster.assert_called_once_with(
+            query="system design documentation",
+            strategy="mixed_features",
+            max_clusters=5,
+            min_cluster_size=2,
+            limit=15,
+            source_types=None,
+            project_ids=None
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_find_complementary_content_mcp_integration(integration_handler):
+    """Test complementary content finding through MCP interface."""
+    
+    with patch.object(integration_handler.search_engine, "find_complementary_content") as mock_complementary:
+        # Mock complementary content response
+        mock_complementary.return_value = [
+            {
+                "document": {"id": "comp1", "title": "Database Security Best Practices"},
+                "complementary_score": 0.9,
+                "recommendation_reasons": ["complements authentication with data security"]
+            }
+        ]
+        
+        request = {
+            "jsonrpc": "2.0",
+            "method": "find_complementary_content",
+            "params": {
+                "target_query": "user authentication system",
+                "context_query": "system security",
+                "max_recommendations": 5,
+                "project_ids": ["MyaHealth"]
+            },
+            "id": 14,
+        }
+
+        response = await integration_handler.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 14
+        assert "result" in response
+        assert response["result"]["isError"] is False
+        
+        # Verify the method was called
+        mock_complementary.assert_called_once()

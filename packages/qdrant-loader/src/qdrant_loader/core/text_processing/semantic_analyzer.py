@@ -254,8 +254,8 @@ class SemanticAnalyzer:
                     passes=self.passes,
                     id2word=temp_dictionary,
                     random_state=42,  # For reproducibility
-                    alpha='auto',
-                    eta='auto'
+                    alpha=0.1,  # Fixed positive value for document-topic density
+                    eta=0.01   # Fixed positive value for topic-word density
                 )
 
             # Get topics

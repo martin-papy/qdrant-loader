@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 0.5.0 - July 25, 2025
+
+### 🚀 Major Features
+
+#### Advanced Search Intelligence
+
+- **Cross-document intelligence**: Document similarity analysis, clustering, and relationship detection
+- **Intent-aware adaptive search**: AI-powered query understanding and strategy selection
+- **Knowledge graph integration**: Entity relationships and multi-hop reasoning capabilities
+- **Topic-driven search chaining**: Automatic topic discovery and related content suggestions
+- **Dynamic faceted search**: Real-time facet generation and filtering interface
+
+#### Enhanced Semantic Analysis
+
+- **spaCy integration**: Advanced NLP processing with configurable language models
+- **Improved topic extraction**: Enhanced LDA modeling with optimized parameters
+- **Entity recognition**: Structured entity and topic conversion in search results
+- **Semantic analysis configuration**: Comprehensive topic modeling settings
+
+#### CLI & User Experience
+
+- **Force ingestion option**: Added `--force` flag to bypass change detection for complete reprocessing
+- **Enhanced chunking**: Improved timeout handling and performance thresholds
+- **Better logging**: Structured logging for semantic analysis and search components
+
 ## Version 0.4.15 - July 22, 2025
 
 ### 🚀 Major Improvements

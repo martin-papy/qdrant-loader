@@ -14,7 +14,7 @@ QDrant Loader supports YAML configuration files for managing settings in a struc
 
 ```yaml
 # Multi-project configuration structure
-global_config:          # Global settings for all projects
+global:                 # Global settings for all projects
   qdrant: {...}         # QDrant connection settings
   embedding: {...}      # Embedding model configuration
   chunking: {...}       # Text chunking settings
@@ -45,7 +45,7 @@ projects:               # Project definitions
 
 ```yaml
 # config.yaml - Minimal multi-project configuration
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
@@ -66,13 +66,14 @@ projects:
           base_url: "https://github.com/user/repo.git"
           branch: "main"
           token: "${REPO_TOKEN}"
+          file_types: ["*.md", "*.txt"]
 ```
 
 ### Complete Configuration Template
 
 ```yaml
 # config.yaml - Complete multi-project configuration template
-global_config:
+global:
   # QDrant vector database configuration
   qdrant:
     url: "http://localhost:6333"
@@ -86,13 +87,21 @@ global_config:
     model: "text-embedding-3-small"
     batch_size: 100
     vector_size: 1536
+    tokenizer: "cl100k_base"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000
   
   # Text chunking configuration
   chunking:
-    chunk_size: 1500
+    chunk_size: 1000
     chunk_overlap: 200
+    max_chunks_per_document: 1000
+  
+  # Semantic analysis configuration
+  semantic_analysis:
+    num_topics: 3
+    lda_passes: 10
+    spacy_model: "en_core_web_md"
   
   # State management configuration
   state_management:
@@ -113,6 +122,8 @@ global_config:
       llm_api_key: "${OPENAI_API_KEY}"
 
 # Multi-project configuration
+# Define multiple projects, each with their own sources and settings
+# All projects use the global collection_name defined above
 projects:
   # Example project: Documentation
   docs-project:
@@ -130,7 +141,8 @@ projects:
           exclude_paths: ["docs/archive/**"]
           file_types: ["*.md", "*.rst", "*.txt"]
           max_file_size: 1048576  # 1MB
-          token: "${DOCS_REPO_TOKEN}"
+          depth: 1
+          token: "${DOCS_REPO_TOKEN}"  # Required for private repos
           enable_file_conversion: true
       
       # Confluence sources
@@ -161,7 +173,9 @@ projects:
           deployment_type: "cloud"
           project_key: "SUPPORT"
           requests_per_minute: 60
-          page_size: 50
+          page_size: 100
+          issue_types: ["Bug", "Story", "Task"]  # Optional: filter by issue types
+          include_statuses: ["Open", "In Progress", "Done"]  # Optional: filter by status
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
           enable_file_conversion: true
@@ -180,12 +194,12 @@ projects:
 
 ## 🔧 Detailed Configuration Sections
 
-### Global Configuration (`global_config`)
+### Global Configuration (`global`)
 
 #### QDrant Database Configuration
 
 ```yaml
-global_config:
+global:
   qdrant:
     # Required: URL of your QDrant database instance
     url: "http://localhost:6333"
@@ -209,12 +223,12 @@ global_config:
 #### Embedding Configuration
 
 ```yaml
-global_config:
+global:
   embedding:
-    # Required: OpenAI API endpoint
+    # Required: API endpoint (OpenAI or compatible)
     endpoint: "https://api.openai.com/v1"
     
-    # Required: OpenAI API key
+    # Required: API key for the embedding service
     api_key: "${OPENAI_API_KEY}"
     
     # Optional: Embedding model (default: "text-embedding-3-small")
@@ -223,8 +237,12 @@ global_config:
     # Optional: Batch size for API calls (default: 100)
     batch_size: 100
     
-    # Optional: Vector dimension (default: 1536)
+    # Optional: Vector dimension (default: 1536 for OpenAI models)
     vector_size: 1536
+    
+    # Optional: Tokenizer for token counting (default: "cl100k_base")
+    # Use "cl100k_base" for OpenAI models or "none" for other models
+    tokenizer: "cl100k_base"
     
     # Optional: Maximum tokens per API request (default: 8000)
     max_tokens_per_request: 8000
@@ -235,27 +253,50 @@ global_config:
 
 **Required Fields:**
 
-- `endpoint` - OpenAI API endpoint URL
-- `api_key` - OpenAI API key (use environment variable)
+- `endpoint` - API endpoint URL
+- `api_key` - API key (use environment variable)
 
 #### Chunking Configuration
 
 ```yaml
-global_config:
+global:
   chunking:
-    # Optional: Maximum size of text chunks in tokens (default: 1500)
-    chunk_size: 1500
+    # Optional: Maximum size of text chunks in characters (default: 1000)
+    chunk_size: 1000
     
-    # Optional: Overlap between chunks in tokens (default: 200)
+    # Optional: Overlap between chunks in characters (default: 200)
     chunk_overlap: 200
+    
+    # Optional: Maximum chunks per document - safety limit (default: 1000)
+    max_chunks_per_document: 1000
+```
+
+#### Semantic Analysis Configuration
+
+```yaml
+global:
+  semantic_analysis:
+    # Optional: Number of topics to extract using LDA (default: 3)
+    num_topics: 3
+    
+    # Optional: Number of passes for LDA training (default: 10)
+    lda_passes: 10
+    
+    # Optional: spaCy model for text processing (default: "en_core_web_md")
+    # Options: en_core_web_sm (15MB, no vectors)
+    #          en_core_web_md (50MB, 20k vectors) - recommended
+    #          en_core_web_lg (750MB, 514k vectors)
+    spacy_model: "en_core_web_md"
 ```
 
 #### State Management Configuration
 
 ```yaml
-global_config:
+global:
   state_management:
     # Required: Path to SQLite database file
+    # Supports environment variable expansion (e.g., $HOME, ${STATE_DB_PATH})
+    # Special values: ":memory:" for in-memory database
     database_path: "${STATE_DB_PATH}"
     
     # Optional: Prefix for database tables (default: "qdrant_loader_")
@@ -267,10 +308,16 @@ global_config:
       timeout: 30  # Connection timeout in seconds (default: 30)
 ```
 
+**Path Validation Notes:**
+- Supports environment variable expansion including `$HOME`
+- Automatically creates parent directories if they don't exist
+- Validates directory permissions before use
+- Special handling for in-memory databases (`:memory:`)
+
 #### File Conversion Configuration
 
 ```yaml
-global_config:
+global:
   file_conversion:
     # Optional: Maximum file size for conversion in bytes (default: 50MB)
     max_file_size: 52428800
@@ -330,6 +377,15 @@ sources:
       # Required: Repository URL
       base_url: "https://github.com/user/repo.git"
       
+      # Required: Authentication token for accessing the repository
+      token: "${REPO_TOKEN}"
+      
+      # Required: File extensions to process (at least one required)
+      file_types:
+        - "*.md"
+        - "*.rst"
+        - "*.txt"
+      
       # Optional: Branch to process (default: "main")
       branch: "main"
       
@@ -343,24 +399,17 @@ sources:
         - "node_modules/**"
         - ".git/**"
       
-      # Optional: File extensions to process
-      file_types:
-        - "*.md"
-        - "*.rst"
-        - "*.txt"
-      
       # Optional: Maximum file size in bytes (default: 1MB)
       max_file_size: 1048576
       
-      # Optional: Maximum directory depth (default: unlimited)
-      depth: 10
-      
-      # Optional: GitHub token for private repositories
-      token: "${REPO_TOKEN}"
+      # Optional: Maximum directory depth (default: 1)
+      depth: 1
       
       # Optional: Enable file conversion (default: false)
       enable_file_conversion: true
 ```
+
+**Note:** The `token` field is required, even for public repositories.
 
 ##### Confluence Sources
 
@@ -377,7 +426,13 @@ sources:
       # Required: Space key to process
       space_key: "DOCS"
       
-      # Optional: Content types to process (default: ["page"])
+      # Required for Cloud: API token
+      token: "${CONFLUENCE_TOKEN}"
+      
+      # Required for Cloud: User email
+      email: "${CONFLUENCE_EMAIL}"
+      
+      # Optional: Content types to process (default: ["page", "blogpost"])
       content_types:
         - "page"
         - "blogpost"
@@ -387,12 +442,6 @@ sources:
       
       # Optional: Exclude content with these labels
       exclude_labels: []
-      
-      # Required for Cloud: API token
-      token: "${CONFLUENCE_TOKEN}"
-      
-      # Required for Cloud: User email
-      email: "${CONFLUENCE_EMAIL}"
       
       # Optional: Enable file conversion (default: false)
       enable_file_conversion: true
@@ -416,17 +465,29 @@ sources:
       # Required: Project key to process
       project_key: "PROJ"
       
-      # Optional: Rate limit for API calls (default: 60)
-      requests_per_minute: 60
-      
-      # Optional: Number of issues per API request (default: 50)
-      page_size: 50
-      
       # Required for Cloud: API token
       token: "${JIRA_TOKEN}"
       
       # Required for Cloud: User email
       email: "${JIRA_EMAIL}"
+      
+      # Optional: Rate limit for API calls (default: 60)
+      requests_per_minute: 60
+      
+      # Optional: Number of issues per API request (default: 100, max: 100)
+      page_size: 100
+      
+      # Optional: Issue types to process (empty = all types)
+      issue_types:
+        - "Bug"
+        - "Story"
+        - "Task"
+      
+      # Optional: Statuses to include (empty = all statuses)
+      include_statuses:
+        - "Open"
+        - "In Progress"
+        - "Done"
       
       # Optional: Enable file conversion (default: false)
       enable_file_conversion: true
@@ -460,8 +521,8 @@ sources:
         - "*.pdf"
         - "*.txt"
       
-      # Optional: Maximum file size in bytes (default: 50MB)
-      max_file_size: 52428800
+      # Optional: Maximum file size in bytes (default: 1MB)
+      max_file_size: 1048576
       
       # Optional: Enable file conversion (default: false)
       enable_file_conversion: true
@@ -476,11 +537,11 @@ sources:
       # Required: Base URL of documentation site
       base_url: "https://docs.example.com"
       
-      # Optional: Documentation version (default: "latest")
+      # Required: Documentation version
       version: "1.0"
       
       # Optional: Content type (default: "html")
-      content_type: "html"
+      content_type: "html"  # Options: html, markdown, rst
       
       # Optional: URL path pattern
       path_pattern: "/docs/{version}/**"
@@ -497,7 +558,8 @@ sources:
           - "nav"
           - "header"
           - "footer"
-        code_blocks: "pre code, .code"   # Code block selectors
+          - ".sidebar"
+        code_blocks: "pre code"   # Code block selectors
       
       # Optional: Enable file conversion (default: false)
       enable_file_conversion: true
@@ -505,10 +567,15 @@ sources:
       # Optional: Download and process attachments (default: false)
       download_attachments: true
       
-      # Optional: Attachment selectors
+      # Optional: CSS selectors for finding downloadable attachments
       attachment_selectors:
         - "a[href$='.pdf']"
+        - "a[href$='.doc']"
         - "a[href$='.docx']"
+        - "a[href$='.xls']"
+        - "a[href$='.xlsx']"
+        - "a[href$='.ppt']"
+        - "a[href$='.pptx']"
 ```
 
 ## 🔧 Configuration Management
@@ -606,7 +673,7 @@ JIRA_EMAIL=your_email
 ### Single Project Setup
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
@@ -631,13 +698,14 @@ projects:
           base_url: "https://github.com/company/docs.git"
           branch: "main"
           token: "${REPO_TOKEN}"
+          file_types: ["*.md", "*.rst"]
           enable_file_conversion: true
 ```
 
 ### Multi-Project Setup
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
@@ -648,15 +716,17 @@ global_config:
     model: "text-embedding-3-small"
   
   chunking:
-    chunk_size: 1500
+    chunk_size: 1000
     chunk_overlap: 200
+    max_chunks_per_document: 1000
   
   state_management:
     database_path: "${STATE_DB_PATH}"
   
   file_conversion:
     max_file_size: 52428800
-    enable_llm_descriptions: false
+    markitdown:
+      enable_llm_descriptions: false
 
 projects:
   documentation:
@@ -671,6 +741,7 @@ projects:
           branch: "main"
           include_paths: ["docs/**", "README.md"]
           token: "${DOCS_REPO_TOKEN}"
+          file_types: ["*.md", "*.rst"]
           enable_file_conversion: true
       
       confluence:
@@ -718,6 +789,7 @@ projects:
 - [ ] **Environment variables** configured in `.env` file
 - [ ] **Project definitions** created with unique project IDs
 - [ ] **Data source credentials** configured for your sources
+- [ ] **Required fields** provided (Git token, Confluence email/token, etc.)
 - [ ] **File conversion settings** configured if processing non-text files
 - [ ] **Configuration validated** with `qdrant-loader project validate`
 - [ ] **Projects listed** with `qdrant-loader project list`

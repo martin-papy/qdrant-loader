@@ -92,7 +92,14 @@ class ChunkingWorker(BaseWorker):
             logger.debug(f"Chunker_worker {document.id} cancelled")
             raise
         except TimeoutError:
-            logger.error(f"Chunking timed out for doc {document.url}")
+            # Provide more detailed timeout information
+            doc_size = len(document.content)
+            timeout_used = self._calculate_adaptive_timeout(document)
+            logger.error(
+                f"Chunking timed out for document '{document.url}' "
+                f"(size: {doc_size:,} bytes, timeout: {timeout_used:.1f}s). "
+                f"Consider increasing chunking timeout or checking document complexity."
+            )
             raise
         except Exception as e:
             logger.error(f"Chunking failed for doc {document.url}: {e}")
@@ -202,21 +209,25 @@ class ChunkingWorker(BaseWorker):
         """
         doc_size = len(document.content)
 
-        # Universal scaling based on document characteristics
+        # More generous base timeouts to reduce false positives
         if doc_size < 1_000:  # Very small files (< 1KB)
-            base_timeout = 10.0
+            base_timeout = 30.0  # Increased from 10.0
         elif doc_size < 10_000:  # Small files (< 10KB)
-            base_timeout = 20.0
+            base_timeout = 60.0  # Increased from 20.0
         elif doc_size < 50_000:  # Medium files (10-50KB)
-            base_timeout = 60.0
+            base_timeout = 120.0  # Increased from 60.0
         elif doc_size < 100_000:  # Large files (50-100KB)
-            base_timeout = 120.0
+            base_timeout = 240.0  # Increased from 120.0
         else:  # Very large files (> 100KB)
-            base_timeout = 180.0
+            base_timeout = 360.0  # Increased from 180.0
 
         # Special handling for HTML files which can have complex structures
         if document.content_type and document.content_type.lower() == "html":
             base_timeout *= 1.5  # Give HTML files 50% more time
+
+        # Special handling for converted files which often have complex markdown
+        if hasattr(document, 'metadata') and document.metadata.get('conversion_method'):
+            base_timeout *= 1.5  # Give converted files 50% more time
 
         # Additional scaling factors
         size_factor = min(doc_size / 50000, 4.0)  # Up to 4x for very large files
@@ -224,5 +235,5 @@ class ChunkingWorker(BaseWorker):
         # Final adaptive timeout
         adaptive_timeout = base_timeout * (1 + size_factor)
 
-        # Cap maximum timeout to prevent indefinite hanging
-        return min(adaptive_timeout, 300.0)  # 5 minute maximum
+        # Increased maximum timeout to handle complex documents
+        return min(adaptive_timeout, 600.0)  # 10 minute maximum (increased from 5 minutes)

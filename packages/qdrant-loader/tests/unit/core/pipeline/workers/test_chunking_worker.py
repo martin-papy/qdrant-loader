@@ -374,9 +374,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be base timeout for very small files
-        assert timeout >= 10.0
-        assert timeout <= 50.0  # With size factor
+        # Should be base timeout for very small files (updated to match new implementation)
+        assert timeout >= 30.0
+        assert timeout <= 60.0  # With size factor
 
     def test_calculate_adaptive_timeout_small_file(self):
         """Test adaptive timeout calculation for small files."""
@@ -384,9 +384,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be base timeout for small files
-        assert timeout >= 20.0
-        assert timeout <= 80.0  # With size factor
+        # Should be base timeout for small files (updated to match new implementation)
+        assert timeout >= 60.0
+        assert timeout <= 120.0  # With size factor
 
     def test_calculate_adaptive_timeout_medium_file(self):
         """Test adaptive timeout calculation for medium files."""
@@ -394,9 +394,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be base timeout for medium files
-        assert timeout >= 60.0
-        assert timeout <= 180.0  # With size factor
+        # Should be base timeout for medium files (updated to match new implementation)
+        assert timeout >= 120.0
+        assert timeout <= 300.0  # With size factor
 
     def test_calculate_adaptive_timeout_large_file(self):
         """Test adaptive timeout calculation for large files."""
@@ -404,9 +404,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be base timeout for large files
-        assert timeout >= 120.0
-        assert timeout <= 300.0  # Capped at maximum
+        # Should be base timeout for large files (updated to match new implementation)
+        assert timeout >= 240.0
+        assert timeout <= 600.0  # Capped at maximum
 
     def test_calculate_adaptive_timeout_very_large_file(self):
         """Test adaptive timeout calculation for very large files."""
@@ -414,9 +414,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be base timeout for very large files, capped at maximum
-        assert timeout >= 180.0
-        assert timeout <= 300.0  # Capped at maximum
+        # Should be base timeout for very large files, capped at maximum (updated to match new implementation)
+        assert timeout >= 360.0
+        assert timeout <= 600.0  # Capped at maximum
 
     def test_calculate_adaptive_timeout_html_file(self):
         """Test adaptive timeout calculation for HTML files."""
@@ -443,9 +443,9 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should work with any content type (non-HTML doesn't get extra time)
-        assert timeout >= 60.0
-        assert timeout <= 300.0
+        # Should work with any content type (non-HTML doesn't get extra time) - updated to match new implementation
+        assert timeout >= 120.0
+        assert timeout <= 600.0
 
     def test_calculate_adaptive_timeout_maximum_cap(self):
         """Test that adaptive timeout is capped at maximum."""
@@ -455,8 +455,8 @@ class TestChunkingWorker:
 
         timeout = self.worker._calculate_adaptive_timeout(document)
 
-        # Should be capped at 300 seconds (5 minutes)
-        assert timeout == 300.0
+        # Should be capped at 600 seconds (10 minutes) - updated to match new implementation
+        assert timeout == 600.0
 
     def test_calculate_adaptive_timeout_size_factor_scaling(self):
         """Test that size factor scales correctly."""
@@ -477,5 +477,5 @@ class TestChunkingWorker:
         for i in range(len(timeouts) - 1):
             # Allow for some variation due to different base timeouts
             # but overall trend should be increasing
-            if timeouts[i + 1] < 300.0:  # Not at cap
+            if timeouts[i + 1] < 600.0:  # Not at cap (updated to match new max)
                 assert timeouts[i + 1] >= timeouts[i] * 0.8  # Allow some variation

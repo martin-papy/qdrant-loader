@@ -17,7 +17,7 @@ async def test_handle_tools_list(mcp_handler):
     assert response["id"] == 1
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 3
+    assert len(response["result"]["tools"]) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
 
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
@@ -315,7 +315,7 @@ async def test_tools_list_contains_all_three_tools(mcp_handler):
     assert "tools" in response["result"]
 
     tools = response["result"]["tools"]
-    assert len(tools) == 3
+    assert len(tools) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
 
     tool_names = [tool["name"] for tool in tools]
     assert "search" in tool_names
