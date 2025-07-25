@@ -878,23 +878,37 @@ class ComplementaryContentFinder:
         recommendations = []
         target_doc_id = f"{target_doc.source_type}:{target_doc.source_title}"
         
+        self.logger.info(f"Finding complementary content for target: {target_doc_id}")
+        self.logger.info(f"Target doc topics: {target_doc.topics}")
+        self.logger.info(f"Target doc entities: {target_doc.entities}")
+        self.logger.info(f"Analyzing {len(candidate_docs)} candidate documents")
+        
         for candidate in candidate_docs:
             candidate_id = f"{candidate.source_type}:{candidate.source_title}"
             
             if candidate_id == target_doc_id:
                 continue
             
+            self.logger.debug(f"Analyzing candidate: {candidate_id}")
+            self.logger.debug(f"Candidate topics: {candidate.topics}")
+            self.logger.debug(f"Candidate entities: {candidate.entities}")
+            
             # Calculate complementary score
             complementary_score, reason = self._calculate_complementary_score(target_doc, candidate)
             
-            if complementary_score > 0.3:  # Threshold for complementary content
+            self.logger.info(f"Complementary score for {candidate_id}: {complementary_score:.3f} - {reason}")
+            
+            if complementary_score > 0.15:  # Lowered threshold for complementary content
                 recommendations.append((candidate_id, complementary_score, reason))
+            else:
+                # Log why it didn't make the cut
+                self.logger.debug(f"Rejected {candidate_id}: score {complementary_score:.3f} below threshold 0.15")
         
         # Sort by complementary score
         recommendations.sort(key=lambda x: x[1], reverse=True)
         
         processing_time = (time.time() - start_time) * 1000
-        self.logger.debug(f"Found {len(recommendations)} complementary recommendations in {processing_time:.2f}ms")
+        self.logger.info(f"Found {len(recommendations)} complementary recommendations in {processing_time:.2f}ms")
         
         return ComplementaryContent(
             target_doc_id=target_doc_id,
@@ -908,40 +922,103 @@ class ComplementaryContentFinder:
         score_factors = []
         reasons = []
         
-        # Different project but related entities (cross-project insights)
+        self.logger.info(f"=== Scoring {candidate_doc.source_title} against {target_doc.source_title} ===")
+        
+        # 1. Documents with shared topics but different source types (high value)
+        has_shared_topics = self._has_shared_topics(target_doc, candidate_doc)
+        different_source_types = target_doc.source_type != candidate_doc.source_type
+        
+        self.logger.info(f"Source types: target={target_doc.source_type}, candidate={candidate_doc.source_type}, different={different_source_types}")
+        self.logger.info(f"Has shared topics: {has_shared_topics}")
+        
+        if (different_source_types and has_shared_topics):
+            shared_topics = self._get_shared_topics_count(target_doc, candidate_doc)
+            score = min(0.8, 0.4 + (shared_topics * 0.1))  # 0.4-0.8 based on topic overlap
+            score_factors.append(score)
+            reasons.append(f"Different source types, {shared_topics} shared topics")
+            self.logger.info(f"✓ Score factor 1: {score} - Different source types, {shared_topics} shared topics")
+        
+        # 2. Documents with shared entities but different project contexts
         if (target_doc.project_id != candidate_doc.project_id and 
             self._has_shared_entities(target_doc, candidate_doc)):
-            score_factors.append(0.6)
-            reasons.append("Cross-project insights")
+            shared_entities = self._get_shared_entities_count(target_doc, candidate_doc)
+            score = min(0.7, 0.3 + (shared_entities * 0.1))  # 0.3-0.7 based on entity overlap
+            score_factors.append(score)
+            reasons.append(f"Cross-project insights, {shared_entities} shared entities")
         
-        # Different content types but same topic (e.g., code + documentation)
-        if (self._has_different_content_types(target_doc, candidate_doc) and
-            self._has_shared_topics(target_doc, candidate_doc)):
-            score_factors.append(0.7)
-            reasons.append("Different content type, same topic")
+        # 3. Different content complexity but related content
+        if self._has_different_content_complexity(target_doc, candidate_doc):
+            if self._has_shared_topics(target_doc, candidate_doc) or self._has_shared_entities(target_doc, candidate_doc):
+                score_factors.append(0.6)
+                reasons.append("Different complexity levels, related content")
         
-        # Different depth levels in same hierarchy (overview + details)
-        if (target_doc.depth is not None and candidate_doc.depth is not None and
-            abs(target_doc.depth - candidate_doc.depth) >= 2 and
-            self._has_hierarchical_relationship(target_doc, candidate_doc)):
+        # 4. Complementary content types (technical + business, requirements + implementation)
+        complementary_type_score = self._get_complementary_content_type_score(target_doc, candidate_doc)
+        if complementary_type_score > 0:
+            score_factors.append(complementary_type_score)
+            reasons.append("Complementary content types")
+        
+        # 5. Sequential or hierarchical relationship
+        if self._has_sequential_relationship(target_doc, candidate_doc):
             score_factors.append(0.5)
-            reasons.append("Different detail levels")
+            reasons.append("Sequential relationship")
         
-        # Prerequisites or follow-up content
-        if self._is_prerequisite_content(target_doc, candidate_doc):
-            score_factors.append(0.8)
-            reasons.append("Prerequisite content")
-        
-        # Similar time frame but different perspective
-        if self._has_similar_timeframe(target_doc, candidate_doc):
-            score_factors.append(0.4)
-            reasons.append("Similar timeframe")
+        # 6. Related keywords in titles/content that suggest complementary value
+        title_complement_score = self._get_title_complementary_score(target_doc, candidate_doc)
+        if title_complement_score > 0:
+            score_factors.append(title_complement_score)
+            reasons.append("Complementary title keywords")
         
         # Calculate final score
-        final_score = max(score_factors) if score_factors else 0.0
-        primary_reason = reasons[score_factors.index(max(score_factors))] if reasons else "No clear relationship"
+        if score_factors:
+            # Use weighted average instead of max to consider multiple factors
+            final_score = sum(score_factors) / len(score_factors)
+            # Boost score if multiple factors contribute
+            if len(score_factors) > 1:
+                final_score = min(0.9, final_score * 1.2)
+            primary_reason = reasons[score_factors.index(max(score_factors))]
+            self.logger.info(f"✓ Final score from {len(score_factors)} factors: {final_score:.3f}")
+        else:
+            # Fallback: Basic content similarity
+            self.logger.info("No advanced factors found, trying fallback scoring...")
+            fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
+            if fallback_score > 0:
+                final_score = fallback_score
+                primary_reason = "Basic content similarity"
+                self.logger.info(f"✓ Fallback score: {final_score:.3f}")
+            else:
+                final_score = 0.0
+                primary_reason = "No complementary relationship found"
+                self.logger.info("✗ No relationship found")
         
+        self.logger.info(f"Final complementary score: {final_score:.3f} for {candidate_doc.source_title} - {primary_reason}")
         return final_score, primary_reason
+    
+    def _calculate_fallback_score(self, target_doc: SearchResult, candidate_doc: SearchResult) -> float:
+        """Fallback scoring for when advanced methods don't find relationships."""
+        score = 0.0
+        
+        # Just having any shared topics at all
+        if self._has_shared_topics(target_doc, candidate_doc):
+            shared_count = self._get_shared_topics_count(target_doc, candidate_doc)
+            score = max(score, 0.2 + (shared_count * 0.05))
+            self.logger.debug(f"Fallback: {shared_count} shared topics → score: {score:.3f}")
+        
+        # Just having any shared entities at all
+        if self._has_shared_entities(target_doc, candidate_doc):
+            shared_count = self._get_shared_entities_count(target_doc, candidate_doc)
+            score = max(score, 0.15 + (shared_count * 0.05))
+            self.logger.debug(f"Fallback: {shared_count} shared entities → score: {score:.3f}")
+        
+        # Simple keyword overlap in titles
+        target_words = set(target_doc.source_title.lower().split())
+        candidate_words = set(candidate_doc.source_title.lower().split())
+        common_words = target_words & candidate_words
+        if len(common_words) > 1:  # More than just common words like "the", "and"
+            score = max(score, 0.1 + (len(common_words) * 0.02))
+            self.logger.debug(f"Fallback: {len(common_words)} common words in titles → score: {score:.3f}")
+        
+        return min(score, 0.5)  # Cap fallback scores
     
     def _has_shared_entities(self, doc1: SearchResult, doc2: SearchResult) -> bool:
         """Check if documents have shared entities."""
@@ -978,6 +1055,119 @@ class ComplementaryContentFinder:
         intro_keywords = ["introduction", "overview", "getting started", "basics", "fundamentals"]
         candidate_title_lower = candidate_doc.source_title.lower()
         return any(keyword in candidate_title_lower for keyword in intro_keywords)
+    
+    def _get_shared_topics_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
+        """Get the count of shared topics between documents."""
+        topics1 = self.similarity_calculator._extract_topic_texts(doc1.topics)
+        topics2 = self.similarity_calculator._extract_topic_texts(doc2.topics)
+        return len(set(topics1) & set(topics2))
+    
+    def _get_shared_entities_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
+        """Get the count of shared entities between documents."""
+        entities1 = self.similarity_calculator._extract_entity_texts(doc1.entities)
+        entities2 = self.similarity_calculator._extract_entity_texts(doc2.entities)
+        return len(set(entities1) & set(entities2))
+    
+    def _has_different_content_complexity(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have different levels of content complexity."""
+        # Compare word counts if available
+        if doc1.word_count and doc2.word_count:
+            ratio = max(doc1.word_count, doc2.word_count) / min(doc1.word_count, doc2.word_count)
+            if ratio > 2.0:  # One document is significantly longer
+                return True
+        
+        # Compare content features
+        features1 = (doc1.has_code_blocks, doc1.has_tables, doc1.has_images)
+        features2 = (doc2.has_code_blocks, doc2.has_tables, doc2.has_images)
+        
+        # Different if one has technical content and the other doesn't
+        return features1 != features2
+    
+    def _get_complementary_content_type_score(self, target_doc: SearchResult, candidate_doc: SearchResult) -> float:
+        """Calculate score based on complementary content types."""
+        score = 0.0
+        
+        # Technical + Business complement
+        technical_keywords = ["api", "code", "implementation", "technical", "development", "architecture"]
+        business_keywords = ["requirements", "business", "specification", "user", "workflow", "process"]
+        
+        target_title = target_doc.source_title.lower()
+        candidate_title = candidate_doc.source_title.lower()
+        
+        target_is_technical = any(keyword in target_title for keyword in technical_keywords)
+        target_is_business = any(keyword in target_title for keyword in business_keywords)
+        candidate_is_technical = any(keyword in candidate_title for keyword in technical_keywords)
+        candidate_is_business = any(keyword in candidate_title for keyword in business_keywords)
+        
+        # Technical document + Business document = complementary
+        if (target_is_technical and candidate_is_business) or (target_is_business and candidate_is_technical):
+            score = 0.7
+        
+        # Documentation + Implementation complement
+        if ("documentation" in target_title and "implementation" in candidate_title) or \
+           ("implementation" in target_title and "documentation" in candidate_title):
+            score = max(score, 0.6)
+        
+        # Requirements + Design complement
+        if ("requirements" in target_title and ("design" in candidate_title or "architecture" in candidate_title)) or \
+           (("design" in target_title or "architecture" in target_title) and "requirements" in candidate_title):
+            score = max(score, 0.6)
+        
+        return score
+    
+    def _has_sequential_relationship(self, target_doc: SearchResult, candidate_doc: SearchResult) -> bool:
+        """Check if documents have a sequential relationship."""
+        # Check depth hierarchy
+        if (target_doc.depth is not None and candidate_doc.depth is not None and
+            abs(target_doc.depth - candidate_doc.depth) == 1):
+            return self._has_hierarchical_relationship(target_doc, candidate_doc)
+        
+        # Check for sequential keywords
+        sequential_keywords = [
+            ("introduction", "implementation"),
+            ("overview", "details"),
+            ("getting started", "advanced"),
+            ("basics", "configuration"),
+            ("setup", "usage"),
+            ("phase 1", "phase 2"),
+            ("part 1", "part 2")
+        ]
+        
+        target_title = target_doc.source_title.lower()
+        candidate_title = candidate_doc.source_title.lower()
+        
+        for first, second in sequential_keywords:
+            if (first in target_title and second in candidate_title) or \
+               (second in target_title and first in candidate_title):
+                return True
+        
+        return False
+    
+    def _get_title_complementary_score(self, target_doc: SearchResult, candidate_doc: SearchResult) -> float:
+        """Calculate complementary score based on title analysis."""
+        target_title = target_doc.source_title.lower()
+        candidate_title = candidate_doc.source_title.lower()
+        
+        # Complementary keyword pairs
+        complementary_pairs = [
+            ("frontend", "backend"),
+            ("client", "server"),
+            ("user", "admin"),
+            ("mobile", "web"),
+            ("design", "implementation"),
+            ("planning", "execution"),
+            ("theory", "practice"),
+            ("overview", "detailed"),
+            ("security", "functionality"),
+            ("testing", "development")
+        ]
+        
+        for word1, word2 in complementary_pairs:
+            if (word1 in target_title and word2 in candidate_title) or \
+               (word2 in target_title and word1 in candidate_title):
+                return 0.5
+        
+        return 0.0
     
     def _has_similar_timeframe(self, doc1: SearchResult, doc2: SearchResult) -> bool:
         """Check if documents are from similar timeframe."""
