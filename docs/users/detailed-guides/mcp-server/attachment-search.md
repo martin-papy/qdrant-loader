@@ -4,37 +4,43 @@ This guide covers the attachment search capabilities of the QDrant Loader MCP Se
 
 ## 🎯 Overview
 
-The attachment search tool specializes in finding file attachments and their associated documents. It's designed for knowledge bases that include:
+The attachment search tool specializes in finding file attachments and their associated documents. **Currently, this feature is specifically designed for Confluence sources** and includes:
 
 - **PDF documents** with extracted text content
-- **Office documents** (Word, Excel, PowerPoint)
-- **Images** with OCR text extraction
+- **Office documents** (Word, Excel, PowerPoint)  
+- **Images** with text extraction via MarkItDown
 - **Code files** and configuration files
 - **Data files** (CSV, JSON, YAML)
 
 ### Key Benefits
 
-- **Content Extraction**: Searches inside file contents, not just filenames
-- **Parent Context**: Understands the relationship between attachments and their parent documents
-- **File Type Intelligence**: Optimized search for different file formats
-- **Metadata Awareness**: Searches file properties, authors, and creation dates
+- **Content Extraction**: Searches inside file contents using MarkItDown conversion
+- **Parent Context**: Understands the relationship between attachments and their parent Confluence pages
+- **File Type Intelligence**: Optimized search for different file formats supported by MarkItDown
+- **Metadata Awareness**: Searches file properties, authors, and creation dates from Confluence
+
+### ⚠️ Important Limitations
+
+- **Confluence Only**: Currently limited to Confluence attachments and documents
+- **MarkItDown Dependency**: File conversion capabilities depend on MarkItDown library support
+- **No OCR**: Text extraction from images relies on MarkItDown, not dedicated OCR processing
 
 ## 📎 How Attachment Search Works
 
 ### File Processing Pipeline
 
 ```text
-File Attachment
+Confluence Attachment
     ↓
-1. Content Extraction (text, metadata)
+1. File Detection (MIME type and extension analysis)
     ↓
-2. OCR Processing (for images)
+2. MarkItDown Conversion (text extraction from various formats)
     ↓
-3. Structure Analysis (for structured files)
+3. Content Processing (markdown structure analysis)
     ↓
-4. Vector Embedding (semantic search)
+4. Vector Embedding (semantic search via OpenAI)
     ↓
-5. Parent Context Integration
+5. Confluence Context Integration (parent page relationship)
     ↓
 6. Searchable Attachment Index
 ```
@@ -44,15 +50,17 @@ File Attachment
 ```text
 Query: "architecture diagrams"
     ↓
-1. Semantic Search (find relevant attachments)
+1. Semantic Search (find relevant Confluence attachments)
     ↓
-2. File Type Filtering (images, PDFs)
+2. Confluence Filter (only Confluence sources processed)
     ↓
-3. Content Analysis (OCR text, metadata)
+3. File Type Filtering (based on MIME type and filename)
     ↓
-4. Parent Context (associated documents)
+4. Content Analysis (MarkItDown extracted text)
     ↓
-5. Ranked Results (by relevance and file type)
+5. Parent Context (associated Confluence pages)
+    ↓
+6. Ranked Results (by relevance and attachment metadata)
 ```
 
 ## 🔧 Attachment Search Parameters
@@ -62,8 +70,9 @@ Query: "architecture diagrams"
 ```json
 {
   "name": "attachment_search",
+  "description": "Search for file attachments and their parent documents across Confluence sources",
   "parameters": {
-    "query": "string",              // Required: Search query
+    "query": "string",              // Required: Search query in natural language
     "limit": 10,                    // Optional: Number of results (default: 10)
     "include_parent_context": true, // Optional: Include parent document info (default: true)
     "attachment_filter": {          // Optional: Attachment-specific filters
@@ -100,100 +109,61 @@ Query: "architecture diagrams"
 
 ## 📁 Supported File Types
 
+The attachment search supports file types that can be processed by MarkItDown for text extraction:
+
 ### Document Files
 
 #### PDF Documents (.pdf)
-
-- **Content**: Full text extraction
-- **Metadata**: Title, author, creation date, page count
-- **Features**: OCR for scanned PDFs, table extraction
+- **Content**: Text extraction via MarkItDown
+- **Metadata**: Basic Confluence attachment metadata (author, size, date)
+- **Features**: Text content search within PDF documents
 - **Use Cases**: Reports, manuals, specifications
 
-```json
-{
-  "file_type": "pdf",
-  "content_extracted": "System Architecture Overview...",
-  "metadata": {
-    "pages": 42,
-    "author": "Architecture Team",
-    "created": "2024-01-15T10:30:00Z",
-    "title": "Microservices Architecture Guide"
-  }
-}
-```
-
-#### Microsoft Word (.docx, .doc)
-
-- **Content**: Text, headers, tables, comments
-- **Metadata**: Author, last modified, word count
-- **Features**: Style preservation, comment extraction
-- **Use Cases**: Documentation, procedures, templates
-
-#### Microsoft Excel (.xlsx, .xls)
-
-- **Content**: Cell data, formulas, sheet names
-- **Metadata**: Author, sheet count, last modified
-- **Features**: Multi-sheet support, formula analysis
-- **Use Cases**: Data analysis, metrics, configurations
-
-#### Microsoft PowerPoint (.pptx, .ppt)
-
-- **Content**: Slide text, notes, titles
-- **Metadata**: Author, slide count, presentation title
-- **Features**: Speaker notes, slide structure
-- **Use Cases**: Presentations, training materials
+#### Microsoft Office Documents
+- **Word Documents** (.docx, .doc): Text content extraction
+- **Excel Spreadsheets** (.xlsx, .xls): Cell content and sheet data extraction  
+- **PowerPoint Presentations** (.pptx, .ppt): Slide text and notes extraction
+- **Metadata**: Author, file size, last modified date from Confluence
+- **Use Cases**: Documentation, presentations, data analysis
 
 ### Image Files
 
-#### PNG/JPEG Images (.png, .jpg, .jpeg)
+#### Common Image Formats (.png, .jpg, .jpeg, .gif, .bmp, .tiff, .webp)
+- **Content**: Text extraction via MarkItDown (limited capability)
+- **Metadata**: File size, dimensions (basic), upload date from Confluence
+- **Features**: Basic text recognition where supported by MarkItDown
+- **Use Cases**: Screenshots, diagrams, charts (text extraction may be limited)
 
-- **Content**: OCR text extraction
-- **Metadata**: Dimensions, creation date, camera info
-- **Features**: Text recognition, diagram analysis
-- **Use Cases**: Screenshots, diagrams, charts
-
-#### SVG Graphics (.svg)
-
-- **Content**: Text elements, metadata
-- **Metadata**: Dimensions, creation tool
-- **Features**: Vector text extraction
-- **Use Cases**: Diagrams, icons, flowcharts
-
-### Data Files
+### Data and Text Files
 
 #### CSV Files (.csv)
+- **Content**: Column headers and data structure extraction
+- **Features**: Data content made searchable
+- **Use Cases**: Data exports, configuration data
 
-- **Content**: Column headers, data structure
-- **Metadata**: Row count, column count
-- **Features**: Schema analysis, data profiling
-- **Use Cases**: Data exports, configurations
+#### Archive Files (.zip, .epub)
+- **Content**: Archive content extraction where supported by MarkItDown
+- **Features**: Basic content indexing
 
-#### JSON Files (.json)
+#### Plain Text Files (.txt)
+- **Content**: Full text extraction
+- **Features**: Complete content searchability
 
-- **Content**: Structure analysis, key extraction
-- **Metadata**: File size, structure depth
-- **Features**: Schema validation, nested data
-- **Use Cases**: API responses, configurations
+### Audio Files (Limited Support)
+#### Audio Formats (.mp3, .wav)
+- **Content**: Limited to metadata extraction only
+- **Note**: Audio transcription is not supported
 
-#### YAML Files (.yaml, .yml)
+### Important Notes
 
-- **Content**: Configuration structure, values
-- **Metadata**: File size, key count
-- **Features**: Configuration analysis
-- **Use Cases**: Config files, CI/CD definitions
-
-### Code Files
-
-#### Source Code (.py, .js, .java, .cpp)
-
-- **Content**: Code structure, comments, functions
-- **Metadata**: Line count, language, encoding
-- **Features**: Syntax analysis, documentation extraction
-- **Use Cases**: Code examples, libraries
+- **Conversion Dependency**: All file processing depends on MarkItDown library capabilities
+- **Text-Based Search**: Search operates on text content extracted by MarkItDown
+- **Confluence Metadata**: File metadata comes from Confluence attachment properties
+- **No Custom OCR**: No dedicated OCR processing beyond MarkItDown's built-in capabilities
 
 ## 🔍 Search Examples and Use Cases
 
-### 1. Finding Specific File Types
+### 1. Finding Specific File Types in Confluence
 
 #### Architecture Diagrams
 
@@ -207,14 +177,14 @@ Parameters: {
 
 Results:
 1. 📄 system-architecture-v2.pdf (2.3 MB)
-   Parent: Architecture Documentation
-   Content: "Microservices architecture with API gateway, service mesh..."
-   Author: Architecture Team
+   Parent: Architecture Documentation (Confluence)
+   Content: "Microservices architecture with API gateway..."
+   Author: architecture-team
    
 2. 📄 database-schema.pdf (1.1 MB)
-   Parent: Database Design
-   Content: "User Table, Product Table, Order Table, Foreign Keys..."
-   Author: Database Team
+   Parent: Database Design (Confluence)
+   Content: "User Table, Product Table, Order Table..."
+   Author: database-team
 ```
 
 #### Performance Reports
@@ -229,17 +199,17 @@ Parameters: {
 
 Results:
 1. 📊 q4-performance-report.xlsx (1.2 MB)
-   Parent: Quarterly Reports
-   Content: "API Performance, Database Metrics, User Analytics"
-   Author: Performance Team
+   Parent: Quarterly Reports (Confluence)
+   Content: Extracted spreadsheet data and metrics
+   Author: performance-team
    
 2. 📊 daily-metrics.xlsx (456 KB)
-   Parent: Monitoring Dashboard
-   Content: "Response times, throughput, error rates"
-   Author: DevOps Team
+   Parent: Monitoring Dashboard (Confluence)
+   Content: Response times, throughput, error rates data
+   Author: devops-team
 ```
 
-### 2. Content-Based Search
+### 2. Content-Based Search in Confluence Attachments
 
 #### Finding Specific Information
 
@@ -251,38 +221,12 @@ Parameters: {
 
 Results:
 1. 📄 api-rate-limiting-policy.pdf (1.8 MB)
-   Parent: API Documentation
-   Content: "Rate limiting is implemented using a token bucket algorithm..."
+   Parent: API Documentation (Confluence)
+   Content: "Rate limiting implementation using token bucket..."
    
-2. 📄 rate-limit-config.yaml (12 KB)
-   Parent: Configuration Files
-   Content: "default_rate: 1000/hour, premium_rate: 5000/hour..."
-   
-3. 📄 throttling-implementation.docx (890 KB)
-   Parent: Development Guidelines
+2. 📄 throttling-implementation.docx (890 KB)
+   Parent: Development Guidelines (Confluence)
    Content: "Implementation guide for rate limiting middleware..."
-```
-
-#### Technical Specifications
-
-```text
-Query: "database schema and table structures"
-Parameters: {
-  "limit": 15
-}
-
-Results:
-1. 📄 database-schema.sql (45 KB)
-   Parent: Database Documentation
-   Content: "CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR..."
-   
-2. 🖼️ erd-diagram.png (1.1 MB)
-   Parent: Database Design
-   Content: "Users, Products, Orders, Payments, Relationships..."
-   
-3. 📊 table-documentation.xlsx (567 KB)
-   Parent: Database Documentation
-   Content: "Complete schema documentation with tables, columns, indexes"
 ```
 
 ### 3. Author and Date Filtering
@@ -300,12 +244,12 @@ Parameters: {
 Results:
 1. 📄 deployment-runbook-v3.pdf (2.1 MB)
    Author: devops-team
-   Parent: Operations Documentation
+   Parent: Operations Documentation (Confluence)
    Content: "Updated deployment procedures for Kubernetes..."
    
 2. 📄 rollback-procedures.docx (678 KB)
    Author: devops-team
-   Parent: Emergency Procedures
+   Parent: Emergency Procedures (Confluence)
    Content: "Step-by-step rollback process for production..."
 ```
 
@@ -321,45 +265,63 @@ Parameters: {
 
 Results:
 1. 📄 complete-api-specification.pdf (5.2 MB)
-   Parent: API Documentation
+   Parent: API Documentation (Confluence)
    Content: "Complete REST API specification with examples..."
    
 2. 📄 system-architecture-guide.pdf (3.8 MB)
-   Parent: Architecture Documentation
+   Parent: Architecture Documentation (Confluence)
    Content: "Comprehensive system architecture documentation..."
 ```
 
 ## 🔧 Advanced Attachment Features
 
-### 1. Content Extraction and Analysis
+### 1. MarkItDown-Based Content Extraction
 
-#### Text Extraction
-
-The tool extracts and indexes various types of content:
+The attachment search uses MarkItDown for converting file content to searchable text:
 
 ```text
-PDF Content:
-"To deploy the application to production, first ensure all dependencies 
-are installed and the database migrations have been applied..."
+PDF Content Extraction:
+"System Architecture Overview
+This document describes our microservices architecture..."
 
-Excel Data:
-"Server response times: 95th percentile: 250ms, 99th percentile: 500ms
-Database query performance: Average: 45ms, Max: 2.3s"
+Excel Data Extraction:
+"Performance Metrics
+Response Time: 250ms
+Database Queries: 45ms average"
 
-Image OCR:
-"System Architecture Diagram
-Web Layer → API Gateway → Microservices
-Database Layer: PostgreSQL, Redis Cache"
+PowerPoint Content:
+"Deployment Strategy
+Slide 1: Overview
+Slide 2: Implementation Steps..."
 
-Code Comments:
-"# Configuration for production deployment
-# This script handles the complete deployment pipeline
-# including database migrations and service restarts"
+Word Document:
+"API Documentation
+Authentication endpoints require JWT tokens..."
 ```
 
-#### Metadata Extraction
+### 2. Confluence Integration
 
-Rich metadata is extracted and made searchable:
+Results include context from the parent Confluence page:
+
+```text
+Attachment: database-migration-script.sql
+Parent Page: "Database Schema Updates v2.1"
+Confluence Space: Development Documentation
+Author: database-team
+Upload Date: 2024-01-15
+
+Parent Context: 
+This migration script updates the user table schema to support 
+new authentication features. Please run during maintenance window.
+
+Related Attachments on Same Page:
+- rollback-script.sql
+- migration-test-results.md
+```
+
+### 3. Basic File Metadata
+
+The search indexes available file metadata from Confluence:
 
 ```json
 {
@@ -368,48 +330,19 @@ Rich metadata is extracted and made searchable:
   "size": 2457600,
   "author": "performance-team",
   "parent_document": "Performance Testing Results",
-  "attachment_context": "File: api-performance-analysis.xlsx | Size: 2.3 MB | Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet | Author: performance-team"
+  "confluence_space": "Engineering Docs",
+  "upload_date": "2024-01-15T10:30:00Z"
 }
 ```
 
-### 2. Parent Context Integration
+### 4. Search Integration
 
-Results include context from the parent document:
+Attachment search integrates with the broader search system:
 
-```text
-Attachment: database-migration-script.sql
-Parent Document: "Database Schema Updates v2.1"
-Parent Context: "This migration script updates the user table schema to 
-support new authentication features. Run this script during the 
-maintenance window scheduled for Saturday 2AM UTC. Ensure you have 
-a backup before proceeding..."
-
-Related Attachments:
-- rollback-script.sql (in same parent document)
-- migration-test-results.pdf (in same parent document)
-- schema-diff.png (visual comparison)
-```
-
-### 3. File Relationship Analysis
-
-The tool understands relationships between files:
-
-```text
-Primary File: system-architecture.pdf
-Related Files:
-├── 📄 architecture-details.docx (detailed specifications)
-├── 🖼️ component-diagram.png (visual representation)
-├── 📊 performance-requirements.xlsx (technical requirements)
-├── 📄 implementation-plan.pdf (development roadmap)
-└── 📄 security-considerations.md (security analysis)
-
-Relationship Types:
-- Supplementary: Provides additional detail
-- Visual: Graphical representation
-- Data: Supporting metrics and requirements
-- Implementation: How to build it
-- Analysis: Security and risk assessment
-```
+- **Semantic Search**: Uses the same vector embeddings as regular document search
+- **Relevance Scoring**: Combines content similarity with file metadata relevance
+- **Parent Context**: Considers both attachment content and parent page context
+- **Filter Support**: Allows filtering by file type, size, author, and parent page
 
 ## 🎯 Optimization Strategies
 
@@ -531,49 +464,64 @@ Overall Score: 0.85         (weighted combination)
 
 ## 🔗 Integration with Other Search Tools
 
-### Combining Search Strategies
+### Combining Search Strategies for Confluence
 
 #### 1. Start with Semantic Search
 
 ```text
 Query: "deployment procedures"
-→ Find general documentation about deployment
+→ Find general documentation about deployment in all sources
 ```
 
-#### 2. Use Attachment Search for Details
+#### 2. Use Attachment Search for Confluence Files
 
 ```text
 Query: "deployment scripts and configurations"
 Parameters: {
   "attachment_filter": {
-    "file_type": "yaml"
+    "file_type": "yml"
   }
 }
-→ Find specific implementation files
+→ Find specific implementation files in Confluence attachments
 ```
 
-#### 3. Use Hierarchy Search for Context
+#### 3. Use Hierarchy Search for Confluence Structure
 
 ```text
 Query: "deployment documentation structure"
-→ Understand how deployment docs are organized
+→ Understand how deployment docs are organized in Confluence
 ```
 
-### Multi-Tool Workflow
+### Multi-Tool Workflow Example
 
 ```text
 1. Semantic Search: "API authentication methods"
-   → Understand authentication concepts
+   → Understand authentication concepts across all sources
 
 2. Attachment Search: "authentication configuration files"
-   → Find implementation details
+   → Find Confluence attachments with implementation details
 
 3. Hierarchy Search: "authentication documentation structure"
-   → See how auth docs are organized
+   → See how auth docs are organized in Confluence
 
-4. Attachment Search: "authentication examples and code"
-   → Find practical examples
+4. Attachment Search: "authentication examples and certificates"
+   → Find practical examples and certificates in Confluence attachments
 ```
+
+### When to Use Attachment Search
+
+**✅ Use Attachment Search When:**
+- Looking for files stored in Confluence
+- Need to find specific file types (PDFs, Excel, Word docs)
+- Want to search within file content, not just titles
+- Need parent page context for attachments
+- Working primarily with Confluence-based knowledge
+
+**❌ Don't Use Attachment Search When:**
+- Looking for Git repository files (use semantic search)
+- Searching JIRA tickets (use semantic search)
+- Need to search across all source types
+- Looking for regular page content (use semantic or hierarchy search)
 
 ## 🔗 Related Documentation
 
@@ -584,16 +532,19 @@ Query: "deployment documentation structure"
 
 ## 📋 Attachment Search Checklist
 
-- [ ] **Understand file types** in your knowledge base
-- [ ] **Use file-type specific queries** for targeted search
-- [ ] **Apply appropriate filters** (size, author, file type)
-- [ ] **Include parent context** for complete understanding
+- [ ] **Understand Confluence attachments** in your knowledge base
+- [ ] **Use file-type specific queries** for targeted search within Confluence
+- [ ] **Apply appropriate filters** (size, author, file type, parent page)
+- [ ] **Include parent context** for complete Confluence page understanding
 - [ ] **Check file metadata** for quality and relevance
-- [ ] **Combine with other search tools** for comprehensive results
+- [ ] **Combine with other search tools** for comprehensive results across all sources
 - [ ] **Optimize performance** with appropriate limits
+- [ ] **Understand MarkItDown limitations** for file content extraction
 
 ---
 
-**Unlock the hidden knowledge in your files!** 📎
+**Unlock the knowledge in your Confluence files!** 📎
 
-Attachment search reveals the wealth of information stored in your files - from detailed specifications in PDFs to data insights in spreadsheets to visual knowledge in diagrams. By understanding how to search and interpret file attachments, you can access the complete picture of your knowledge base.
+Attachment search reveals the wealth of information stored in your Confluence attachments - from detailed specifications in PDFs to data insights in spreadsheets to presentation content in slides. By understanding how to search and interpret Confluence file attachments, you can access important content that might otherwise be buried in file repositories.
+
+**Note**: This feature currently focuses on Confluence sources and uses MarkItDown for file content extraction. For files in other sources (Git repositories, JIRA, etc.), use the standard semantic search tool.

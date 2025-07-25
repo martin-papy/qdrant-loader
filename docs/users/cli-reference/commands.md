@@ -46,6 +46,14 @@ qdrant-loader --workspace . --log-level DEBUG init
 qdrant-loader --config /path/to/config.yaml --env /path/to/.env init
 ```
 
+#### Available Options
+
+- `--force` - Force reinitialization of existing collection
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--log-level LEVEL` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
 #### Workspace Mode
 
 ```bash
@@ -103,20 +111,34 @@ qdrant-loader --workspace . --log-level DEBUG ingest
 # Ingest with performance profiling
 qdrant-loader --workspace . ingest --profile
 
-# Force full re-ingestion
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+# Force full re-ingestion (bypass change detection)
+qdrant-loader --workspace . ingest --force
+
+# Combine options
+qdrant-loader --workspace . ingest --project my-project --source-type git --force --profile
 ```
+
+#### Available Options
+
+- `--project NAME` - Project ID to process
+- `--source-type TYPE` - Source type to process (publicdocs, git, confluence, jira, localfile)
+- `--source NAME` - Source name to process
+- `--force` - Force processing of all documents, bypassing change detection
+- `--profile` - Run under cProfile and save output to 'profile.out'
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--log-level LEVEL` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
 #### Source Types
 
 The following source types are supported:
 
+- **`publicdocs`** - Public documentation websites
 - **`git`** - Git repositories
 - **`confluence`** - Confluence Cloud/Data Center
 - **`jira`** - JIRA Cloud/Data Center  
 - **`localfile`** - Local files and directories
-- **`publicdocs`** - Public documentation websites
 
 ## 🔧 Configuration Commands
 
@@ -150,6 +172,13 @@ qdrant-loader --workspace . --log-level DEBUG config
 qdrant-loader --config /etc/qdrant-loader/config.yaml --env /etc/qdrant-loader/.env config
 ```
 
+#### Available Options
+
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--log-level LEVEL` - Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
 #### Configuration Validation
 
 The `config` command automatically validates the configuration and will show any errors or warnings. Use this to troubleshoot configuration issues:
@@ -172,24 +201,31 @@ List all configured projects in the workspace.
 
 ```bash
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # List projects with specific configuration
-qdrant-loader project --config config.yaml --env .env list
+qdrant-loader project list --config config.yaml --env .env
 ```
 
 #### Output Formats
 
 ```bash
 # List projects in table format (default)
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # List projects in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 
 # List projects in JSON format for scripting
-qdrant-loader project --workspace . list --format json | jq '.[] | .project_id'
+qdrant-loader project list --workspace . --format json | jq '.[] | .project_id'
 ```
+
+#### Available Options
+
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--format FORMAT` - Output format (table, json)
 
 #### Project Information
 
@@ -209,24 +245,32 @@ Show project status including configuration and statistics.
 
 ```bash
 # Show status for all projects
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 ```
 
 #### Output Formats
 
 ```bash
 # Show status in table format (default)
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Show status in JSON format
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 
 # Show status for specific project in JSON
-qdrant-loader project --workspace . status --project-id my-project --format json
+qdrant-loader project status --workspace . --project-id my-project --format json
 ```
+
+#### Available Options
+
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--project-id ID` - Specific project ID to check status for
+- `--format FORMAT` - Output format (table, json)
 
 #### Status Information
 
@@ -237,8 +281,8 @@ The status command shows:
 - **Description** - Project description
 - **Collection** - QDrant collection name
 - **Sources** - Number of configured sources
-- **Documents** - Document count (requires database)
-- **Latest Ingestion** - Last ingestion timestamp (requires database)
+- **Documents** - Document count (when available)
+- **Latest Ingestion** - Last ingestion timestamp (when available)
 
 ### `qdrant-loader project validate`
 
@@ -248,21 +292,28 @@ Validate project configurations for correctness.
 
 ```bash
 # Validate all projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 #### Validation Process
 
 ```bash
 # Validate with debug output
-qdrant-loader project --workspace . --log-level DEBUG validate
+qdrant-loader project validate --workspace . --log-level DEBUG
 
 # Validate specific project with detailed output
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
+
+#### Available Options
+
+- `--workspace PATH` - Workspace directory containing config.yaml and .env files
+- `--config PATH` - Path to configuration file
+- `--env PATH` - Path to environment file
+- `--project-id ID` - Specific project ID to validate
 
 #### Validation Checks
 
@@ -320,7 +371,7 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 # Edit config.yaml and .env with your settings
 
 # 4. Validate configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # 5. Initialize collection
 qdrant-loader --workspace . init
@@ -333,16 +384,16 @@ qdrant-loader --workspace . ingest
 
 ```bash
 # Check project configuration
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Validate before processing
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Process with debug logging
 qdrant-loader --workspace . --log-level DEBUG ingest
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ### Production Workflow
@@ -362,6 +413,19 @@ qdrant-loader --workspace . ingest --source-type git
 # Full refresh workflow
 qdrant-loader --workspace . init --force
 qdrant-loader --workspace . ingest
+```
+
+### Performance Analysis
+
+```bash
+# Profile ingestion performance
+qdrant-loader --workspace . ingest --profile
+
+# Force full re-processing for benchmarking
+qdrant-loader --workspace . ingest --force --profile
+
+# Process specific project with profiling
+qdrant-loader --workspace . ingest --project my-project --profile
 ```
 
 ## 🔄 Exit Codes
