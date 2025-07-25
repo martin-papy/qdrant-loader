@@ -139,7 +139,7 @@ Each data source can enable or disable file conversion:
 
 ### Conversion Process
 
-```
+```text
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │    File     │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
 │  Detection  │    │ Detection   │    │ Conversion  │    │  Content    │

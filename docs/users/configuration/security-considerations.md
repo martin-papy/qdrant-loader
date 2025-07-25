@@ -20,7 +20,7 @@ QDrant Loader handles sensitive data including API keys, documents, and search q
 
 ### Environment Variables (Primary Method)
 
-QDrant Loader uses environment variables for all credential management. This is the **only supported method** for storing API keys and tokens.
+QDrant Loader uses environment variables for all credential management. Environment variables are used both directly by the MCP server and for substitution in YAML configuration files using `${VARIABLE_NAME}` syntax.
 
 ```bash
 # .env - Secure environment file (chmod 600)
@@ -30,27 +30,26 @@ QDrant Loader uses environment variables for all credential management. This is 
 OPENAI_API_KEY=sk-your-openai-api-key
 
 # QDrant Configuration
-QDRANT_URL=https://your-qdrant-cluster.qdrant.io
 QDRANT_API_KEY=your-qdrant-api-key
-QDRANT_COLLECTION_NAME=documents
-
-# Atlassian Credentials (if using Confluence/Jira)
-CONFLUENCE_URL=https://company.atlassian.net
-CONFLUENCE_EMAIL=service-account@company.com
-CONFLUENCE_TOKEN=your-confluence-api-token
-
-JIRA_URL=https://company.atlassian.net
-JIRA_EMAIL=service-account@company.com
-JIRA_TOKEN=your-jira-api-token
 
 # Git Credentials (if using Git repositories)
 REPO_TOKEN=your-git-personal-access-token
-REPO_URL=https://github.com/your-org/your-repo
 
-# State Database Path
-STATE_DB_PATH=./state.db
+# Confluence Configuration (if using Confluence)
+CONFLUENCE_TOKEN=your-confluence-api-token
+CONFLUENCE_EMAIL=your-confluence-email@company.com
 
-# MCP Server Logging (Optional)
+# For Confluence Data Center/Server (alternative to token/email)
+CONFLUENCE_PAT=your-confluence-personal-access-token
+
+# Jira Configuration (if using Jira)
+JIRA_TOKEN=your-jira-api-token
+JIRA_EMAIL=your-jira-email@company.com
+
+# For Jira Data Center/Server (alternative to token/email)
+JIRA_PAT=your-jira-personal-access-token
+
+# MCP Server Configuration (Optional)
 MCP_LOG_LEVEL=INFO
 MCP_LOG_FILE=/path/to/logs/mcp.log
 MCP_DISABLE_CONSOLE_LOGGING=true
@@ -64,7 +63,7 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 
 # Validate OpenAI API key format
 validate_openai_key() {
-    if [[ ! $OPENAI_API_KEY =~ ^sk-[a-zA-Z0-9-_]{48,}$ ]]; then
+    if [[ ! $OPENAI_API_KEY =~ ^sk-[a-zA-Z0-9-_]{20,}$ ]]; then
         echo "❌ Invalid OpenAI API key format"
         exit 1
     fi
@@ -86,9 +85,24 @@ test_connections() {
     fi
 }
 
+# Validate configuration using QDrant Loader CLI
+validate_config() {
+    echo "Validating QDrant Loader configuration..."
+    
+    # Validate workspace configuration
+    qdrant-loader --workspace . project validate
+    if [ $? -eq 0 ]; then
+        echo "✅ Configuration valid"
+    else
+        echo "❌ Configuration validation failed"
+        exit 1
+    fi
+}
+
 # Run validations
 validate_openai_key
 test_connections
+validate_config
 ```
 
 ## 🌐 Network Security
@@ -99,15 +113,26 @@ QDrant Loader automatically uses HTTPS for all external API connections:
 
 - **OpenAI API**: Always uses HTTPS
 - **QDrant Cloud**: Uses HTTPS by default
-- **Confluence/Jira**: Uses HTTPS for cloud instances
+- **Confluence/Jira**: Uses HTTPS for cloud instances (configured in config.yaml)
 - **Git repositories**: Uses HTTPS for cloning
 
-```bash
-# Environment variables for secure connections
-# These are handled automatically by the application
-export QDRANT_URL="https://your-qdrant-cluster.qdrant.io"  # Use HTTPS
-export CONFLUENCE_URL="https://company.atlassian.net"      # Use HTTPS
-export JIRA_URL="https://company.atlassian.net"           # Use HTTPS
+URLs are configured in the YAML configuration file, not environment variables:
+
+```yaml
+# config.yaml - Use HTTPS URLs for security
+global_config:
+  qdrant:
+    url: "https://your-qdrant-cluster.qdrant.io"  # Use HTTPS
+
+projects:
+  my-project:
+    sources:
+      confluence:
+        wiki:
+          base_url: "https://company.atlassian.net/wiki"  # Use HTTPS
+      jira:
+        project:
+          base_url: "https://company.atlassian.net"       # Use HTTPS
 ```
 
 ### Required Network Access
@@ -137,13 +162,13 @@ gitlab.com:443
 
 ### MCP Server Security
 
-The MCP server has basic security considerations:
+The MCP server uses environment variables for configuration. For Cursor integration:
 
 ```json
 {
   "mcpServers": {
     "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
+      "command": "/path/to/venv/bin/mcp-qdrant-loader",
       "env": {
         "QDRANT_URL": "https://your-qdrant-cluster.qdrant.io",
         "QDRANT_API_KEY": "your-secure-api-key",
@@ -158,15 +183,28 @@ The MCP server has basic security considerations:
 }
 ```
 
+**Critical MCP Security Notes:**
+- **Always set `MCP_DISABLE_CONSOLE_LOGGING=true`** for Cursor integration to prevent JSON-RPC interference
+- **Use full path to the MCP server binary** for security and reliability
+- **Use `MCP_LOG_FILE`** for debugging when console logging is disabled
+
 ### Rate Limiting
 
-QDrant Loader implements basic rate limiting for API calls:
+QDrant Loader implements rate limiting for external API calls:
 
-- **OpenAI API**: Built-in rate limiting with exponential backoff
-- **Confluence/Jira**: Basic rate limiting to respect API limits
+- **OpenAI API**: Built-in rate limiting (500ms minimum interval between requests) with exponential backoff retry logic
+- **Confluence API**: No built-in rate limiting (uses standard HTTP requests)
+- **Jira API**: Configurable rate limiting (default: 60 requests per minute) with async rate limit control
 - **Git operations**: No specific rate limiting
 
-The rate limiting is implemented in the embedding service and connectors but is not user-configurable.
+**Jira Rate Limiting Configuration:**
+```yaml
+jira:
+  my-project:
+    requests_per_minute: 60  # Configurable rate limit
+```
+
+The rate limiting is implemented in the embedding service and Jira connector. OpenAI rate limiting is not user-configurable, while Jira rate limiting can be adjusted per project.
 
 ## 📊 Data Protection
 
@@ -193,10 +231,43 @@ Local Files → Memory → OpenAI API → QDrant Database
 ```bash
 # Secure file permissions for QDrant Loader files
 chmod 600 .env                    # Environment variables
-chmod 600 qdrant-loader.yaml     # Configuration file
-chmod 700 ~/.qdrant-loader/      # Application directory
-chmod 600 state.db               # State database
+chmod 600 config.yaml             # Configuration file
+chmod 700 ~/.qdrant-loader/       # Application directory (if used)
+chmod 600 state.db                # State database
+
+# For workspace mode (recommended)
+chmod 700 /path/to/workspace       # Workspace directory
+chmod 600 /path/to/workspace/.env  # Workspace environment file
+chmod 600 /path/to/workspace/config.yaml  # Workspace configuration
 ```
+
+### Workspace Mode Security
+
+QDrant Loader supports **workspace mode** (recommended) which provides better organization and security:
+
+**Benefits:**
+- **Isolated configuration** per workspace/project
+- **Automatic path management** for databases and logs
+- **Built-in security** for workspace directory structure
+- **Version control friendly** (exclude .env, include config.yaml)
+
+**Workspace Security Setup:**
+```bash
+# Create secure workspace
+mkdir /secure/path/my-workspace
+cd /secure/path/my-workspace
+chmod 700 .
+
+# Create configuration files
+touch .env config.yaml
+chmod 600 .env config.yaml
+
+# Run in workspace mode
+qdrant-loader --workspace . project validate
+qdrant-loader --workspace . ingest
+```
+
+**Important:** In workspace mode, `state_management.database_path` in config.yaml is ignored for security - the state database is automatically placed in the workspace directory.
 
 ## 🔍 Monitoring and Logging
 
@@ -205,9 +276,6 @@ chmod 600 state.db               # State database
 QDrant Loader provides basic logging capabilities:
 
 ```bash
-# Set logging level
-export LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR
-
 # MCP Server logging
 export MCP_LOG_LEVEL=INFO
 export MCP_LOG_FILE=/path/to/logs/mcp.log
@@ -241,11 +309,12 @@ JIRA_EMAIL=qdrant-loader-service@company.com
 
 # 3. Secure file permissions
 chmod 600 .env
+chmod 600 config.yaml
 
-# 4. Use HTTPS URLs
-QDRANT_URL=https://your-qdrant-cluster.qdrant.io
-CONFLUENCE_URL=https://company.atlassian.net
-JIRA_URL=https://company.atlassian.net
+# 4. Use HTTPS URLs in config.yaml
+# global_config:
+#   qdrant:
+#     url: "https://your-qdrant-cluster.qdrant.io"
 ```
 
 #### Development Environment
@@ -255,14 +324,13 @@ JIRA_URL=https://company.atlassian.net
 # 1. Use separate API keys for development
 OPENAI_API_KEY=sk-dev-your-development-key
 
-# 2. Use local QDrant instance
-QDRANT_URL=http://localhost:6333
+# 2. Use test data collections in config.yaml
+# global_config:
+#   qdrant:
+#     url: "http://localhost:6333"
+#     collection_name: "dev_documents"
 
-# 3. Use test data collections
-QDRANT_COLLECTION_NAME=dev_documents
-
-# 4. Enable debug logging
-LOG_LEVEL=DEBUG
+# 3. Enable debug logging for MCP server
 MCP_LOG_LEVEL=DEBUG
 ```
 
@@ -273,10 +341,24 @@ MCP_LOG_LEVEL=DEBUG
 ```bash
 # .env - Minimal secure configuration
 OPENAI_API_KEY=sk-your-openai-api-key
-QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION_NAME=documents
-STATE_DB_PATH=./state.db
-LOG_LEVEL=INFO
+```
+
+```yaml
+# config.yaml - Minimal secure configuration
+global_config:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+
+projects:
+  default-project:
+    project_id: "default-project"
+    display_name: "Default Project"
+    sources: {}
 ```
 
 ### Production Security Configuration
@@ -284,31 +366,68 @@ LOG_LEVEL=INFO
 ```bash
 # .env - Production secure configuration
 OPENAI_API_KEY=sk-your-production-openai-key
-QDRANT_URL=https://your-qdrant-cluster.qdrant.io
 QDRANT_API_KEY=your-production-qdrant-api-key
-QDRANT_COLLECTION_NAME=production_documents
 
-# Atlassian (if used)
-CONFLUENCE_URL=https://company.atlassian.net
+# Confluence (if used)
 CONFLUENCE_EMAIL=qdrant-loader-service@company.com
 CONFLUENCE_TOKEN=your-production-confluence-token
 
-JIRA_URL=https://company.atlassian.net
+# Jira (if used)
 JIRA_EMAIL=qdrant-loader-service@company.com
 JIRA_TOKEN=your-production-jira-token
 
 # Git (if used)
 REPO_TOKEN=your-production-git-token
-REPO_URL=https://github.com/company/docs
-
-# State and logging
-STATE_DB_PATH=/secure/path/state.db
-LOG_LEVEL=INFO
 
 # MCP Server (if used)
 MCP_LOG_LEVEL=INFO
 MCP_LOG_FILE=/secure/path/logs/mcp.log
 MCP_DISABLE_CONSOLE_LOGGING=true
+```
+
+```yaml
+# config.yaml - Production secure configuration
+global_config:
+  qdrant:
+    url: "https://your-qdrant-cluster.qdrant.io"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "production_documents"
+  
+  embedding:
+    endpoint: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+  
+  state_management:
+    database_path: "/secure/path/state.db"
+
+projects:
+  knowledge-base:
+    project_id: "knowledge-base"
+    display_name: "Company Knowledge Base"
+    sources:
+      confluence:
+        company-wiki:
+          base_url: "https://company.atlassian.net/wiki"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          email: "${CONFLUENCE_EMAIL}"
+          token: "${CONFLUENCE_TOKEN}"
+      
+      jira:
+        support-project:
+          base_url: "https://company.atlassian.net"
+          deployment_type: "cloud"
+          project_key: "SUPPORT"
+          email: "${JIRA_EMAIL}"
+          token: "${JIRA_TOKEN}"
+      
+      git:
+        docs-repo:
+          base_url: "https://github.com/company/docs.git"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          file_types: ["*.md", "*.rst"]
 ```
 
 ## 🔗 Related Documentation
@@ -322,27 +441,33 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ### Pre-Deployment Security
 
 - [ ] **API keys** stored in environment variables only
-- [ ] **File permissions** set correctly (600 for .env)
-- [ ] **HTTPS URLs** used for all external services
+- [ ] **File permissions** set correctly (600 for .env and config.yaml, 700 for workspace)
+- [ ] **HTTPS URLs** used for all external services in config.yaml
 - [ ] **Service accounts** created with minimal permissions
 - [ ] **Secrets** excluded from version control (.env in .gitignore)
-- [ ] **API key formats** validated
-- [ ] **Connectivity** tested with validation scripts
+- [ ] **API key formats** validated with validation scripts
+- [ ] **Configuration** validated using `qdrant-loader project validate`
+- [ ] **Workspace mode** used for production deployments
+- [ ] **MCP server logging** configured properly for AI IDE integration
 
 ### Runtime Security
 
-- [ ] **Environment variables** properly configured
-- [ ] **Log files** secured with appropriate permissions
+- [ ] **Environment variables** properly configured and loaded
+- [ ] **Log files** secured with appropriate permissions (600)
 - [ ] **API usage** monitored through provider dashboards
-- [ ] **State database** backed up regularly
-- [ ] **Application logs** reviewed for errors
+- [ ] **State database** backed up regularly (auto-managed in workspace mode)
+- [ ] **Application logs** reviewed for errors and security issues
+- [ ] **MCP server** functioning properly with secure logging configuration
+- [ ] **Workspace directory** permissions maintained (700)
 
 ### Operational Security
 
-- [ ] **API usage** monitored for unexpected spikes
-- [ ] **Access reviews** conducted for service accounts
-- [ ] **Security updates** applied to dependencies
-- [ ] **Documentation** kept current
+- [ ] **API usage** monitored for unexpected spikes or rate limit violations
+- [ ] **Access reviews** conducted for service accounts and API tokens
+- [ ] **Security updates** applied to QDrant Loader and Python dependencies
+- [ ] **Configuration drift** monitored using `qdrant-loader project validate`
+- [ ] **Documentation** kept current with actual implementation
+- [ ] **Backup and recovery** procedures tested for workspace data
 
 ---
 

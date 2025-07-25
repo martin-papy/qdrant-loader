@@ -1,69 +1,50 @@
 # MCP Server Guide
 
-The QDrant Loader MCP (Model Context Protocol) Server enables seamless integration with AI development tools like Cursor IDE, Windsurf, and Claude Desktop. This guide covers everything you need to know about setting up and using the MCP server.
+The QDrant Loader MCP (Model Context Protocol) Server enables seamless integration with AI development tools like Cursor IDE, Windsurf, and Claude Desktop. This guide covers everything you need to know about setting up and using our **intelligent search system**.
 
 ## 🎯 Overview
 
-The MCP Server acts as a bridge between your AI tools and your QDrant Loader knowledge base, providing intelligent search capabilities directly within your development environment.
+The MCP Server acts as a bridge between your AI tools and your QDrant Loader knowledge base, providing **intelligent search capabilities** that go beyond simple keyword matching. Our system includes semantic understanding, hierarchy navigation, attachment analysis, and cross-document intelligence.
 
 ### What is MCP?
 
-**Model Context Protocol (MCP)** is an open standard that allows AI applications to securely connect to external data sources and tools. It enables AI assistants to access and search your ingested documents in real-time.
+**Model Context Protocol (MCP)** is an open standard that allows AI applications to securely connect to external data sources. It enables your AI tools to access and search your knowledge base in real-time.
 
-```
-AI Tool (Cursor) ←→ MCP Server ←→ QDrant Database
-     ↓
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│ Developer   │    │ MCP Server   │    │ QDrant      │
-│ asks: "How  │ ──→│ - Receives   │──→ │ - Searches  │
-│ do I deploy │    │   query      │    │   vectors   │
-│ this app?"  │    │ - Searches   │    │ - Returns   │
-│             │ ←──│   knowledge  │←── │   results   │
-│ Gets answer │    │ - Formats    │    │             │
-│ with context│    │   response   │    │             │
-└─────────────┘    └──────────────┘    └─────────────┘
-```
+### Key Capabilities
 
-### Key Benefits
-
-- **Contextual AI Responses**: AI tools can access your specific documentation and codebase
-- **Real-time Search**: Search across all ingested documents without leaving your IDE
-- **Intelligent Filtering**: Advanced search with hierarchy and attachment support
-- **Seamless Integration**: Works with popular AI development tools
-- **Secure Access**: Controlled access to your knowledge base
+✅ **Enhanced Semantic Search** - AI-powered similarity search with context understanding  
+✅ **Hierarchy-Aware Navigation** - Structure-aware search with document relationships  
+✅ **Intelligent Attachment Search** - File and document search with content analysis  
+✅ **Cross-Document Intelligence** - Relationship analysis, conflict detection, and clustering  
+✅ **Real-Time Integration** - Live access from your AI development environment  
+✅ **Multi-Source Support** - Works with Git, Confluence, JIRA, and local files
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### 1. Prerequisites
 
-- QDrant Loader installed and configured
-- Documents ingested into QDrant
-- AI tool that supports MCP (Cursor, Windsurf, Claude Desktop)
+- **QDrant Loader** installed and configured with documents ingested
+- **AI Development Tool** that supports MCP (Cursor, Claude Desktop, etc.)
+- **OpenAI API Key** for semantic search capabilities
 
-### 1. Start the MCP Server
+### 2. Install MCP Server
 
 ```bash
-# Start the MCP server
-mcp-qdrant-loader
+# Install the MCP server package
+pip install qdrant-loader-mcp-server
 
-# Expected output:
-# 🚀 QDrant Loader MCP Server starting...
-# 📡 Server running on stdio
-# 🔍 Available tools: search, hierarchy_search, attachment_search
-# ✅ Ready for connections
+# Verify installation
+mcp-qdrant-loader --version
 ```
 
-### 2. Configure Your AI Tool
+### 3. Configure Your AI Tool
 
-**For Cursor IDE**:
-
-1. Open Cursor Settings (Cmd/Ctrl + ,)
-2. Navigate to **Extensions** → **MCP Servers**
-3. Add new server configuration:
+#### For Cursor IDE
+Add to your MCP servers configuration:
 
 ```json
 {
-  "name": "qdrant-loader",
+  "name": "mcp-qdrant-loader",
   "command": "mcp-qdrant-loader",
   "args": [],
   "env": {
@@ -74,424 +55,325 @@ mcp-qdrant-loader
 }
 ```
 
-4. Save and restart Cursor
-
-### 3. Test the Integration
-
-1. Open a new chat in your AI tool
-2. Ask a question about your documentation:
-
-```
-"Can you search for information about deployment procedures?"
-```
-
-3. The AI will use the MCP server to search your knowledge base and provide contextual answers
-
-## 🔧 Available MCP Tools
-
-The QDrant Loader MCP Server provides three powerful search tools:
-
-### 1. Semantic Search Tool
-
-**Purpose**: Basic semantic search across all ingested documents
-
-**Usage**: General queries about any topic in your knowledge base
+#### For Claude Desktop
+Add to your `claude_desktop_config.json`:
 
 ```json
 {
-  "name": "search",
-  "description": "Search across all ingested documents using semantic similarity",
-  "parameters": {
-    "query": "search terms or question",
-    "limit": 10,
-    "source_types": ["git", "confluence", "jira", "documentation", "localfile"],
-    "project_ids": ["project1", "project2"]
-  }
-}
-```
-
-**Example Queries**:
-
-- "How do I configure authentication?"
-- "What are the deployment options?"
-- "Find information about API rate limits"
-
-### 2. Hierarchy Search Tool
-
-**Purpose**: Search with document structure and hierarchy awareness
-
-**Usage**: When you need context about document organization and relationships
-
-```json
-{
-  "name": "hierarchy_search",
-  "description": "Search with document hierarchy context",
-  "parameters": {
-    "query": "search terms",
-    "limit": 10,
-    "organize_by_hierarchy": false,
-    "hierarchy_filter": {
-      "depth": 3,
-      "has_children": true,
-      "parent_title": "API Documentation"
+  "mcpServers": {
+    "qdrant-loader": {
+      "command": "mcp-qdrant-loader",
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "OPENAI_API_KEY": "your-openai-api-key",
+        "QDRANT_COLLECTION_NAME": "documents"
+      }
     }
   }
 }
 ```
 
-**Example Queries**:
+### 4. Test Integration
 
-- "Show me the structure of the API documentation"
-- "Find all child pages under the deployment section"
-- "What's the hierarchy of troubleshooting guides?"
-
-### 3. Attachment Search Tool
-
-**Purpose**: Search file attachments and their parent documents
-
-**Usage**: Finding specific files, diagrams, or documents attached to pages
-
-```json
-{
-  "name": "attachment_search",
-  "description": "Search file attachments and parent documents",
-  "parameters": {
-    "query": "search terms",
-    "limit": 10,
-    "include_parent_context": true,
-    "attachment_filter": {
-      "file_type": "pdf",
-      "file_size_min": 1024,
-      "file_size_max": 10485760
-    }
-  }
-}
+Open your AI tool and try:
+```
+"Search my knowledge base for authentication implementation examples"
 ```
 
-**Example Queries**:
+The AI should use the MCP server to search your documents and provide contextual answers.
 
-- "Find PDF documents about architecture"
-- "Show me Excel files with metrics data"
-- "Search for presentation slides about the product roadmap"
+## 🔍 Available Search Tools
+
+### Core Search Capabilities
+
+#### 1. **Semantic Search**
+AI-powered search that understands meaning beyond keywords.
+
+```
+Example: "How do I implement secure user authentication?"
+→ Finds: Implementation guides, security best practices, code examples
+```
+
+#### 2. **Hierarchy Search**  
+Navigate document structures and understand relationships.
+
+```
+Example: "Show me the structure of our API documentation"
+→ Returns: Document hierarchy with navigation context and completeness analysis
+```
+
+#### 3. **Attachment Search**
+Search files and attachments with intelligent content analysis.
+
+```
+Example: "Find architecture diagrams related to microservices"
+→ Locates: PDFs, images, and documents with content intelligence
+```
+
+### 🔥 Cross-Document Intelligence
+
+#### 4. **Document Relationship Analysis**
+Comprehensive analysis of how documents relate to each other.
+
+```
+Example: Analyze relationships in "API authentication documentation"
+→ Discovers: Implementation dependencies, reference patterns, usage flows
+```
+
+#### 5. **Document Similarity Detection**
+Find documents with similar content for comparison or deduplication.
+
+```
+Example: Find documents similar to "API Rate Limiting Guide"  
+→ Identifies: Related guides, alternative implementations, comparative content
+```
+
+#### 6. **Conflict Detection**
+Identify contradictions and inconsistencies across documents.
+
+```
+Example: Detect conflicts in "authentication policies"
+→ Finds: Contradictory requirements, inconsistent configurations, policy conflicts
+```
+
+#### 7. **Complementary Content Discovery**
+Find content that enhances and supports a target document.
+
+```
+Example: Find content that complements "User Authentication API Specification"
+→ Suggests: Implementation guides, testing procedures, troubleshooting docs
+```
+
+#### 8. **Document Clustering**
+Group related documents by topic, purpose, and relationships.
+
+```
+Example: Cluster "API documentation" by topic
+→ Creates: Authentication cluster, Implementation cluster, Troubleshooting cluster
+```
+
+## 🎯 Integration Examples
+
+### Development Workflow with Cursor
+
+**Understanding Code Architecture:**
+```
+You: "How does our authentication system work and what are the dependencies?"
+
+AI Response: (Using semantic + relationship analysis)
+I'll search your knowledge base for authentication information and analyze the relationships.
+
+Found Core Authentication Components:
+1. [Authentication Service] JWT token management and validation
+2. [User Database] User credential storage and retrieval  
+3. [API Gateway] Authentication middleware and routing
+4. [Security Policy] Authentication requirements and standards
+
+Relationship Analysis Shows:
+- Authentication Service depends on User Database for credential validation
+- API Gateway uses Authentication Service for request authorization
+- All components must comply with Security Policy requirements
+- Testing procedures cover integration between all components
+
+This gives you a complete view of your authentication architecture and dependencies.
+```
+
+**Documentation Quality Assessment:**
+```
+You: "Are there any inconsistencies in our deployment documentation?"
+
+AI Response: (Using conflict detection)
+I'll analyze your deployment documentation for conflicts and inconsistencies.
+
+Conflicts Found:
+🚨 Environment Configuration Mismatch:
+- Production Setup Guide: Database pool size = 50 connections
+- Performance Tuning Doc: Recommends 200 connections for production
+- Impact: Production may be under-configured for optimal performance
+
+🚨 Deployment Process Differences:
+- Deployment Manual: 3-step approval process required
+- Quick Deploy Guide: Shows 1-step deployment
+- Impact: Inconsistent deployment procedures
+
+Recommendations:
+1. Update Production Setup Guide with performance-optimized settings
+2. Standardize deployment procedures across all documentation
+3. Create single source of truth for configuration values
+```
+
+**Feature Implementation Planning:**
+```
+You: "I need to implement real-time notifications - what should I review?"
+
+AI Response: (Using complementary content discovery)
+I'll find content that complements real-time notification implementation.
+
+Complementary Content Found:
+
+Implementation Foundation (High Relevance):
+1. WebSocket Connection Management - Existing patterns you can extend
+2. User Preference System - For notification settings and delivery
+3. Authentication Context - For secure real-time connections
+
+Architecture Considerations (Medium Relevance):  
+4. Database Event Triggers - For notification generation
+5. Message Queue System - For reliable notification delivery
+6. Monitoring Setup - For real-time system health
+
+Support Documentation (Supporting):
+7. Performance Testing - Real-time system load testing
+8. Troubleshooting Guide - WebSocket and real-time issues
+
+This gives you a complete foundation for implementing notifications effectively.
+```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-The MCP server uses environment variables for configuration:
-
 ```bash
-# Required
+# Required Configuration
 QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
 
-# Optional
-QDRANT_COLLECTION_NAME=documents
-QDRANT_API_KEY=your-qdrant-cloud-api-key
-MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
+# Optional Configuration
+QDRANT_COLLECTION_NAME=documents        # Default: "documents"
+QDRANT_API_KEY=your-qdrant-cloud-key   # For QDrant Cloud
+MCP_DISABLE_CONSOLE_LOGGING=true       # Recommended for development tools
 ```
 
-### Command Line Options
+### Multi-Project Setup
 
-The MCP server supports these command line options:
-
-```bash
-# Start with debug logging
-mcp-qdrant-loader --log-level DEBUG
-
-# Start with custom configuration file
-mcp-qdrant-loader --config custom-config.yaml
-
-# Show version
-mcp-qdrant-loader --version
-
-# Show help
-mcp-qdrant-loader --help
-```
-
-**Note**: The MCP server communicates via JSON-RPC over stdio and does not support options like `--collection`, `--list-tools`, `--test`, `--status`, or `--stats`.
-
-## 🔗 AI Tool Integration Guides
-
-### Cursor IDE Integration
-
-**Detailed Guide**: [Cursor Integration](./cursor-integration.md)
-
-**Quick Setup**:
-
-1. Install QDrant Loader MCP server
-2. Configure in Cursor settings
-3. Start using AI chat with your knowledge base
-
-### Windsurf Integration
-
-**Setup**:
-
-1. Open Windsurf settings
-2. Navigate to MCP configuration
-3. Add QDrant Loader server:
+For teams with multiple knowledge bases:
 
 ```json
 {
   "mcpServers": {
-    "qdrant-loader": {
+    "project-docs": {
       "command": "mcp-qdrant-loader",
-      "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-api-key"
+        "QDRANT_COLLECTION_NAME": "project_docs",
+        "OPENAI_API_KEY": "your-openai-api-key"
+      }
+    },
+    "team-knowledge": {
+      "command": "mcp-qdrant-loader", 
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_COLLECTION_NAME": "team_knowledge",
+        "OPENAI_API_KEY": "your-openai-api-key"
       }
     }
   }
 }
-```
-
-### Claude Desktop Integration
-
-**Setup**:
-
-1. Open Claude Desktop configuration
-2. Edit the MCP settings file
-3. Add QDrant Loader configuration:
-
-```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-api-key"
-      }
-    }
-  }
-}
-```
-
-## 🔍 Advanced Search Features
-
-### Search Capabilities
-
-**Detailed Guide**: [Search Capabilities](./search-capabilities.md)
-
-**Key Features**:
-
-- Semantic similarity search
-- Source type filtering
-- Project-specific search
-- Limit and threshold controls
-
-### Hierarchy Navigation
-
-**Detailed Guide**: [Hierarchy Search](./hierarchy-search.md)
-
-**Key Features**:
-
-- Document structure awareness
-- Parent-child relationships
-- Depth filtering
-- Hierarchical organization
-
-### Attachment Handling
-
-**Detailed Guide**: [Attachment Search](./attachment-search.md)
-
-**Key Features**:
-
-- File type filtering
-- Parent document context
-- File size filtering
-- Attachment metadata
-
-## 🎯 Use Cases and Examples
-
-### Development Workflow
-
-**Scenario**: Developer working on a new feature
-
-```
-Developer: "How do I implement authentication in our API?"
-
-AI Response (using MCP search):
-Based on your documentation, here's how to implement authentication:
-
-1. [From api-auth.md] Use JWT tokens for stateless authentication
-2. [From security-guide.md] Implement rate limiting for auth endpoints
-3. [From examples/auth.py] Here's a code example...
-
-The search found 5 relevant documents across your codebase and documentation.
-```
-
-### Support Team Workflow
-
-**Scenario**: Support agent helping a customer
-
-```
-Agent: "Customer is having issues with deployment on AWS"
-
-AI Response (using MCP search):
-I found several relevant resources for AWS deployment issues:
-
-1. [From deployment/aws.md] Common AWS deployment troubleshooting
-2. [From troubleshooting/aws-errors.md] Specific error codes and solutions
-3. [From attachments/aws-architecture.pdf] Architecture diagram showing proper setup
-
-Would you like me to search for more specific error messages?
-```
-
-### Content Creation Workflow
-
-**Scenario**: Technical writer updating documentation
-
-```
-Writer: "What existing content do we have about API versioning?"
-
-AI Response (using MCP search):
-Found existing content about API versioning:
-
-1. [From api/versioning.md] Current versioning strategy (v1, v2)
-2. [From changelog.md] Version history and breaking changes
-3. [From examples/] Code examples for different API versions
-4. [From confluence/API-Strategy] High-level versioning decisions
-
-This gives you a complete picture of existing versioning documentation.
 ```
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-#### MCP Server Won't Start
-
-**Problem**: Server fails to start or connect
-
-**Solutions**:
-
+#### MCP Server Not Starting
 ```bash
-# Check if QDrant is running
+# Check if package is installed
+which mcp-qdrant-loader
+
+# Verify environment variables
+echo $QDRANT_URL
+echo $OPENAI_API_KEY
+
+# Test QDrant connection
 curl http://localhost:6333/health
-
-# Check environment variables
-env | grep QDRANT
-env | grep OPENAI
-
-# Start with debug logging
-mcp-qdrant-loader --log-level DEBUG
 ```
 
-#### AI Tool Can't Connect
-
-**Problem**: AI tool shows MCP connection errors
-
-**Solutions**:
-
-1. Verify MCP server is running
-2. Check AI tool MCP configuration
-3. Restart both server and AI tool
-4. Check firewall/network settings
-
-#### Search Returns No Results
-
-**Problem**: MCP searches return empty results
-
-**Solutions**:
-
+#### No Search Results
 ```bash
-# Verify documents are ingested using qdrant-loader CLI
+# Verify documents are ingested
 qdrant-loader --workspace . project status
 
-# Check collection status
+# Check collection exists
 curl http://localhost:6333/collections/documents
-
-# Re-ingest if needed
-qdrant-loader --workspace . ingest
 ```
 
-#### Poor Search Quality
+#### Performance Issues
+- Use appropriate `limit` parameters (5-15 for most searches)
+- Filter by `source_types` when possible
+- Enable console logging to debug query processing
 
-**Problem**: Search results are not relevant
+### Getting Help
 
-**Solutions**:
+- **[Setup Guide](./setup-and-integration.md)** - Complete setup instructions
+- **[Search Capabilities](./search-capabilities.md)** - Detailed feature documentation  
+- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup
+- **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
 
-1. Use more specific search terms
-2. Try different search tools (hierarchy, attachment)
-3. Check if documents are properly chunked
-4. Verify the correct collection is being used
+## 🚀 Advanced Usage
+
+### Multi-Tool Search Strategies
+
+**Complete Feature Investigation:**
+1. Start with **Semantic Search** to understand the topic
+2. Use **Hierarchy Search** to explore documentation structure  
+3. Apply **Relationship Analysis** to understand dependencies
+4. Use **Conflict Detection** to identify inconsistencies
+
+**Documentation Quality Audit:**
+1. **Hierarchy Search** for structure analysis and gap identification
+2. **Conflict Detection** for inconsistency identification
+3. **Similarity Detection** for duplication review
+4. **Complementary Content** for completeness assessment
+
+**Implementation Planning:**
+1. **Semantic Search** for existing patterns and examples
+2. **Complementary Content** for supporting documentation
+3. **Relationship Analysis** for dependency understanding
+4. **Clustering** for organizing related resources
 
 ### Performance Optimization
 
-#### For Large Knowledge Bases
+#### Search Efficiency
+- Use specific queries rather than broad terms
+- Apply source type filters when appropriate
+- Set reasonable limits for cross-document analysis
 
-- Use smaller `limit` values in search queries
-- Filter by `source_types` or `project_ids` to narrow scope
-- Use specific search tools for targeted queries
+#### Result Quality
+- Provide context in your search queries
+- Use natural language for better semantic understanding
+- Combine multiple search tools for comprehensive results
 
-#### For Real-time Usage
+## 📋 Integration Checklist
 
-- Keep the MCP server running continuously
-- Use environment variables instead of config files for faster startup
-- Monitor memory usage for large document collections
-
-## 📊 Monitoring and Analytics
-
-### Server Logs
-
-```bash
-# Enable debug logging
-mcp-qdrant-loader --log-level DEBUG
-
-# Use log file for Cursor integration
-export MCP_LOG_FILE="/path/to/mcp.log"
-export MCP_DISABLE_CONSOLE_LOGGING="true"
-mcp-qdrant-loader
-```
-
-### Usage Monitoring
-
-Monitor MCP server usage through:
-
-- Log file analysis
-- QDrant collection metrics
-- AI tool usage patterns
-- Search query performance
-
-## 🔗 Related Documentation
-
-### Setup and Integration
-
-- **[Setup and Integration Guide](./setup-and-integration.md)** - Detailed setup for all AI tools
-- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup and usage
-
-### Search Features
-
-- **[Search Capabilities](./search-capabilities.md)** - Complete search feature reference
-- **[Hierarchy Search](./hierarchy-search.md)** - Document hierarchy navigation
-- **[Attachment Search](./attachment-search.md)** - File attachment search
-
-### Configuration
-
-- **[Basic Configuration](../../getting-started/basic-configuration.md)** - General QDrant Loader setup
-- **[Environment Variables](../../configuration/environment-variables.md)** - Complete variable reference
-
-### Troubleshooting
-
-- **[Common Issues](../../troubleshooting/common-issues.md)** - General troubleshooting
-- **[Performance Optimization](../../troubleshooting/performance-optimization.md)** - Performance tuning
-
-## 📋 MCP Server Checklist
-
+### Setup Requirements
 - [ ] **QDrant Loader** installed and configured
 - [ ] **Documents ingested** into QDrant database
-- [ ] **MCP server** starts without errors
-- [ ] **AI tool configured** with MCP server details
-- [ ] **Search tools** working in AI tool
+- [ ] **MCP server package** installed
+- [ ] **AI development tool** with MCP support
+- [ ] **OpenAI API key** configured
+
+### Configuration
+- [ ] **MCP server** added to tool configuration
 - [ ] **Environment variables** properly set
-- [ ] **Performance** optimized for your use case
-- [ ] **Monitoring** enabled if needed
+- [ ] **Collection name** matches ingested documents
+- [ ] **Connection** tested and working
+
+### Functionality Testing
+- [ ] **Basic semantic search** working
+- [ ] **Hierarchy search** navigating document structures
+- [ ] **Attachment search** finding files and documents
+- [ ] **Cross-document analysis** detecting relationships
+- [ ] **Performance** acceptable for daily use
+
+### Team Deployment
+- [ ] **Configuration standardized** across team
+- [ ] **Best practices** documented and shared
+- [ ] **Security considerations** addressed
+- [ ] **Troubleshooting procedures** established
 
 ---
 
-**Ready to integrate AI tools with your knowledge base!** 🤖
+**Transform your AI development workflow with intelligent knowledge access!** 🚀
 
-The MCP server provides powerful search capabilities that make your AI tools much more useful by grounding them in your actual documentation and codebase. Continue with the specific integration guides for your AI tool of choice.
+The MCP Server brings your entire knowledge base into your AI development environment, enabling contextual assistance, intelligent exploration, and comprehensive understanding. Your AI tools can now provide answers grounded in your specific project knowledge, making development more informed and efficient.
+
+**Ready to unlock the power of your knowledge base?** Start with our **[Setup Guide](./setup-and-integration.md)** or jump into **[Search Capabilities](./search-capabilities.md)** to explore what's possible! ✨

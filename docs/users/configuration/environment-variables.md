@@ -4,7 +4,9 @@ This reference covers the environment variables actually used by QDrant Loader a
 
 ## 🎯 Overview
 
-Environment variables are used primarily for sensitive information like API keys and connection strings. They are substituted into configuration files using `${VARIABLE_NAME}` syntax.
+QDrant Loader uses environment variables in two ways:
+1. **Direct usage** - Variables read directly by the application code
+2. **Config substitution** - Variables substituted into YAML configuration files using `${VARIABLE_NAME}` syntax
 
 ### Configuration Priority
 
@@ -15,387 +17,252 @@ Environment variables are used primarily for sensitive information like API keys
 4. Default values           (lowest priority)
 ```
 
-## 🔧 Core Environment Variables
+## 🔧 Environment Variables Used Directly by Code
 
-Based on the actual codebase implementation, these are the environment variables that are actually used:
+These environment variables are read directly by the application code:
 
-### QDrant Database Connection
+### QDrant Database Connection (MCP Server)
 
 #### QDRANT_URL
-
 - **Description**: URL of your QDrant database instance
-- **Required**: Yes (when used in config files)
+- **Used by**: MCP server configuration
+- **Required**: No (defaults to "http://localhost:6333")
 - **Format**: `http://host:port` or `https://host:port`
-- **Usage**: Referenced in configuration files as `${QDRANT_URL}`
 - **Examples**:
-
   ```bash
-  # Local QDrant instance
   export QDRANT_URL="http://localhost:6333"
-  
-  # QDrant Cloud
   export QDRANT_URL="https://your-cluster.qdrant.io"
   ```
 
 #### QDRANT_API_KEY
-
 - **Description**: API key for QDrant Cloud or secured instances
-- **Required**: Only for QDrant Cloud or secured instances
+- **Used by**: MCP server configuration
+- **Required**: No (only for secured QDrant instances)
 - **Format**: String
-- **Usage**: Referenced in configuration files as `${QDRANT_API_KEY}`
 - **Examples**:
-
   ```bash
-  # QDrant Cloud API key
   export QDRANT_API_KEY="your-qdrant-cloud-api-key"
   ```
 
 #### QDRANT_COLLECTION_NAME
-
 - **Description**: Name of the QDrant collection to use
-- **Required**: Yes (when used in config files)
+- **Used by**: MCP server configuration
+- **Required**: No (defaults to "documents")
 - **Format**: String (alphanumeric, underscores, hyphens)
-- **Usage**: Referenced in configuration files as `${QDRANT_COLLECTION_NAME}`
 - **Examples**:
-
   ```bash
-  # Default collection
   export QDRANT_COLLECTION_NAME="documents"
-  
-  # Project-specific collection
   export QDRANT_COLLECTION_NAME="my_project_docs"
   ```
 
 ### OpenAI Configuration
 
 #### OPENAI_API_KEY
-
-- **Description**: OpenAI API key for embeddings generation
+- **Description**: OpenAI API key for embeddings and file conversion
+- **Used by**: MCP server configuration, file conversion fallback
 - **Required**: Yes (when using OpenAI models)
 - **Format**: String starting with "sk-"
-- **Usage**: Referenced in configuration files as `${OPENAI_API_KEY}`
 - **Examples**:
-
   ```bash
-  # OpenAI API key
   export OPENAI_API_KEY="sk-your-openai-api-key"
   ```
 
-### State Management
-
-#### STATE_DB_PATH
-
-- **Description**: Path to SQLite database file for state management
-- **Required**: No (defaults to ":memory:" in workspace mode)
-- **Format**: File path or ":memory:"
-- **Usage**: Referenced in configuration files as `${STATE_DB_PATH}`
-- **Examples**:
-
-  ```bash
-  # File-based database
-  export STATE_DB_PATH="/path/to/state.db"
-  
-  # In-memory database (default)
-  export STATE_DB_PATH=":memory:"
-  ```
-
-## 📊 Data Source Configuration
-
-### Git Repository Settings
-
-#### REPO_TOKEN / DOCS_REPO_TOKEN / CODE_REPO_TOKEN
-
-- **Description**: Personal access tokens for Git authentication
-- **Required**: Only for private repositories
-- **Format**: String (GitHub: ghp_*, GitLab: glpat-*)
-- **Usage**: Referenced in configuration files as `${REPO_TOKEN}`, `${DOCS_REPO_TOKEN}`, or `${CODE_REPO_TOKEN}`
-- **Examples**:
-
-  ```bash
-  # GitHub personal access token
-  export REPO_TOKEN="ghp_your-github-token"
-  export DOCS_REPO_TOKEN="ghp_your-docs-token"
-  export CODE_REPO_TOKEN="ghp_your-code-token"
-  ```
-
-#### REPO_URL / CODE_REPO_URL
-
-- **Description**: Git repository URLs
-- **Required**: When using git sources
-- **Format**: Git URL
-- **Usage**: Referenced in configuration files as `${REPO_URL}` or `${CODE_REPO_URL}`
-- **Examples**:
-
-  ```bash
-  # Repository URLs
-  export REPO_URL="https://github.com/org/repo.git"
-  export CODE_REPO_URL="https://github.com/org/code-repo.git"
-  ```
-
-### Confluence Configuration
-
-#### CONFLUENCE_URL / CONFLUENCE_BASE_URL
-
-- **Description**: Base URL of your Confluence instance
-- **Required**: Only when using Confluence
-- **Format**: URL
-- **Usage**: Referenced in configuration files as `${CONFLUENCE_URL}` or `${CONFLUENCE_BASE_URL}`
-- **Examples**:
-
-  ```bash
-  # Atlassian Cloud
-  export CONFLUENCE_URL="https://company.atlassian.net"
-  export CONFLUENCE_BASE_URL="https://company.atlassian.net"
-  ```
+### Data Source Authentication
 
 #### CONFLUENCE_TOKEN
-
-- **Description**: Confluence API token
-- **Required**: Only when using Confluence
+- **Description**: Confluence API token for authentication
+- **Used by**: Confluence connector when not specified in config
+- **Required**: No (fallback only)
 - **Format**: String
-- **Usage**: Referenced in configuration files as `${CONFLUENCE_TOKEN}`
 - **Examples**:
-
   ```bash
-  # Confluence API token
   export CONFLUENCE_TOKEN="your-confluence-api-token"
   ```
 
 #### CONFLUENCE_EMAIL
-
-- **Description**: Confluence user email
-- **Required**: Only when using Confluence Cloud
+- **Description**: Confluence user email for Cloud authentication
+- **Used by**: Confluence connector when not specified in config
+- **Required**: No (fallback only)
 - **Format**: Email address
-- **Usage**: Referenced in configuration files as `${CONFLUENCE_EMAIL}`
 - **Examples**:
-
   ```bash
-  # Email address
   export CONFLUENCE_EMAIL="user@company.com"
   ```
 
-#### CONFLUENCE_SPACE_KEY
-
-- **Description**: Confluence space key to process
-- **Required**: When using Confluence sources
-- **Format**: String (space key)
-- **Usage**: Referenced in configuration files as `${CONFLUENCE_SPACE_KEY}`
-- **Examples**:
-
-  ```bash
-  # Space key
-  export CONFLUENCE_SPACE_KEY="DOCS"
-  ```
-
-#### CONFLUENCE_PAT
-
-- **Description**: Confluence Personal Access Token (for Data Center/Server)
-- **Required**: Alternative to token/email for Data Center
-- **Format**: String
-- **Usage**: Referenced in configuration files as `${CONFLUENCE_PAT}`
-- **Examples**:
-
-  ```bash
-  # Personal Access Token
-  export CONFLUENCE_PAT="your-confluence-personal-access-token"
-  ```
-
-### JIRA Configuration
-
-#### JIRA_URL / JIRA_BASE_URL
-
-- **Description**: Base URL of your JIRA instance
-- **Required**: Only when using JIRA
-- **Format**: URL
-- **Usage**: Referenced in configuration files as `${JIRA_URL}` or `${JIRA_BASE_URL}`
-- **Examples**:
-
-  ```bash
-  # Atlassian Cloud
-  export JIRA_URL="https://company.atlassian.net"
-  export JIRA_BASE_URL="https://company.atlassian.net"
-  ```
-
 #### JIRA_TOKEN
-
-- **Description**: JIRA API token
-- **Required**: Only when using JIRA
+- **Description**: JIRA API token for authentication
+- **Used by**: JIRA connector when not specified in config
+- **Required**: No (fallback only)
 - **Format**: String
-- **Usage**: Referenced in configuration files as `${JIRA_TOKEN}`
 - **Examples**:
-
   ```bash
-  # JIRA API token
   export JIRA_TOKEN="your-jira-api-token"
   ```
 
 #### JIRA_EMAIL
-
-- **Description**: JIRA user email
-- **Required**: Only when using JIRA Cloud
+- **Description**: JIRA user email for Cloud authentication
+- **Used by**: JIRA connector when not specified in config
+- **Required**: No (fallback only)
 - **Format**: Email address
-- **Usage**: Referenced in configuration files as `${JIRA_EMAIL}`
 - **Examples**:
-
   ```bash
-  # Email address
   export JIRA_EMAIL="user@company.com"
   ```
 
-#### JIRA_PROJECT_KEY
-
-- **Description**: JIRA project key to process
-- **Required**: When using JIRA sources
-- **Format**: String (project key)
-- **Usage**: Referenced in configuration files as `${JIRA_PROJECT_KEY}`
-- **Examples**:
-
-  ```bash
-  # Project key
-  export JIRA_PROJECT_KEY="PROJ"
-  ```
-
-#### JIRA_PAT
-
-- **Description**: JIRA Personal Access Token (for Data Center/Server)
-- **Required**: Alternative to token/email for Data Center
-- **Format**: String
-- **Usage**: Referenced in configuration files as `${JIRA_PAT}`
-- **Examples**:
-
-  ```bash
-  # Personal Access Token
-  export JIRA_PAT="your-jira-personal-access-token"
-  ```
-
-## 🤖 MCP Server Configuration
-
-The MCP server uses these environment variables directly (not through configuration files):
-
-### Core MCP Settings
+### MCP Server Logging
 
 #### MCP_LOG_LEVEL
-
 - **Description**: Log level for MCP server
+- **Used by**: MCP server logging configuration
 - **Required**: No (defaults to "INFO")
-- **Format**: String (DEBUG, INFO, WARNING, ERROR)
-- **Usage**: Used directly by MCP server
+- **Format**: String (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 - **Examples**:
-
   ```bash
-  # Default logging
   export MCP_LOG_LEVEL="INFO"
-  
-  # Debug logging
   export MCP_LOG_LEVEL="DEBUG"
   ```
 
 #### MCP_LOG_FILE
-
 - **Description**: Path to MCP server log file
-- **Required**: No (defaults to console only)
+- **Used by**: MCP server logging configuration
+- **Required**: No (console only if not set)
 - **Format**: File path
-- **Usage**: Used directly by MCP server
 - **Examples**:
-
   ```bash
-  # Log to file
   export MCP_LOG_FILE="/var/log/mcp-server.log"
+  export MCP_LOG_FILE="./logs/mcp.log"
   ```
 
 #### MCP_DISABLE_CONSOLE_LOGGING
-
 - **Description**: Disable console logging for MCP server
+- **Used by**: MCP server logging configuration
 - **Required**: No (defaults to false)
 - **Format**: Boolean string ("true"/"false")
-- **Usage**: Used directly by MCP server
 - **Examples**:
-
   ```bash
-  # Disable console logging
   export MCP_DISABLE_CONSOLE_LOGGING="true"
   ```
+
+### Development/Release Variables
+
+#### GITHUB_TOKEN
+- **Description**: GitHub token for release automation
+- **Used by**: Release script
+- **Required**: No (only for releases)
+- **Format**: String (ghp_* or github_pat_*)
+- **Examples**:
+  ```bash
+  export GITHUB_TOKEN="ghp_your-github-token"
+  ```
+
+## 📝 Environment Variables for Config File Substitution
+
+These variables are substituted into YAML configuration files using `${VARIABLE_NAME}` syntax. They are not read directly by the code but can be used in config files:
+
+### Common Substitution Variables
+
+Any environment variable can be used for substitution in config files. Common examples include:
+
+- `STATE_DB_PATH` - Database path for state management
+- `REPO_TOKEN` - Git repository tokens
+- `CONFLUENCE_URL` - Confluence base URLs
+- `CONFLUENCE_SPACE_KEY` - Confluence space keys
+- `CONFLUENCE_PAT` - Confluence Personal Access Tokens
+- `JIRA_URL` - JIRA base URLs  
+- `JIRA_PROJECT_KEY` - JIRA project keys
+- `JIRA_PAT` - JIRA Personal Access Tokens
+
+**Example config usage:**
+```yaml
+global_config:
+  state_management:
+    database_path: "${STATE_DB_PATH}"
+  
+sources:
+  confluence:
+    my-wiki:
+      base_url: "${CONFLUENCE_URL}"
+      space_key: "${CONFLUENCE_SPACE_KEY}"
+      token: "${CONFLUENCE_TOKEN}"
+```
 
 ## 📋 Environment File Templates
 
 ### Basic .env Template
-
 ```bash
-# .env - Basic configuration
-# Copy this template and fill in your values
+# .env - Basic configuration for MCP server
 
-# Required: QDrant Database
-QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION_NAME=documents
-
-# Required: OpenAI API
+# Required for MCP server
 OPENAI_API_KEY=sk-your-openai-api-key
 
-# Optional: QDrant Cloud
+# QDrant configuration (defaults shown)
+QDRANT_URL=http://localhost:6333
+QDRANT_COLLECTION_NAME=documents
 # QDRANT_API_KEY=your-qdrant-cloud-api-key
 
-# Optional: State Management
-# STATE_DB_PATH=/path/to/state.db
+# MCP Server logging (optional)
+MCP_LOG_LEVEL=INFO
+# MCP_LOG_FILE=./logs/mcp.log
+# MCP_DISABLE_CONSOLE_LOGGING=true
 ```
 
 ### Development .env Template
-
 ```bash
 # .env.development - Development environment
 
-# QDrant Database (local)
+# Core requirements
+OPENAI_API_KEY=sk-your-dev-openai-api-key
+
+# QDrant (local development)
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=dev_documents
 
-# OpenAI API (development key)
-OPENAI_API_KEY=sk-your-dev-openai-api-key
-
-# State Management (in-memory for development)
-STATE_DB_PATH=:memory:
-
-# Git Repository (if using)
-REPO_TOKEN=ghp_your-github-token
-REPO_URL=https://github.com/org/repo.git
-
 # MCP Server (development settings)
 MCP_LOG_LEVEL=DEBUG
-MCP_LOG_FILE=/tmp/mcp-dev.log
+MCP_LOG_FILE=./logs/mcp-dev.log
+
+# Config file substitution variables (examples)
+STATE_DB_PATH=:memory:
+REPO_TOKEN=ghp_your-github-token
+CONFLUENCE_URL=https://company.atlassian.net
+CONFLUENCE_TOKEN=your-confluence-token
+CONFLUENCE_EMAIL=dev@company.com
+JIRA_URL=https://company.atlassian.net
+JIRA_TOKEN=your-jira-token
+JIRA_EMAIL=dev@company.com
 ```
 
 ### Production .env Template
-
 ```bash
 # .env.production - Production environment
 
-# QDrant Database (production)
+# Core requirements
+OPENAI_API_KEY=sk-your-prod-openai-api-key
+
+# QDrant (production)
 QDRANT_URL=https://your-qdrant-cluster.qdrant.io
 QDRANT_API_KEY=your-production-qdrant-api-key
 QDRANT_COLLECTION_NAME=production_documents
-
-# OpenAI API (production key)
-OPENAI_API_KEY=sk-your-prod-openai-api-key
-
-# State Management (persistent database)
-STATE_DB_PATH=/var/lib/qdrant-loader/state.db
-
-# Data Sources (production credentials)
-CONFLUENCE_URL=https://company.atlassian.net
-CONFLUENCE_TOKEN=your-confluence-api-token
-CONFLUENCE_EMAIL=service-account@company.com
-CONFLUENCE_SPACE_KEY=DOCS
-
-JIRA_URL=https://company.atlassian.net
-JIRA_TOKEN=your-jira-api-token
-JIRA_EMAIL=service-account@company.com
-JIRA_PROJECT_KEY=PROJ
-
-REPO_TOKEN=ghp_your-production-github-token
-REPO_URL=https://github.com/company/docs.git
 
 # MCP Server (production settings)
 MCP_LOG_LEVEL=INFO
 MCP_LOG_FILE=/var/log/qdrant-loader/mcp.log
 MCP_DISABLE_CONSOLE_LOGGING=true
+
+# Config file substitution variables
+STATE_DB_PATH=/var/lib/qdrant-loader/state.db
+REPO_TOKEN=ghp_your-production-github-token
+CONFLUENCE_URL=https://company.atlassian.net
+CONFLUENCE_TOKEN=your-confluence-api-token
+CONFLUENCE_EMAIL=service-account@company.com
+CONFLUENCE_SPACE_KEY=DOCS
+JIRA_URL=https://company.atlassian.net
+JIRA_TOKEN=your-jira-api-token
+JIRA_EMAIL=service-account@company.com
+JIRA_PROJECT_KEY=PROJ
+
+# Release automation (if needed)
+GITHUB_TOKEN=ghp_your-production-github-token
 ```
 
 ## 🔧 Environment Management
@@ -403,7 +270,6 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ### Loading Environment Variables
 
 #### Using .env Files
-
 ```bash
 # Load from .env file
 set -a  # automatically export all variables
@@ -416,7 +282,6 @@ direnv allow
 ```
 
 #### Using Environment-Specific Files
-
 ```bash
 # Load development environment
 source .env.development
@@ -430,54 +295,47 @@ env $(cat .env.production | xargs) qdrant-loader --workspace . config
 
 ### Validation and Testing
 
-#### Check Environment Variables
-
+#### Check Required Variables for MCP Server
 ```bash
-# Check if required variables are set
-if [ -z "$QDRANT_URL" ]; then
-  echo "Error: QDRANT_URL not set"
-  exit 1
-fi
-
+# Check if MCP server variables are set
 if [ -z "$OPENAI_API_KEY" ]; then
-  echo "Error: OPENAI_API_KEY not set"
+  echo "Error: OPENAI_API_KEY not set (required for MCP server)"
   exit 1
 fi
 
-# Test configuration
-qdrant-loader --workspace . config
+echo "✅ OPENAI_API_KEY is set"
+
+# Optional variables with defaults
+echo "QDRANT_URL: ${QDRANT_URL:-http://localhost:6333 (default)}"
+echo "QDRANT_COLLECTION_NAME: ${QDRANT_COLLECTION_NAME:-documents (default)}"
+echo "MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO (default)}"
 ```
 
-#### Environment Variable Script
-
+#### Environment Variable Validation Script
 ```bash
 #!/bin/bash
 # check-env.sh - Validate environment variables
 
-required_vars=(
-  "QDRANT_URL"
-  "OPENAI_API_KEY"
-  "QDRANT_COLLECTION_NAME"
-)
+echo "=== Core Variables (directly used by code) ==="
 
-optional_vars=(
-  "QDRANT_API_KEY"
-  "CONFLUENCE_URL"
-  "JIRA_URL"
-  "REPO_TOKEN"
-)
+# Required for MCP server
+if [ -z "$OPENAI_API_KEY" ]; then
+  echo "❌ OPENAI_API_KEY is not set (required for MCP server)"
+  exit 1
+else
+  echo "✅ OPENAI_API_KEY is set"
+fi
 
-echo "Checking required environment variables..."
-for var in "${required_vars[@]}"; do
-  if [ -z "${!var}" ]; then
-    echo "❌ $var is not set"
-    exit 1
-  else
-    echo "✅ $var is set"
-  fi
-done
+# Optional with defaults
+echo "✅ QDRANT_URL: ${QDRANT_URL:-http://localhost:6333 (default)}"
+echo "✅ QDRANT_COLLECTION_NAME: ${QDRANT_COLLECTION_NAME:-documents (default)}"
+echo "✅ MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO (default)}"
 
-echo "Checking optional environment variables..."
+# Optional without defaults
+optional_vars=("QDRANT_API_KEY" "CONFLUENCE_TOKEN" "CONFLUENCE_EMAIL" "JIRA_TOKEN" "JIRA_EMAIL" "MCP_LOG_FILE" "MCP_DISABLE_CONSOLE_LOGGING")
+
+echo ""
+echo "=== Optional Variables ==="
 for var in "${optional_vars[@]}"; do
   if [ -z "${!var}" ]; then
     echo "⚠️  $var is not set (optional)"
@@ -486,26 +344,32 @@ for var in "${optional_vars[@]}"; do
   fi
 done
 
+echo ""
 echo "Environment validation complete!"
 ```
 
 ## 🔗 Related Documentation
 
-- **[Configuration File Reference](./config-file-reference.md)** - YAML configuration options
-- **[Basic Configuration](../getting-started/basic-configuration.md)** - Getting started with configuration
-- **[Security Considerations](./security-considerations.md)** - Security best practices
+- **[Configuration File Reference](./config-file-reference.md)** - YAML configuration options and substitution
+- **[Basic Configuration](../getting-started/basic-configuration.md)** - Getting started guide
+- **[MCP Server Setup](../detailed-guides/mcp-server/setup-and-integration.md)** - MCP server configuration
 
 ## 📋 Environment Variables Checklist
 
-- [ ] **Core variables** set (QDRANT_URL, OPENAI_API_KEY, QDRANT_COLLECTION_NAME)
-- [ ] **Data source credentials** configured for your sources
-- [ ] **MCP server settings** configured if using MCP server
+### For MCP Server Usage:
+- [ ] **OPENAI_API_KEY** set (required)
+- [ ] **QDRANT_URL** configured (optional, defaults to localhost)
+- [ ] **QDRANT_COLLECTION_NAME** set (optional, defaults to "documents")
+- [ ] **MCP logging variables** configured if needed
+
+### For QDrant Loader Configuration:
+- [ ] **Config file substitution variables** set as needed
+- [ ] **Data source credentials** configured (Confluence, JIRA, Git)
 - [ ] **Environment file** created and secured (chmod 600)
 - [ ] **Variables validated** with test commands
-- [ ] **Configuration tested** with `qdrant-loader --workspace . config`
 
 ---
 
 **Environment configuration complete!** 🎉
 
-Your QDrant Loader is now configured via environment variables. This provides a secure way to manage credentials while keeping sensitive information out of configuration files.
+Your QDrant Loader environment variables are now accurately configured. Remember that most variables are used for config file substitution rather than direct code usage.

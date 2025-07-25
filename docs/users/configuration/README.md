@@ -35,41 +35,72 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 Edit `.env` file:
 
 ```bash
-# QDrant Configuration
+# Required - OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Required - QDrant Configuration
 QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION_NAME=my_docs
-QDRANT_API_KEY=your_api_key  # Required for QDrant Cloud
+QDRANT_COLLECTION_NAME=documents
+QDRANT_API_KEY=your_qdrant_api_key_here  # Optional: for QDrant Cloud
 
-# Embedding Configuration
-OPENAI_API_KEY=your_openai_key
+# Optional - Git Authentication
+REPO_TOKEN=your_github_token_here
 
-# State Management
-STATE_DB_PATH=./state.db
+# Optional - Confluence Configuration
+CONFLUENCE_TOKEN=your_confluence_token_here
+CONFLUENCE_EMAIL=your_confluence_email_here
+
+# Optional - Jira Configuration
+JIRA_TOKEN=your_jira_token_here
+JIRA_EMAIL=your_jira_email_here
 ```
 
-### 3. Basic Data Sources
+### 3. Basic Multi-Project Configuration
 
 Edit `config.yaml`:
 
 ```yaml
-sources:
-  git:
-    - url: "https://github.com/your-org/your-repo.git"
-      branch: "main"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.py"
+# Global configuration shared across all projects
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+  
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
 
-  local_files:
-    - path: "./docs"
-      include_patterns:
-        - "**/*.md"
-        - "**/*.pdf"
-
-# Global settings
-enable_file_conversion: true
-chunk_size: 1000
-chunk_overlap: 200
+# Multi-project configuration
+projects:
+  my-project:
+    project_id: "my-project"
+    display_name: "My Documentation Project"
+    description: "Company documentation and code"
+    
+    sources:
+      git:
+        docs-repo:
+          base_url: "https://github.com/your-org/your-repo.git"
+          branch: "main"
+          include_paths:
+            - "docs/**"
+            - "README.md"
+          file_types:
+            - "*.md"
+            - "*.py"
+          enable_file_conversion: true
+      
+      localfile:
+        local-docs:
+          base_url: "file://./docs"
+          include_paths:
+            - "**/*.md"
+            - "**/*.pdf"
+          enable_file_conversion: true
 ```
 
 ## 📚 Configuration Sections
@@ -81,7 +112,6 @@ Complete reference for all environment variables including:
 - **QDrant connection settings** - URL, API keys, collection configuration
 - **Authentication credentials** - API tokens for data sources
 - **Processing options** - Embedding models, file conversion settings
-- **Performance tuning** - Memory limits, concurrency settings
 
 ### 🔒 [Security Considerations](./security-considerations.md)
 
@@ -100,25 +130,53 @@ Security best practices and configuration:
 
 ```yaml
 # config.yaml
-sources:
-  git:
-    - url: "https://github.com/company/main-app.git"
-      branch: "main"
-      include_patterns: ["src/**/*.py", "docs/**/*.md"]
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
   
-  confluence:
-    - space_key: "DEV"
-      include_patterns: ["Architecture/*", "API/*"]
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 50
   
-  jira:
-    - project_key: "PROJ"
-      include_issue_types: ["Story", "Epic", "Bug"]
+  chunking:
+    chunk_size: 800
+    chunk_overlap: 150
 
-# Performance for team use
-chunk_size: 800
-batch_size: 50
-max_concurrent_requests: 10
-enable_file_conversion: true
+projects:
+  dev-team:
+    project_id: "dev-team"
+    display_name: "Development Team Knowledge"
+    description: "Code repositories, documentation, and project management"
+    
+    sources:
+      git:
+        main-app:
+          base_url: "https://github.com/company/main-app.git"
+          branch: "main"
+          include_paths: ["src/**", "docs/**"]
+          file_types: ["*.py", "*.md"]
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
+      
+      confluence:
+        dev-space:
+          base_url: "https://company.atlassian.net/wiki"
+          space_key: "DEV"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+      
+      jira:
+        project-tracker:
+          base_url: "https://company.atlassian.net"
+          project_key: "PROJ"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ```bash
@@ -141,26 +199,50 @@ JIRA_EMAIL=team@company.com
 
 ```yaml
 # config.yaml
-sources:
-  confluence:
-    - space_key: "DOCS"
-      include_attachments: true
-      include_patterns: ["*"]
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
   
-  local_files:
-    - path: "./legacy-docs"
-      include_patterns: ["**/*.pdf", "**/*.docx", "**/*.md"]
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
   
-  public_docs:
-    - url: "https://api-docs.example.com"
-      css_selector: ".content"
-      max_pages: 100
+  chunking:
+    chunk_size: 1200
+    chunk_overlap: 300
+  
+  file_conversion:
+    max_file_size: 52428800  # 50MB for large documents
 
-# Optimized for document processing
-enable_file_conversion: true
-chunk_size: 1200
-chunk_overlap: 300
-max_file_size: 52428800  # 50MB for large documents
+projects:
+  documentation:
+    project_id: "documentation"
+    display_name: "Documentation Hub"
+    description: "Centralized documentation across platforms"
+    
+    sources:
+      confluence:
+        docs-space:
+          base_url: "https://company.atlassian.net/wiki"
+          space_key: "DOCS"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+      
+      localfile:
+        legacy-docs:
+          base_url: "file://./legacy-docs"
+          include_paths: ["**/*.pdf", "**/*.docx", "**/*.md"]
+          enable_file_conversion: true
+      
+      publicdocs:
+        api-docs:
+          base_url: "https://api-docs.example.com"
+          selectors:
+            content: ".content"
+          enable_file_conversion: true
 ```
 
 ### 🔬 Research Team
@@ -169,24 +251,47 @@ max_file_size: 52428800  # 50MB for large documents
 
 ```yaml
 # config.yaml
-sources:
-  local_files:
-    - path: "./research-papers"
-      include_patterns: ["**/*.pdf", "**/*.txt", "**/*.csv"]
-      max_file_size: 104857600  # 100MB for datasets
-    
-    - path: "./notebooks"
-      include_patterns: ["**/*.ipynb", "**/*.py"]
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
   
-  git:
-    - url: "https://github.com/research-org/analysis-tools.git"
-      include_patterns: ["**/*.py", "**/*.md", "**/*.ipynb"]
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 20  # Slower processing for large files
+  
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 400
+  
+  file_conversion:
+    max_file_size: 104857600  # 100MB for datasets
 
-# Research-optimized settings
-chunk_size: 1500
-chunk_overlap: 400
-enable_file_conversion: true
-batch_size: 20  # Slower processing for large files
+projects:
+  research:
+    project_id: "research"
+    display_name: "Research Materials"
+    description: "Research papers, datasets, and analysis tools"
+    
+    sources:
+      localfile:
+        research-papers:
+          base_url: "file://./research-papers"
+          include_paths: ["**/*.pdf", "**/*.txt", "**/*.csv"]
+          enable_file_conversion: true
+        
+        notebooks:
+          base_url: "file://./notebooks"
+          include_paths: ["**/*.ipynb", "**/*.py"]
+          enable_file_conversion: true
+      
+      git:
+        analysis-tools:
+          base_url: "https://github.com/research-org/analysis-tools.git"
+          include_paths: ["**/*.py", "**/*.md", "**/*.ipynb"]
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
 ```
 
 ### 🏢 Enterprise Deployment
@@ -195,35 +300,76 @@ batch_size: 20  # Slower processing for large files
 
 ```yaml
 # config.yaml
-sources:
-  git:
-    - url: "https://github.com/enterprise/platform.git"
-      branch: "main"
-      include_patterns: ["**/*.py", "**/*.js", "**/*.md"]
-    - url: "https://github.com/enterprise/services.git"
-      branch: "main"
-      include_patterns: ["**/*.py", "**/*.md"]
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
   
-  confluence:
-    - space_key: "ARCH"
-    - space_key: "DOCS"
-    - space_key: "PROC"
+  embedding:
+    model: "text-embedding-3-small"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: 100
   
-  jira:
-    - project_key: "PLAT"
-    - project_key: "SERV"
+  chunking:
+    chunk_size: 1000
+    chunk_overlap: 200
 
-# Enterprise performance settings
-chunk_size: 1000
-batch_size: 100
-max_concurrent_requests: 20
-enable_caching: true
-cache_ttl_hours: 24
-
-# Error handling
-retry_attempts: 5
-retry_delay: 2
-timeout_seconds: 60
+projects:
+  enterprise-platform:
+    project_id: "enterprise-platform"
+    display_name: "Enterprise Platform"
+    description: "Platform code, architecture, and documentation"
+    
+    sources:
+      git:
+        platform-repo:
+          base_url: "https://github.com/enterprise/platform.git"
+          branch: "main"
+          include_paths: ["**/*.py", "**/*.js", "**/*.md"]
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
+        
+        services-repo:
+          base_url: "https://github.com/enterprise/services.git"
+          branch: "main"
+          include_paths: ["**/*.py", "**/*.md"]
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
+      
+      confluence:
+        architecture:
+          base_url: "https://enterprise.atlassian.net/wiki"
+          space_key: "ARCH"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+        
+        documentation:
+          base_url: "https://enterprise.atlassian.net/wiki"
+          space_key: "DOCS"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+      
+      jira:
+        platform-issues:
+          base_url: "https://enterprise.atlassian.net"
+          project_key: "PLAT"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
+        
+        services-issues:
+          base_url: "https://enterprise.atlassian.net"
+          project_key: "SERV"
+          token: "${JIRA_TOKEN}"
+          email: "${JIRA_EMAIL}"
+          enable_file_conversion: true
+          download_attachments: true
 ```
 
 ```bash
@@ -242,14 +388,17 @@ STATE_DB_PATH=/data/qdrant-loader/state.db
 ### Validate Configuration
 
 ```bash
-# Display and validate configuration
-qdrant-loader --workspace . config
+# Display current configuration
+qdrant-loader config --workspace .
 
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
+
+# List all projects
+qdrant-loader project list --workspace .
 ```
 
 ### Common Validation Errors
@@ -261,32 +410,34 @@ qdrant-loader project --workspace . status
 export QDRANT_URL=http://localhost:6333
 
 # Error: Missing OPENAI_API_KEY
-export OPENAI_API_KEY=sk-proj-your_key
+export OPENAI_API_KEY=your_openai_api_key
 
-# Error: Invalid collection name
-export QDRANT_COLLECTION_NAME=valid_collection_name
+# Error: Missing collection name
+export QDRANT_COLLECTION_NAME=documents
 ```
 
 #### Invalid Configuration Syntax
 
 ```yaml
-# ❌ Invalid YAML syntax
-sources:
-  git:
-    - url: "https://github.com/org/repo.git"
-      branch: main  # Missing quotes
-      include_patterns:
-        - "**/*.md"
-        - "**/*.py"
+# ❌ Invalid YAML syntax - Missing quotes
+projects:
+  my-project:
+    project_id: my-project  # Missing quotes
+    sources:
+      git:
+        repo:
+          base_url: https://github.com/org/repo.git  # Missing quotes
+          branch: main  # Missing quotes
 
 # ✅ Correct YAML syntax
-sources:
-  git:
-    - url: "https://github.com/org/repo.git"
-      branch: "main"  # Quoted string
-      include_patterns:
-        - "**/*.md"
-        - "**/*.py"
+projects:
+  my-project:
+    project_id: "my-project"  # Quoted string
+    sources:
+      git:
+        repo:
+          base_url: "https://github.com/org/repo.git"  # Quoted string
+          branch: "main"  # Quoted string
 ```
 
 ## 🎯 Configuration Best Practices
@@ -335,12 +486,11 @@ max_concurrent_requests: 5
 ### 4. Monitoring and Logging
 
 ```bash
-# Enable appropriate logging
-export LOG_LEVEL=INFO
-export LOG_FILE=/var/log/qdrant-loader/app.log
-
 # Monitor project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
+
+# Use debug logging for troubleshooting
+qdrant-loader config --log-level DEBUG --workspace .
 ```
 
 ## 🔍 Advanced Configuration Patterns
@@ -349,48 +499,99 @@ qdrant-loader project --workspace . status
 
 ```yaml
 # config.yaml with environment variables
-sources:
-  git:
-    - url: "${GIT_REPO_URL}"
-      branch: "${GIT_BRANCH:-main}"
-      include_patterns: 
-        - "**/*.md"
-        - "**/*.py"
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    model: "${EMBEDDING_MODEL:-text-embedding-3-small}"
+    api_key: "${OPENAI_API_KEY}"
+    batch_size: ${BATCH_SIZE:-50}
+  
+  chunking:
+    chunk_size: ${CHUNK_SIZE:-1500}
+    chunk_overlap: ${CHUNK_OVERLAP:-200}
 
-chunk_size: ${CHUNK_SIZE:-1000}
-batch_size: ${BATCH_SIZE:-50}
+projects:
+  main-project:
+    project_id: "main-project"
+    display_name: "Main Project"
+    
+    sources:
+      git:
+        repo:
+          base_url: "${GIT_REPO_URL}"
+          branch: "${GIT_BRANCH:-main}"
+          include_paths: ["**/*.md", "**/*.py"]
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
 ```
 
 ### Conditional Configuration
 
 ```yaml
 # Different settings based on environment
-sources:
-  git:
-    - url: "https://github.com/org/repo.git"
-      branch: "main"
-      # Only process recent files in development
-      max_age_days: ${MAX_AGE_DAYS:-30}
-      # Smaller files in development
-      max_file_size: ${MAX_FILE_SIZE:-1048576}
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    api_key: "${OPENAI_API_KEY}"
+  
+  file_conversion:
+    max_file_size: ${MAX_FILE_SIZE:-52428800}  # 50MB default
+
+projects:
+  main-project:
+    project_id: "main-project"
+    
+    sources:
+      git:
+        repo:
+          base_url: "https://github.com/org/repo.git"
+          branch: "main"
+          max_file_size: ${MAX_FILE_SIZE:-1048576}  # Smaller files in development
+          token: "${REPO_TOKEN}"
+          enable_file_conversion: true
 ```
 
 ### Template-Based Configuration
 
 ```yaml
 # Base configuration template
-_defaults: &defaults
-  chunk_size: 1000
-  chunk_overlap: 200
+_git_defaults: &git_defaults
+  branch: "main"
   enable_file_conversion: true
+  include_paths: ["**/*.md", "**/*.py"]
+  token: "${REPO_TOKEN}"
 
-# Apply defaults to sources
-sources:
-  git:
-    - <<: *defaults
-      url: "https://github.com/org/repo1.git"
-    - <<: *defaults
-      url: "https://github.com/org/repo2.git"
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  
+  embedding:
+    api_key: "${OPENAI_API_KEY}"
+  
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
+
+projects:
+  multi-repo:
+    project_id: "multi-repo"
+    
+    sources:
+      git:
+        repo1:
+          <<: *git_defaults
+          base_url: "https://github.com/org/repo1.git"
+        
+        repo2:
+          <<: *git_defaults
+          base_url: "https://github.com/org/repo2.git"
 ```
 
 ## 🧪 Testing Configuration
@@ -398,20 +599,23 @@ sources:
 ### Configuration Testing Workflow
 
 ```bash
-# 1. Validate configuration syntax
-qdrant-loader --workspace . config
+# 1. Display current configuration
+qdrant-loader config --workspace .
 
 # 2. Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
-# 3. Check project status
-qdrant-loader project --workspace . status
+# 3. List all projects
+qdrant-loader project list --workspace .
 
-# 4. Initialize workspace
-qdrant-loader --workspace . init
+# 4. Check project status
+qdrant-loader project status --workspace .
 
-# 5. Process data
-qdrant-loader --workspace . ingest
+# 5. Initialize QDrant collection
+qdrant-loader init --workspace .
+
+# 6. Process data
+qdrant-loader ingest --workspace .
 ```
 
 ### Performance Testing
@@ -421,10 +625,10 @@ qdrant-loader --workspace . ingest
 top -p $(pgrep -f qdrant-loader)
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Measure processing time
-time qdrant-loader --workspace . ingest
+time qdrant-loader ingest --workspace .
 ```
 
 ## 📚 Related Documentation
