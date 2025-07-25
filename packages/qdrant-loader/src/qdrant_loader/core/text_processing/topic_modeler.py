@@ -105,8 +105,8 @@ class TopicModeler:
                 passes=self.passes,
                 chunksize=2000,
                 update_every=1,
-                alpha="auto",
-                eta="auto",
+                alpha=0.1,  # Fixed positive value for document-topic density
+                eta=0.01,   # Fixed positive value for topic-word density
                 decay=0.5,
                 offset=1.0,
                 eval_every=10,
