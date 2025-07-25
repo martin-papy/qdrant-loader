@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-mcp-server"
-version = "0.4.14"
+version = "0.5.0"
 description = "A Model Context Protocol (MCP) server that provides RAG capabilities to Cursor using Qdrant."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -86,15 +86,24 @@ where = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+]
+python_classes = [
+    "Test*",
+]
+python_functions = [
+    "test_*",
+]
 addopts = [
     "--strict-markers",
     "--strict-config",
     "-v",
-    "-W", "ignore::RuntimeWarning",
+    "-W",
+    "ignore::RuntimeWarning",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
@@ -109,7 +118,7 @@ filterwarnings = [
 ]
 markers = [
     "asyncio: marks tests as async",
-    "unit: marks tests as unit tests", 
+    "unit: marks tests as unit tests",
     "integration: marks tests as integration tests",
     "slow: marks tests as slow running",
 ]
