@@ -1295,6 +1295,10 @@ class MCPHandler:
                 )
 
         try:
+            logger.info(f"🔍 About to call search_engine.find_complementary_content")
+            logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
+            logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
+            
             complementary = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
                 context_query=params["context_query"],
@@ -1302,6 +1306,8 @@ class MCPHandler:
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
             )
+            
+            logger.info(f"✅ search_engine.find_complementary_content completed, got {len(complementary)} results")
 
             return self.protocol.create_response(
                 request_id,
@@ -1459,14 +1465,14 @@ class MCPHandler:
         
         for i, item in enumerate(complementary[:5], 1):  # Show top 5
             document = item.get("document", {})
-            score = item.get("complementary_score", 0)
-            reasons = item.get("recommendation_reasons", [])
+            score = item.get("relevance_score", 0)  # Fixed: use correct key
+            reason = item.get("recommendation_reason", "")  # Fixed: singular form
             
             formatted += f"**{i}. Complementary Score: {score:.3f}**\n"
             if hasattr(document, 'source_title'):
                 formatted += f"• Title: {document.source_title}\n"
-            if reasons:
-                formatted += f"• Why Complementary: {', '.join(reasons)}\n"
+            if reason:
+                formatted += f"• Why Complementary: {reason}\n"
             formatted += "\n"
 
         return formatted

@@ -982,7 +982,7 @@ class ComplementaryContentFinder:
             factors.append((score, f"Same topics, different document types ({shared_topics} topics)"))
             self.logger.info(f"✓ Topic overlap with different doc types: {score:.3f}")
         
-        return self._calculate_weighted_score(factors)
+        return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
     def _score_inter_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
         """Score complementary relationships between different projects."""
@@ -1010,12 +1010,15 @@ class ComplementaryContentFinder:
             factors.append((score, f"Shared technologies ({shared_count} common)"))
             self.logger.info(f"✓ Shared technologies: {score:.3f}")
         
-        return self._calculate_weighted_score(factors)
+        return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
-    def _calculate_weighted_score(self, factors: List[Tuple[float, str]]) -> Tuple[float, str]:
+    def _calculate_weighted_score(self, factors: List[Tuple[float, str]], target_doc: SearchResult = None, candidate_doc: SearchResult = None) -> Tuple[float, str]:
         """Calculate weighted score from multiple factors."""
         if not factors:
-            return self._enhanced_fallback_scoring(None, None)  # Will implement fallback
+            if target_doc and candidate_doc:
+                return self._enhanced_fallback_scoring(target_doc, candidate_doc)
+            else:
+                return 0.0, "No complementary relationship found"
         
         # Use the highest scoring factor as primary, but consider multiple factors
         factors.sort(key=lambda x: x[0], reverse=True)
@@ -1237,9 +1240,6 @@ class ComplementaryContentFinder:
     
     def _enhanced_fallback_scoring(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
         """Enhanced fallback when advanced algorithms don't apply."""
-        if target_doc is None or candidate_doc is None:
-            return 0.0, "No complementary relationship found"
-        
         fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
         if fallback_score > 0:
             return fallback_score, "Basic content similarity"

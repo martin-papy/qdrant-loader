@@ -637,6 +637,7 @@ class SearchEngine:
             raise RuntimeError("Search engine not initialized")
         
         try:
+            self.logger.info(f"🔍 Step 1: Searching for target document with query: '{target_query}'")
             # Get target document
             target_results = await self.hybrid_search.search(
                 query=target_query,
@@ -645,11 +646,15 @@ class SearchEngine:
                 project_ids=project_ids
             )
             
+            self.logger.info(f"🎯 Target search returned {len(target_results)} results")
             if not target_results:
+                self.logger.warning("No target document found!")
                 return []
             
             target_document = target_results[0]
+            self.logger.info(f"🎯 Target document: {target_document.source_title}")
             
+            self.logger.info(f"🔍 Step 2: Searching for context documents with query: '{context_query}'")
             # Get context documents
             context_documents = await self.hybrid_search.search(
                 query=context_query,
@@ -658,6 +663,9 @@ class SearchEngine:
                 project_ids=project_ids
             )
             
+            self.logger.info(f"📚 Context search returned {len(context_documents)} documents")
+            
+            self.logger.info(f"🔍 Step 3: Finding complementary content...")
             # Find complementary content
             complementary = await self.hybrid_search.find_complementary_content(
                 target_document=target_document,
@@ -665,6 +673,7 @@ class SearchEngine:
                 max_recommendations=max_recommendations
             )
             
+            self.logger.info(f"✅ Found {len(complementary)} complementary recommendations")
             return complementary
             
         except Exception as e:

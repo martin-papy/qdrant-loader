@@ -1867,8 +1867,26 @@ class HybridSearchEngine:
                 target_document,
                 documents
             )
-            # Get top recommendations using the proper method
-            return complementary_content.get_top_recommendations(max_recommendations)
+            # Get top recommendations and enhance with document objects
+            recommendations = complementary_content.get_top_recommendations(max_recommendations)
+            
+            # Create lookup dictionary for documents by ID
+            doc_lookup = {f"{doc.source_type}:{doc.source_title}": doc for doc in documents}
+            
+            # Enhance recommendations with full document objects
+            enhanced_recommendations = []
+            for rec in recommendations:
+                doc_id = rec["document_id"]
+                if doc_id in doc_lookup:
+                    enhanced_rec = {
+                        "document": doc_lookup[doc_id],  # Include full document object
+                        "relevance_score": rec["relevance_score"],
+                        "recommendation_reason": rec["recommendation_reason"],
+                        "strategy": rec["strategy"]
+                    }
+                    enhanced_recommendations.append(enhanced_rec)
+            
+            return enhanced_recommendations
         except Exception as e:
             self.logger.error("Error finding complementary content", error=str(e))
             raise
