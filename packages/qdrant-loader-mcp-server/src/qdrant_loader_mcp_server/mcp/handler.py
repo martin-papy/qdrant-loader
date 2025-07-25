@@ -106,6 +106,22 @@ class MCPHandler:
             elif method == "search":
                 logger.info("Handling search request")
                 return await self._handle_search(request_id, params)
+            # 🔥 Phase 2.3: Cross-Document Intelligence Methods
+            elif method == "analyze_document_relationships":
+                logger.info("Handling document relationship analysis request")
+                return await self._handle_analyze_document_relationships(request_id, params)
+            elif method == "find_similar_documents":
+                logger.info("Handling find similar documents request")
+                return await self._handle_find_similar_documents(request_id, params)
+            elif method == "detect_document_conflicts":
+                logger.info("Handling conflict detection request")
+                return await self._handle_detect_document_conflicts(request_id, params)
+            elif method == "find_complementary_content":
+                logger.info("Handling complementary content request")
+                return await self._handle_find_complementary_content(request_id, params)
+            elif method == "cluster_documents":
+                logger.info("Handling document clustering request")
+                return await self._handle_cluster_documents(request_id, params)
             elif method == "tools/call":
                 logger.info("Handling tools/call request")
                 tool_name = params.get("name")
@@ -119,6 +135,27 @@ class MCPHandler:
                     )
                 elif tool_name == "attachment_search":
                     return await self._handle_attachment_search(
+                        request_id, params.get("arguments", {})
+                    )
+                # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                elif tool_name == "analyze_document_relationships":
+                    return await self._handle_analyze_document_relationships(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "find_similar_documents":
+                    return await self._handle_find_similar_documents(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "detect_document_conflicts":
+                    return await self._handle_detect_document_conflicts(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "find_complementary_content":
+                    return await self._handle_find_complementary_content(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "cluster_documents":
+                    return await self._handle_cluster_documents(
                         request_id, params.get("arguments", {})
                     )
                 else:
@@ -329,6 +366,189 @@ class MCPHandler:
             },
         }
 
+        # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+        analyze_relationships_tool = {
+            "name": "analyze_document_relationships",
+            "description": "🔥 Phase 2.3: Analyze relationships between documents including clustering, similarities, and conflicts",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to get documents for analysis",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of documents to analyze",
+                        "default": 20,
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of source types to filter by",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of project IDs to filter by",
+                    },
+                },
+                "required": ["query"],
+            },
+        }
+
+        find_similar_tool = {
+            "name": "find_similar_documents",
+            "description": "🔥 Phase 2.3: Find documents similar to a target document using multiple similarity metrics",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "target_query": {
+                        "type": "string",
+                        "description": "Query to find the target document",
+                    },
+                    "comparison_query": {
+                        "type": "string",
+                        "description": "Query to get documents to compare against",
+                    },
+                    "similarity_metrics": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["entity_overlap", "topic_overlap", "semantic_similarity", "metadata_similarity", "hierarchical_distance", "content_features"]
+                        },
+                        "description": "Similarity metrics to use",
+                    },
+                    "max_similar": {
+                        "type": "integer",
+                        "description": "Maximum number of similar documents to return",
+                        "default": 5,
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of source types to filter by",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of project IDs to filter by",
+                    },
+                },
+                "required": ["target_query", "comparison_query"],
+            },
+        }
+
+        detect_conflicts_tool = {
+            "name": "detect_document_conflicts",
+            "description": "🔥 Phase 2.3: Detect conflicts and contradictions between documents",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to get documents for conflict analysis",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of documents to analyze",
+                        "default": 15,
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of source types to filter by",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of project IDs to filter by",
+                    },
+                },
+                "required": ["query"],
+            },
+        }
+
+        find_complementary_tool = {
+            "name": "find_complementary_content",
+            "description": "🔥 Phase 2.3: Find content that complements a target document",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "target_query": {
+                        "type": "string",
+                        "description": "Query to find the target document",
+                    },
+                    "context_query": {
+                        "type": "string",
+                        "description": "Query to get contextual documents",
+                    },
+                    "max_recommendations": {
+                        "type": "integer",
+                        "description": "Maximum number of recommendations",
+                        "default": 5,
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of source types to filter by",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of project IDs to filter by",
+                    },
+                },
+                "required": ["target_query", "context_query"],
+            },
+        }
+
+        cluster_documents_tool = {
+            "name": "cluster_documents",
+            "description": "🔥 Phase 2.3: Cluster documents based on similarity and relationships",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to get documents for clustering",
+                    },
+                    "strategy": {
+                        "type": "string",
+                        "enum": ["mixed_features", "entity_based", "topic_based", "project_based"],
+                        "description": "Clustering strategy to use",
+                        "default": "mixed_features",
+                    },
+                    "max_clusters": {
+                        "type": "integer",
+                        "description": "Maximum number of clusters to create",
+                        "default": 10,
+                    },
+                    "min_cluster_size": {
+                        "type": "integer",
+                        "description": "Minimum size for a cluster",
+                        "default": 2,
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of documents to cluster",
+                        "default": 25,
+                    },
+                    "source_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of source types to filter by",
+                    },
+                    "project_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of project IDs to filter by",
+                    },
+                },
+                "required": ["query"],
+            },
+        }
+
         # If the method is tools/list, return the tools array with nextCursor
         if method == "tools/list":
             return self.protocol.create_response(
@@ -338,6 +558,12 @@ class MCPHandler:
                         search_tool,
                         hierarchy_search_tool,
                         attachment_search_tool,
+                        # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                        analyze_relationships_tool,
+                        find_similar_tool,
+                        detect_conflicts_tool,
+                        find_complementary_tool,
+                        cluster_documents_tool,
                     ]
                     # Omit nextCursor when there are no more results
                 },
@@ -357,6 +583,12 @@ class MCPHandler:
                             search_tool,
                             hierarchy_search_tool,
                             attachment_search_tool,
+                            # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                            analyze_relationships_tool,
+                            find_similar_tool,
+                            detect_conflicts_tool,
+                            find_complementary_tool,
+                            cluster_documents_tool,
                         ],
                         "resources": [],
                         "resourceTemplates": [],
@@ -901,3 +1133,378 @@ class MCPHandler:
             formatted_result += f"\n⬇️ Children: {result.children_count}"
 
         return formatted_result
+
+    # 🔥 Phase 2.3: Cross-Document Intelligence Handler Methods
+
+    async def _handle_analyze_document_relationships(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle document relationship analysis request."""
+        logger.debug("Handling document relationship analysis with params", params=params)
+
+        if "query" not in params:
+            logger.error("Missing required parameter: query")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: query",
+                },
+            )
+
+        try:
+            analysis = await self.search_engine.analyze_document_relationships(
+                query=params["query"],
+                limit=params.get("limit", 20),
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self._format_relationship_analysis(analysis),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error during document relationship analysis", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            )
+
+    async def _handle_find_similar_documents(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle find similar documents request."""
+        logger.debug("Handling find similar documents with params", params=params)
+
+        required_params = ["target_query", "comparison_query"]
+        for param in required_params:
+            if param not in params:
+                logger.error(f"Missing required parameter: {param}")
+                return self.protocol.create_response(
+                    request_id,
+                    error={
+                        "code": -32602,
+                        "message": "Invalid params",
+                        "data": f"Missing required parameter: {param}",
+                    },
+                )
+
+        try:
+            similar_docs = await self.search_engine.find_similar_documents(
+                target_query=params["target_query"],
+                comparison_query=params["comparison_query"],
+                similarity_metrics=params.get("similarity_metrics"),
+                max_similar=params.get("max_similar", 5),
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self._format_similar_documents(similar_docs),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error finding similar documents", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            )
+
+    async def _handle_detect_document_conflicts(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle conflict detection request."""
+        logger.debug("Handling conflict detection with params", params=params)
+
+        if "query" not in params:
+            logger.error("Missing required parameter: query")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: query",
+                },
+            )
+
+        try:
+            conflicts = await self.search_engine.detect_document_conflicts(
+                query=params["query"],
+                limit=params.get("limit", 15),
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self._format_conflict_analysis(conflicts),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error detecting conflicts", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            )
+
+    async def _handle_find_complementary_content(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle complementary content request."""
+        logger.debug("Handling complementary content with params", params=params)
+
+        required_params = ["target_query", "context_query"]
+        for param in required_params:
+            if param not in params:
+                logger.error(f"Missing required parameter: {param}")
+                return self.protocol.create_response(
+                    request_id,
+                    error={
+                        "code": -32602,
+                        "message": "Invalid params",
+                        "data": f"Missing required parameter: {param}",
+                    },
+                )
+
+        try:
+            complementary = await self.search_engine.find_complementary_content(
+                target_query=params["target_query"],
+                context_query=params["context_query"],
+                max_recommendations=params.get("max_recommendations", 5),
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self._format_complementary_content(complementary),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error finding complementary content", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            )
+
+    async def _handle_cluster_documents(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle document clustering request."""
+        logger.debug("Handling document clustering with params", params=params)
+
+        if "query" not in params:
+            logger.error("Missing required parameter: query")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: query",
+                },
+            )
+
+        try:
+            clusters = await self.search_engine.cluster_documents(
+                query=params["query"],
+                strategy=params.get("strategy", "mixed_features"),
+                max_clusters=params.get("max_clusters", 10),
+                min_cluster_size=params.get("min_cluster_size", 2),
+                limit=params.get("limit", 25),
+                source_types=params.get("source_types"),
+                project_ids=params.get("project_ids"),
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self._format_document_clusters(clusters),
+                        }
+                    ],
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error clustering documents", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            )
+
+    # 🔥 Phase 2.3: Formatting Methods for Cross-Document Intelligence Results
+
+    def _format_relationship_analysis(self, analysis: dict[str, Any]) -> str:
+        """Format document relationship analysis for display."""
+        if "error" in analysis:
+            return f"❌ Error: {analysis['error']}"
+
+        summary = analysis.get("summary", {})
+        formatted = f"""🔍 **Document Relationship Analysis**
+
+📊 **Summary:**
+• Total Documents: {summary.get('total_documents', 0)}
+• Clusters Found: {summary.get('clusters_found', 0)}
+• Citation Relationships: {summary.get('citation_relationships', 0)}
+• Conflicts Detected: {summary.get('conflicts_detected', 0)}
+
+🏷️ **Query Information:**
+• Original Query: {analysis.get('query_metadata', {}).get('original_query', 'N/A')}
+• Documents Analyzed: {analysis.get('query_metadata', {}).get('document_count', 0)}
+"""
+
+        clusters = analysis.get("document_clusters", [])
+        if clusters:
+            formatted += "\n🗂️ **Document Clusters:**\n"
+            for i, cluster in enumerate(clusters[:3], 1):  # Show first 3 clusters
+                formatted += f"• Cluster {i}: {len(cluster.get('documents', []))} documents\n"
+
+        conflicts = analysis.get("conflict_analysis", {}).get("conflicting_pairs", [])
+        if conflicts:
+            formatted += f"\n⚠️ **Conflicts Detected:** {len(conflicts)} conflicting document pairs\n"
+
+        return formatted
+
+    def _format_similar_documents(self, similar_docs: list[dict[str, Any]]) -> str:
+        """Format similar documents results for display."""
+        if not similar_docs:
+            return "🔍 **Similar Documents**\n\nNo similar documents found."
+
+        formatted = f"🔍 **Similar Documents** ({len(similar_docs)} found)\n\n"
+        
+        for i, doc_info in enumerate(similar_docs[:5], 1):  # Show top 5
+            score = doc_info.get("similarity_score", 0)
+            document = doc_info.get("document", {})
+            reasons = doc_info.get("similarity_reasons", [])
+            
+            formatted += f"**{i}. Similarity Score: {score:.3f}**\n"
+            if hasattr(document, 'source_title'):
+                formatted += f"• Title: {document.source_title}\n"
+            if reasons:
+                formatted += f"• Reasons: {', '.join(reasons)}\n"
+            formatted += "\n"
+
+        return formatted
+
+    def _format_conflict_analysis(self, conflicts: dict[str, Any]) -> str:
+        """Format conflict analysis results for display."""
+        conflicting_pairs = conflicts.get("conflicting_pairs", [])
+        
+        if not conflicting_pairs:
+            return "✅ **Conflict Analysis**\n\nNo conflicts detected between documents."
+
+        formatted = f"⚠️ **Conflict Analysis** ({len(conflicting_pairs)} conflicts found)\n\n"
+        
+        for i, (doc1, doc2, conflict_info) in enumerate(conflicting_pairs[:5], 1):
+            conflict_type = conflict_info.get("type", "unknown")
+            formatted += f"**{i}. Conflict Type: {conflict_type}**\n"
+            formatted += f"• Document 1: {doc1}\n"
+            formatted += f"• Document 2: {doc2}\n\n"
+
+        suggestions = conflicts.get("resolution_suggestions", [])
+        if suggestions:
+            formatted += "💡 **Resolution Suggestions:**\n"
+            for suggestion in suggestions[:3]:
+                formatted += f"• {suggestion}\n"
+
+        return formatted
+
+    def _format_complementary_content(self, complementary: list[dict[str, Any]]) -> str:
+        """Format complementary content results for display."""
+        if not complementary:
+            return "🔍 **Complementary Content**\n\nNo complementary content found."
+
+        formatted = f"🔗 **Complementary Content** ({len(complementary)} recommendations)\n\n"
+        
+        for i, item in enumerate(complementary[:5], 1):  # Show top 5
+            document = item.get("document", {})
+            score = item.get("complementary_score", 0)
+            reasons = item.get("recommendation_reasons", [])
+            
+            formatted += f"**{i}. Complementary Score: {score:.3f}**\n"
+            if hasattr(document, 'source_title'):
+                formatted += f"• Title: {document.source_title}\n"
+            if reasons:
+                formatted += f"• Why Complementary: {', '.join(reasons)}\n"
+            formatted += "\n"
+
+        return formatted
+
+    def _format_document_clusters(self, clusters: dict[str, Any]) -> str:
+        """Format document clustering results for display."""
+        cluster_list = clusters.get("clusters", [])
+        metadata = clusters.get("clustering_metadata", {})
+        
+        if not cluster_list:
+            message = metadata.get("message", "No clusters could be formed.")
+            return f"🗂️ **Document Clustering**\n\n{message}"
+
+        formatted = f"""🗂️ **Document Clustering Results**
+
+📊 **Clustering Summary:**
+• Strategy: {metadata.get('strategy', 'unknown')}
+• Total Clusters: {metadata.get('total_clusters', 0)}
+• Total Documents: {metadata.get('total_documents', 0)}
+• Original Query: {metadata.get('original_query', 'N/A')}
+
+"""
+
+        for i, cluster in enumerate(cluster_list[:5], 1):  # Show first 5 clusters
+            formatted += f"**Cluster {i} (ID: {cluster.get('id', 'unknown')})**\n"
+            formatted += f"• Documents: {len(cluster.get('documents', []))}\n"
+            formatted += f"• Coherence Score: {cluster.get('coherence_score', 0):.3f}\n"
+            
+            topics = cluster.get('centroid_topics', [])
+            if topics:
+                formatted += f"• Key Topics: {', '.join(topics[:3])}\n"
+            
+            entities = cluster.get('shared_entities', [])
+            if entities:
+                formatted += f"• Shared Entities: {', '.join(entities[:3])}\n"
+            
+            summary = cluster.get('cluster_summary', '')
+            if summary:
+                formatted += f"• Summary: {summary}\n"
+            
+            formatted += "\n"
+
+        return formatted
