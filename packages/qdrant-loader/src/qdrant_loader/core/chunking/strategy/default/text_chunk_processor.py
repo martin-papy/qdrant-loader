@@ -37,11 +37,11 @@ class TextChunkProcessor(BaseChunkProcessor):
             content=chunk_content,
             metadata=base_metadata,
             source=original_doc.source,
-            doc_type="text_chunk"
+            source_type=original_doc.source_type,
+            url=original_doc.url,
+            content_type=original_doc.content_type,
+            title=f"{original_doc.title} - Chunk {chunk_index + 1}"
         )
-        
-        # Set processed timestamp
-        chunk_doc.processed_at = self._get_current_timestamp()
         
         return chunk_doc
 
