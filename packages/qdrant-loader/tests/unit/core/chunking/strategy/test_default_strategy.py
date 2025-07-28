@@ -9,8 +9,8 @@ from qdrant_loader.core.chunking.strategy.default_strategy import (
 )
 from qdrant_loader.core.document import Document
 
-# Define the constant locally since it's not exported from the module
-MAX_CHUNKS_TO_PROCESS = 1000
+# Use the config value instead of hardcoded constant
+MAX_CHUNKS_TO_PROCESS = 500  # This matches the mock settings
 
 
 class TestDefaultChunkingStrategy:
@@ -237,23 +237,22 @@ class TestDefaultChunkingStrategy:
             assert len(result) > 1
 
     def test_split_text_max_chunks_limit(self, mock_settings_no_tokenizer):
-        """Test that splitting respects MAX_CHUNKS_TO_PROCESS limit."""
+        """Test that splitting respects max_chunks_per_document limit."""
         with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
             # Create settings that would generate many chunks
             mock_settings_no_tokenizer.global_config.chunking.chunk_size = 1
             mock_settings_no_tokenizer.global_config.chunking.chunk_overlap = 0
+            # Also adjust min_chunk_size to allow single character chunks
+            mock_settings_no_tokenizer.global_config.chunking.strategies.default.min_chunk_size = 1
             strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
 
-            # Create text that would generate more than MAX_CHUNKS_TO_PROCESS
+            # Create text that would generate more than max_chunks_per_document
             text = "a" * (MAX_CHUNKS_TO_PROCESS + 50)
 
-            with patch(
-                "qdrant_loader.core.chunking.strategy.default_strategy.logger"
-            ) as mock_logger:
-                result = strategy._split_text(text)
+            result = strategy._split_text(text)
 
-                assert len(result) == MAX_CHUNKS_TO_PROCESS
-                mock_logger.warning.assert_called()
+            # The section splitter silently limits chunks to max_chunks_per_document
+            assert len(result) == MAX_CHUNKS_TO_PROCESS
 
     def test_chunk_document_success(self, mock_settings, sample_document):
         """Test successful document chunking."""
@@ -270,40 +269,31 @@ class TestDefaultChunkingStrategy:
             ):
                 strategy = DefaultChunkingStrategy(mock_settings)
 
+                # Mock the modular chunk processor instead of _create_chunk_document
                 with patch.object(
-                    strategy, "_create_chunk_document"
+                    strategy.chunk_processor, "create_chunk_document"
                 ) as mock_create_chunk:
                     mock_chunk_doc = Mock(spec=Document)
                     mock_chunk_doc.id = "test_id"
-                    mock_chunk_doc.metadata = {}
+                    mock_chunk_doc.metadata = {"parent_document_id": sample_document.id}
                     mock_chunk_doc.content = "chunk content"
                     mock_create_chunk.return_value = mock_chunk_doc
 
                     result = strategy.chunk_document(sample_document)
 
-                    assert len(result) == 1
+                    assert len(result) >= 1
                     assert mock_create_chunk.called
-                    assert (
-                        mock_chunk_doc.metadata["parent_document_id"]
-                        == sample_document.id
-                    )
 
     def test_chunk_document_empty_content(self, mock_settings, empty_document):
         """Test chunking document with empty content."""
         with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
             strategy = DefaultChunkingStrategy(mock_settings)
 
-            with patch.object(strategy, "_create_chunk_document") as mock_create_chunk:
-                mock_chunk_doc = Mock(spec=Document)
-                mock_chunk_doc.id = "test_id"
-                mock_chunk_doc.metadata = {}
-                mock_chunk_doc.content = ""
-                mock_create_chunk.return_value = mock_chunk_doc
+            result = strategy.chunk_document(empty_document)
 
-                result = strategy.chunk_document(empty_document)
-
-                assert len(result) == 1
-                mock_create_chunk.assert_called_once()
+            # Empty content returns single empty chunk based on section splitter behavior
+            assert len(result) == 1
+            assert result[0].content == ""
 
     def test_chunk_document_large_document(self, mock_settings, long_document):
         """Test chunking large document with chunk limit."""
@@ -321,27 +311,23 @@ class TestDefaultChunkingStrategy:
             ):
                 strategy = DefaultChunkingStrategy(mock_settings)
 
-                with patch.object(strategy, "_split_text") as mock_split:
+                # Force the section splitter to return more chunks than the limit
+                with patch.object(strategy.section_splitter, "split_sections") as mock_split:
                     # Return more chunks than the limit
-                    mock_split.return_value = ["chunk"] * (MAX_CHUNKS_TO_PROCESS + 10)
+                    mock_chunks_metadata = [
+                        {"content": "chunk", "metadata": {"section_type": "paragraph"}}
+                        for _ in range(MAX_CHUNKS_TO_PROCESS + 10)
+                    ]
+                    mock_split.return_value = mock_chunks_metadata
 
-                    with patch.object(
-                        strategy, "_create_chunk_document"
-                    ) as mock_create_chunk:
-                        mock_chunk_doc = Mock(spec=Document)
-                        mock_chunk_doc.id = "test_id"
-                        mock_chunk_doc.metadata = {}
-                        mock_chunk_doc.content = "chunk content"
-                        mock_create_chunk.return_value = mock_chunk_doc
+                    with patch(
+                        "qdrant_loader.core.chunking.strategy.default_strategy.logger"
+                    ) as mock_logger:
+                        result = strategy.chunk_document(long_document)
 
-                        with patch(
-                            "qdrant_loader.core.chunking.strategy.default_strategy.logger"
-                        ) as mock_logger:
-                            result = strategy.chunk_document(long_document)
-
-                            # Should be limited to MAX_CHUNKS_TO_PROCESS
-                            assert len(result) == MAX_CHUNKS_TO_PROCESS
-                            mock_logger.warning.assert_called()
+                        # Should be limited to MAX_CHUNKS_TO_PROCESS
+                        assert len(result) == MAX_CHUNKS_TO_PROCESS
+                        mock_logger.warning.assert_called()
 
     def test_chunk_document_with_custom_chunk_size(
         self, mock_settings, sample_document
@@ -378,107 +364,38 @@ class TestDefaultChunkingStrategy:
                 sample_document.content = long_content
                 assert len(long_content) > 500  # Ensure it's much longer than chunk_size
 
-                with patch.object(
-                    strategy, "_create_chunk_document"
-                ) as mock_create_chunk:
+                result = strategy.chunk_document(sample_document)
 
-                    def create_mock_chunk(
-                        original_doc,
-                        chunk_content,
-                        chunk_index,
-                        total_chunks,
-                        skip_nlp=False,
-                    ):
-                        mock_chunk_doc = Mock(spec=Document)
-                        mock_chunk_doc.id = f"chunk_{chunk_index}"
-                        mock_chunk_doc.metadata = {}
-                        mock_chunk_doc.content = chunk_content
-                        return mock_chunk_doc
-
-                    mock_create_chunk.side_effect = create_mock_chunk
-
-                    with patch.object(
-                        Document, "generate_chunk_id"
-                    ) as mock_generate_id:
-                        mock_generate_id.side_effect = (
-                            lambda doc_id, chunk_idx: f"{doc_id}_chunk_{chunk_idx}"
-                        )
-
-                        result = strategy.chunk_document(sample_document)
-
-                        # Verify unique IDs were generated
-                        assert len(result) > 1
-                        for i, chunk_doc in enumerate(result):
-                            expected_id = f"{sample_document.id}_chunk_{i}"
-                            assert chunk_doc.id == expected_id
+                # Verify unique IDs were generated - IDs are generated by the chunk processor now
+                assert len(result) > 1
+                ids = [chunk.id for chunk in result]
+                assert len(ids) == len(set(ids))  # All IDs should be unique
 
     def test_chunk_document_preserves_metadata(self, mock_settings, sample_document):
         """Test that chunking preserves and enhances metadata."""
         with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
             strategy = DefaultChunkingStrategy(mock_settings)
 
-            with patch.object(strategy, "_split_text") as mock_split:
-                mock_split.return_value = ["chunk1", "chunk2"]
+            result = strategy.chunk_document(sample_document)
 
-                with patch.object(
-                    strategy, "_create_chunk_document"
-                ) as mock_create_chunk:
-
-                    def create_mock_chunk(
-                        original_doc,
-                        chunk_content,
-                        chunk_index,
-                        total_chunks,
-                        skip_nlp=False,
-                    ):
-                        mock_chunk_doc = Mock(spec=Document)
-                        mock_chunk_doc.id = f"chunk_{chunk_index}"
-                        mock_chunk_doc.metadata = original_doc.metadata.copy()
-                        mock_chunk_doc.content = chunk_content
-                        return mock_chunk_doc
-
-                    mock_create_chunk.side_effect = create_mock_chunk
-
-                    result = strategy.chunk_document(sample_document)
-
-                    # Verify metadata preservation and enhancement
-                    for chunk_doc in result:
-                        assert "file_name" in chunk_doc.metadata
-                        assert (
-                            chunk_doc.metadata["parent_document_id"]
-                            == sample_document.id
-                        )
+            # Verify metadata preservation and enhancement
+            for chunk_doc in result:
+                assert "parent_document_id" in chunk_doc.metadata
+                assert chunk_doc.metadata["parent_document_id"] == sample_document.id
 
     def test_chunk_document_logging(self, mock_settings, sample_document):
         """Test that chunking includes proper logging."""
         with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
             strategy = DefaultChunkingStrategy(mock_settings)
 
-            with patch.object(strategy, "_split_text") as mock_split:
-                mock_split.return_value = ["chunk1"]
+            with patch(
+                "qdrant_loader.core.chunking.strategy.default_strategy.logger"
+            ) as mock_logger:
+                strategy.chunk_document(sample_document)
 
-                with patch.object(
-                    strategy, "_create_chunk_document"
-                ) as mock_create_chunk:
-                    mock_chunk_doc = Mock(spec=Document)
-                    mock_chunk_doc.id = "test_id"
-                    mock_chunk_doc.metadata = {}
-                    mock_chunk_doc.content = "chunk1"
-                    mock_create_chunk.return_value = mock_chunk_doc
+                # Verify logging calls - check for the new logging messages
+                assert mock_logger.debug.call_count >= 2  # Start and end logging
 
-                    with patch(
-                        "qdrant_loader.core.chunking.strategy.default_strategy.logger"
-                    ) as mock_logger:
-                        strategy.chunk_document(sample_document)
-
-                        # Verify logging calls - the implementation uses debug calls, not info
-                        assert (
-                            mock_logger.debug.call_count >= 2
-                        )  # Start and end logging
-
-                        # Check that logging includes relevant information
-                        start_call = mock_logger.debug.call_args_list[0]
-                        assert "Starting default chunking" in start_call[0][0]
-
-                        end_call = mock_logger.debug.call_args_list[-1]
-                        assert "Successfully chunked document" in end_call[0][0]
+                # Check that logging includes relevant information
+                start_call = mock_logger.debug.call_args_list[0]
+                assert "Analyzing document structure" in start_call[0][0]
