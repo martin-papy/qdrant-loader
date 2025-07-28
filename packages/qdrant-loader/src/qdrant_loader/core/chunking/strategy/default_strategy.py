@@ -166,7 +166,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 # Create chunk document using the chunk processor
                 # Skip NLP for small documents or documents that might cause LDA issues
                 skip_nlp = self.chunk_processor.should_skip_semantic_analysis(
-                    chunk_content, enriched_metadata, document
+                    chunk_content, enriched_metadata
                 )
                 
                 chunk_doc = self.chunk_processor.create_chunk_document(

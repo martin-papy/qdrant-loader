@@ -24,6 +24,15 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 100
         settings.global_config.chunking.chunk_overlap = 20
+        settings.global_config.chunking.max_chunks_per_document = 500
+        
+        # Add strategy-specific configuration
+        settings.global_config.chunking.strategies = Mock()
+        settings.global_config.chunking.strategies.default = Mock()
+        settings.global_config.chunking.strategies.default.min_chunk_size = 50
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
+        
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"
         return settings
@@ -36,6 +45,15 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 50
         settings.global_config.chunking.chunk_overlap = 10
+        settings.global_config.chunking.max_chunks_per_document = 500
+        
+        # Add strategy-specific configuration
+        settings.global_config.chunking.strategies = Mock()
+        settings.global_config.chunking.strategies.default = Mock()
+        settings.global_config.chunking.strategies.default.min_chunk_size = 25
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
+        
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "none"
         return settings
