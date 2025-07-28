@@ -58,6 +58,9 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         self.metadata_extractor = TextMetadataExtractor()
         self.chunk_processor = TextChunkProcessor(settings)
         
+        # Give section splitter access to tokenizer
+        self.section_splitter._parent_strategy = self
+        
         # Apply any chunk overlap that was set before components were initialized
         if hasattr(self, '_chunk_overlap'):
             self.chunk_overlap = self._chunk_overlap

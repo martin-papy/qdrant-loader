@@ -19,6 +19,25 @@ class TextSectionSplitter(BaseSectionSplitter):
     def split_sections(self, content: str, document: Optional[Document] = None) -> List[Dict[str, Any]]:
         """Split text content into intelligent sections."""
         if not content.strip():
+            # For empty content, return a single empty section for compatibility
+            if content == "":
+                return [{
+                    'content': "",
+                    'metadata': {
+                        'section_type': 'empty',
+                        'paragraph_index': 0,
+                        'word_count': 0,
+                        'has_formatting': False,
+                        'content_characteristics': {
+                            'sentence_count': 0,
+                            'avg_sentence_length': 0,
+                            'has_questions': False,
+                            'has_exclamations': False,
+                            'capitalization_ratio': 0,
+                            'number_count': 0,
+                        }
+                    }
+                }]
             return []
 
         # First, try to split by natural boundaries (paragraphs)
@@ -76,6 +95,7 @@ class TextSectionSplitter(BaseSectionSplitter):
         
         chunks = []
         remaining = content
+        previous_length = len(remaining)
         
         while len(remaining) > self.chunk_size:
             # Find the best split point within the chunk size limit
@@ -90,10 +110,24 @@ class TextSectionSplitter(BaseSectionSplitter):
                 chunks.append(chunk)
             
             # Move to next chunk with overlap if configured
+            # Ensure we always make meaningful progress to prevent infinite loops
             overlap_start = max(0, split_point - self.chunk_overlap)
+            
+            # Safety check: ensure we advance at least min_chunk_size characters
+            # This prevents infinite loops when overlap is too large
+            min_advance = max(self.min_chunk_size, split_point // 2)
+            overlap_start = min(overlap_start, split_point - min_advance)
+            
             remaining = remaining[overlap_start:].strip()
             
-            # Prevent infinite loops
+            # Prevent infinite loops - ensure we're making progress
+            if len(remaining) >= previous_length:
+                # Force progress by advancing more aggressively
+                remaining = remaining[min_advance:].strip()
+            
+            previous_length = len(remaining)
+            
+            # Additional safety: break if remaining content is small
             if len(remaining) <= self.min_chunk_size:
                 break
         
@@ -107,6 +141,11 @@ class TextSectionSplitter(BaseSectionSplitter):
         """Find the best point to split content within the size limit."""
         if len(content) <= max_size:
             return len(content)
+        
+        # Try tokenizer-based boundary detection if available
+        tokenizer_split = self._find_tokenizer_boundary(content, max_size)
+        if tokenizer_split > 0:
+            return tokenizer_split
         
         # Search window for optimal split point
         search_start = max(0, max_size - 200)
@@ -142,6 +181,34 @@ class TextSectionSplitter(BaseSectionSplitter):
                     best_split = split_pos
         
         return best_split if best_split > 0 else max_size
+
+    def _find_tokenizer_boundary(self, content: str, max_size: int) -> int:
+        """Use tokenizer to find optimal boundary if available."""
+        try:
+            # Access the encoding from the parent strategy if available
+            parent_strategy = getattr(self, '_parent_strategy', None)
+            if not parent_strategy or not hasattr(parent_strategy, 'encoding') or not parent_strategy.encoding:
+                return 0
+            
+            encoding = parent_strategy.encoding
+            
+            # Get tokens for the content up to max_size
+            text_to_encode = content[:max_size]
+            tokens = encoding.encode(text_to_encode)
+            
+            # Find a good boundary by decoding back from slightly fewer tokens
+            if len(tokens) > 10:  # Only if we have enough tokens
+                boundary_tokens = tokens[:-5]  # Remove last few tokens to find clean boundary
+                decoded_text = encoding.decode(boundary_tokens)
+                
+                # Find where the decoded text ends in the original content
+                if decoded_text and decoded_text in content:
+                    return len(decoded_text)
+            
+            return 0
+        except Exception:
+            # If tokenizer boundary detection fails, fall back to regex patterns
+            return 0
 
     def _score_split_point(self, content: str, split_pos: int, split_type: str) -> float:
         """Score a potential split point based on quality criteria."""

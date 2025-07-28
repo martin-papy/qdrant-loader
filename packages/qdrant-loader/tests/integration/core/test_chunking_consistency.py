@@ -15,11 +15,32 @@ class TestChunkingConsistency:
     def mock_settings(self):
         """Mock settings with consistent configuration."""
         settings = Mock()
+        
+        # Create properly structured mock with actual values instead of Mock objects
+        settings.global_config = Mock()
+        settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 200  # characters
         settings.global_config.chunking.chunk_overlap = 50  # characters
         settings.global_config.chunking.max_chunks_per_document = 1000
+        
+        # Add strategy-specific configurations
+        settings.global_config.chunking.strategies = Mock()
+        settings.global_config.chunking.strategies.default = Mock()
+        settings.global_config.chunking.strategies.default.min_chunk_size = 50
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
+        
+        settings.global_config.chunking.strategies.markdown = Mock()
+        settings.global_config.chunking.strategies.markdown.preserve_code_blocks = True
+        settings.global_config.chunking.strategies.markdown.preserve_tables = True
+        settings.global_config.chunking.strategies.markdown.min_heading_chunk_size = 100
+        
+        settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"
+        
+        settings.global_config.semantic_analysis = Mock()
         settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
+        
         return settings
 
     @pytest.fixture
@@ -104,7 +125,7 @@ This concludes the documentation with a summary of all the topics covered and re
                 assert len(markdown_chunks) > 1, "Markdown strategy should create multiple chunks"
 
                 # Verify that all chunks respect the character-based size limit
-                max_size = mock_settings.global_config.chunking.chunk_size
+                max_size = 200  # Use actual value instead of mock
                 
                 for chunk in default_chunks:
                     # Allow some tolerance for boundary detection and overlap
@@ -133,6 +154,7 @@ This concludes the documentation with a summary of all the topics covered and re
         
         # Test with different chunk sizes
         for chunk_size in [100, 300, 500]:
+            # Update the mock setting with actual value
             mock_settings.global_config.chunking.chunk_size = chunk_size
             
             # Simple text content 
@@ -224,7 +246,7 @@ This concludes the documentation with a summary of all the topics covered and re
             assert len(chunks) >= 2, "Should create multiple chunks for long content"
 
             # All chunks should respect character-based size limit (with tolerance for boundaries)
-            max_size = mock_settings.global_config.chunking.chunk_size
+            max_size = 200  # Use actual value instead of mock
             for i, chunk in enumerate(chunks):
                 assert len(chunk.content) <= max_size + 50, \
                     f"Chunk {i} too large: {len(chunk.content)} chars (max: {max_size} + boundary tolerance)" 
