@@ -56,7 +56,7 @@ class TestInit:
         from qdrant_loader.config.chunking import ChunkingConfig
 
         instance = ChunkingConfig()
-        assert instance.chunk_size == 1000  # Default value
+        assert instance.chunk_size == 1500  # Default value
 
     def test_lazy_import_global_config(self):
         """Test lazy import of GlobalConfig."""

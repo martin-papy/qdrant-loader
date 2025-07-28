@@ -22,7 +22,7 @@ class ChunkingConfig(BaseModel):
     """Configuration for document chunking."""
 
     chunk_size: int = Field(
-        default=1000, description="Maximum size of each chunk in characters"
+        default=1500, description="Maximum size of each chunk in characters"
     )
 
     chunk_overlap: int = Field(
