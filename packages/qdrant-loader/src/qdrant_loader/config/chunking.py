@@ -123,6 +123,72 @@ class JsonStrategyConfig(BaseModel):
     )
 
 
+class MarkdownStrategyConfig(BaseModel):
+    """Configuration for Markdown chunking strategy."""
+    
+    min_content_length_for_nlp: int = Field(
+        default=100,
+        description="Minimum content length for NLP processing (characters)",
+        gt=0
+    )
+    min_word_count_for_nlp: int = Field(
+        default=20,
+        description="Minimum word count for NLP processing",
+        gt=0
+    )
+    min_line_count_for_nlp: int = Field(
+        default=3,
+        description="Minimum line count for NLP processing",
+        gt=0
+    )
+    min_section_size: int = Field(
+        default=500,
+        description="Minimum characters for a standalone section",
+        gt=0
+    )
+    max_chunks_per_section: int = Field(
+        default=1000,
+        description="Maximum chunks per section (prevents runaway chunking)",
+        gt=0
+    )
+    max_overlap_percentage: float = Field(
+        default=0.25,
+        description="Maximum overlap between chunks as percentage (0.25 = 25%)",
+        ge=0.0,
+        le=1.0
+    )
+    max_workers: int = Field(
+        default=4,
+        description="Maximum worker threads for parallel processing",
+        gt=0
+    )
+    estimation_buffer: float = Field(
+        default=0.2,
+        description="Buffer factor for chunk count estimation (0.2 = 20%)",
+        ge=0.0,
+        le=1.0
+    )
+    words_per_minute_reading: int = Field(
+        default=200,
+        description="Words per minute for reading time estimation",
+        gt=0
+    )
+    header_analysis_threshold_h1: int = Field(
+        default=3,
+        description="H1 header count threshold for split level decisions",
+        gt=0
+    )
+    header_analysis_threshold_h3: int = Field(
+        default=8,
+        description="H3 header count threshold for split level decisions",
+        gt=0
+    )
+    enable_hierarchical_metadata: bool = Field(
+        default=True,
+        description="Enable extraction of hierarchical section metadata"
+    )
+
+
 class StrategySpecificConfig(BaseModel):
     """Strategy-specific configuration settings."""
     
@@ -142,6 +208,10 @@ class StrategySpecificConfig(BaseModel):
         default_factory=JsonStrategyConfig,
         description="Configuration for JSON chunking strategy",
         alias="json"
+    )
+    markdown: MarkdownStrategyConfig = Field(
+        default_factory=MarkdownStrategyConfig,
+        description="Configuration for Markdown chunking strategy"
     )
 
 

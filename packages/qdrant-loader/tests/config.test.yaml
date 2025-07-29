@@ -15,7 +15,14 @@ global:
   chunking:
     chunk_size: 2000       # Increased to better handle markdown sections
     chunk_overlap: 200     # Increased overlap to maintain context between chunks
-  
+    
+  semantic_analysis:
+    num_topics: 3                    # Number of topics to extract using LDA
+    lda_passes: 10                   # Number of passes for LDA training
+    spacy_model: "en_core_web_md"    # spaCy model for text processing
+                                     # Options: en_core_web_sm (15MB, no vectors)
+                                     #          en_core_web_md (50MB, 20k vectors) - recommended
+                                     #          en_core_web_lg (750MB, 514k vectors)  
   # Default embedding configuration
   # Controls how text is converted to vectors
   embedding:

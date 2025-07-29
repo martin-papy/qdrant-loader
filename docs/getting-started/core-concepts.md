@@ -416,7 +416,7 @@ embedding:
 
 ```yaml
 chunking:
-  chunk_size: 1000
+  chunk_size: 1500
   chunk_overlap: 200
   max_file_size: "10MB"
   supported_formats: ["md", "txt", "pdf", "docx"]

@@ -321,16 +321,72 @@ class SemanticAnalyzer:
         similarities = {}
         doc = self.nlp(text)
 
+        # Check if the model has word vectors
+        has_vectors = self.nlp.vocab.vectors_length > 0
+
         for doc_id, cached_result in self._doc_cache.items():
             # Check if cached_result has entities and the first entity has context
             if not cached_result.entities or not cached_result.entities[0].get("context"):
                 continue
                 
             cached_doc = self.nlp(cached_result.entities[0]["context"])
-            similarity = doc.similarity(cached_doc)
+            
+            if has_vectors:
+                # Use spaCy's built-in similarity which uses word vectors
+                similarity = doc.similarity(cached_doc)
+            else:
+                # Use alternative similarity calculation for models without word vectors
+                # This avoids the spaCy warning about missing word vectors
+                similarity = self._calculate_alternative_similarity(doc, cached_doc)
+            
             similarities[doc_id] = float(similarity)
 
         return similarities
+
+    def _calculate_alternative_similarity(self, doc1: Doc, doc2: Doc) -> float:
+        """Calculate similarity for models without word vectors.
+        
+        Uses token overlap and shared entities as similarity metrics.
+        
+        Args:
+            doc1: First document
+            doc2: Second document
+            
+        Returns:
+            Similarity score between 0 and 1
+        """
+        # Extract lemmatized tokens (excluding stop words and punctuation)
+        tokens1 = {token.lemma_.lower() for token in doc1 
+                  if not token.is_stop and not token.is_punct and token.is_alpha}
+        tokens2 = {token.lemma_.lower() for token in doc2 
+                  if not token.is_stop and not token.is_punct and token.is_alpha}
+        
+        # Calculate token overlap (Jaccard similarity)
+        if not tokens1 and not tokens2:
+            return 1.0  # Both empty
+        if not tokens1 or not tokens2:
+            return 0.0  # One empty
+            
+        intersection = len(tokens1.intersection(tokens2))
+        union = len(tokens1.union(tokens2))
+        token_similarity = intersection / union if union > 0 else 0.0
+        
+        # Extract named entities
+        entities1 = {ent.text.lower() for ent in doc1.ents}
+        entities2 = {ent.text.lower() for ent in doc2.ents}
+        
+        # Calculate entity overlap
+        entity_similarity = 0.0
+        if entities1 or entities2:
+            entity_intersection = len(entities1.intersection(entities2))
+            entity_union = len(entities1.union(entities2))
+            entity_similarity = entity_intersection / entity_union if entity_union > 0 else 0.0
+        
+        # Combine token and entity similarities (weighted average)
+        # Token similarity gets more weight as it's more comprehensive
+        combined_similarity = 0.7 * token_similarity + 0.3 * entity_similarity
+        
+        return combined_similarity
 
     def _calculate_topic_coherence(self, terms: list[dict[str, Any]]) -> float:
         """Calculate topic coherence score.
