@@ -48,7 +48,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         # Initialize modular components
         self.document_parser = DocumentParser()
         self.section_splitter = SectionSplitter(settings)
-        self.metadata_extractor = MetadataExtractor()
+        self.metadata_extractor = MetadataExtractor(settings)
         self.chunk_processor = ChunkProcessor(settings)
         
         # Apply any chunk overlap that was set before components were initialized
@@ -136,10 +136,11 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
                 # Create chunk document using the chunk processor
                 # 🔥 FIX: Skip NLP for small documents or documents that might cause LDA issues
+                markdown_config = self.settings.global_config.chunking.strategies.markdown
                 skip_nlp = (
-                    len(chunk_content) < 100 or  # Too short
-                    len(chunk_content.split()) < 20 or  # Too few words
-                    chunk_content.count('\n') < 3  # Too simple structure
+                    len(chunk_content) < markdown_config.min_content_length_for_nlp or
+                    len(chunk_content.split()) < markdown_config.min_word_count_for_nlp or
+                    chunk_content.count('\n') < markdown_config.min_line_count_for_nlp
                 )
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,

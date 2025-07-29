@@ -101,7 +101,7 @@ global_config:
     max_tokens_per_chunk: 8000
 
   chunking:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
 
   file_conversion:

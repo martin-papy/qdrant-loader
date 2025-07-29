@@ -47,6 +47,7 @@ class TestSemanticAnalyzer:
         """Mock spaCy NLP model."""
         nlp = Mock()
         nlp.vocab.strings = {"ORG": "Organization", "PERSON": "Person"}
+        nlp.vocab.vectors_length = 0  # Simulate model without word vectors (like en_core_web_sm)
         return nlp
 
     @pytest.fixture
@@ -121,6 +122,7 @@ class TestSemanticAnalyzer:
         """Test SemanticAnalyzer initialization with default parameters."""
         with patch("spacy.load") as mock_load:
             mock_nlp = Mock()
+            mock_nlp.vocab.vectors_length = 0  # Simulate model without word vectors
             mock_load.return_value = mock_nlp
 
             analyzer = SemanticAnalyzer()
@@ -138,6 +140,7 @@ class TestSemanticAnalyzer:
         """Test SemanticAnalyzer initialization with custom parameters."""
         with patch("spacy.load") as mock_load:
             mock_nlp = Mock()
+            mock_nlp.vocab.vectors_length = 0  # Simulate model without word vectors
             mock_load.return_value = mock_nlp
 
             analyzer = SemanticAnalyzer(
@@ -161,6 +164,7 @@ class TestSemanticAnalyzer:
         ):
             # First call raises OSError, second call succeeds
             mock_nlp = Mock()
+            mock_nlp.vocab.vectors_length = 0  # Simulate model without word vectors
             mock_load.side_effect = [OSError("Model not found"), mock_nlp]
 
             analyzer = SemanticAnalyzer()

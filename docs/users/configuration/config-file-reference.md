@@ -93,9 +93,48 @@ global:
   
   # Text chunking configuration
   chunking:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
-    max_chunks_per_document: 1000
+    max_chunks_per_document: 500
+    strategies:
+      default:
+        min_chunk_size: 100
+        enable_semantic_analysis: true
+        enable_entity_extraction: true
+      html:
+        simple_parsing_threshold: 100000
+        max_html_size_for_parsing: 500000
+        max_sections_to_process: 200
+        max_chunk_size_for_nlp: 20000
+        preserve_semantic_structure: true
+      code:
+        max_file_size_for_ast: 75000
+        max_elements_to_process: 800
+        max_recursion_depth: 8
+        max_element_size: 20000
+        enable_ast_parsing: true
+        enable_dependency_analysis: true
+      json:
+        max_json_size_for_parsing: 1000000
+        max_objects_to_process: 200
+        max_chunk_size_for_nlp: 20000
+        max_recursion_depth: 5
+        max_array_items_per_chunk: 50
+        max_object_keys_to_process: 100
+        enable_schema_inference: true
+      markdown:
+        min_content_length_for_nlp: 100
+        min_word_count_for_nlp: 20
+        min_line_count_for_nlp: 3
+        min_section_size: 500
+        max_chunks_per_section: 1000
+        max_overlap_percentage: 0.25
+        max_workers: 4
+        estimation_buffer: 0.2
+        words_per_minute_reading: 200
+        header_analysis_threshold_h1: 3
+        header_analysis_threshold_h3: 8
+        enable_hierarchical_metadata: true
   
   # Semantic analysis configuration
   semantic_analysis:
@@ -261,15 +300,112 @@ global:
 ```yaml
 global:
   chunking:
-    # Optional: Maximum size of text chunks in characters (default: 1000)
-    chunk_size: 1000
+    # Optional: Maximum size of text chunks in characters (default: 1500)
+    chunk_size: 1500
     
     # Optional: Overlap between chunks in characters (default: 200)
     chunk_overlap: 200
     
-    # Optional: Maximum chunks per document - safety limit (default: 1000)
-    max_chunks_per_document: 1000
+    # Optional: Maximum chunks per document - safety limit (default: 500)
+    max_chunks_per_document: 500
+    
+    # Optional: Strategy-specific configurations for different content types
+    strategies:
+      # Default text chunking strategy configuration
+      default:
+        min_chunk_size: 100              # Minimum chunk size in characters (default: 100)
+        enable_semantic_analysis: true   # Enable semantic analysis for text chunks (default: true)
+        enable_entity_extraction: true   # Enable entity extraction from text (default: true)
+      
+      # HTML content chunking strategy configuration
+      html:
+        simple_parsing_threshold: 100000    # Size threshold for simple vs complex HTML parsing in bytes (default: 100000)
+        max_html_size_for_parsing: 500000   # Maximum HTML size for complex parsing in bytes (default: 500000)
+        max_sections_to_process: 200        # Maximum number of sections to process (default: 200)
+        max_chunk_size_for_nlp: 20000       # Maximum chunk size for NLP processing in characters (default: 20000)
+        preserve_semantic_structure: true   # Preserve HTML semantic structure in chunks (default: true)
+      
+      # Code file chunking strategy configuration
+      code:
+        max_file_size_for_ast: 75000        # Maximum file size for AST parsing in characters (default: 75000)
+        max_elements_to_process: 800        # Maximum number of code elements to process (default: 800)
+        max_recursion_depth: 8              # Maximum AST recursion depth (default: 8)
+        max_element_size: 20000             # Maximum size for individual code elements in characters (default: 20000)
+        enable_ast_parsing: true            # Enable AST parsing for code analysis (default: true)
+        enable_dependency_analysis: true    # Enable dependency analysis for code (default: true)
+      
+      # JSON file chunking strategy configuration
+      json:
+        max_json_size_for_parsing: 1000000  # Maximum JSON size for parsing in bytes (default: 1000000)
+        max_objects_to_process: 200         # Maximum number of JSON objects to process (default: 200)
+        max_chunk_size_for_nlp: 20000       # Maximum chunk size for NLP processing in characters (default: 20000)
+        max_recursion_depth: 5              # Maximum recursion depth for nested structures (default: 5)
+        max_array_items_per_chunk: 50       # Maximum array items to include per chunk (default: 50)
+        max_object_keys_to_process: 100     # Maximum object keys to process (default: 100)
+        enable_schema_inference: true       # Enable JSON schema inference (default: true)
+      
+      # Markdown file chunking strategy configuration
+      markdown:
+        min_content_length_for_nlp: 100     # Minimum content length for NLP processing in characters (default: 100)
+        min_word_count_for_nlp: 20          # Minimum word count for NLP processing (default: 20)
+        min_line_count_for_nlp: 3           # Minimum line count for NLP processing (default: 3)
+        min_section_size: 500               # Minimum characters for a standalone section (default: 500)
+        max_chunks_per_section: 1000        # Maximum chunks per section (default: 1000)
+        max_overlap_percentage: 0.25        # Maximum overlap between chunks as percentage (default: 0.25)
+        max_workers: 4                      # Maximum worker threads for parallel processing (default: 4)
+        estimation_buffer: 0.2              # Buffer factor for chunk count estimation (default: 0.2)
+        words_per_minute_reading: 200       # Words per minute for reading time estimation (default: 200)
+        header_analysis_threshold_h1: 3     # H1 header count threshold for split level decisions (default: 3)
+        header_analysis_threshold_h3: 8     # H3 header count threshold for split level decisions (default: 8)
+        enable_hierarchical_metadata: true  # Enable extraction of hierarchical section metadata (default: true)
 ```
+
+**Strategy-Specific Configuration Details:**
+
+The `strategies` section allows you to fine-tune how different content types are processed:
+
+**Default Strategy (Text Files):**
+- `min_chunk_size`: Prevents creation of very small chunks that may lack context
+- `enable_semantic_analysis`: Controls topic extraction and semantic analysis
+- `enable_entity_extraction`: Controls named entity recognition processing
+
+**HTML Strategy:**
+- `simple_parsing_threshold`: Files below this size use simple text extraction
+- `max_html_size_for_parsing`: Maximum size for complex HTML parsing before fallback
+- `max_sections_to_process`: Limits processing to prevent infinite loops on malformed HTML
+- `max_chunk_size_for_nlp`: Maximum chunk size for semantic analysis
+- `preserve_semantic_structure`: Maintains HTML structure relationships in chunks
+
+**Code Strategy:**
+- `max_file_size_for_ast`: Maximum file size for Abstract Syntax Tree parsing
+- `max_elements_to_process`: Limits code elements to prevent excessive processing time
+- `max_recursion_depth`: Controls AST traversal depth for nested code structures
+- `max_element_size`: Maximum size for individual code elements (functions, classes)
+- `enable_ast_parsing`: Toggle AST-based code analysis vs simple text splitting
+- `enable_dependency_analysis`: Extract import/dependency relationships
+
+**JSON Strategy:**
+- `max_json_size_for_parsing`: Maximum JSON file size for structured parsing
+- `max_objects_to_process`: Limits number of JSON objects to prevent memory issues
+- `max_chunk_size_for_nlp`: Maximum chunk size for semantic processing
+- `max_recursion_depth`: Controls nested structure traversal depth
+- `max_array_items_per_chunk`: Groups array items for better context
+- `max_object_keys_to_process`: Limits object key processing for large objects
+- `enable_schema_inference`: Automatically detect and extract JSON schema information
+
+**Markdown Strategy:**
+- `min_content_length_for_nlp`: Minimum content length required for NLP processing
+- `min_word_count_for_nlp`: Minimum word count required for semantic analysis
+- `min_line_count_for_nlp`: Minimum line count required for complex text processing
+- `min_section_size`: Minimum section size before merging with adjacent sections
+- `max_chunks_per_section`: Safety limit to prevent runaway chunking on large sections
+- `max_overlap_percentage`: Maximum overlap between adjacent chunks (0.25 = 25%)
+- `max_workers`: Number of parallel threads for processing large documents
+- `estimation_buffer`: Buffer factor for chunk count estimation accuracy
+- `words_per_minute_reading`: Reading speed for estimated reading time calculation
+- `header_analysis_threshold_h1`: H1 header count threshold for split strategy decisions
+- `header_analysis_threshold_h3`: H3 header count threshold for split strategy decisions
+- `enable_hierarchical_metadata`: Extract section relationships and breadcrumb navigation
 
 #### Semantic Analysis Configuration
 
@@ -716,9 +852,48 @@ global:
     model: "text-embedding-3-small"
   
   chunking:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
-    max_chunks_per_document: 1000
+    max_chunks_per_document: 500
+    strategies:
+      default:
+        min_chunk_size: 100
+        enable_semantic_analysis: true
+        enable_entity_extraction: true
+      html:
+        simple_parsing_threshold: 100000
+        max_html_size_for_parsing: 500000
+        max_sections_to_process: 200
+        max_chunk_size_for_nlp: 20000
+        preserve_semantic_structure: true
+      code:
+        max_file_size_for_ast: 75000
+        max_elements_to_process: 800
+        max_recursion_depth: 8
+        max_element_size: 20000
+        enable_ast_parsing: true
+        enable_dependency_analysis: true
+      json:
+        max_json_size_for_parsing: 1000000
+        max_objects_to_process: 200
+        max_chunk_size_for_nlp: 20000
+        max_recursion_depth: 5
+        max_array_items_per_chunk: 50
+        max_object_keys_to_process: 100
+        enable_schema_inference: true
+      markdown:
+        min_content_length_for_nlp: 100
+        min_word_count_for_nlp: 20
+        min_line_count_for_nlp: 3
+        min_section_size: 500
+        max_chunks_per_section: 1000
+        max_overlap_percentage: 0.25
+        max_workers: 4
+        estimation_buffer: 0.2
+        words_per_minute_reading: 200
+        header_analysis_threshold_h1: 3
+        header_analysis_threshold_h3: 8
+        enable_hierarchical_metadata: true
   
   state_management:
     database_path: "${STATE_DB_PATH}"

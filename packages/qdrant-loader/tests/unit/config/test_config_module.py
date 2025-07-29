@@ -57,7 +57,7 @@ class TestChunkingConfig:
     def test_default_values(self):
         """Test default configuration values."""
         config = ChunkingConfig()
-        assert config.chunk_size == 1000
+        assert config.chunk_size == 1500
         assert config.chunk_overlap == 200
 
     def test_custom_values(self):
@@ -100,7 +100,7 @@ class TestGlobalConfig:
         assert isinstance(config.semantic_analysis, SemanticAnalysisConfig)
 
         # Check default values of nested configs
-        assert config.chunking.chunk_size == 1000
+        assert config.chunking.chunk_size == 1500
         assert config.semantic_analysis.num_topics == 3
 
     def test_custom_nested_configs(self):

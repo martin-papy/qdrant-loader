@@ -132,8 +132,13 @@ class TopicAnalyzer:
 class MetadataExtractor:
     """Main metadata extractor that coordinates all extraction components."""
 
-    def __init__(self):
-        """Initialize the metadata extractor."""
+    def __init__(self, settings=None):
+        """Initialize the metadata extractor.
+        
+        Args:
+            settings: Configuration settings containing markdown strategy config
+        """
+        self.settings = settings
         self.cross_reference_extractor = CrossReferenceExtractor()
         self.entity_extractor = EntityExtractor()
         self.hierarchy_extractor = HierarchyExtractor()
@@ -182,6 +187,12 @@ class MetadataExtractor:
         """
         metadata = self.extract_all_metadata(chunk_content, chunk_meta)
         
+        # Calculate reading speed from configuration
+        words_per_minute = (
+            self.settings.global_config.chunking.strategies.markdown.words_per_minute_reading
+            if self.settings else 200  # Default fallback
+        )
+        
         # 🔥 JIRA-style relationship metadata
         metadata.update({
             "parent_document_id": document_context.id,
@@ -201,7 +212,7 @@ class MetadataExtractor:
                 "has_links": bool(re.search(r"\[.*?\]\(.*?\)", chunk_content)),
                 "word_count": len(chunk_content.split()),
                 "char_count": len(chunk_content),
-                "estimated_read_time": max(1, len(chunk_content.split()) // 200),  # minutes
+                "estimated_read_time": max(1, len(chunk_content.split()) // words_per_minute),  # minutes
                 "paragraph_count": len([p for p in chunk_content.split('\n\n') if p.strip()]),
             },
             
