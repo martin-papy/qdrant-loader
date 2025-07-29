@@ -402,5 +402,59 @@ class SemanticAnalyzer:
         return sum(weights) / len(weights) if weights else 0.0
 
     def clear_cache(self):
-        """Clear the document cache."""
+        """Clear the document cache and release all resources."""
+        # Clear document cache
         self._doc_cache.clear()
+        
+        # Release LDA model resources
+        if hasattr(self, 'lda_model') and self.lda_model is not None:
+            try:
+                # Clear LDA model
+                self.lda_model = None
+            except Exception as e:
+                logger.warning(f"Error releasing LDA model: {e}")
+        
+        # Release dictionary
+        if hasattr(self, 'dictionary') and self.dictionary is not None:
+            try:
+                self.dictionary = None
+            except Exception as e:
+                logger.warning(f"Error releasing dictionary: {e}")
+        
+        # Release spaCy model resources
+        if hasattr(self, 'nlp') and self.nlp is not None:
+            try:
+                # Clear spaCy caches and release memory
+                if hasattr(self.nlp, 'vocab') and hasattr(self.nlp.vocab, 'strings'):
+                    # Try different methods to clear spaCy caches
+                    if hasattr(self.nlp.vocab.strings, '_map') and hasattr(self.nlp.vocab.strings._map, 'clear'):
+                        self.nlp.vocab.strings._map.clear()
+                    elif hasattr(self.nlp.vocab.strings, 'clear'):
+                        self.nlp.vocab.strings.clear()
+                    # Additional cleanup for different spaCy versions
+                    if hasattr(self.nlp.vocab, '_vectors') and hasattr(self.nlp.vocab._vectors, 'clear'):
+                        self.nlp.vocab._vectors.clear()
+                # Note: We don't set nlp to None as it might be needed for other operations
+                # but we clear its internal caches
+            except Exception as e:
+                logger.debug(f"spaCy cache clearing skipped (version-specific): {e}")
+        
+        logger.debug("Semantic analyzer resources cleared")
+
+    def shutdown(self):
+        """Shutdown the semantic analyzer and release all resources.
+        
+        This method should be called when the analyzer is no longer needed
+        to ensure proper cleanup of all resources.
+        """
+        self.clear_cache()
+        
+        # More aggressive cleanup for shutdown
+        if hasattr(self, 'nlp'):
+            try:
+                # Release the spaCy model completely
+                del self.nlp
+            except Exception as e:
+                logger.warning(f"Error releasing spaCy model: {e}")
+        
+        logger.debug("Semantic analyzer shutdown completed")
