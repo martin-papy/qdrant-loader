@@ -22,7 +22,7 @@ The MCP server provides **8 powerful search tools**:
 - **🏗️ Hierarchy Search** - Structure-aware navigation with document relationships  
 - **📎 Attachment Search** - Specialized file and document analysis
 
-#### 🔥 Phase 2.3: Cross-Document Intelligence
+#### Cross-Document Intelligence
 - **🤝 Document Relationships** - Comprehensive relationship analysis
 - **👥 Similar Documents** - Multi-metric similarity detection  
 - **⚠️ Conflict Detection** - Identify contradictions and inconsistencies
@@ -434,7 +434,7 @@ Example: "Show me the structure of our API documentation"
 Example: "Find architecture diagrams related to our microservices"
 ```
 
-### 🔥 Phase 2.3: Cross-Document Intelligence Tools
+### Cross-Document Intelligence Tools
 
 #### 4. Document Relationships (`analyze_document_relationships`)
 **Purpose**: Comprehensive analysis of document connections and dependencies
@@ -719,7 +719,7 @@ The MCP server provides these search capabilities:
 2. **hierarchy_search** - Structure-aware search with hierarchy navigation
 3. **attachment_search** - File and attachment search with content analysis
 
-### 🔥 Phase 2.3: Cross-Document Intelligence Tools
+### Cross-Document Intelligence Tools
 4. **analyze_document_relationships** - Comprehensive relationship analysis
 5. **find_similar_documents** - Document similarity detection using multiple metrics
 6. **detect_document_conflicts** - Conflict and inconsistency identification
