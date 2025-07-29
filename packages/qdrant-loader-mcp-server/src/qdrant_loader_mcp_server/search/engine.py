@@ -433,7 +433,7 @@ class SearchEngine:
             self.logger.error("Facet suggestions failed", error=str(e), query=query)
             raise
     
-    # 🔥 Phase 2.3: Cross-Document Intelligence MCP Interface
+    # Cross-Document Intelligence MCP Interface
     
     async def analyze_document_relationships(
         self,
@@ -443,7 +443,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Analyze relationships between documents from search results.
+        Analyze relationships between documents from search results.
         
         Args:
             query: Search query to get documents for analysis
@@ -499,7 +499,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find documents similar to a target document.
+        Find documents similar to a target document.
         
         Args:
             target_query: Query to find the target document
@@ -564,7 +564,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Detect conflicts between documents.
+        Detect conflicts between documents.
         
         Args:
             query: Search query to get documents for conflict analysis
@@ -621,7 +621,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find content that complements a target document.
+        Find content that complements a target document.
         
         Args:
             target_query: Query to find the target document
@@ -691,7 +691,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Cluster documents based on similarity and relationships.
+        Cluster documents based on similarity and relationships.
         
         Args:
             query: Search query to get documents for clustering

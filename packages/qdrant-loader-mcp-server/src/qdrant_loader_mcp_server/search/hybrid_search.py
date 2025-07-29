@@ -1751,14 +1751,14 @@ class HybridSearchEngine:
             current_filters
         )
     
-    # 🔥 Phase 2.3: Cross-Document Intelligence Methods
+    # Cross-Document Intelligence Methods
     
     async def analyze_document_relationships(
         self,
         documents: list[SearchResult]
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Perform comprehensive cross-document relationship analysis.
+        Perform comprehensive cross-document relationship analysis.
         
         Args:
             documents: Documents to analyze for relationships
@@ -1780,7 +1780,7 @@ class HybridSearchEngine:
         max_similar: int = 5
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find documents similar to a target document.
+        Find documents similar to a target document.
         
         Args:
             target_document: Document to find similar documents for
@@ -1825,7 +1825,7 @@ class HybridSearchEngine:
         documents: list[SearchResult]
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Detect conflicts between documents.
+        Detect conflicts between documents.
         
         Args:
             documents: Documents to analyze for conflicts
@@ -1852,7 +1852,7 @@ class HybridSearchEngine:
         max_recommendations: int = 5
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find content that complements the target document.
+        Find content that complements the target document.
         
         Args:
             target_document: Document to find complementary content for
@@ -1899,7 +1899,7 @@ class HybridSearchEngine:
         min_cluster_size: int = 2
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Cluster documents based on similarity and relationships.
+        Cluster documents based on similarity and relationships.
         
         Args:
             documents: Documents to cluster

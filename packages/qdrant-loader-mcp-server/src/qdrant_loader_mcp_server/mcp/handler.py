@@ -22,37 +22,33 @@ class MCPHandler:
         self.query_processor = query_processor
         logger.info("MCP Handler initialized")
 
-    async def handle_request(self, request: dict[str, Any]) -> dict[str, Any]:
+    async def handle_request(self, request: dict[str, Any], headers: dict[str, str] | None = None) -> dict[str, Any]:
         """Handle MCP request.
 
         Args:
             request: The request to handle
+            headers: Optional HTTP headers for protocol validation
 
         Returns:
             Dict[str, Any]: The response
         """
         logger.debug("Handling request", request=request)
-
-        # Handle non-dict requests
-        if not isinstance(request, dict):
-            logger.error("Request is not a dictionary")
-            return {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {
-                    "code": -32600,
-                    "message": "Invalid Request",
-                    "data": "The request is not a valid JSON-RPC 2.0 request",
-                },
-            }
+        
+        # Optional protocol version validation from headers
+        if headers:
+            protocol_version = headers.get("mcp-protocol-version")
+            if protocol_version and protocol_version not in ["2025-06-18", "2025-03-26", "2024-11-05"]:
+                logger.warning(f"Unsupported protocol version in headers: {protocol_version}")
 
         # Validate request format
         if not self.protocol.validate_request(request):
             logger.error("Request validation failed")
             # For invalid requests, we need to determine if we can extract an ID
-            request_id = request.get("id")
-            if request_id is None or not isinstance(request_id, str | int):
-                request_id = None
+            request_id = None
+            if isinstance(request, dict):
+                request_id = request.get("id")
+                if request_id is not None and not isinstance(request_id, (str, int)):
+                    request_id = None
             return {
                 "jsonrpc": "2.0",
                 "id": request_id,
@@ -106,7 +102,7 @@ class MCPHandler:
             elif method == "search":
                 logger.info("Handling search request")
                 return await self._handle_search(request_id, params)
-            # 🔥 Phase 2.3: Cross-Document Intelligence Methods
+            # Cross-Document Intelligence Methods
             elif method == "analyze_document_relationships":
                 logger.info("Handling document relationship analysis request")
                 return await self._handle_analyze_document_relationships(request_id, params)
@@ -137,7 +133,7 @@ class MCPHandler:
                     return await self._handle_attachment_search(
                         request_id, params.get("arguments", {})
                     )
-                # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                # Cross-Document Intelligence Tools
                 elif tool_name == "analyze_document_relationships":
                     return await self._handle_analyze_document_relationships(
                         request_id, params.get("arguments", {})
@@ -201,7 +197,7 @@ class MCPHandler:
         return self.protocol.create_response(
             request_id,
             result={
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": "2025-06-18",
                 "serverInfo": {"name": "Qdrant Loader MCP Server", "version": "1.0.0"},
                 "capabilities": {"tools": {"listChanged": False}},
             },
@@ -226,6 +222,7 @@ class MCPHandler:
         search_tool = {
             "name": "search",
             "description": "Perform semantic search across multiple data sources",
+            "annotations": ["read-only"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -262,12 +259,48 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "score": {"type": "number"},
+                                "title": {"type": "string"},
+                                "content": {"type": "string"},
+                                "source_type": {"type": "string"},
+                                "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "file_path": {"type": "string"},
+                                        "project_id": {"type": "string"},
+                                        "created_at": {"type": "string"},
+                                        "last_modified": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "total_found": {"type": "integer"},
+                    "query_context": {
+                        "type": "object",
+                        "properties": {
+                            "original_query": {"type": "string"},
+                            "source_types_filtered": {"type": "array", "items": {"type": "string"}},
+                            "project_ids_filtered": {"type": "array", "items": {"type": "string"}}
+                        }
+                    }
+                }
+            }
         }
 
         # Define the hierarchical search tool for Confluence
         hierarchy_search_tool = {
             "name": "hierarchy_search",
             "description": "Search Confluence documents with hierarchy-aware filtering and organization",
+            "annotations": ["read-only"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -309,12 +342,48 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "score": {"type": "number"},
+                                "title": {"type": "string"},
+                                "content": {"type": "string"},
+                                "hierarchy_path": {"type": "string"},
+                                "parent_title": {"type": "string"},
+                                "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "space_key": {"type": "string"},
+                                        "project_id": {"type": "string"},
+                                        "page_id": {"type": "string"},
+                                        "hierarchy_level": {"type": "integer"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "total_found": {"type": "integer"},
+                    "hierarchy_organization": {
+                        "type": "object",
+                        "properties": {
+                            "organized_by_hierarchy": {"type": "boolean"},
+                            "hierarchy_groups": {"type": "array", "items": {"type": "object"}}
+                        }
+                    }
+                }
+            }
         }
 
         # Define the attachment search tool
         attachment_search_tool = {
             "name": "attachment_search",
             "description": "Search for file attachments and their parent documents across Confluence, Jira, and other sources",
+            "annotations": ["read-only"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -364,12 +433,56 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "score": {"type": "number"},
+                                "title": {"type": "string"},
+                                "content": {"type": "string"},
+                                "attachment_info": {
+                                    "type": "object",
+                                    "properties": {
+                                        "filename": {"type": "string"},
+                                        "file_type": {"type": "string"},
+                                        "file_size": {"type": "integer"},
+                                        "parent_document": {"type": "string"}
+                                    }
+                                },
+                                "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "file_path": {"type": "string"},
+                                        "project_id": {"type": "string"},
+                                        "upload_date": {"type": "string"},
+                                        "author": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "total_found": {"type": "integer"},
+                    "attachment_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_attachments": {"type": "integer"},
+                            "file_types": {"type": "array", "items": {"type": "string"}},
+                            "attachments_only": {"type": "boolean"}
+                        }
+                    }
+                }
+            }
         }
 
-        # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+        # Cross-Document Intelligence Tools
         analyze_relationships_tool = {
             "name": "analyze_document_relationships",
-            "description": "🔥 Phase 2.3: Analyze relationships between documents including clustering, similarities, and conflicts",
+            "description": "Analyze relationships between documents including clustering, similarities, and conflicts",
+            "annotations": ["read-only", "compute-intensive"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -395,11 +508,68 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "analysis_results": {
+                        "type": "object",
+                        "properties": {
+                            "similarity_clusters": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cluster_id": {"type": "string"},
+                                        "documents": {"type": "array", "items": {"type": "string"}},
+                                        "similarity_score": {"type": "number"},
+                                        "cluster_theme": {"type": "string"}
+                                    }
+                                }
+                            },
+                            "conflicts_detected": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "document_1": {"type": "string"},
+                                        "document_2": {"type": "string"},
+                                        "conflict_type": {"type": "string"},
+                                        "conflict_score": {"type": "number"},
+                                        "description": {"type": "string"}
+                                    }
+                                }
+                            },
+                            "complementary_pairs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "document_1": {"type": "string"},
+                                        "document_2": {"type": "string"},
+                                        "complementary_score": {"type": "number"},
+                                        "relationship_type": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "total_documents_analyzed": {"type": "integer"},
+                    "analysis_metadata": {
+                        "type": "object",
+                        "properties": {
+                            "processing_time_ms": {"type": "number"},
+                            "analysis_date": {"type": "string"},
+                            "query_used": {"type": "string"}
+                        }
+                    }
+                }
+            }
         }
 
         find_similar_tool = {
             "name": "find_similar_documents",
-            "description": "🔥 Phase 2.3: Find documents similar to a target document using multiple similarity metrics",
+            "description": "Find documents similar to a target document using multiple similarity metrics",
+            "annotations": ["read-only"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -437,11 +607,56 @@ class MCPHandler:
                 },
                 "required": ["target_query", "comparison_query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "similar_documents": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "document_id": {"type": "string"},
+                                "title": {"type": "string"},
+                                "similarity_score": {"type": "number"},
+                                "similarity_metrics": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_overlap": {"type": "number"},
+                                        "topic_overlap": {"type": "number"},
+                                        "semantic_similarity": {"type": "number"},
+                                        "metadata_similarity": {"type": "number"}
+                                    }
+                                },
+                                "similarity_reason": {"type": "string"},
+                                "content_preview": {"type": "string"}
+                            }
+                        }
+                    },
+                    "target_document": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "content_preview": {"type": "string"},
+                            "source_type": {"type": "string"}
+                        }
+                    },
+                    "similarity_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_compared": {"type": "integer"},
+                            "similar_found": {"type": "integer"},
+                            "highest_similarity": {"type": "number"},
+                            "metrics_used": {"type": "array", "items": {"type": "string"}}
+                        }
+                    }
+                }
+            }
         }
 
         detect_conflicts_tool = {
             "name": "detect_document_conflicts",
-            "description": "🔥 Phase 2.3: Detect conflicts and contradictions between documents",
+            "description": "Detect conflicts and contradictions between documents",
+            "annotations": ["read-only", "compute-intensive"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -467,11 +682,72 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "conflicts_detected": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "conflict_id": {"type": "string"},
+                                "document_1": {
+                                    "type": "object",
+                                    "properties": {
+                                        "title": {"type": "string"},
+                                        "content_preview": {"type": "string"},
+                                        "source_type": {"type": "string"}
+                                    }
+                                },
+                                "document_2": {
+                                    "type": "object", 
+                                    "properties": {
+                                        "title": {"type": "string"},
+                                        "content_preview": {"type": "string"},
+                                        "source_type": {"type": "string"}
+                                    }
+                                },
+                                "conflict_type": {"type": "string"},
+                                "conflict_score": {"type": "number"},
+                                "conflict_description": {"type": "string"},
+                                "conflicting_statements": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "from_doc1": {"type": "string"},
+                                            "from_doc2": {"type": "string"}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "conflict_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_documents_analyzed": {"type": "integer"},
+                            "conflicts_found": {"type": "integer"},
+                            "conflict_types": {"type": "array", "items": {"type": "string"}},
+                            "highest_conflict_score": {"type": "number"}
+                        }
+                    },
+                    "analysis_metadata": {
+                        "type": "object",
+                        "properties": {
+                            "query_used": {"type": "string"},
+                            "analysis_date": {"type": "string"},
+                            "processing_time_ms": {"type": "number"}
+                        }
+                    }
+                }
+            }
         }
 
         find_complementary_tool = {
             "name": "find_complementary_content",
-            "description": "🔥 Phase 2.3: Find content that complements a target document",
+            "description": "Find content that complements a target document",
+            "annotations": ["read-only"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -501,11 +777,57 @@ class MCPHandler:
                 },
                 "required": ["target_query", "context_query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "complementary_content": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "document_id": {"type": "string"},
+                                "title": {"type": "string"},
+                                "content_preview": {"type": "string"},
+                                "complementary_score": {"type": "number"},
+                                "complementary_reason": {"type": "string"},
+                                "relationship_type": {"type": "string"},
+                                "source_type": {"type": "string"},
+                                "metadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "project_id": {"type": "string"},
+                                        "created_date": {"type": "string"},
+                                        "author": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "target_document": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "content_preview": {"type": "string"},
+                            "source_type": {"type": "string"}
+                        }
+                    },
+                    "complementary_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_analyzed": {"type": "integer"},
+                            "complementary_found": {"type": "integer"},
+                            "highest_score": {"type": "number"},
+                            "relationship_types": {"type": "array", "items": {"type": "string"}}
+                        }
+                    }
+                }
+            }
         }
 
         cluster_documents_tool = {
             "name": "cluster_documents",
-            "description": "🔥 Phase 2.3: Cluster documents based on similarity and relationships",
+            "description": "Cluster documents based on similarity and relationships",
+            "annotations": ["read-only", "compute-intensive"],
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -547,6 +869,62 @@ class MCPHandler:
                 },
                 "required": ["query"],
             },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "clusters": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "cluster_id": {"type": "string"},
+                                "cluster_name": {"type": "string"},
+                                "cluster_theme": {"type": "string"},
+                                "document_count": {"type": "integer"},
+                                "cohesion_score": {"type": "number"},
+                                "documents": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "document_id": {"type": "string"},
+                                            "title": {"type": "string"},
+                                            "content_preview": {"type": "string"},
+                                            "source_type": {"type": "string"},
+                                            "cluster_relevance": {"type": "number"}
+                                        }
+                                    }
+                                },
+                                "cluster_keywords": {"type": "array", "items": {"type": "string"}},
+                                "cluster_summary": {"type": "string"}
+                            }
+                        }
+                    },
+                    "clustering_metadata": {
+                        "type": "object",
+                        "properties": {
+                            "total_documents": {"type": "integer"},
+                            "clusters_created": {"type": "integer"},
+                            "strategy_used": {"type": "string"},
+                            "unclustered_documents": {"type": "integer"},
+                            "clustering_quality": {"type": "number"},
+                            "processing_time_ms": {"type": "number"}
+                        }
+                    },
+                    "cluster_relationships": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "cluster_1": {"type": "string"},
+                                "cluster_2": {"type": "string"},
+                                "relationship_type": {"type": "string"},
+                                "relationship_strength": {"type": "number"}
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         # If the method is tools/list, return the tools array with nextCursor
@@ -558,7 +936,7 @@ class MCPHandler:
                         search_tool,
                         hierarchy_search_tool,
                         attachment_search_tool,
-                        # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                        # Cross-Document Intelligence Tools
                         analyze_relationships_tool,
                         find_similar_tool,
                         detect_conflicts_tool,
@@ -583,7 +961,7 @@ class MCPHandler:
                             search_tool,
                             hierarchy_search_tool,
                             attachment_search_tool,
-                            # 🔥 Phase 2.3: Cross-Document Intelligence Tools
+                            # Cross-Document Intelligence Tools
                             analyze_relationships_tool,
                             find_similar_tool,
                             detect_conflicts_tool,
@@ -659,19 +1037,47 @@ class MCPHandler:
                 first_result_score=results[0].score if results else None,
             )
 
-            # Format the response
+            # Create structured results for MCP 2025-06-18 compliance
+            structured_results = [
+                {
+                    "score": result.score,
+                    "title": result.source_title or "Untitled",
+                    "content": result.text,
+                    "source_type": result.source_type,
+                    "metadata": {
+                        "file_path": getattr(result, 'file_path', ''),
+                        "project_id": getattr(result, 'project_id', ''),
+                        "created_at": getattr(result, 'created_at', ''),
+                        "last_modified": getattr(result, 'last_modified', '')
+                    }
+                }
+                for result in results
+            ]
+            
+            # Keep existing text response for backward compatibility
+            text_response = f"Found {len(results)} results:\n\n" + "\n\n".join(
+                self._format_search_result(result) for result in results
+            )
+            
+            # Format the response with both text and structured content
             response = self.protocol.create_response(
                 request_id,
                 result={
                     "content": [
                         {
                             "type": "text",
-                            "text": f"Found {len(results)} results:\n\n"
-                            + "\n\n".join(
-                                self._format_search_result(result) for result in results
-                            ),
+                            "text": text_response,
                         }
                     ],
+                    "structuredContent": {
+                        "results": structured_results,
+                        "total_found": len(results),
+                        "query_context": {
+                            "original_query": query,
+                            "source_types_filtered": source_types,
+                            "project_ids_filtered": project_ids
+                        }
+                    },
                     "isError": False,
                 },
             )
@@ -1134,7 +1540,7 @@ class MCPHandler:
 
         return formatted_result
 
-    # 🔥 Phase 2.3: Cross-Document Intelligence Handler Methods
+    # Cross-Document Intelligence Handler Methods
 
     async def _handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -1377,7 +1783,7 @@ class MCPHandler:
                 error={"code": -32603, "message": "Internal error", "data": str(e)},
             )
 
-    # 🔥 Phase 2.3: Formatting Methods for Cross-Document Intelligence Results
+    # Formatting Methods for Cross-Document Intelligence Results
 
     def _format_relationship_analysis(self, analysis: dict[str, Any]) -> str:
         """Format document relationship analysis for display."""

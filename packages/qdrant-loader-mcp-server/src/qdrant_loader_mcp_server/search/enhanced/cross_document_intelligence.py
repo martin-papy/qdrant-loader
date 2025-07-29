@@ -1,5 +1,5 @@
 """
-🔥 Phase 2.3: Cross-Document Intelligence
+Cross-Document Intelligence
 
 This module implements advanced cross-document relationship analysis that leverages
 the rich metadata extracted during document ingestion. It provides intelligent

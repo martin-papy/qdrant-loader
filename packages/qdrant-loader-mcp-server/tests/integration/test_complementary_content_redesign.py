@@ -45,13 +45,13 @@ class TestComplementaryContentRedesign:
         # Arrange
         target_doc = self.create_test_document(
             title="User Story: Patient Authentication Requirements",
-            project_id="MyaHealth",
+            project_id="HealthApp",
             topics=["authentication", "patient", "security"]
         )
         
         candidate_doc = self.create_test_document(
             title="Technical Implementation: JWT Authentication Service",
-            project_id="MyaHealth",
+            project_id="HealthApp",
             topics=["authentication", "jwt", "technical"],
             entities=["JWT", "Authentication"]
         )
@@ -77,13 +77,13 @@ class TestComplementaryContentRedesign:
         """Test abstraction level difference detection within same project."""
         # Arrange
         target_doc = self.create_test_document(
-            title="Executive Overview: MyaHealth Platform Strategy", 
-            project_id="MyaHealth"
+            title="Executive Overview: HealthApp Platform Strategy", 
+            project_id="HealthApp"
         )
         
         candidate_doc = self.create_test_document(
             title="Technical Implementation: Database Configuration",
-            project_id="MyaHealth"
+            project_id="HealthApp"
         )
         
         # Act
@@ -167,32 +167,32 @@ class TestComplementaryContentRedesign:
         assert complementary_finder._has_cross_functional_relationship(feature_doc, security_doc)
         print("✓ Feature + Security relationship detected")
     
-    def test_myahealth_scenario_simulation(self, complementary_finder):
-        """Simulate MyaHealth project scenario that was returning 0.000 scores."""
-        # Arrange - All documents from same project (MyaHealth) and same source type (localfile)
+    def test_health_platform_scenario_simulation(self, complementary_finder):
+        """Simulate health platform project scenario that was returning 0.000 scores."""
+        # Arrange - All documents from same project (HealthPlatform) and same source type (localfile)
         target_doc = self.create_test_document(
-            title="MYA Functions -Updated Version 28.01.2025",
-            project_id="Mya Health",
+            title="Platform Functions - Updated Version 28.01.2025",
+            project_id="HealthPlatform",
             source_type="localfile",
-            topics=["functions", "features", "mya"]
+            topics=["functions", "features", "platform"]
         )
         
         candidates = [
             self.create_test_document(
-                title="MYA - Technical Specification May 24",
-                project_id="Mya Health",
+                title="Technical Specification May 24",
+                project_id="HealthPlatform",
                 source_type="localfile", 
-                topics=["technical", "specification", "mya"]
+                topics=["technical", "specification", "platform"]
             ),
             self.create_test_document(
-                title="MYA - Functional Requirement - Mobile App Wireframes",
-                project_id="Mya Health",
+                title="Functional Requirement - Mobile App Wireframes",
+                project_id="HealthPlatform",
                 source_type="localfile",
                 topics=["functional", "requirements", "mobile", "wireframes"]
             ),
             self.create_test_document(
-                title="Documentation Audio-visuel Technique Complète - MYA",
-                project_id="Mya Health", 
+                title="Technical Documentation - Audio-visual Complete Guide",
+                project_id="HealthPlatform", 
                 source_type="localfile",
                 topics=["documentation", "technical", "audio", "visual"]
             )
@@ -210,9 +210,9 @@ class TestComplementaryContentRedesign:
             
         # Verify we're getting better than 0.000 scores
         non_zero_scores = [score for score, _, _ in results if score > 0]
-        assert len(non_zero_scores) > 0, "Expected at least one non-zero score for MyaHealth scenario"
+        assert len(non_zero_scores) > 0, "Expected at least one non-zero score for health platform scenario"
         
-        print("=== MyaHealth Scenario Results ===")
+        print("=== Health Platform Scenario Results ===")
         for score, reason, title in results:
             print(f"Score: {score:.3f} - {title}")
             print(f"Reason: {reason}")
