@@ -25,6 +25,7 @@ class TestChunkingService:
         config.chunking = Mock()
         config.chunking.chunk_size = 1000
         config.chunking.chunk_overlap = 100
+        config.chunking.max_chunks_per_document = 500
         return config
 
     @pytest.fixture
@@ -37,8 +38,28 @@ class TestChunkingService:
         settings.global_config.chunking = Mock()
         settings.global_config.chunking.chunk_size = 1000
         settings.global_config.chunking.chunk_overlap = 100
+        settings.global_config.chunking.max_chunks_per_document = 500
+        
+        # Add strategy-specific configurations
+        settings.global_config.chunking.strategies = Mock()
+        settings.global_config.chunking.strategies.markdown = Mock()
+        settings.global_config.chunking.strategies.markdown.min_content_length_for_nlp = 100
+        settings.global_config.chunking.strategies.markdown.min_word_count_for_nlp = 20
+        settings.global_config.chunking.strategies.markdown.min_line_count_for_nlp = 3
+        settings.global_config.chunking.strategies.markdown.min_section_size = 500
+        settings.global_config.chunking.strategies.markdown.max_chunks_per_section = 1000
+        settings.global_config.chunking.strategies.markdown.max_overlap_percentage = 0.25
+        settings.global_config.chunking.strategies.markdown.max_workers = 4
+        settings.global_config.chunking.strategies.markdown.estimation_buffer = 0.2
+        settings.global_config.chunking.strategies.markdown.words_per_minute_reading = 200
+        settings.global_config.chunking.strategies.markdown.header_analysis_threshold_h1 = 3
+        settings.global_config.chunking.strategies.markdown.header_analysis_threshold_h3 = 8
+        settings.global_config.chunking.strategies.markdown.enable_hierarchical_metadata = True
+        
         settings.global_config.semantic_analysis = Mock()
         settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
+        settings.global_config.semantic_analysis.num_topics = 3
+        settings.global_config.semantic_analysis.lda_passes = 10
         return settings
 
     @pytest.fixture

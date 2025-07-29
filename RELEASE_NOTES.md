@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.5.1 - July 28, 2025
+
+### 🏗️ Major Architecture Improvements
+
+#### Chunking Strategy Modernization
+
+- **Modular architecture implementation**: Complete refactor of all chunking strategies (Default, HTML, Code, JSON) into modular components for enhanced maintainability and extensibility
+- **Component-based design**: Introduced dedicated classes for document parsing, section splitting, metadata extraction, and chunk processing across all strategies
+- **Improved HTML chunking**: Enhanced robust handling for empty content and malformed HTML with graceful degradation
+- **Code and JSON strategy overhaul**: Complete modular redesign with better handling of large documents and fallback mechanisms
+- **Enhanced chunk processing**: Added additional metadata fields (source_type, url, content_type, title) and improved semantic analysis handling
+- **Updated configuration templates**: Enhanced [config.template.yaml](packages/qdrant-loader/conf/config.template.yaml) and [configuration documentation](docs/users/configuration/config-file-reference.md) with new strategy-specific chunking options
+
 ## Version 0.5.0 - July 25, 2025
 
 ### 🚀 Major Features

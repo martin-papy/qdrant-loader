@@ -148,7 +148,7 @@ global_config:
     api_key: "${OPENAI_API_KEY}"
     model: "text-embedding-3-small"
   chunking:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
 ```
 

@@ -31,9 +31,18 @@ class TestChunkingConsistency:
         settings.global_config.chunking.strategies.default.enable_entity_extraction = True
         
         settings.global_config.chunking.strategies.markdown = Mock()
-        settings.global_config.chunking.strategies.markdown.preserve_code_blocks = True
-        settings.global_config.chunking.strategies.markdown.preserve_tables = True
-        settings.global_config.chunking.strategies.markdown.min_heading_chunk_size = 100
+        settings.global_config.chunking.strategies.markdown.min_content_length_for_nlp = 100
+        settings.global_config.chunking.strategies.markdown.min_word_count_for_nlp = 20
+        settings.global_config.chunking.strategies.markdown.min_line_count_for_nlp = 3
+        settings.global_config.chunking.strategies.markdown.min_section_size = 500
+        settings.global_config.chunking.strategies.markdown.max_chunks_per_section = 1000
+        settings.global_config.chunking.strategies.markdown.max_overlap_percentage = 0.25
+        settings.global_config.chunking.strategies.markdown.max_workers = 4
+        settings.global_config.chunking.strategies.markdown.estimation_buffer = 0.2
+        settings.global_config.chunking.strategies.markdown.words_per_minute_reading = 200
+        settings.global_config.chunking.strategies.markdown.header_analysis_threshold_h1 = 3
+        settings.global_config.chunking.strategies.markdown.header_analysis_threshold_h3 = 8
+        settings.global_config.chunking.strategies.markdown.enable_hierarchical_metadata = True
         
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"

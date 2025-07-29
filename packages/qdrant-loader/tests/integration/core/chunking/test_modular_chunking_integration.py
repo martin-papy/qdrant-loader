@@ -275,6 +275,14 @@ class TestModularChunkingIntegration:
         assert json_config.max_json_size_for_parsing == 1000000
         assert json_config.enable_schema_inference is True
         assert json_config.max_array_items_per_chunk == 50
+        
+        # Test Markdown strategy configuration
+        markdown_config = config.chunking.strategies.markdown
+        assert markdown_config.min_content_length_for_nlp == 100
+        assert markdown_config.min_word_count_for_nlp == 20
+        assert markdown_config.min_section_size == 500
+        assert markdown_config.max_chunks_per_section == 1000
+        assert markdown_config.enable_hierarchical_metadata is True
     
     def test_metadata_consistency_across_chunks(self, real_settings, sample_documents):
         """Test that metadata is consistent across all chunks from the same document."""
