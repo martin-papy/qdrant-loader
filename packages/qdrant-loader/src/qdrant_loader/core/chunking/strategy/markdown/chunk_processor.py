@@ -36,7 +36,8 @@ class ChunkProcessor:
         self._processed_chunks: dict[str, dict[str, Any]] = {}
 
         # Initialize thread pool for parallel processing
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+        max_workers = settings.global_config.chunking.strategies.markdown.max_workers
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
 
     def process_chunk(
         self, chunk: str, chunk_index: int, total_chunks: int
@@ -151,7 +152,9 @@ class ChunkProcessor:
         estimated = len(content) // chunk_size
         
         # Add some buffer for overlap and paragraph boundaries
-        estimated = int(estimated * 1.2)  # 20% buffer
+        # Apply estimation buffer from configuration
+        buffer_factor = 1.0 + self.settings.global_config.chunking.strategies.markdown.estimation_buffer
+        estimated = int(estimated * buffer_factor)
         
         return max(1, estimated)  # At least 1 chunk
 
@@ -162,7 +165,7 @@ class ChunkProcessor:
             self._executor = None
         
         if hasattr(self, "semantic_analyzer"):
-            self.semantic_analyzer.clear_cache()
+            self.semantic_analyzer.shutdown()  # Use shutdown() instead of clear_cache() for complete cleanup
 
     def __del__(self):
         """Cleanup on deletion."""

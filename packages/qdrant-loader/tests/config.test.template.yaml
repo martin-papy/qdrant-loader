@@ -19,7 +19,14 @@ global:
     model: text-embedding-3-small
     api_key: "${OPENAI_API_KEY}"     # API key for the embedding service (required for OpenAI models)
     batch_size: 10  # Smaller batch size for tests
-  
+    
+  semantic_analysis:
+    num_topics: 3                    # Number of topics to extract using LDA
+    lda_passes: 10                   # Number of passes for LDA training
+    spacy_model: "en_core_web_md"    # spaCy model for text processing
+                                     # Options: en_core_web_sm (15MB, no vectors)
+                                     #          en_core_web_md (50MB, 20k vectors) - recommended
+                                     #          en_core_web_lg (750MB, 514k vectors)  
   state_management:
     database_path: ":memory:"  # Use in-memory SQLite for tests
     table_prefix: "test_qdrant_loader_"

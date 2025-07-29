@@ -129,7 +129,7 @@ global:
   
   # Processing Configuration
   processing:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
     min_chunk_size: 100
     max_file_size: 52428800  # 50MB

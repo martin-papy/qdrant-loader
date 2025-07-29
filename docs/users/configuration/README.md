@@ -312,7 +312,7 @@ global:
     batch_size: 100
   
   chunking:
-    chunk_size: 1000
+    chunk_size: 1500
     chunk_overlap: 200
 
 projects:

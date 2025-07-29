@@ -114,10 +114,10 @@ class StandardSplitter(BaseSplitter):
         chunks = []
         
         # Calculate dynamic safety limit based on configuration
-        # Allow up to 50% of max_chunks_per_document for a single section
+        # Use configured max_chunks_per_section, bounded by global document limit
         max_chunks_per_section = min(
-            self.settings.global_config.chunking.max_chunks_per_document // 2,
-            1000  # Absolute maximum to prevent runaway chunking
+            self.settings.global_config.chunking.strategies.markdown.max_chunks_per_section,
+            self.settings.global_config.chunking.max_chunks_per_document // 2
         )
 
         # Split by paragraphs first
@@ -167,12 +167,14 @@ class StandardSplitter(BaseSplitter):
             
             # Calculate overlap and advance position
             if units_in_chunk > 0:
-                # When overlap is 0, advance by all units to avoid any overlap
                 if self.chunk_overlap == 0:
                     advance = units_in_chunk
                 else:
                     # Calculate how many characters of overlap we want
-                    overlap_chars = min(self.chunk_overlap, len(current_chunk) // 4)  # Max 25% overlap
+                    # Use configured maximum overlap percentage
+                    max_overlap_percent = self.settings.global_config.chunking.strategies.markdown.max_overlap_percentage
+                    max_overlap_chars = int(len(current_chunk) * max_overlap_percent)
+                    overlap_chars = min(self.chunk_overlap, max_overlap_chars)
                     
                     # Find a good overlap point by counting back from the end
                     if overlap_chars > 0 and len(current_chunk) > overlap_chars:
@@ -228,8 +230,8 @@ class ExcelSplitter(BaseSplitter):
         
         # Calculate dynamic safety limit
         max_chunks_per_section = min(
-            self.settings.global_config.chunking.max_chunks_per_document // 2,
-            1000
+            self.settings.global_config.chunking.strategies.markdown.max_chunks_per_section,
+            self.settings.global_config.chunking.max_chunks_per_document // 2
         )
 
         # Split content into logical units: headers, tables, and text blocks
@@ -470,8 +472,13 @@ class SectionSplitter:
             else:
                 return {1, 2}
         
+        # Get configured thresholds
+        markdown_config = self.settings.global_config.chunking.strategies.markdown
+        h1_threshold = markdown_config.header_analysis_threshold_h1
+        h3_threshold = markdown_config.header_analysis_threshold_h3
+        
         # Regular markdown: Intelligent granularity based on structure
-        if header_analysis.h1 <= 1 and header_analysis.h2 >= 3:
+        if header_analysis.h1 <= 1 and header_analysis.h2 >= h1_threshold:
             # Single H1 with multiple H2s - the common case requiring granular splitting!
             logger.info(
                 "Detected single H1 with multiple H2 sections - applying granular splitting",
@@ -482,11 +489,11 @@ class SectionSplitter:
                 }
             )
             # Split on H2 and H3 if there are many H3s
-            if header_analysis.h3 >= 8:
+            if header_analysis.h3 >= h3_threshold:
                 return {1, 2, 3}
             else:
                 return {1, 2}
-        elif header_analysis.h1 >= 3:
+        elif header_analysis.h1 >= h1_threshold:
             # Multiple H1s - keep traditional splitting to avoid over-fragmentation
             logger.info(
                 "Multiple H1 sections detected - using traditional H1-only splitting",
@@ -506,16 +513,16 @@ class SectionSplitter:
                 }
             )
             # 🔥 ENHANCED: Intelligent H3/H4 splitting based on document structure
-            if header_analysis.h3 == 1 and header_analysis.h4 >= 3:
+            if header_analysis.h3 == 1 and header_analysis.h4 >= h1_threshold:
                 # Single H3 with multiple H4s (common DOCX pattern) - split on both
                 return {3, 4}
-            elif header_analysis.h3 >= 3:
+            elif header_analysis.h3 >= h1_threshold:
                 # Multiple H3s - split on H3 primarily, H4 if many
-                if header_analysis.h4 >= 8:
+                if header_analysis.h4 >= h3_threshold:
                     return {3, 4}
                 else:
                     return {3}
-            elif header_analysis.total_headers >= 8:
+            elif header_analysis.total_headers >= h3_threshold:
                 # Many headers total - split on H3 and H4
                 return {3, 4}
             else:
@@ -590,7 +597,7 @@ class SectionSplitter:
                 "has_images": bool(re.search(r"!\[.*?\]\(.*?\)", content)),
                 "has_links": bool(re.search(r"\[.*?\]\(.*?\)", content)),
                 "word_count": len(content.split()),
-                "estimated_read_time": max(1, len(content.split()) // 200),  # minutes
+                "estimated_read_time": max(1, len(content.split()) // markdown_config.words_per_minute_reading),  # minutes
                 "char_count": len(content),
             }
             
@@ -764,7 +771,8 @@ class SectionSplitter:
 
         merged = []
         current_section = sections[0].copy()
-        min_section_size = 500  # Minimum characters for a standalone section
+        # Use configured minimum section size
+        min_section_size = self.settings.global_config.chunking.strategies.markdown.min_section_size
 
         for i in range(1, len(sections)):
             next_section = sections[i]
