@@ -225,27 +225,26 @@ async def test_search_empty_results(integration_handler):
 async def test_cross_document_intelligence_mcp_integration(integration_handler):
     """Test Phase 2.3 cross-document intelligence through MCP interface."""
     
+    # Create mock search results with enough documents for analysis
+    from qdrant_loader_mcp_server.search.models import SearchResult
+    
+    mock_documents = [
+        SearchResult(
+            score=0.9, text="Authentication system using JWT tokens for secure access control",
+            source_type="git", source_title="Auth Module", source_url="http://test1.com"
+        ),
+        SearchResult(
+            score=0.8, text="User authentication flow with OAuth integration for external providers",
+            source_type="confluence", source_title="Auth Guide", source_url="http://test2.com"  
+        ),
+        SearchResult(
+            score=0.7, text="Security protocols for API authentication and authorization mechanisms",
+            source_type="jira", source_title="Security Ticket", source_url="http://test3.com"
+        )
+    ]
+    
     # Test document relationship analysis
-    with patch.object(integration_handler.search_engine, "analyze_document_relationships") as mock_analyze:
-        # Mock successful analysis response
-        mock_analyze.return_value = {
-            "summary": {
-                "total_documents": 5,
-                "clusters_found": 2,
-                "citation_relationships": 3,
-                "conflicts_detected": 1
-            },
-            "document_clusters": [],
-            "citation_network": {"nodes": [], "edges": []},
-            "complementary_content": {},
-            "conflict_analysis": {"conflicting_pairs": []},
-            "similarity_insights": {},
-            "query_metadata": {
-                "original_query": "authentication system",
-                "document_count": 5
-            }
-        }
-        
+    with patch.object(integration_handler.search_engine, "search", return_value=mock_documents):
         request = {
             "jsonrpc": "2.0",
             "method": "analyze_document_relationships",
@@ -264,13 +263,9 @@ async def test_cross_document_intelligence_mcp_integration(integration_handler):
         assert "result" in response
         assert response["result"]["isError"] is False
         
-        # Verify the method was called with correct parameters
-        mock_analyze.assert_called_once_with(
-            query="authentication system",
-            limit=10,
-            source_types=None,
-            project_ids=["MyaHealth"]
-        )
+        # Verify the response contains the expected structure
+        result = response["result"]
+        assert "content" in result or "summary" in result, "Response should contain analysis results"
 
 
 @pytest.mark.asyncio

@@ -274,7 +274,7 @@ async def test_keyword_search_with_project_filter(hybrid_search, mock_qdrant_cli
     """Test keyword search with project filtering."""
     # Mock the BM25 scoring to return results
     with patch(
-        "qdrant_loader_mcp_server.search.hybrid_search.BM25Okapi"
+        "qdrant_loader_mcp_server.search.components.keyword_search_service.BM25Okapi"
     ) as mock_bm25_class:
         mock_bm25 = MagicMock()
         mock_bm25.get_scores.return_value = [0.9, 0.8, 0.7]  # Scores for 3 documents
