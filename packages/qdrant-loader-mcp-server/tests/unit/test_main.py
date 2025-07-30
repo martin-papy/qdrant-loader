@@ -76,19 +76,20 @@ async def test_shutdown():
 def test_cli_imports():
     """Test that CLI module imports work correctly."""
     # Test that we can import the CLI components
-    from qdrant_loader_mcp_server.cli import _get_version, _setup_logging, cli
+    from qdrant_loader_mcp_server.cli import _setup_logging, cli
+    from qdrant_loader_mcp_server.utils import get_version
 
     # Verify the components are available
     assert cli is not None
-    assert _get_version is not None
+    assert get_version is not None
     assert _setup_logging is not None
 
 
 def test_version_function():
     """Test the version function."""
-    from qdrant_loader_mcp_server.cli import _get_version
+    from qdrant_loader_mcp_server.utils import get_version
 
-    version = _get_version()
+    version = get_version()
     assert isinstance(version, str)
     assert len(version) > 0
 
