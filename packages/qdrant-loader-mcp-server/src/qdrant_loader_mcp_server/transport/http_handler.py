@@ -140,7 +140,7 @@ class HTTPTransportHandler:
                 "jsonrpc": "2.0",
                 "error": {
                     "code": -32700,
-                    "message": f"Parse error: {str(e)}"
+                    "message": "Invalid JSON in request"
                 }
             }
         except Exception as e:
@@ -149,7 +149,7 @@ class HTTPTransportHandler:
                 "jsonrpc": "2.0", 
                 "error": {
                     "code": -32603,
-                    "message": f"Internal error: {str(e)}"
+                    "message": "Internal server error"
                 }
             }
     
@@ -188,7 +188,7 @@ class HTTPTransportHandler:
                 raise
             except Exception as e:
                 logger.error(f"Error in SSE stream: {e}", exc_info=True)
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Stream processing error'})}\n\n"
         
         return StreamingResponse(
             event_stream(),

@@ -1,5 +1,44 @@
 # Release Notes
 
+## Version 1.0.0 - July 30, 2025
+
+### **MAJOR MILESTONE RELEASE**
+
+#### 🚀 Upgraded MCP Server Architecture
+
+- **Streamable HTTP Transport Support**: Added FastAPI-based HTTP transport alongside existing stdio transport, enabling web-based MCP clients and multiple concurrent connections
+- **MCP Protocol 2025-06-18 Compliance**: Upgraded from MCP Protocol version 2024-11-05 to the latest 2025-06-18 specification with full backward compatibility
+- **Server-Sent Events (SSE) Streaming**: Implemented real-time streaming capabilities for enhanced client communication
+- **Dual Transport Architecture**: Support for both stdio (subprocess-based clients) and HTTP (web clients) transports simultaneously
+
+#### 🔧 Enhanced Integration & Connectivity
+
+- **Production-Ready HTTP Server**: FastAPI implementation with proper security, session management, and CORS support
+- **Advanced Security Features**: Origin validation, localhost binding, and DNS rebinding protection
+- **CLI Transport Selection**: Added `--transport` option to choose between stdio and HTTP modes
+- **Health Check Endpoints**: Built-in monitoring and health check capabilities for production deployment
+
+#### 📊 Structured Output & Protocol Features  
+
+- **Structured Tool Output**: Enhanced tool responses with JSON-structured content while maintaining backward compatibility
+- **Tool Behavioral Annotations**: Added annotations for all 8 tools indicating read-only and compute-intensive operations
+- **Protocol Version Validation**: Header-based protocol version validation with graceful degradation
+- **Session Management**: Comprehensive session handling for stateful HTTP connections
+
+#### 🔄 Backward Compatibility & Migration
+
+- **Zero Breaking Changes**: Existing stdio clients continue to work unchanged
+- **Seamless Migration Path**: Easy transition between transport modes without configuration changes  
+- **Legacy Support**: Full support for existing MCP 2024-11-05 clients
+- **Configuration Compatibility**: All existing configurations work with new transport layer
+
+#### 🏗️ Architecture Improvements
+
+- **Modular Transport Layer**: Clean separation between protocol handling and transport mechanisms
+- **Enhanced Error Handling**: Improved error messages and graceful failure handling
+- **Performance Optimizations**: Efficient connection handling and resource management
+- **Comprehensive Testing**: Full test coverage for HTTP transport, session management, and protocol compliance
+
 ## Version 0.5.1 - July 28, 2025
 
 ### 🏗️ Major Architecture Improvements

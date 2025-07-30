@@ -18,6 +18,7 @@ Key Features:
 import logging
 import time
 import math
+import warnings
 import networkx as nx
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
@@ -153,13 +154,28 @@ class CitationNetwork:
             self.build_graph()
             
         try:
-            # Calculate HITS algorithm scores
-            hits_scores = nx.hits(self.graph, max_iter=100, normalized=True)
-            self.hub_scores = hits_scores[0]
-            self.authority_scores = hits_scores[1]
-            
-            # Calculate PageRank scores
-            self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
+            # Check if graph has enough edges for meaningful analysis
+            if self.graph.number_of_edges() == 0:
+                logger.debug("Graph has no edges, using degree centrality fallback")
+                if self.graph.nodes():
+                    degree_centrality = nx.degree_centrality(self.graph)
+                    self.authority_scores = degree_centrality
+                    self.hub_scores = degree_centrality
+                    self.pagerank_scores = degree_centrality
+                return
+                
+            # Suppress NetworkX RuntimeWarning for division by zero in HITS algorithm
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", "invalid value encountered in divide", RuntimeWarning)
+                warnings.filterwarnings("ignore", "divide by zero encountered", RuntimeWarning)
+                
+                # Calculate HITS algorithm scores
+                hits_scores = nx.hits(self.graph, max_iter=100, normalized=True)
+                self.hub_scores = hits_scores[0]
+                self.authority_scores = hits_scores[1]
+                
+                # Calculate PageRank scores
+                self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
             
         except Exception as e:
             logger.warning(f"Failed to calculate centrality scores: {e}")
