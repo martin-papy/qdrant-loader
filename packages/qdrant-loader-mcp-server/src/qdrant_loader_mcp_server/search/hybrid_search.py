@@ -1918,12 +1918,31 @@ class HybridSearchEngine:
                 min_cluster_size
             )
             
-            # Convert to serializable format
+            # Convert to serializable format with full SearchResult objects
+            # Create a mapping from document ID to SearchResult
+            doc_id_to_result = {}
+            for doc in documents:
+                # Create document ID consistently with what the clustering uses
+                doc_id = f"{doc.source_type}:{doc.source_title}"
+                doc_id_to_result[doc_id] = doc
+            
             cluster_data = []
             for cluster in clusters:
+                # Map document IDs back to full SearchResult objects
+                cluster_documents = []
+                for doc_id in cluster.documents:
+                    if doc_id in doc_id_to_result:
+                        cluster_documents.append(doc_id_to_result[doc_id])
+                    else:
+                        # Fallback: try to find by partial matching
+                        for orig_id, result in doc_id_to_result.items():
+                            if doc_id in orig_id or orig_id in doc_id:
+                                cluster_documents.append(result)
+                                break
+                
                 cluster_data.append({
                     "id": cluster.cluster_id,
-                    "documents": cluster.documents,
+                    "documents": cluster_documents,  # Now contains SearchResult objects
                     "centroid_topics": cluster.shared_topics,
                     "shared_entities": cluster.shared_entities,
                     "coherence_score": cluster.coherence_score,
