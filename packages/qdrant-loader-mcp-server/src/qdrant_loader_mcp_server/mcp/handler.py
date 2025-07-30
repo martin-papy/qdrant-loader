@@ -141,7 +141,9 @@ class MCPHandler:
                         request_id, params.get("arguments", {})
                     )
                 # Cross-Document Intelligence Tools
-                elif tool_name == "analyze_document_relationships":
+                elif tool_name == "analyze_relationships":
+                    logger.info("🔍 DEBUG: analyze_relationships tool called!")
+                    logger.info(f"🔍 DEBUG: intelligence_handler exists: {self.intelligence_handler is not None}")
                     return await self.intelligence_handler.handle_analyze_document_relationships(
                         request_id, params.get("arguments", {})
                     )
