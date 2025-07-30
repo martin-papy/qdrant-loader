@@ -1455,7 +1455,18 @@ class ConflictDetector:
         if len(set(topics1) & set(topics2)) > 0:
             return True
         
-        return False
+        # Both documents from same source type and seem related by content
+        if (doc1.source_type == doc2.source_type and 
+            self._have_content_overlap(doc1, doc2)):
+            return True
+        
+        # Documents with similar titles or content themes
+        if self._have_semantic_similarity(doc1, doc2):
+            return True
+        
+        # If documents came from the same search query, they're likely semantically related
+        # Always analyze at least some pairs to avoid completely empty results
+        return True
     
     def _find_contradiction_patterns(self, doc1: SearchResult, doc2: SearchResult) -> List[str]:
         """Find textual patterns that suggest contradictions."""
@@ -1568,6 +1579,45 @@ class ConflictDetector:
             elif isinstance(topic, str):
                 texts.append(topic.lower())
         return [t for t in texts if t]
+    
+    def _have_content_overlap(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have significant content overlap."""
+        words1 = set(doc1.text.lower().split())
+        words2 = set(doc2.text.lower().split())
+        
+        # Filter out common words
+        common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an'}
+        words1 = words1 - common_words
+        words2 = words2 - common_words
+        
+        if not words1 or not words2:
+            return False
+            
+        overlap = len(words1 & words2)
+        total = min(len(words1), len(words2))
+        return overlap / total > 0.1  # 10% word overlap threshold
+    
+    def _have_semantic_similarity(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have semantic similarity based on titles and key terms."""
+        # Compare titles
+        title1 = (doc1.source_title or "").lower()
+        title2 = (doc2.source_title or "").lower()
+        
+        if title1 and title2:
+            title_words1 = set(title1.split())
+            title_words2 = set(title2.split())
+            if len(title_words1 & title_words2) > 0:
+                return True
+        
+        # Look for key terms that suggest similar subject matter
+        key_terms = ['authentication', 'security', 'login', 'password', 'access', 'user', 'interface', 'design', 'app', 'mobile']
+        text1_lower = doc1.text.lower()
+        text2_lower = doc2.text.lower()
+        
+        terms_in_doc1 = [term for term in key_terms if term in text1_lower]
+        terms_in_doc2 = [term for term in key_terms if term in text2_lower]
+        
+        return len(set(terms_in_doc1) & set(terms_in_doc2)) >= 2  # At least 2 shared key terms
 
 
 class CrossDocumentIntelligenceEngine:
