@@ -3,8 +3,7 @@
 from typing import Any
 
 from openai import AsyncOpenAI
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.http import models
+from qdrant_client import AsyncQdrantClient, models
 
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
@@ -35,7 +34,13 @@ class SearchEngine:
         """Initialize the search engine with configuration."""
         self.config = config
         try:
-            self.client = AsyncQdrantClient(url=config.url, api_key=config.api_key)
+            # Configure timeout for Qdrant cloud instances
+            # Set to 120 seconds to handle large datasets and prevent ReadTimeout errors
+            self.client = AsyncQdrantClient(
+                url=config.url, 
+                api_key=config.api_key,
+                timeout=120  # 120 seconds timeout for cloud instances
+            )
             self.openai_client = AsyncOpenAI(api_key=openai_config.api_key)
 
             # Ensure collection exists
