@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from ..utils import get_version
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
@@ -207,7 +208,7 @@ class MCPHandler:
             request_id,
             result={
                 "protocolVersion": "2025-06-18",
-                "serverInfo": {"name": "Qdrant Loader MCP Server", "version": "1.0.0"},
+                "serverInfo": {"name": "Qdrant Loader MCP Server", "version": get_version()},
                 "capabilities": {"tools": {"listChanged": False}},
             },
         )
