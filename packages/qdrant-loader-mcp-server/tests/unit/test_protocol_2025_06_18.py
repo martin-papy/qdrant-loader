@@ -140,7 +140,6 @@ class TestToolBehavioralAnnotations:
         
         # Tools that should be marked as compute-intensive
         compute_intensive_tools = [
-            "analyze_document_relationships",
             "detect_document_conflicts", 
             "cluster_documents"
         ]
@@ -247,21 +246,23 @@ class TestToolOutputSchemas:
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
         
-        # Test analyze_document_relationships schema
-        analyze_tool = next((tool for tool in tools if tool["name"] == "analyze_document_relationships"), None)
+        # Test analyze_relationships schema
+        analyze_tool = next((tool for tool in tools if tool["name"] == "analyze_relationships"), None)
         assert analyze_tool is not None
         
         schema = analyze_tool["outputSchema"]
         properties = schema["properties"]
-        assert "analysis_results" in properties
-        assert "total_documents_analyzed" in properties
-        assert "analysis_metadata" in properties
+        assert "relationships" in properties
+        assert "total_analyzed" in properties
+        assert "summary" in properties
         
-        # Check analysis_results structure
-        analysis_results = properties["analysis_results"]["properties"]
-        assert "similarity_clusters" in analysis_results
-        assert "conflicts_detected" in analysis_results
-        assert "complementary_pairs" in analysis_results
+        # Check relationships structure
+        relationships = properties["relationships"]["items"]["properties"]
+        assert "document_1" in relationships
+        assert "document_2" in relationships
+        assert "relationship_type" in relationships
+        assert "score" in relationships
+        assert "description" in relationships
 
     @pytest.mark.asyncio  
     async def test_cluster_tool_output_schema(self, mcp_handler):
@@ -335,7 +336,7 @@ class TestToolCapabilities:
             "search",
             "hierarchy_search", 
             "attachment_search",
-            "analyze_document_relationships",
+            "analyze_relationships",
             "find_similar_documents",
             "detect_document_conflicts",
             "find_complementary_content",
