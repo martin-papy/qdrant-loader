@@ -276,9 +276,9 @@ class MCPSchemas:
     def get_analyze_relationships_tool_schema() -> dict[str, Any]:
         """Get the analyze document relationships tool schema."""
         return {
-            "name": "analyze_document_relationships",
-            "description": "Analyze relationships between documents including clustering, similarities, and conflicts",
-            "annotations": {"read-only": True, "compute-intensive": True},
+            "name": "analyze_relationships",
+            "description": "Analyze relationships between documents",
+            "annotations": {"read-only": True},
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -307,57 +307,21 @@ class MCPSchemas:
             "outputSchema": {
                 "type": "object",
                 "properties": {
-                    "analysis_results": {
-                        "type": "object",
-                        "properties": {
-                            "similarity_clusters": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cluster_id": {"type": "string"},
-                                        "documents": {"type": "array", "items": {"type": "string"}},
-                                        "similarity_score": {"type": "number"},
-                                        "cluster_theme": {"type": "string"}
-                                    }
-                                }
-                            },
-                            "conflicts_detected": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "document_1": {"type": "string"},
-                                        "document_2": {"type": "string"},
-                                        "conflict_type": {"type": "string"},
-                                        "conflict_score": {"type": "number"},
-                                        "description": {"type": "string"}
-                                    }
-                                }
-                            },
-                            "complementary_pairs": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "document_1": {"type": "string"},
-                                        "document_2": {"type": "string"},
-                                        "complementary_score": {"type": "number"},
-                                        "relationship_type": {"type": "string"}
-                                    }
-                                }
+                    "relationships": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "document_1": {"type": "string"},
+                                "document_2": {"type": "string"},
+                                "relationship_type": {"type": "string"},
+                                "score": {"type": "number"},
+                                "description": {"type": "string"}
                             }
                         }
                     },
-                    "total_documents_analyzed": {"type": "integer"},
-                    "analysis_metadata": {
-                        "type": "object",
-                        "properties": {
-                            "processing_time_ms": {"type": "number"},
-                            "analysis_date": {"type": "string"},
-                            "query_used": {"type": "string"}
-                        }
-                    }
+                    "total_analyzed": {"type": "integer"},
+                    "summary": {"type": "string"}
                 }
             }
         }
