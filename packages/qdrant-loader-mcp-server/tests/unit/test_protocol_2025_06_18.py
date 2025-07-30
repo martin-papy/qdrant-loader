@@ -104,7 +104,7 @@ class TestToolBehavioralAnnotations:
         # Check that every tool has annotations
         for tool in tools:
             assert "annotations" in tool, f"Tool '{tool['name']}' missing annotations"
-            assert isinstance(tool["annotations"], list), f"Tool '{tool['name']}' annotations should be a list"
+            assert isinstance(tool["annotations"], dict), f"Tool '{tool['name']}' annotations should be an object"
             assert len(tool["annotations"]) > 0, f"Tool '{tool['name']}' should have at least one annotation"
 
     @pytest.mark.asyncio
@@ -123,6 +123,7 @@ class TestToolBehavioralAnnotations:
         search_tool = next((tool for tool in tools if tool["name"] == "search"), None)
         assert search_tool is not None, "Search tool not found"
         assert "read-only" in search_tool["annotations"]
+        assert search_tool["annotations"]["read-only"] is True
 
     @pytest.mark.asyncio
     async def test_compute_intensive_tool_annotations(self, mcp_handler):
@@ -148,7 +149,9 @@ class TestToolBehavioralAnnotations:
             tool = next((tool for tool in tools if tool["name"] == tool_name), None)
             assert tool is not None, f"Tool '{tool_name}' not found"
             assert "read-only" in tool["annotations"], f"Tool '{tool_name}' should be read-only"
+            assert tool["annotations"]["read-only"] is True, f"Tool '{tool_name}' should be read-only"
             assert "compute-intensive" in tool["annotations"], f"Tool '{tool_name}' should be compute-intensive"
+            assert tool["annotations"]["compute-intensive"] is True, f"Tool '{tool_name}' should be compute-intensive"
 
     @pytest.mark.asyncio
     async def test_all_tools_are_read_only(self, mcp_handler):
@@ -165,6 +168,7 @@ class TestToolBehavioralAnnotations:
         
         for tool in tools:
             assert "read-only" in tool["annotations"], f"Tool '{tool['name']}' should be read-only"
+            assert tool["annotations"]["read-only"] is True, f"Tool '{tool['name']}' should be read-only"
 
 
 class TestToolOutputSchemas:

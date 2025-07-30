@@ -392,8 +392,13 @@ class TestToolAnnotationsBackwardCompatibility:
             assert "description" in tool
             assert "inputSchema" in tool
             
-            # Annotations should be a simple array that old clients can ignore
-            assert isinstance(tool["annotations"], list)
+            # Annotations should be a dictionary for 2025-06-18 protocol
+            # Old clients that don't understand annotations can simply ignore this field
+            assert isinstance(tool["annotations"], dict)
+            
+            # Verify the annotation contains expected properties
+            assert "read-only" in tool["annotations"]
+            assert isinstance(tool["annotations"]["read-only"], bool)
 
     @pytest.mark.asyncio
     async def test_output_schemas_dont_break_old_clients(self, mcp_handler):
