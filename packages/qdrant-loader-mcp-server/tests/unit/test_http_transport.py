@@ -378,11 +378,11 @@ class TestHTTPTransportErrorHandling:
         
         response = await http_transport._handle_post_request(mock_request)
         
-        # Should return proper JSON-RPC error response
+        # Should return proper JSON-RPC error response with generic message for security
         assert response["jsonrpc"] == "2.0"
         assert "error" in response
         assert response["error"]["code"] == -32603  # Internal error
-        assert "Test error" in response["error"]["message"]
+        assert response["error"]["message"] == "Internal server error"
 
     @pytest.mark.asyncio
     async def test_session_id_generation(self, http_transport, mock_mcp_handler):
