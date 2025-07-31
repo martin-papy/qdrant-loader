@@ -1,5 +1,5 @@
 """
-🔥 Phase 1.3: Unit tests for Dynamic Faceted Search Interface
+Unit tests for Dynamic Faceted Search Interface
 
 Tests for faceted search functionality including:
 - Dynamic facet generation from metadata

@@ -1,4 +1,4 @@
-"""Unit tests for Phase 2.2 Intent-Aware Adaptive Search."""
+"""Unit tests for Intent-Aware Adaptive Search."""
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock

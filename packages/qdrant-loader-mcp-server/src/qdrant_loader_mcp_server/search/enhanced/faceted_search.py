@@ -199,7 +199,7 @@ class FacetedSearchResults:
 
 class DynamicFacetGenerator:
     """
-    🔥 Phase 1.3: Dynamic Facet Generator
+    Dynamic Facet Generator
     
     Analyzes HybridSearchResult metadata to dynamically generate relevant facets
     for filtering and exploration. Leverages the rich metadata infrastructure
@@ -557,7 +557,7 @@ class DynamicFacetGenerator:
 
 class FacetedSearchEngine:
     """
-    🔥 Phase 1.3: Faceted Search Engine
+    Faceted Search Engine
     
     Provides faceted search capabilities with filtering and refinement.
     Integrates with the existing HybridSearchEngine to add faceting layer.

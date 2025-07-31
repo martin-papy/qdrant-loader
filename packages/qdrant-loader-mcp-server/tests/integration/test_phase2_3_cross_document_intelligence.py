@@ -1,4 +1,4 @@
-"""Integration tests for Phase 2.3 Cross-Document Intelligence."""
+"""Integration tests for Cross-Document Intelligence."""
 
 import pytest
 import asyncio

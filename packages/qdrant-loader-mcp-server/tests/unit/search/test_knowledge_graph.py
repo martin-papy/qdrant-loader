@@ -1,4 +1,4 @@
-"""Unit tests for Phase 2.1 Knowledge Graph implementation."""
+"""Unit tests for Knowledge Graph implementation."""
 
 import pytest
 import unittest

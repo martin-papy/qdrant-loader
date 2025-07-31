@@ -1,4 +1,4 @@
-"""Unit tests for Topic-Driven Search Chaining (Phase 1.2)."""
+"""Unit tests for Topic-Driven Search Chaining."""
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock

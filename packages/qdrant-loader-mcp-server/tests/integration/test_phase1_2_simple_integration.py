@@ -1,4 +1,5 @@
-"""Simple integration test for Phase 1.2 Topic-Driven Search Chaining.
+"""
+Simple integration test for Topic-Driven Search Chaining.
 
 Tests real components working together without complex mocking.
 """
@@ -287,7 +288,7 @@ class TestPhase12SimpleIntegration:
         assert len(chain.chain_links) >= 0  # May be 0 if no good chains found
         
         print(f"\n✅ End-to-end workflow completed successfully!")
-        print(f"🚀 Phase 1.2 Topic-Driven Search Chaining is working with real components!")
+        print(f"🚀 Topic-Driven Search Chaining is working with real components!")
 
 
 if __name__ == "__main__":

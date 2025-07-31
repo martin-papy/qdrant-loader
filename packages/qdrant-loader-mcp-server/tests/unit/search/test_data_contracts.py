@@ -1,5 +1,5 @@
 """
-Data Contract Tests for Phase 2.3 Cross-Document Intelligence
+Data Contract Tests for Cross-Document Intelligence
 
 These tests validate that our data structures have the expected interfaces
 and would have caught the attribute naming mismatches we encountered.

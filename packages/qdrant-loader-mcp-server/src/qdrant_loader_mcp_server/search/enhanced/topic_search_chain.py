@@ -1,4 +1,5 @@
-"""Topic-Driven Search Chaining for Phase 1.2 Search Enhancement.
+"""
+Topic-Driven Search Chaining for Search Enhancement.
 
 This module implements intelligent topic-based search progression that creates
 discovery chains from initial queries to related content exploration.

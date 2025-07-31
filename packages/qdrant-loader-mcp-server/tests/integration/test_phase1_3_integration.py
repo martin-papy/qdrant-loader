@@ -1,5 +1,5 @@
 """
-🔥 Phase 1.3: Integration tests for Dynamic Faceted Search Interface
+Integration tests for Dynamic Faceted Search Interface
 
 Integration tests that verify the complete faceted search workflow:
 - Integration with existing hybrid search
@@ -147,7 +147,7 @@ def sample_search_results():
 
 
 class TestPhase13FacetedSearchIntegration:
-    """Integration tests for Phase 1.3 Faceted Search."""
+    """Integration tests for Faceted Search."""
     
     def test_faceted_search_engine_initialization(self, mock_qdrant_client, mock_openai_client):
         """Test that faceted search engine is properly initialized in HybridSearchEngine."""
@@ -486,7 +486,7 @@ class TestSearchEngineMCPIntegration:
 
 
 class TestPhase13PerformanceIntegration:
-    """Performance tests for Phase 1.3 integration."""
+    """Performance tests for integration."""
     
     def test_facet_generation_performance(self):
         """Test facet generation performance with larger dataset."""
