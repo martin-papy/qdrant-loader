@@ -1,4 +1,4 @@
-"""Integration tests for Phase 2.1 Knowledge Graph with existing search system."""
+"""Integration tests for Knowledge Graph with existing search system."""
 
 import pytest
 import asyncio
@@ -17,7 +17,7 @@ from qdrant_loader_mcp_server.search.components.search_result_models import Hybr
 
 
 class TestPhase2Integration:
-    """Integration tests for Phase 2.1 Knowledge Graph functionality."""
+    """Integration tests for Knowledge Graph functionality."""
     
     def setup_method(self):
         """Set up test fixtures."""
@@ -97,7 +97,7 @@ class TestPhase2Integration:
     
     def test_knowledge_graph_construction(self):
         """Test knowledge graph construction from search results."""
-        print("🚀 Testing Phase 2.1 Knowledge Graph Construction")
+        print("🚀 Testing Knowledge Graph Construction")
         print("=" * 60)
         
         # Build knowledge graph
@@ -289,7 +289,7 @@ class TestPhase2Integration:
             print("ℹ️ No cross-document relationships found (may need more diverse content)")
     
     def test_performance_benchmarks(self):
-        """Test performance benchmarks for Phase 2.1 implementation."""
+        """Test performance benchmarks for implementation."""
         print("\n⚡ Testing Performance Benchmarks")
         print("=" * 40)
         
@@ -350,8 +350,8 @@ class TestPhase2Integration:
         print("✅ Performance benchmarks completed")
     
     def test_integration_with_spacy_phase1(self):
-        """Test integration with Phase 1.0 spaCy components."""
-        print("\n🔗 Testing Integration with Phase 1.0 spaCy")
+        """Test integration with spaCy components."""
+        print("\n🔗 Testing Integration with spaCy")
         print("=" * 50)
         
         # Test that spaCy analyzer is properly integrated
@@ -375,7 +375,7 @@ class TestPhase2Integration:
         print(f"   🔧 Is technical: {query_analysis.is_technical}")
         
         # Verify spaCy analysis quality
-        assert query_analysis.processing_time_ms < 50  # Phase 1.0 performance target
+        assert query_analysis.processing_time_ms < 50
         assert len(query_analysis.semantic_keywords) > 0
         assert query_analysis.complexity_score >= 0.0
         
@@ -400,11 +400,11 @@ class TestPhase2Integration:
             print(f"   📊 Average semantic relevance: {avg_semantic_score:.3f}")
             assert avg_semantic_score >= 0.0
         
-        print("✅ Phase 1.0 spaCy integration validated")
+        print("✅ spaCy integration validated")
     
     def test_complete_phase2_workflow(self):
-        """Test complete Phase 2.1 workflow end-to-end."""
-        print("\n🎯 Testing Complete Phase 2.1 Workflow")
+        """Test complete workflow end-to-end."""
+        print("\n🎯 Testing Complete Workflow")
         print("=" * 45)
         
         total_start_time = time.time()
@@ -466,7 +466,7 @@ class TestPhase2Integration:
             "relationships_created": stats['total_edges']
         }
         
-        print(f"\n📊 Phase 2.1 Performance Summary:")
+        print(f"\n📊 Performance Summary:")
         print(f"   ⏱️ Total workflow: {performance_metrics['total_workflow_time']:.2f}ms")
         print(f"   🏗️ Graph construction: {performance_metrics['graph_construction_time']:.2f}ms")
         print(f"   🔍 Average query: {performance_metrics['avg_query_time']:.2f}ms")
@@ -480,12 +480,12 @@ class TestPhase2Integration:
         assert performance_metrics['nodes_created'] >= 4  # Should create multiple nodes
         assert performance_metrics['relationships_created'] > 0  # Should create relationships
         
-        print("\n🎉 Phase 2.1 Complete Workflow Validation:")
+        print("\n🎉 Complete Workflow Validation:")
         print("   ✅ Knowledge graph construction")
         print("   ✅ Multi-strategy content discovery") 
         print("   ✅ Cross-document relationship analysis")
         print("   ✅ Performance benchmarks met")
-        print("   ✅ Integration with Phase 1.0 spaCy")
+        print("   ✅ Integration with spaCy")
         
         return performance_metrics
 
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     test_instance = TestPhase2Integration()
     test_instance.setup_method()
     
-    print("🚀 Phase 2.1 Knowledge Graph Integration Testing")
+    print("🚀 Knowledge Graph Integration Testing")
     print("=" * 60)
     
     # Run all integration tests
@@ -509,6 +509,6 @@ if __name__ == "__main__":
     # Run complete workflow test
     performance_metrics = test_instance.test_complete_phase2_workflow()
     
-    print("\n🎉 Phase 2.1 Integration Testing Complete!")
+    print("\n🎉 Integration Testing Complete!")
     print(f"🏆 All tests passed with excellent performance metrics!")
     print(f"🚀 Ready for production deployment!") 

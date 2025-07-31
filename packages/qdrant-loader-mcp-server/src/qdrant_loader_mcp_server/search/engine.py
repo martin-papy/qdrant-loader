@@ -9,9 +9,7 @@ from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
 from .hybrid_search import HybridSearchEngine
 from .components.search_result_models import HybridSearchResult
-# 🔥 NEW: Import Phase 1.2 topic chaining components
 from .enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
-# 🔥 NEW: Import Phase 2.3 cross-document intelligence components
 from .enhanced.cross_document_intelligence import SimilarityMetric, ClusteringStrategy
 
 logger = LoggingConfig.get_logger(__name__)
@@ -292,7 +290,7 @@ class SearchEngine:
             raise
     
     # ============================================================================
-    # 🔥 Phase 1.3: Dynamic Faceted Search Interface Methods
+    # Dynamic Faceted Search Interface Methods
     # ============================================================================
     
     async def search_with_facets(
@@ -304,7 +302,7 @@ class SearchEngine:
         facet_filters: list[dict] | None = None,
     ) -> dict:
         """
-        🔥 Phase 1.3: Perform faceted search with dynamic facet generation.
+        Perform faceted search with dynamic facet generation.
         
         Returns search results with generated facets for interactive filtering.
         
@@ -393,7 +391,7 @@ class SearchEngine:
         limit: int = 20
     ) -> list[dict]:
         """
-        🔥 Phase 1.3: Get facet refinement suggestions based on current search.
+        Get facet refinement suggestions based on current search.
         
         Args:
             query: Current search query

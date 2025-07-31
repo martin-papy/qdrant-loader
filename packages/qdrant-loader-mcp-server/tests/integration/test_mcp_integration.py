@@ -175,7 +175,7 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
     # Check that we have the expected tools available
     assert "result" in tools_response
     assert "tools" in tools_response["result"]
-    assert len(tools_response["result"]["tools"]) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
+    assert len(tools_response["result"]["tools"]) == 8
 
 
 @pytest.mark.asyncio
@@ -223,7 +223,7 @@ async def test_search_empty_results(integration_handler):
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_cross_document_intelligence_mcp_integration(integration_handler):
-    """Test Phase 2.3 cross-document intelligence through MCP interface."""
+    """Test cross-document intelligence through MCP interface."""
     
     # Create mock search results with enough documents for analysis
     from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
@@ -417,12 +417,25 @@ async def test_find_complementary_content_mcp_integration(integration_handler):
     """Test complementary content finding through MCP interface."""
     
     with patch.object(integration_handler.search_engine, "find_complementary_content") as mock_complementary:
-        # Mock complementary content response
+        # Create a mock HybridSearchResult object for the document
+        from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
+        
+        mock_document = create_hybrid_search_result(
+            score=0.9,
+            text="Database security best practices including encryption, access control, and audit logging",
+            source_type="confluence",
+            source_title="Database Security Best Practices",
+            source_url="http://comp1.com",
+            document_id="comp1"  # Set document_id through kwargs
+        )
+        
+        # Mock complementary content response with correct structure
         mock_complementary.return_value = [
             {
-                "document": {"id": "comp1", "title": "Database Security Best Practices"},
-                "complementary_score": 0.9,
-                "recommendation_reasons": ["complements authentication with data security"]
+                "document": mock_document,
+                "relevance_score": 0.9,
+                "recommendation_reason": "complements authentication with data security",
+                "strategy": "mixed"
             }
         ]
         

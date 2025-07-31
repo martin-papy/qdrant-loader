@@ -1,4 +1,4 @@
-"""Integration tests for Phase 2.2 Intent-Aware Adaptive Search."""
+"""Integration tests for Intent-Aware Adaptive Search."""
 
 import pytest
 import asyncio
@@ -15,7 +15,7 @@ from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyze
 
 
 class TestPhase2_2Integration:
-    """Integration tests for Phase 2.2 Intent-Aware Adaptive Search."""
+    """Integration tests for Intent-Aware Adaptive Search."""
     
     @pytest.fixture
     def mock_qdrant_client(self):

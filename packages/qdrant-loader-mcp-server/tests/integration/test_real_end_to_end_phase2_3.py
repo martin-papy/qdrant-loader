@@ -1,5 +1,5 @@
 """
-Real End-to-End Integration Tests for Phase 2.3 Cross-Document Intelligence
+Real End-to-End Integration Tests for Cross-Document Intelligence
 
 These tests exercise the complete real implementation path:
 MCP Handler → SearchEngine → HybridSearchEngine → CrossDocumentIntelligenceEngine
@@ -104,7 +104,7 @@ def create_generic_test_documents() -> List[HybridSearchResult]:
 
 
 class TestRealEndToEndPhase2_3:
-    """Real end-to-end tests for Phase 2.3 Cross-Document Intelligence."""
+    """Real end-to-end tests for Cross-Document Intelligence."""
 
     @pytest.fixture
     def mock_qdrant_client(self):

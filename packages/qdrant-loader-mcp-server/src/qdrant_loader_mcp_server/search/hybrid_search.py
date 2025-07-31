@@ -79,8 +79,8 @@ class HybridSearchEngine:
             dense_vector_name: Name of the dense vector field
             sparse_vector_name: Name of the sparse vector field
             alpha: Weight for dense search (1-alpha for sparse search)
-            knowledge_graph: Optional knowledge graph for Phase 2.1 integration
-            enable_intent_adaptation: Enable Phase 2.2 intent-aware adaptive search
+            knowledge_graph: Optional knowledge graph for integration
+            enable_intent_adaptation: Enable intent-aware adaptive search
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client
@@ -132,7 +132,7 @@ class HybridSearchEngine:
         if self.enable_intent_adaptation:
             self.intent_classifier = IntentClassifier(self.spacy_analyzer)
             self.adaptive_strategy = AdaptiveSearchStrategy(self.knowledge_graph)
-            logger.info("🔥 Phase 2.2: Intent-aware adaptive search ENABLED")
+            logger.info("Intent-aware adaptive search ENABLED")
         else:
             self.intent_classifier = None
             self.adaptive_strategy = None
@@ -144,11 +144,11 @@ class HybridSearchEngine:
             self.knowledge_graph
         )
         self._topic_chains_initialized = False
-        logger.info("🔥 Phase 1.2: Topic-driven search chaining ENABLED")
+        logger.info("Topic-driven search chaining ENABLED")
         
         # Dynamic faceted search interface
         self.faceted_search_engine = FacetedSearchEngine()
-        logger.info("🔥 Phase 1.3: Dynamic faceted search interface ENABLED")
+        logger.info("Dynamic faceted search interface ENABLED")
         
         # Cross-document intelligence
         self.cross_document_engine = CrossDocumentIntelligenceEngine(
