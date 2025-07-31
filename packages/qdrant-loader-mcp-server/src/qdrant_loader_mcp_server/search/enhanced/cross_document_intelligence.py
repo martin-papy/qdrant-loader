@@ -29,6 +29,7 @@ from datetime import datetime
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
 from ..models import SearchResult
+from ..components.search_result_models import HybridSearchResult
 from .knowledge_graph import DocumentKnowledgeGraph, NodeType, TraversalStrategy
 
 logger = LoggingConfig.get_logger(__name__)
@@ -885,8 +886,8 @@ class ComplementaryContentFinder:
         self.knowledge_graph = knowledge_graph
         self.logger = LoggingConfig.get_logger(__name__)
         
-    def find_complementary_content(self, target_doc: SearchResult, 
-                                 candidate_docs: List[SearchResult],
+    def find_complementary_content(self, target_doc: HybridSearchResult, 
+                                 candidate_docs: List[HybridSearchResult],
                                  max_recommendations: int = 5) -> ComplementaryContent:
         """Find complementary content for a target document."""
         start_time = time.time()
@@ -932,8 +933,8 @@ class ComplementaryContentFinder:
             recommendation_strategy="mixed"
         )
     
-    def _calculate_complementary_score(self, target_doc: SearchResult, 
-                                     candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _calculate_complementary_score(self, target_doc: HybridSearchResult, 
+                                     candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Calculate how complementary a candidate document is to the target.
         
         Redesigned algorithm that prioritizes intra-project relationships while
@@ -969,7 +970,7 @@ class ComplementaryContentFinder:
         self.logger.info(f"Final complementary score: {score:.3f} for {candidate_doc.source_title} - {reason}")
         return score, reason
     
-    def _score_intra_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _score_intra_project_complementary(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Score complementary relationships within the same project."""
         factors = []
         
@@ -1000,7 +1001,7 @@ class ComplementaryContentFinder:
         
         return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
-    def _score_inter_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _score_inter_project_complementary(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Score complementary relationships between different projects."""
         factors = []
         
@@ -1028,7 +1029,7 @@ class ComplementaryContentFinder:
         
         return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
-    def _calculate_weighted_score(self, factors: List[Tuple[float, str]], target_doc: SearchResult = None, candidate_doc: SearchResult = None) -> Tuple[float, str]:
+    def _calculate_weighted_score(self, factors: List[Tuple[float, str]], target_doc: HybridSearchResult = None, candidate_doc: HybridSearchResult = None) -> Tuple[float, str]:
         """Calculate weighted score from multiple factors."""
         if not factors:
             if target_doc and candidate_doc:
@@ -1050,7 +1051,7 @@ class ComplementaryContentFinder:
             
         return final_score, primary_reason
     
-    def _is_requirements_implementation_pair(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+    def _is_requirements_implementation_pair(self, doc1: HybridSearchResult, doc2: HybridSearchResult) -> bool:
         """Detect if documents form a requirements -> implementation chain."""
         req_keywords = ["requirements", "specification", "user story", "feature", "functional"]
         impl_keywords = ["implementation", "technical", "architecture", "api", "code", "development"]
@@ -1119,13 +1120,13 @@ class ComplementaryContentFinder:
         
         return False
     
-    def _has_different_document_types(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+    def _has_different_document_types(self, doc1: HybridSearchResult, doc2: HybridSearchResult) -> bool:
         """Check if documents are of different types based on content and title."""
         type1 = self._classify_document_type(doc1)
         type2 = self._classify_document_type(doc2)
         return type1 != type2
     
-    def _classify_document_type(self, doc: SearchResult) -> str:
+    def _classify_document_type(self, doc: HybridSearchResult) -> str:
         """Classify document as: user_story, technical_spec, architecture, compliance, testing, etc."""
         title = doc.source_title.lower()
         
@@ -1254,7 +1255,7 @@ class ComplementaryContentFinder:
         
         return shared_tech
     
-    def _enhanced_fallback_scoring(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _enhanced_fallback_scoring(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Enhanced fallback when advanced algorithms don't apply."""
         fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
         if fallback_score > 0:
@@ -1637,7 +1638,7 @@ class CrossDocumentIntelligenceEngine:
         self.complementary_finder = ComplementaryContentFinder(self.similarity_calculator, knowledge_graph)
         self.conflict_detector = ConflictDetector(spacy_analyzer)
         
-    def analyze_document_relationships(self, documents: List[SearchResult]) -> Dict[str, Any]:
+    def analyze_document_relationships(self, documents: List[HybridSearchResult]) -> Dict[str, Any]:
         """Perform comprehensive cross-document relationship analysis."""
         start_time = time.time()
         

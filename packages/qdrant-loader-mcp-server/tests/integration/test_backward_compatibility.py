@@ -4,7 +4,7 @@ from unittest.mock import Mock, AsyncMock
 import pytest
 from qdrant_loader_mcp_server.mcp import MCPHandler
 from qdrant_loader_mcp_server.transport import HTTPTransportHandler
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def mock_search_engine():
     
     # Default sample results
     sample_results = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.9,
             text="Sample document about testing",
             source_title="Test Document",
@@ -142,7 +142,7 @@ class TestOldClientToolUsage:
         """Test that search functionality works for old clients."""
         # Setup mocks
         mock_search_engine.search.return_value = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Test result content",
                 source_title="Test Title",
@@ -252,7 +252,7 @@ class TestResponseFormatCompatibility:
         """Test that content array format is preserved for compatibility."""
         # Setup mock
         mock_search_engine.search.return_value = [
-            SearchResult(score=0.9, text="Test content", source_title="Test", source_type="doc")
+            create_hybrid_search_result(score=0.9, text="Test content", source_title="Test", source_type="doc")
         ]
         
         request = {

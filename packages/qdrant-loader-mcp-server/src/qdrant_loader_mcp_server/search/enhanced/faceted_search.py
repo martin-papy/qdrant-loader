@@ -1,9 +1,7 @@
 """
-🔥 Phase 1.3: Dynamic Faceted Search Interface
-
 This module provides intelligent faceted search capabilities that leverage the rich
 metadata extracted during document ingestion. It dynamically generates facets from
-SearchResult metadata and provides filtering and refinement capabilities.
+HybridSearchResult metadata and provides filtering and refinement capabilities.
 
 Key Features:
 - Dynamic facet generation from metadata
@@ -20,7 +18,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from datetime import datetime
 
-from ..models import SearchResult
+from ..components.search_result_models import HybridSearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +108,7 @@ class FacetFilter:
     values: List[str]
     operator: str = "OR"  # "OR", "AND"
     
-    def matches(self, result: SearchResult) -> bool:
+    def matches(self, result: HybridSearchResult) -> bool:
         """Check if a search result matches this facet filter."""
         result_values = self._extract_values_from_result(result)
         
@@ -119,7 +117,7 @@ class FacetFilter:
         else:  # AND
             return all(value in result_values for value in self.values)
     
-    def _extract_values_from_result(self, result: SearchResult) -> List[str]:
+    def _extract_values_from_result(self, result: HybridSearchResult) -> List[str]:
         """Extract values for this facet type from a search result."""
         if self.facet_type == FacetType.CONTENT_TYPE:
             return [result.source_type] if result.source_type else []
@@ -183,7 +181,7 @@ class FacetFilter:
 class FacetedSearchResults:
     """Container for faceted search results with facets and filtered results."""
     
-    results: List[SearchResult]
+    results: List[HybridSearchResult]
     facets: List[Facet]
     applied_filters: List[FacetFilter]
     total_results: int
@@ -203,7 +201,7 @@ class DynamicFacetGenerator:
     """
     🔥 Phase 1.3: Dynamic Facet Generator
     
-    Analyzes SearchResult metadata to dynamically generate relevant facets
+    Analyzes HybridSearchResult metadata to dynamically generate relevant facets
     for filtering and exploration. Leverages the rich metadata infrastructure
     from previous phases.
     """
@@ -263,7 +261,7 @@ class DynamicFacetGenerator:
             }
         }
     
-    def generate_facets(self, search_results: List[SearchResult]) -> List[Facet]:
+    def generate_facets(self, search_results: List[HybridSearchResult]) -> List[Facet]:
         """
         Generate dynamic facets from search results metadata.
         
@@ -297,7 +295,7 @@ class DynamicFacetGenerator:
     def _generate_facet(
         self, 
         facet_type: FacetType, 
-        search_results: List[SearchResult],
+        search_results: List[HybridSearchResult],
         config: Dict[str, Any]
     ) -> Optional[Facet]:
         """Generate a specific facet from search results."""
@@ -344,7 +342,7 @@ class DynamicFacetGenerator:
             sort_by="count"
         )
     
-    def _extract_facet_values(self, result: SearchResult, facet_type: FacetType) -> List[str]:
+    def _extract_facet_values(self, result: HybridSearchResult, facet_type: FacetType) -> List[str]:
         """Extract values for a specific facet type from a search result."""
         
         if facet_type == FacetType.CONTENT_TYPE:
@@ -528,7 +526,7 @@ class DynamicFacetGenerator:
     def _sort_facets_by_priority(
         self, 
         facets: List[Facet], 
-        search_results: List[SearchResult]
+        search_results: List[HybridSearchResult]
     ) -> List[Facet]:
         """Sort facets by priority/usefulness for the current result set."""
         
@@ -571,9 +569,9 @@ class FacetedSearchEngine:
     
     def apply_facet_filters(
         self, 
-        results: List[SearchResult],
+        results: List[HybridSearchResult],
         filters: List[FacetFilter]
-    ) -> List[SearchResult]:
+    ) -> List[HybridSearchResult]:
         """
         Apply facet filters to search results.
         
@@ -605,7 +603,7 @@ class FacetedSearchEngine:
     
     def generate_faceted_results(
         self,
-        results: List[SearchResult],
+        results: List[HybridSearchResult],
         applied_filters: Optional[List[FacetFilter]] = None
     ) -> FacetedSearchResults:
         """
@@ -655,7 +653,7 @@ class FacetedSearchEngine:
     
     def suggest_refinements(
         self,
-        current_results: List[SearchResult],
+        current_results: List[HybridSearchResult],
         current_filters: List[FacetFilter]
     ) -> List[Dict[str, Any]]:
         """

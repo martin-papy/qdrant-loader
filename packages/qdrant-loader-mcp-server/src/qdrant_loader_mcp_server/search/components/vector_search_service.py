@@ -91,21 +91,28 @@ class VectorSearchService:
             score_threshold=self.min_score,
             search_params=search_params,
             query_filter=self._build_filter(project_ids),
+            with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
         )
 
-        return [
-            {
+        extracted_results = []
+        for hit in results:
+            extracted = {
                 "score": hit.score,
                 "text": hit.payload.get("content", "") if hit.payload else "",
                 "metadata": hit.payload.get("metadata", {}) if hit.payload else {},
-                "source_type": (
-                    hit.payload.get("source_type", "unknown")
-                    if hit.payload
-                    else "unknown"
-                ),
+                "source_type": hit.payload.get("source_type", "unknown") if hit.payload else "unknown",
+                # Extract fields directly from Qdrant payload
+                "title": hit.payload.get("title", "") if hit.payload else "",
+                "url": hit.payload.get("url", "") if hit.payload else "",
+                "document_id": hit.payload.get("document_id", "") if hit.payload else "",
+                "source": hit.payload.get("source", "") if hit.payload else "",
+                "created_at": hit.payload.get("created_at", "") if hit.payload else "",
+                "updated_at": hit.payload.get("updated_at", "") if hit.payload else "",
             }
-            for hit in results
-        ]
+            
+            extracted_results.append(extracted)
+            
+        return extracted_results
 
     def _build_filter(
         self, project_ids: list[str] | None = None

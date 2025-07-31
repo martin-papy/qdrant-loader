@@ -3,7 +3,7 @@
 from unittest.mock import Mock, AsyncMock
 import pytest
 from qdrant_loader_mcp_server.mcp import MCPHandler
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def mcp_handler(mock_search_engine, mock_query_processor):
 def sample_search_results():
     """Create sample search results for testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.95,
             text="This is a test document about authentication.",
             source_title="Authentication Guide",
@@ -42,7 +42,7 @@ def sample_search_results():
             created_at="2024-01-01T00:00:00Z",
             last_modified="2024-01-02T00:00:00Z"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.87,
             text="API security best practices document.",
             source_title="Security Best Practices",
@@ -131,8 +131,11 @@ class TestStructuredOutputFormat:
             metadata = result_item["metadata"]
             assert "file_path" in metadata
             assert "project_id" in metadata
-            assert "created_at" in metadata
-            assert "last_modified" in metadata
+            
+            # Check root level fields (moved from metadata as per user request)
+            assert "created_at" in result_item
+            assert "updated_at" in result_item
+            assert "document_id" in result_item
 
     @pytest.mark.asyncio
     async def test_query_context_in_structured_output(self, mcp_handler, mock_query_processor, mock_search_engine, sample_search_results):
@@ -353,7 +356,7 @@ class TestStructuredOutputErrorHandling:
         """Test structured output when search results have missing metadata."""
         # Create results with missing metadata
         incomplete_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Test document",
                 source_title="Test Title",

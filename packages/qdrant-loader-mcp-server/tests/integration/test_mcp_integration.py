@@ -226,18 +226,18 @@ async def test_cross_document_intelligence_mcp_integration(integration_handler):
     """Test Phase 2.3 cross-document intelligence through MCP interface."""
     
     # Create mock search results with enough documents for analysis
-    from qdrant_loader_mcp_server.search.models import SearchResult
+    from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
     
     mock_documents = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.9, text="Authentication system using JWT tokens for secure access control",
             source_type="git", source_title="Auth Module", source_url="http://test1.com"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.8, text="User authentication flow with OAuth integration for external providers",
             source_type="confluence", source_title="Auth Guide", source_url="http://test2.com"  
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.7, text="Security protocols for API authentication and authorization mechanisms",
             source_type="jira", source_title="Security Ticket", source_url="http://test3.com"
         )

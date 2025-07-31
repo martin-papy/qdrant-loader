@@ -3,7 +3,7 @@
 from typing import Any
 
 from ..search.engine import SearchEngine
-from ..search.models import SearchResult
+from ..search.components.search_result_models import HybridSearchResult
 from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
@@ -157,11 +157,11 @@ class SearchHandler:
                 "Query processed successfully", processed_query=processed_query
             )
 
-            # Perform the search (Confluence only for hierarchy)
+            # Perform the search (All source types for hierarchy - localfiles have folder structure)
             logger.debug("Executing hierarchy search in Qdrant")
             results = await self.search_engine.search(
                 query=processed_query["query"],
-                source_types=["confluence"],  # Only search Confluence for hierarchy
+                source_types=["confluence", "localfile"],  # Include localfiles with folder structure
                 limit=limit * 2,  # Get more results to filter
             )
 
@@ -321,33 +321,50 @@ class SearchHandler:
             )
 
     def _apply_hierarchy_filters(
-        self, results: list[SearchResult], hierarchy_filter: dict[str, Any]
-    ) -> list[SearchResult]:
+        self, results: list[HybridSearchResult], hierarchy_filter: dict[str, Any]
+    ) -> list[HybridSearchResult]:
         """Apply hierarchy-based filters to search results."""
         filtered_results = []
 
         for result in results:
-            # Skip non-Confluence results
-            if result.source_type != "confluence":
+            # Only process sources that have hierarchical structure (confluence, localfile)
+            if result.source_type not in ["confluence", "localfile"]:
                 continue
 
-            # Apply depth filter
+            # Apply depth filter - use folder depth for localfiles
             if "depth" in hierarchy_filter:
-                if result.depth != hierarchy_filter["depth"]:
+                # For localfiles, calculate depth from file_path folder structure
+                if result.source_type == "localfile" and result.file_path:
+                    folder_depth = len([p for p in result.file_path.split('/') if p]) - 1  # Exclude filename
+                    if folder_depth != hierarchy_filter["depth"]:
+                        continue
+                elif hasattr(result, 'depth') and result.depth != hierarchy_filter["depth"]:
                     continue
 
-            # Apply parent title filter
+            # Apply parent title filter - for localfiles use parent folder
             if "parent_title" in hierarchy_filter:
-                if result.parent_title != hierarchy_filter["parent_title"]:
+                if result.source_type == "localfile" and result.file_path:
+                    # Get parent folder name
+                    path_parts = [p for p in result.file_path.split('/') if p]
+                    parent_folder = path_parts[-2] if len(path_parts) > 1 else ""
+                    if parent_folder != hierarchy_filter["parent_title"]:
+                        continue
+                elif hasattr(result, 'parent_title') and result.parent_title != hierarchy_filter["parent_title"]:
                     continue
 
             # Apply root only filter
             if hierarchy_filter.get("root_only", False):
-                if not result.is_root_document():
+                # For localfiles, check if it's in the root folder
+                if result.source_type == "localfile" and result.file_path:
+                    path_parts = [p for p in result.file_path.split('/') if p]
+                    is_root = len(path_parts) <= 2  # Root folder + filename
+                    if not is_root:
+                        continue
+                elif not result.is_root_document():
                     continue
 
-            # Apply has children filter
-            if "has_children" in hierarchy_filter:
+            # Apply has children filter - skip for localfiles as we don't track child relationships
+            if "has_children" in hierarchy_filter and result.source_type != "localfile":
                 if result.has_children() != hierarchy_filter["has_children"]:
                     continue
 
@@ -356,14 +373,18 @@ class SearchHandler:
         return filtered_results
 
     def _organize_by_hierarchy(
-        self, results: list[SearchResult]
-    ) -> dict[str, list[SearchResult]]:
+        self, results: list[HybridSearchResult]
+    ) -> dict[str, list[HybridSearchResult]]:
         """Organize search results by hierarchy structure."""
         hierarchy_groups = {}
 
         for result in results:
             # Group by root ancestor or use the document title if it's a root
-            if result.breadcrumb_text:
+            if result.source_type == "localfile" and result.file_path:
+                # For localfiles, use top-level folder as root
+                path_parts = [p for p in result.file_path.split('/') if p]
+                root_title = path_parts[0] if path_parts else "Root"
+            elif result.breadcrumb_text:
                 # Extract the root from breadcrumb
                 breadcrumb_parts = result.breadcrumb_text.split(" > ")
                 root_title = (
@@ -378,13 +399,20 @@ class SearchHandler:
 
         # Sort within each group by depth and title
         for group in hierarchy_groups.values():
-            group.sort(key=lambda x: (x.depth or 0, x.source_title))
+            def sort_key(x):
+                # Calculate depth for localfiles from folder structure
+                if x.source_type == "localfile" and x.file_path:
+                    folder_depth = len([p for p in x.file_path.split('/') if p]) - 1
+                    return (folder_depth, x.source_title)
+                else:
+                    return (x.depth or 0, x.source_title)
+            group.sort(key=sort_key)
 
         return hierarchy_groups
 
     def _apply_attachment_filters(
-        self, results: list[SearchResult], attachment_filter: dict[str, Any]
-    ) -> list[SearchResult]:
+        self, results: list[HybridSearchResult], attachment_filter: dict[str, Any]
+    ) -> list[HybridSearchResult]:
         """Apply attachment-based filters to search results."""
         filtered_results = []
 

@@ -8,7 +8,7 @@ from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi  # For test compatibility
 
 from ..utils.logging import LoggingConfig
-from .models import SearchResult
+
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 
 # Enhanced search components
@@ -166,7 +166,7 @@ class HybridSearchEngine:
         # Enhanced parameters
         session_context: dict[str, Any] | None = None,
         behavioral_context: list[str] | None = None,
-    ) -> list[SearchResult]:
+    ) -> list[HybridSearchResult]:
         """Perform hybrid search combining vector and keyword search.
 
         Args:
@@ -267,94 +267,14 @@ class HybridSearchEngine:
                 self.result_combiner.keyword_weight = original_keyword_weight  
                 self.result_combiner.min_score = original_min_score
 
-            # Convert HybridSearchResult to SearchResult for backward compatibility
-            return [self._convert_to_search_result(result) for result in combined_results]
+            # 🔥 CLEAN: Return HybridSearchResult directly (no data loss!)
+            return combined_results
 
         except Exception as e:
             self.logger.error("Error in hybrid search", error=str(e), query=query)
             raise
 
-    def _convert_to_search_result(self, hybrid_result: HybridSearchResult) -> SearchResult:
-        """Convert HybridSearchResult to SearchResult for backward compatibility."""
-        return SearchResult(
-            score=hybrid_result.score,
-            text=hybrid_result.text,
-            source_type=hybrid_result.source_type,
-            source_title=hybrid_result.source_title,
-            source_url=hybrid_result.source_url,
-            file_path=hybrid_result.file_path,
-            repo_name=hybrid_result.repo_name,
-            
-            # Project information
-            project_id=hybrid_result.project_id,
-            project_name=hybrid_result.project_name,
-            project_description=hybrid_result.project_description,
-            collection_name=hybrid_result.collection_name,
-            
-            # Hierarchy and attachment info
-            parent_id=hybrid_result.parent_id,
-            parent_title=hybrid_result.parent_title,
-            breadcrumb_text=hybrid_result.breadcrumb_text,
-            depth=hybrid_result.depth,
-            children_count=hybrid_result.children_count,
-            hierarchy_context=hybrid_result.hierarchy_context,
-            is_attachment=hybrid_result.is_attachment,
-            parent_document_id=hybrid_result.parent_document_id,
-            parent_document_title=hybrid_result.parent_document_title,
-            attachment_id=hybrid_result.attachment_id,
-            original_filename=hybrid_result.original_filename,
-            file_size=hybrid_result.file_size,
-            mime_type=hybrid_result.mime_type,
-            attachment_author=hybrid_result.attachment_author,
-            attachment_context=hybrid_result.attachment_context,
-            
-            # Section-level intelligence
-            section_title=hybrid_result.section_title,
-            section_type=hybrid_result.section_type,
-            section_level=hybrid_result.section_level,
-            section_anchor=hybrid_result.section_anchor,
-            section_breadcrumb=hybrid_result.section_breadcrumb,
-            section_depth=hybrid_result.section_depth,
-            
-            # Content analysis
-            has_code_blocks=hybrid_result.has_code_blocks,
-            has_tables=hybrid_result.has_tables,
-            has_images=hybrid_result.has_images,
-            has_links=hybrid_result.has_links,
-            word_count=hybrid_result.word_count,
-            char_count=hybrid_result.char_count,
-            estimated_read_time=hybrid_result.estimated_read_time,
-            paragraph_count=hybrid_result.paragraph_count,
-            
-            # Semantic analysis
-            entities=hybrid_result.entities,
-            topics=hybrid_result.topics,
-            key_phrases=hybrid_result.key_phrases,
-            pos_tags=hybrid_result.pos_tags,
-            
-            # Navigation context
-            previous_section=hybrid_result.previous_section,
-            next_section=hybrid_result.next_section,
-            sibling_sections=hybrid_result.sibling_sections,
-            subsections=hybrid_result.subsections,
-            document_hierarchy=hybrid_result.document_hierarchy,
-            
-            # Chunking context
-            chunk_index=hybrid_result.chunk_index,
-            total_chunks=hybrid_result.total_chunks,
-            chunking_strategy=hybrid_result.chunking_strategy,
-            
-            # File conversion intelligence
-            original_file_type=hybrid_result.original_file_type,
-            conversion_method=hybrid_result.conversion_method,
-            is_excel_sheet=hybrid_result.is_excel_sheet,
-            is_converted=hybrid_result.is_converted,
-            
-            # Cross-references and enhanced context
-            cross_references=hybrid_result.cross_references,
-            topic_analysis=hybrid_result.topic_analysis,
-            content_type_context=hybrid_result.content_type_context,
-        )
+
 
     # ============================================================================
     # Topic Search Chain Methods
@@ -408,7 +328,7 @@ class HybridSearchEngine:
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> dict[str, list[SearchResult]]:
+    ) -> dict[str, list[HybridSearchResult]]:
         """Execute searches for all links in a topic chain."""
         self.logger.debug(
             "Executing topic chain search",
@@ -568,7 +488,7 @@ class HybridSearchEngine:
     
     async def analyze_document_relationships(
         self,
-        documents: list[SearchResult]
+        documents: list[HybridSearchResult]
     ) -> dict[str, Any]:
         """Perform comprehensive cross-document relationship analysis."""
         try:
@@ -579,8 +499,8 @@ class HybridSearchEngine:
     
     async def find_similar_documents(
         self,
-        target_document: SearchResult,
-        documents: list[SearchResult],
+        target_document: HybridSearchResult,
+        documents: list[HybridSearchResult],
         similarity_metrics: list[SimilarityMetric] = None,
         max_similar: int = 5
     ) -> list[dict[str, Any]]:
@@ -616,7 +536,7 @@ class HybridSearchEngine:
     
     async def detect_document_conflicts(
         self,
-        documents: list[SearchResult]
+        documents: list[HybridSearchResult]
     ) -> dict[str, Any]:
         """Detect conflicts between documents."""
         try:
@@ -632,8 +552,8 @@ class HybridSearchEngine:
     
     async def find_complementary_content(
         self,
-        target_document: SearchResult,
-        documents: list[SearchResult],
+        target_document: HybridSearchResult,
+        documents: list[HybridSearchResult],
         max_recommendations: int = 5
     ) -> list[dict[str, Any]]:
         """Find content that complements the target document."""
@@ -667,7 +587,7 @@ class HybridSearchEngine:
     
     async def cluster_documents(
         self,
-        documents: list[SearchResult],
+        documents: list[HybridSearchResult],
         strategy: ClusteringStrategy = ClusteringStrategy.MIXED_FEATURES,
         max_clusters: int = 10,
         min_cluster_size: int = 2
@@ -681,7 +601,7 @@ class HybridSearchEngine:
                 min_cluster_size
             )
             
-            # Convert to serializable format with full SearchResult objects
+            # Convert to serializable format with full HybridSearchResult objects
             doc_id_to_result = {}
             for doc in documents:
                 doc_id = f"{doc.source_type}:{doc.source_title}"
@@ -870,7 +790,7 @@ class HybridSearchEngine:
     
     def suggest_facet_refinements(
         self,
-        current_results: list[SearchResult],
+        current_results: list[HybridSearchResult],
         current_filters: list[FacetFilter]
     ) -> list[dict[str, Any]]:
         """Backward compatibility: Delegate to faceted search engine."""
@@ -881,7 +801,7 @@ class HybridSearchEngine:
     
     def generate_facets(
         self,
-        results: list[SearchResult]
+        results: list[HybridSearchResult]
     ) -> list:
         """Backward compatibility: Delegate to faceted search engine."""
         return self.faceted_search_engine.facet_generator.generate_facets(results)

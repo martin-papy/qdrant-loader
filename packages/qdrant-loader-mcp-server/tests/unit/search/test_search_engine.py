@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ async def test_search_engine_search(
     # Mock hybrid search
     mock_hybrid_search = AsyncMock()
     mock_results = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="git",

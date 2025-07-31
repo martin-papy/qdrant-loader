@@ -13,7 +13,7 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.enhanced.faceted_search import (
@@ -44,7 +44,7 @@ def mock_openai_client():
 def sample_search_results():
     """Sample search results with diverse metadata for testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.95,
             text="OAuth 2.0 implementation guide with code examples",
             source_type="confluence",
@@ -64,7 +64,7 @@ def sample_search_results():
             estimated_read_time=8,
             word_count=1200
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.89,
             text="Database schema design for user management",
             source_type="localfile",
@@ -84,7 +84,7 @@ def sample_search_results():
             estimated_read_time=5,
             word_count=800
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.83,
             text="Frontend React components for authentication UI",
             source_type="git",
@@ -104,7 +104,7 @@ def sample_search_results():
             estimated_read_time=12,
             word_count=2100
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.78,
             text="API documentation for user authentication endpoints",
             source_type="confluence",
@@ -124,7 +124,7 @@ def sample_search_results():
             estimated_read_time=6,
             word_count=900
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.72,
             text="Security best practices for authentication systems",
             source_type="localfile",
@@ -493,7 +493,7 @@ class TestPhase13PerformanceIntegration:
         # Create 200 varied search results
         large_results = []
         for i in range(200):
-            result = SearchResult(
+            result = create_hybrid_search_result(
                 score=0.8 - (i * 0.001),  # Decreasing scores
                 text=f"Test document {i} with authentication content",
                 source_type=["confluence", "localfile", "git"][i % 3],
@@ -538,7 +538,7 @@ class TestPhase13PerformanceIntegration:
         # Create test dataset
         large_results = []
         for i in range(500):
-            result = SearchResult(
+            result = create_hybrid_search_result(
                 score=0.8,
                 text=f"Content {i}",
                 source_type=["confluence", "localfile"][i % 2],

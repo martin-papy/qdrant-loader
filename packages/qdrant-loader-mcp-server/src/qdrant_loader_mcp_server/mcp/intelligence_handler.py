@@ -96,15 +96,22 @@ class IntelligenceHandler:
             if "complementary_content" in analysis_results:
                 complementary = analysis_results["complementary_content"]
                 comp_count = 0
-                for doc_id, recommendations in complementary.items():
-                    for rec in recommendations[:2]:  # Limit to top 2 per document
+                for doc_id, complementary_content in complementary.items():
+                    # Handle ComplementaryContent object properly
+                    if hasattr(complementary_content, 'get_top_recommendations'):
+                        recommendations = complementary_content.get_top_recommendations(2)
+                    else:
+                        recommendations = complementary_content[:2] if isinstance(complementary_content, list) else []
+                    
+                    for rec in recommendations:
                         if isinstance(rec, dict):
-                            target_doc = rec.get("target_doc", "Unknown")
-                            score = rec.get("score", 0.5)
-                            reason = rec.get("reason", "complementary content")
+                            # Use proper field names from ComplementaryContent.get_top_recommendations()
+                            target_doc_id = rec.get("document_id", "Unknown")
+                            score = rec.get("relevance_score", 0.5)
+                            reason = rec.get("recommendation_reason", "complementary content")
                             relationships.append({
                                 "document_1": doc_id,
-                                "document_2": target_doc,
+                                "document_2": target_doc_id,
                                 "relationship_type": "complementary",
                                 "score": score,
                                 "description": f"Complementary content: {reason}"
@@ -320,17 +327,26 @@ class IntelligenceHandler:
                     "structuredContent": {
                         "complementary_content": [
                             {
-                                "document_id": f"comp_{i}",
-                                "title": getattr(comp_doc.get("document", {}), "source_title", "") or "",
+                                # 🔥 Use actual document_id from HybridSearchResult
+                                "document_id": comp_doc.get("document", {}).document_id or f"comp_{i}",
+                                "title": comp_doc.get("document", {}).get_display_title() if hasattr(comp_doc.get("document", {}), "get_display_title") else getattr(comp_doc.get("document", {}), "source_title", ""),
                                 "content_preview": getattr(comp_doc.get("document", {}), "text", "")[:200] or "",
-                                "complementary_score": comp_doc.get("complementary_score", 0.0),
-                                "complementary_reason": comp_doc.get("reason", "Complementary content found"),
-                                "relationship_type": comp_doc.get("relationship_type", "related"),
+                                "complementary_score": comp_doc.get("relevance_score", 0.0),
+                                "complementary_reason": comp_doc.get("recommendation_reason", "Complementary content found"),
+                                "relationship_type": comp_doc.get("strategy", "related"),
                                 "source_type": getattr(comp_doc.get("document", {}), "source_type", "") or "",
+                                # 🔥 Root level fields (matching our search structure)
+                                "url": getattr(comp_doc.get("document", {}), "source_url", "") or "",
+                                "created_at": getattr(comp_doc.get("document", {}), "created_at", "") or "",
+                                "updated_at": getattr(comp_doc.get("document", {}), "last_modified", "") or "",
                                 "metadata": {
                                     "project_id": getattr(comp_doc.get("document", {}), "project_id", "") or "",
-                                    "created_date": "",
-                                    "author": ""
+                                    "project_name": getattr(comp_doc.get("document", {}), "project_name", "") or "",
+                                    "file_path": getattr(comp_doc.get("document", {}), "file_path", "") or "",
+                                    "file_type": getattr(comp_doc.get("document", {}), "file_type", "") or "",
+                                    "file_size": getattr(comp_doc.get("document", {}), "file_size", None),
+                                    "word_count": getattr(comp_doc.get("document", {}), "word_count", None),
+                                    "chunk_info": getattr(comp_doc.get("document", {}), "chunk_info", "") or ""
                                 }
                             }
                             for i, comp_doc in enumerate(complementary if complementary else [])

@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import Mock
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import ComplementaryContentFinder
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestComplementaryContentRedesign:
@@ -22,9 +22,9 @@ class TestComplementaryContentRedesign:
         )
     
     def create_test_document(self, title: str, project_id: str, source_type: str = "localfile", 
-                           topics: list = None, entities: list = None) -> SearchResult:
+                           topics: list = None, entities: list = None) -> HybridSearchResult:
         """Create a test document for testing."""
-        return SearchResult(
+        return create_hybrid_search_result(
             source_title=title,
             project_id=project_id,
             source_type=source_type,

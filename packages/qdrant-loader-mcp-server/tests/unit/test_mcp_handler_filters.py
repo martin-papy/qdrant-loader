@@ -3,7 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
 from qdrant_loader_mcp_server.mcp.formatters import MCPFormatters
 from qdrant_loader_mcp_server.mcp.protocol import MCPProtocol
@@ -15,7 +15,7 @@ def mock_search_results():
     results = []
 
     # Confluence root document with children
-    result1 = Mock(spec=SearchResult)
+    result1 = Mock(spec=HybridSearchResult)
     result1.source_type = "confluence"
     result1.source_title = "Developer Guide"
     result1.text = "Complete developer documentation"
@@ -41,7 +41,7 @@ def mock_search_results():
     results.append(result1)
 
     # Confluence child document
-    result2 = Mock(spec=SearchResult)
+    result2 = Mock(spec=HybridSearchResult)
     result2.source_type = "confluence"
     result2.source_title = "API Reference"
     result2.text = "API documentation and examples"
@@ -67,7 +67,7 @@ def mock_search_results():
     results.append(result2)
 
     # PDF attachment on Confluence document
-    result3 = Mock(spec=SearchResult)
+    result3 = Mock(spec=HybridSearchResult)
     result3.source_type = "confluence"
     result3.source_title = "project-requirements.pdf"
     result3.text = "Project requirements and specifications document"
@@ -93,7 +93,7 @@ def mock_search_results():
     results.append(result3)
 
     # Git result (non-Confluence)
-    result4 = Mock(spec=SearchResult)
+    result4 = Mock(spec=HybridSearchResult)
     result4.source_type = "git"
     result4.source_title = "README.md"
     result4.text = "Project readme file"
