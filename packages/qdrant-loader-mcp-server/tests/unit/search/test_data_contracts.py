@@ -17,7 +17,7 @@ from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import
     ClusteringStrategy,
     RelationshipType
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestDataStructureContracts:
@@ -207,12 +207,12 @@ class TestDataStructureContracts:
 
     def test_search_result_integration_contract(self):
         """
-        Test that SearchResult works with cross-document intelligence.
+        Test that HybridSearchResult works with cross-document intelligence.
         
         This validates the integration interface.
         """
-        # Create SearchResult instance
-        search_result = SearchResult(
+        # Create HybridSearchResult instance
+        search_result = create_hybrid_search_result(
             score=0.95,
             text="Test document content",
             source_type="documentation",
@@ -247,7 +247,7 @@ class TestDataStructureContracts:
         # Expected response format
         expected_response = [
             {
-                "document": SearchResult(
+                "document": create_hybrid_search_result(
                     score=0.95,
                     text="Test content",
                     source_type="documentation", 
@@ -274,7 +274,7 @@ class TestDataStructureContracts:
             assert "similarity_reasons" in doc_info
             
             # Validate types
-            assert isinstance(doc_info["document"], SearchResult)
+            assert isinstance(doc_info["document"], HybridSearchResult)
             assert isinstance(doc_info["similarity_score"], (int, float))
             assert isinstance(doc_info["metric_scores"], dict)
             assert isinstance(doc_info["similarity_reasons"], list)

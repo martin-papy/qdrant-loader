@@ -21,16 +21,16 @@ load_dotenv('tests/.env.test')
 
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.processor import QueryProcessor
 from qdrant_loader_mcp_server.config import QdrantConfig, OpenAIConfig
 
 # Generic test data (no confidential client information)
-def create_generic_test_documents() -> List[SearchResult]:
+def create_generic_test_documents() -> List[HybridSearchResult]:
     """Create generic test documents for cross-document intelligence testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.95,
             text="User authentication system implementation guide. Covers OAuth 2.0, JWT tokens, and session management for secure access control.",
             source_type="documentation",
@@ -44,7 +44,7 @@ def create_generic_test_documents() -> List[SearchResult]:
             key_phrases=["user authentication", "OAuth 2.0", "JWT tokens"],
             content_type_context="technical_guide"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.88,
             text="Security requirements for authentication systems. Includes password policies, multi-factor authentication, and compliance standards.",
             source_type="documentation",
@@ -58,7 +58,7 @@ def create_generic_test_documents() -> List[SearchResult]:
             key_phrases=["security requirements", "multi-factor authentication", "compliance"],
             content_type_context="requirements"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.82,
             text="Database design patterns for healthcare applications. Covers data modeling, relationships, and performance optimization strategies.",
             source_type="documentation", 
@@ -72,7 +72,7 @@ def create_generic_test_documents() -> List[SearchResult]:
             key_phrases=["database design", "data modeling", "performance optimization"],
             content_type_context="technical_guide"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.90,
             text="RESTful API design guidelines for healthcare platform. Authentication, rate limiting, and data validation best practices.",
             source_type="documentation",
@@ -86,7 +86,7 @@ def create_generic_test_documents() -> List[SearchResult]:
             key_phrases=["RESTful API", "authentication", "rate limiting"],
             content_type_context="guidelines"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.85,
             text="Mobile application requirements for patient engagement. User interface design, offline capabilities, and data synchronization.",
             source_type="requirements",

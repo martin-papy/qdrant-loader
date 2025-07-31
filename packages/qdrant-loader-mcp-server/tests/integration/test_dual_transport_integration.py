@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import pytest
 from qdrant_loader_mcp_server.mcp import MCPHandler
 from qdrant_loader_mcp_server.transport import HTTPTransportHandler
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def mock_search_engine():
     
     # Sample search results
     sample_results = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.92,
             text="Authentication is handled through OAuth 2.0 tokens.",
             source_title="Authentication Guide",
@@ -28,7 +28,7 @@ def mock_search_engine():
             created_at="2024-01-01T00:00:00Z",
             last_modified="2024-01-15T00:00:00Z"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.87,
             text="Security best practices for API development.",
             source_title="Security Guidelines",

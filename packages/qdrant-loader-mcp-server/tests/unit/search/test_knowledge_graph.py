@@ -18,7 +18,7 @@ from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     TraversalResult
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestKnowledgeGraph:
@@ -447,7 +447,7 @@ class TestGraphBuilder:
         
         # Create sample search results
         self.search_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="This document discusses API authentication and authorization methods.",
                 source="git",
@@ -476,7 +476,7 @@ class TestGraphBuilder:
                     }
                 }
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Security best practices for API development include proper authentication.",
                 source="confluence",
@@ -587,7 +587,7 @@ class TestDocumentKnowledgeGraph:
         
         # Mock search results
         self.search_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="API documentation for authentication",
                 source="git",

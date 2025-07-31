@@ -13,7 +13,7 @@ from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
 )
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestPhase2Integration:
@@ -31,7 +31,7 @@ class TestPhase2Integration:
         
         # Create sample search results with comprehensive metadata
         self.sample_search_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.95,
                 text="This document provides comprehensive API authentication guidelines for developers. It covers OAuth 2.0, JWT tokens, and best security practices for REST APIs.",
                 source_type="git",
@@ -47,7 +47,7 @@ class TestPhase2Integration:
                 depth=3,
                 hierarchy_context="Main authentication documentation"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.87,
                 text="Security best practices for API development include proper authentication, authorization, input validation, and rate limiting. OAuth 2.0 is recommended for most use cases.",
                 source_type="confluence",
@@ -62,7 +62,7 @@ class TestPhase2Integration:
                 depth=4,
                 hierarchy_context="Security guidelines for development"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.82,
                 text="OAuth 2.0 implementation examples with code samples for JavaScript, Python, and Java. Includes token management and refresh strategies.",
                 source_type="git",
@@ -78,7 +78,7 @@ class TestPhase2Integration:
                 depth=3,
                 hierarchy_context="Practical OAuth implementation examples"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.78,
                 text="JWT token structure and validation guide. Explains claims, signatures, and token lifecycle management for secure API access.",
                 source_type="confluence",

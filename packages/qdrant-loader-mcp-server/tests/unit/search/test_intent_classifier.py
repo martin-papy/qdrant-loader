@@ -13,7 +13,7 @@ from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
     TraversalStrategy,
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import QueryAnalysis
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestIntentType:

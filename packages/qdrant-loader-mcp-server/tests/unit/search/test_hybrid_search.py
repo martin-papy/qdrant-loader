@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -123,7 +123,7 @@ async def test_search_basic(hybrid_search):
     results = await hybrid_search.search("test query")
 
     assert len(results) > 0
-    assert isinstance(results[0], SearchResult)
+    assert isinstance(results[0], HybridSearchResult)
     assert results[0].score > 0
     assert results[0].text == "Test content 1"
     assert results[0].source_type == "git"

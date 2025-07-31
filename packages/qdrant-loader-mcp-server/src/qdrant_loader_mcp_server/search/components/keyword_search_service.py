@@ -55,15 +55,35 @@ class KeywordSearchService:
         documents = []
         metadata_list = []
         source_types = []
+        titles = []
+        urls = []
+        document_ids = []
+        sources = []
+        created_ats = []
+        updated_ats = []
 
         for point in scroll_results[0]:
             if point.payload:
                 content = point.payload.get("content", "")
                 metadata = point.payload.get("metadata", {})
                 source_type = point.payload.get("source_type", "unknown")
+                # Extract fields directly from Qdrant payload
+                title = point.payload.get("title", "")
+                url = point.payload.get("url", "")
+                document_id = point.payload.get("document_id", "")
+                source = point.payload.get("source", "")
+                created_at = point.payload.get("created_at", "")
+                updated_at = point.payload.get("updated_at", "")
+                
                 documents.append(content)
                 metadata_list.append(metadata)
                 source_types.append(source_type)
+                titles.append(title)
+                urls.append(url)
+                document_ids.append(document_id)
+                sources.append(source)
+                created_ats.append(created_at)
+                updated_ats.append(updated_at)
 
         if not documents:
             self.logger.warning("No documents found for keyword search")
@@ -77,16 +97,26 @@ class KeywordSearchService:
 
         top_indices = np.argsort(scores)[-limit:][::-1]
 
-        return [
-            {
-                "score": float(scores[idx]),
-                "text": documents[idx],
-                "metadata": metadata_list[idx],
-                "source_type": source_types[idx],
-            }
-            for idx in top_indices
-            if scores[idx] > 0
-        ]
+        results = []
+        for idx in top_indices:
+            if scores[idx] > 0:
+                result = {
+                    "score": float(scores[idx]),
+                    "text": documents[idx],
+                    "metadata": metadata_list[idx],
+                    "source_type": source_types[idx],
+                    # Include extracted fields from Qdrant payload
+                    "title": titles[idx],
+                    "url": urls[idx],
+                    "document_id": document_ids[idx],
+                    "source": sources[idx],
+                    "created_at": created_ats[idx],
+                    "updated_at": updated_ats[idx],
+                }
+                
+                results.append(result)
+        
+        return results
 
     def _build_filter(
         self, project_ids: list[str] | None = None

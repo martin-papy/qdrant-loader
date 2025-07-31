@@ -9,7 +9,7 @@ import os
 from unittest.mock import AsyncMock, MagicMock, patch
 from dotenv import load_dotenv
 
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
@@ -24,10 +24,10 @@ class TestComplementaryContentE2E:
 
     @pytest.fixture
     def sample_documents(self):
-        """Create a diverse set of real SearchResult documents for testing."""
+        """Create a diverse set of real HybridSearchResult documents for testing."""
         return [
             # Technical Architecture Document
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.95,
                 text="System architecture overview with microservices design patterns and API specifications.",
                 source_type="confluence",
@@ -44,7 +44,7 @@ class TestComplementaryContentE2E:
             ),
             
             # Business Requirements Document
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.90,
                 text="Business requirements for patient management features and user workflows.",
                 source_type="confluence",
@@ -61,7 +61,7 @@ class TestComplementaryContentE2E:
             ),
             
             # API Documentation (Different source type, shared entities)
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.85,
                 text="REST API documentation for patient data endpoints and authentication.",
                 source_type="git",
@@ -78,7 +78,7 @@ class TestComplementaryContentE2E:
             ),
             
             # Different Project but Related Domain
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.80,
                 text="User authentication and security implementation for web applications.",
                 source_type="git",
@@ -95,7 +95,7 @@ class TestComplementaryContentE2E:
             ),
             
             # User Stories (Business + Functional)
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.75,
                 text="User stories for healthcare professionals managing patient records.",
                 source_type="jira",
@@ -112,7 +112,7 @@ class TestComplementaryContentE2E:
             ),
             
             # Implementation Guide (Technical + Procedural)
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.70,
                 text="Step-by-step implementation guide for integrating healthcare APIs.",
                 source_type="confluence",
@@ -514,7 +514,7 @@ class TestComplementaryContentE2E:
         print(f"Fallback score: {fallback_score:.3f}")
         
         # Test with documents that should have no advanced relationships
-        minimal_doc = SearchResult(
+        minimal_doc = create_hybrid_search_result(
             score=0.5,
             text="Simple document with no special features.",
             source_type="confluence",

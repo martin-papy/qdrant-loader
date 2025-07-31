@@ -2,14 +2,14 @@
 
 from typing import Any
 
-from ..search.models import SearchResult
+from ..search.components.search_result_models import HybridSearchResult
 
 
 class MCPFormatters:
     """Response formatters for MCP server."""
 
     @staticmethod
-    def format_search_result(result: SearchResult) -> str:
+    def format_search_result(result: HybridSearchResult) -> str:
         """Format a search result for display."""
         formatted_result = f"Score: {result.score}\n"
         formatted_result += f"Text: {result.text}\n"
@@ -61,7 +61,7 @@ class MCPFormatters:
         return formatted_result
 
     @staticmethod
-    def format_attachment_search_result(result: SearchResult) -> str:
+    def format_attachment_search_result(result: HybridSearchResult) -> str:
         """Format an attachment search result for display."""
         formatted_result = f"Score: {result.score}\n"
         formatted_result += f"Text: {result.text}\n"
@@ -108,7 +108,7 @@ class MCPFormatters:
 
     @staticmethod
     def format_hierarchical_results(
-        organized_results: dict[str, list[SearchResult]]
+        organized_results: dict[str, list[HybridSearchResult]]
     ) -> str:
         """Format hierarchically organized results for display."""
         formatted_sections = []
@@ -284,19 +284,56 @@ class MCPFormatters:
         return formatted
 
     @staticmethod
-    def create_structured_search_results(results: list[SearchResult]) -> list[dict[str, Any]]:
-        """Create structured results for MCP 2025-06-18 compliance."""
+    def create_structured_search_results(results: list[HybridSearchResult]) -> list[dict[str, Any]]:
+        """Create structured results matching Qdrant document structure."""
         return [
             {
+                # 🔥 ROOT LEVEL FIELDS (matching Qdrant structure)
                 "score": result.score,
-                "title": result.source_title or "Untitled",
+                "document_id": result.document_id or "",
+                "title": result.get_display_title(),
                 "content": result.text,
                 "source_type": result.source_type,
+                "source": result.repo_name or "",
+                "url": result.source_url or "",
+                "created_at": result.created_at or "",
+                "updated_at": result.last_modified or "",
+                
+                # 🔥 NESTED METADATA (matching Qdrant structure)
                 "metadata": {
-                    "file_path": result.file_path or "",
+                    # Project information
                     "project_id": result.project_id or "",
-                    "created_at": getattr(result, 'created_at', '') or "",
-                    "last_modified": getattr(result, 'last_modified', '') or ""
+                    "project_name": result.project_name or "",
+                    "project_description": result.project_description or "",
+                    "collection_name": result.collection_name or "",
+                    
+                    # File information (from rich Qdrant metadata)
+                    "file_path": result.file_path or "",
+                    "file_name": result.original_filename or "",
+                    "file_type": result.original_file_type or "",
+                    "file_size": result.file_size,
+                    
+                    # Content analysis (from rich Qdrant metadata)
+                    "word_count": result.word_count,
+                    "char_count": result.char_count,
+                    "estimated_read_time": result.estimated_read_time,
+                    
+                    # Chunking information (from rich Qdrant metadata)
+                    "chunk_index": result.chunk_index,
+                    "total_chunks": result.total_chunks,
+                    "chunk_info": f"Chunk {result.chunk_index + 1}/{result.total_chunks}" if result.chunk_index is not None and result.total_chunks is not None else None,
+                    "chunking_strategy": result.chunking_strategy or "",
+                    
+                    # Enhanced context and analysis
+                    "hierarchy_context": result.get_hierarchy_info(),
+                    "content_analysis": result.get_content_info(),
+                    "semantic_analysis": result.get_semantic_info(),
+                    "section_context": result.get_section_context(),
+                    "attachment_info": result.get_attachment_info(),
+                    
+                    # Legacy fields for backward compatibility
+                    "is_attachment": result.is_attachment,
+                    "is_converted": result.is_converted,
                 }
             }
             for result in results
@@ -304,9 +341,9 @@ class MCPFormatters:
 
     @staticmethod
     def create_structured_hierarchy_results(
-        filtered_results: list[SearchResult], 
+        filtered_results: list[HybridSearchResult], 
         organize_by_hierarchy: bool,
-        organized_results: dict[str, list[SearchResult]] = None
+        organized_results: dict[str, list[HybridSearchResult]] = None
     ) -> dict[str, Any]:
         """Create structured content for hierarchy search MCP compliance."""
         structured_results = []
@@ -358,7 +395,7 @@ class MCPFormatters:
 
     @staticmethod
     def create_structured_attachment_results(
-        filtered_results: list[SearchResult], 
+        filtered_results: list[HybridSearchResult], 
         attachment_filter: dict[str, Any],
         include_parent_context: bool = True
     ) -> dict[str, Any]:

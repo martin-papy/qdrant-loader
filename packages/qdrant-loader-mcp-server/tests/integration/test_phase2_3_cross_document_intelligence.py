@@ -17,7 +17,7 @@ from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import
     RelationshipType
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from tests.fixtures.cross_document_test_data import (
     create_authentication_docs,
     create_database_docs,
@@ -303,7 +303,7 @@ class TestCrossDocumentIntelligenceIntegration:
         assert single_analysis["summary"]["total_documents"] == 1
         
         # Test with documents missing key fields
-        incomplete_doc = SearchResult(
+        incomplete_doc = create_hybrid_search_result(
             score=0.8,
             text="Basic document with minimal fields",
             source_type="confluence",

@@ -8,7 +8,7 @@ from qdrant_client import AsyncQdrantClient, models
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
 from .hybrid_search import HybridSearchEngine
-from .models import SearchResult
+from .components.search_result_models import HybridSearchResult
 # 🔥 NEW: Import Phase 1.2 topic chaining components
 from .enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
 # 🔥 NEW: Import Phase 2.3 cross-document intelligence components
@@ -90,7 +90,7 @@ class SearchEngine:
         source_types: list[str] | None = None,
         limit: int = 5,
         project_ids: list[str] | None = None,
-    ) -> list[SearchResult]:
+    ) -> list[HybridSearchResult]:
         """Search for documents using hybrid search.
 
         Args:
@@ -189,7 +189,7 @@ class SearchEngine:
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> dict[str, list[SearchResult]]:
+    ) -> dict[str, list[HybridSearchResult]]:
         """🔥 NEW: Execute searches for all links in a topic chain.
         
         Args:
@@ -240,7 +240,7 @@ class SearchEngine:
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> dict[str, list[SearchResult]]:
+    ) -> dict[str, list[HybridSearchResult]]:
         """🔥 NEW: Combined method to generate and execute a topic search chain.
         
         Args:
