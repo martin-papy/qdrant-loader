@@ -5,13 +5,9 @@ without mocks, testing the full integration of all components.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from qdrant_loader.config import Settings, GlobalConfig
 from qdrant_loader.core.chunking.strategy.default.text_document_parser import TextDocumentParser
-from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
-from qdrant_loader.core.chunking.strategy.base.section_splitter import BaseSectionSplitter
-from qdrant_loader.core.chunking.strategy.base.metadata_extractor import BaseMetadataExtractor
-from qdrant_loader.core.chunking.strategy.base.chunk_processor import BaseChunkProcessor
 
 # Import test fixtures
 from tests.fixtures.modular_chunking import (

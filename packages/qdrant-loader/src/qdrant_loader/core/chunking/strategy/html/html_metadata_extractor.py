@@ -3,12 +3,12 @@
 import re
 from typing import Any, Dict, List
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from qdrant_loader.core.chunking.strategy.base.metadata_extractor import BaseMetadataExtractor
 from qdrant_loader.core.document import Document
 
-from .html_document_parser import SectionType, HTMLDocumentParser
+from .html_document_parser import HTMLDocumentParser
 
 
 class HTMLMetadataExtractor(BaseMetadataExtractor):

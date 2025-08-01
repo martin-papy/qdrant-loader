@@ -1,6 +1,4 @@
 """Unit tests for BaseMetadataExtractor."""
-
-from unittest.mock import Mock
 import pytest
 import re
 from qdrant_loader.core.chunking.strategy.base.metadata_extractor import BaseMetadataExtractor

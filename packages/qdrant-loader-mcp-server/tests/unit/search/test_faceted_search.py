@@ -9,14 +9,11 @@ Tests for faceted search functionality including:
 """
 
 import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime
 
 from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.search.enhanced.faceted_search import (
     FacetType,
-    FacetValue,
-    Facet,
     FacetFilter,
     FacetedSearchResults,
     DynamicFacetGenerator,

@@ -1,10 +1,10 @@
 """Base class for document structure analysis."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from qdrant_loader.core.document import Document
+    pass
 
 
 class BaseDocumentParser(ABC):

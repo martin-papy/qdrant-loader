@@ -14,7 +14,6 @@ class ConfluenceDeploymentType(str, Enum):
 
     CLOUD = "cloud"
     DATACENTER = "datacenter"
-    SERVER = "server"  # Legacy, treated same as datacenter
 
 
 class ConfluenceSpaceConfig(SourceConfig):

@@ -1,17 +1,14 @@
 """Integration tests for Intent-Aware Adaptive Search."""
 
 import pytest
-import asyncio
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from typing import List, Dict, Any
 
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine, HybridSearchResult
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
-    IntentType, SearchIntent, IntentClassifier, AdaptiveSearchStrategy
+    IntentType, SearchIntent
 )
 from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import DocumentKnowledgeGraph
-from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
+from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import QueryAnalysis
 
 
 class TestPhase2_2Integration:

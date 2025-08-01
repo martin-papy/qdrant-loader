@@ -3,7 +3,6 @@
 import pytest
 import asyncio
 import time
-from unittest.mock import AsyncMock, Mock
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     CrossDocumentIntelligenceEngine,
@@ -12,18 +11,15 @@ from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import
     CitationNetworkAnalyzer,
     ComplementaryContentFinder,
     ConflictDetector,
-    SimilarityMetric,
     ClusteringStrategy,
     RelationshipType
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 from tests.fixtures.cross_document_test_data import (
     create_authentication_docs,
-    create_database_docs,
     create_conflicting_docs,
     create_cross_project_docs,
-    create_tutorial_docs,
     create_comprehensive_test_dataset
 )
 

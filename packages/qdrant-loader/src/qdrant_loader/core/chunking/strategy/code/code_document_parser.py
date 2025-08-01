@@ -9,11 +9,10 @@ import structlog
 
 # Tree-sitter imports with error handling
 try:
-    from tree_sitter_languages import get_language, get_parser
+    from tree_sitter_languages import get_parser
     TREE_SITTER_AVAILABLE = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False
-    get_language = None
     get_parser = None
 
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser

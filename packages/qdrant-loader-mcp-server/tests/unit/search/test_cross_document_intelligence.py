@@ -1,7 +1,7 @@
 """Unit tests for cross-document intelligence components."""
 
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     CrossDocumentIntelligenceEngine,
@@ -10,11 +10,9 @@ from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import
     CitationNetworkAnalyzer,
     ComplementaryContentFinder,
     ConflictDetector,
-    SimilarityMetric,
     ClusteringStrategy,
     RelationshipType
 )
-from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from tests.fixtures.cross_document_test_data import (
     create_authentication_docs,
     create_database_docs,

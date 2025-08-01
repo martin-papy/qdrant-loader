@@ -403,7 +403,7 @@ class TestEmbeddingWorker:
         # Create empty async iterator
         async def empty_iterator():
             return
-            yield  # This line will never be reached
+            # Note: yield is unreachable but kept for testing generator behavior
 
         with patch(
             "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"

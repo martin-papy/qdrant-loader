@@ -1,9 +1,7 @@
 """Unit tests for Knowledge Graph implementation."""
 
 import pytest
-import unittest
-from unittest.mock import Mock, patch, MagicMock
-from typing import List, Dict, Any
+from unittest.mock import Mock, patch
 
 from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     KnowledgeGraph,
@@ -14,11 +12,10 @@ from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     GraphEdge,
     NodeType,
     RelationshipType,
-    TraversalStrategy,
-    TraversalResult
+    TraversalStrategy
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 class TestKnowledgeGraph:

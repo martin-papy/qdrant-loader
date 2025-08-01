@@ -17,7 +17,7 @@ class BaseConnector(ABC):
         self._initialized = True
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, _exc_tb):
         """Async context manager exit."""
         self._initialized = False
 

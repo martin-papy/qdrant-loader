@@ -566,7 +566,7 @@ async def ingest(
             # Windows doesn't support signal handlers in ProactorEventLoop
             # Use a different approach for graceful shutdown on Windows
 
-            def _signal_handler(signum, frame):
+            def _signal_handler(_signum, _frame):
                 logger = LoggingConfig.get_logger(__name__)
                 logger.debug(" SIGINT received on Windows, cancelling all tasks...")
                 # Schedule the stop event to be set in the event loop

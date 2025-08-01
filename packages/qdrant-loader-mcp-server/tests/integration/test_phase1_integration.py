@@ -1,8 +1,5 @@
 """Comprehensive test for spaCy integration components."""
-
-import asyncio
 import time
-from typing import Dict, Any
 
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from qdrant_loader_mcp_server.search.nlp.semantic_expander import EntityQueryExpander

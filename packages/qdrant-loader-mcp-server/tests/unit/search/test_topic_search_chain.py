@@ -1,8 +1,7 @@
 """Unit tests for Topic-Driven Search Chaining."""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from typing import List
+from unittest.mock import Mock
 
 from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     TopicSearchChainGenerator,
@@ -12,7 +11,7 @@ from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     ChainStrategy
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 class TestTopicRelationshipMap:

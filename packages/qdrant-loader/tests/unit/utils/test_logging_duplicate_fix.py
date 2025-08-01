@@ -1,9 +1,7 @@
 """Test logging duplicate level fix."""
 
 import logging
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import Mock
 from qdrant_loader.utils.logging import CleanFormatter, CustomConsoleRenderer
 
 

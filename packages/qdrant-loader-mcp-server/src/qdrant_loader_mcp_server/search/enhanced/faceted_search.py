@@ -12,10 +12,10 @@ Key Features:
 """
 
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 
 from ..components.search_result_models import HybridSearchResult

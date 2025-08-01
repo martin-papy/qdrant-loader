@@ -14,8 +14,7 @@ from dotenv import load_dotenv
 from pydantic import (
     Field,
     ValidationError,
-    field_validator,
-    model_validator,
+    model_validator
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -39,7 +38,7 @@ from .parser import MultiProjectConfigParser
 from .sources import SourcesConfig
 from .state import StateManagementConfig
 from .validator import ConfigValidator
-from .workspace import WorkspaceConfig, get_workspace_env_override
+from .workspace import WorkspaceConfig
 
 # Load environment variables from .env file
 load_dotenv(override=False)

@@ -100,7 +100,7 @@ def mock_openai_client():
 def mock_search_engine(mock_qdrant_client, mock_openai_client):
     """Create a mock search engine."""
     from qdrant_loader_mcp_server.search.engine import SearchEngine
-    from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+    from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
     engine = MagicMock(spec=SearchEngine)
 

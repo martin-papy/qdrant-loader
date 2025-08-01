@@ -6,7 +6,6 @@ Tests real components working together without complex mocking.
 
 import pytest
 import time
-from typing import List
 
 from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     TopicSearchChainGenerator,
@@ -15,7 +14,7 @@ from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     ChainStrategy
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 class TestPhase12SimpleIntegration:

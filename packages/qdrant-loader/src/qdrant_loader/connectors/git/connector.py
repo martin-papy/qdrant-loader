@@ -232,12 +232,12 @@ class GitConnector(BaseConnector):
                 raise
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, _exc_tb):
         """Async context manager exit."""
         self._cleanup()
         self._initialized = False
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, _exc_tb):
         """Clean up resources."""
         self._cleanup()
 

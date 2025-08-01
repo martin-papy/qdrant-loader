@@ -7,7 +7,6 @@ import structlog
 
 from qdrant_loader.core.chunking.strategy.base.metadata_extractor import BaseMetadataExtractor
 from qdrant_loader.core.document import Document
-from .code_document_parser import CodeElement, CodeElementType
 
 logger = structlog.get_logger(__name__)
 

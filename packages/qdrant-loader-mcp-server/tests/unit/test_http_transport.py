@@ -1,7 +1,4 @@
 """Unit tests for HTTP Transport Handler."""
-
-import asyncio
-import json
 import time
 from unittest.mock import AsyncMock, Mock, patch
 from fastapi.testclient import TestClient

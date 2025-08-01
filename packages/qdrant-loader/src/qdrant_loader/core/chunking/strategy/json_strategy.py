@@ -7,7 +7,7 @@ import structlog
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.progress_tracker import ChunkingProgressTracker
 from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrategy
-from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONDocumentParser, JSONElement, JSONElementType
+from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONDocumentParser
 from qdrant_loader.core.chunking.strategy.json.json_section_splitter import JSONSectionSplitter
 from qdrant_loader.core.chunking.strategy.json.json_metadata_extractor import JSONMetadataExtractor
 from qdrant_loader.core.chunking.strategy.json.json_chunk_processor import JSONChunkProcessor

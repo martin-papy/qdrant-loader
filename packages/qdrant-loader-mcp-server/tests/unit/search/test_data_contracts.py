@@ -6,7 +6,6 @@ and would have caught the attribute naming mismatches we encountered.
 """
 
 import pytest
-from typing import Dict, List, Any
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     DocumentSimilarity,

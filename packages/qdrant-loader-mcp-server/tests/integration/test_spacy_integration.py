@@ -1,8 +1,5 @@
 """Simple test script to verify spaCy integration is working."""
-
-import asyncio
 import time
-from typing import Dict, Any
 
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
 

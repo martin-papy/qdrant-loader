@@ -2,12 +2,11 @@
 
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from bs4 import BeautifulSoup, Tag
 
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
-from qdrant_loader.core.document import Document
 
 
 class SectionType(Enum):

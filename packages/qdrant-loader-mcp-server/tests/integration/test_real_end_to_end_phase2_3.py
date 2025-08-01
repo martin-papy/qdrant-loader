@@ -9,18 +9,16 @@ This would have caught the import/attribute errors we encountered in production.
 
 import pytest
 import pytest_asyncio
-import asyncio
 import time
 import os
 from unittest.mock import AsyncMock, MagicMock
-from typing import List, Dict, Any
+from typing import List
 from dotenv import load_dotenv
 
 # Load test environment variables
 load_dotenv('tests/.env.test')
 
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.search.processor import QueryProcessor

@@ -1,13 +1,11 @@
 """Integration tests for dual transport support (stdio and HTTP)."""
-
-import asyncio
 from unittest.mock import Mock, AsyncMock
 from fastapi.testclient import TestClient
 
 import pytest
 from qdrant_loader_mcp_server.mcp import MCPHandler
 from qdrant_loader_mcp_server.transport import HTTPTransportHandler
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 @pytest.fixture

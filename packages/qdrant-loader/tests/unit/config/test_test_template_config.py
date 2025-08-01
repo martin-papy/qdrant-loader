@@ -86,7 +86,7 @@ projects:
           project_key: "${JIRA_PROJECT_KEY}"
           requests_per_minute: 60
           page_size: 50
-          process_attachments: true
+          
           track_last_sync: true
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"

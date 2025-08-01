@@ -67,14 +67,6 @@ class QueryProcessor:
                 concept_terms = " ".join(query_analysis.main_concepts[:2])
                 expanded_query = f"{expanded_query} {concept_terms}"
             
-            # Legacy expansion logic as fallback
-            lower_query = query.lower()
-            for key, expansions in self.query_expansions.items():
-                if key.lower() in lower_query:
-                    expansion_terms = " ".join(expansions[:2])  # Limit to avoid over-expansion
-                    expanded_query = f"{expanded_query} {expansion_terms}"
-                    break
-            
             if expanded_query != query:
                 self.logger.debug(
                     "spaCy-enhanced query expansion",
@@ -119,15 +111,6 @@ class QueryProcessor:
             if query_analysis.entities:
                 entity_terms = " ".join([ent[0] for ent in query_analysis.entities[:3]])
                 expanded_query = f"{expanded_query} {entity_terms}"
-            
-            # Apply multiple legacy expansions for exploration
-            lower_query = query.lower()
-            expansion_count = 0
-            for key, expansions in self.query_expansions.items():
-                if key.lower() in lower_query and expansion_count < 3:  # Max 3 expansions
-                    expansion_terms = " ".join(expansions[:3])
-                    expanded_query = f"{expanded_query} {expansion_terms}"
-                    expansion_count += 1
             
             self.logger.debug(
                 "Aggressive query expansion for exploration",

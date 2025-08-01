@@ -1,19 +1,14 @@
 """Integration tests for Knowledge Graph with existing search system."""
-
-import pytest
-import asyncio
 import time
-from unittest.mock import Mock, patch, MagicMock
-from typing import List, Dict, Any
+from unittest.mock import Mock
 
 from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
     DocumentKnowledgeGraph,
     TraversalStrategy,
     TraversalResult
 )
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 class TestPhase2Integration:

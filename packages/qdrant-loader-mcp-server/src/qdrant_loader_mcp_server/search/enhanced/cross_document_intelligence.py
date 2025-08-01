@@ -14,23 +14,20 @@ Key Features:
 - Conflict detection between documents
 - Cross-project relationship discovery
 """
-
-import logging
 import time
-import math
 import warnings
 import networkx as nx
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime
 
 from ...utils.logging import LoggingConfig
-from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
+from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from ..models import SearchResult
 from ..components.search_result_models import HybridSearchResult
-from .knowledge_graph import DocumentKnowledgeGraph, NodeType, TraversalStrategy
+from .knowledge_graph import DocumentKnowledgeGraph
 
 logger = LoggingConfig.get_logger(__name__)
 

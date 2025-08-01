@@ -226,7 +226,7 @@ async def test_cross_document_intelligence_mcp_integration(integration_handler):
     """Test cross-document intelligence through MCP interface."""
     
     # Create mock search results with enough documents for analysis
-    from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+    from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
     
     mock_documents = [
         create_hybrid_search_result(

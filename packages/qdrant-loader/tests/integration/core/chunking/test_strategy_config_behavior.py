@@ -3,12 +3,9 @@
 These tests verify that configuration changes actually affect the behavior
 of chunking strategies, not just that the configuration values exist.
 """
-
-import pytest
 from unittest.mock import Mock, patch
 
 from qdrant_loader.config.global_config import GlobalConfig
-from qdrant_loader.config.chunking import MarkdownStrategyConfig
 from qdrant_loader.config import Settings
 from qdrant_loader.core.chunking.strategy.markdown.markdown_strategy import MarkdownChunkingStrategy
 from qdrant_loader.core.chunking.strategy.default_strategy import DefaultChunkingStrategy
