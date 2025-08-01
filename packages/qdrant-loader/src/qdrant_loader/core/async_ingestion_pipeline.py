@@ -22,10 +22,10 @@ logger = LoggingConfig.get_logger(__name__)
 
 
 class AsyncIngestionPipeline:
-    """Refactored async ingestion pipeline using modular architecture.
+    """Async ingestion pipeline using modular architecture.
 
-    This class maintains backward compatibility with the original interface
-    while using the new modular pipeline architecture internally.
+    This class provides a streamlined interface for the modular pipeline
+    architecture, handling document ingestion and processing workflows.
     """
 
     def __init__(
@@ -33,7 +33,7 @@ class AsyncIngestionPipeline:
         settings: Settings,
         qdrant_manager: QdrantManager,
         state_manager: StateManager | None = None,
-        embedding_cache=None,  # Placeholder for future cache (maintained for compatibility)
+
         max_chunk_workers: int = 10,
         max_embed_workers: int = 4,
         max_upsert_workers: int = 4,
@@ -48,7 +48,7 @@ class AsyncIngestionPipeline:
             settings: Application settings
             qdrant_manager: QdrantManager instance
             state_manager: Optional state manager
-            embedding_cache: Placeholder for future cache (unused)
+
             max_chunk_workers: Maximum number of chunking workers
             max_embed_workers: Maximum number of embedding workers
             max_upsert_workers: Maximum number of upsert workers
@@ -59,7 +59,7 @@ class AsyncIngestionPipeline:
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
-        self.embedding_cache = embedding_cache  # Maintained for compatibility
+
 
         # Validate global configuration
         if not settings.global_config:
@@ -134,7 +134,7 @@ class AsyncIngestionPipeline:
         self._cleanup_performed = False
 
     async def initialize(self):
-        """Initialize the pipeline (maintained for compatibility)."""
+        """Initialize the pipeline."""
         logger.debug("Pipeline initialization called")
 
         try:
@@ -212,7 +212,7 @@ class AsyncIngestionPipeline:
                 force=force,
             )
 
-            # Update metrics (maintained for compatibility)
+            # Update metrics
             if documents:
                 self.monitor.start_batch(
                     "document_batch",
@@ -304,43 +304,6 @@ class AsyncIngestionPipeline:
 
         logger.info("Pipeline cleanup completed (sync)")
 
-    # Backward compatibility properties
-    @property
-    def _shutdown_event(self):
-        """Backward compatibility property for shutdown event."""
-        return self.resource_manager.shutdown_event
 
-    @property
-    def _active_tasks(self):
-        """Backward compatibility property for active tasks."""
-        return self.resource_manager.active_tasks
 
-    @property
-    def _cleanup_done(self):
-        """Backward compatibility property for cleanup status."""
-        return self.resource_manager.cleanup_done
 
-    # Legacy methods maintained for compatibility
-    def _cleanup(self):
-        """Legacy cleanup method (redirects to sync cleanup)."""
-        self._sync_cleanup()
-
-    async def _async_cleanup(self):
-        """Legacy async cleanup method (redirects to resource manager)."""
-        await self.resource_manager.cleanup()
-
-    def _handle_sigint(self, signum, frame):
-        """Legacy signal handler (redirects to resource manager)."""
-        self.resource_manager._handle_sigint(signum, frame)
-
-    def _handle_sigterm(self, signum, frame):
-        """Legacy signal handler (redirects to resource manager)."""
-        self.resource_manager._handle_sigterm(signum, frame)
-
-    def _cancel_all_tasks(self):
-        """Legacy task cancellation (redirects to resource manager)."""
-        self.resource_manager._cancel_all_tasks()
-
-    def _force_immediate_exit(self):
-        """Legacy force exit (redirects to resource manager)."""
-        self.resource_manager._force_immediate_exit()
