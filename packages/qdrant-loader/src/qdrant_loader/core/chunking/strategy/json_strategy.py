@@ -352,34 +352,4 @@ class JSONChunkingStrategy(BaseChunkingStrategy):
             f")"
         )
 
-    # Legacy compatibility methods (maintained for backward compatibility)
-    def _split_text(self, text: str) -> List[str]:
-        """Legacy method: Split text using the new modular approach.
-        
-        This method is maintained for backward compatibility with any code
-        that might call it directly, but it now uses the modular architecture.
-        
-        Args:
-            text: The text to split
 
-        Returns:
-            List of text chunks
-        """
-        logger.debug("Legacy _split_text method called for JSON, using modular approach")
-        
-        # Create a temporary document for compatibility
-        temp_doc = Document(
-            title="Legacy JSON Split Text",
-            content_type="json",
-            content=text,
-            metadata={},
-            source="legacy_split.json",
-            source_type="text",
-            url="internal://legacy"
-        )
-        
-        # Use the modular section splitter
-        chunks_metadata = self.section_splitter.split_sections(text, temp_doc)
-        
-        # Extract just the content for legacy compatibility
-        return [chunk["content"] for chunk in chunks_metadata]

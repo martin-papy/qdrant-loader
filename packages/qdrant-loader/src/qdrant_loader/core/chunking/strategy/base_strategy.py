@@ -478,22 +478,4 @@ class BaseChunkingStrategy(ABC):
             "Chunking strategy must implement chunk_document method"
         )
 
-    @abstractmethod
-    def _split_text(self, text: str) -> list[str]:
-        """Split text into chunks based on strategy-specific rules.
 
-        This method should:
-        1. Implement the specific chunking logic for the strategy
-        2. Return a list of text chunks
-        3. Preserve the semantic meaning of the content
-
-        Args:
-            text: The text to split into chunks
-
-        Returns:
-            List of text chunks
-
-        Raises:
-            NotImplementedError: If the strategy doesn't implement this method
-        """
-        raise NotImplementedError("Chunking strategy must implement _split_text method")

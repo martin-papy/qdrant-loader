@@ -349,19 +349,7 @@ class TestCodeChunkingStrategyModern:
             max_allowed = mock_settings.global_config.chunking.max_chunks_per_document
             assert len(chunks) <= max_allowed or len(chunks) <= max_allowed + 100  # Allow some tolerance for fallback
 
-    def test_legacy_split_text_method(self, mock_settings):
-        """Test the legacy _split_text method for backward compatibility."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
-            strategy = CodeChunkingStrategy(mock_settings)
-            
-            sample_code = "def hello():\n    print('hello')\n\nprint('world')"
-            
-            # Test legacy method
-            text_chunks = strategy._split_text(sample_code)
-            
-            assert isinstance(text_chunks, list)
-            assert len(text_chunks) >= 1
-            assert all(isinstance(chunk, str) for chunk in text_chunks)
+
 
     def test_shutdown_cleanup(self, mock_settings):
         """Test that shutdown properly cleans up resources."""

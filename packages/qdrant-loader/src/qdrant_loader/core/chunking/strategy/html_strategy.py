@@ -14,27 +14,7 @@ from .html import (
     HTMLChunkProcessor,
 )
 
-# Import classes and constants for backward compatibility
-from .html.html_document_parser import SectionType
 
-# Backward compatibility class alias
-class HTMLSection:
-    """Backward compatibility class for old tests."""
-    def __init__(self, content: str, tag_name: str, level: int = 0, type=None, 
-                 parent=None, children=None, attributes=None, text_content: str = ""):
-        self.content = content
-        self.tag_name = tag_name
-        self.level = level
-        self.type = type or SectionType.DIV
-        self.parent = parent
-        self.children = children or []
-        self.attributes = attributes or {}
-        self.text_content = text_content
-    
-    def add_child(self, child):
-        """Add a child section."""
-        self.children.append(child)
-        child.parent = self
 
 logger = structlog.get_logger(__name__)
 
