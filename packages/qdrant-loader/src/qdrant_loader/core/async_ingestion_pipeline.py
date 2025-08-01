@@ -61,13 +61,13 @@ class AsyncIngestionPipeline:
         self.qdrant_manager = qdrant_manager
 
 
-        # Validate global configuration
+        # Validate that global configuration is available for pipeline operation.
         if not settings.global_config:
             raise ValueError(
                 "Global configuration not available. Please check your configuration file."
             )
 
-        # Create pipeline configuration
+        # Create pipeline configuration with worker and batch size settings.
         self.pipeline_config = PipelineConfig(
             max_chunk_workers=max_chunk_workers,
             max_embed_workers=max_embed_workers,
@@ -77,16 +77,16 @@ class AsyncIngestionPipeline:
             enable_metrics=enable_metrics,
         )
 
-        # Create resource manager
+        # Create resource manager to handle cleanup and signal handling.
         self.resource_manager = ResourceManager()
         self.resource_manager.register_signal_handlers()
 
-        # Create state manager if not provided
+        # Create state manager instance if not provided by caller.
         self.state_manager = state_manager or StateManager(
             settings.global_config.state_management
         )
 
-        # Initialize project manager for multi-project support
+        # Initialize project manager to support multi-project configurations.
         if not settings.global_config.qdrant:
             raise ValueError(
                 "Qdrant configuration is required for project manager initialization"

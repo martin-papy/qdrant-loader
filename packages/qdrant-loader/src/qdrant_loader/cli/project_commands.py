@@ -21,7 +21,7 @@ from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistor
 from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 
-# Rich console for better output formatting
+# Initialize Rich console for enhanced output formatting.
 console = Console()
 
 
@@ -54,7 +54,7 @@ async def _get_project_document_count(state_manager: StateManager, project_id: s
             count = result.scalar() or 0
             return count
     except Exception:
-        # Return 0 if there's any error querying the database
+        # Return zero count if database query fails to ensure graceful degradation.
         return 0
 
 
@@ -71,7 +71,7 @@ async def _get_project_latest_ingestion(state_manager: StateManager, project_id:
             timestamp = result.scalar_one_or_none()
             return timestamp.isoformat() if timestamp else None
     except Exception:
-        # Return None if there's any error querying the database
+        # Return None if database query fails to indicate no ingestion data available.
         return None
 
 
@@ -100,17 +100,17 @@ async def list(
 ):
     """List all configured projects."""
     try:
-        # Validate flag combinations
+        # Validate that workspace flags are properly configured.
         validate_workspace_flags(workspace, config, env)
 
-        # Load configuration and initialize components
+        # Load configuration and initialize project management components.
         settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
 
-        # Get project contexts
+        # Retrieve all configured project contexts for display.
         project_contexts = project_manager.get_all_project_contexts()
 
         if format == "json":
-            # JSON output
+            # Generate structured JSON output for programmatic consumption.
             projects_data = []
             for context in project_contexts.values():
                 source_count = (
@@ -129,7 +129,7 @@ async def list(
                 )
             echo(json.dumps(projects_data, indent=2))
         else:
-            # Table output using Rich
+            # Generate formatted table output using Rich for better readability.
             if not project_contexts:
                 console.print("[yellow]No projects configured.[/yellow]")
                 return
