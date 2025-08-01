@@ -9,7 +9,6 @@ from qdrant_loader_mcp_server.mcp import MCPHandler
 @pytest.fixture
 def mcp_handler():
     """Create MCP handler fixture."""
-    # TODO: Implement search engine and query processor
     search_engine = Mock()
     query_processor = Mock()
     return MCPHandler(search_engine, query_processor)

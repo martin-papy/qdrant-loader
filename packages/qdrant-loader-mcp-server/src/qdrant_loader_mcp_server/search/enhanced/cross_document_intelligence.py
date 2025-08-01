@@ -16,12 +16,13 @@ Key Features:
 """
 import time
 import warnings
-import networkx as nx
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
-from datetime import datetime
+
+import networkx as nx
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
