@@ -1,4 +1,4 @@
-"""Integration tests for Phase 2.1 Knowledge Graph with existing search system."""
+"""Integration tests for Knowledge Graph with existing search system."""
 
 import pytest
 import asyncio
@@ -13,11 +13,11 @@ from qdrant_loader_mcp_server.search.enhanced.knowledge_graph import (
 )
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestPhase2Integration:
-    """Integration tests for Phase 2.1 Knowledge Graph functionality."""
+    """Integration tests for Knowledge Graph functionality."""
     
     def setup_method(self):
         """Set up test fixtures."""
@@ -31,7 +31,7 @@ class TestPhase2Integration:
         
         # Create sample search results with comprehensive metadata
         self.sample_search_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.95,
                 text="This document provides comprehensive API authentication guidelines for developers. It covers OAuth 2.0, JWT tokens, and best security practices for REST APIs.",
                 source_type="git",
@@ -47,7 +47,7 @@ class TestPhase2Integration:
                 depth=3,
                 hierarchy_context="Main authentication documentation"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.87,
                 text="Security best practices for API development include proper authentication, authorization, input validation, and rate limiting. OAuth 2.0 is recommended for most use cases.",
                 source_type="confluence",
@@ -62,7 +62,7 @@ class TestPhase2Integration:
                 depth=4,
                 hierarchy_context="Security guidelines for development"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.82,
                 text="OAuth 2.0 implementation examples with code samples for JavaScript, Python, and Java. Includes token management and refresh strategies.",
                 source_type="git",
@@ -78,7 +78,7 @@ class TestPhase2Integration:
                 depth=3,
                 hierarchy_context="Practical OAuth implementation examples"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.78,
                 text="JWT token structure and validation guide. Explains claims, signatures, and token lifecycle management for secure API access.",
                 source_type="confluence",
@@ -97,7 +97,7 @@ class TestPhase2Integration:
     
     def test_knowledge_graph_construction(self):
         """Test knowledge graph construction from search results."""
-        print("🚀 Testing Phase 2.1 Knowledge Graph Construction")
+        print("🚀 Testing Knowledge Graph Construction")
         print("=" * 60)
         
         # Build knowledge graph
@@ -289,7 +289,7 @@ class TestPhase2Integration:
             print("ℹ️ No cross-document relationships found (may need more diverse content)")
     
     def test_performance_benchmarks(self):
-        """Test performance benchmarks for Phase 2.1 implementation."""
+        """Test performance benchmarks for implementation."""
         print("\n⚡ Testing Performance Benchmarks")
         print("=" * 40)
         
@@ -350,8 +350,8 @@ class TestPhase2Integration:
         print("✅ Performance benchmarks completed")
     
     def test_integration_with_spacy_phase1(self):
-        """Test integration with Phase 1.0 spaCy components."""
-        print("\n🔗 Testing Integration with Phase 1.0 spaCy")
+        """Test integration with spaCy components."""
+        print("\n🔗 Testing Integration with spaCy")
         print("=" * 50)
         
         # Test that spaCy analyzer is properly integrated
@@ -375,7 +375,7 @@ class TestPhase2Integration:
         print(f"   🔧 Is technical: {query_analysis.is_technical}")
         
         # Verify spaCy analysis quality
-        assert query_analysis.processing_time_ms < 50  # Phase 1.0 performance target
+        assert query_analysis.processing_time_ms < 50
         assert len(query_analysis.semantic_keywords) > 0
         assert query_analysis.complexity_score >= 0.0
         
@@ -400,11 +400,11 @@ class TestPhase2Integration:
             print(f"   📊 Average semantic relevance: {avg_semantic_score:.3f}")
             assert avg_semantic_score >= 0.0
         
-        print("✅ Phase 1.0 spaCy integration validated")
+        print("✅ spaCy integration validated")
     
     def test_complete_phase2_workflow(self):
-        """Test complete Phase 2.1 workflow end-to-end."""
-        print("\n🎯 Testing Complete Phase 2.1 Workflow")
+        """Test complete workflow end-to-end."""
+        print("\n🎯 Testing Complete Workflow")
         print("=" * 45)
         
         total_start_time = time.time()
@@ -466,7 +466,7 @@ class TestPhase2Integration:
             "relationships_created": stats['total_edges']
         }
         
-        print(f"\n📊 Phase 2.1 Performance Summary:")
+        print(f"\n📊 Performance Summary:")
         print(f"   ⏱️ Total workflow: {performance_metrics['total_workflow_time']:.2f}ms")
         print(f"   🏗️ Graph construction: {performance_metrics['graph_construction_time']:.2f}ms")
         print(f"   🔍 Average query: {performance_metrics['avg_query_time']:.2f}ms")
@@ -480,12 +480,12 @@ class TestPhase2Integration:
         assert performance_metrics['nodes_created'] >= 4  # Should create multiple nodes
         assert performance_metrics['relationships_created'] > 0  # Should create relationships
         
-        print("\n🎉 Phase 2.1 Complete Workflow Validation:")
+        print("\n🎉 Complete Workflow Validation:")
         print("   ✅ Knowledge graph construction")
         print("   ✅ Multi-strategy content discovery") 
         print("   ✅ Cross-document relationship analysis")
         print("   ✅ Performance benchmarks met")
-        print("   ✅ Integration with Phase 1.0 spaCy")
+        print("   ✅ Integration with spaCy")
         
         return performance_metrics
 
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     test_instance = TestPhase2Integration()
     test_instance.setup_method()
     
-    print("🚀 Phase 2.1 Knowledge Graph Integration Testing")
+    print("🚀 Knowledge Graph Integration Testing")
     print("=" * 60)
     
     # Run all integration tests
@@ -509,6 +509,6 @@ if __name__ == "__main__":
     # Run complete workflow test
     performance_metrics = test_instance.test_complete_phase2_workflow()
     
-    print("\n🎉 Phase 2.1 Integration Testing Complete!")
+    print("\n🎉 Integration Testing Complete!")
     print(f"🏆 All tests passed with excellent performance metrics!")
     print(f"🚀 Ready for production deployment!") 

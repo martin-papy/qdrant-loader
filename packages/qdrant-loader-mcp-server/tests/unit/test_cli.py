@@ -9,21 +9,21 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import pytest
 from click.testing import CliRunner
 from qdrant_loader_mcp_server.cli import (
-    _get_version,
     _setup_logging,
     cli,
     handle_stdio,
     read_stdin,
     shutdown,
 )
+from qdrant_loader_mcp_server.utils import get_version
 
 
 class TestVersionDetection:
     """Test version detection functionality."""
 
-    @patch("qdrant_loader_mcp_server.cli.Path")
+    @patch("qdrant_loader_mcp_server.utils.version.Path")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("qdrant_loader_mcp_server.cli.tomli.load")
+    @patch("qdrant_loader_mcp_server.utils.version.tomli.load")
     def test_get_version_from_package_dir(self, mock_tomli_load, mock_file, mock_path):
         """Test version detection from package directory."""
         # Mock the path structure
@@ -36,12 +36,12 @@ class TestVersionDetection:
         # Mock tomli loading
         mock_tomli_load.return_value = {"project": {"version": "1.2.3"}}
 
-        version = _get_version()
+        version = get_version()
         assert version == "1.2.3"
 
-    @patch("qdrant_loader_mcp_server.cli.Path")
+    @patch("qdrant_loader_mcp_server.utils.version.Path")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("qdrant_loader_mcp_server.cli.tomli.load")
+    @patch("qdrant_loader_mcp_server.utils.version.tomli.load")
     def test_get_version_from_workspace_root(
         self, mock_tomli_load, mock_file, mock_path
     ):
@@ -70,10 +70,10 @@ class TestVersionDetection:
         # Mock tomli loading
         mock_tomli_load.return_value = {"project": {"version": "2.0.0"}}
 
-        version = _get_version()
+        version = get_version()
         assert version == "2.0.0"
 
-    @patch("qdrant_loader_mcp_server.cli.Path")
+    @patch("qdrant_loader_mcp_server.utils.version.Path")
     def test_get_version_not_found(self, mock_path):
         """Test version detection when pyproject.toml is not found."""
         # Mock all paths not existing
@@ -82,10 +82,10 @@ class TestVersionDetection:
         mock_path.return_value.parent.__truediv__.return_value = mock_pyproject_path
         mock_path.cwd.return_value.__truediv__.return_value = mock_pyproject_path
 
-        version = _get_version()
+        version = get_version()
         assert version == "Unknown"
 
-    @patch("qdrant_loader_mcp_server.cli.Path")
+    @patch("qdrant_loader_mcp_server.utils.version.Path")
     @patch("builtins.open", side_effect=Exception("File error"))
     def test_get_version_exception_handling(self, mock_file, mock_path):
         """Test version detection with file reading exception."""
@@ -93,7 +93,7 @@ class TestVersionDetection:
         mock_pyproject_path.exists.return_value = True
         mock_path.return_value.parent.__truediv__.return_value = mock_pyproject_path
 
-        version = _get_version()
+        version = get_version()
         assert version == "Unknown"
 
 

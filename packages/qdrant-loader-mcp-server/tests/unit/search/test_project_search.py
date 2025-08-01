@@ -11,7 +11,7 @@ from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -121,7 +121,7 @@ async def test_hybrid_search_with_project_filter(hybrid_search, mock_qdrant_clie
         # Verify results contain project information
         assert len(results) > 0
         for result in results:
-            assert isinstance(result, SearchResult)
+            assert isinstance(result, HybridSearchResult)
             assert result.project_id is not None
             assert result.project_name is not None
 
@@ -186,7 +186,7 @@ async def test_search_engine_with_project_filter(search_engine):
 
         assert len(results) > 0
         for result in results:
-            assert isinstance(result, SearchResult)
+            assert isinstance(result, HybridSearchResult)
             assert hasattr(result, "project_id")
             assert hasattr(result, "project_name")
 
@@ -225,8 +225,8 @@ def test_extract_project_info(hybrid_search):
 
 
 def test_search_result_project_methods():
-    """Test SearchResult project-related methods."""
-    result = SearchResult(
+    """Test HybridSearchResult project-related methods."""
+    result = create_hybrid_search_result(
         score=0.9,
         text="Test content",
         source_type="git",
@@ -254,8 +254,8 @@ def test_search_result_project_methods():
 
 
 def test_search_result_without_project_info():
-    """Test SearchResult methods when project info is not available."""
-    result = SearchResult(
+    """Test HybridSearchResult methods when project info is not available."""
+    result = create_hybrid_search_result(
         score=0.9, text="Test content", source_type="git", source_title="Test Document"
     )
 
@@ -274,7 +274,7 @@ async def test_keyword_search_with_project_filter(hybrid_search, mock_qdrant_cli
     """Test keyword search with project filtering."""
     # Mock the BM25 scoring to return results
     with patch(
-        "qdrant_loader_mcp_server.search.hybrid_search.BM25Okapi"
+        "qdrant_loader_mcp_server.search.components.keyword_search_service.BM25Okapi"
     ) as mock_bm25_class:
         mock_bm25 = MagicMock()
         mock_bm25.get_scores.return_value = [0.9, 0.8, 0.7]  # Scores for 3 documents

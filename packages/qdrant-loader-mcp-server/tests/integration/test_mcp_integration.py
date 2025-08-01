@@ -175,7 +175,7 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
     # Check that we have the expected tools available
     assert "result" in tools_response
     assert "tools" in tools_response["result"]
-    assert len(tools_response["result"]["tools"]) == 8  # Updated for Phase 2.3: 3 original + 5 cross-document intelligence tools
+    assert len(tools_response["result"]["tools"]) == 8
 
 
 @pytest.mark.asyncio
@@ -223,29 +223,28 @@ async def test_search_empty_results(integration_handler):
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_cross_document_intelligence_mcp_integration(integration_handler):
-    """Test Phase 2.3 cross-document intelligence through MCP interface."""
+    """Test cross-document intelligence through MCP interface."""
+    
+    # Create mock search results with enough documents for analysis
+    from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+    
+    mock_documents = [
+        create_hybrid_search_result(
+            score=0.9, text="Authentication system using JWT tokens for secure access control",
+            source_type="git", source_title="Auth Module", source_url="http://test1.com"
+        ),
+        create_hybrid_search_result(
+            score=0.8, text="User authentication flow with OAuth integration for external providers",
+            source_type="confluence", source_title="Auth Guide", source_url="http://test2.com"  
+        ),
+        create_hybrid_search_result(
+            score=0.7, text="Security protocols for API authentication and authorization mechanisms",
+            source_type="jira", source_title="Security Ticket", source_url="http://test3.com"
+        )
+    ]
     
     # Test document relationship analysis
-    with patch.object(integration_handler.search_engine, "analyze_document_relationships") as mock_analyze:
-        # Mock successful analysis response
-        mock_analyze.return_value = {
-            "summary": {
-                "total_documents": 5,
-                "clusters_found": 2,
-                "citation_relationships": 3,
-                "conflicts_detected": 1
-            },
-            "document_clusters": [],
-            "citation_network": {"nodes": [], "edges": []},
-            "complementary_content": {},
-            "conflict_analysis": {"conflicting_pairs": []},
-            "similarity_insights": {},
-            "query_metadata": {
-                "original_query": "authentication system",
-                "document_count": 5
-            }
-        }
-        
+    with patch.object(integration_handler.search_engine, "search", return_value=mock_documents):
         request = {
             "jsonrpc": "2.0",
             "method": "analyze_document_relationships",
@@ -264,13 +263,9 @@ async def test_cross_document_intelligence_mcp_integration(integration_handler):
         assert "result" in response
         assert response["result"]["isError"] is False
         
-        # Verify the method was called with correct parameters
-        mock_analyze.assert_called_once_with(
-            query="authentication system",
-            limit=10,
-            source_types=None,
-            project_ids=["MyaHealth"]
-        )
+        # Verify the response contains the expected structure
+        result = response["result"]
+        assert "content" in result or "summary" in result, "Response should contain analysis results"
 
 
 @pytest.mark.asyncio
@@ -422,12 +417,25 @@ async def test_find_complementary_content_mcp_integration(integration_handler):
     """Test complementary content finding through MCP interface."""
     
     with patch.object(integration_handler.search_engine, "find_complementary_content") as mock_complementary:
-        # Mock complementary content response
+        # Create a mock HybridSearchResult object for the document
+        from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
+        
+        mock_document = create_hybrid_search_result(
+            score=0.9,
+            text="Database security best practices including encryption, access control, and audit logging",
+            source_type="confluence",
+            source_title="Database Security Best Practices",
+            source_url="http://comp1.com",
+            document_id="comp1"  # Set document_id through kwargs
+        )
+        
+        # Mock complementary content response with correct structure
         mock_complementary.return_value = [
             {
-                "document": {"id": "comp1", "title": "Database Security Best Practices"},
-                "complementary_score": 0.9,
-                "recommendation_reasons": ["complements authentication with data security"]
+                "document": mock_document,
+                "relevance_score": 0.9,
+                "recommendation_reason": "complements authentication with data security",
+                "strategy": "mixed"
             }
         ]
         

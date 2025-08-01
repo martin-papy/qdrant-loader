@@ -9,45 +9,23 @@ import sys
 from pathlib import Path
 
 import click
-import tomli
 from click.decorators import option
 from click.types import Choice
 from click.types import Path as ClickPath
+from dotenv import load_dotenv
 
 from .config import Config
 from .mcp import MCPHandler
 from .search.engine import SearchEngine
 from .search.processor import QueryProcessor
-from .utils import LoggingConfig
+from .transport import HTTPTransportHandler
+from .utils import LoggingConfig, get_version
 
 # Suppress asyncio debug messages
 logging.getLogger("asyncio").setLevel(logging.WARNING)
 
 
-def _get_version() -> str:
-    """Get version from pyproject.toml."""
-    try:
-        # Try to find pyproject.toml in the package directory or parent directories
-        current_dir = Path(__file__).parent
-        for _ in range(5):  # Look up to 5 levels up
-            pyproject_path = current_dir / "pyproject.toml"
-            if pyproject_path.exists():
-                with open(pyproject_path, "rb") as f:
-                    pyproject = tomli.load(f)
-                    return pyproject["project"]["version"]
-            current_dir = current_dir.parent
 
-        # If not found, try the workspace root
-        workspace_root = Path.cwd()
-        for package_dir in ["packages/qdrant-loader-mcp-server", "."]:
-            pyproject_path = workspace_root / package_dir / "pyproject.toml"
-            if pyproject_path.exists():
-                with open(pyproject_path, "rb") as f:
-                    pyproject = tomli.load(f)
-                    return pyproject["project"]["version"]
-    except Exception:
-        pass
-    return "Unknown"
 
 
 def _setup_logging(log_level: str) -> None:
@@ -95,6 +73,53 @@ async def shutdown(loop: asyncio.AbstractEventLoop):
 
     # Stop the event loop
     loop.stop()
+
+
+async def start_http_server(config: Config, log_level: str, host: str, port: int):
+    """Start MCP server with HTTP transport."""
+    logger = LoggingConfig.get_logger(__name__)
+    
+    try:
+        logger.info(f"Starting HTTP server on {host}:{port}")
+        
+        # Initialize components
+        search_engine = SearchEngine()
+        query_processor = QueryProcessor(config.openai)
+        mcp_handler = MCPHandler(search_engine, query_processor)
+        
+        # Initialize search engine
+        try:
+            await search_engine.initialize(config.qdrant, config.openai)
+            logger.info("Search engine initialized successfully")
+        except Exception as e:
+            logger.error("Failed to initialize search engine", exc_info=True)
+            raise RuntimeError("Failed to initialize search engine") from e
+        
+        # Create HTTP transport handler
+        http_handler = HTTPTransportHandler(
+            mcp_handler,
+            host=host,
+            port=port
+        )
+        
+        # Start the FastAPI server using uvicorn
+        import uvicorn
+        
+        uvicorn_config = uvicorn.Config(
+            app=http_handler.app,
+            host=host,
+            port=port,
+            log_level=log_level.lower(),
+            access_log=log_level.upper() == "DEBUG"
+        )
+        
+        server = uvicorn.Server(uvicorn_config)
+        logger.info(f"HTTP MCP server ready at http://{host}:{port}/mcp")
+        await server.serve()
+        
+    except Exception as e:
+        logger.error(f"Error in HTTP server: {e}", exc_info=True)
+        raise
 
 
 async def handle_stdio(config: Config, log_level: str):
@@ -260,18 +285,41 @@ async def handle_stdio(config: Config, log_level: str):
     type=ClickPath(exists=True, path_type=Path),
     help="Path to configuration file (currently not implemented).",
 )
+@option(
+    "--transport",
+    type=Choice(["stdio", "http"], case_sensitive=False),
+    default="stdio",
+    help="Transport protocol to use (stdio for JSON-RPC over stdin/stdout, http for HTTP with SSE)",
+)
+@option(
+    "--host",
+    type=str,
+    default="127.0.0.1",
+    help="Host to bind HTTP server to (only used with --transport http)",
+)
+@option(
+    "--port",
+    type=int,
+    default=8080,
+    help="Port to bind HTTP server to (only used with --transport http)",
+)
+@option(
+    "--env",
+    type=ClickPath(exists=True, path_type=Path),
+    help="Path to .env file to load environment variables from",
+)
 @click.version_option(
-    version=_get_version(),
+    version=get_version(),
     message="QDrant Loader MCP Server v%(version)s",
 )
-def cli(log_level: str = "INFO", config: Path | None = None) -> None:
+def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "stdio", host: str = "127.0.0.1", port: int = 8080, env: Path | None = None) -> None:
     """QDrant Loader MCP Server.
 
     A Model Context Protocol (MCP) server that provides RAG capabilities
     to Cursor and other LLM applications using Qdrant vector database.
 
-    The server communicates via JSON-RPC over stdio and provides semantic
-    search capabilities for documents stored in Qdrant.
+    The server supports both stdio (JSON-RPC) and HTTP (with SSE) transports
+    for maximum compatibility with different MCP clients.
 
     Environment Variables:
         QDRANT_URL: URL of your QDrant instance (required)
@@ -281,11 +329,17 @@ def cli(log_level: str = "INFO", config: Path | None = None) -> None:
         MCP_DISABLE_CONSOLE_LOGGING: Set to "true" to disable console logging
 
     Examples:
-        # Start the MCP server
+        # Start with stdio transport (default, for Cursor/Claude Desktop)
         mcp-qdrant-loader
 
+        # Start with HTTP transport (for web clients)
+        mcp-qdrant-loader --transport http --port 8080
+
+        # Start with environment variables from .env file
+        mcp-qdrant-loader --transport http --env /path/to/.env
+
         # Start with debug logging
-        mcp-qdrant-loader --log-level DEBUG
+        mcp-qdrant-loader --log-level DEBUG --transport http
 
         # Show help
         mcp-qdrant-loader --help
@@ -294,6 +348,11 @@ def cli(log_level: str = "INFO", config: Path | None = None) -> None:
         mcp-qdrant-loader --version
     """
     try:
+        # Load environment variables from .env file if specified
+        if env:
+            load_dotenv(env)
+            click.echo(f"Loaded environment variables from: {env}")
+        
         # Setup logging
         _setup_logging(log_level)
 
@@ -308,8 +367,13 @@ def cli(log_level: str = "INFO", config: Path | None = None) -> None:
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(loop)))
 
-        # Start the stdio handler
-        loop.run_until_complete(handle_stdio(config_obj, log_level))
+        # Start the appropriate transport handler
+        if transport.lower() == "stdio":
+            loop.run_until_complete(handle_stdio(config_obj, log_level))
+        elif transport.lower() == "http":
+            loop.run_until_complete(start_http_server(config_obj, log_level, host, port))
+        else:
+            raise ValueError(f"Unsupported transport: {transport}")
     except Exception:
         logger = LoggingConfig.get_logger(__name__)
         logger.error("Error in main", exc_info=True)

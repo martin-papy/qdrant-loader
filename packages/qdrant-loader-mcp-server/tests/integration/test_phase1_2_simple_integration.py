@@ -1,4 +1,5 @@
-"""Simple integration test for Phase 1.2 Topic-Driven Search Chaining.
+"""
+Simple integration test for Topic-Driven Search Chaining.
 
 Tests real components working together without complex mocking.
 """
@@ -14,7 +15,7 @@ from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     ChainStrategy
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestPhase12SimpleIntegration:
@@ -32,7 +33,7 @@ class TestPhase12SimpleIntegration:
     def sample_search_results(self):
         """Realistic search results for testing."""
         return [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="OAuth 2.0 authentication flow with JWT token validation for secure API access",
                 source_type="git",
@@ -49,7 +50,7 @@ class TestPhase12SimpleIntegration:
                 ],
                 breadcrumb_text="Documentation > Security > Authentication > OAuth"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.85,
                 text="REST API design principles and security best practices for web applications",
                 source_type="confluence",
@@ -66,7 +67,7 @@ class TestPhase12SimpleIntegration:
                 ],
                 breadcrumb_text="Documentation > API > Design > REST"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Database security patterns and encryption strategies for sensitive data protection",
                 source_type="documentation",
@@ -82,7 +83,7 @@ class TestPhase12SimpleIntegration:
                 ],
                 breadcrumb_text="Documentation > Database > Security"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.75,
                 text="Microservices architecture patterns for scalable web applications and APIs",
                 source_type="git",
@@ -287,7 +288,7 @@ class TestPhase12SimpleIntegration:
         assert len(chain.chain_links) >= 0  # May be 0 if no good chains found
         
         print(f"\n✅ End-to-end workflow completed successfully!")
-        print(f"🚀 Phase 1.2 Topic-Driven Search Chaining is working with real components!")
+        print(f"🚀 Topic-Driven Search Chaining is working with real components!")
 
 
 if __name__ == "__main__":
