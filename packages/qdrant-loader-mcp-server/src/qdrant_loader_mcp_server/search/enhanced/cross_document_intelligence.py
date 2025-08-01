@@ -1,5 +1,5 @@
 """
-🔥 Phase 2.3: Cross-Document Intelligence
+Cross-Document Intelligence
 
 This module implements advanced cross-document relationship analysis that leverages
 the rich metadata extracted during document ingestion. It provides intelligent
@@ -18,6 +18,7 @@ Key Features:
 import logging
 import time
 import math
+import warnings
 import networkx as nx
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
@@ -28,6 +29,7 @@ from datetime import datetime
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
 from ..models import SearchResult
+from ..components.search_result_models import HybridSearchResult
 from .knowledge_graph import DocumentKnowledgeGraph, NodeType, TraversalStrategy
 
 logger = LoggingConfig.get_logger(__name__)
@@ -153,13 +155,28 @@ class CitationNetwork:
             self.build_graph()
             
         try:
-            # Calculate HITS algorithm scores
-            hits_scores = nx.hits(self.graph, max_iter=100, normalized=True)
-            self.hub_scores = hits_scores[0]
-            self.authority_scores = hits_scores[1]
-            
-            # Calculate PageRank scores
-            self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
+            # Check if graph has enough edges for meaningful analysis
+            if self.graph.number_of_edges() == 0:
+                logger.debug("Graph has no edges, using degree centrality fallback")
+                if self.graph.nodes():
+                    degree_centrality = nx.degree_centrality(self.graph)
+                    self.authority_scores = degree_centrality
+                    self.hub_scores = degree_centrality
+                    self.pagerank_scores = degree_centrality
+                return
+                
+            # Suppress NetworkX RuntimeWarning for division by zero in HITS algorithm
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", "invalid value encountered in divide", RuntimeWarning)
+                warnings.filterwarnings("ignore", "divide by zero encountered", RuntimeWarning)
+                
+                # Calculate HITS algorithm scores
+                hits_scores = nx.hits(self.graph, max_iter=100, normalized=True)
+                self.hub_scores = hits_scores[0]
+                self.authority_scores = hits_scores[1]
+                
+                # Calculate PageRank scores
+                self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
             
         except Exception as e:
             logger.warning(f"Failed to calculate centrality scores: {e}")
@@ -869,8 +886,8 @@ class ComplementaryContentFinder:
         self.knowledge_graph = knowledge_graph
         self.logger = LoggingConfig.get_logger(__name__)
         
-    def find_complementary_content(self, target_doc: SearchResult, 
-                                 candidate_docs: List[SearchResult],
+    def find_complementary_content(self, target_doc: HybridSearchResult, 
+                                 candidate_docs: List[HybridSearchResult],
                                  max_recommendations: int = 5) -> ComplementaryContent:
         """Find complementary content for a target document."""
         start_time = time.time()
@@ -916,8 +933,8 @@ class ComplementaryContentFinder:
             recommendation_strategy="mixed"
         )
     
-    def _calculate_complementary_score(self, target_doc: SearchResult, 
-                                     candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _calculate_complementary_score(self, target_doc: HybridSearchResult, 
+                                     candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Calculate how complementary a candidate document is to the target.
         
         Redesigned algorithm that prioritizes intra-project relationships while
@@ -953,7 +970,7 @@ class ComplementaryContentFinder:
         self.logger.info(f"Final complementary score: {score:.3f} for {candidate_doc.source_title} - {reason}")
         return score, reason
     
-    def _score_intra_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _score_intra_project_complementary(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Score complementary relationships within the same project."""
         factors = []
         
@@ -984,7 +1001,7 @@ class ComplementaryContentFinder:
         
         return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
-    def _score_inter_project_complementary(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _score_inter_project_complementary(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Score complementary relationships between different projects."""
         factors = []
         
@@ -1012,7 +1029,7 @@ class ComplementaryContentFinder:
         
         return self._calculate_weighted_score(factors, target_doc, candidate_doc)
     
-    def _calculate_weighted_score(self, factors: List[Tuple[float, str]], target_doc: SearchResult = None, candidate_doc: SearchResult = None) -> Tuple[float, str]:
+    def _calculate_weighted_score(self, factors: List[Tuple[float, str]], target_doc: HybridSearchResult = None, candidate_doc: HybridSearchResult = None) -> Tuple[float, str]:
         """Calculate weighted score from multiple factors."""
         if not factors:
             if target_doc and candidate_doc:
@@ -1034,7 +1051,7 @@ class ComplementaryContentFinder:
             
         return final_score, primary_reason
     
-    def _is_requirements_implementation_pair(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+    def _is_requirements_implementation_pair(self, doc1: HybridSearchResult, doc2: HybridSearchResult) -> bool:
         """Detect if documents form a requirements -> implementation chain."""
         req_keywords = ["requirements", "specification", "user story", "feature", "functional"]
         impl_keywords = ["implementation", "technical", "architecture", "api", "code", "development"]
@@ -1103,13 +1120,13 @@ class ComplementaryContentFinder:
         
         return False
     
-    def _has_different_document_types(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+    def _has_different_document_types(self, doc1: HybridSearchResult, doc2: HybridSearchResult) -> bool:
         """Check if documents are of different types based on content and title."""
         type1 = self._classify_document_type(doc1)
         type2 = self._classify_document_type(doc2)
         return type1 != type2
     
-    def _classify_document_type(self, doc: SearchResult) -> str:
+    def _classify_document_type(self, doc: HybridSearchResult) -> str:
         """Classify document as: user_story, technical_spec, architecture, compliance, testing, etc."""
         title = doc.source_title.lower()
         
@@ -1238,7 +1255,7 @@ class ComplementaryContentFinder:
         
         return shared_tech
     
-    def _enhanced_fallback_scoring(self, target_doc: SearchResult, candidate_doc: SearchResult) -> Tuple[float, str]:
+    def _enhanced_fallback_scoring(self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult) -> Tuple[float, str]:
         """Enhanced fallback when advanced algorithms don't apply."""
         fallback_score = self._calculate_fallback_score(target_doc, candidate_doc)
         if fallback_score > 0:
@@ -1439,7 +1456,18 @@ class ConflictDetector:
         if len(set(topics1) & set(topics2)) > 0:
             return True
         
-        return False
+        # Both documents from same source type and seem related by content
+        if (doc1.source_type == doc2.source_type and 
+            self._have_content_overlap(doc1, doc2)):
+            return True
+        
+        # Documents with similar titles or content themes
+        if self._have_semantic_similarity(doc1, doc2):
+            return True
+        
+        # If documents came from the same search query, they're likely semantically related
+        # Always analyze at least some pairs to avoid completely empty results
+        return True
     
     def _find_contradiction_patterns(self, doc1: SearchResult, doc2: SearchResult) -> List[str]:
         """Find textual patterns that suggest contradictions."""
@@ -1552,6 +1580,45 @@ class ConflictDetector:
             elif isinstance(topic, str):
                 texts.append(topic.lower())
         return [t for t in texts if t]
+    
+    def _have_content_overlap(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have significant content overlap."""
+        words1 = set(doc1.text.lower().split())
+        words2 = set(doc2.text.lower().split())
+        
+        # Filter out common words
+        common_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an'}
+        words1 = words1 - common_words
+        words2 = words2 - common_words
+        
+        if not words1 or not words2:
+            return False
+            
+        overlap = len(words1 & words2)
+        total = min(len(words1), len(words2))
+        return overlap / total > 0.1  # 10% word overlap threshold
+    
+    def _have_semantic_similarity(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check if documents have semantic similarity based on titles and key terms."""
+        # Compare titles
+        title1 = (doc1.source_title or "").lower()
+        title2 = (doc2.source_title or "").lower()
+        
+        if title1 and title2:
+            title_words1 = set(title1.split())
+            title_words2 = set(title2.split())
+            if len(title_words1 & title_words2) > 0:
+                return True
+        
+        # Look for key terms that suggest similar subject matter
+        key_terms = ['authentication', 'security', 'login', 'password', 'access', 'user', 'interface', 'design', 'app', 'mobile']
+        text1_lower = doc1.text.lower()
+        text2_lower = doc2.text.lower()
+        
+        terms_in_doc1 = [term for term in key_terms if term in text1_lower]
+        terms_in_doc2 = [term for term in key_terms if term in text2_lower]
+        
+        return len(set(terms_in_doc1) & set(terms_in_doc2)) >= 2  # At least 2 shared key terms
 
 
 class CrossDocumentIntelligenceEngine:
@@ -1571,7 +1638,7 @@ class CrossDocumentIntelligenceEngine:
         self.complementary_finder = ComplementaryContentFinder(self.similarity_calculator, knowledge_graph)
         self.conflict_detector = ConflictDetector(spacy_analyzer)
         
-    def analyze_document_relationships(self, documents: List[SearchResult]) -> Dict[str, Any]:
+    def analyze_document_relationships(self, documents: List[HybridSearchResult]) -> Dict[str, Any]:
         """Perform comprehensive cross-document relationship analysis."""
         start_time = time.time()
         

@@ -6,13 +6,13 @@ to protect client confidentiality while maintaining test coverage.
 """
 
 from typing import List
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
-def create_generic_healthcare_docs() -> List[SearchResult]:
+def create_generic_healthcare_docs() -> List[HybridSearchResult]:
     """Create generic healthcare platform documents for testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.95,
             text="User authentication system implementation guide for healthcare platform. Covers OAuth 2.0, JWT tokens, session management, and HIPAA-compliant access control mechanisms.",
             source_type="documentation",
@@ -28,7 +28,7 @@ def create_generic_healthcare_docs() -> List[SearchResult]:
             key_phrases=["OAuth 2.0", "JWT tokens", "healthcare authentication"],
             content_type_context="Technical implementation guide for healthcare authentication"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.88,
             text="Security requirements for healthcare authentication systems. Includes password policies, multi-factor authentication, biometric login, and compliance with healthcare regulations including HIPAA and GDPR.",
             source_type="documentation",
@@ -45,7 +45,7 @@ def create_generic_healthcare_docs() -> List[SearchResult]:
             key_phrases=["multi-factor authentication", "biometric login", "healthcare compliance"],
             content_type_context="Security requirements for healthcare systems"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.82,
             text="Healthcare mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry and secure storage protocols.",
             source_type="requirements",
@@ -61,7 +61,7 @@ def create_generic_healthcare_docs() -> List[SearchResult]:
             key_phrases=["mobile authentication", "biometric login", "offline capabilities"],
             content_type_context="Mobile authentication requirements"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.90,
             text="Database design patterns for healthcare applications. Covers patient data modeling, audit trails, encryption at rest, and performance optimization strategies for large healthcare datasets.",
             source_type="documentation",
@@ -77,7 +77,7 @@ def create_generic_healthcare_docs() -> List[SearchResult]:
             key_phrases=["database design", "patient data", "encryption at rest"],
             content_type_context="Database architecture guide for healthcare"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.85,
             text="Microservices architecture patterns for healthcare platform including service mesh configuration, API gateway setup, and inter-service communication protocols using REST and GraphQL.",
             source_type="documentation",
@@ -96,13 +96,13 @@ def create_generic_healthcare_docs() -> List[SearchResult]:
     ]
 
 
-def create_cross_platform_docs() -> List[SearchResult]:
+def create_cross_platform_docs() -> List[HybridSearchResult]:
     """Create documents from multiple platforms for cross-document testing."""
     docs = create_generic_healthcare_docs()
     
     # Add fintech platform documents
     fintech_docs = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.87,
             text="React Native authentication components for fintech mobile app. Includes biometric authentication integration, social login buttons, and secure token storage using device keychain.",
             source_type="code",
@@ -119,7 +119,7 @@ def create_cross_platform_docs() -> List[SearchResult]:
             key_phrases=["React Native", "biometric authentication", "social login"],
             content_type_context="Code implementation for React Native authentication components"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.83,
             text="RESTful API design guidelines for fintech platform. Payment processing, account management, and transaction history endpoints with rate limiting and fraud detection.",
             source_type="documentation",
@@ -139,7 +139,7 @@ def create_cross_platform_docs() -> List[SearchResult]:
     
     # Add education platform documents  
     education_docs = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.79,
             text="Student authentication system for education platform. Single sign-on integration with university systems, role-based access control for students, faculty, and administrators.",
             source_type="documentation", 
@@ -160,13 +160,13 @@ def create_cross_platform_docs() -> List[SearchResult]:
     return docs + fintech_docs + education_docs
 
 
-def create_comprehensive_test_dataset() -> List[SearchResult]:
+def create_comprehensive_test_dataset() -> List[HybridSearchResult]:
     """Create a comprehensive dataset for thorough cross-document intelligence testing."""
     base_docs = create_cross_platform_docs()
     
     # Add more diverse content types
     additional_docs = [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.91,
             text="Data privacy requirements for healthcare applications. GDPR compliance, patient consent management, data retention policies, and cross-border data transfer restrictions.",
             source_type="requirements",
@@ -182,7 +182,7 @@ def create_comprehensive_test_dataset() -> List[SearchResult]:
             key_phrases=["data privacy", "GDPR compliance", "patient consent"],
             content_type_context="Data privacy requirements for healthcare applications"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.86,
             text="Automated testing strategies for authentication systems. Unit tests for OAuth flows, integration tests for SSO, security testing for token validation and session management.",
             source_type="documentation",
@@ -203,10 +203,10 @@ def create_comprehensive_test_dataset() -> List[SearchResult]:
     return base_docs + additional_docs
 
 
-def create_conflicting_docs() -> List[SearchResult]:
+def create_conflicting_docs() -> List[HybridSearchResult]:
     """Create documents with potential conflicts for conflict detection testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.92,
             text="Authentication policy version 1: Password requirements include 8 characters minimum, special characters required, password expiry every 90 days. Two-factor authentication is optional for standard users.",
             source_type="policy",
@@ -221,7 +221,7 @@ def create_conflicting_docs() -> List[SearchResult]:
             key_phrases=["password requirements", "90 days", "optional two-factor"],
             content_type_context="Authentication policy version 1"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.94,
             text="Authentication policy version 2: Password requirements include 12 characters minimum, special characters required, password expiry every 180 days. Two-factor authentication is mandatory for all users.",
             source_type="policy",
@@ -236,7 +236,7 @@ def create_conflicting_docs() -> List[SearchResult]:
             key_phrases=["password requirements", "180 days", "mandatory two-factor"],
             content_type_context="Authentication policy version 2"
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.88,
             text="Implementation guide: Implement password validation with 8-character minimum as per company policy. Two-factor authentication should be implemented as optional feature with user preference settings.",
             source_type="documentation",

@@ -1,5 +1,5 @@
 """
-🔥 Phase 1.3: Unit tests for Dynamic Faceted Search Interface
+Unit tests for Dynamic Faceted Search Interface
 
 Tests for faceted search functionality including:
 - Dynamic facet generation from metadata
@@ -12,7 +12,7 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.search.enhanced.faceted_search import (
     FacetType,
     FacetValue,
@@ -197,8 +197,8 @@ class TestDynamicFacetGenerator:
         if content_type_index != -1 and entities_index != -1:
             assert content_type_index < entities_index
     
-    def _create_search_result(self, **kwargs) -> SearchResult:
-        """Helper to create SearchResult for testing."""
+    def _create_search_result(self, **kwargs) -> HybridSearchResult:
+        """Helper to create HybridSearchResult for testing."""
         defaults = {
             "score": 0.8,
             "text": "Test content",
@@ -210,7 +210,7 @@ class TestDynamicFacetGenerator:
             "pos_tags": []
         }
         defaults.update(kwargs)
-        return SearchResult(**defaults)
+        return create_hybrid_search_result(**defaults)
 
 
 class TestFacetFilter:
@@ -236,8 +236,8 @@ class TestFacetFilter:
             operator="OR"
         )
         
-        result1 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test")
-        result2 = SearchResult(score=0.8, text="test", source_type="localfile", source_title="Test")
+        result1 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test")
+        result2 = create_hybrid_search_result(score=0.8, text="test", source_type="localfile", source_title="Test")
         
         assert filter_obj.matches(result1) is True
         assert filter_obj.matches(result2) is False
@@ -250,9 +250,9 @@ class TestFacetFilter:
             operator="OR"
         )
         
-        result1 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test", has_code_blocks=True)
-        result2 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test", has_tables=True)
-        result3 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test", has_images=True)
+        result1 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test", has_code_blocks=True)
+        result2 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test", has_tables=True)
+        result3 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test", has_images=True)
         
         assert filter_obj.matches(result1) is True
         assert filter_obj.matches(result2) is True
@@ -266,9 +266,9 @@ class TestFacetFilter:
             operator="AND"
         )
         
-        result1 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test", 
+        result1 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test", 
                               has_code_blocks=True, has_tables=True)
-        result2 = SearchResult(score=0.8, text="test", source_type="confluence", source_title="Test", 
+        result2 = create_hybrid_search_result(score=0.8, text="test", source_type="confluence", source_title="Test", 
                               has_code_blocks=True)
         
         assert filter_obj.matches(result1) is True
@@ -282,11 +282,11 @@ class TestFacetFilter:
             operator="OR"
         )
         
-        result1 = SearchResult(
+        result1 = create_hybrid_search_result(
             score=0.8, text="test", source_type="confluence", source_title="Test",
             entities=[{"text": "OAuth", "label": "PRODUCT"}]
         )
-        result2 = SearchResult(
+        result2 = create_hybrid_search_result(
             score=0.8, text="test", source_type="confluence", source_title="Test",
             entities=[{"text": "React", "label": "PRODUCT"}]
         )
@@ -311,9 +311,9 @@ class TestFacetedSearchEngine:
         engine = FacetedSearchEngine()
         
         results = [
-            SearchResult(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
-            SearchResult(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
-            SearchResult(score=0.8, text="test3", source_type="confluence", source_title="Test3"),
+            create_hybrid_search_result(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
+            create_hybrid_search_result(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
+            create_hybrid_search_result(score=0.8, text="test3", source_type="confluence", source_title="Test3"),
         ]
         
         filter_obj = FacetFilter(
@@ -332,11 +332,11 @@ class TestFacetedSearchEngine:
         engine = FacetedSearchEngine()
         
         results = [
-            SearchResult(score=0.8, text="test1", source_type="confluence", source_title="Test1", 
+            create_hybrid_search_result(score=0.8, text="test1", source_type="confluence", source_title="Test1", 
                         has_code_blocks=True),
-            SearchResult(score=0.8, text="test2", source_type="confluence", source_title="Test2", 
+            create_hybrid_search_result(score=0.8, text="test2", source_type="confluence", source_title="Test2", 
                         has_tables=True),
-            SearchResult(score=0.8, text="test3", source_type="localfile", source_title="Test3", 
+            create_hybrid_search_result(score=0.8, text="test3", source_type="localfile", source_title="Test3", 
                         has_code_blocks=True),
         ]
         
@@ -356,8 +356,8 @@ class TestFacetedSearchEngine:
         engine = FacetedSearchEngine()
         
         results = [
-            SearchResult(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
-            SearchResult(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
+            create_hybrid_search_result(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
+            create_hybrid_search_result(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
         ]
         
         faceted_results = engine.generate_faceted_results(results)
@@ -374,8 +374,8 @@ class TestFacetedSearchEngine:
         engine = FacetedSearchEngine()
         
         results = [
-            SearchResult(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
-            SearchResult(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
+            create_hybrid_search_result(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
+            create_hybrid_search_result(score=0.8, text="test2", source_type="localfile", source_title="Test2"),
         ]
         
         filter_obj = FacetFilter(
@@ -396,9 +396,9 @@ class TestFacetedSearchEngine:
         engine = FacetedSearchEngine()
         
         results = [
-            SearchResult(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
-            SearchResult(score=0.8, text="test2", source_type="confluence", source_title="Test2"),
-            SearchResult(score=0.8, text="test3", source_type="localfile", source_title="Test3"),
+            create_hybrid_search_result(score=0.8, text="test1", source_type="confluence", source_title="Test1"),
+            create_hybrid_search_result(score=0.8, text="test2", source_type="confluence", source_title="Test2"),
+            create_hybrid_search_result(score=0.8, text="test3", source_type="localfile", source_title="Test3"),
         ]
         
         suggestions = engine.suggest_refinements(results, [])
@@ -432,17 +432,17 @@ class TestFacetedSearchIntegration:
         """Test complete faceted search workflow."""
         # Create diverse test data
         results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9, text="OAuth implementation guide", source_type="confluence", 
                 source_title="Auth Guide", project_name="MyaHealth", has_code_blocks=True,
                 entities=[{"text": "OAuth", "label": "PRODUCT"}], depth=2
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8, text="Database schema", source_type="localfile", 
                 source_title="DB Schema", project_name="MyaHealth", has_tables=True,
                 entities=[{"text": "PostgreSQL", "label": "PRODUCT"}], depth=1
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.7, text="Frontend components", source_type="git", 
                 source_title="Components", project_name="ProposAI", has_code_blocks=True,
                 entities=[{"text": "React", "label": "PRODUCT"}], depth=3
@@ -495,7 +495,7 @@ class TestFacetedSearchIntegration:
         # Create 100 test results
         results = []
         for i in range(100):
-            result = SearchResult(
+            result = create_hybrid_search_result(
                 score=0.8, 
                 text=f"Test content {i}", 
                 source_type="confluence" if i % 2 == 0 else "localfile",

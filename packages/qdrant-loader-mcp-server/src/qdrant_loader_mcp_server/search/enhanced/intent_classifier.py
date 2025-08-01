@@ -1,7 +1,8 @@
-"""Intent-Aware Adaptive Search for Phase 2.2 Search Enhancement.
+"""
+Intent-Aware Adaptive Search for Search Enhancement.
 
 This module implements advanced intent classification and adaptive search strategies
-that leverage Phase 1.0 spaCy analysis and Phase 2.1 knowledge graph capabilities.
+that leverage spaCy analysis and knowledge graph capabilities.
 """
 
 import logging
@@ -294,7 +295,7 @@ class IntentClassifier:
             return cached
         
         try:
-            # Step 1: Perform spaCy semantic analysis (leveraging Phase 1.0)
+            # Step 1: Perform spaCy semantic analysis
             spacy_analysis = self.spacy_analyzer.analyze_query_semantic(query)
             
             # Step 2: Extract linguistic features for intent classification

@@ -3,16 +3,13 @@
 from typing import Any
 
 from openai import AsyncOpenAI
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.http import models
+from qdrant_client import AsyncQdrantClient, models
 
 from ..config import OpenAIConfig, QdrantConfig
 from ..utils.logging import LoggingConfig
 from .hybrid_search import HybridSearchEngine
-from .models import SearchResult
-# 🔥 NEW: Import Phase 1.2 topic chaining components
+from .components.search_result_models import HybridSearchResult
 from .enhanced.topic_search_chain import TopicSearchChain, ChainStrategy
-# 🔥 NEW: Import Phase 2.3 cross-document intelligence components
 from .enhanced.cross_document_intelligence import SimilarityMetric, ClusteringStrategy
 
 logger = LoggingConfig.get_logger(__name__)
@@ -35,7 +32,13 @@ class SearchEngine:
         """Initialize the search engine with configuration."""
         self.config = config
         try:
-            self.client = AsyncQdrantClient(url=config.url, api_key=config.api_key)
+            # Configure timeout for Qdrant cloud instances
+            # Set to 120 seconds to handle large datasets and prevent ReadTimeout errors
+            self.client = AsyncQdrantClient(
+                url=config.url, 
+                api_key=config.api_key,
+                timeout=120  # 120 seconds timeout for cloud instances
+            )
             self.openai_client = AsyncOpenAI(api_key=openai_config.api_key)
 
             # Ensure collection exists
@@ -85,7 +88,7 @@ class SearchEngine:
         source_types: list[str] | None = None,
         limit: int = 5,
         project_ids: list[str] | None = None,
-    ) -> list[SearchResult]:
+    ) -> list[HybridSearchResult]:
         """Search for documents using hybrid search.
 
         Args:
@@ -184,7 +187,7 @@ class SearchEngine:
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> dict[str, list[SearchResult]]:
+    ) -> dict[str, list[HybridSearchResult]]:
         """🔥 NEW: Execute searches for all links in a topic chain.
         
         Args:
@@ -235,7 +238,7 @@ class SearchEngine:
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> dict[str, list[SearchResult]]:
+    ) -> dict[str, list[HybridSearchResult]]:
         """🔥 NEW: Combined method to generate and execute a topic search chain.
         
         Args:
@@ -287,7 +290,7 @@ class SearchEngine:
             raise
     
     # ============================================================================
-    # 🔥 Phase 1.3: Dynamic Faceted Search Interface Methods
+    # Dynamic Faceted Search Interface Methods
     # ============================================================================
     
     async def search_with_facets(
@@ -299,7 +302,7 @@ class SearchEngine:
         facet_filters: list[dict] | None = None,
     ) -> dict:
         """
-        🔥 Phase 1.3: Perform faceted search with dynamic facet generation.
+        Perform faceted search with dynamic facet generation.
         
         Returns search results with generated facets for interactive filtering.
         
@@ -388,7 +391,7 @@ class SearchEngine:
         limit: int = 20
     ) -> list[dict]:
         """
-        🔥 Phase 1.3: Get facet refinement suggestions based on current search.
+        Get facet refinement suggestions based on current search.
         
         Args:
             query: Current search query
@@ -433,7 +436,7 @@ class SearchEngine:
             self.logger.error("Facet suggestions failed", error=str(e), query=query)
             raise
     
-    # 🔥 Phase 2.3: Cross-Document Intelligence MCP Interface
+    # Cross-Document Intelligence MCP Interface
     
     async def analyze_document_relationships(
         self,
@@ -443,7 +446,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Analyze relationships between documents from search results.
+        Analyze relationships between documents from search results.
         
         Args:
             query: Search query to get documents for analysis
@@ -499,7 +502,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find documents similar to a target document.
+        Find documents similar to a target document.
         
         Args:
             target_query: Query to find the target document
@@ -564,7 +567,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Detect conflicts between documents.
+        Detect conflicts between documents.
         
         Args:
             query: Search query to get documents for conflict analysis
@@ -621,7 +624,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        🔥 Phase 2.3: Find content that complements a target document.
+        Find content that complements a target document.
         
         Args:
             target_query: Query to find the target document
@@ -691,7 +694,7 @@ class SearchEngine:
         project_ids: list[str] | None = None
     ) -> dict[str, Any]:
         """
-        🔥 Phase 2.3: Cluster documents based on similarity and relationships.
+        Cluster documents based on similarity and relationships.
         
         Args:
             query: Search query to get documents for clustering

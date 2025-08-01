@@ -1,10 +1,11 @@
-"""Knowledge Graph Construction for Advanced Search Intelligence.
+"""
+Knowledge Graph for Search Enhancement.
 
-This module implements Phase 2.1 of the search enhancement roadmap:
+This module implements knowledge graph capabilities for search enhancement:
 - Multi-node graph construction from document metadata
 - Relationship extraction and strength scoring
 - Graph traversal algorithms for multi-hop search
-- Integration with spaCy-powered Phase 1.0 components
+- Integration with spaCy-powered components
 """
 
 import logging

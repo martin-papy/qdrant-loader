@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -123,7 +123,7 @@ async def test_search_basic(hybrid_search):
     results = await hybrid_search.search("test query")
 
     assert len(results) > 0
-    assert isinstance(results[0], SearchResult)
+    assert isinstance(results[0], HybridSearchResult)
     assert results[0].score > 0
     assert results[0].text == "Test content 1"
     assert results[0].source_type == "git"
@@ -324,7 +324,25 @@ async def test_vector_search(hybrid_search, mock_qdrant_client):
 @pytest.mark.asyncio
 async def test_keyword_search(hybrid_search, mock_qdrant_client):
     """Test keyword search functionality."""
-    with patch("qdrant_loader_mcp_server.search.hybrid_search.BM25Okapi") as mock_bm25:
+    # Add a third mock result to match BM25 scores
+    search_result3 = MagicMock()
+    search_result3.id = "3"
+    search_result3.score = 0.6
+    search_result3.payload = {
+        "content": "Test content 3",
+        "metadata": {"title": "Test Doc 3", "url": "http://test3.com"},
+        "source_type": "jira",
+    }
+    
+    # Update scroll to return 3 results
+    original_scroll_return = mock_qdrant_client.scroll.return_value
+    original_results = original_scroll_return[0]
+    mock_qdrant_client.scroll.return_value = (
+        original_results + [search_result3], 
+        None
+    )
+    
+    with patch("qdrant_loader_mcp_server.search.components.keyword_search_service.BM25Okapi") as mock_bm25:
         # Mock BM25 scoring
         mock_bm25_instance = MagicMock()
         mock_bm25_instance.get_scores.return_value = np.array([0.5, 0.8, 0.3])

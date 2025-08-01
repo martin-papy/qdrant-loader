@@ -1,4 +1,4 @@
-"""Unit tests for Topic-Driven Search Chaining (Phase 1.2)."""
+"""Unit tests for Topic-Driven Search Chaining."""
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
@@ -12,7 +12,7 @@ from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     ChainStrategy
 )
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestTopicRelationshipMap:
@@ -41,7 +41,7 @@ class TestTopicRelationshipMap:
     def sample_search_results(self):
         """Create sample search results for testing."""
         return [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="API documentation for user authentication",
                 source_type="confluence",
@@ -56,7 +56,7 @@ class TestTopicRelationshipMap:
                 ],
                 breadcrumb_text="Development > Authentication > API"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Database security best practices",
                 source_type="documentation",
@@ -71,7 +71,7 @@ class TestTopicRelationshipMap:
                 ],
                 breadcrumb_text="Development > Security > Database"
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.85,
                 text="OAuth implementation with JWT tokens",
                 source_type="git",
@@ -107,7 +107,7 @@ class TestTopicRelationshipMap:
     
     def test_extract_topics_from_result(self, topic_map):
         """Test topic extraction from search results."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.9,
             text="Test content",
             source_type="confluence",
@@ -213,14 +213,14 @@ class TestTopicSearchChainGenerator:
     def sample_search_results_for_init(self):
         """Sample results for initializing topic relationships."""
         return [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="REST API documentation",
                 source_type="confluence",
                 source_title="API Guide", 
                 topics=[{"text": "api", "score": 0.8}, {"text": "rest", "score": 0.7}]
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.8,
                 text="Authentication mechanisms",
                 source_type="documentation",
@@ -419,7 +419,7 @@ class TestTopicChainIntegration:
         
         # Create realistic search results
         sample_results = [
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.9,
                 text="RESTful API design principles and best practices for authentication",
                 source_type="confluence",
@@ -434,7 +434,7 @@ class TestTopicChainIntegration:
                     {"text": "HTTP", "label": "PROTOCOL"}
                 ]
             ),
-            SearchResult(
+            create_hybrid_search_result(
                 score=0.85,
                 text="OAuth 2.0 implementation with JWT tokens for secure API access",
                 source_type="documentation", 

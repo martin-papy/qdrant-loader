@@ -1,14 +1,14 @@
 """Tests for search models."""
 
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 class TestSearchResult:
-    """Test SearchResult model methods."""
+    """Test HybridSearchResult model methods."""
 
     def test_get_display_title_with_breadcrumb(self):
         """Test display title with breadcrumb for Confluence documents."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -23,7 +23,7 @@ class TestSearchResult:
 
     def test_get_display_title_without_breadcrumb(self):
         """Test display title without breadcrumb."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8, text="Test content", source_type="git", source_title="config.py"
         )
 
@@ -32,7 +32,7 @@ class TestSearchResult:
 
     def test_get_display_title_non_confluence(self):
         """Test display title for non-Confluence sources."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="git",
@@ -45,7 +45,7 @@ class TestSearchResult:
 
     def test_get_hierarchy_info_with_context(self):
         """Test hierarchy info extraction."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -58,7 +58,7 @@ class TestSearchResult:
 
     def test_get_hierarchy_info_non_confluence(self):
         """Test hierarchy info for non-Confluence sources."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="git",
@@ -71,7 +71,7 @@ class TestSearchResult:
 
     def test_get_hierarchy_info_no_context(self):
         """Test hierarchy info when no context is available."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -83,7 +83,7 @@ class TestSearchResult:
 
     def test_is_root_document_true(self):
         """Test root document detection when parent_id is None."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -95,7 +95,7 @@ class TestSearchResult:
 
     def test_is_root_document_false(self):
         """Test root document detection when parent_id exists."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -107,7 +107,7 @@ class TestSearchResult:
 
     def test_has_children_true(self):
         """Test children detection when children_count > 0."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -119,7 +119,7 @@ class TestSearchResult:
 
     def test_has_children_false_zero(self):
         """Test children detection when children_count is 0."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -131,7 +131,7 @@ class TestSearchResult:
 
     def test_has_children_false_none(self):
         """Test children detection when children_count is None."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -143,7 +143,7 @@ class TestSearchResult:
 
     def test_get_attachment_info_with_context(self):
         """Test attachment info extraction."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -160,7 +160,7 @@ class TestSearchResult:
 
     def test_get_attachment_info_not_attachment(self):
         """Test attachment info for non-attachment documents."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -174,7 +174,7 @@ class TestSearchResult:
 
     def test_get_attachment_info_no_context(self):
         """Test attachment info when no context is available."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -188,7 +188,7 @@ class TestSearchResult:
 
     def test_is_file_attachment_true(self):
         """Test file attachment detection when is_attachment is True."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -200,7 +200,7 @@ class TestSearchResult:
 
     def test_is_file_attachment_false(self):
         """Test file attachment detection when is_attachment is False."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -212,7 +212,7 @@ class TestSearchResult:
 
     def test_get_file_type_from_mime_type(self):
         """Test file type extraction from MIME type."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -225,7 +225,7 @@ class TestSearchResult:
 
     def test_get_file_type_from_filename_extension(self):
         """Test file type extraction from filename extension."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -253,7 +253,7 @@ class TestSearchResult:
         ]
 
         for filename, expected_type in test_cases:
-            result = SearchResult(
+            result = create_hybrid_search_result(
                 score=0.8,
                 text="Test content",
                 source_type="confluence",
@@ -267,7 +267,7 @@ class TestSearchResult:
 
     def test_get_file_type_no_extension(self):
         """Test file type extraction when filename has no extension."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -281,7 +281,7 @@ class TestSearchResult:
 
     def test_get_file_type_hidden_file(self):
         """Test file type extraction for hidden files (starting with dot)."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="git",
@@ -295,7 +295,7 @@ class TestSearchResult:
 
     def test_get_file_type_multiple_dots(self):
         """Test file type extraction for files with multiple dots."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -309,7 +309,7 @@ class TestSearchResult:
 
     def test_get_file_type_case_insensitive(self):
         """Test file type extraction is case insensitive."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -323,7 +323,7 @@ class TestSearchResult:
 
     def test_get_file_type_no_filename_no_mime(self):
         """Test file type extraction when both filename and MIME type are None."""
-        result = SearchResult(
+        result = create_hybrid_search_result(
             score=0.8,
             text="Test content",
             source_type="confluence",
@@ -336,8 +336,8 @@ class TestSearchResult:
         assert file_type is None
 
     def test_search_result_model_validation(self):
-        """Test SearchResult model validation with all fields."""
-        result = SearchResult(
+        """Test HybridSearchResult model validation with all fields."""
+        result = create_hybrid_search_result(
             score=0.95,
             text="Complete test content with all fields",
             source_type="confluence",
@@ -392,8 +392,8 @@ class TestSearchResult:
         )
 
     def test_search_result_minimal_fields(self):
-        """Test SearchResult with only required fields."""
-        result = SearchResult(
+        """Test HybridSearchResult with only required fields."""
+        result = create_hybrid_search_result(
             score=0.5,
             text="Minimal content",
             source_type="git",

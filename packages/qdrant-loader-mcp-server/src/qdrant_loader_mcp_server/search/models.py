@@ -13,6 +13,11 @@ class SearchResult(BaseModel):
     source_url: str | None = None
     file_path: str | None = None
     repo_name: str | None = None
+    
+    # Document identification
+    document_id: str | None = None
+    created_at: str | None = None
+    last_modified: str | None = None
 
     # Project information (for multi-project support)
     project_id: str | None = None
@@ -88,14 +93,26 @@ class SearchResult(BaseModel):
 
     def get_display_title(self) -> str:
         """Get the display title with enhanced hierarchy context."""
+        # Use source_title as base, but if empty, derive from other fields
+        base_title = self.source_title
+        if not base_title or base_title.strip() == "":
+            # Try to create title from available data
+            if self.file_path:
+                import os
+                base_title = os.path.basename(self.file_path)
+            elif self.repo_name:
+                base_title = self.repo_name
+            else:
+                base_title = "Untitled"
+        
         # 🔥 ENHANCED: Use section breadcrumb for better context
         if self.section_breadcrumb:
-            return f"{self.section_title or self.source_title} ({self.section_breadcrumb})"
+            return f"{self.section_title or base_title} ({self.section_breadcrumb})"
         elif self.breadcrumb_text and self.source_type == "confluence":
-            return f"{self.source_title} ({self.breadcrumb_text})"
-        elif self.section_title and self.section_title != self.source_title:
-            return f"{self.source_title} > {self.section_title}"
-        return self.source_title
+            return f"{base_title} ({self.breadcrumb_text})"
+        elif self.section_title and self.section_title != base_title:
+            return f"{base_title} > {self.section_title}"
+        return base_title
 
     def get_project_info(self) -> str | None:
         """Get formatted project information for display."""
@@ -164,7 +181,17 @@ class SearchResult(BaseModel):
             parts.append(f"{entity_count} entities")
             
         if self.topics:
-            topic_list = ", ".join(self.topics[:3])  # Show first 3 topics
+            # Handle both string and dict formats for topics
+            topic_texts = []
+            for topic in self.topics[:3]:
+                if isinstance(topic, str):
+                    topic_texts.append(topic)
+                elif isinstance(topic, dict):
+                    topic_texts.append(topic.get("text", str(topic)))
+                else:
+                    topic_texts.append(str(topic))
+            
+            topic_list = ", ".join(topic_texts)
             if len(self.topics) > 3:
                 topic_list += f" (+{len(self.topics) - 3} more)"
             parts.append(f"Topics: {topic_list}")

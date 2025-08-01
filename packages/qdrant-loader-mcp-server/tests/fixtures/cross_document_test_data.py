@@ -1,13 +1,13 @@
 """Test fixtures for cross-document intelligence testing."""
 
 from typing import List
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
-def create_authentication_docs() -> List[SearchResult]:
+def create_authentication_docs() -> List[HybridSearchResult]:
     """Create a cluster of related authentication documents."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.95,
             text="OAuth 2.0 implementation guide with JWT tokens for microservices architecture. This document provides comprehensive security best practices including token expiration policies, refresh token handling, and secure storage mechanisms.",
             source_type="confluence",
@@ -39,7 +39,7 @@ def create_authentication_docs() -> List[SearchResult]:
             ]
         ),
         
-        SearchResult(
+        create_hybrid_search_result(
             score=0.90,
             text="JWT token implementation with Node.js Express framework. Code examples for token generation, validation, middleware integration, and refresh token rotation. Includes performance optimization tips.",
             source_type="git",
@@ -67,7 +67,7 @@ def create_authentication_docs() -> List[SearchResult]:
             breadcrumb_text="Code Repository > Backend > Authentication Service"
         ),
         
-        SearchResult(
+        create_hybrid_search_result(
             score=0.88,
             text="Healthcare mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
             source_type="confluence",
@@ -97,10 +97,10 @@ def create_authentication_docs() -> List[SearchResult]:
     ]
 
 
-def create_database_docs() -> List[SearchResult]:
+def create_database_docs() -> List[HybridSearchResult]:
     """Create a cluster of database-related documents."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.85,
             text="User management database schema design with tables for users, roles, permissions, authentication sessions, and audit logs. Includes indexing strategies and performance considerations for high-scale systems.",
             source_type="confluence",
@@ -128,7 +128,7 @@ def create_database_docs() -> List[SearchResult]:
             breadcrumb_text="Technical Documentation > Database > Schema Design"
         ),
         
-        SearchResult(
+        create_hybrid_search_result(
             score=0.82,
             text="Microservices architecture patterns for healthcare platform including service mesh configuration, API gateway setup, and inter-service communication protocols using REST and GraphQL.",
             source_type="confluence",
@@ -158,10 +158,10 @@ def create_database_docs() -> List[SearchResult]:
     ]
 
 
-def create_conflicting_docs() -> List[SearchResult]:
+def create_conflicting_docs() -> List[HybridSearchResult]:
     """Create documents with conflicting information for conflict detection testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.88,
             text="Healthcare mobile application authentication requirements including biometric login, social OAuth integration, and offline authentication capabilities. Security requirements specify token expiry of 24 hours.",
             source_type="confluence",
@@ -184,7 +184,7 @@ def create_conflicting_docs() -> List[SearchResult]:
             estimated_read_time=16
         ),
         
-        SearchResult(
+        create_hybrid_search_result(
             score=0.80,
             text="Security audit findings and recommendations for authentication system. CRITICAL: Token expiry should be reduced to 4 hours maximum for enhanced security. Previous 24-hour expiry policy is insufficient for current threat landscape.",
             source_type="confluence",
@@ -212,10 +212,10 @@ def create_conflicting_docs() -> List[SearchResult]:
     ]
 
 
-def create_cross_project_docs() -> List[SearchResult]:
+def create_cross_project_docs() -> List[HybridSearchResult]:
     """Create documents from different projects for cross-project analysis."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.78,
             text="Enterprise OAuth implementation patterns and security best practices from the business platform project. Includes lessons learned and recommended token management strategies for multi-tenant applications.",
             source_type="confluence",
@@ -243,7 +243,7 @@ def create_cross_project_docs() -> List[SearchResult]:
             breadcrumb_text="Projects > Business Platform > Architecture"
         ),
         
-        SearchResult(
+        create_hybrid_search_result(
             score=0.75,
             text="React Native authentication components for healthcare mobile app. Includes biometric authentication integration, social login buttons, and secure token storage using device keychain.",
             source_type="git",
@@ -273,10 +273,10 @@ def create_cross_project_docs() -> List[SearchResult]:
     ]
 
 
-def create_tutorial_docs() -> List[SearchResult]:
+def create_tutorial_docs() -> List[HybridSearchResult]:
     """Create tutorial and documentation for complementary content testing."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.72,
             text="Step-by-step authentication integration tutorial for new developers. Covers OAuth flow, JWT handling, error scenarios, and testing strategies. Includes postman collection and environment setup.",
             source_type="confluence",
@@ -306,7 +306,7 @@ def create_tutorial_docs() -> List[SearchResult]:
     ]
 
 
-def create_comprehensive_test_dataset() -> List[SearchResult]:
+def create_comprehensive_test_dataset() -> List[HybridSearchResult]:
     """Create a comprehensive dataset combining all test document types."""
     docs = []
     docs.extend(create_authentication_docs())
@@ -317,10 +317,10 @@ def create_comprehensive_test_dataset() -> List[SearchResult]:
     return docs
 
 
-def create_minimal_test_dataset() -> List[SearchResult]:
+def create_minimal_test_dataset() -> List[HybridSearchResult]:
     """Create a minimal dataset for quick unit tests."""
     return [
-        SearchResult(
+        create_hybrid_search_result(
             score=0.9,
             text="OAuth 2.0 authentication with JWT tokens",
             source_type="confluence",
@@ -330,7 +330,7 @@ def create_minimal_test_dataset() -> List[SearchResult]:
             entities=[{"text": "OAuth", "label": "TECHNOLOGY"}],
             topics=[{"text": "authentication", "score": 0.9}]
         ),
-        SearchResult(
+        create_hybrid_search_result(
             score=0.8,
             text="JWT implementation in Node.js",
             source_type="git", 

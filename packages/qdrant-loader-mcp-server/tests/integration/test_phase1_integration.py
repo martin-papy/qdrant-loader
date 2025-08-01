@@ -1,4 +1,4 @@
-"""Comprehensive test for Phase 1.0 spaCy integration components."""
+"""Comprehensive test for spaCy integration components."""
 
 import asyncio
 import time
@@ -10,12 +10,12 @@ from qdrant_loader_mcp_server.search.nlp.linguistic_preprocessor import Linguist
 
 
 def test_phase1_integration():
-    """Test all Phase 1.0 components working together."""
-    print("🚀 Testing Phase 1.0 spaCy Integration - Complete Suite")
+    """Test all components working together."""
+    print("🚀 Testing spaCy Integration - Complete Suite")
     print("=" * 60)
     
     # Initialize all components
-    print("Initializing Phase 1.0 components...")
+    print("Initializing components...")
     start_time = time.time()
     
     analyzer = SpaCyQueryAnalyzer()
@@ -164,11 +164,11 @@ def test_phase1_integration():
     
     print("✅ All caches cleared successfully")
     
-    print(f"\n🎉 Phase 1.0 Integration Test Complete!")
+    print(f"\n🎉 Integration Test Complete!")
     print("=" * 45)
     
     # Summary of capabilities
-    print(f"\n📋 Phase 1.0 Capabilities Summary:")
+    print(f"\n📋 Capabilities Summary:")
     print("-" * 33)
     print("✅ spaCy-powered query analysis (en_core_web_md)")
     print("✅ Linguistic intent detection (POS patterns)")
@@ -197,8 +197,8 @@ def test_phase1_integration():
 if __name__ == "__main__":
     try:
         test_phase1_integration()
-        print(f"\n✨ All Phase 1.0 tests passed successfully! Ready for production use.")
+        print(f"\n✨ All tests passed successfully! Ready for production use.")
     except Exception as e:
-        print(f"\n❌ Phase 1.0 test failed: {e}")
+        print(f"\n❌ Test failed: {e}")
         import traceback
         traceback.print_exc() 

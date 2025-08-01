@@ -1,4 +1,4 @@
-"""Integration tests for Phase 2.2 Intent-Aware Adaptive Search."""
+"""Integration tests for Intent-Aware Adaptive Search."""
 
 import pytest
 import asyncio
@@ -6,7 +6,7 @@ from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from typing import List, Dict, Any
 
 from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine, HybridSearchResult
-from qdrant_loader_mcp_server.search.models import SearchResult
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
     IntentType, SearchIntent, IntentClassifier, AdaptiveSearchStrategy
 )
@@ -15,7 +15,7 @@ from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import SpaCyQueryAnalyze
 
 
 class TestPhase2_2Integration:
-    """Integration tests for Phase 2.2 Intent-Aware Adaptive Search."""
+    """Integration tests for Intent-Aware Adaptive Search."""
     
     @pytest.fixture
     def mock_qdrant_client(self):
