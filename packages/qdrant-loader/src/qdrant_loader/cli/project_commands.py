@@ -11,11 +11,14 @@ from click.utils import echo
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from sqlalchemy import func, select
 
 from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.config import Settings
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.core.project_manager import ProjectManager
+from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
+from qdrant_loader.core.state.state_manager import StateManager
 from qdrant_loader.utils.logging import LoggingConfig
 
 # Rich console for better output formatting
@@ -37,6 +40,39 @@ def _get_all_sources_from_config(sources_config):
     all_sources.update(sources_config.jira)
     all_sources.update(sources_config.localfile)
     return all_sources
+
+
+async def _get_project_document_count(state_manager: StateManager, project_id: str) -> int:
+    """Get the count of non-deleted documents for a project."""
+    try:
+        async with state_manager._session_factory() as session:
+            result = await session.execute(
+                select(func.count(DocumentStateRecord.id))
+                .filter_by(project_id=project_id)
+                .filter_by(is_deleted=False)
+            )
+            count = result.scalar() or 0
+            return count
+    except Exception:
+        # Return 0 if there's any error querying the database
+        return 0
+
+
+async def _get_project_latest_ingestion(state_manager: StateManager, project_id: str) -> str | None:
+    """Get the latest ingestion timestamp for a project."""
+    try:
+        async with state_manager._session_factory() as session:
+            result = await session.execute(
+                select(IngestionHistory.last_successful_ingestion)
+                .filter_by(project_id=project_id)
+                .order_by(IngestionHistory.last_successful_ingestion.desc())
+                .limit(1)
+            )
+            timestamp = result.scalar_one_or_none()
+            return timestamp.isoformat() if timestamp else None
+    except Exception:
+        # Return None if there's any error querying the database
+        return None
 
 
 @project_cli.command()
@@ -68,7 +104,7 @@ async def list(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize components
-        settings, project_manager = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
 
         # Get project contexts
         project_contexts = project_manager.get_all_project_contexts()
@@ -162,7 +198,7 @@ async def status(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize components
-        settings, project_manager = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, state_manager = await _setup_project_manager(workspace, config, env)
 
         # Get project contexts
         if project_id:
@@ -177,6 +213,10 @@ async def status(
             # JSON output
             status_data = []
             for context in project_contexts.values():
+                # Query database for real stats
+                document_count = await _get_project_document_count(state_manager, context.project_id)
+                latest_ingestion = await _get_project_latest_ingestion(state_manager, context.project_id)
+                
                 status_data.append(
                     {
                         "project_id": context.project_id,
@@ -187,8 +227,8 @@ async def status(
                             if context.config
                             else 0
                         ),
-                        "document_count": "N/A",  # TODO: Implement database query
-                        "latest_ingestion": None,  # TODO: Implement database query
+                        "document_count": document_count,
+                        "latest_ingestion": latest_ingestion,
                     }
                 )
             echo(json.dumps(status_data, indent=2))
@@ -205,14 +245,19 @@ async def status(
                     else 0
                 )
 
+                # Query database for real stats
+                document_count = await _get_project_document_count(state_manager, context.project_id)
+                latest_ingestion = await _get_project_latest_ingestion(state_manager, context.project_id)
+                latest_ingestion_display = latest_ingestion or "Never"
+
                 # Create project panel
                 project_info = f"""[bold cyan]Project ID:[/bold cyan] {context.project_id}
 [bold magenta]Display Name:[/bold magenta] {context.display_name or 'N/A'}
 [bold green]Description:[/bold green] {context.description or 'N/A'}
 [bold blue]Collection:[/bold blue] {context.collection_name or 'N/A'}
 [bold yellow]Sources:[/bold yellow] {source_count}
-[bold red]Documents:[/bold red] N/A (requires database)
-[bold red]Latest Ingestion:[/bold red] N/A (requires database)"""
+[bold red]Documents:[/bold red] {document_count}
+[bold red]Latest Ingestion:[/bold red] {latest_ingestion_display}"""
 
                 console.print(
                     Panel(project_info, title=f"Project: {context.project_id}")
@@ -252,7 +297,7 @@ async def validate(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize components
-        settings, project_manager = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
 
         # Get project contexts to validate
         if project_id:
@@ -355,8 +400,8 @@ async def _setup_project_manager(
     workspace: Path | None,
     config: Path | None,
     env: Path | None,
-) -> tuple[Settings, ProjectManager]:
-    """Setup project manager with configuration loading."""
+) -> tuple[Settings, ProjectManager, StateManager]:
+    """Setup project manager and state manager with configuration loading."""
     from qdrant_loader.cli.cli import (
         _check_settings,
         _load_config_with_workspace,
@@ -384,7 +429,16 @@ async def _setup_project_manager(
     # Initialize project contexts directly from configuration (without database)
     await _initialize_project_contexts_from_config(project_manager)
 
-    return settings, project_manager
+    # Create and initialize state manager
+    state_manager = StateManager(settings.global_config.state_management)
+    try:
+        await state_manager.initialize()
+    except Exception:
+        # If state manager initialization fails, we'll continue without it
+        # The database queries will return default values (0 count, None timestamp)
+        pass
+
+    return settings, project_manager, state_manager
 
 
 async def _initialize_project_contexts_from_config(

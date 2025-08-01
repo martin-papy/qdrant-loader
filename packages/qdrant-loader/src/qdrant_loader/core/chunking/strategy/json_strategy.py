@@ -2,6 +2,7 @@
 
 import json
 from typing import List
+
 import structlog
 
 from qdrant_loader.config import Settings

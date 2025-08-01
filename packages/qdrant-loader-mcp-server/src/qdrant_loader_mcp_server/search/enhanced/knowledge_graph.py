@@ -7,13 +7,14 @@ This module implements knowledge graph capabilities for search enhancement:
 - Graph traversal algorithms for multi-hop search
 - Integration with spaCy-powered components
 """
+import json
 import time
-import networkx as nx
+from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
-from collections import defaultdict, Counter
-import json
+
+import networkx as nx
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis

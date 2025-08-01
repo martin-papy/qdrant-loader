@@ -4,12 +4,12 @@ Topic-Driven Search Chaining for Search Enhancement.
 This module implements intelligent topic-based search progression that creates
 discovery chains from initial queries to related content exploration.
 """
+import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
-import math
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
