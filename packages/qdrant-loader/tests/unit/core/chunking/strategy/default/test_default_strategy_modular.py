@@ -171,18 +171,7 @@ class TestDefaultChunkingStrategyModular:
         
         assert result == []
 
-    def test_legacy_split_text_compatibility(self, strategy):
-        """Test that legacy _split_text method still works for backward compatibility."""
-        # Mock section splitter for legacy compatibility
-        strategy.section_splitter.split_sections = Mock(return_value=[
-            {"content": "First chunk"},
-            {"content": "Second chunk"}
-        ])
-        
-        result = strategy._split_text("Test text content")
-        
-        # Should return list of content strings for compatibility
-        assert result == ["First chunk", "Second chunk"]
+
         
         # Should have called section splitter
         strategy.section_splitter.split_sections.assert_called_once()

@@ -223,70 +223,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         return chunked_docs
 
-    def _split_text(self, text: str) -> list[dict]:
-        """Split text into chunks based on markdown structure.
 
-        Args:
-            text: The text to split into chunks
 
-        Returns:
-            List of text chunks
-        """
-        # Split text into sections using the section splitter
-        sections_metadata = self.section_splitter.split_sections(text)
-        
-        # Return the sections metadata (for backward compatibility with tests)
-        return sections_metadata
 
-    # Proxy methods for backward compatibility with tests
-    @property
-    def semantic_analyzer(self):
-        """Access semantic analyzer for compatibility."""
-        return self.chunk_processor.semantic_analyzer
-
-    def _identify_section_type(self, content: str):
-        """Identify section type - delegates to section identifier."""
-        return self.document_parser.section_identifier.identify_section_type(content)
-
-    def _extract_section_metadata(self, section):
-        """Extract section metadata - delegates to document parser."""
-        return self.document_parser.extract_section_metadata(section)
-
-    def _build_section_breadcrumb(self, section):
-        """Build section breadcrumb - delegates to hierarchy builder."""
-        return self.document_parser.hierarchy_builder.build_section_breadcrumb(section)
-
-    def _parse_document_structure(self, text: str):
-        """Parse document structure - delegates to document parser."""
-        return self.document_parser.parse_document_structure(text)
-
-    def _split_large_section(self, content: str, max_size: int):
-        """Split large section - delegates to section splitter."""
-        return self.section_splitter.standard_splitter.split_content(content, max_size)
-
-    def _process_chunk(self, chunk: str, chunk_index: int, total_chunks: int):
-        """Process chunk - delegates to chunk processor."""
-        return self.chunk_processor.process_chunk(chunk, chunk_index, total_chunks)
-
-    def _extract_section_title(self, chunk: str):
-        """Extract section title - delegates to document parser."""
-        return self.document_parser.extract_section_title(chunk)
-
-    def _extract_cross_references(self, text: str):
-        """Extract cross references - delegates to metadata extractor."""
-        return self.metadata_extractor.cross_reference_extractor.extract_cross_references(text)
-
-    def _extract_entities(self, text: str):
-        """Extract entities - delegates to metadata extractor."""
-        return self.metadata_extractor.entity_extractor.extract_entities(text)
-
-    def _map_hierarchical_relationships(self, text: str):
-        """Map hierarchical relationships - delegates to metadata extractor."""
-        return self.metadata_extractor.hierarchy_extractor.map_hierarchical_relationships(text)
-
-    def _analyze_topic(self, text: str):
-        """Analyze topic - delegates to metadata extractor."""
-        return self.metadata_extractor.topic_analyzer.analyze_topic(text)
 
     @property
     def chunk_overlap(self):

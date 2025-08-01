@@ -533,13 +533,11 @@ def function():
         """Test that BaseChunkingStrategy has abstract methods defined."""
         # Verify that the abstract methods are defined in the class
         assert hasattr(BaseChunkingStrategy, "chunk_document")
-        assert hasattr(BaseChunkingStrategy, "_split_text")
 
         # Verify that the class has abstract methods
         assert getattr(BaseChunkingStrategy, "__abstractmethods__", None) is not None
         abstract_methods = BaseChunkingStrategy.__abstractmethods__
         assert "chunk_document" in abstract_methods
-        assert "_split_text" in abstract_methods
 
     def test_create_chunk_document_converted_file_enables_nlp(self, mock_settings):
         """Test chunk document creation enables NLP for converted files."""

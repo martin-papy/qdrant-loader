@@ -186,36 +186,7 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
             )
             return self._fallback_chunking(document)
     
-    def _split_text(self, text: str) -> List[str]:
-        """Legacy method: Split code text using the new modular approach.
-        
-        This method is maintained for backward compatibility with any code
-        that might call it directly, but it now uses the modular architecture.
-        
-        Args:
-            text: The code text to split
 
-        Returns:
-            List of text chunks
-        """
-        logger.debug("Legacy _split_text method called for code, using modular approach")
-        
-        # Create a temporary document for compatibility
-        temp_doc = Document(
-            title="Legacy Split Code",
-            content_type="code",
-            content=text,
-            metadata={},
-            source="legacy_split",
-            source_type="code",
-            url="internal://legacy"
-        )
-        
-        # Use the modular section splitter
-        chunks_metadata = self.section_splitter.split_sections(text, temp_doc)
-        
-        # Extract just the content for legacy compatibility
-        return [chunk["content"] for chunk in chunks_metadata]
     
     def _fallback_chunking(self, document: Document) -> List[Document]:
         """Fallback chunking using simple text-based approach.
