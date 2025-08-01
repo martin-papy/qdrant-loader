@@ -20,11 +20,19 @@ class TestMultiProjectConfigParser:
                 "qdrant": {"url": "http://localhost:6333", "collection_name": "test"}
             },
             "sources": {
-                "git": {"test-repo": {"base_url": "https://github.com/test/repo.git"}}
+                "git": {
+                    "test-repo": {
+                        "base_url": "https://github.com/test/repo.git",
+                        "token": "test-token",
+                        "file_types": [".py", ".md"]
+                    }
+                }
             },
         }
 
-        assert self.parser._is_legacy_config(legacy_config) is True
+        # Test that legacy format now raises clear error
+        with pytest.raises(ValueError, match="Configuration must contain 'projects' section"):
+            self.parser.parse(legacy_config)
 
     def test_multi_project_format_detection(self):
         """Test that multi-project format is correctly detected."""
@@ -42,6 +50,8 @@ class TestMultiProjectConfigParser:
                                 "source_type": "git",
                                 "source": "test-repo",
                                 "base_url": "https://github.com/test/repo.git",
+                                "token": "test-token",
+                                "file_types": [".py", ".md"]
                             }
                         }
                     },
@@ -49,16 +59,25 @@ class TestMultiProjectConfigParser:
             },
         }
 
-        assert self.parser._is_legacy_config(multi_project_config) is False
+        # Test that multi-project format parses successfully
+        result = self.parser.parse(multi_project_config, skip_validation=True)
+        assert result is not None
+        assert len(result.projects_config.projects) > 0
 
     def test_legacy_format_error_message(self):
-        """Test that legacy format raises helpful error message."""
+        """Test that legacy format raises clear error message."""
         legacy_config = {
             "global": {
                 "qdrant": {"url": "http://localhost:6333", "collection_name": "test"}
             },
             "sources": {
-                "git": {"test-repo": {"base_url": "https://github.com/test/repo.git"}}
+                "git": {
+                    "test-repo": {
+                        "base_url": "https://github.com/test/repo.git",
+                        "token": "test-token", 
+                        "file_types": [".py", ".md"]
+                    }
+                }
             },
         }
 
@@ -66,12 +85,7 @@ class TestMultiProjectConfigParser:
             self.parser.parse(legacy_config)
 
         error_message = str(exc_info.value)
-        assert "Legacy configuration format detected" in error_message
-        assert "MIGRATION GUIDE" in error_message
-        assert "OLD FORMAT (legacy)" in error_message
-        assert "NEW FORMAT (multi-project)" in error_message
-        assert "projects:" in error_message
-        assert "sources:" in error_message
+        assert "Configuration must contain 'projects' section" in error_message
 
     def test_valid_multi_project_config_parsing(self):
         """Test that valid multi-project configuration is parsed correctly."""
@@ -94,6 +108,7 @@ class TestMultiProjectConfigParser:
                                 "base_url": "https://github.com/test/repo.git",
                                 "branch": "main",
                                 "token": "test-token",
+                                "file_types": [".py", ".md"]
                             }
                         }
                     },
