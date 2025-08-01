@@ -509,8 +509,9 @@ class TestUpsertWorker:
 
         # Create empty async iterator
         async def empty_iterator():
-            return
-            # Note: yield is unreachable but kept for testing generator behavior
+            # Empty async generator - loop never executes but makes it a generator
+            for _ in []:
+                yield
 
         with patch(
             "qdrant_loader.core.pipeline.workers.upsert_worker.prometheus_metrics"

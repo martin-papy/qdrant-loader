@@ -252,10 +252,12 @@ async def test_expand_query_with_expansions(hybrid_search):
 
 @pytest.mark.asyncio
 async def test_expand_query_case_insensitive(hybrid_search):
-    """Test that query expansion is case insensitive."""
+    """Test that query expansion is case insensitive and uses spaCy semantic expansion."""
     expanded = await hybrid_search._expand_query("PRODUCT REQUIREMENTS")
-    assert "PRD" in expanded
-    assert "requirements document" in expanded
+    # Test should verify spaCy-based expansion, not legacy keyword mapping
+    assert "product requirement" in expanded  # spaCy semantic expansion
+    assert "PRODUCT REQUIREMENTS" in expanded  # Original query preserved
+    assert len(expanded.split()) > len("PRODUCT REQUIREMENTS".split())  # Query was expanded
 
 
 def test_analyze_query_questions(hybrid_search):
