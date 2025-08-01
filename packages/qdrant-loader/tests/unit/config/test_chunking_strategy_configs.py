@@ -1,7 +1,6 @@
 """Tests for chunking strategy configuration validation and behavior."""
 
 import pytest
-from unittest.mock import Mock
 
 from qdrant_loader.config.chunking import (
     ChunkingConfig,

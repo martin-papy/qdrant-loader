@@ -5,33 +5,28 @@ from typing import Any
 
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
-from rank_bm25 import BM25Okapi  # For test compatibility
 
 from ..utils.logging import LoggingConfig
 
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 
 # Enhanced search components
-from .enhanced.intent_classifier import IntentClassifier, AdaptiveSearchStrategy, SearchIntent
+from .enhanced.intent_classifier import IntentClassifier, AdaptiveSearchStrategy
 from .enhanced.knowledge_graph import DocumentKnowledgeGraph
 from .enhanced.topic_search_chain import (
     TopicSearchChainGenerator, 
     TopicSearchChain, 
-    ChainStrategy,
-    TopicChainLink
+    ChainStrategy
 )
 from .enhanced.faceted_search import (
-    FacetType,
     FacetFilter,
     FacetedSearchResults,
-    DynamicFacetGenerator,
     FacetedSearchEngine
 )
 from .enhanced.cross_document_intelligence import (
     CrossDocumentIntelligenceEngine,
     SimilarityMetric,
-    ClusteringStrategy,
-    DocumentSimilarityCalculator
+    ClusteringStrategy
 )
 
 # New modular components

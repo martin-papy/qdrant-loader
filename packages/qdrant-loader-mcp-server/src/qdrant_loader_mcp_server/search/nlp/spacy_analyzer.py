@@ -1,8 +1,6 @@
 """spaCy-powered query analysis for intelligent search."""
-
-import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import spacy
 from spacy.cli.download import download as spacy_download

@@ -1,6 +1,4 @@
 """Test MarkItDown Windows signal compatibility fix."""
-
-import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch

@@ -1,7 +1,7 @@
 """Base class for chunk processing and analysis coordination."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings

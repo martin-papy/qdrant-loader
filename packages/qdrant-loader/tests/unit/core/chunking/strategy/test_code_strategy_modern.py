@@ -1,7 +1,6 @@
 """Unit tests for modernized code chunking strategy."""
 
 from unittest.mock import Mock, patch
-from typing import Dict, Any
 
 import pytest
 

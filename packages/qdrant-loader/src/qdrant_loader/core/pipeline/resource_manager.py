@@ -88,7 +88,7 @@ class ResourceManager:
             except TimeoutError:
                 logger.warning("Some tasks did not complete within timeout")
 
-    def _handle_sigint(self, signum, frame):
+    def _handle_sigint(self, _signum, _frame):
         """Handle SIGINT signal."""
         # Prevent multiple signal handling
         if self.shutdown_event.is_set():
@@ -113,7 +113,7 @@ class ResourceManager:
             self._cleanup()
             self._force_immediate_exit()
 
-    def _handle_sigterm(self, signum, frame):
+    def _handle_sigterm(self, _signum, _frame):
         """Handle SIGTERM signal."""
         if self.shutdown_event.is_set():
             logger.warning("Multiple SIGTERM received, forcing immediate exit")

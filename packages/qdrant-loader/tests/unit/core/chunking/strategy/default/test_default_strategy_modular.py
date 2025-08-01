@@ -1,7 +1,7 @@
 """Tests for the modernized DefaultChunkingStrategy using modular architecture."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from qdrant_loader.core.chunking.strategy.default_strategy import DefaultChunkingStrategy
 from qdrant_loader.core.document import Document

@@ -4,16 +4,14 @@ Tests the full stack from MCP handler down to the scoring algorithms with minima
 """
 
 import pytest
-import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 from dotenv import load_dotenv
 
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 from qdrant_loader_mcp_server.search.engine import SearchEngine
-from qdrant_loader_mcp_server.search.hybrid_search import HybridSearchEngine
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
-    ComplementaryContentFinder, DocumentSimilarityCalculator, CrossDocumentIntelligenceEngine
+    ComplementaryContentFinder, DocumentSimilarityCalculator
 )
 from qdrant_loader_mcp_server.mcp.handler import MCPHandler
 from qdrant_loader_mcp_server.config import QdrantConfig, OpenAIConfig

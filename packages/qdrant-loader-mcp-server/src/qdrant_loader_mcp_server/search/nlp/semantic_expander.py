@@ -1,8 +1,6 @@
 """Semantic query expansion using spaCy word vectors and entity matching."""
-
-import logging
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any, Optional
 
 from ...utils.logging import LoggingConfig
 from .spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis

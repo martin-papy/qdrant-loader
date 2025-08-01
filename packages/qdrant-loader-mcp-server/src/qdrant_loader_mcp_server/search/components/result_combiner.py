@@ -5,9 +5,8 @@ from typing import Any
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from .search_result_models import (
-    BaseSearchResult,
     HybridSearchResult,
-    create_hybrid_search_result,
+    create_hybrid_search_result
 )
 from .metadata_extractor import MetadataExtractor
 

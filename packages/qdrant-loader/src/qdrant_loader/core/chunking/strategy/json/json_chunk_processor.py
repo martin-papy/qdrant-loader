@@ -4,7 +4,7 @@ from typing import Any, Dict
 import structlog
 
 from qdrant_loader.core.chunking.strategy.base.chunk_processor import BaseChunkProcessor
-from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONElement, JSONElementType
+from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONElement
 from qdrant_loader.config import Settings
 from qdrant_loader.core.document import Document
 

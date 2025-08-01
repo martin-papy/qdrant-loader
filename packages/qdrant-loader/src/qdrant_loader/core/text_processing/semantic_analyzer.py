@@ -1,7 +1,6 @@
 """Semantic analysis module for text processing."""
 
 import logging
-import warnings
 from dataclasses import dataclass
 from typing import Any
 

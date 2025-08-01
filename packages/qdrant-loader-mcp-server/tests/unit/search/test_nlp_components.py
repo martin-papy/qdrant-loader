@@ -1,6 +1,4 @@
 """Simplified tests for spaCy NLP components."""
-
-import pytest
 from qdrant_loader_mcp_server.search.nlp.spacy_analyzer import (
     SpaCyQueryAnalyzer,
     QueryAnalysis,

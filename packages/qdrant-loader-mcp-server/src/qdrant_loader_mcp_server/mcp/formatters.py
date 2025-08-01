@@ -330,10 +330,6 @@ class MCPFormatters:
                     "semantic_analysis": result.get_semantic_info(),
                     "section_context": result.get_section_context(),
                     "attachment_info": result.get_attachment_info(),
-                    
-                    # Legacy fields for backward compatibility
-                    "is_attachment": result.is_attachment,
-                    "is_converted": result.is_converted,
                 }
             }
             for result in results

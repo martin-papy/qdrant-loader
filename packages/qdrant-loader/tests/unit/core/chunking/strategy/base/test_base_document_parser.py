@@ -1,9 +1,6 @@
 """Unit tests for BaseDocumentParser."""
-
-from unittest.mock import Mock
 import pytest
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
-from qdrant_loader.core.document import Document
 
 
 class ConcreteDocumentParser(BaseDocumentParser):

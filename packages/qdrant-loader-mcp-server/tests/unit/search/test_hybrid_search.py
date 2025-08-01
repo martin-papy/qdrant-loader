@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
 )
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
+from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult
 
 
 @pytest.fixture

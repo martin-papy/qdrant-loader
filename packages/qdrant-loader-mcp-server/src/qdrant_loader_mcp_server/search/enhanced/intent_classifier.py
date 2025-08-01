@@ -4,14 +4,10 @@ Intent-Aware Adaptive Search for Search Enhancement.
 This module implements advanced intent classification and adaptive search strategies
 that leverage spaCy analysis and knowledge graph capabilities.
 """
-
-import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-from collections import defaultdict, Counter
-import math
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer, QueryAnalysis
@@ -903,7 +899,7 @@ class AdaptiveSearchStrategy:
         self, 
         search_intent: SearchIntent, 
         query: str,
-        base_results: Optional[List[SearchResult]] = None
+        _base_results: Optional[List[SearchResult]] = None
     ) -> AdaptiveSearchConfig:
         """Adapt search configuration based on classified intent."""
         

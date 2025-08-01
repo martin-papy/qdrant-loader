@@ -1,7 +1,6 @@
 """Modular search result data structures for hybrid search."""
 
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass

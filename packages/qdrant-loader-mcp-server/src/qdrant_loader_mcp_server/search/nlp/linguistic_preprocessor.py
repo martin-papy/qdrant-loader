@@ -3,7 +3,7 @@
 import re
 import time
 from dataclasses import dataclass
-from typing import List, Set, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from ...utils.logging import LoggingConfig
 from .spacy_analyzer import SpaCyQueryAnalyzer

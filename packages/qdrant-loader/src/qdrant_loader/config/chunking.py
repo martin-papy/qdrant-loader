@@ -1,6 +1,4 @@
 """Configuration for text chunking."""
-
-from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
