@@ -662,7 +662,7 @@ class HybridSearchEngine:
         return stats
 
     # ============================================================================
-    # Backward Compatibility Methods
+    # Internal Implementation Methods
     # ============================================================================
     
     async def _get_embedding(self, text: str) -> list[float]:

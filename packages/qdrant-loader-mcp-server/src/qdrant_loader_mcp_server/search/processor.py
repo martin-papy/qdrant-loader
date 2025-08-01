@@ -129,45 +129,7 @@ class QueryProcessor:
             self.logger.warning(f"spaCy intent inference failed: {e}")
             return "general", True
 
-    async def _infer_intent(self, query: str) -> tuple[str, bool]:
-        """🔥 LEGACY: Original OpenAI-based intent inference (kept as fallback).
 
-        Args:
-            query: The cleaned query string
-
-        Returns:
-            Tuple of (inferred intent, whether inference failed)
-        """
-        try:
-            if self.openai_client is None:
-                raise RuntimeError("OpenAI client not initialized")
-
-            response = await self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a query intent classifier. Classify the query into one of these categories: code, documentation, issue, or general. Respond with just the category name.",
-                    },
-                    {"role": "user", "content": query},
-                ],
-                temperature=0,
-            )
-
-            if not response.choices or not response.choices[0].message:
-                return "general", False  # Default to general if no response
-
-            content = response.choices[0].message.content
-            if not content:
-                return "general", False  # Default to general if empty content
-
-            return content.strip().lower(), False
-        except Exception as e:
-            self.logger.error("Intent inference failed", error=str(e), query=query)
-            return (
-                "general",
-                True,
-            )  # Default to general if inference fails, mark as failed
 
     def _extract_source_type(self, query: str, intent: str) -> str | None:
         """🔥 ENHANCED: Extract source type using improved keyword matching.
