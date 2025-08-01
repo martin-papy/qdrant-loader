@@ -7,11 +7,11 @@ try:
 
     __version__ = version("qdrant-loader")
 except ImportError:
-    # Fallback for older Python versions or if package not installed
+    # Provide fallback for older Python versions or when package is not installed.
     __version__ = "unknown"
 
 
-# Lazy imports to avoid slow package loading
+# Use lazy imports to avoid slow package loading at startup.
 def __getattr__(name):
     """Lazy import heavy modules only when accessed."""
     if name == "ChunkingConfig":

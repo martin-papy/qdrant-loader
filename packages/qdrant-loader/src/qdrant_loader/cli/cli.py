@@ -14,8 +14,8 @@ from click.utils import echo
 
 from qdrant_loader.cli.asyncio import async_command
 
-# Minimal imports at startup - everything else is lazy loaded
-logger = None  # Will be initialized when needed
+# Use minimal imports at startup to improve CLI responsiveness.
+logger = None  # Logger will be initialized when first accessed.
 
 
 def _get_logger():
@@ -35,23 +35,23 @@ def _get_version() -> str:
 
         return version("qdrant-loader")
     except ImportError:
-        # Fallback for older Python versions
+        # Provide fallback for older Python versions that lack importlib.metadata.
         return "unknown"
     except Exception:
-        # Fallback if package not found or other error
+        # Handle cases where package is not found or other errors occur.
         return "unknown"
 
 
 def _check_for_updates():
     """Check for version updates in the background."""
     try:
-        # Lazy import to avoid slow startup
+        # Use lazy import to minimize startup performance impact.
         from qdrant_loader.utils.version_check import check_version_async
 
         current_version = _get_version()
         check_version_async(current_version, silent=False)
     except Exception:
-        # Silently fail if version check doesn't work
+        # Silently ignore version check failures to avoid disrupting CLI operation.
         pass
 
 
@@ -70,10 +70,10 @@ def _check_for_updates():
 )
 def cli(log_level: str = "INFO") -> None:
     """QDrant Loader CLI."""
-    # Initialize basic logging first
+    # Initialize basic logging configuration before other operations.
     _setup_logging(log_level)
 
-    # Check for updates in background (non-blocking)
+    # Check for available updates in background without blocking CLI startup.
     _check_for_updates()
 
 

@@ -21,7 +21,7 @@ from .search.processor import QueryProcessor
 from .transport import HTTPTransportHandler
 from .utils import LoggingConfig, get_version
 
-# Suppress asyncio debug messages
+# Suppress asyncio debug messages to reduce noise in logs.
 logging.getLogger("asyncio").setLevel(logging.WARNING)
 
 
@@ -31,7 +31,7 @@ logging.getLogger("asyncio").setLevel(logging.WARNING)
 def _setup_logging(log_level: str) -> None:
     """Set up logging configuration."""
     try:
-        # Check if console logging is disabled
+        # Check if console logging is disabled via environment variable.
         disable_console_logging = (
             os.getenv("MCP_DISABLE_CONSOLE_LOGGING", "").lower() == "true"
         )
