@@ -140,15 +140,22 @@ class GitConnector(BaseConnector):
             self._initialized = True
             return self
         except ValueError as e:
-            # Preserve ValueError type
-            self.logger.error("Failed to set up Git repository", error=str(e))
+            # Standardized error logging: user-friendly message + troubleshooting context
+            self.logger.error(
+                "Git repository setup failed due to invalid configuration",
+                error=str(e),
+                error_type="ValueError",
+                suggestion="Verify Git URL format, credentials, and repository accessibility"
+            )
             raise ValueError(str(e)) from e  # Re-raise with the same message
         except Exception as e:
+            # Standardized error logging: user-friendly message + technical details + cleanup context
             self.logger.error(
-                "Failed to set up Git repository",
+                "Git repository setup failed during initialization",
                 error=str(e),
                 error_type=type(e).__name__,
                 temp_dir=self.temp_dir,
+                suggestion="Check Git URL, network connectivity, authentication, and disk space"
             )
             # Clean up if something goes wrong
             if self.temp_dir:

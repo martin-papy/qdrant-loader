@@ -4,8 +4,13 @@ Simple integration test for Topic-Driven Search Chaining.
 Tests real components working together without complex mocking.
 """
 
+import logging
 import pytest
 import time
+
+# Set up test logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import (
     TopicSearchChainGenerator,
@@ -103,8 +108,8 @@ class TestPhase12SimpleIntegration:
     
     def test_real_topic_relationship_mapping(self, real_spacy_analyzer, sample_search_results):
         """Test real topic relationship mapping with actual spaCy."""
-        print("\n🔥 Testing Real Topic Relationship Mapping")
-        print("=" * 50)
+        logger.info("\n🔥 Testing Real Topic Relationship Mapping")
+        logger.info("=" * 50)
         
         # Create real topic relationship map
         topic_map = TopicRelationshipMap(real_spacy_analyzer)
@@ -114,16 +119,16 @@ class TestPhase12SimpleIntegration:
         topic_map.build_topic_map(sample_search_results)
         build_time = (time.time() - start_time) * 1000
         
-        print(f"✅ Topic map built in {build_time:.2f}ms")
-        print(f"📊 Topics found: {len(topic_map.topic_document_frequency)}")
-        print(f"🔗 Co-occurrences: {sum(len(cooc) for cooc in topic_map.topic_cooccurrence.values())}")
+        logger.info(f"✅ Topic map built in {build_time:.2f}ms")
+        logger.info(f"📊 Topics found: {len(topic_map.topic_document_frequency)}")
+        logger.info(f"🔗 Co-occurrences: {sum(len(cooc) for cooc in topic_map.topic_cooccurrence.values())}")
         
         # Test finding related topics with real spaCy similarity
         related_topics = topic_map.find_related_topics("authentication", max_related=3)
         
-        print(f"\n🔍 Related topics for 'authentication':")
+        logger.info(f"\n🔍 Related topics for 'authentication':")
         for topic, score, rel_type in related_topics:
-            print(f"   • {topic} (score: {score:.3f}, type: {rel_type})")
+            logger.debug(f"   • {topic} (score: {score:.3f}, type: {rel_type})")
         
         # Verify we found relationships
         assert len(topic_map.topic_document_frequency) > 0
@@ -133,13 +138,13 @@ class TestPhase12SimpleIntegration:
         similarity = real_spacy_analyzer.nlp("authentication").similarity(
             real_spacy_analyzer.nlp("security")
         )
-        print(f"🧠 spaCy similarity 'authentication' ↔ 'security': {similarity:.3f}")
+        logger.debug(f"🧠 spaCy similarity 'authentication' ↔ 'security': {similarity:.3f}")
         assert 0 <= similarity <= 1
     
     def test_real_topic_chain_generation(self, real_spacy_analyzer, sample_search_results):
         """Test real topic chain generation with all strategies."""
-        print("\n🚀 Testing Real Topic Chain Generation")
-        print("=" * 45)
+        logger.info("\n🚀 Testing Real Topic Chain Generation")
+        logger.info("=" * 45)
         
         # Create real topic chain generator
         generator = TopicSearchChainGenerator(real_spacy_analyzer)
@@ -156,7 +161,7 @@ class TestPhase12SimpleIntegration:
         test_query = "How to implement secure API authentication"
         
         for strategy in strategies:
-            print(f"\n🔄 Testing {strategy.value} strategy:")
+            logger.info(f"\n🔄 Testing {strategy.value} strategy:")
             
             start_time = time.time()
             chain = generator.generate_search_chain(
@@ -166,11 +171,11 @@ class TestPhase12SimpleIntegration:
             )
             generation_time = (time.time() - start_time) * 1000
             
-            print(f"   ⏱️ Generated in {generation_time:.2f}ms")
-            print(f"   🔗 Chain length: {len(chain.chain_links)}")
-            print(f"   📊 Topics covered: {chain.total_topics_covered}")
-            print(f"   🎯 Discovery potential: {chain.estimated_discovery_potential:.2f}")
-            print(f"   🧠 Coherence score: {chain.chain_coherence_score:.2f}")
+            logger.debug(f"   ⏱️ Generated in {generation_time:.2f}ms")
+            logger.debug(f"   🔗 Chain length: {len(chain.chain_links)}")
+            logger.debug(f"   📊 Topics covered: {chain.total_topics_covered}")
+            logger.debug(f"   🎯 Discovery potential: {chain.estimated_discovery_potential:.2f}")
+            logger.debug(f"   🧠 Coherence score: {chain.chain_coherence_score:.2f}")
             
             # Verify chain structure
             assert isinstance(chain, TopicSearchChain)
@@ -182,12 +187,12 @@ class TestPhase12SimpleIntegration:
             
             # Show generated chain links
             for i, link in enumerate(chain.chain_links):
-                print(f"   {i+1}. '{link.query}' (focus: {link.topic_focus}, type: {link.exploration_type})")
+                logger.debug(f"   {i+1}. '{link.query}' (focus: {link.topic_focus}, type: {link.exploration_type})")
     
     def test_real_performance_benchmarks(self, real_spacy_analyzer, sample_search_results):
         """Test real performance with actual components."""
-        print("\n⚡ Testing Real Performance Benchmarks")
-        print("=" * 40)
+        logger.info("\n⚡ Testing Real Performance Benchmarks")
+        logger.info("=" * 40)
         
         generator = TopicSearchChainGenerator(real_spacy_analyzer)
         
@@ -200,7 +205,7 @@ class TestPhase12SimpleIntegration:
             init_times.append(init_time)
         
         avg_init_time = sum(init_times) / len(init_times)
-        print(f"📊 Average initialization: {avg_init_time:.2f}ms")
+        logger.info(f"📊 Average initialization: {avg_init_time:.2f}ms")
         
         # Test chain generation performance
         generation_times = []

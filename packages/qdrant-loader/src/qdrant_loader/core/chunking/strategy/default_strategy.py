@@ -120,12 +120,9 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         )
 
         try:
-            # Parse document structure first
-            logger.debug("Analyzing document structure")
+            # Parse document structure and split into sections
+            logger.debug("Analyzing document structure and splitting into sections")
             document_structure = self.document_parser.parse_document_structure(document.content)
-            
-            # Split text into intelligent sections using the section splitter
-            logger.debug("Splitting document into sections")
             chunks_metadata = self.section_splitter.split_sections(document.content, document)
 
             if not chunks_metadata:

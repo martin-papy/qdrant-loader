@@ -607,7 +607,14 @@ async def ingest(
             error_msg = (
                 str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
             )
-            logger.error("ingest_failed", error=error_msg, exc_info=True)
+            # Standardized error logging: user-friendly message + technical details + stack trace
+            logger.error(
+                "Document ingestion process failed during execution",
+                error=error_msg,
+                error_type=type(e).__name__,
+                suggestion="Check data sources, configuration, and system resources. Run 'qdrant-loader project validate' to verify setup",
+                exc_info=True
+            )
             raise ClickException(f"Failed to run ingestion: {error_msg}") from e
         finally:
             if stop_event.is_set():
@@ -616,12 +623,24 @@ async def ingest(
                 logger.debug(" All tasks cancelled, exiting after SIGINT.")
 
     except ClickException as e:
-        LoggingConfig.get_logger(__name__).error("ingest_failed", error=str(e))
+        # Standardized error logging: user-friendly message for CLI exceptions
+        LoggingConfig.get_logger(__name__).error(
+            "Command-line operation failed",
+            error=str(e),
+            suggestion="Check command syntax and parameters"
+        )
         raise e from None
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
         error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
-        logger.error("ingest_failed", error=error_msg, exc_info=True)
+        # Standardized error logging: user-friendly message + technical details + stack trace
+        logger.error(
+            "Unexpected error during ingestion command execution",
+            error=error_msg,
+            error_type=type(e).__name__,
+            suggestion="Check logs above for specific error details and verify system configuration",
+            exc_info=True
+        )
         raise ClickException(f"Failed to run ingestion: {error_msg}") from e
 
 

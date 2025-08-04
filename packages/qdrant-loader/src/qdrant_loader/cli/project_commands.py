@@ -159,7 +159,13 @@ async def list(
 
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
-        logger.error("project_list_failed", error=str(e))
+        # Standardized error logging: user-friendly message + technical details + troubleshooting hint
+        logger.error(
+            "Failed to list projects from configuration", 
+            error=str(e),
+            error_type=type(e).__name__,
+            suggestion="Try running 'qdrant-loader project validate' to check configuration"
+        )
         raise ClickException(f"Failed to list projects: {str(e)!s}") from e
 
 
@@ -265,7 +271,13 @@ async def status(
 
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
-        logger.error("project_status_failed", error=str(e))
+        # Standardized error logging: user-friendly message + technical details + troubleshooting hint
+        logger.error(
+            "Failed to retrieve project status information", 
+            error=str(e),
+            error_type=type(e).__name__,
+            suggestion="Verify project configuration and database connectivity"
+        )
         raise ClickException(f"Failed to get project status: {str(e)!s}") from e
 
 
@@ -392,7 +404,13 @@ async def validate(
 
     except Exception as e:
         logger = LoggingConfig.get_logger(__name__)
-        logger.error("project_validate_failed", error=str(e))
+        # Standardized error logging: user-friendly message + technical details + troubleshooting hint
+        logger.error(
+            "Failed to validate project configurations", 
+            error=str(e),
+            error_type=type(e).__name__,
+            suggestion="Check config.yaml syntax and data source accessibility"
+        )
         raise ClickException(f"Failed to validate projects: {str(e)!s}") from e
 
 

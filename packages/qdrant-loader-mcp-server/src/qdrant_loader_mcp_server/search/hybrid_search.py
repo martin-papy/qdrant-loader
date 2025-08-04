@@ -6,6 +6,7 @@ from typing import Any
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
 
+from ..config import SearchConfig
 from ..utils.logging import LoggingConfig
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from .enhanced.intent_classifier import IntentClassifier, AdaptiveSearchStrategy
@@ -55,6 +56,7 @@ class HybridSearchEngine:
         # Enhanced search parameters
         knowledge_graph: DocumentKnowledgeGraph = None,
         enable_intent_adaptation: bool = True,
+        search_config: "SearchConfig" | None = None,
     ):
         """Initialize the hybrid search service.
 
@@ -71,6 +73,7 @@ class HybridSearchEngine:
             alpha: Weight for dense search (1-alpha for sparse search)
             knowledge_graph: Optional knowledge graph for integration
             enable_intent_adaptation: Enable intent-aware adaptive search
+            search_config: Optional search configuration for performance optimization
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client
@@ -90,15 +93,30 @@ class HybridSearchEngine:
         # Initialize modular components
         self.query_processor = QueryProcessor(self.spacy_analyzer)
         
-        self.vector_search_service = VectorSearchService(
-            qdrant_client=qdrant_client,
-            openai_client=openai_client,
-            collection_name=collection_name,
-            min_score=min_score,
-            dense_vector_name=dense_vector_name,
-            sparse_vector_name=sparse_vector_name,
-            alpha=alpha,
-        )
+        # Configure vector search service with caching if config provided
+        if search_config:
+            self.vector_search_service = VectorSearchService(
+                qdrant_client=qdrant_client,
+                openai_client=openai_client,
+                collection_name=collection_name,
+                min_score=min_score,
+                dense_vector_name=dense_vector_name,
+                sparse_vector_name=sparse_vector_name,
+                alpha=alpha,
+                cache_enabled=search_config.cache_enabled,
+                cache_ttl=search_config.cache_ttl,
+                cache_max_size=search_config.cache_max_size,
+            )
+        else:
+            self.vector_search_service = VectorSearchService(
+                qdrant_client=qdrant_client,
+                openai_client=openai_client,
+                collection_name=collection_name,
+                min_score=min_score,
+                dense_vector_name=dense_vector_name,
+                sparse_vector_name=sparse_vector_name,
+                alpha=alpha,
+            )
         
         self.keyword_search_service = KeywordSearchService(
             qdrant_client=qdrant_client,
@@ -693,7 +711,7 @@ class HybridSearchEngine:
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
         """Backward compatibility: Delegate to result combiner."""
-        # Temporarily sync min_score for backward compatibility
+        # Sync min_score for consistent scoring behavior
         original_min_score = self.result_combiner.min_score
         self.result_combiner.min_score = self.min_score
         

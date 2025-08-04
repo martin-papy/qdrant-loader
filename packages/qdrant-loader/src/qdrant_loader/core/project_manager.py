@@ -83,10 +83,12 @@ class ProjectManager:
 
     async def _discover_projects(self, session: AsyncSession) -> None:
         """Discover projects from configuration and create project contexts."""
-        self.logger.debug("Discovering projects from configuration")
+        self.logger.debug(
+            "Discovering projects from configuration", 
+            project_count=len(self.projects_config.projects)
+        )
 
         for project_id, project_config in self.projects_config.projects.items():
-            self.logger.debug(f"Processing project: {project_id}")
 
             # Validate project configuration
             await self._validate_project_config(project_id, project_config)

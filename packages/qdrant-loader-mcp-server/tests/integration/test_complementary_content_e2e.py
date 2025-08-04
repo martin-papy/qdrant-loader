@@ -351,7 +351,7 @@ class TestComplementaryContentE2E:
                         "metadata": {},  # Provide empty metadata dict
                     }
                 ))
-            print(f"DEBUG: Mock scroll called, returning {len(mock_points)} documents")
+            # Removed development debug print statement - use proper test logging if needed
             return mock_points, None  # (points, next_page_offset)
         
         config['mock_qdrant_client'].scroll.side_effect = create_mock_scroll_response

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from collections.abc import Sequence
 
@@ -277,12 +278,14 @@ class EmbeddingService:
         batch_num = getattr(self, "_batch_counter", 0) + 1
         self._batch_counter = batch_num
 
-        logger.debug(
-            "Processing embedding batch",
-            batch_num=batch_num,
-            batch_size=len(batch),
-            total_tokens=sum(self.count_tokens(content) for content in batch),
-        )
+        # Optimized: Only calculate tokens for debug when debug logging is enabled
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Processing embedding batch",
+                batch_num=batch_num,
+                batch_size=len(batch),
+                total_tokens=sum(self.count_tokens(content) for content in batch),
+            )
 
         await self._apply_rate_limit()
 

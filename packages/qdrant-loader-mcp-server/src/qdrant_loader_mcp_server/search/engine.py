@@ -5,7 +5,7 @@ from typing import Any
 from openai import AsyncOpenAI
 from qdrant_client import AsyncQdrantClient, models
 
-from ..config import OpenAIConfig, QdrantConfig
+from ..config import OpenAIConfig, QdrantConfig, SearchConfig
 from ..utils.logging import LoggingConfig
 from .hybrid_search import HybridSearchEngine
 from .components.search_result_models import HybridSearchResult
@@ -27,7 +27,7 @@ class SearchEngine:
         self.logger = LoggingConfig.get_logger(__name__)
 
     async def initialize(
-        self, config: QdrantConfig, openai_config: OpenAIConfig
+        self, config: QdrantConfig, openai_config: OpenAIConfig, search_config: "SearchConfig" | None = None
     ) -> None:
         """Initialize the search engine with configuration."""
         self.config = config
@@ -57,11 +57,20 @@ class SearchEngine:
 
             # Initialize hybrid search
             if self.client and self.openai_client:
-                self.hybrid_search = HybridSearchEngine(
-                    qdrant_client=self.client,
-                    openai_client=self.openai_client,
-                    collection_name=config.collection_name,
-                )
+                # Use search config if provided, otherwise use defaults
+                if search_config:
+                    self.hybrid_search = HybridSearchEngine(
+                        qdrant_client=self.client,
+                        openai_client=self.openai_client,
+                        collection_name=config.collection_name,
+                        search_config=search_config,
+                    )
+                else:
+                    self.hybrid_search = HybridSearchEngine(
+                        qdrant_client=self.client,
+                        openai_client=self.openai_client,
+                        collection_name=config.collection_name,
+                    )
 
             self.logger.info("Successfully connected to Qdrant", url=config.url)
         except Exception as e:
