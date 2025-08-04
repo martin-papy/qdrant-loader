@@ -142,7 +142,7 @@ async def handle_stdio(config: Config, log_level: str):
 
         # Initialize search engine
         try:
-            await search_engine.initialize(config.qdrant, config.openai)
+            await search_engine.initialize(config.qdrant, config.openai, config.search)
             if not disable_console_logging:
                 logger.info("Search engine initialized successfully")
         except Exception as e:

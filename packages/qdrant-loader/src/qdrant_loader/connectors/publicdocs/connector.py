@@ -1,6 +1,7 @@
 """Public documentation connector implementation."""
 
 import fnmatch
+import logging
 import warnings
 from collections import deque
 from datetime import UTC, datetime
@@ -457,16 +458,14 @@ class PublicDocsConnector(BaseConnector):
         self.logger.debug("Starting title extraction", html_length=len(html))
         soup = BeautifulSoup(html, "html.parser")
 
-        # Debug: Log the first 500 characters of the HTML to see what we're parsing
-        self.logger.debug("HTML preview", preview=html[:500])
-
-        # Debug: Log all title tags found
+        # Production logging: Log title extraction process without verbose HTML content
         title_tags = soup.find_all("title")
-        self.logger.debug(
-            "Found title tags",
-            count=len(title_tags),
-            tags=[str(tag) for tag in title_tags],
-        )
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                "Found title tags during HTML parsing",
+                count=len(title_tags),
+                html_length=len(html)
+            )
 
         # First try to find the title in head/title
         title_tag = soup.find("title")

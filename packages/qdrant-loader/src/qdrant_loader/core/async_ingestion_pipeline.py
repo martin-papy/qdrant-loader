@@ -135,14 +135,13 @@ class AsyncIngestionPipeline:
 
     async def initialize(self):
         """Initialize the pipeline."""
-        logger.debug("Pipeline initialization called")
+        logger.debug("Starting pipeline initialization")
 
         try:
             # Initialize state manager first
             if not self.state_manager._initialized:
                 logger.debug("Initializing state manager")
                 await self.state_manager.initialize()
-                logger.debug("State manager initialization completed")
 
             # Initialize project manager
             if not self.project_manager._initialized:
@@ -153,15 +152,31 @@ class AsyncIngestionPipeline:
                             await self.project_manager.initialize(session)
                         logger.debug("Project manager initialization completed")
                     except Exception as e:
+                        # Standardized error logging: user-friendly message + technical details + stack trace
                         logger.error(
-                            f"Failed to initialize project manager: {e}", exc_info=True
+                            "Failed to initialize project manager during pipeline startup",
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            suggestion="Check database connectivity and project configuration",
+                            exc_info=True
                         )
                         raise
                 else:
-                    logger.error("State manager session factory is not available")
+                    # Standardized error logging: user-friendly message + technical context
+                    logger.error(
+                        "State manager session factory is not available during initialization",
+                        suggestion="Check database configuration and ensure proper state manager setup"
+                    )
                     raise RuntimeError("State manager session factory is not available")
         except Exception as e:
-            logger.error(f"Pipeline initialization failed: {e}", exc_info=True)
+            # Standardized error logging: user-friendly message + technical details + stack trace
+            logger.error(
+                "Pipeline initialization failed during startup sequence",
+                error=str(e),
+                error_type=type(e).__name__,
+                suggestion="Check configuration, database connectivity, and system resources",
+                exc_info=True
+            )
             raise
 
     async def process_documents(
@@ -235,7 +250,15 @@ class AsyncIngestionPipeline:
             return documents
 
         except Exception as e:
-            logger.error(f"Document processing failed: {e}", exc_info=True)
+            # Standardized error logging: user-friendly message + technical details + stack trace
+            logger.error(
+                "Document processing pipeline failed during ingestion",
+                error=str(e),
+                error_type=type(e).__name__,
+                documents_attempted=len(documents) if documents else 0,
+                suggestion="Check data source connectivity, document formats, and system resources",
+                exc_info=True
+            )
             self.monitor.end_operation("ingestion_process", error=str(e))
             raise
 

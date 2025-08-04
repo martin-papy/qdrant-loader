@@ -1,7 +1,12 @@
 """Integration tests for the redesigned complementary content algorithm."""
 
+import logging
 import pytest
 from unittest.mock import Mock
+
+# Set up test logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import ComplementaryContentFinder
 from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 

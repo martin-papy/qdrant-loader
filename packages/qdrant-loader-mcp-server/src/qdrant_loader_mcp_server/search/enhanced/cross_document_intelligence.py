@@ -904,9 +904,13 @@ class ComplementaryContentFinder:
             if candidate_id == target_doc_id:
                 continue
             
-            self.logger.debug(f"Analyzing candidate: {candidate_id}")
-            self.logger.debug(f"Candidate topics: {candidate.topics}")
-            self.logger.debug(f"Candidate entities: {candidate.entities}")
+            # Consolidated candidate analysis debug (reduces verbosity)
+            self.logger.debug(
+                "Analyzing candidate",
+                candidate_id=candidate_id,
+                topics_count=len(candidate.topics),
+                entities_count=len(candidate.entities),
+            )
             
             # Calculate complementary score
             complementary_score, reason = self._calculate_complementary_score(target_doc, candidate)

@@ -1,5 +1,6 @@
 """Service for chunking documents."""
 
+import logging
 from pathlib import Path
 
 from qdrant_loader.config import GlobalConfig, Settings
@@ -186,30 +187,36 @@ class ChunkingService:
 
         # Get the appropriate strategy for the document type
         strategy = self._get_strategy(document)
-        self.logger.debug(
-            "Selected chunking strategy",
-            extra={
-                "doc_id": document.id,
-                "strategy": strategy.__class__.__name__,
-                "content_type": document.content_type,
-            },
-        )
+        
+        # Optimized: Only log detailed chunking info when debug logging is enabled
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(
+                "Selected chunking strategy",
+                extra={
+                    "doc_id": document.id,
+                    "strategy": strategy.__class__.__name__,
+                    "content_type": document.content_type,
+                },
+            )
 
         try:
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
-            self.logger.debug(
-                "Document chunking completed",
-                extra={
-                    "doc_id": document.id,
-                    "chunk_count": len(chunked_docs),
-                    "avg_chunk_size": (
-                        sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
-                        if chunked_docs
-                        else 0
-                    ),
-                },
-            )
+            
+            # Optimized: Only calculate and log detailed metrics when debug logging is enabled
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    "Document chunking completed",
+                    extra={
+                        "doc_id": document.id,
+                        "chunk_count": len(chunked_docs),
+                        "avg_chunk_size": (
+                            sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
+                            if chunked_docs
+                            else 0
+                        ),
+                    },
+                )
             return chunked_docs
         except Exception as e:
             self.logger.error(
