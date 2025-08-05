@@ -96,6 +96,10 @@ class WindowsSafeConsoleHandler(logging.StreamHandler):
     def emit(self, record):
         """Emit a record, handling Windows console encoding issues."""
         try:
+            # Check if stream is still open before writing
+            if hasattr(self.stream, 'closed') and self.stream.closed:
+                return  # Skip logging if stream is closed
+                
             # Get the formatted message
             msg = self.format(record)
 
@@ -137,6 +141,9 @@ class WindowsSafeConsoleHandler(logging.StreamHandler):
                 self.stream.write(msg + self.terminator)
 
             self.flush()
+        except (ValueError, OSError):
+            # Stream is closed or unavailable, skip silently
+            pass
         except Exception:
             self.handleError(record)
 
@@ -150,6 +157,10 @@ class CleanFileHandler(logging.FileHandler):
     def emit(self, record):
         """Emit a record, stripping ANSI codes from the message."""
         try:
+            # Check if stream is still open before writing
+            if hasattr(self.stream, 'closed') and self.stream.closed:
+                return  # Skip logging if stream is closed
+                
             # Get the formatted message
             msg = self.format(record)
             # Strip ANSI escape sequences
@@ -201,6 +212,9 @@ class CleanFileHandler(logging.FileHandler):
                     )
                     stream.write(safe_msg + self.terminator)
             self.flush()
+        except (ValueError, OSError):
+            # Stream is closed or unavailable, skip silently
+            pass
         except Exception:
             self.handleError(record)
 

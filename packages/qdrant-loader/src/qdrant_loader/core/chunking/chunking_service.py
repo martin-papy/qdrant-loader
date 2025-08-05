@@ -189,7 +189,7 @@ class ChunkingService:
         strategy = self._get_strategy(document)
         
         # Optimized: Only log detailed chunking info when debug logging is enabled
-        if self.logger.isEnabledFor(logging.DEBUG):
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 "Selected chunking strategy",
                 extra={
@@ -204,7 +204,7 @@ class ChunkingService:
             chunked_docs = strategy.chunk_document(document)
             
             # Optimized: Only calculate and log detailed metrics when debug logging is enabled
-            if self.logger.isEnabledFor(logging.DEBUG):
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
                 self.logger.debug(
                     "Document chunking completed",
                     extra={

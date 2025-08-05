@@ -215,6 +215,7 @@ class AsyncIngestionPipeline:
             },
         )
 
+        documents = []  # Initialize to avoid UnboundLocalError in exception handler
         try:
             logger.debug("Starting document processing with new pipeline architecture")
 
@@ -255,7 +256,7 @@ class AsyncIngestionPipeline:
                 "Document processing pipeline failed during ingestion",
                 error=str(e),
                 error_type=type(e).__name__,
-                documents_attempted=len(documents) if documents else 0,
+                documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
                 exc_info=True
             )

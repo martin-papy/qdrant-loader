@@ -27,7 +27,7 @@ class SearchEngine:
         self.logger = LoggingConfig.get_logger(__name__)
 
     async def initialize(
-        self, config: QdrantConfig, openai_config: OpenAIConfig, search_config: "SearchConfig" | None = None
+        self, config: QdrantConfig, openai_config: OpenAIConfig, search_config: SearchConfig | None = None
     ) -> None:
         """Initialize the search engine with configuration."""
         self.config = config

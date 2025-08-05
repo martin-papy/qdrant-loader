@@ -124,6 +124,7 @@ class TestVectorSearchCache:
         assert vector_search_service_no_cache.cache_enabled is False
 
     @patch('qdrant_loader_mcp_server.search.components.vector_search_service.time.time')
+    @pytest.mark.asyncio
     async def test_cache_hit(self, mock_time, vector_search_service, sample_search_results):
         """Test cache hit scenario."""
         mock_time.return_value = 1000.0
@@ -150,6 +151,7 @@ class TestVectorSearchCache:
         assert vector_search_service.qdrant_client.search.call_count == 1
 
     @patch('qdrant_loader_mcp_server.search.components.vector_search_service.time.time')
+    @pytest.mark.asyncio
     async def test_cache_expiry(self, mock_time, vector_search_service, sample_search_results):
         """Test cache expiry functionality."""
         # Mock the get_embedding method
@@ -173,6 +175,7 @@ class TestVectorSearchCache:
         await vector_search_service.vector_search("test query", 10)
         assert vector_search_service._cache_misses == 2
 
+    @pytest.mark.asyncio
     async def test_cache_disabled(self, vector_search_service_no_cache, sample_search_results):
         """Test behavior when caching is disabled."""
         # Mock the get_embedding method
@@ -263,6 +266,7 @@ class TestVectorSearchCache:
         
         assert len(vector_search_service._search_cache) == 0
 
+    @pytest.mark.asyncio
     async def test_project_filter_caching(self, vector_search_service, sample_search_results):
         """Test caching with project ID filters."""
         # Mock the get_embedding method
@@ -280,6 +284,7 @@ class TestVectorSearchCache:
         assert vector_search_service._cache_hits == 1   # Third call
         assert vector_search_service.qdrant_client.search.call_count == 2
 
+    @pytest.mark.asyncio
     async def test_result_format_consistency(self, vector_search_service, sample_search_results):
         """Test that cached results maintain the same format as fresh results."""
         # Mock the get_embedding method
