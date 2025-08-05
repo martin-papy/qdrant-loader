@@ -104,7 +104,8 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         dependencies = {
             "imports": [],
             "internal_references": [],
-            "external_libraries": []
+            "external_libraries": [],
+            "stdlib_imports": []
         }
         
         # Extract import statements
@@ -120,9 +121,20 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             imports = re.findall(pattern, content)
             dependencies["imports"].extend(imports)
         
-        # Identify external vs internal dependencies
+        # Python standard library modules (common ones)
+        python_stdlib = {
+            'os', 'sys', 'json', 'math', 'random', 'datetime', 'collections', 'itertools',
+            'functools', 'operator', 're', 'urllib', 'http', 'pathlib', 'typing', 'dataclasses',
+            'abc', 'enum', 'logging', 'threading', 'multiprocessing', 'subprocess', 'socket',
+            'sqlite3', 'csv', 'pickle', 'gzip', 'zipfile', 'tarfile', 'shutil', 'tempfile'
+        }
+        
+        # Identify external vs internal vs stdlib dependencies
         for imp in dependencies["imports"]:
-            if any(keyword in imp.lower() for keyword in ['std', 'system', 'lib', 'framework']):
+            base_module = imp.split('.')[0]
+            if base_module in python_stdlib:
+                dependencies["stdlib_imports"].append(imp)
+            elif any(keyword in imp.lower() for keyword in ['std', 'system', 'lib', 'framework']):
                 dependencies["external_libraries"].append(imp)
             else:
                 dependencies["internal_references"].append(imp)
@@ -167,7 +179,7 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             "cyclomatic_complexity": cyclomatic_complexity,
             "lines_of_code": len(non_empty_lines),
             "total_lines": len(lines),
-            "max_nesting_depth": max_nesting,
+            "nesting_depth": max_nesting,
             "complexity_density": cyclomatic_complexity / max(len(non_empty_lines), 1),
             "maintainability_index": self._calculate_maintainability_index(
                 len(non_empty_lines), cyclomatic_complexity, content
@@ -402,7 +414,7 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         if any(keyword in content_lower for keyword in ['cache', 'memoize', 'lazy']):
             performance_indicators["optimization_patterns"].append("caching")
         if 'async' in content_lower or 'await' in content_lower:
-            performance_indicators["optimization_patterns"].append("asynchronous")
+            performance_indicators["optimization_patterns"].append("async_programming")
         if any(keyword in content_lower for keyword in ['parallel', 'concurrent', 'threading']):
             performance_indicators["optimization_patterns"].append("concurrency")
         
@@ -492,21 +504,23 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         """Extract Python-specific metadata."""
         features = []
         
-        if 'async def' in content:
-            features.append("async_functions")
+        if 'async def' in content or ('async' in content and 'await' in content):
+            features.append("async_await")
         if '@' in content:
             features.append("decorators")
-        if 'typing' in content or 'Type' in content:
+        if 'typing' in content or 'Type' in content or ':' in content:
             features.append("type_hints")
         if 'yield' in content:
             features.append("generators")
+        if '__enter__' in content and '__exit__' in content:
+            features.append("context_managers")
         if '__' in content:
             features.append("dunder_methods")
         if 'lambda' in content:
             features.append("lambda_functions")
         
         return {
-            "language_features": features,
+            "python_features": features,
             "python_version_indicators": self._detect_python_version_features(content)
         }
     
@@ -526,8 +540,12 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             features.append("es6_modules")
         if '${' in content:
             features.append("template_literals")
+        if '{' in content and '}' in content and ('=' in content or 'const' in content):
+            features.append("destructuring")
+        if 'function*' in content or 'yield' in content:
+            features.append("generators")
         
-        return {"language_features": features}
+        return {"javascript_features": features}
     
     def _extract_java_metadata(self, content: str) -> Dict[str, Any]:
         """Extract Java-specific metadata."""

@@ -7,10 +7,19 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from .document_parser import DocumentParser, HierarchyBuilder
+
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
 
 logger = structlog.get_logger(__name__)
+
+# Markdown configuration placeholder - can be imported from settings if needed
+class MarkdownConfig:
+    """Configuration for markdown processing."""
+    words_per_minute_reading = 200
+
+markdown_config = MarkdownConfig()
 
 
 @dataclass

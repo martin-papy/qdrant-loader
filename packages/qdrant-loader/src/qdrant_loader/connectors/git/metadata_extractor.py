@@ -21,7 +21,7 @@ class GitMetadataExtractor:
             config (GitRepoConfig): Configuration for the Git repository.
         """
         self.config = config
-        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger = logger
 
     def extract_all_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         """Extract all metadata for a file.
@@ -63,7 +63,7 @@ class GitMetadataExtractor:
         file_type = os.path.splitext(rel_path)[1]
         file_name = os.path.basename(rel_path)
         file_encoding = self._detect_encoding(content)
-        line_count = len(content.splitlines())
+        line_count = content.count('\n') + 1 if content else 0
         word_count = len(content.split())
         file_size = len(content.encode(file_encoding))
 
@@ -98,12 +98,26 @@ class GitMetadataExtractor:
             # Extract repository name and owner from normalized URL
             normalized_url = repo_url[:-4] if repo_url.endswith(".git") else repo_url
             repo_parts = normalized_url.split("/")
-            if len(repo_parts) >= 2:
+            
+            # Handle different Git hosting platforms
+            if "dev.azure.com" in repo_url:
+                # Azure DevOps format: https://dev.azure.com/org/project/_git/repo
+                if len(repo_parts) >= 5 and "_git" in repo_parts:
+                    git_index = repo_parts.index("_git")
+                    if git_index >= 1:
+                        repo_owner = repo_parts[git_index - 2]  # org
+                        repo_name = repo_parts[git_index + 1]   # repo
+                    else:
+                        return {}
+                else:
+                    return {}
+            elif len(repo_parts) >= 2:
+                # Standard format: github.com/owner/repo or gitlab.com/owner/repo
                 repo_owner = repo_parts[-2]
                 repo_name = repo_parts[-1]
             else:
-                repo_owner = ""
-                repo_name = normalized_url
+                # Invalid URL format
+                return {}
 
             # Initialize metadata with default values
             metadata = {
@@ -160,7 +174,7 @@ class GitMetadataExtractor:
                         {
                             "last_commit_date": last_commit.committed_datetime.isoformat(),
                             "last_commit_author": last_commit.author.name,
-                            "last_commit_message": last_commit.message.strip(),
+                            "last_commit_message": last_commit.message.strip().split('\n')[0],
                         }
                     )
                 else:
@@ -172,7 +186,7 @@ class GitMetadataExtractor:
                             {
                                 "last_commit_date": last_commit.committed_datetime.isoformat(),
                                 "last_commit_author": last_commit.author.name,
-                                "last_commit_message": last_commit.message.strip(),
+                                "last_commit_message": last_commit.message.strip().split('\n')[0],
                             }
                         )
                     else:
@@ -182,7 +196,7 @@ class GitMetadataExtractor:
                             {
                                 "last_commit_date": head_commit.committed_datetime.isoformat(),
                                 "last_commit_author": head_commit.author.name,
-                                "last_commit_message": head_commit.message.strip(),
+                                "last_commit_message": head_commit.message.strip().split('\n')[0],
                             }
                         )
             except Exception as e:
@@ -194,7 +208,7 @@ class GitMetadataExtractor:
                         {
                             "last_commit_date": head_commit.committed_datetime.isoformat(),
                             "last_commit_author": head_commit.author.name,
-                            "last_commit_message": head_commit.message.strip(),
+                            "last_commit_message": head_commit.message.strip().split('\n')[0],
                         }
                     )
                 except Exception as e:
@@ -359,7 +373,7 @@ class GitMetadataExtractor:
         except Exception as e:
             self.logger.debug(f"Failed to get repository description: {e}")
 
-        return "No description available"
+        return ""
 
     def _detect_encoding(self, content: str) -> str:
         """Detect file encoding."""
