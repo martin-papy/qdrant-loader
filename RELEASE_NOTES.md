@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.0.0 - July 30, 2025
+## Version 0.6.0 - August 05, 2025
 
 ### **MAJOR MILESTONE RELEASE**
 
