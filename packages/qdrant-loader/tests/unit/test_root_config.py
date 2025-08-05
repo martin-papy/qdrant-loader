@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-# Import directly from the config.py file to test the simple models
+# Import directly from the root config.py file to ensure coverage
 from qdrant_loader.config import (
     ChunkingConfig,
     GlobalConfig, 
