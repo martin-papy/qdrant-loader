@@ -47,8 +47,10 @@ async def test_shutdown():
     # Create some mock tasks
     mock_task1 = MagicMock()
     mock_task1.cancel = MagicMock()
+    mock_task1.done.return_value = False  # Task not done, should be cancelled
     mock_task2 = MagicMock()
     mock_task2.cancel = MagicMock()
+    mock_task2.done.return_value = False  # Task not done, should be cancelled
 
     # Create an async function that returns None
     async def mock_gather(*args, **kwargs):
@@ -56,21 +58,22 @@ async def test_shutdown():
 
     with patch("asyncio.all_tasks", return_value=[mock_task1, mock_task2]):
         with patch("asyncio.current_task", return_value=None):
-            # Mock asyncio.gather with a proper async function
-            with patch("asyncio.gather", side_effect=mock_gather) as mock_gather_patch:
-                await shutdown(mock_loop)
+            with patch("asyncio.sleep"):  # Mock the sleep call
+                # Mock asyncio.gather with a proper async function
+                with patch("asyncio.gather", side_effect=mock_gather) as mock_gather_patch:
+                    await shutdown(mock_loop)
 
-                # Verify tasks were cancelled
-                mock_task1.cancel.assert_called_once()
-                mock_task2.cancel.assert_called_once()
+                    # Verify tasks were cancelled
+                    mock_task1.cancel.assert_called_once()
+                    mock_task2.cancel.assert_called_once()
 
-                # Verify gather was called with the tasks
-                mock_gather_patch.assert_called_once_with(
-                    mock_task1, mock_task2, return_exceptions=True
-                )
+                    # Verify gather was called with the tasks
+                    mock_gather_patch.assert_called_once_with(
+                        mock_task1, mock_task2, return_exceptions=True
+                    )
 
-                # Verify loop was stopped
-                mock_loop.stop.assert_called_once()
+                    # Verify loop was stopped
+                    mock_loop.stop.assert_called_once()
 
 
 def test_cli_imports():
