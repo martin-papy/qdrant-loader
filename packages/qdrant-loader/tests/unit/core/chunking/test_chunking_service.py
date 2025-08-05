@@ -614,10 +614,16 @@ class TestChunkingService:
             patch(
                 "qdrant_loader.core.chunking.chunking_service.LoggingConfig"
             ) as mock_logging,
+            patch("qdrant_loader.core.chunking.chunking_service.logging") as mock_logging_module,
         ):
 
             mock_logger = Mock()
             mock_logging.get_logger.return_value = mock_logger
+            
+            # Mock the logger level check to return True for debug logging
+            mock_root_logger = Mock()
+            mock_root_logger.isEnabledFor.return_value = True
+            mock_logging_module.getLogger.return_value = mock_root_logger
 
             service = ChunkingService(mock_global_config, mock_settings)
 
