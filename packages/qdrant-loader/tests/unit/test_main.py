@@ -29,12 +29,18 @@ def test_main_module_execution_via_runpy():
     """Test main module execution via runpy to ensure line 8 coverage."""
     import subprocess
     import sys
+    from pathlib import Path
     
     # Use python -m to run the module as __main__
     # This should trigger the if __name__ == "__main__": block and cover line 8
+    
+    # Get the package root directory (where pyproject.toml is located)
+    test_dir = Path(__file__).parent  # tests/unit/
+    package_root = test_dir.parent.parent  # packages/qdrant-loader/
+    
     result = subprocess.run(
         [sys.executable, "-m", "qdrant_loader.main", "--help"],
-        cwd="/Users/martin.papy/Development/qdrant-loader/packages/qdrant-loader",
+        cwd=str(package_root),  # Use portable path
         capture_output=True,
         text=True,
         timeout=10
