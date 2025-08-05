@@ -279,7 +279,7 @@ class EmbeddingService:
         self._batch_counter = batch_num
 
         # Optimized: Only calculate tokens for debug when debug logging is enabled
-        if logger.isEnabledFor(logging.DEBUG):
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
             logger.debug(
                 "Processing embedding batch",
                 batch_num=batch_num,

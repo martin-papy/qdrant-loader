@@ -460,7 +460,7 @@ class PublicDocsConnector(BaseConnector):
 
         # Production logging: Log title extraction process without verbose HTML content
         title_tags = soup.find_all("title")
-        if self.logger.isEnabledFor(logging.DEBUG):
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 "Found title tags during HTML parsing",
                 count=len(title_tags),

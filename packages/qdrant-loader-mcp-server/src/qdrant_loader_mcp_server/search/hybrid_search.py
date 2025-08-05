@@ -56,7 +56,7 @@ class HybridSearchEngine:
         # Enhanced search parameters
         knowledge_graph: DocumentKnowledgeGraph = None,
         enable_intent_adaptation: bool = True,
-        search_config: "SearchConfig" | None = None,
+        search_config: SearchConfig | None = None,
     ):
         """Initialize the hybrid search service.
 
