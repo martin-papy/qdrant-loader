@@ -215,3 +215,54 @@ class TestConfigSerialization:
         new_config = GlobalConfig.model_validate_json(config_json)
         assert new_config.chunking.chunk_size == 3000
         assert new_config.semantic_analysis.num_topics == 8
+
+
+class TestRootConfigModuleImports:
+    """Test module-level imports to improve coverage."""
+
+    def test_import_all_config_classes(self):
+        """Test importing all classes from config module - covers import lines."""
+        # This test covers the import statements in config.py
+        # Import the classes that actually exist in the root config.py
+        from qdrant_loader.config import (
+            ChunkingConfig,
+            GlobalConfig,
+            SemanticAnalysisConfig,
+        )
+        
+        # Verify all classes are importable
+        assert ChunkingConfig is not None
+        assert GlobalConfig is not None
+        assert SemanticAnalysisConfig is not None
+        
+        # Create instances to ensure they work
+        chunking_config = ChunkingConfig()
+        global_config = GlobalConfig()
+        semantic_config = SemanticAnalysisConfig()
+        
+        assert chunking_config.chunk_size == 1500  # default value
+        assert global_config.chunking is not None
+        assert semantic_config.num_topics == 3  # default value
+
+    def test_module_level_imports_coverage(self):
+        """Test module-level imports and exports to improve coverage."""
+        import qdrant_loader.config as config_module
+        
+        # Verify the module has expected attributes
+        assert hasattr(config_module, 'ChunkingConfig')
+        assert hasattr(config_module, 'GlobalConfig')
+        assert hasattr(config_module, 'SemanticAnalysisConfig')
+        
+        # Test that we can access the classes
+        ChunkingConfig = getattr(config_module, 'ChunkingConfig')
+        GlobalConfig = getattr(config_module, 'GlobalConfig')
+        SemanticAnalysisConfig = getattr(config_module, 'SemanticAnalysisConfig')
+        
+        # Create instances to verify they work
+        chunking_config = ChunkingConfig()
+        global_config = GlobalConfig()
+        semantic_config = SemanticAnalysisConfig()
+        
+        assert chunking_config is not None
+        assert global_config is not None 
+        assert semantic_config is not None

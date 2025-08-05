@@ -414,3 +414,44 @@ class TestConfigValidator:
         max_length_name = "a" * 255  # Exactly 255 characters
         
         validator._validate_collection_name(max_length_name)  # Should not raise
+
+    def test_validate_projects_section_duplicate_project_ids(self, validator):
+        """Test validation with duplicate project IDs - covers line 75."""
+        # Since Python dicts automatically deduplicate keys, we need to simulate the 
+        # validation logic directly to test line 75. We'll create a scenario that
+        # manually triggers the duplicate check.
+        
+        # Create a custom dict-like object that can simulate duplicate keys
+        class MockProjectsData(dict):
+            def __bool__(self):
+                # Pretend we're not empty to pass the empty check on line 65
+                return True
+            
+            def __len__(self):
+                # Return non-zero length to pass empty check
+                return 2
+                
+            def items(self):
+                # Return items with duplicate project IDs to trigger line 75
+                project_config = {
+                    "display_name": "Test Project",
+                    "sources": {
+                        "git": {
+                            "repo1": {
+                                "source_type": "git", 
+                                "source": "repo1",
+                                "base_url": "https://github.com",
+                                "token": "test_token",
+                                "repo_path": "test/repo1"
+                            }
+                        }
+                    }
+                }
+                # Return the same project_id twice to trigger duplicate check
+                yield ("project1", project_config)
+                yield ("project1", project_config)  # Duplicate - triggers line 75
+        
+        mock_projects_data = MockProjectsData()
+        
+        with pytest.raises(ValueError, match="Duplicate project ID: 'project1'"):
+            validator._validate_projects_section(mock_projects_data)
