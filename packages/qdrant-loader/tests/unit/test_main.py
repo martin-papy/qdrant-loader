@@ -50,6 +50,16 @@ def test_main_module_execution_via_runpy():
     # What matters is that the main block executed
     assert result.returncode in [0, 1, 2], f"Unexpected return code: {result.returncode}"
 
+def test_main_module_direct_import():
+    """Test main module import to cover all lines."""
+    # Import the main module - this should cover lines 5-8
+    import qdrant_loader.main
+    
+    # Verify the module has the expected structure
+    assert hasattr(qdrant_loader.main, 'cli')
+    
+    # The import itself should trigger line coverage for lines 5-6
+
 def test_import_without_execution():
     """Test that importing main module doesn't execute cli()."""
     # Simply import the module - this should execute all module-level code
