@@ -101,8 +101,9 @@ class JSONChunkProcessor(BaseChunkProcessor):
             source=original_doc.source,
             source_type=original_doc.source_type,
             title=f"{original_doc.title}_chunk_{chunk_index + 1}",
-            metadata=enhanced_metadata,
-            skip_nlp=skip_nlp
+            url=original_doc.url,
+            content_type=original_doc.content_type,
+            metadata=enhanced_metadata
         )
         
         return chunk_doc
