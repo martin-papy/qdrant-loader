@@ -53,31 +53,45 @@ async def read_stdin():
     return reader
 
 
-async def shutdown(loop: asyncio.AbstractEventLoop):
+async def shutdown(loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Event = None):
     """Handle graceful shutdown."""
     logger = LoggingConfig.get_logger(__name__)
     logger.info("Shutting down...")
 
+    # Set the shutdown event to signal other tasks to stop
+    if shutdown_event:
+        shutdown_event.set()
+        # Give the main server task time to handle the shutdown signal gracefully
+        await asyncio.sleep(0.2)
+
     # Get all tasks except the current one
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
-    # Cancel all tasks
+    # Cancel all remaining tasks
     for task in tasks:
-        task.cancel()
+        if not task.done():
+            task.cancel()
 
-    # Wait for all tasks to complete
-    try:
-        await asyncio.gather(*tasks, return_exceptions=True)
-    except Exception:
-        logger.error("Error during shutdown", exc_info=True)
+    # Wait for all tasks to complete, suppressing CancelledError during shutdown
+    if tasks:
+        try:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Only log non-CancelledError exceptions during shutdown
+            for result in results:
+                if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+                    logger.error(f"Error during task cleanup: {result}", exc_info=True)
+        except Exception as e:
+            if not isinstance(e, asyncio.CancelledError):
+                logger.error("Error during shutdown", exc_info=True)
 
     # Stop the event loop
     loop.stop()
 
 
-async def start_http_server(config: Config, log_level: str, host: str, port: int):
+async def start_http_server(config: Config, log_level: str, host: str, port: int, shutdown_event: asyncio.Event):
     """Start MCP server with HTTP transport."""
     logger = LoggingConfig.get_logger(__name__)
+    search_engine = None
     
     try:
         logger.info(f"Starting HTTP server on {host}:{port}")
@@ -115,11 +129,54 @@ async def start_http_server(config: Config, log_level: str, host: str, port: int
         
         server = uvicorn.Server(uvicorn_config)
         logger.info(f"HTTP MCP server ready at http://{host}:{port}/mcp")
-        await server.serve()
+        
+        # Create a task to monitor shutdown event
+        async def shutdown_monitor():
+            await shutdown_event.wait()
+            logger.info("Shutdown signal received, stopping HTTP server...")
+            # Signal uvicorn to stop gracefully
+            server.should_exit = True
+            # Also trigger the shutdown procedure
+            if hasattr(server, 'force_exit'):
+                # Give it a moment to shutdown gracefully
+                await asyncio.sleep(0.5)
+                if not server.should_exit:
+                    server.force_exit = True
+        
+        # Start shutdown monitor task
+        monitor_task = asyncio.create_task(shutdown_monitor())
+        
+        try:
+            # Run the server until shutdown
+            await server.serve()
+        except asyncio.CancelledError:
+            logger.info("Server shutdown initiated")
+        except Exception as e:
+            if not shutdown_event.is_set():
+                logger.error(f"Server error: {e}", exc_info=True)
+            else:
+                logger.info(f"Server stopped during shutdown: {e}")
+        finally:
+            # Cancel the monitor task
+            if not monitor_task.done():
+                monitor_task.cancel()
+                try:
+                    await monitor_task
+                except asyncio.CancelledError:
+                    pass
         
     except Exception as e:
-        logger.error(f"Error in HTTP server: {e}", exc_info=True)
+        if not shutdown_event.is_set():
+            logger.error(f"Error in HTTP server: {e}", exc_info=True)
         raise
+    finally:
+        # Clean up search engine
+        if search_engine:
+            try:
+                await search_engine.cleanup()
+                logger.info("Search engine cleanup completed")
+            except Exception as e:
+                logger.error(f"Error during search engine cleanup: {e}", exc_info=True)
 
 
 async def handle_stdio(config: Config, log_level: str):
@@ -347,6 +404,7 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
         # Show version
         mcp-qdrant-loader --version
     """
+    loop = None
     try:
         # Load environment variables from .env file if specified
         if env:
@@ -363,15 +421,21 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        # Set up signal handlers
+        # Create shutdown event for coordinating graceful shutdown
+        shutdown_event = asyncio.Event()
+
+        # Set up signal handlers with shutdown event
+        def signal_handler():
+            asyncio.create_task(shutdown(loop, shutdown_event))
+
         for sig in (signal.SIGTERM, signal.SIGINT):
-            loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(loop)))
+            loop.add_signal_handler(sig, signal_handler)
 
         # Start the appropriate transport handler
         if transport.lower() == "stdio":
             loop.run_until_complete(handle_stdio(config_obj, log_level))
         elif transport.lower() == "http":
-            loop.run_until_complete(start_http_server(config_obj, log_level, host, port))
+            loop.run_until_complete(start_http_server(config_obj, log_level, host, port, shutdown_event))
         else:
             raise ValueError(f"Unsupported transport: {transport}")
     except Exception:
@@ -379,21 +443,22 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
         logger.error("Error in main", exc_info=True)
         sys.exit(1)
     finally:
-        try:
-            # Cancel all remaining tasks
-            pending = asyncio.all_tasks(loop)
-            for task in pending:
-                task.cancel()
+        if loop:
+            try:
+                # Cancel all remaining tasks
+                pending = asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
 
-            # Run the loop until all tasks are done
-            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-        except Exception:
-            logger = LoggingConfig.get_logger(__name__)
-            logger.error("Error during final cleanup", exc_info=True)
-        finally:
-            loop.close()
-            logger = LoggingConfig.get_logger(__name__)
-            logger.info("Server shutdown complete")
+                # Run the loop until all tasks are done
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                logger = LoggingConfig.get_logger(__name__)
+                logger.error("Error during final cleanup", exc_info=True)
+            finally:
+                loop.close()
+                logger = LoggingConfig.get_logger(__name__)
+                logger.info("Server shutdown complete")
 
 
 if __name__ == "__main__":
