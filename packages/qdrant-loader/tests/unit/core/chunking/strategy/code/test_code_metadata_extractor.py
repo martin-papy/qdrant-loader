@@ -684,7 +684,7 @@ function* generatorFunc() {
         # Should still extract basic metadata
         assert "complexity_metrics" in metadata
         assert "code_patterns" in metadata
-        assert "content_type" == "code"
+        assert metadata["content_type"] == "code"
 
     def test_edge_cases(self):
         """Test edge cases and error handling."""

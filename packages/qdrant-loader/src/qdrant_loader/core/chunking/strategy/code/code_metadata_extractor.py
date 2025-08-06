@@ -104,7 +104,7 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         dependencies = {
             "imports": [],
             "internal_references": [],
-            "external_libraries": [],
+            "third_party_imports": [],
             "stdlib_imports": []
         }
         
@@ -134,12 +134,54 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             base_module = imp.split('.')[0]
             if base_module in python_stdlib:
                 dependencies["stdlib_imports"].append(imp)
-            elif any(keyword in imp.lower() for keyword in ['std', 'system', 'lib', 'framework']):
-                dependencies["external_libraries"].append(imp)
+            elif self._is_third_party_import(imp):
+                dependencies["third_party_imports"].append(imp)
             else:
                 dependencies["internal_references"].append(imp)
         
         return dependencies
+    
+    def _is_third_party_import(self, import_name: str) -> bool:
+        """Determine if an import is a third-party library.
+        
+        Args:
+            import_name: The import name to check
+            
+        Returns:
+            True if it's likely a third-party import
+        """
+        base_module = import_name.split('.')[0].lower()
+        
+        # Known third-party libraries
+        known_third_party = {
+            'requests', 'numpy', 'pandas', 'flask', 'django', 'fastapi', 
+            'tensorflow', 'torch', 'pytorch', 'sklearn', 'scipy', 'matplotlib',
+            'seaborn', 'plotly', 'streamlit', 'dash', 'celery', 'redis',
+            'sqlalchemy', 'alembic', 'pydantic', 'marshmallow', 'click',
+            'typer', 'pytest', 'unittest2', 'mock', 'httpx', 'aiohttp',
+            'websockets', 'uvicorn', 'gunicorn', 'jinja2', 'mako', 'babel',
+            'pillow', 'opencv', 'cv2', 'boto3', 'azure', 'google'
+        }
+        
+        if base_module in known_third_party:
+            return True
+            
+        # Heuristics for third-party libraries:
+        # 1. Contains common third-party patterns
+        if any(pattern in base_module for pattern in ['lib', 'client', 'sdk', 'api']):
+            return True
+            
+        # 2. Looks like a package name (contains underscores but not starting with _)
+        if '_' in base_module and not base_module.startswith('_'):
+            return True
+            
+        # 3. Single lowercase word that's not obviously internal
+        if (base_module.islower() and 
+            not base_module.startswith('test') and 
+            not base_module in ['main', 'app', 'config', 'utils', 'helpers']):
+            return True
+            
+        return False
     
     def _calculate_complexity_metrics(self, content: str) -> Dict[str, Any]:
         """Calculate code complexity metrics.
@@ -181,23 +223,33 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             "total_lines": len(lines),
             "nesting_depth": max_nesting,
             "complexity_density": cyclomatic_complexity / max(len(non_empty_lines), 1),
-            "maintainability_index": self._calculate_maintainability_index(
-                len(non_empty_lines), cyclomatic_complexity, content
-            )
+            "maintainability_index": self._calculate_maintainability_index(content)
         }
     
-    def _calculate_maintainability_index(self, loc: int, complexity: int, content: str) -> float:
+    def _calculate_maintainability_index(self, content: str) -> float:
         """Calculate maintainability index (0-100 scale).
         
         Args:
-            loc: Lines of code
-            complexity: Cyclomatic complexity
             content: Code content
             
         Returns:
             Maintainability index score
         """
         import math
+        
+        if not content.strip():
+            return 50  # Default for empty content
+        
+        # Calculate lines of code and complexity
+        lines = content.split('\n')
+        non_empty_lines = [line for line in lines if line.strip()]
+        loc = len(non_empty_lines)
+        
+        # Simple cyclomatic complexity
+        complexity_indicators = ['if ', 'elif ', 'else:', 'while ', 'for ', 'try:', 'except:', 'case ']
+        complexity = 1  # Base complexity
+        for indicator in complexity_indicators:
+            complexity += content.lower().count(indicator.lower())
         
         # Simplified maintainability index calculation
         # Based on Halstead metrics and cyclomatic complexity
@@ -250,7 +302,7 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             patterns["design_patterns"].append("strategy")
         
         # Anti-patterns and code smells
-        if content.count('if ') > 10:
+        if content.count('if ') > 5:
             patterns["code_smells"].append("too_many_conditionals")
         if len(content.split('\n')) > 100:
             patterns["code_smells"].append("long_method")
@@ -278,9 +330,15 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         Returns:
             Dictionary of documentation metrics
         """
-        # Count functions and classes
-        function_count = content.count('def ') + content.count('function ')
-        class_count = content.count('class ')
+        # Count functions and classes using more precise regex patterns
+        import re
+        
+        # Match function definitions (def at start of line with optional whitespace)
+        function_count = len(re.findall(r'^\s*def\s+\w+', content, re.MULTILINE))
+        function_count += len(re.findall(r'^\s*function\s+\w+', content, re.MULTILINE))
+        
+        # Match class definitions (class at start of line with optional whitespace)
+        class_count = len(re.findall(r'^\s*class\s+\w+', content, re.MULTILINE))
         
         # Count docstrings
         docstring_count = content.count('"""') // 2 + content.count("'''") // 2
@@ -339,7 +397,10 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         # Count tests and assertions
         test_indicators["test_count"] = content.count('def test_') + content.count('it(')
         
-        assertion_patterns = ['assert', 'expect(', 'should', 'assertEqual', 'assertTrue']
+        assertion_patterns = [
+            'assert ', 'assert(', 'expect(', 'should', 'assertEqual', 'assertTrue',
+            'pytest.raises', 'self.assert', 'with pytest.raises', 'raises('
+        ]
         test_indicators["assertion_count"] = sum(content.count(pattern) for pattern in assertion_patterns)
         
         # Check for mocking and fixtures
@@ -419,9 +480,24 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             performance_indicators["optimization_patterns"].append("concurrency")
         
         # Potential bottlenecks
-        nested_loops = content.count('for ') * content.count('while ')
-        if nested_loops > 3:
+        # Detect nested loops by looking for multiple for/while statements
+        total_loops = content.count('for ') + content.count('while ')
+        if total_loops >= 3:  # 3+ loops likely indicates nesting
             performance_indicators["potential_bottlenecks"].append("nested_loops")
+        
+        # Detect recursion patterns
+        lines = content.split('\n')
+        for line in lines:
+            line = line.strip()
+            if 'def ' in line:
+                func_name = line.split('def ')[1].split('(')[0].strip()
+                if func_name and func_name in content:
+                    # Check if function calls itself
+                    func_call_pattern = f"{func_name}("
+                    if content.count(func_call_pattern) > 1:  # Once for definition, once+ for calls
+                        performance_indicators["potential_bottlenecks"].append("recursion")
+                        break
+        
         if content.count('database') > 5 or content.count('query') > 5:
             performance_indicators["potential_bottlenecks"].append("database_heavy")
         if content.count('file') > 10 or content.count('read') > 10:
@@ -429,7 +505,7 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         
         # Resource usage
         if any(keyword in content_lower for keyword in ['memory', 'buffer', 'allocation']):
-            performance_indicators["resource_usage"].append("memory_management")
+            performance_indicators["resource_usage"].append("memory_allocation")
         if any(keyword in content_lower for keyword in ['connection', 'pool', 'socket']):
             performance_indicators["resource_usage"].append("connection_management")
         
@@ -487,18 +563,17 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         Returns:
             Language-specific metadata
         """
-        metadata = {"language_features": []}
-        
         if language == "python":
-            metadata.update(self._extract_python_metadata(content))
+            return self._extract_python_metadata(content)
         elif language in ["javascript", "typescript"]:
-            metadata.update(self._extract_javascript_metadata(content))
+            return self._extract_javascript_metadata(content)
         elif language == "java":
-            metadata.update(self._extract_java_metadata(content))
+            return self._extract_java_metadata(content)
         elif language in ["cpp", "c"]:
-            metadata.update(self._extract_c_cpp_metadata(content))
-        
-        return metadata
+            return self._extract_c_cpp_metadata(content)
+        else:
+            # Return empty dict for unknown languages
+            return {}
     
     def _extract_python_metadata(self, content: str) -> Dict[str, Any]:
         """Extract Python-specific metadata."""
@@ -518,6 +593,8 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
             features.append("dunder_methods")
         if 'lambda' in content:
             features.append("lambda_functions")
+        if 'dataclass' in content or '@dataclass' in content:
+            features.append("dataclasses")
         
         return {
             "python_features": features,

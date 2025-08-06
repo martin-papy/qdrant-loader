@@ -185,6 +185,7 @@ Final paragraph with special characters: éñüñøß
         """Test repository metadata extraction for GitHub."""
         # Mock repository
         mock_repo = MagicMock(spec=git.Repo)
+        mock_repo.bare = False  # Ensure it's not a bare repository
         mock_config = MagicMock()
         mock_config.has_section.return_value = True
         mock_config.get_value.side_effect = lambda section, key, default: {
@@ -340,7 +341,7 @@ Final thoughts.
         metadata = extractor._extract_structure_metadata(content)
         
         assert metadata["has_toc"] is True
-        assert metadata["sections_count"] == 10
+        assert metadata["sections_count"] == 12
         expected_levels = [1, 2, 2, 3, 4, 2, 3, 3, 2, 3, 3, 2]
         assert metadata["heading_levels"] == expected_levels
 
@@ -563,9 +564,8 @@ if __name__ == "__main__":
     def test_extract_all_metadata_logging(self, base_config):
         """Test that extract_all_metadata logs appropriately."""
         with patch("git.Repo", side_effect=git.InvalidGitRepositoryError):
-            with patch.object(GitMetadataExtractor, 'logger') as mock_logger:
+            with patch("qdrant_loader.connectors.git.metadata_extractor.logger") as mock_logger:
                 extractor = GitMetadataExtractor(base_config)
-                extractor.logger = mock_logger
                 
                 metadata = extractor.extract_all_metadata("/test/file.md", "# Test")
                 

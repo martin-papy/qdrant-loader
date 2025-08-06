@@ -286,5 +286,9 @@ class TestDefaultChunkingStrategy:
                 assert mock_logger.debug.call_count >= 2  # Start and end logging
 
                 # Check that logging includes relevant information
-                start_call = mock_logger.debug.call_args_list[0]
-                assert "Analyzing document structure" in start_call[0][0]
+                # Find the chunk processing debug call (not shutdown or other calls)
+                chunk_processing_calls = [
+                    call for call in mock_logger.debug.call_args_list 
+                    if len(call[0]) > 0 and "Analyzing document structure" in call[0][0]
+                ]
+                assert len(chunk_processing_calls) >= 1, f"Expected chunking debug call not found. Calls: {[call[0][0] for call in mock_logger.debug.call_args_list]}"
