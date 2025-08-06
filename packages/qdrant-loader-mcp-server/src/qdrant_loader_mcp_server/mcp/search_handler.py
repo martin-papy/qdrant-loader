@@ -162,28 +162,24 @@ class SearchHandler:
             results = await self.search_engine.search(
                 query=processed_query["query"],
                 source_types=["confluence", "localfile"],  # Include localfiles with folder structure
-                limit=limit * 2,  # Get more results to filter
+                limit=max(limit * 2, 40),  # Get enough results to filter for hierarchy navigation
             )
 
             # Apply hierarchy filters
             filtered_results = self._apply_hierarchy_filters(results, hierarchy_filter)
 
-            # Limit results after filtering
-            filtered_results = filtered_results[:limit]
+            # For hierarchy search, prioritize returning more documents for better hierarchy navigation
+            # Limit to maximum of 20 documents for hierarchy index (not just the user's limit)
+            hierarchy_limit = max(limit, 20)
+            filtered_results = filtered_results[:hierarchy_limit]
 
             # Organize results if requested
             organized_results = None
             if organize_by_hierarchy:
                 organized_results = self._organize_by_hierarchy(filtered_results)
-                response_text = self.formatters.format_hierarchical_results(organized_results)
+                response_text = self._format_lightweight_hierarchy_text(organized_results, len(filtered_results))
             else:
-                response_text = (
-                    f"Found {len(filtered_results)} results:\n\n"
-                    + "\n\n".join(
-                        self.formatters.format_search_result(result)
-                        for result in filtered_results
-                    )
-                )
+                response_text = self._format_lightweight_hierarchy_text({}, len(filtered_results))
 
             logger.info(
                 "Hierarchy search completed successfully",
@@ -194,8 +190,8 @@ class SearchHandler:
             )
 
             # Create structured content for MCP compliance
-            structured_content = self.formatters.create_structured_hierarchy_results(
-                filtered_results, organize_by_hierarchy, organized_results
+            structured_content = self.formatters.create_lightweight_hierarchy_results(
+                filtered_results, organized_results, query
             )
 
             # Format the response with both text and structured content
@@ -460,4 +456,32 @@ class SearchHandler:
 
             filtered_results.append(result)
 
-        return filtered_results 
+        return filtered_results
+
+    def _format_lightweight_hierarchy_text(
+        self, organized_results: dict[str, list], total_found: int
+    ) -> str:
+        """Format hierarchy results as lightweight text summary."""
+        if not organized_results:
+            return f"📋 **Hierarchy Search Results**\n\nFound {total_found} documents. Use the structured data below to navigate the hierarchy and retrieve specific documents."
+        
+        formatted = f"📋 **Hierarchy Search Results** ({total_found} documents)\n\n"
+        
+        for group_name, results in organized_results.items():
+            clean_name = self.formatters._generate_clean_group_name(group_name, results)
+            formatted += f"📁 **{clean_name}** ({len(results)} documents)\n"
+            
+            # Show first few documents as examples
+            for result in results[:3]:
+                formatted += f"  📄 {result.source_title} (Score: {result.score:.3f})\n"
+            
+            if len(results) > 3:
+                formatted += f"  ... and {len(results) - 3} more documents\n"
+            formatted += "\n"
+        
+        formatted += "💡 **Usage:** Use the structured hierarchy data to:\n"
+        formatted += "• Browse document groups and navigate hierarchy levels\n"
+        formatted += "• Get document IDs for specific content retrieval\n"
+        formatted += "• Understand document relationships and organization\n"
+        
+        return formatted 

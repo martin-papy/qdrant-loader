@@ -256,6 +256,64 @@ class TestHierarchyFilters:
         assert "API Reference" in formatted
         assert "results organized by hierarchy" in formatted
 
+    def test_create_lightweight_hierarchy_results(self, formatters, search_handler, mock_search_results):
+        """Test creating lightweight hierarchy results structure."""
+        confluence_results = [
+            r
+            for r in mock_search_results
+            if r.source_type == "confluence" and not r.is_attachment
+        ]
+        organized = search_handler._organize_by_hierarchy(confluence_results)
+        
+        lightweight_results = formatters.create_lightweight_hierarchy_results(
+            confluence_results, organized, "test query"
+        )
+        
+        # Validate the new lightweight structure
+        assert "hierarchy_index" in lightweight_results
+        assert "hierarchy_groups" in lightweight_results
+        assert "total_found" in lightweight_results
+        assert "query_metadata" in lightweight_results
+        
+        # Check hierarchy index structure
+        hierarchy_index = lightweight_results["hierarchy_index"]
+        assert len(hierarchy_index) > 0
+        
+        first_item = hierarchy_index[0]
+        assert "document_id" in first_item
+        assert "title" in first_item
+        assert "score" in first_item
+        assert "hierarchy_info" in first_item
+        assert "navigation_hints" in first_item
+        
+        # Check hierarchy_info structure
+        hierarchy_info = first_item["hierarchy_info"]
+        assert "depth" in hierarchy_info
+        assert "source_type" in hierarchy_info
+        assert "has_children" in hierarchy_info
+        
+        # Check navigation_hints structure
+        navigation_hints = first_item["navigation_hints"]
+        assert "group" in navigation_hints
+        assert "siblings_count" in navigation_hints
+        assert "children_count" in navigation_hints
+        
+        # Check hierarchy groups structure
+        hierarchy_groups = lightweight_results["hierarchy_groups"]
+        if hierarchy_groups:  # Only check if groups exist
+            first_group = hierarchy_groups[0]
+            assert "group_key" in first_group
+            assert "group_name" in first_group
+            assert "document_ids" in first_group
+            assert "depth_range" in first_group
+            assert "total_documents" in first_group
+        
+        # Check query metadata
+        query_metadata = lightweight_results["query_metadata"]
+        assert "search_query" in query_metadata
+        assert "source_types_found" in query_metadata
+        assert query_metadata["search_query"] == "test query"
+
 
 class TestAttachmentFilters:
     """Test attachment filtering functionality."""
