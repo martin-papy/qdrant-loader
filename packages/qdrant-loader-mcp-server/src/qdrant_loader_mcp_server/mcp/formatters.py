@@ -646,4 +646,161 @@ class MCPFormatters:
                 "file_types": list(set(getattr(result, 'file_type', 'unknown') for result in filtered_results)),
                 "attachments_only": attachment_filter.get('attachments_only', False)
             }
-        } 
+        }
+
+    @staticmethod
+    def create_lightweight_attachment_results(
+        filtered_results: list[HybridSearchResult], 
+        attachment_filter: dict[str, Any],
+        query: str = ""
+    ) -> dict[str, Any]:
+        """Return minimal attachment data for fast navigation and lazy loading."""
+        
+        # Create attachment index with minimal data (limit to 20 for performance)
+        attachment_index = []
+        for result in filtered_results[:20]:
+            attachment_index.append({
+                "document_id": result.document_id,
+                "title": result.source_title or "Untitled",
+                "score": result.score,
+                "attachment_info": {
+                    "filename": MCPFormatters._extract_safe_filename(result),
+                    "file_type": MCPFormatters._extract_file_type_minimal(result),
+                    "file_size": result.file_size if result.file_size and result.file_size > 0 else None,
+                    "source_type": result.source_type
+                },
+                "navigation_hints": {
+                    "parent_document": result.parent_document_title or result.parent_title,
+                    "project_context": result.project_name or result.project_id,
+                    "content_preview": result.text[:100] + "..." if result.text else None
+                }
+            })
+        
+        # Create attachment groups for better organization
+        attachment_groups = MCPFormatters._organize_attachments_by_type(filtered_results)
+        
+        return {
+            "attachment_index": attachment_index,
+            "attachment_groups": attachment_groups,
+            "total_found": len(filtered_results),
+            "query_metadata": {
+                "search_query": query,
+                "source_types_found": list(set(r.source_type for r in filtered_results)),
+                "filters_applied": attachment_filter
+            }
+        }
+
+    @staticmethod
+    def _extract_safe_filename(result: HybridSearchResult) -> str:
+        """Fast filename extraction with minimal processing."""
+        # Quick priority check - avoid expensive validation
+        if result.original_filename and len(result.original_filename) < 200:
+            return result.original_filename
+        
+        if result.file_path:
+            import os
+            return os.path.basename(result.file_path)
+        
+        # Fallback to source title but clean it
+        title = result.source_title or "untitled"
+        # Quick clean - remove obvious chunk indicators
+        if "(Chunk " in title:
+            title = title.split("(Chunk ")[0].strip()
+        
+        return title[:100]  # Truncate for safety
+
+    @staticmethod
+    def _extract_file_type_minimal(result: HybridSearchResult) -> str:
+        """Fast file type detection - minimal processing."""
+        # Priority order with early returns for performance
+        if result.mime_type:
+            return result.mime_type.split('/')[-1]  # Get extension from MIME
+        
+        # Try multiple filename sources for extension extraction
+        filename_candidates = [
+            result.original_filename,
+            result.source_title,
+            result.file_path.split('/')[-1] if result.file_path else None
+        ]
+        
+        for filename in filename_candidates:
+            if filename and '.' in filename:
+                ext = filename.split('.')[-1].lower().strip()
+                # Valid file extensions and common document types
+                if len(ext) <= 5 and ext.isalnum():
+                    return ext
+        
+        return "unknown"
+
+    @staticmethod
+    def _organize_attachments_by_type(results: list[HybridSearchResult]) -> list[dict]:
+        """Organize attachments into logical groups for navigation."""
+        from collections import defaultdict
+        
+        type_groups = defaultdict(list)
+        
+        for result in results:
+            # Group by file type first
+            file_type = MCPFormatters._extract_file_type_minimal(result)
+            group_key = MCPFormatters._get_attachment_group_key(file_type, result.source_type)
+            type_groups[group_key].append(result.document_id)
+        
+        # Convert to structured format
+        groups = []
+        for group_key, doc_ids in type_groups.items():
+            if len(doc_ids) >= 1:  # Include all groups, even single files
+                groups.append({
+                    "group_key": group_key,
+                    "group_name": MCPFormatters._generate_friendly_group_name(group_key),
+                    "document_ids": doc_ids,
+                    "file_count": len(doc_ids)
+                })
+        
+        # Sort by file count (most common types first)
+        return sorted(groups, key=lambda g: g["file_count"], reverse=True)
+
+    @staticmethod
+    def _get_attachment_group_key(file_type: str, source_type: str) -> str:
+        """Generate logical grouping keys for attachments."""
+        # Map to broader categories for better UX
+        document_types = {"pdf", "doc", "docx", "txt", "md"}
+        spreadsheet_types = {"xls", "xlsx", "csv"}
+        image_types = {"png", "jpg", "jpeg", "gif", "svg"}
+        
+        if file_type in document_types:
+            return f"documents_{source_type}"
+        elif file_type in spreadsheet_types:
+            return f"spreadsheets_{source_type}"
+        elif file_type in image_types:
+            return f"images_{source_type}"
+        else:
+            return f"other_{source_type}"
+
+    @staticmethod
+    def _generate_friendly_group_name(group_key: str) -> str:
+        """Generate user-friendly group names."""
+        # Parse the group key format: "type_source"
+        if "_" in group_key:
+            file_category, source_type = group_key.split("_", 1)
+            
+            # Capitalize and format
+            category_map = {
+                "documents": "Documents",
+                "spreadsheets": "Spreadsheets", 
+                "images": "Images",
+                "other": "Other Files"
+            }
+            
+            source_map = {
+                "confluence": "Confluence",
+                "localfile": "Local Files",
+                "git": "Git Repository",
+                "jira": "Jira"
+            }
+            
+            category = category_map.get(file_category, file_category.title())
+            source = source_map.get(source_type, source_type.title())
+            
+            return f"{category} ({source})"
+        
+        return group_key.title() 

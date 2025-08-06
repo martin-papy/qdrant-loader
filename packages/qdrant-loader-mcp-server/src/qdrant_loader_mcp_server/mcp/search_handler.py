@@ -266,13 +266,14 @@ class SearchHandler:
                 limit=limit * 2,  # Get more results to filter
             )
 
-            # Apply attachment filters
-            filtered_results = self._apply_attachment_filters(
+            # Apply lightweight attachment filters (NEW - supports multi-source)
+            filtered_results = self._apply_lightweight_attachment_filters(
                 results, attachment_filter
             )
-
-            # Limit results after filtering
-            filtered_results = filtered_results[:limit]
+            
+            # Limit to reasonable number for performance (ensure good navigation)
+            attachment_limit = max(limit, 15)  # At least 15 for good navigation
+            filtered_results = filtered_results[:attachment_limit]
 
             logger.info(
                 "Attachment search completed successfully",
@@ -282,15 +283,23 @@ class SearchHandler:
                 ),
             )
 
-            # Format the response
-            response_text = f"Found {len(filtered_results)} results:\n\n" + "\n\n".join(
-                self.formatters.format_attachment_search_result(result)
-                for result in filtered_results
+            # Create attachment groups for organized display
+            organized_results = {}
+            if filtered_results:
+                # Group attachments by type for better organization
+                attachment_groups = self.formatters._organize_attachments_by_type(filtered_results)
+                for group in attachment_groups:
+                    group_results = [r for r in filtered_results if r.document_id in group["document_ids"]]
+                    organized_results[group["group_name"]] = group_results
+
+            # Create lightweight text response
+            response_text = self._format_lightweight_attachment_text(
+                organized_results, len(filtered_results)
             )
 
-            # Create structured content for MCP compliance
-            structured_content = self.formatters.create_structured_attachment_results(
-                filtered_results, attachment_filter, include_parent_context
+            # Create lightweight structured content for MCP compliance
+            structured_content = self.formatters.create_lightweight_attachment_results(
+                filtered_results, attachment_filter, query
             )
 
             response = self.protocol.create_response(
@@ -457,6 +466,86 @@ class SearchHandler:
             filtered_results.append(result)
 
         return filtered_results
+
+    def _apply_lightweight_attachment_filters(
+        self, results: list[HybridSearchResult], attachment_filter: dict[str, Any]
+    ) -> list[HybridSearchResult]:
+        """Fast filtering optimized for attachment discovery across all sources."""
+        filtered_results = []
+        
+        for result in results:
+            # Quick attachment detection - avoid expensive checks
+            is_attachment = (
+                result.is_attachment or 
+                result.original_filename or 
+                (result.file_path and '.' in result.file_path and not result.file_path.endswith('/'))
+            )
+            
+            if not is_attachment:
+                continue
+            
+            # Apply filters with early exits for performance
+            if attachment_filter.get('attachments_only') and not result.is_attachment:
+                continue
+                
+            if attachment_filter.get('file_type'):
+                file_type = self.formatters._extract_file_type_minimal(result)
+                if file_type != attachment_filter['file_type']:
+                    continue
+            
+            # Size filters with null checks
+            if attachment_filter.get('file_size_min') and result.file_size:
+                if result.file_size < attachment_filter['file_size_min']:
+                    continue
+                    
+            if attachment_filter.get('file_size_max') and result.file_size:
+                if result.file_size > attachment_filter['file_size_max']:
+                    continue
+            
+            # Parent document filter (works across source types)
+            if attachment_filter.get('parent_document_title'):
+                parent_title = result.parent_document_title or result.parent_title
+                if parent_title != attachment_filter['parent_document_title']:
+                    continue
+            
+            # Author filter
+            if attachment_filter.get('author'):
+                author = result.attachment_author or getattr(result, 'author', None)
+                if author != attachment_filter['author']:
+                    continue
+                    
+            filtered_results.append(result)
+        
+        return filtered_results
+
+    def _format_lightweight_attachment_text(
+        self, organized_results: dict[str, list], total_found: int
+    ) -> str:
+        """Format attachment results as lightweight text summary."""
+        if not organized_results:
+            return f"📎 **Attachment Search Results**\n\nFound {total_found} attachments. Use the structured data below to navigate and retrieve specific files."
+        
+        formatted = f"📎 **Attachment Search Results** ({total_found} attachments)\n\n"
+        
+        for group_name, results in organized_results.items():
+            formatted += f"📁 **{group_name}** ({len(results)} files)\n"
+            
+            # Show first few attachments as examples
+            for result in results[:3]:
+                filename = self.formatters._extract_safe_filename(result)
+                file_type = self.formatters._extract_file_type_minimal(result)
+                formatted += f"  📄 {filename} ({file_type}) - Score: {result.score:.3f}\n"
+            
+            if len(results) > 3:
+                formatted += f"  ... and {len(results) - 3} more files\n"
+            formatted += "\n"
+        
+        formatted += "💡 **Usage:** Use the structured attachment data to:\n"
+        formatted += "• Browse attachments by file type or source\n"
+        formatted += "• Get document IDs for specific file content retrieval\n"
+        formatted += "• Filter attachments by metadata (size, type, etc.)\n"
+        
+        return formatted
 
     def _format_lightweight_hierarchy_text(
         self, organized_results: dict[str, list], total_found: int
