@@ -49,16 +49,17 @@ def start_metrics_server(port: int = 8001):
 
     except Exception as e:
         logger.error(f"Failed to start metrics server: {e}")
-        raise
+        # Don't re-raise to allow application to continue without metrics
 
 
 def stop_metrics_server():
     """Stop the metrics server and cleanup resources."""
-    global _metrics_server_started
+    global _metrics_server_started, _metrics_server_thread
 
     if _metrics_server_started:
         logger.info("Stopping metrics server...")
         _metrics_server_started = False
+        _metrics_server_thread = None
 
         # Note: prometheus_client doesn't provide a clean way to stop the server
         # The HTTP server threads will be cleaned up when the process exits

@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 import chardet
 import git
@@ -63,7 +64,16 @@ class GitMetadataExtractor:
         file_type = os.path.splitext(rel_path)[1]
         file_name = os.path.basename(rel_path)
         file_encoding = self._detect_encoding(content)
-        line_count = content.count('\n') + 1 if content else 0
+        # Count lines using splitlines(), but handle special case for whitespace-only content
+        if not content:
+            line_count = 0
+        elif content.strip() == '' and '\n' in content:
+            # Special case: whitespace-only content with newlines
+            # Count newlines + 1 to include all whitespace segments
+            line_count = content.count('\n') + 1
+        else:
+            # Normal content: use splitlines() which handles trailing newlines correctly
+            line_count = len(content.splitlines())
         word_count = len(content.split())
         file_size = len(content.encode(file_encoding))
 
@@ -99,8 +109,11 @@ class GitMetadataExtractor:
             normalized_url = repo_url[:-4] if repo_url.endswith(".git") else repo_url
             repo_parts = normalized_url.split("/")
             
-            # Handle different Git hosting platforms
-            if "dev.azure.com" in repo_url:
+            # Handle different Git hosting platforms using secure URL parsing
+            parsed_url = urlparse(repo_url)
+            hostname = parsed_url.hostname
+            
+            if hostname == "dev.azure.com":
                 # Azure DevOps format: https://dev.azure.com/org/project/_git/repo
                 if len(repo_parts) >= 5 and "_git" in repo_parts:
                     git_index = repo_parts.index("_git")
@@ -111,13 +124,22 @@ class GitMetadataExtractor:
                         return {}
                 else:
                     return {}
-            elif len(repo_parts) >= 2:
+            elif hostname in ["github.com", "gitlab.com"] or (hostname and hostname.endswith(".github.com")):
                 # Standard format: github.com/owner/repo or gitlab.com/owner/repo
-                repo_owner = repo_parts[-2]
-                repo_name = repo_parts[-1]
+                # Also handle GitHub Enterprise subdomains
+                if len(repo_parts) >= 2:
+                    repo_owner = repo_parts[-2]
+                    repo_name = repo_parts[-1]
+                else:
+                    return {}
             else:
-                # Invalid URL format
-                return {}
+                # Handle other Git hosting platforms (GitLab self-hosted, etc.)
+                if len(repo_parts) >= 2:
+                    repo_owner = repo_parts[-2]
+                    repo_name = repo_parts[-1]
+                else:
+                    # Invalid URL format
+                    return {}
 
             # Initialize metadata with default values
             metadata = {
@@ -148,6 +170,10 @@ class GitMetadataExtractor:
                             config.get_value("core", "description", "")
                         )
                     self.logger.debug(f"Repository metadata extracted: {metadata!s}")
+            except git.InvalidGitRepositoryError:
+                # If the directory is not a valid Git repository, we can't extract any metadata
+                self.logger.error("Invalid Git repository directory")
+                return {}
             except Exception as e:
                 self.logger.error(f"Failed to read Git config: {e}")
 
@@ -234,13 +260,19 @@ class GitMetadataExtractor:
         # 2. Are followed by whitespace and text
         # 3. Continue until the next newline or end of content
         headings = re.findall(
-            r"(?:^|\n)\s*(#{1,6})\s+(.+?)(?:\n|$)", content, re.MULTILINE
+            r"^[ \t]*(#{1,6})[ \t]+(.+?)$", content, re.MULTILINE
         )
         self.logger.debug(f"Found {len(headings)!s} headers in content")
 
         if headings:
             self.logger.debug(f"Headers found: {headings!s}")
-            has_toc = "## Table of Contents" in content or "## Contents" in content
+            # Check for various TOC formats with different heading levels
+            toc_patterns = [
+                r"#+\s*Table\s+of\s+Contents",
+                r"#+\s*Contents",
+                r"#+\s*TOC"
+            ]
+            has_toc = any(re.search(pattern, content, re.IGNORECASE) for pattern in toc_patterns)
             heading_levels = [len(h[0]) for h in headings]
             sections_count = len(heading_levels)
             self.logger.debug(

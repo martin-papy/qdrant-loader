@@ -25,17 +25,38 @@ class TestPrometheusMetrics:
         prometheus_metrics.EMBED_QUEUE_SIZE.set(0)
         prometheus_metrics.CPU_USAGE.set(0)
         prometheus_metrics.MEMORY_USAGE.set(0)
+        
+        # Clear histogram values by manually resetting internal state
+        try:
+            # Reset histograms by clearing their buckets and sum
+            for hist in [prometheus_metrics.CHUNKING_DURATION, 
+                        prometheus_metrics.EMBEDDING_DURATION, 
+                        prometheus_metrics.UPSERT_DURATION]:
+                hist._sum._value = 0
+                for bucket in hist._buckets:
+                    bucket._value = 0
+        except Exception:
+            # If histogram clearing fails, skip it
+            pass
 
     def teardown_method(self):
         """Clean up after each test."""
         # Reset module state after each test
         prometheus_metrics._metrics_server_started = False
         prometheus_metrics._metrics_server_thread = None
+    
+    def get_histogram_count(self, histogram):
+        """Helper to get count value from histogram using collect()."""
+        for metric_family in histogram.collect():
+            for sample in metric_family.samples:
+                if sample.name.endswith('_count'):
+                    return sample.value
+        return 0
 
     def test_metrics_definitions(self):
         """Test that all metrics are properly defined."""
         # Test Counter metrics
-        assert prometheus_metrics.INGESTED_DOCUMENTS._name == "qdrant_ingested_documents_total"
+        assert prometheus_metrics.INGESTED_DOCUMENTS._name == "qdrant_ingested_documents"
         assert "Total number of documents ingested" in prometheus_metrics.INGESTED_DOCUMENTS._documentation
         
         # Test Histogram metrics
@@ -103,17 +124,17 @@ class TestPrometheusMetrics:
         # Test CHUNKING_DURATION histogram
         prometheus_metrics.CHUNKING_DURATION.observe(1.5)
         assert prometheus_metrics.CHUNKING_DURATION._sum._value > 0
-        assert prometheus_metrics.CHUNKING_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.CHUNKING_DURATION) == 1
         
         # Test EMBEDDING_DURATION histogram
         prometheus_metrics.EMBEDDING_DURATION.observe(2.3)
         assert prometheus_metrics.EMBEDDING_DURATION._sum._value > 0
-        assert prometheus_metrics.EMBEDDING_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.EMBEDDING_DURATION) == 1
         
         # Test UPSERT_DURATION histogram
         prometheus_metrics.UPSERT_DURATION.observe(0.8)
         assert prometheus_metrics.UPSERT_DURATION._sum._value > 0
-        assert prometheus_metrics.UPSERT_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.UPSERT_DURATION) == 1
 
     def test_histogram_timer_context_manager(self):
         """Test histogram timer context manager functionality."""
@@ -121,17 +142,17 @@ class TestPrometheusMetrics:
         with prometheus_metrics.CHUNKING_DURATION.time():
             time.sleep(0.01)  # Small sleep to ensure measurable time
         
-        assert prometheus_metrics.CHUNKING_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.CHUNKING_DURATION) == 1
         assert prometheus_metrics.CHUNKING_DURATION._sum._value > 0
         
         # Test embedding duration timer
         with prometheus_metrics.EMBEDDING_DURATION.time():
             time.sleep(0.01)
         
-        assert prometheus_metrics.EMBEDDING_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.EMBEDDING_DURATION) == 1
         assert prometheus_metrics.EMBEDDING_DURATION._sum._value > 0
 
-    @patch('prometheus_client.start_http_server')
+    @patch('qdrant_loader.core.monitoring.prometheus_metrics.start_http_server')
     def test_start_metrics_server_success(self, mock_start_server):
         """Test successful metrics server startup."""
         # Test starting server on default port
@@ -148,7 +169,7 @@ class TestPrometheusMetrics:
         assert mock_start_server.call_count == 2
         mock_start_server.assert_called_with(9090)
 
-    @patch('prometheus_client.start_http_server')
+    @patch('qdrant_loader.core.monitoring.prometheus_metrics.start_http_server')
     def test_start_metrics_server_already_started(self, mock_start_server):
         """Test metrics server startup when already started."""
         # Set server as already started
@@ -160,7 +181,7 @@ class TestPrometheusMetrics:
         # Should not call start_http_server
         mock_start_server.assert_not_called()
 
-    @patch('prometheus_client.start_http_server')
+    @patch('qdrant_loader.core.monitoring.prometheus_metrics.start_http_server')
     def test_start_metrics_server_exception_handling(self, mock_start_server):
         """Test metrics server startup exception handling."""
         # Mock server to raise exception
@@ -227,7 +248,7 @@ class TestPrometheusMetrics:
         assert prometheus_metrics._metrics_server_started is True
 
     @patch('atexit.register')
-    @patch('prometheus_client.start_http_server')
+    @patch('qdrant_loader.core.monitoring.prometheus_metrics.start_http_server')
     def test_atexit_registration(self, mock_start_server, mock_atexit_register):
         """Test that cleanup function is registered with atexit."""
         prometheus_metrics.start_metrics_server()
@@ -276,7 +297,7 @@ class TestPrometheusMetrics:
         # Verify values are set
         assert prometheus_metrics.INGESTED_DOCUMENTS._value._value == 10
         assert prometheus_metrics.CHUNK_QUEUE_SIZE._value._value == 50
-        assert prometheus_metrics.CHUNKING_DURATION._count._value == 1
+        assert self.get_histogram_count(prometheus_metrics.CHUNKING_DURATION) == 1
         
         # Reset counter (note: Prometheus counters don't have reset, but we can simulate)
         prometheus_metrics.INGESTED_DOCUMENTS._value._value = 0
@@ -294,7 +315,7 @@ class TestPrometheusMetrics:
         
         # Check that our metrics are registered
         expected_metrics = [
-            "qdrant_ingested_documents_total",
+            "qdrant_ingested_documents",
             "qdrant_chunking_duration_seconds",
             "qdrant_embedding_duration_seconds", 
             "qdrant_upsert_duration_seconds",
@@ -319,15 +340,15 @@ class TestPrometheusMetrics:
         
         # Test zero duration observation
         prometheus_metrics.CHUNKING_DURATION.observe(0)
-        assert prometheus_metrics.CHUNKING_DURATION._count._value >= 1
+        assert self.get_histogram_count(prometheus_metrics.CHUNKING_DURATION) >= 1
         
         # Test very small duration observation
         prometheus_metrics.EMBEDDING_DURATION.observe(0.000001)
-        assert prometheus_metrics.EMBEDDING_DURATION._count._value >= 1
+        assert self.get_histogram_count(prometheus_metrics.EMBEDDING_DURATION) >= 1
         
         # Test very large duration observation
         prometheus_metrics.UPSERT_DURATION.observe(999999.999)
-        assert prometheus_metrics.UPSERT_DURATION._count._value >= 1
+        assert self.get_histogram_count(prometheus_metrics.UPSERT_DURATION) >= 1
 
     def test_logging_integration(self):
         """Test that logging is properly configured."""
