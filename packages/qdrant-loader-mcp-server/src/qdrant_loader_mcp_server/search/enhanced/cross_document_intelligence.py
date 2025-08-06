@@ -1641,63 +1641,70 @@ class CrossDocumentIntelligenceEngine:
         self.conflict_detector = ConflictDetector(spacy_analyzer)
         
     def analyze_document_relationships(self, documents: List[HybridSearchResult]) -> Dict[str, Any]:
-        """Perform comprehensive cross-document relationship analysis."""
+        """Lightweight relationship analysis focusing on essential relationships."""
         start_time = time.time()
         
-        self.logger.info(f"Starting cross-document intelligence analysis for {len(documents)} documents")
+        self.logger.info(f"Starting lightweight cross-document analysis for {len(documents)} documents")
         
-        # Document similarity analysis
-        similarity_matrix = self._build_similarity_matrix(documents)
+        # Skip heavy analysis components for performance:
+        # - Skip similarity matrix computation (O(n²) operation)
+        # - Skip citation network analysis
+        # - Skip complementary content analysis
+        # - Skip conflict detection
         
-        # Document clustering
+        # Keep only: document clustering for essential relationships
         clusters = self.cluster_analyzer.create_clusters(
             documents, 
             strategy=ClusteringStrategy.MIXED_FEATURES,
-            max_clusters=10,
+            max_clusters=5,  # Reduced from 10 to 5 for faster processing
             min_cluster_size=2
         )
         
-        # Citation network analysis
-        citation_network = self.citation_analyzer.build_citation_network(documents)
-        
-        # Find complementary content for each document
-        complementary_recommendations = {}
-        for doc in documents[:5]:  # Limit to first 5 for performance
-            doc_id = f"{doc.source_type}:{doc.source_title}"
-            complementary = self.complementary_finder.find_complementary_content(doc, documents)
-            complementary_recommendations[doc_id] = complementary
-        
-        # Conflict detection
-        conflicts = self.conflict_detector.detect_conflicts(documents)
-        
         processing_time = (time.time() - start_time) * 1000
         
-        # Compile comprehensive analysis results
+        # Build lightweight response focused on cluster relationships
+        # Need to include documents in clusters for relationship extraction
+        cluster_data = []
+        doc_id_to_doc = {}
+        
+        # Create document lookup for mapping cluster document IDs to actual documents
+        for doc in documents:
+            doc_id = f"{doc.source_type}:{doc.source_title}"
+            doc_id_to_doc[doc_id] = doc
+        
+        for cluster in clusters:
+            cluster_summary = cluster.get_cluster_summary()
+            
+            # Add actual document objects for relationship extraction
+            cluster_documents = []
+            for doc_id in cluster.documents:
+                if doc_id in doc_id_to_doc:
+                    doc = doc_id_to_doc[doc_id]
+                    cluster_documents.append({
+                        "document_id": doc.document_id,
+                        "title": doc.source_title,
+                        "source_title": doc.source_title,
+                        "source_type": doc.source_type
+                    })
+                    
+            cluster_summary["documents"] = cluster_documents
+            cluster_data.append(cluster_summary)
+        
         analysis_results = {
             "summary": {
                 "total_documents": len(documents),
                 "processing_time_ms": processing_time,
                 "clusters_found": len(clusters),
-                "citation_relationships": len(citation_network.edges),
-                "conflicts_detected": len(conflicts.conflicting_pairs),
-                "complementary_pairs": sum(len(comp.recommendations) for comp in complementary_recommendations.values())
+                "analysis_mode": "lightweight"
             },
-            "document_clusters": [cluster.get_cluster_summary() for cluster in clusters],
-            "citation_network": {
-                "nodes": len(citation_network.nodes),
-                "edges": len(citation_network.edges),
-                "most_authoritative": self.citation_analyzer.get_most_authoritative_documents(citation_network, 5),
-                "most_connected": self.citation_analyzer.get_most_connected_documents(citation_network, 5)
-            },
-            "complementary_content": {
-                doc_id: comp.get_top_recommendations(3) 
-                for doc_id, comp in complementary_recommendations.items()
-            },
-            "conflict_analysis": conflicts.get_conflict_summary(),
-            "similarity_insights": self._extract_similarity_insights(similarity_matrix),
+            "document_clusters": cluster_data,
+            "relationships_count": sum(
+                len(cluster.documents) * (len(cluster.documents) - 1) // 2 
+                for cluster in clusters if len(cluster.documents) > 1
+            )
         }
         
-        self.logger.info(f"Cross-document intelligence analysis completed in {processing_time:.2f}ms")
+        self.logger.info(f"Lightweight cross-document analysis completed in {processing_time:.2f}ms")
         
         return analysis_results
     

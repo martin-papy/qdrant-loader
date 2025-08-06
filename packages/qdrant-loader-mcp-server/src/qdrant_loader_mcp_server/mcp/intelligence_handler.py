@@ -65,14 +65,22 @@ class IntelligenceHandler:
                     # Create similarity relationships between documents in the same cluster
                     for i, doc1 in enumerate(cluster_docs):
                         for doc2 in cluster_docs[i+1:]:
-                            doc1_title = doc1.get("title", doc1.get("source_title", "Unknown"))
-                            doc2_title = doc2.get("title", doc2.get("source_title", "Unknown"))
+                            # Extract document IDs for lazy loading
+                            doc1_id = doc1.get("document_id") or f"{doc1.get('source_type', 'unknown')}:{doc1.get('source_title', 'unknown')}"
+                            doc2_id = doc2.get("document_id") or f"{doc2.get('source_type', 'unknown')}:{doc2.get('source_title', 'unknown')}"
+                            
+                            # Extract titles for preview (truncated)
+                            doc1_title = doc1.get("title", doc1.get("source_title", "Unknown"))[:100]
+                            doc2_title = doc2.get("title", doc2.get("source_title", "Unknown"))[:100]
+                            
                             relationships.append({
-                                "document_1": doc1_title,
-                                "document_2": doc2_title,
+                                "document_1_id": doc1_id,
+                                "document_2_id": doc2_id,
+                                "document_1_title": doc1_title,
+                                "document_2_title": doc2_title,
                                 "relationship_type": "similarity",
-                                "score": cluster.get("cohesion_score", 0.8),
-                                "description": f"Both documents belong to cluster: {cluster.get('theme', 'unnamed cluster')}"
+                                "confidence_score": cluster.get("cohesion_score", 0.8),
+                                "relationship_summary": f"Both documents belong to cluster: {cluster.get('theme', 'unnamed cluster')}"
                             })
                 
             # Extract conflict relationships
@@ -84,12 +92,21 @@ class IntelligenceHandler:
                         if isinstance(conflict, (list, tuple)) and len(conflict) >= 2:
                             doc1, doc2 = conflict[0], conflict[1]
                             conflict_info = conflict[2] if len(conflict) > 2 else {}
+                            
+                            # Extract document IDs if available
+                            doc1_id = doc1.get("document_id") if isinstance(doc1, dict) else str(doc1)
+                            doc2_id = doc2.get("document_id") if isinstance(doc2, dict) else str(doc2)
+                            doc1_title = doc1.get("title", str(doc1))[:100] if isinstance(doc1, dict) else str(doc1)[:100]
+                            doc2_title = doc2.get("title", str(doc2))[:100] if isinstance(doc2, dict) else str(doc2)[:100]
+                            
                             relationships.append({
-                                "document_1": str(doc1),
-                                "document_2": str(doc2),
+                                "document_1_id": doc1_id,
+                                "document_2_id": doc2_id,
+                                "document_1_title": doc1_title,
+                                "document_2_title": doc2_title,
                                 "relationship_type": "conflict",
-                                "score": conflict_info.get("severity", 0.5),
-                                "description": f"Conflict detected: {conflict_info.get('type', 'unknown conflict')}"
+                                "confidence_score": conflict_info.get("severity", 0.5),
+                                "relationship_summary": f"Conflict detected: {conflict_info.get('type', 'unknown conflict')}"
                             })
                             
             # Extract complementary relationships
@@ -97,11 +114,11 @@ class IntelligenceHandler:
                 complementary = analysis_results["complementary_content"]
                 comp_count = 0
                 for doc_id, complementary_content in complementary.items():
-                    # Handle ComplementaryContent object properly
+                    # Handle ComplementaryContent object properly - no limit on recommendations
                     if hasattr(complementary_content, 'get_top_recommendations'):
-                        recommendations = complementary_content.get_top_recommendations(2)
+                        recommendations = complementary_content.get_top_recommendations()  # Return all recommendations
                     else:
-                        recommendations = complementary_content[:2] if isinstance(complementary_content, list) else []
+                        recommendations = complementary_content if isinstance(complementary_content, list) else []
                     
                     for rec in recommendations:
                         if isinstance(rec, dict):
@@ -109,12 +126,19 @@ class IntelligenceHandler:
                             target_doc_id = rec.get("document_id", "Unknown")
                             score = rec.get("relevance_score", 0.5)
                             reason = rec.get("recommendation_reason", "complementary content")
+                            
+                            # Extract titles for preview
+                            doc1_title = str(doc_id)[:100]
+                            doc2_title = rec.get("title", str(target_doc_id))[:100]
+                            
                             relationships.append({
-                                "document_1": doc_id,
-                                "document_2": target_doc_id,
+                                "document_1_id": doc_id,
+                                "document_2_id": target_doc_id,
+                                "document_1_title": doc1_title,
+                                "document_2_title": doc2_title,
                                 "relationship_type": "complementary",
-                                "score": score,
-                                "description": f"Complementary content: {reason}"
+                                "confidence_score": score,
+                                "relationship_summary": f"Complementary content: {reason}"
                             })
                             comp_count += 1
                 if comp_count > 0:

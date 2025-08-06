@@ -52,26 +52,23 @@ class TestCrossDocumentIntelligenceIntegration:
         analysis = intelligence_engine.analyze_document_relationships(docs)
         processing_time = time.time() - start_time
         
-        # Verify analysis structure (updated to match actual implementation)
+        # Verify analysis structure (updated to match lightweight implementation)
         assert isinstance(analysis, dict)
         expected_components = [
             "summary",
             "document_clusters", 
-            "citation_network",
-            "complementary_content",
-            "conflict_analysis",
-            "similarity_insights"
+            "relationships_count"
         ]
         
         for component in expected_components:
             assert component in analysis, f"Missing component: {component}"
         
-        # Verify summary statistics
+        # Verify summary statistics for lightweight mode
         summary = analysis["summary"]
         assert summary["total_documents"] == len(docs)
         assert summary["clusters_found"] >= 0
-        assert summary["citation_relationships"] >= 0
-        assert summary["conflicts_detected"] >= 0
+        assert summary["analysis_mode"] == "lightweight"
+        assert "processing_time_ms" in summary
         
         # Verify performance is reasonable
         assert processing_time < 30.0, f"Processing took too long: {processing_time:.2f}s"

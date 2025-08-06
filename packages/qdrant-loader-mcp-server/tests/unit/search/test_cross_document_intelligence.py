@@ -465,23 +465,22 @@ class TestCrossDocumentIntelligenceEngine:
         
         analysis = intelligence_engine.analyze_document_relationships(docs)
         
-        # Check all analysis components are present (updated to match actual implementation)
+        # Check all analysis components are present (updated to match lightweight implementation)
         expected_keys = [
             "summary",
             "document_clusters",
-            "citation_network",
-            "complementary_content",
-            "conflict_analysis",
-            "similarity_insights"
+            "relationships_count"
         ]
         
         for key in expected_keys:
             assert key in analysis
 
-        # Verify summary
+        # Verify summary for lightweight mode
         summary = analysis["summary"]
         assert "total_documents" in summary
         assert summary["total_documents"] == len(docs)
+        assert summary["analysis_mode"] == "lightweight"
+        assert "processing_time_ms" in summary
 
     def test_find_document_relationships(self, intelligence_engine):
         """Test finding relationships for a specific document."""
