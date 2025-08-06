@@ -528,15 +528,26 @@ class HybridSearchEngine:
                 )
                 
                 similar_docs.append({
+                    "document_id": doc.document_id,  # ✅ ADD document_id for lazy loading
                     "document": doc,
                     "similarity_score": similarity.similarity_score,
                     "metric_scores": similarity.metric_scores,
                     "similarity_reasons": [similarity.get_display_explanation()]
                 })
             
+            # ✅ Add debug logging before filtering
+            self.logger.debug(f"Total similar documents calculated: {len(similar_docs)}")
+            if similar_docs:
+                scores = [doc["similarity_score"] for doc in similar_docs]
+                self.logger.debug(f"Similarity scores range: {min(scores):.3f} - {max(scores):.3f}")
+                self.logger.debug(f"Similarity scores: {[f'{s:.3f}' for s in scores[:10]]}")  # First 10 scores
+            
             # Sort by similarity score and return top results
             similar_docs.sort(key=lambda x: x["similarity_score"], reverse=True)
-            return similar_docs[:max_similar]
+            filtered_docs = similar_docs[:max_similar]
+            
+            self.logger.debug(f"Returning {len(filtered_docs)} documents after limiting to max_similar={max_similar}")
+            return filtered_docs
             
         except Exception as e:
             self.logger.error("Error finding similar documents", error=str(e))

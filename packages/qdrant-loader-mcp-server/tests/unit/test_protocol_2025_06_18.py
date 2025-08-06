@@ -331,7 +331,7 @@ class TestToolCapabilities:
         tools_response = await mcp_handler.handle_request(tools_list_request)
         tools_count = len(tools_response["result"]["tools"])
         
-        # Should have exactly 8 tools (3 search + 5 analysis)
+        # Should have exactly 9 tools (3 search + 5 analysis + 1 lazy loading)
         expected_tools = [
             "search",
             "hierarchy_search", 
@@ -340,7 +340,8 @@ class TestToolCapabilities:
             "find_similar_documents",
             "detect_document_conflicts",
             "find_complementary_content",
-            "cluster_documents"
+            "cluster_documents",
+            "expand_document"
         ]
         
         assert tools_count == len(expected_tools)

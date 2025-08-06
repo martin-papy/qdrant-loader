@@ -164,6 +164,10 @@ class MCPHandler:
                     return await self.intelligence_handler.handle_cluster_documents(
                         request_id, params.get("arguments", {})
                     )
+                elif tool_name == "expand_document":
+                    return await self.search_handler.handle_expand_document(
+                        request_id, params.get("arguments", {})
+                    )
                 else:
                     logger.warning("Unknown tool requested", tool_name=tool_name)
                     return self.protocol.create_response(
