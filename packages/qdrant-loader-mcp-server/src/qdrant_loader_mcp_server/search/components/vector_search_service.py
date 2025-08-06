@@ -9,6 +9,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 from ...utils.logging import LoggingConfig
+from .field_query_parser import FieldQueryParser
 
 
 class VectorSearchService:
@@ -58,6 +59,9 @@ class VectorSearchService:
         # Cache performance metrics
         self._cache_hits = 0
         self._cache_misses = 0
+        
+        # Field query parser for handling field:value syntax
+        self.field_parser = FieldQueryParser()
         
         self.logger = LoggingConfig.get_logger(__name__)
 
@@ -173,19 +177,53 @@ class VectorSearchService:
             cache_misses=self._cache_misses,
         )
         
-        query_embedding = await self.get_embedding(query)
-
-        search_params = models.SearchParams(hnsw_ef=128, exact=False)
-
-        results = await self.qdrant_client.search(
-            collection_name=self.collection_name,
-            query_vector=query_embedding,
-            limit=limit,
-            score_threshold=self.min_score,
-            search_params=search_params,
-            query_filter=self._build_filter(project_ids),
-            with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
-        )
+        # ✅ Parse query for field-specific filters
+        parsed_query = self.field_parser.parse_query(query)
+        self.logger.debug(f"Parsed query: {len(parsed_query.field_queries)} field queries, text: '{parsed_query.text_query}'")
+        
+        # Determine search strategy based on parsed query
+        if self.field_parser.should_use_filter_only(parsed_query):
+            # Filter-only search (exact field matching)
+            self.logger.debug("Using filter-only search for exact field matching")
+            query_filter = self.field_parser.create_qdrant_filter(parsed_query.field_queries, project_ids)
+            
+            # For filter-only searches, use scroll with filter instead of vector search
+            scroll_results = await self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                limit=limit,
+                scroll_filter=query_filter,
+                with_payload=True,
+                with_vectors=False
+            )
+            
+            results = []
+            for point in scroll_results[0]:  # scroll_results is (points, next_page_offset)
+                # Create a result object similar to search results
+                class FilterResult:
+                    def __init__(self, score: float, payload: dict):
+                        self.score = score
+                        self.payload = payload
+                
+                results.append(FilterResult(1.0, point.payload))
+        else:
+            # Hybrid search (vector search + field filters)
+            search_query = parsed_query.text_query if parsed_query.text_query else query
+            query_embedding = await self.get_embedding(search_query)
+            
+            search_params = models.SearchParams(hnsw_ef=128, exact=False)
+            
+            # Combine field filters with project filters
+            query_filter = self.field_parser.create_qdrant_filter(parsed_query.field_queries, project_ids)
+            
+            results = await self.qdrant_client.search(
+                collection_name=self.collection_name,
+                query_vector=query_embedding,
+                limit=limit,
+                score_threshold=self.min_score,
+                search_params=search_params,
+                query_filter=query_filter,
+                with_payload=True,  # 🔧 CRITICAL: Explicitly request payload data
+            )
 
         extracted_results = []
         for hit in results:
@@ -245,24 +283,25 @@ class VectorSearchService:
         self._search_cache.clear()
         self.logger.info("Search result cache cleared")
 
-    def _build_filter(
-        self, project_ids: list[str] | None = None
-    ) -> models.Filter | None:
-        """Build a Qdrant filter based on project IDs.
+    def _build_filter(self, project_ids: list[str] | None = None) -> models.Filter | None:
+        """Legacy method for backward compatibility - use FieldQueryParser instead.
         
         Args:
-            project_ids: Optional list of project IDs to filter by
+            project_ids: Optional project ID filters
             
         Returns:
-            Qdrant filter object or None if no filtering needed
+            Qdrant Filter object or None
         """
-        if not project_ids:
-            return None
+        if project_ids:
+            from qdrant_client.http import models
+            return models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="project_id",
+                        match=models.MatchAny(any=project_ids)
+                    )
+                ]
+            )
+        return None
 
-        return models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="project_id", match=models.MatchAny(any=project_ids)
-                )
-            ]
-        )
+    # Note: _build_filter method added back for backward compatibility - prefer FieldQueryParser.create_qdrant_filter()

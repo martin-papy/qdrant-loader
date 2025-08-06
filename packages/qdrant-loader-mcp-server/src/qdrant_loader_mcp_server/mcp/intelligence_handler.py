@@ -223,6 +223,26 @@ class IntelligenceHandler:
             )
             
             logger.info(f"Got {len(similar_docs)} similar documents from SearchEngine")
+            
+            # ✅ Add response validation
+            expected_count = params.get("max_similar", 5)
+            if len(similar_docs) < expected_count:
+                logger.warning(f"Expected up to {expected_count} similar documents, but only got {len(similar_docs)}. "
+                              f"This may indicate similarity threshold issues or insufficient comparison documents.")
+            
+            # ✅ Log document IDs for debugging
+            doc_ids = [doc.get("document_id") for doc in similar_docs]
+            logger.debug(f"Similar document IDs: {doc_ids}")
+            
+            # ✅ Validate that document_id is present in responses
+            missing_ids = [i for i, doc in enumerate(similar_docs) if not doc.get("document_id")]
+            if missing_ids:
+                logger.error(f"Missing document_id in similar documents at indices: {missing_ids}")
+
+            # ✅ Create structured content for MCP compliance using lightweight formatter
+            structured_content = self.formatters.create_lightweight_similar_documents_results(
+                similar_docs, params["target_query"], params["comparison_query"]
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -233,13 +253,7 @@ class IntelligenceHandler:
                             "text": self.formatters.format_similar_documents(similar_docs),
                         }
                     ],
-                    "structuredContent": {
-                        "similar_documents": similar_docs,
-                        "similarity_summary": {
-                            "total_found": len(similar_docs),
-                            "metrics_used": params.get("similarity_metrics", [])
-                        }
-                    },
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )

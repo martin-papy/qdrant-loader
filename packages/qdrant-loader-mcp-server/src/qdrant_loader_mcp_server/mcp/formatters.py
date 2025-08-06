@@ -195,6 +195,71 @@ class MCPFormatters:
         return formatted
 
     @staticmethod
+    def create_lightweight_similar_documents_results(
+        similar_docs: list[dict[str, Any]], 
+        target_query: str = "",
+        comparison_query: str = ""
+    ) -> dict[str, Any]:
+        """Return minimal similar documents data for fast navigation."""
+        
+        # Create similarity index with minimal data
+        similarity_index = []
+        for doc_info in similar_docs:
+            document = doc_info.get("document", {})
+            
+            # Handle both HybridSearchResult objects and dict formats
+            if hasattr(document, 'document_id'):
+                doc_id = document.document_id
+                title = document.source_title or "Untitled"
+                source_type = document.source_type
+                text_length = len(document.text) if document.text else 0
+            else:
+                # Fallback for dict format
+                doc_id = document.get("document_id") or doc_info.get("document_id")
+                title = document.get("source_title", "Untitled") 
+                source_type = document.get("source_type", "unknown")
+                text_length = len(document.get("text", ""))
+            
+            similarity_index.append({
+                "document_id": doc_id,
+                "title": title,
+                "similarity_score": doc_info.get("similarity_score", 0),
+                "similarity_info": {
+                    "metric_scores": doc_info.get("metric_scores", {}),
+                    "similarity_reasons": doc_info.get("similarity_reasons", []),
+                    "source_type": source_type
+                },
+                "navigation_hints": {
+                    "can_expand": True,
+                    "has_content": text_length > 0,
+                    "content_length": text_length,
+                    "expand_tool": "search"  # Tool to get full document content
+                }
+            })
+        
+        # Extract similarity metrics used
+        metrics_used = []
+        if similar_docs:
+            first_doc_metrics = similar_docs[0].get("metric_scores", {})
+            metrics_used = list(first_doc_metrics.keys())
+        
+        return {
+            "similarity_index": similarity_index,
+            "query_info": {
+                "target_query": target_query,
+                "comparison_query": comparison_query,
+                "total_found": len(similarity_index),
+                "metrics_used": metrics_used
+            },
+            "navigation": {
+                "supports_lazy_loading": True,
+                "expand_document_tool": "search",  # Tool to get full document content
+                "sort_order": "similarity_desc",
+                "max_displayed": len(similarity_index)
+            }
+        }
+
+    @staticmethod
     def format_conflict_analysis(conflicts: dict[str, Any]) -> str:
         """Format conflict analysis results for display."""
         conflicting_pairs = conflicts.get("conflicting_pairs", [])

@@ -8,6 +8,7 @@ from qdrant_client.http import models
 from rank_bm25 import BM25Okapi
 
 from ...utils.logging import LoggingConfig
+from .field_query_parser import FieldQueryParser
 
 
 class KeywordSearchService:
@@ -26,6 +27,7 @@ class KeywordSearchService:
         """
         self.qdrant_client = qdrant_client
         self.collection_name = collection_name
+        self.field_parser = FieldQueryParser()
         self.logger = LoggingConfig.get_logger(__name__)
 
     async def keyword_search(
@@ -44,12 +46,19 @@ class KeywordSearchService:
         Returns:
             List of search results with scores, text, metadata, and source_type
         """
+        # ✅ Parse query for field-specific filters
+        parsed_query = self.field_parser.parse_query(query)
+        self.logger.debug(f"Keyword search - parsed query: {len(parsed_query.field_queries)} field queries, text: '{parsed_query.text_query}'")
+        
+        # Create filter combining field queries and project IDs
+        query_filter = self.field_parser.create_qdrant_filter(parsed_query.field_queries, project_ids)
+        
         scroll_results = await self.qdrant_client.scroll(
             collection_name=self.collection_name,
             limit=10000,
             with_payload=True,
             with_vectors=False,
-            scroll_filter=self._build_filter(project_ids),
+            scroll_filter=query_filter,
         )
 
         documents = []
@@ -89,11 +98,19 @@ class KeywordSearchService:
             self.logger.warning("No documents found for keyword search")
             return []
 
-        tokenized_docs = [doc.split() for doc in documents]
-        bm25 = BM25Okapi(tokenized_docs)
-
-        tokenized_query = query.split()
-        scores = bm25.get_scores(tokenized_query)
+        # Handle filter-only searches (no text query for BM25)
+        if self.field_parser.should_use_filter_only(parsed_query):
+            self.logger.debug("Filter-only search - assigning equal scores to all results")
+            # For filter-only searches, assign equal scores to all results
+            scores = np.ones(len(documents))
+        else:
+            # Use BM25 scoring for text queries
+            search_query = parsed_query.text_query if parsed_query.text_query else query
+            tokenized_docs = [doc.split() for doc in documents]
+            bm25 = BM25Okapi(tokenized_docs)
+            
+            tokenized_query = search_query.split()
+            scores = bm25.get_scores(tokenized_query)
 
         top_indices = np.argsort(scores)[-limit:][::-1]
 
@@ -118,24 +135,4 @@ class KeywordSearchService:
         
         return results
 
-    def _build_filter(
-        self, project_ids: list[str] | None = None
-    ) -> models.Filter | None:
-        """Build a Qdrant filter based on project IDs.
-        
-        Args:
-            project_ids: Optional list of project IDs to filter by
-            
-        Returns:
-            Qdrant filter object or None if no filtering needed
-        """
-        if not project_ids:
-            return None
-
-        return models.Filter(
-            must=[
-                models.FieldCondition(
-                    key="project_id", match=models.MatchAny(any=project_ids)
-                )
-            ]
-        )
+    # Note: _build_filter method removed - now using FieldQueryParser.create_qdrant_filter()

@@ -5,6 +5,7 @@ from .vector_search_service import VectorSearchService
 from .keyword_search_service import KeywordSearchService
 from .result_combiner import ResultCombiner
 from .metadata_extractor import MetadataExtractor
+from .field_query_parser import FieldQueryParser, FieldQuery, ParsedQuery
 from .search_result_models import (
     BaseSearchResult,
     ProjectInfo,
@@ -25,6 +26,9 @@ __all__ = [
     "KeywordSearchService",
     "ResultCombiner",
     "MetadataExtractor",
+    "FieldQueryParser",
+    "FieldQuery",
+    "ParsedQuery",
     "BaseSearchResult",
     "ProjectInfo",
     "HierarchyInfo",

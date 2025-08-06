@@ -573,4 +573,101 @@ class SearchHandler:
         formatted += "• Get document IDs for specific content retrieval\n"
         formatted += "• Understand document relationships and organization\n"
         
-        return formatted 
+        return formatted
+
+    async def handle_expand_document(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle expand document request for lazy loading using standard search format."""
+        logger.debug("Handling expand document with params", params=params)
+
+        # Validate required parameter
+        if "document_id" not in params:
+            logger.error("Missing required parameter: document_id")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: document_id",
+                },
+            )
+
+        document_id = params["document_id"]
+
+        try:
+            logger.info(f"Expanding document with ID: {document_id}")
+            
+            # Search for the document - field search doesn't guarantee exact matches
+            # Try document_id field search first, but get more results to filter
+            results = await self.search_engine.search(
+                query=f"document_id:{document_id}",
+                limit=10  # Get more results to ensure we find the exact match
+            )
+            
+            # Filter for exact document_id matches
+            exact_matches = [r for r in results if r.document_id == document_id]
+            if exact_matches:
+                results = exact_matches[:1]  # Take only the first exact match
+            else:
+                # Fallback to general search if no exact match in field search
+                results = await self.search_engine.search(
+                    query=document_id,
+                    limit=10
+                )
+                # Filter again for exact document_id matches
+                exact_matches = [r for r in results if r.document_id == document_id]
+                if exact_matches:
+                    results = exact_matches[:1]
+                else:
+                    results = []
+
+            if not results:
+                logger.warning(f"Document not found with ID: {document_id}")
+                return self.protocol.create_response(
+                    request_id,
+                    error={
+                        "code": -32604,
+                        "message": "Document not found",
+                        "data": f"No document found with ID: {document_id}",
+                    },
+                )
+
+            logger.info(f"Successfully found document: {results[0].source_title}")
+
+            # Use the existing search result formatting - exactly the same as standard search
+            formatted_results = f"Found 1 document:\n\n" + self.formatters.format_search_result(results[0])
+            structured_results_list = self.formatters.create_structured_search_results(results)
+
+            # Create the same structure as standard search
+            structured_results = {
+                "results": structured_results_list,
+                "total_found": len(results),
+                "query_context": {
+                    "original_query": f"expand_document:{document_id}",
+                    "source_types_filtered": [],
+                    "project_ids_filtered": [],
+                    "is_document_expansion": True
+                }
+            }
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": formatted_results,
+                        }
+                    ],
+                    "structuredContent": structured_results,
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error expanding document", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal error", "data": str(e)},
+            ) 
