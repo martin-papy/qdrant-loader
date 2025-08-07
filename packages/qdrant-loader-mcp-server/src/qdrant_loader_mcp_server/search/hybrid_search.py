@@ -640,7 +640,12 @@ class HybridSearchEngine:
         min_cluster_size: int = 2
     ) -> dict[str, Any]:
         """Cluster documents based on similarity and relationships."""
+        import time
+        start_time = time.time()
+        
         try:
+            self.logger.info(f"Starting clustering with {len(documents)} documents using {strategy.value}")
+            
             clusters = self.cross_document_engine.cluster_analyzer.create_clusters(
                 documents,
                 strategy,
@@ -648,46 +653,503 @@ class HybridSearchEngine:
                 min_cluster_size
             )
             
-            # Convert to serializable format with full HybridSearchResult objects
-            doc_id_to_result = {}
-            for doc in documents:
-                doc_id = f"{doc.source_type}:{doc.source_title}"
-                doc_id_to_result[doc_id] = doc
+            # Build comprehensive document lookup with multiple strategies
+            doc_lookup = self._build_robust_document_lookup(documents)
             
             cluster_data = []
-            for cluster in clusters:
+            total_matched_docs = 0
+            total_requested_docs = 0
+            
+            for i, cluster in enumerate(clusters):
                 cluster_documents = []
+                doc_ids_found = []
+                doc_ids_missing = []
+                
+                total_requested_docs += len(cluster.documents)
+                
                 for doc_id in cluster.documents:
-                    if doc_id in doc_id_to_result:
-                        cluster_documents.append(doc_id_to_result[doc_id])
+                    matched_doc = self._find_document_by_id(doc_id, doc_lookup)
+                    if matched_doc:
+                        cluster_documents.append(matched_doc)
+                        doc_ids_found.append(doc_id)
+                        total_matched_docs += 1
                     else:
-                        # Fallback: try to find by partial matching
-                        for orig_id, result in doc_id_to_result.items():
-                            if doc_id in orig_id or orig_id in doc_id:
-                                cluster_documents.append(result)
-                                break
+                        doc_ids_missing.append(doc_id)
+                        self.logger.warning(f"Document not found in lookup: {doc_id}")
+                
+                # Log cluster matching statistics
+                self.logger.info(f"Cluster {i}: Found {len(doc_ids_found)}/{len(cluster.documents)} documents")
+                if doc_ids_missing:
+                    self.logger.warning(f"Missing documents in cluster {i}: {doc_ids_missing[:3]}")
+                
+                # Calculate cluster quality metrics
+                cluster_quality = self._calculate_cluster_quality(cluster, cluster_documents)
                 
                 cluster_data.append({
                     "id": cluster.cluster_id,
+                    "name": cluster.name,
                     "documents": cluster_documents,
                     "centroid_topics": cluster.shared_topics,
                     "shared_entities": cluster.shared_entities,
                     "coherence_score": cluster.coherence_score,
-                    "cluster_summary": cluster.cluster_description
+                    "cluster_summary": cluster.cluster_description,
+                    "representative_doc_id": cluster.representative_doc_id,
+                    "cluster_strategy": strategy.value,
+                    "quality_metrics": cluster_quality,
+                    "document_count": len(cluster_documents),
+                    "expected_document_count": len(cluster.documents)
                 })
+            
+            processing_time = (time.time() - start_time) * 1000
+            
+            # Enhanced clustering metadata
+            clustering_metadata = self._build_enhanced_metadata(
+                clusters, documents, strategy, processing_time, 
+                total_matched_docs, total_requested_docs
+            )
+            
+            # Analyze cluster relationships
+            cluster_relationships = self._analyze_cluster_relationships(clusters, documents)
+            
+            self.logger.info(f"Clustering completed: {len(clusters)} clusters, "
+                           f"{total_matched_docs}/{total_requested_docs} documents matched, "
+                           f"{len(cluster_relationships)} relationships identified")
             
             return {
                 "clusters": cluster_data,
-                "clustering_metadata": {
-                    "strategy": strategy.value,
-                    "total_clusters": len(clusters),
-                    "total_documents": len(documents)
-                }
+                "clustering_metadata": clustering_metadata,
+                "cluster_relationships": cluster_relationships
             }
             
         except Exception as e:
-            self.logger.error("Error clustering documents", error=str(e))
+            self.logger.error("Error clustering documents", error=str(e), exc_info=True)
             raise
+
+    def _build_robust_document_lookup(self, documents: list[HybridSearchResult]) -> dict[str, HybridSearchResult]:
+        """Build comprehensive document lookup with multiple strategies."""
+        lookup = {}
+        
+        for doc in documents:
+            # Ensure we handle None values gracefully
+            source_type = doc.source_type or "unknown"
+            source_title = doc.source_title or ""
+            
+            # Primary lookup by composite key (standard format)
+            composite_key = f"{source_type}:{source_title}"
+            lookup[composite_key] = doc
+            
+            # Secondary lookup by document_id if available
+            if doc.document_id:
+                lookup[doc.document_id] = doc
+                
+            # Tertiary lookup by source_title only (fallback)
+            if source_title:
+                lookup[source_title] = doc
+                
+            # Quaternary lookup by sanitized composite key (handle special chars)
+            sanitized_key = f"{source_type.strip()}:{source_title.strip()}"
+            if sanitized_key != composite_key:
+                lookup[sanitized_key] = doc
+                
+        self.logger.debug(f"Built robust document lookup with {len(lookup)} keys for {len(documents)} documents")
+        return lookup
+    
+    def _find_document_by_id(self, doc_id: str, doc_lookup: dict[str, HybridSearchResult]) -> HybridSearchResult | None:
+        """Find document using multiple lookup strategies."""
+        if not doc_id:
+            return None
+            
+        # Direct lookup
+        if doc_id in doc_lookup:
+            return doc_lookup[doc_id]
+            
+        # Try sanitized lookup
+        sanitized_id = doc_id.strip()
+        if sanitized_id in doc_lookup:
+            return doc_lookup[sanitized_id]
+            
+        # Partial matching for edge cases
+        for lookup_key, doc in doc_lookup.items():
+            if doc_id in lookup_key or lookup_key in doc_id:
+                self.logger.debug(f"Found document via partial match: {doc_id} -> {lookup_key}")
+                return doc
+                
+        # Try by source title extraction (handle composite keys)
+        if ":" in doc_id:
+            title_part = doc_id.split(":", 1)[1]
+            if title_part in doc_lookup:
+                return doc_lookup[title_part]
+                
+        return None
+    
+    def _calculate_cluster_quality(self, cluster, cluster_documents: list[HybridSearchResult]) -> dict[str, Any]:
+        """Calculate quality metrics for a cluster."""
+        quality_metrics = {
+            "document_retrieval_rate": len(cluster_documents) / len(cluster.documents) if cluster.documents else 0,
+            "coherence_score": cluster.coherence_score,
+            "entity_diversity": len(cluster.shared_entities),
+            "topic_diversity": len(cluster.shared_topics),
+            "has_representative": bool(cluster.representative_doc_id),
+            "cluster_size_category": self._categorize_cluster_size(len(cluster_documents))
+        }
+        
+        # Calculate content similarity if we have documents
+        if len(cluster_documents) > 1:
+            quality_metrics["content_similarity"] = self._estimate_content_similarity(cluster_documents)
+        
+        return quality_metrics
+    
+    def _categorize_cluster_size(self, size: int) -> str:
+        """Categorize cluster size for analysis."""
+        if size <= 2:
+            return "small"
+        elif size <= 5:
+            return "medium"
+        elif size <= 10:
+            return "large"
+        else:
+            return "very_large"
+    
+    def _estimate_content_similarity(self, documents: list[HybridSearchResult]) -> float:
+        """Estimate content similarity within cluster."""
+        # Simple estimation based on shared keywords
+        if len(documents) < 2:
+            return 1.0
+            
+        # Count overlapping words in document titles/content
+        all_words = []
+        doc_word_sets = []
+        
+        for doc in documents[:5]:  # Limit to first 5 for performance
+            words = set()
+            if doc.source_title:
+                words.update(doc.source_title.lower().split())
+            if hasattr(doc, 'text') and doc.text:
+                words.update(doc.text[:200].lower().split())
+            doc_word_sets.append(words)
+            all_words.extend(words)
+        
+        if not doc_word_sets:
+            return 0.0
+            
+        # Calculate average pairwise overlap
+        total_overlap = 0
+        comparisons = 0
+        
+        for i in range(len(doc_word_sets)):
+            for j in range(i + 1, len(doc_word_sets)):
+                overlap = len(doc_word_sets[i] & doc_word_sets[j])
+                union = len(doc_word_sets[i] | doc_word_sets[j])
+                if union > 0:
+                    total_overlap += overlap / union
+                comparisons += 1
+        
+        return total_overlap / comparisons if comparisons > 0 else 0.0
+    
+    def _build_enhanced_metadata(self, clusters, documents, strategy, processing_time, 
+                                matched_docs, requested_docs) -> dict[str, Any]:
+        """Build enhanced clustering metadata."""
+        cluster_sizes = [len(cluster.documents) for cluster in clusters]
+        coherence_scores = [cluster.coherence_score for cluster in clusters if cluster.coherence_score > 0]
+        
+        metadata = {
+            "strategy": strategy.value,
+            "total_documents": len(documents),
+            "clusters_created": len(clusters),
+            "unclustered_documents": len(documents) - sum(cluster_sizes),
+            "document_retrieval_rate": matched_docs / requested_docs if requested_docs > 0 else 0,
+            "processing_time_ms": round(processing_time, 2),
+            "strategy_performance": {
+                "coherence_avg": sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0,
+                "coherence_std": self._calculate_std(coherence_scores) if len(coherence_scores) > 1 else 0,
+                "size_distribution": cluster_sizes,
+                "size_avg": sum(cluster_sizes) / len(cluster_sizes) if cluster_sizes else 0
+            },
+            "clustering_quality": self._assess_overall_quality(clusters, matched_docs, requested_docs),
+            "recommendations": self._generate_clustering_recommendations(clusters, strategy, matched_docs, requested_docs)
+        }
+        
+        return metadata
+    
+    def _calculate_std(self, values: list[float]) -> float:
+        """Calculate standard deviation."""
+        if len(values) < 2:
+            return 0.0
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance ** 0.5
+    
+    def _assess_overall_quality(self, clusters, matched_docs: int, requested_docs: int) -> float:
+        """Assess overall clustering quality."""
+        if not clusters:
+            return 0.0
+            
+        # Factors: retrieval rate, coherence, cluster distribution
+        retrieval_score = matched_docs / requested_docs if requested_docs > 0 else 0
+        coherence_scores = [c.coherence_score for c in clusters if c.coherence_score > 0]
+        coherence_score = sum(coherence_scores) / len(coherence_scores) if coherence_scores else 0
+        
+        # Penalize single large cluster or many tiny clusters
+        cluster_sizes = [len(c.documents) for c in clusters]
+        size_distribution_score = 1.0
+        if len(clusters) == 1 and len(cluster_sizes) > 0 and cluster_sizes[0] > 10:
+            size_distribution_score = 0.7  # Penalize single large cluster
+        elif len([s for s in cluster_sizes if s < 3]) > len(clusters) * 0.7:
+            size_distribution_score = 0.8  # Penalize too many small clusters
+            
+        overall_quality = (retrieval_score * 0.4 + coherence_score * 0.4 + size_distribution_score * 0.2)
+        return min(1.0, max(0.0, overall_quality))
+    
+    def _generate_clustering_recommendations(self, clusters, strategy, matched_docs: int, requested_docs: int) -> dict[str, Any]:
+        """Generate recommendations for clustering improvement."""
+        recommendations = {
+            "quality_threshold_met": matched_docs / requested_docs >= 0.9 if requested_docs > 0 else False,
+            "suggestions": []
+        }
+        
+        retrieval_rate = matched_docs / requested_docs if requested_docs > 0 else 0
+        
+        if retrieval_rate < 0.9:
+            recommendations["suggestions"].append(f"Low document retrieval rate ({retrieval_rate:.1%}). Check document ID consistency.")
+            
+        if len(clusters) == 1 and requested_docs > 10:
+            recommendations["suggestions"].append("Single large cluster detected. Consider trying entity_based or topic_based strategy.")
+            recommendations["alternative_strategies"] = ["entity_based", "topic_based"]
+            
+        if len(clusters) > requested_docs * 0.5:
+            recommendations["suggestions"].append("Many small clusters. Consider increasing min_cluster_size or trying mixed_features strategy.")
+            
+        coherence_scores = [c.coherence_score for c in clusters if c.coherence_score > 0]
+        if coherence_scores and sum(coherence_scores) / len(coherence_scores) < 0.5:
+            recommendations["suggestions"].append("Low cluster coherence. Documents may be too diverse for meaningful clustering.")
+            
+        return recommendations
+    
+    def _analyze_cluster_relationships(self, clusters, documents: list[HybridSearchResult]) -> list[dict[str, Any]]:
+        """Analyze relationships between clusters."""
+        if len(clusters) < 2:
+            return []
+        
+        relationships = []
+        doc_lookup = {f"{doc.source_type}:{doc.source_title}": doc for doc in documents}
+        
+        # Analyze pairwise cluster relationships
+        for i, cluster_a in enumerate(clusters):
+            for j, cluster_b in enumerate(clusters[i+1:], i+1):
+                relationship = self._analyze_cluster_pair(cluster_a, cluster_b, doc_lookup)
+                if relationship and relationship["strength"] > 0.1:  # Only include meaningful relationships
+                    relationships.append({
+                        "cluster_a_id": cluster_a.cluster_id,
+                        "cluster_b_id": cluster_b.cluster_id,
+                        "cluster_a_name": cluster_a.name,
+                        "cluster_b_name": cluster_b.name,
+                        "relationship_type": relationship["type"],
+                        "strength": relationship["strength"],
+                        "description": relationship["description"],
+                        "shared_elements": relationship["shared_elements"]
+                    })
+        
+        # Sort by relationship strength
+        relationships.sort(key=lambda x: x["strength"], reverse=True)
+        
+        return relationships[:10]  # Return top 10 relationships
+    
+    def _analyze_cluster_pair(self, cluster_a, cluster_b, doc_lookup: dict) -> dict[str, Any] | None:
+        """Analyze the relationship between two clusters."""
+        # Get cluster documents
+        docs_a = [doc_lookup.get(doc_id) for doc_id in cluster_a.documents if doc_id in doc_lookup]
+        docs_b = [doc_lookup.get(doc_id) for doc_id in cluster_b.documents if doc_id in doc_lookup]
+        
+        if not docs_a or not docs_b:
+            return None
+        
+        # Analyze different relationship types
+        relationships = []
+        
+        # 1. Entity overlap
+        entity_relationship = self._analyze_entity_overlap(cluster_a, cluster_b)
+        if entity_relationship:
+            relationships.append(entity_relationship)
+        
+        # 2. Topic overlap
+        topic_relationship = self._analyze_topic_overlap(cluster_a, cluster_b)
+        if topic_relationship:
+            relationships.append(topic_relationship)
+        
+        # 3. Source type similarity
+        source_relationship = self._analyze_source_similarity(docs_a, docs_b)
+        if source_relationship:
+            relationships.append(source_relationship)
+        
+        # 4. Hierarchical relationship
+        hierarchy_relationship = self._analyze_hierarchy_relationship(docs_a, docs_b)
+        if hierarchy_relationship:
+            relationships.append(hierarchy_relationship)
+        
+        # 5. Content similarity
+        content_relationship = self._analyze_content_similarity(docs_a, docs_b)
+        if content_relationship:
+            relationships.append(content_relationship)
+        
+        # Return the strongest relationship
+        if relationships:
+            strongest = max(relationships, key=lambda x: x["strength"])
+            return strongest
+        
+        return None
+    
+    def _analyze_entity_overlap(self, cluster_a, cluster_b) -> dict[str, Any] | None:
+        """Analyze entity overlap between clusters."""
+        entities_a = set(cluster_a.shared_entities or [])
+        entities_b = set(cluster_b.shared_entities or [])
+        
+        if not entities_a or not entities_b:
+            return None
+        
+        overlap = entities_a & entities_b
+        union = entities_a | entities_b
+        
+        if not overlap:
+            return None
+        
+        strength = len(overlap) / len(union)
+        
+        return {
+            "type": "entity_overlap",
+            "strength": strength,
+            "description": f"Share {len(overlap)} common entities: {', '.join(list(overlap)[:3])}",
+            "shared_elements": list(overlap)
+        }
+    
+    def _analyze_topic_overlap(self, cluster_a, cluster_b) -> dict[str, Any] | None:
+        """Analyze topic overlap between clusters."""
+        topics_a = set(cluster_a.shared_topics or [])
+        topics_b = set(cluster_b.shared_topics or [])
+        
+        if not topics_a or not topics_b:
+            return None
+        
+        overlap = topics_a & topics_b
+        union = topics_a | topics_b
+        
+        if not overlap:
+            return None
+        
+        strength = len(overlap) / len(union)
+        
+        return {
+            "type": "topic_overlap", 
+            "strength": strength,
+            "description": f"Share {len(overlap)} common topics: {', '.join(list(overlap)[:3])}",
+            "shared_elements": list(overlap)
+        }
+    
+    def _analyze_source_similarity(self, docs_a: list, docs_b: list) -> dict[str, Any] | None:
+        """Analyze source type similarity between clusters."""
+        sources_a = set(doc.source_type for doc in docs_a if doc)
+        sources_b = set(doc.source_type for doc in docs_b if doc)
+        
+        if not sources_a or not sources_b:
+            return None
+        
+        overlap = sources_a & sources_b
+        union = sources_a | sources_b
+        
+        if not overlap:
+            return None
+        
+        strength = len(overlap) / len(union)
+        
+        # Boost strength if both clusters are from the same single source
+        if len(sources_a) == 1 and len(sources_b) == 1 and sources_a == sources_b:
+            strength = min(1.0, strength + 0.3)
+        
+        return {
+            "type": "source_similarity",
+            "strength": strength,
+            "description": f"Both contain {', '.join(overlap)} documents",
+            "shared_elements": list(overlap)
+        }
+    
+    def _analyze_hierarchy_relationship(self, docs_a: list, docs_b: list) -> dict[str, Any] | None:
+        """Analyze hierarchical relationships between clusters."""
+        # Look for parent-child relationships in breadcrumbs
+        breadcrumbs_a = [getattr(doc, 'breadcrumb_text', '') for doc in docs_a if doc and hasattr(doc, 'breadcrumb_text')]
+        breadcrumbs_b = [getattr(doc, 'breadcrumb_text', '') for doc in docs_b if doc and hasattr(doc, 'breadcrumb_text')]
+        
+        if not breadcrumbs_a or not breadcrumbs_b:
+            return None
+        
+        # Check for parent-child relationships
+        parent_child_count = 0
+        for bc_a in breadcrumbs_a:
+            for bc_b in breadcrumbs_b:
+                if bc_a and bc_b:
+                    if bc_a in bc_b or bc_b in bc_a:
+                        parent_child_count += 1
+        
+        if parent_child_count == 0:
+            return None
+        
+        total_comparisons = len(breadcrumbs_a) * len(breadcrumbs_b)
+        strength = parent_child_count / total_comparisons if total_comparisons > 0 else 0
+        
+        return {
+            "type": "hierarchical",
+            "strength": strength,
+            "description": f"Hierarchically related documents ({parent_child_count} connections)",
+            "shared_elements": []
+        }
+    
+    def _analyze_content_similarity(self, docs_a: list, docs_b: list) -> dict[str, Any] | None:
+        """Analyze content similarity between clusters."""
+        # Analyze document characteristics
+        has_code_a = any(getattr(doc, 'has_code_blocks', False) for doc in docs_a if doc)
+        has_code_b = any(getattr(doc, 'has_code_blocks', False) for doc in docs_b if doc)
+        
+        # Handle None values for word_count
+        word_counts_a = [getattr(doc, 'word_count', 0) or 0 for doc in docs_a if doc]
+        word_counts_b = [getattr(doc, 'word_count', 0) or 0 for doc in docs_b if doc]
+        avg_size_a = sum(word_counts_a) / len(word_counts_a) if word_counts_a else 0
+        avg_size_b = sum(word_counts_b) / len(word_counts_b) if word_counts_b else 0
+        
+        # Calculate similarity based on characteristics
+        similarity_factors = []
+        
+        # Code content similarity
+        if has_code_a and has_code_b:
+            similarity_factors.append(0.4)  # Both have code
+        elif not has_code_a and not has_code_b:
+            similarity_factors.append(0.2)  # Neither have code
+        
+        # Size similarity
+        if avg_size_a > 0 and avg_size_b > 0:
+            size_ratio = min(avg_size_a, avg_size_b) / max(avg_size_a, avg_size_b)
+            if size_ratio > 0.5:  # Similar sizes
+                similarity_factors.append(size_ratio * 0.3)
+        
+        if not similarity_factors:
+            return None
+        
+        strength = sum(similarity_factors)
+        
+        if strength < 0.1:
+            return None
+        
+        description_parts = []
+        if has_code_a and has_code_b:
+            description_parts.append("both contain code")
+        if avg_size_a > 0 and avg_size_b > 0 and abs(avg_size_a - avg_size_b) / max(avg_size_a, avg_size_b) < 0.5:
+            description_parts.append("similar document sizes")
+        
+        description = f"Content similarity: {', '.join(description_parts)}" if description_parts else "Similar content characteristics"
+        
+        return {
+            "type": "content_similarity",
+            "strength": strength,
+            "description": description,
+            "shared_elements": []
+        }
 
     # ============================================================================
     # Utility Methods

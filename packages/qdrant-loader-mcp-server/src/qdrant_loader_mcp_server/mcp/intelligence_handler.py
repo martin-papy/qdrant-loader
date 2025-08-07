@@ -425,100 +425,10 @@ class IntelligenceHandler:
             
             logger.info(f"Document clustering completed successfully")
 
-            # Transform clustering results to match MCP schema
-            mcp_clusters = []
-            clusters = clustering_results.get("clusters", [])
-            
-            for i, cluster in enumerate(clusters):
-                # Transform documents to match schema
-                mcp_documents = []
-                cluster_docs = cluster.get("documents", [])
-                
-                for j, doc in enumerate(cluster_docs):
-                    if hasattr(doc, 'source_title'):
-                        # Handle SearchResult objects - use proper fields
-                        # Create a proper document ID from available data
-                        doc_id = (
-                            doc.parent_document_id or  # For attachments
-                            f"{doc.source_type}:{doc.source_title}" or  # Fallback composite ID
-                            f"doc_{j}"  # Last resort
-                        )
-                        
-                        # Smart title extraction with multiple fallbacks
-                        title = (
-                            doc.source_title or 
-                            doc.parent_document_title or 
-                            doc.section_title or 
-                            doc.parent_title or 
-                            doc.original_filename or
-                            (doc.text.split('\n')[0][:50] + "..." if doc.text and len(doc.text.split('\n')[0]) > 50 else doc.text.split('\n')[0] if doc.text else None) or
-                            "Untitled"
-                        )
-                        
-                        mcp_doc = {
-                            "document_id": doc_id,
-                            "title": title,
-                            "content_preview": (doc.text[:200] + "...") if len(doc.text) > 200 else doc.text,
-                            "source_type": doc.source_type,
-                            "cluster_relevance": 1.0
-                        }
-                    elif isinstance(doc, dict):
-                        # Handle dict objects with smart title extraction
-                        title = (
-                            doc.get("title") or 
-                            doc.get("source_title") or 
-                            doc.get("parent_document_title") or 
-                            doc.get("section_title") or 
-                            doc.get("parent_title") or 
-                            doc.get("original_filename") or
-                            (doc.get("text", "").split('\n')[0][:50] + "..." if doc.get("text") and len(doc.get("text", "").split('\n')[0]) > 50 else doc.get("text", "").split('\n')[0] if doc.get("text") else None) or
-                            "Untitled"
-                        )
-                        
-                        mcp_doc = {
-                            "document_id": doc.get("document_id", f"doc_{j}"),
-                            "title": title,
-                            "content_preview": doc.get("content_preview", doc.get("text", "")[:200]),
-                            "source_type": doc.get("source_type", "unknown"),
-                            "cluster_relevance": doc.get("cluster_relevance", 1.0)
-                        }
-                    else:
-                        # Fallback for unknown formats
-                        mcp_doc = {
-                            "document_id": f"doc_{j}",
-                            "title": str(doc),
-                            "content_preview": "",
-                            "source_type": "unknown",
-                            "cluster_relevance": 1.0
-                        }
-                    mcp_documents.append(mcp_doc)
-                
-                mcp_cluster = {
-                    "cluster_id": f"cluster_{i}",
-                    "cluster_name": cluster.get("name", f"Cluster {i+1}"),
-                    "cluster_theme": cluster.get("theme", f"Theme {i+1}"),
-                    "document_count": len(mcp_documents),
-                    "cohesion_score": cluster.get("cohesion_score", 0.8),
-                    "documents": mcp_documents,
-                    "cluster_keywords": cluster.get("keywords", []),
-                    "cluster_summary": cluster.get("summary", f"Cluster of {len(mcp_documents)} documents")
-                }
-                mcp_clusters.append(mcp_cluster)
-            
-            # Create metadata
-            metadata = clustering_results.get("clustering_metadata", {})
-            mcp_clustering_results = {
-                "clusters": mcp_clusters,
-                "clustering_metadata": {
-                    "total_documents": metadata.get("total_documents", sum(len(c["documents"]) for c in mcp_clusters)),
-                    "clusters_created": len(mcp_clusters),
-                    "strategy_used": params.get("strategy", "mixed_features"),
-                    "unclustered_documents": metadata.get("unclustered_documents", 0),
-                    "clustering_quality": metadata.get("clustering_quality", 0.0),
-                    "processing_time_ms": metadata.get("processing_time_ms", 0.0)
-                },
-                "cluster_relationships": clustering_results.get("cluster_relationships", [])[:3]
-            }
+            # Create lightweight clustering response following hierarchy_search pattern  
+            mcp_clustering_results = self.formatters.create_lightweight_cluster_results(
+                clustering_results, params.get("query", "")
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -536,6 +446,82 @@ class IntelligenceHandler:
 
         except Exception as e:
             logger.error("Error clustering documents", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal server error"},
+            )
+
+    async def handle_expand_cluster(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle cluster expansion request for lazy loading."""
+        logger.debug("Handling expand cluster with params", params=params)
+
+        if "cluster_id" not in params:
+            logger.error("Missing required parameter: cluster_id")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: cluster_id",
+                },
+            )
+
+        try:
+            cluster_id = params["cluster_id"]
+            limit = params.get("limit", 20)
+            offset = params.get("offset", 0)
+            include_metadata = params.get("include_metadata", True)
+            
+            logger.info(f"Expanding cluster {cluster_id} with limit={limit}, offset={offset}")
+            
+            # For now, we need to re-run clustering to get cluster data
+            # In a production system, this would be cached or stored
+            # This is a placeholder implementation
+            
+            # Since we don't have cluster data persistence yet, return a helpful message
+            # In the future, this would retrieve stored cluster data and expand it
+            
+            expansion_result = {
+                "cluster_id": cluster_id,
+                "message": "Cluster expansion functionality requires re-running clustering",
+                "suggestion": "Please run cluster_documents again and use the lightweight response for navigation",
+                "cluster_info": {
+                    "expansion_requested": True,
+                    "limit": limit,
+                    "offset": offset,
+                    "include_metadata": include_metadata
+                },
+                "documents": [],
+                "pagination": {
+                    "offset": offset,
+                    "limit": limit,
+                    "total": 0,
+                    "has_more": False
+                }
+            }
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"🔄 **Cluster Expansion Request**\n\nCluster ID: {cluster_id}\n\n" +
+                                   "Currently, cluster expansion requires re-running the clustering operation. " +
+                                   "The lightweight cluster response provides the first 5 documents per cluster. " +
+                                   "For complete cluster content, please run `cluster_documents` again.\n\n" +
+                                   "💡 **Future Enhancement**: Cluster data will be cached to enable true lazy loading.",
+                        }
+                    ],
+                    "structuredContent": expansion_result,
+                    "isError": False,
+                },
+            )
+
+        except Exception as e:
+            logger.error("Error expanding cluster", exc_info=True)
             return self.protocol.create_response(
                 request_id,
                 error={"code": -32603, "message": "Internal server error"},

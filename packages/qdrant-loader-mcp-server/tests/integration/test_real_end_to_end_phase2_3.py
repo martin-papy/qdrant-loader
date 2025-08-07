@@ -283,7 +283,7 @@ class TestRealEndToEndPhase2_3:
             # Validate clustering metadata
             metadata = cluster_results["clustering_metadata"]
             assert "strategy" in metadata
-            assert "total_clusters" in metadata
+            assert "clusters_created" in metadata
             assert "total_documents" in metadata
             
             # Validate cluster structure (would catch centroid_topics error)
