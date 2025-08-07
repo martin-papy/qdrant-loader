@@ -634,7 +634,7 @@ class SearchEngine:
         max_recommendations: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
         Find content that complements a target document.
         
@@ -646,7 +646,7 @@ class SearchEngine:
             project_ids: Optional list of project IDs to filter by
             
         Returns:
-            List of complementary documents with recommendation reasons
+            Dict containing complementary recommendations and target document info
         """
         if not self.hybrid_search:
             raise RuntimeError("Search engine not initialized")
@@ -664,16 +664,24 @@ class SearchEngine:
             self.logger.info(f"🎯 Target search returned {len(target_results)} results")
             if not target_results:
                 self.logger.warning("No target document found!")
-                return []
+                return {
+                    "complementary_recommendations": [],
+                    "target_document": None,
+                    "context_documents_analyzed": 0
+                }
             
             target_document = target_results[0]
             self.logger.info(f"🎯 Target document: {target_document.source_title}")
             
-            self.logger.info(f"🔍 Step 2: Searching for context documents with query: '{context_query}'")
-            # Get context documents
+            # Adaptive context limit based on recommendations needed
+            context_limit = max(max_recommendations * 4, 20)  # 4x buffer for better selection
+            context_limit = min(context_limit, 100)  # Cap at 100 for performance
+            
+            self.logger.info(f"🔍 Step 2: Searching for context documents with query: '{context_query}' (limit: {context_limit})")
+            # Get context documents with adaptive limit
             context_documents = await self.hybrid_search.search(
                 query=context_query,
-                limit=20,
+                limit=context_limit,
                 source_types=source_types,
                 project_ids=project_ids
             )
@@ -689,7 +697,13 @@ class SearchEngine:
             )
             
             self.logger.info(f"✅ Found {len(complementary)} complementary recommendations")
-            return complementary
+            
+            # Return structured result with target document info
+            return {
+                "complementary_recommendations": complementary,
+                "target_document": target_document,
+                "context_documents_analyzed": len(context_documents)
+            }
             
         except Exception as e:
             self.logger.error("Complementary content search failed", error=str(e))

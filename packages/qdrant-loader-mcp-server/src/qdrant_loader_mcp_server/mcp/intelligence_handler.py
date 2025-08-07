@@ -349,7 +349,7 @@ class IntelligenceHandler:
             logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
             logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
             
-            complementary = await self.search_engine.find_complementary_content(
+            result = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
                 context_query=params["context_query"],
                 max_recommendations=params.get("max_recommendations", 5),
@@ -357,7 +357,19 @@ class IntelligenceHandler:
                 project_ids=params.get("project_ids"),
             )
             
-            logger.info(f"✅ search_engine.find_complementary_content completed, got {len(complementary)} results")
+            complementary_recommendations = result.get("complementary_recommendations", [])
+            target_document = result.get("target_document")
+            context_documents_analyzed = result.get("context_documents_analyzed", 0)
+            
+            logger.info(f"✅ search_engine.find_complementary_content completed, got {len(complementary_recommendations)} results")
+
+            # Create lightweight structured content using the new formatter
+            structured_content = self.formatters.create_lightweight_complementary_results(
+                complementary_recommendations=complementary_recommendations,
+                target_document=target_document,
+                context_documents_analyzed=context_documents_analyzed,
+                target_query=params["target_query"]
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -365,48 +377,10 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_complementary_content(complementary),
+                            "text": self.formatters.format_complementary_content(complementary_recommendations),
                         }
                     ],
-                    "structuredContent": {
-                        "complementary_content": [
-                            {
-                                # 🔥 Use actual document_id from HybridSearchResult
-                                "document_id": comp_doc.get("document", {}).document_id or f"comp_{i}",
-                                "title": comp_doc.get("document", {}).get_display_title() if hasattr(comp_doc.get("document", {}), "get_display_title") else getattr(comp_doc.get("document", {}), "source_title", ""),
-                                "content_preview": getattr(comp_doc.get("document", {}), "text", "")[:200] or "",
-                                "complementary_score": comp_doc.get("relevance_score", 0.0),
-                                "complementary_reason": comp_doc.get("recommendation_reason", "Complementary content found"),
-                                "relationship_type": comp_doc.get("strategy", "related"),
-                                "source_type": getattr(comp_doc.get("document", {}), "source_type", "") or "",
-                                # 🔥 Root level fields (matching our search structure)
-                                "url": getattr(comp_doc.get("document", {}), "source_url", "") or "",
-                                "created_at": getattr(comp_doc.get("document", {}), "created_at", "") or "",
-                                "updated_at": getattr(comp_doc.get("document", {}), "last_modified", "") or "",
-                                "metadata": {
-                                    "project_id": getattr(comp_doc.get("document", {}), "project_id", "") or "",
-                                    "project_name": getattr(comp_doc.get("document", {}), "project_name", "") or "",
-                                    "file_path": getattr(comp_doc.get("document", {}), "file_path", "") or "",
-                                    "file_type": getattr(comp_doc.get("document", {}), "file_type", "") or "",
-                                    "file_size": getattr(comp_doc.get("document", {}), "file_size", None),
-                                    "word_count": getattr(comp_doc.get("document", {}), "word_count", None),
-                                    "chunk_info": getattr(comp_doc.get("document", {}), "chunk_info", "") or ""
-                                }
-                            }
-                            for i, comp_doc in enumerate(complementary if complementary else [])
-                        ],
-                        "target_document": {
-                            "title": params["target_query"],
-                            "content_preview": "",
-                            "source_type": ""
-                        },
-                        "complementary_summary": {
-                            "total_analyzed": len(complementary) if complementary else 0,
-                            "complementary_found": len(complementary) if complementary else 0,
-                            "highest_score": max((c.get("complementary_score", 0.0) for c in complementary), default=0.0) if complementary else 0.0,
-                            "relationship_types": list(set(c.get("relationship_type", "related") for c in complementary)) if complementary else []
-                        }
-                    },
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )

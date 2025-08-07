@@ -652,6 +652,66 @@ class MCPFormatters:
                 "source_types_found": list(set(r.source_type for r in filtered_results))
             }
         }
+    
+    @staticmethod
+    def create_lightweight_complementary_results(
+        complementary_recommendations: list[dict[str, Any]],
+        target_document: 'HybridSearchResult' = None,
+        context_documents_analyzed: int = 0,
+        target_query: str = ""
+    ) -> dict[str, Any]:
+        """Create lightweight complementary content results for lazy loading."""
+        
+        # Create complementary index with minimal data
+        complementary_index = []
+        for result in complementary_recommendations:
+            document = result.get("document")
+            if document:
+                complementary_index.append({
+                    "document_id": document.document_id,
+                    "title": document.source_title or "Untitled",
+                    "complementary_score": result.get("relevance_score", 0.0),
+                    "complementary_reason": result.get("recommendation_reason", ""),
+                    "relationship_type": result.get("strategy", "related"),
+                    "source_type": document.source_type or "",
+                    "basic_metadata": {
+                        "project_id": document.project_id or "",
+                        "created_at": document.created_at or "",
+                        "source_url": document.source_url or ""
+                    }
+                    # NO content_preview - use expand_document for full content
+                })
+        
+        # Target document info
+        target_info = {
+            "title": target_query,  # Fallback to query
+            "content_preview": "",
+            "source_type": ""
+        }
+        
+        if target_document:
+            target_info = {
+                "document_id": target_document.document_id,
+                "title": target_document.source_title or target_query,
+                "source_type": target_document.source_type or ""
+            }
+        
+        # Calculate summary statistics
+        scores = [item.get("complementary_score", 0.0) for item in complementary_index]
+        relationship_types = [item.get("relationship_type", "related") for item in complementary_index]
+        
+        return {
+            "complementary_index": complementary_index,
+            "target_document": target_info,
+            "complementary_summary": {
+                "total_analyzed": context_documents_analyzed,
+                "complementary_found": len(complementary_index),
+                "highest_score": max(scores, default=0.0),
+                "relationship_types": list(set(relationship_types))
+            },
+            "lazy_loading_enabled": True,
+            "expand_document_hint": "Use expand_document tool with document_id for full content"
+        }
 
     @staticmethod
     def _generate_clean_group_name(group_key: str, results: list) -> str:
