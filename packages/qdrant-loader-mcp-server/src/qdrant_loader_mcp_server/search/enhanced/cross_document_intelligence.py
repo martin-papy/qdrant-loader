@@ -1376,33 +1376,63 @@ class ConflictDetector:
         self.logger = LoggingConfig.get_logger(__name__)
         
     def detect_conflicts(self, documents: List[SearchResult]) -> ConflictAnalysis:
-        """Detect conflicts between documents."""
+        """Detect conflicts between documents using tiered analysis strategy."""
         start_time = time.time()
         
         conflicts = ConflictAnalysis()
         
-        # Compare documents pairwise for conflicts
+        # Tiered analysis approach for better coverage
+        document_pairs = []
+        
+        # Tier 1: Primary analysis - same project + shared entities/topics
+        primary_pairs = []
+        # Tier 2: Secondary analysis - semantic similarity 
+        secondary_pairs = []
+        # Tier 3: Tertiary analysis - content overlap
+        tertiary_pairs = []
+        
         for i in range(len(documents)):
             for j in range(i + 1, len(documents)):
                 doc1, doc2 = documents[i], documents[j]
                 
-                conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
-                if conflict_info:
-                    doc1_id = f"{doc1.source_type}:{doc1.source_title}"
-                    doc2_id = f"{doc2.source_type}:{doc2.source_title}"
-                    conflicts.conflicting_pairs.append((doc1_id, doc2_id, conflict_info))
-                    
-                    # Categorize conflict
-                    conflict_type = conflict_info.get("type", "general")
-                    if conflict_type not in conflicts.conflict_categories:
-                        conflicts.conflict_categories[conflict_type] = []
-                    conflicts.conflict_categories[conflict_type].append((doc1_id, doc2_id))
+                # Categorize pair by analysis tier
+                if self._is_primary_analysis_candidate(doc1, doc2):
+                    primary_pairs.append((doc1, doc2, "primary"))
+                elif self._is_secondary_analysis_candidate(doc1, doc2):
+                    secondary_pairs.append((doc1, doc2, "secondary"))
+                elif self._is_tertiary_analysis_candidate(doc1, doc2):
+                    tertiary_pairs.append((doc1, doc2, "tertiary"))
+        
+        # Analyze pairs in priority order
+        all_pairs = primary_pairs + secondary_pairs + tertiary_pairs
+        analyzed_count = 0
+        
+        for doc1, doc2, tier in all_pairs:
+            conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
+            if conflict_info:
+                # Use document_id if available, fallback to title-based ID for backward compatibility
+                doc1_id = doc1.document_id or f"{doc1.source_type}:{doc1.source_title}"
+                doc2_id = doc2.document_id or f"{doc2.source_type}:{doc2.source_title}"
+                
+                # Enhance conflict info with analysis tier
+                conflict_info["analysis_tier"] = tier
+                conflicts.conflicting_pairs.append((doc1_id, doc2_id, conflict_info))
+                
+                # Categorize conflict
+                conflict_type = conflict_info.get("type", "general")
+                if conflict_type not in conflicts.conflict_categories:
+                    conflicts.conflict_categories[conflict_type] = []
+                conflicts.conflict_categories[conflict_type].append((doc1_id, doc2_id))
+            
+            analyzed_count += 1
         
         # Generate resolution suggestions
         conflicts.resolution_suggestions = self._generate_resolution_suggestions(conflicts)
         
         processing_time = (time.time() - start_time) * 1000
-        self.logger.info(f"Detected {len(conflicts.conflicting_pairs)} conflicts in {processing_time:.2f}ms")
+        self.logger.info(f"Detected {len(conflicts.conflicting_pairs)} conflicts from {analyzed_count} pairs "
+                        f"(Primary: {len(primary_pairs)}, Secondary: {len(secondary_pairs)}, "
+                        f"Tertiary: {len(tertiary_pairs)}) in {processing_time:.2f}ms")
         
         return conflicts
     
@@ -1431,11 +1461,15 @@ class ConflictDetector:
             conflict_indicators.extend(procedural_conflicts)
         
         if conflict_indicators:
+            # Extract summaries for backward compatibility with existing methods
+            indicator_summaries = [indicator.get("summary", str(indicator)) for indicator in conflict_indicators]
+            
             return {
-                "type": self._categorize_conflict(conflict_indicators),
-                "indicators": conflict_indicators,
-                "confidence": self._calculate_conflict_confidence(conflict_indicators),
-                "description": self._describe_conflict(conflict_indicators)
+                "type": self._categorize_conflict(indicator_summaries),
+                "indicators": indicator_summaries,  # Keep summaries for backward compatibility
+                "structured_indicators": conflict_indicators,  # New: Full structured data
+                "confidence": self._calculate_conflict_confidence(indicator_summaries),
+                "description": self._describe_conflict(indicator_summaries)
             }
         
         return None
@@ -1471,28 +1505,231 @@ class ConflictDetector:
         # Always analyze at least some pairs to avoid completely empty results
         return True
     
-    def _find_contradiction_patterns(self, doc1: SearchResult, doc2: SearchResult) -> List[str]:
-        """Find textual patterns that suggest contradictions."""
+    def _is_primary_analysis_candidate(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Tier 1: High priority analysis - same project + shared entities/topics."""
+        # Same project
+        if doc1.project_id and doc2.project_id and doc1.project_id == doc2.project_id:
+            return True
+        
+        # Shared entities
+        entities1 = self._extract_entity_texts(doc1.entities)
+        entities2 = self._extract_entity_texts(doc2.entities)
+        if len(set(entities1) & set(entities2)) > 0:
+            return True
+        
+        # Shared topics
+        topics1 = self._extract_topic_texts(doc1.topics)
+        topics2 = self._extract_topic_texts(doc2.topics)
+        if len(set(topics1) & set(topics2)) > 0:
+            return True
+            
+        return False
+    
+    def _is_secondary_analysis_candidate(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Tier 2: Medium priority analysis - semantic similarity."""
+        # Documents with similar titles or content themes
+        if self._have_semantic_similarity(doc1, doc2):
+            return True
+            
+        # Both documents from same source type and seem related by content
+        if (doc1.source_type == doc2.source_type and 
+            self._have_content_overlap(doc1, doc2)):
+            return True
+            
+        return False
+    
+    def _is_tertiary_analysis_candidate(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Tier 3: Lower priority analysis - basic content overlap."""
+        # If documents came from the same search query, they're likely semantically related
+        # Basic text similarity check
+        if self._have_basic_text_similarity(doc1, doc2):
+            return True
+            
+        return False
+    
+    def _have_basic_text_similarity(self, doc1: SearchResult, doc2: SearchResult) -> bool:
+        """Check for basic text similarity between documents."""
+        # Simple word overlap check
+        words1 = set(doc1.text.lower().split())
+        words2 = set(doc2.text.lower().split())
+        
+        # Remove common stop words for better comparison
+        stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being'}
+        words1 = words1 - stop_words
+        words2 = words2 - stop_words
+        
+        if not words1 or not words2:
+            return False
+            
+        # Calculate Jaccard similarity
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        if union == 0:
+            return False
+            
+        jaccard_similarity = intersection / union
+        return jaccard_similarity > 0.1  # 10% word overlap threshold
+    
+    def _find_contradiction_patterns(self, doc1: SearchResult, doc2: SearchResult) -> List[Dict[str, Any]]:
+        """Find textual patterns that suggest contradictions using enhanced semantic analysis."""
         patterns = []
         
-        # Look for opposing statements (simplified)
-        opposing_keywords = [
-            ("should", "should not"), ("enabled", "disabled"), ("true", "false"),
-            ("required", "optional"), ("always", "never"), ("use", "avoid")
+        # Enhanced opposing keywords with context
+        opposing_patterns = [
+            # Basic opposites
+            ("should", "should not"), ("must", "must not"), ("shall", "shall not"),
+            ("enabled", "disabled"), ("active", "inactive"), ("on", "off"),
+            ("true", "false"), ("yes", "no"), ("allow", "deny"),
+            ("required", "optional"), ("mandatory", "optional"),
+            ("always", "never"), ("all", "none"), ("include", "exclude"),
+            ("use", "avoid"), ("recommend", "discourage"), ("prefer", "avoid"),
+            
+            # Procedural opposites
+            ("start", "stop"), ("begin", "end"), ("create", "delete"),
+            ("add", "remove"), ("install", "uninstall"), ("enable", "disable"),
+            
+            # Methodology opposites
+            ("agile", "waterfall"), ("sync", "async"), ("manual", "automatic"),
+            ("centralized", "decentralized"), ("public", "private"),
+            
+            # Quality opposites
+            ("accept", "reject"), ("approve", "decline"), ("valid", "invalid"),
+            ("correct", "incorrect"), ("right", "wrong")
         ]
         
         text1_lower = doc1.text.lower()
         text2_lower = doc2.text.lower()
         
-        for positive, negative in opposing_keywords:
-            if positive in text1_lower and negative in text2_lower:
-                patterns.append(f"Contradictory guidance: '{positive}' vs '{negative}'")
-            elif negative in text1_lower and positive in text2_lower:
-                patterns.append(f"Contradictory guidance: '{negative}' vs '{positive}'")
+        # Check for direct opposites using word boundaries
+        import re
+        for positive, negative in opposing_patterns:
+            # Use word boundaries to avoid false matches like "off" in "Kick-Off"
+            positive_pattern = r'\b' + re.escape(positive) + r'\b'
+            negative_pattern = r'\b' + re.escape(negative) + r'\b'
+            
+            if (re.search(positive_pattern, text1_lower, re.IGNORECASE) and 
+                re.search(negative_pattern, text2_lower, re.IGNORECASE)):
+                snippet1 = self._extract_context_snippet(doc1.text, positive)
+                snippet2 = self._extract_context_snippet(doc2.text, negative)
+                patterns.append({
+                    "type": "contradictory_guidance",
+                    "keywords": f"'{positive}' vs '{negative}'",
+                    "doc1_snippet": snippet1,
+                    "doc2_snippet": snippet2,
+                    "summary": f"Contradictory guidance: '{positive}' vs '{negative}'"
+                })
+            elif (re.search(negative_pattern, text1_lower, re.IGNORECASE) and 
+                  re.search(positive_pattern, text2_lower, re.IGNORECASE)):
+                snippet1 = self._extract_context_snippet(doc1.text, negative)
+                snippet2 = self._extract_context_snippet(doc2.text, positive)
+                patterns.append({
+                    "type": "contradictory_guidance", 
+                    "keywords": f"'{negative}' vs '{positive}'",
+                    "doc1_snippet": snippet1,
+                    "doc2_snippet": snippet2,
+                    "summary": f"Contradictory guidance: '{negative}' vs '{positive}'"
+                })
+        
+        # Check for conflicting instructions with common contexts
+        instruction_contexts = [
+            "workflow", "process", "procedure", "method", "approach",
+            "implementation", "configuration", "setup", "deployment"
+        ]
+        
+        for context in instruction_contexts:
+            if context in text1_lower and context in text2_lower:
+                # Look for conflicting instructions in same context
+                conflict_indicators = [
+                    ("first", "last"), ("initial", "final"), ("primary", "secondary"),
+                    ("before", "after"), ("preceding", "following")
+                ]
+                
+                for indicator1, indicator2 in conflict_indicators:
+                    # Use word boundaries for context and indicators
+                    context_pattern = r'\b' + re.escape(context) + r'\b'
+                    indicator1_pattern = r'\b' + re.escape(indicator1) + r'\b'
+                    indicator2_pattern = r'\b' + re.escape(indicator2) + r'\b'
+                    
+                    if (re.search(context_pattern, text1_lower, re.IGNORECASE) and 
+                        re.search(indicator1_pattern, text1_lower, re.IGNORECASE) and
+                        re.search(context_pattern, text2_lower, re.IGNORECASE) and 
+                        re.search(indicator2_pattern, text2_lower, re.IGNORECASE)):
+                        snippet1 = self._extract_context_snippet(doc1.text, f"{context} {indicator1}")
+                        snippet2 = self._extract_context_snippet(doc2.text, f"{context} {indicator2}")
+                        patterns.append({
+                            "type": "sequence_conflict",
+                            "context": context,
+                            "keywords": f"'{indicator1}' vs '{indicator2}'",
+                            "doc1_snippet": snippet1,
+                            "doc2_snippet": snippet2,
+                            "summary": f"Conflicting {context} sequence: '{indicator1}' vs '{indicator2}'"
+                        })
         
         return patterns
     
-    def _detect_version_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> List[str]:
+    def _extract_context_snippet(self, text: str, keyword: str, max_length: int = 150) -> str:
+        """Extract a context snippet around a keyword from document text."""
+        import re
+        
+        # Find the keyword using word boundaries (case insensitive)
+        keyword_lower = keyword.lower()
+        
+        # Handle multi-word keywords
+        if ' ' in keyword_lower:
+            # For multi-word phrases, search for exact phrase with word boundaries
+            pattern = r'\b' + re.escape(keyword_lower) + r'\b'
+        else:
+            # For single words, use word boundaries
+            pattern = r'\b' + re.escape(keyword_lower) + r'\b'
+        
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            # If exact phrase not found, try individual words
+            words = keyword_lower.split()
+            for word in words:
+                word_pattern = r'\b' + re.escape(word) + r'\b'
+                match = re.search(word_pattern, text, re.IGNORECASE)
+                if match:
+                    keyword = word
+                    break
+        
+        if not match:
+            # Debug: Log when we can't find the keyword
+            return f"[Keyword '{keyword}' not found in text (length: {len(text)})]"
+        
+        keyword_start = match.start()
+        
+        # Calculate start and end positions for snippet
+        snippet_start = max(0, keyword_start - max_length // 2)
+        snippet_end = min(len(text), keyword_start + len(keyword) + max_length // 2)
+        
+        # Extract snippet
+        snippet = text[snippet_start:snippet_end].strip()
+        
+        # Clean up snippet - try to break at sentence boundaries
+        sentences = snippet.split('.')
+        if len(sentences) > 1:
+            # Find the sentence containing the keyword
+            for i, sentence in enumerate(sentences):
+                if keyword.lower() in sentence.lower():
+                    # Include this sentence and maybe one before/after
+                    start_idx = max(0, i - 1) if i > 0 else 0
+                    end_idx = min(len(sentences), i + 2)
+                    snippet = '.'.join(sentences[start_idx:end_idx]).strip()
+                    if snippet.endswith('.'):
+                        snippet = snippet[:-1]
+                    break
+        
+        # Add ellipsis if we truncated
+        if snippet_start > 0:
+            snippet = "..." + snippet
+        if snippet_end < len(text):
+            snippet = snippet + "..."
+            
+        return snippet or f"[Content containing '{keyword}']"
+    
+    def _detect_version_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> List[Dict[str, Any]]:
         """Detect version-related conflicts."""
         conflicts = []
         
@@ -1504,11 +1741,22 @@ class ConflictDetector:
         versions2 = re.findall(version_pattern, doc2.text)
         
         if versions1 and versions2 and set(versions1) != set(versions2):
-            conflicts.append(f"Version mismatch: {versions1} vs {versions2}")
+            # Find snippets containing version numbers
+            snippet1 = self._extract_context_snippet(doc1.text, versions1[0])
+            snippet2 = self._extract_context_snippet(doc2.text, versions2[0])
+            
+            conflicts.append({
+                "type": "version_conflict",
+                "versions1": versions1,
+                "versions2": versions2,
+                "doc1_snippet": snippet1,
+                "doc2_snippet": snippet2,
+                "summary": f"Version mismatch: {versions1} vs {versions2}"
+            })
         
         return conflicts
     
-    def _detect_procedural_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> List[str]:
+    def _detect_procedural_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> List[Dict[str, Any]]:
         """Detect conflicts in procedural information."""
         conflicts = []
         
@@ -1536,9 +1784,45 @@ class ConflictDetector:
             return "general_conflict"
     
     def _calculate_conflict_confidence(self, indicators: List[str]) -> float:
-        """Calculate confidence in the conflict detection."""
-        # Simple confidence based on number of indicators
-        return min(0.9, len(indicators) * 0.3)
+        """Calculate confidence in the conflict detection using multiple signals."""
+        if not indicators:
+            return 0.0
+        
+        base_confidence = 0.2  # Base confidence for any detected conflict
+        
+        # Confidence boosts based on indicator types
+        confidence_boosts = {
+            "version": 0.25,      # Version conflicts are highly reliable
+            "contradictory": 0.20, # Direct contradictions are strong indicators
+            "procedural": 0.15,    # Procedural conflicts are moderately reliable
+            "guidance": 0.15,      # Guidance conflicts need context
+            "requirement": 0.20,   # Requirement conflicts are important
+            "timeline": 0.15,      # Timeline conflicts can be significant
+            "default": 0.10        # Generic conflict indicators
+        }
+        
+        total_boost = 0.0
+        for indicator in indicators:
+            indicator_lower = indicator.lower()
+            boost_applied = False
+            
+            for keyword, boost in confidence_boosts.items():
+                if keyword in indicator_lower:
+                    total_boost += boost
+                    boost_applied = True
+                    break
+            
+            if not boost_applied:
+                total_boost += confidence_boosts["default"]
+        
+        # Multiple indicators increase confidence but with diminishing returns
+        indicator_multiplier = 1.0 + (len(indicators) - 1) * 0.1
+        
+        # Calculate final confidence
+        final_confidence = (base_confidence + total_boost) * indicator_multiplier
+        
+        # Cap at 0.95 to indicate some uncertainty always exists
+        return min(0.95, final_confidence)
     
     def _describe_conflict(self, indicators: List[str]) -> str:
         """Generate a description of the conflict."""
