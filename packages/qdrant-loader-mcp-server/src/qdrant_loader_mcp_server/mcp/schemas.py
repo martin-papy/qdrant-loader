@@ -609,8 +609,8 @@ class MCPSchemas:
                     },
                     "strategy": {
                         "type": "string",
-                        "enum": ["mixed_features", "entity_based", "topic_based", "project_based"],
-                        "description": "Clustering strategy to use",
+                        "enum": ["mixed_features", "entity_based", "topic_based", "project_based", "hierarchical", "adaptive"],
+                        "description": "Clustering strategy to use (adaptive automatically selects the best strategy)",
                         "default": "mixed_features",
                     },
                     "max_clusters": {
@@ -677,7 +677,7 @@ class MCPSchemas:
                         "properties": {
                             "total_documents": {"type": "integer"},
                             "clusters_created": {"type": "integer"},
-                            "strategy_used": {"type": "string"},
+                            "strategy": {"type": "string"},
                             "unclustered_documents": {"type": "integer"},
                             "clustering_quality": {"type": "number"},
                             "processing_time_ms": {"type": "number"}
@@ -694,6 +694,61 @@ class MCPSchemas:
                                 "relationship_strength": {"type": "number"}
                             }
                         }
+                    }
+                }
+            }
+        }
+
+    @staticmethod 
+    def get_expand_cluster_tool_schema() -> dict[str, Any]:
+        """Get the expand cluster tool schema for lazy loading cluster documents."""
+        return {
+            "name": "expand_cluster",
+            "description": "Retrieve all documents from a specific cluster for lazy loading",
+            "annotations": {"read-only": True},
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cluster_id": {
+                        "type": "string",
+                        "description": "The ID of the cluster to expand and retrieve all documents",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of documents to return from cluster (default: 20)",
+                        "default": 20,
+                    },
+                    "offset": {
+                        "type": "integer", 
+                        "description": "Number of documents to skip for pagination (default: 0)",
+                        "default": 0,
+                    },
+                    "include_metadata": {
+                        "type": "boolean",
+                        "description": "Include detailed metadata for each document (default: true)",
+                        "default": True,
+                    }
+                },
+                "required": ["cluster_id"],
+            },
+            "outputSchema": {
+                "type": "object",
+                "properties": {
+                    "cluster_id": {
+                        "type": "string",
+                        "description": "The expanded cluster ID"
+                    },
+                    "cluster_info": {
+                        "type": "object",
+                        "description": "Detailed cluster information"
+                    },
+                    "documents": {
+                        "type": "array",
+                        "description": "Full list of documents in the cluster"
+                    },
+                    "pagination": {
+                        "type": "object", 
+                        "description": "Pagination information"
                     }
                 }
             }
@@ -781,4 +836,5 @@ class MCPSchemas:
             cls.get_find_complementary_tool_schema(),
             cls.get_cluster_documents_tool_schema(),
             cls.get_expand_document_tool_schema(),  # ✅ Add expand_document tool
+            cls.get_expand_cluster_tool_schema(),   # ✅ Add expand_cluster tool
         ] 

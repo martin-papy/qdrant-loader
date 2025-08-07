@@ -550,9 +550,12 @@ class DocumentClusterAnalyzer:
         for i, (entity_key, doc_ids) in enumerate(entity_groups.items()):
             if len(doc_ids) >= min_cluster_size and len(clusters) < max_clusters:
                 shared_entities = entity_key.split("|")
+                cluster_name = self._generate_intelligent_cluster_name(
+                    shared_entities[:2], [], "entity", i
+                )
                 cluster = DocumentCluster(
                     cluster_id=f"entity_cluster_{i}",
-                    name=f"Entity Cluster: {', '.join(shared_entities[:2])}",
+                    name=cluster_name,
                     documents=doc_ids,
                     shared_entities=shared_entities,
                     cluster_strategy=ClusteringStrategy.ENTITY_BASED
@@ -584,9 +587,12 @@ class DocumentClusterAnalyzer:
         for i, (topic_key, doc_ids) in enumerate(topic_groups.items()):
             if len(doc_ids) >= min_cluster_size and len(clusters) < max_clusters:
                 shared_topics = topic_key.split("|")
+                cluster_name = self._generate_intelligent_cluster_name(
+                    [], shared_topics[:2], "topic", i
+                )
                 cluster = DocumentCluster(
                     cluster_id=f"topic_cluster_{i}",
-                    name=f"Topic Cluster: {', '.join(shared_topics[:2])}",
+                    name=cluster_name,
                     documents=doc_ids,
                     shared_topics=shared_topics,
                     cluster_strategy=ClusteringStrategy.TOPIC_BASED
@@ -610,9 +616,12 @@ class DocumentClusterAnalyzer:
         clusters = []
         for i, (project_key, doc_ids) in enumerate(project_groups.items()):
             if len(doc_ids) >= min_cluster_size and len(clusters) < max_clusters:
+                cluster_name = self._generate_intelligent_cluster_name(
+                    [], [], "project", i, project_key
+                )
                 cluster = DocumentCluster(
                     cluster_id=f"project_cluster_{i}",
-                    name=f"Project: {project_key}",
+                    name=cluster_name,
                     documents=doc_ids,
                     cluster_strategy=ClusteringStrategy.PROJECT_BASED
                 )
@@ -642,9 +651,12 @@ class DocumentClusterAnalyzer:
         clusters = []
         for i, (hierarchy_key, doc_ids) in enumerate(hierarchy_groups.items()):
             if len(doc_ids) >= min_cluster_size and len(clusters) < max_clusters:
+                cluster_name = self._generate_intelligent_cluster_name(
+                    [], [], "hierarchy", i, hierarchy_key
+                )
                 cluster = DocumentCluster(
                     cluster_id=f"hierarchy_cluster_{i}",
-                    name=f"Hierarchy: {hierarchy_key}",
+                    name=cluster_name,
                     documents=doc_ids,
                     cluster_strategy=ClusteringStrategy.HIERARCHICAL
                 )
@@ -691,17 +703,113 @@ class DocumentClusterAnalyzer:
                     elif part.startswith("topics:"):
                         shared_topics = part.replace("topics:", "").split(",")
                 
+                clean_entities = [e for e in shared_entities if e]
+                clean_topics = [t for t in shared_topics if t]
+                cluster_name = self._generate_intelligent_cluster_name(
+                    clean_entities, clean_topics, "mixed", i
+                )
                 cluster = DocumentCluster(
                     cluster_id=f"mixed_cluster_{i}",
-                    name=f"Mixed Cluster {i+1}",
+                    name=cluster_name,
                     documents=doc_ids,
-                    shared_entities=[e for e in shared_entities if e],
-                    shared_topics=[t for t in shared_topics if t],
+                    shared_entities=clean_entities,
+                    shared_topics=clean_topics,
                     cluster_strategy=ClusteringStrategy.MIXED_FEATURES
                 )
                 clusters.append(cluster)
         
         return clusters
+    
+    def _generate_intelligent_cluster_name(self, entities: List[str], topics: List[str], 
+                                         cluster_type: str, index: int, 
+                                         context_key: str = "") -> str:
+        """Generate an intelligent, descriptive name for a cluster."""
+        
+        # Entity-based naming
+        if cluster_type == "entity" and entities:
+            if len(entities) == 1:
+                return f"{entities[0].title()} Documentation"
+            elif len(entities) == 2:
+                return f"{entities[0].title()} & {entities[1].title()}"
+            else:
+                return f"{entities[0].title()} Ecosystem"
+        
+        # Topic-based naming  
+        if cluster_type == "topic" and topics:
+            # Clean up topic names
+            clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
+            if len(clean_topics) == 1:
+                return f"{clean_topics[0]} Content"
+            elif len(clean_topics) == 2:
+                return f"{clean_topics[0]} & {clean_topics[1]}"
+            else:
+                return f"{clean_topics[0]} Topics"
+        
+        # Project-based naming
+        if cluster_type == "project" and context_key:
+            if context_key == "no_project":
+                return "Unorganized Documents"
+            return f"{context_key.title()} Project"
+        
+        # Hierarchy-based naming
+        if cluster_type == "hierarchy" and context_key:
+            if context_key == "root":
+                return "Root Documentation"
+            # Clean up breadcrumb path
+            parts = context_key.split(" > ")
+            if len(parts) == 1:
+                return f"{parts[0]} Section"
+            elif len(parts) >= 2:
+                return f"{parts[0]} > {parts[1]}"
+            return f"{context_key} Hierarchy"
+        
+        # Mixed features naming
+        if cluster_type == "mixed":
+            name_parts = []
+            
+            # Prioritize entities for naming
+            if entities:
+                if len(entities) == 1:
+                    name_parts.append(entities[0].title())
+                else:
+                    name_parts.append(f"{entities[0].title()} & {entities[1].title()}")
+            elif topics:
+                clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
+                if len(clean_topics) == 1:
+                    name_parts.append(clean_topics[0])
+                else:
+                    name_parts.append(f"{clean_topics[0]} & {clean_topics[1]}")
+            
+            if name_parts:
+                return f"{name_parts[0]} Collection"
+            else:
+                return f"Document Group {index + 1}"
+        
+        # Fallback naming
+        cluster_names = {
+            "entity": "Entity Group",
+            "topic": "Topic Group", 
+            "project": "Project Group",
+            "hierarchy": "Documentation Section",
+            "mixed": "Document Collection"
+        }
+        
+        base_name = cluster_names.get(cluster_type, "Document Cluster")
+        return f"{base_name} {index + 1}"
+    
+    def _clean_topic_name(self, topic: str) -> str:
+        """Clean and format topic names for display."""
+        if not topic:
+            return ""
+        
+        # Remove common prefixes/suffixes
+        topic = topic.strip()
+        
+        # Capitalize appropriately
+        if topic.islower():
+            return topic.title()
+        
+        return topic
     
     def _calculate_cluster_coherence(self, cluster: DocumentCluster, 
                                    all_documents: List[SearchResult]) -> float:
@@ -744,19 +852,191 @@ class DocumentClusterAnalyzer:
     
     def _generate_cluster_description(self, cluster: DocumentCluster, 
                                     all_documents: List[SearchResult]) -> str:
-        """Generate a description for the cluster."""
-        descriptions = []
+        """Generate an intelligent description for the cluster."""
+        # Get actual document objects for analysis
+        cluster_docs = self._get_cluster_documents(cluster, all_documents)
         
+        if not cluster_docs:
+            return f"Empty cluster with {len(cluster.documents)} document references"
+        
+        # Generate intelligent theme and description
+        theme_analysis = self._analyze_cluster_theme(cluster_docs, cluster)
+        
+        # Construct meaningful description
+        description_parts = []
+        
+        # Primary theme
+        if theme_analysis["primary_theme"]:
+            description_parts.append(theme_analysis["primary_theme"])
+        
+        # Key characteristics
+        if theme_analysis["characteristics"]:
+            description_parts.append(f"Characteristics: {', '.join(theme_analysis['characteristics'][:3])}")
+        
+        # Document type insights
+        if theme_analysis["document_insights"]:
+            description_parts.append(theme_analysis["document_insights"])
+        
+        # Fallback if no meaningful description found
+        if not description_parts:
+            if cluster.shared_entities:
+                description_parts.append(f"Documents about {', '.join(cluster.shared_entities[:2])}")
+            elif cluster.shared_topics:
+                description_parts.append(f"Related to {', '.join(cluster.shared_topics[:2])}")
+            else:
+                description_parts.append(f"Semantically similar documents")
+        
+        return " | ".join(description_parts)
+    
+    def _get_cluster_documents(self, cluster: DocumentCluster, all_documents: List[SearchResult]) -> List[SearchResult]:
+        """Get actual document objects for a cluster."""
+        doc_lookup = {f"{doc.source_type}:{doc.source_title}": doc for doc in all_documents}
+        cluster_docs = []
+        
+        for doc_id in cluster.documents:
+            if doc_id in doc_lookup:
+                cluster_docs.append(doc_lookup[doc_id])
+        
+        return cluster_docs
+    
+    def _analyze_cluster_theme(self, cluster_docs: List[SearchResult], cluster: DocumentCluster) -> Dict[str, Any]:
+        """Analyze cluster to generate intelligent theme and characteristics."""
+        if not cluster_docs:
+            return {"primary_theme": "", "characteristics": [], "document_insights": ""}
+        
+        # Analyze document patterns
+        source_types = [doc.source_type for doc in cluster_docs]
+        source_type_counts = Counter(source_types)
+        
+        # Analyze titles for common patterns
+        titles = [doc.source_title or "" for doc in cluster_docs if doc.source_title]
+        title_words = []
+        for title in titles:
+            title_words.extend(title.lower().split())
+        
+        common_title_words = [word for word, count in Counter(title_words).most_common(10) 
+                             if len(word) > 3 and word not in {"documentation", "guide", "overview", "introduction", "the", "and", "for", "with"}]
+        
+        # Analyze content patterns
+        has_code = any(getattr(doc, 'has_code_blocks', False) for doc in cluster_docs)
+        # Handle None values for word_count
+        word_counts = [getattr(doc, 'word_count', 0) or 0 for doc in cluster_docs]
+        avg_size = sum(word_counts) / len(word_counts) if word_counts else 0
+        
+        # Generate primary theme
+        primary_theme = self._generate_primary_theme(cluster, common_title_words, source_type_counts)
+        
+        # Generate characteristics
+        characteristics = self._generate_characteristics(cluster_docs, cluster, has_code, avg_size)
+        
+        # Generate document insights
+        document_insights = self._generate_document_insights(cluster_docs, source_type_counts)
+        
+        return {
+            "primary_theme": primary_theme,
+            "characteristics": characteristics,
+            "document_insights": document_insights
+        }
+    
+    def _generate_primary_theme(self, cluster: DocumentCluster, common_words: List[str], source_types: Counter) -> str:
+        """Generate primary theme for the cluster."""
+        # Strategy-based theme generation
+        if cluster.cluster_strategy == ClusteringStrategy.ENTITY_BASED and cluster.shared_entities:
+            entities = [e.title() for e in cluster.shared_entities[:2]]
+            return f"Documents focused on {' and '.join(entities)}"
+        
+        if cluster.cluster_strategy == ClusteringStrategy.TOPIC_BASED and cluster.shared_topics:
+            topics = [t.title() for t in cluster.shared_topics[:2]]
+            return f"Content about {' and '.join(topics)}"
+        
+        if cluster.cluster_strategy == ClusteringStrategy.PROJECT_BASED:
+            most_common_source = source_types.most_common(1)
+            if most_common_source:
+                return f"Project documents from {most_common_source[0][0]} sources"
+        
+        # Content-based theme generation
+        if common_words:
+            if len(common_words) >= 2:
+                return f"Documents about {common_words[0].title()} and {common_words[1].title()}"
+            else:
+                return f"Documents related to {common_words[0].title()}"
+        
+        # Entity/topic fallback
         if cluster.shared_entities:
-            descriptions.append(f"Documents related to {', '.join(cluster.shared_entities[:2])}")
+            return f"Content involving {cluster.shared_entities[0].title()}"
         
         if cluster.shared_topics:
-            descriptions.append(f"Topics: {', '.join(cluster.shared_topics[:2])}")
+            return f"Documents on {cluster.shared_topics[0].title()}"
         
-        descriptions.append(f"Strategy: {cluster.cluster_strategy.value}")
-        descriptions.append(f"{len(cluster.documents)} documents")
+        return "Related document collection"
+    
+    def _generate_characteristics(self, cluster_docs: List[SearchResult], cluster: DocumentCluster, 
+                                has_code: bool, avg_size: float) -> List[str]:
+        """Generate cluster characteristics."""
+        characteristics = []
         
-        return "; ".join(descriptions)
+        # Technical content
+        if has_code:
+            characteristics.append("technical content")
+        
+        # Size characteristics (ensure avg_size is valid)
+        if avg_size and avg_size > 2000:
+            characteristics.append("comprehensive documentation")
+        elif avg_size and avg_size < 500:
+            characteristics.append("concise content")
+        
+        # Entity diversity
+        if len(cluster.shared_entities) > 3:
+            characteristics.append("multi-faceted topics")
+        
+        # Coherence quality
+        if cluster.coherence_score > 0.8:
+            characteristics.append("highly related")
+        elif cluster.coherence_score < 0.5:
+            characteristics.append("loosely connected")
+        
+        # Source diversity
+        source_types = set(doc.source_type for doc in cluster_docs)
+        if len(source_types) > 2:
+            characteristics.append("cross-platform content")
+        
+        return characteristics
+    
+    def _generate_document_insights(self, cluster_docs: List[SearchResult], source_types: Counter) -> str:
+        """Generate insights about document composition."""
+        if not cluster_docs:
+            return ""
+        
+        insights = []
+        
+        # Source composition
+        if len(source_types) == 1:
+            source_name = list(source_types.keys())[0]
+            insights.append(f"All {source_name} documents")
+        elif len(source_types) > 1:
+            main_source = source_types.most_common(1)[0]
+            if main_source[1] > len(cluster_docs) * 0.7:
+                insights.append(f"Primarily {main_source[0]} documents")
+            else:
+                insights.append(f"Mixed sources ({len(source_types)} types)")
+        
+        # Size insights
+        size_category = self._categorize_cluster_size(len(cluster_docs))
+        if size_category in ["large", "very_large"]:
+            insights.append(f"{size_category} cluster")
+        
+        return " | ".join(insights) if insights else ""
+    
+    def _categorize_cluster_size(self, size: int) -> str:
+        """Categorize cluster size."""
+        if size <= 2:
+            return "small"
+        elif size <= 5:
+            return "medium"  
+        elif size <= 10:
+            return "large"
+        else:
+            return "very_large"
 
 
 class CitationNetworkAnalyzer:

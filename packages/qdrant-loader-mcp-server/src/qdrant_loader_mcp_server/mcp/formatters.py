@@ -547,6 +547,102 @@ class MCPFormatters:
         return formatted
 
     @staticmethod
+    def create_lightweight_cluster_results(
+        clustering_results: dict[str, Any], 
+        query: str = ""
+    ) -> dict[str, Any]:
+        """Create lightweight cluster results for lazy loading following hierarchy_search pattern."""
+        
+        clusters = clustering_results.get("clusters", [])
+        metadata = clustering_results.get("clustering_metadata", {})
+        
+        # Create cluster index with minimal data (limit documents per cluster for performance)
+        cluster_index = []
+        total_documents_shown = 0
+        max_docs_per_cluster = 5  # Show only first 5 documents per cluster initially
+        
+        for cluster in clusters:
+            cluster_documents = cluster.get("documents", [])
+            
+            # Create lightweight document entries (only first few per cluster)
+            lightweight_docs = []
+            for doc in cluster_documents[:max_docs_per_cluster]:
+                doc_id = None
+                title = "Untitled"
+                source_type = "unknown"
+                
+                if hasattr(doc, 'document_id'):
+                    doc_id = doc.document_id
+                    title = doc.source_title or doc.get_display_title()
+                    source_type = doc.source_type
+                elif hasattr(doc, 'source_title'):
+                    doc_id = f"{doc.source_type}:{doc.source_title}"
+                    title = doc.source_title
+                    source_type = doc.source_type
+                elif isinstance(doc, dict):
+                    doc_id = doc.get("document_id", "")
+                    title = (doc.get("title") or doc.get("source_title") or 
+                            doc.get("parent_document_title") or "Untitled")
+                    source_type = doc.get("source_type", "unknown")
+                
+                lightweight_docs.append({
+                    "document_id": doc_id,
+                    "title": title,
+                    "source_type": source_type,
+                    "cluster_relevance": 1.0
+                })
+                total_documents_shown += 1
+            
+            # Build cluster info
+            cluster_info = {
+                "cluster_id": cluster.get("id", f"cluster_{len(cluster_index)}"),
+                "cluster_name": cluster.get("name", f"Cluster {len(cluster_index) + 1}"),
+                "cluster_theme": cluster.get("cluster_summary", "Mixed documents"),
+                "document_count": len(cluster_documents),
+                "documents_shown": len(lightweight_docs),
+                "coherence_score": cluster.get("coherence_score", 0.0),
+                "representative_doc_id": cluster.get("representative_doc_id"),
+                "cluster_strategy": cluster.get("cluster_strategy", metadata.get("strategy", "mixed_features")),
+                "quality_metrics": cluster.get("quality_metrics", {}),
+                "documents": lightweight_docs,
+                "cluster_metadata": {
+                    "shared_entities": cluster.get("shared_entities", [])[:5],  # Limit to first 5
+                    "shared_topics": cluster.get("centroid_topics", [])[:5],   # Limit to first 5
+                    "cluster_keywords": cluster.get("cluster_keywords", [])[:5]
+                }
+            }
+            cluster_index.append(cluster_info)
+        
+        # Create enhanced clustering metadata
+        enhanced_metadata = {
+            "strategy": metadata.get("strategy", "mixed_features"),
+            "total_documents": metadata.get("total_documents", 0),
+            "clusters_created": metadata.get("clusters_created", len(clusters)),
+            "unclustered_documents": metadata.get("unclustered_documents", 0),
+            "document_retrieval_rate": metadata.get("document_retrieval_rate", 1.0),
+            "clustering_quality": metadata.get("clustering_quality", 0.0),
+            "processing_time_ms": metadata.get("processing_time_ms", 0),
+            "strategy_performance": metadata.get("strategy_performance", {}),
+            "recommendations": metadata.get("recommendations", {}),
+            "query_metadata": {
+                "search_query": query,
+                "documents_shown": total_documents_shown,
+                "max_docs_per_cluster": max_docs_per_cluster,
+                "lazy_loading_enabled": True
+            }
+        }
+        
+        return {
+            "cluster_index": cluster_index,
+            "clustering_metadata": enhanced_metadata,
+            "expansion_info": {
+                "cluster_expansion_available": True,
+                "document_expansion_available": True,
+                "expansion_instructions": "Use expand_document tool with document_id or expand_cluster with cluster_id for full content"
+            }
+        }
+
+    @staticmethod
     def create_structured_search_results(results: list[HybridSearchResult]) -> list[dict[str, Any]]:
         """Create structured results matching Qdrant document structure."""
         return [
