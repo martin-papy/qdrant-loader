@@ -306,18 +306,44 @@ class MCPFormatters:
             title_1 = doc1_id.split(":", 1)[-1] if ":" in doc1_id else doc1_id
             title_2 = doc2_id.split(":", 1)[-1] if ":" in doc2_id else doc2_id
             
-            # Create rich conflict entry
+            # Extract conflicting statements from structured indicators
+            conflicting_statements = []
+            structured_indicators = conflict_info.get("structured_indicators", [])
+            
+            for indicator in structured_indicators:
+                if isinstance(indicator, dict) and "doc1_snippet" in indicator and "doc2_snippet" in indicator:
+                    conflicting_statements.append({
+                        "from_doc1": indicator["doc1_snippet"],
+                        "from_doc2": indicator["doc2_snippet"]
+                    })
+            
+            # If no structured indicators, try to extract from basic indicators
+            if not conflicting_statements and conflict_info.get("indicators"):
+                # Fallback: create generic conflicting statements
+                indicators = conflict_info.get("indicators", [])
+                if indicators:
+                    conflicting_statements.append({
+                        "from_doc1": f"Document contains: {indicators[0] if indicators else 'conflicting information'}",
+                        "from_doc2": f"Document contains: {indicators[1] if len(indicators) > 1 else 'different information'}"
+                    })
+            
+            # Create rich conflict entry with comprehensive information
             conflict_entry = {
                 "conflict_id": conflict_id,
                 "document_1_id": doc1_id,
                 "document_2_id": doc2_id,
                 "conflict_type": conflict_info.get("type", "unknown"),
-                "confidence_score": conflict_info.get("confidence", 0.0),
+                "confidence_score": round(conflict_info.get("confidence", 0.0), 3),
                 "title_1": title_1[:100] + "..." if len(title_1) > 100 else title_1,
                 "title_2": title_2[:100] + "..." if len(title_2) > 100 else title_2,
                 "summary": conflict_info.get("description", "Potential conflict detected"),
+                "detailed_description": conflict_info.get("description", "Documents contain contradictory or inconsistent information"),
+                "resolution_suggestion": MCPFormatters._generate_conflict_resolution_suggestion(conflict_info),
                 "conflict_indicators": conflict_info.get("indicators", []),
-                "analysis_tier": conflict_info.get("analysis_tier", "unknown")
+                "conflicting_statements": conflicting_statements,
+                "analysis_tier": conflict_info.get("analysis_tier", "unknown"),
+                "tier_score": round(conflict_info.get("tier_score", 0.0), 3),
+                "affected_sections": MCPFormatters._extract_affected_sections(conflict_info)
             }
             
             conflict_index.append(conflict_entry)
@@ -1040,4 +1066,56 @@ class MCPFormatters:
             
             return f"{category} ({source})"
         
-        return group_key.title() 
+        return group_key.title()
+
+    @staticmethod
+    def _generate_conflict_resolution_suggestion(conflict_info: dict) -> str:
+        """Generate a resolution suggestion based on conflict type and information."""
+        conflict_type = conflict_info.get("type", "unknown")
+        
+        if conflict_type == "version_conflict":
+            return "Review documents for version consistency and update outdated information"
+        elif conflict_type == "contradictory_guidance":
+            return "Reconcile contradictory guidance by consulting authoritative sources or stakeholders"
+        elif conflict_type == "procedural_conflict":
+            return "Establish a single, authoritative procedure and deprecate conflicting processes"
+        elif conflict_type == "requirement_conflict":
+            return "Clarify requirements with stakeholders and update documentation to resolve ambiguity"
+        elif conflict_type == "implementation_conflict":
+            return "Review implementation approaches and standardize on the preferred solution"
+        else:
+            return "Review conflicting information and establish a single source of truth"
+
+    @staticmethod
+    def _extract_affected_sections(conflict_info: dict) -> list:
+        """Extract affected sections from conflict information."""
+        affected_sections = []
+        
+        # Try to identify sections from structured indicators
+        structured_indicators = conflict_info.get("structured_indicators", [])
+        for indicator in structured_indicators:
+            if isinstance(indicator, dict):
+                # Look for section keywords in the snippets
+                doc1_snippet = indicator.get("doc1_snippet", "")
+                doc2_snippet = indicator.get("doc2_snippet", "")
+                
+                sections = set()
+                for snippet in [doc1_snippet, doc2_snippet]:
+                    # Common section patterns
+                    if "introduction" in snippet.lower():
+                        sections.add("Introduction")
+                    elif "requirement" in snippet.lower():
+                        sections.add("Requirements")
+                    elif "procedure" in snippet.lower() or "process" in snippet.lower():
+                        sections.add("Procedures")
+                    elif "implementation" in snippet.lower():
+                        sections.add("Implementation")
+                    elif "configuration" in snippet.lower() or "config" in snippet.lower():
+                        sections.add("Configuration")
+                    elif "guideline" in snippet.lower() or "guide" in snippet.lower():
+                        sections.add("Guidelines")
+                
+                affected_sections.extend(list(sections))
+        
+        # Remove duplicates and return
+        return list(set(affected_sections)) if affected_sections else ["Content"] 

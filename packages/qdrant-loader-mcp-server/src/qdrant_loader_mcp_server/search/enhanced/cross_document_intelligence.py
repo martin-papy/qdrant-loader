@@ -16,6 +16,9 @@ Key Features:
 """
 import time
 import warnings
+import numpy as np
+import re
+import asyncio
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -23,6 +26,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
+from qdrant_client import AsyncQdrantClient
+from openai import AsyncOpenAI
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
@@ -1368,54 +1373,284 @@ class ComplementaryContentFinder:
 
 
 class ConflictDetector:
-    """Detects conflicting information between documents."""
+    """Enhanced conflict detector using vector similarity and LLM validation."""
     
-    def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer):
-        """Initialize the conflict detector."""
+    def __init__(
+        self, 
+        spacy_analyzer: SpaCyQueryAnalyzer,
+        qdrant_client: Optional[AsyncQdrantClient] = None,
+        openai_client: Optional[AsyncOpenAI] = None,
+        collection_name: str = "documents"
+    ):
+        """Initialize the enhanced conflict detector.
+        
+        Args:
+            spacy_analyzer: SpaCy analyzer for text processing
+            qdrant_client: Qdrant client for vector operations
+            openai_client: OpenAI client for LLM analysis
+            collection_name: Qdrant collection name
+        """
         self.spacy_analyzer = spacy_analyzer
+        self.qdrant_client = qdrant_client
+        self.openai_client = openai_client
+        self.collection_name = collection_name
         self.logger = LoggingConfig.get_logger(__name__)
         
-    def detect_conflicts(self, documents: List[SearchResult]) -> ConflictAnalysis:
+        # Vector similarity thresholds
+        self.MIN_VECTOR_SIMILARITY = 0.6  # Minimum similarity to consider for conflict analysis
+        self.MAX_VECTOR_SIMILARITY = 0.95  # Maximum similarity - too similar suggests same content
+        
+        # LLM validation settings
+        self.llm_enabled = qdrant_client is not None and openai_client is not None
+
+    async def _get_document_embeddings(self, document_ids: List[str]) -> Dict[str, List[float]]:
+        """Retrieve document embeddings from Qdrant."""
+        if not self.qdrant_client:
+            return {}
+        
+        try:
+            embeddings = {}
+            # Add timeout for vector retrieval
+            for doc_id in document_ids:
+                try:
+                    # Retrieve the document point from Qdrant with timeout
+                    result = await asyncio.wait_for(
+                        self.qdrant_client.retrieve(
+                            collection_name=self.collection_name,
+                            ids=[doc_id]
+                        ),
+                        timeout=5.0  # 5 second timeout per document
+                    )
+                    if result and len(result) > 0:
+                        # Extract dense vector embedding
+                        vector = result[0].vector
+                        if isinstance(vector, dict) and "dense" in vector:
+                            embeddings[doc_id] = vector["dense"]
+                        elif isinstance(vector, list):
+                            embeddings[doc_id] = vector
+                except asyncio.TimeoutError:
+                    self.logger.warning(f"Timeout retrieving embedding for document {doc_id}")
+                    continue
+                        
+            return embeddings
+        except Exception as e:
+            self.logger.warning(f"Failed to retrieve embeddings: {e}")
+            return {}
+
+    def _calculate_vector_similarity(self, embedding1: List[float], embedding2: List[float]) -> float:
+        """Calculate cosine similarity between two embeddings."""
+        try:
+            # Convert to numpy arrays
+            vec1 = np.array(embedding1)
+            vec2 = np.array(embedding2)
+            
+            # Calculate cosine similarity
+            dot_product = np.dot(vec1, vec2)
+            magnitude1 = np.linalg.norm(vec1)
+            magnitude2 = np.linalg.norm(vec2)
+            
+            if magnitude1 == 0 or magnitude2 == 0:
+                return 0.0
+                
+            similarity = dot_product / (magnitude1 * magnitude2)
+            return float(similarity)
+            
+        except Exception as e:
+            self.logger.warning(f"Failed to calculate vector similarity: {e}")
+            return 0.0
+
+    async def _filter_by_vector_similarity(self, documents: List[SearchResult]) -> List[Tuple[SearchResult, SearchResult, float]]:
+        """Filter document pairs by vector similarity for conflict analysis."""
+        if not self.qdrant_client:
+            # Fall back to all pairs if no vector capabilities
+            return [(doc1, doc2, 0.7) for i, doc1 in enumerate(documents) 
+                   for j, doc2 in enumerate(documents[i+1:], i+1)]
+        
+        # Get embeddings for all documents
+        document_ids = [doc.document_id for doc in documents if doc.document_id]
+        embeddings = await self._get_document_embeddings(document_ids)
+        
+        if not embeddings:
+            self.logger.warning("No embeddings retrieved, falling back to traditional analysis")
+            return [(doc1, doc2, 0.7) for i, doc1 in enumerate(documents) 
+                   for j, doc2 in enumerate(documents[i+1:], i+1)]
+        
+        # Calculate similarities and filter
+        candidate_pairs = []
+        for i, doc1 in enumerate(documents):
+            if not doc1.document_id or doc1.document_id not in embeddings:
+                continue
+                
+            for j, doc2 in enumerate(documents[i+1:], i+1):
+                if not doc2.document_id or doc2.document_id not in embeddings:
+                    continue
+                
+                similarity = self._calculate_vector_similarity(
+                    embeddings[doc1.document_id],
+                    embeddings[doc2.document_id]
+                )
+                
+                # Filter by similarity range - similar enough to be related, 
+                # but not so similar they're identical
+                if self.MIN_VECTOR_SIMILARITY <= similarity <= self.MAX_VECTOR_SIMILARITY:
+                    candidate_pairs.append((doc1, doc2, similarity))
+        
+        # Sort by similarity (highest first) and limit to top candidates
+        candidate_pairs.sort(key=lambda x: x[2], reverse=True)
+        max_pairs = min(10, len(candidate_pairs))  # Limit to 10 most similar pairs for performance
+        
+        self.logger.info(f"Vector filtering: {len(candidate_pairs)} candidate pairs from {len(documents)} documents")
+        return candidate_pairs[:max_pairs]
+
+    async def _get_tiered_analysis_pairs(self, documents: List[SearchResult]) -> List[Tuple[SearchResult, SearchResult, str, float]]:
+        """Get document pairs using tiered analysis strategy for broader coverage."""
+        all_pairs = []
+        primary_pairs = []
+        secondary_pairs = []
+        tertiary_pairs = []
+        fallback_pairs = []
+        
+        # Get document embeddings for semantic similarity if available
+        document_embeddings = {}
+        if self.qdrant_client:
+            document_ids = [doc.document_id for doc in documents if doc.document_id]
+            document_embeddings = await self._get_document_embeddings(document_ids)
+        
+        # Generate all possible pairs and categorize them
+        for i, doc1 in enumerate(documents):
+            for j, doc2 in enumerate(documents[i+1:], i+1):
+                # Tier 1: Primary Analysis - Same project + shared entities/topics
+                if self._is_primary_analysis_candidate(doc1, doc2):
+                    score = 1.0  # Highest priority
+                    primary_pairs.append((doc1, doc2, "primary", score))
+                    continue
+                
+                # Tier 2: Secondary Analysis - Semantic similarity
+                semantic_score = self._calculate_semantic_similarity_score(doc1, doc2, document_embeddings)
+                if semantic_score > 0.7:
+                    secondary_pairs.append((doc1, doc2, "secondary", semantic_score))
+                    continue
+                
+                # Tier 3: Tertiary Analysis - Content overlap
+                if self._is_secondary_analysis_candidate(doc1, doc2):
+                    score = 0.6  # Medium priority
+                    tertiary_pairs.append((doc1, doc2, "tertiary", score))
+                    continue
+                
+                # Tier 4: Fallback Analysis - Basic text similarity
+                if self._is_tertiary_analysis_candidate(doc1, doc2):
+                    score = 0.3  # Lower priority
+                    fallback_pairs.append((doc1, doc2, "fallback", score))
+        
+        # Prioritize and limit pairs for performance
+        # Sort secondary pairs by semantic similarity (highest first)
+        secondary_pairs.sort(key=lambda x: x[3], reverse=True)
+        
+        # Combine tiers with limits to ensure reasonable performance
+        max_primary = 50    # Analyze all high-priority pairs
+        max_secondary = 30  # Top semantic similarity pairs
+        max_tertiary = 20   # Some content overlap pairs
+        max_fallback = 10   # Few fallback pairs for coverage
+        
+        all_pairs.extend(primary_pairs[:max_primary])
+        all_pairs.extend(secondary_pairs[:max_secondary])
+        all_pairs.extend(tertiary_pairs[:max_tertiary])
+        all_pairs.extend(fallback_pairs[:max_fallback])
+        
+        # Randomize within each tier to avoid bias towards document order
+        import random
+        if len(primary_pairs) > max_primary:
+            random.shuffle(primary_pairs)
+        if len(tertiary_pairs) > max_tertiary:
+            random.shuffle(tertiary_pairs)
+        if len(fallback_pairs) > max_fallback:
+            random.shuffle(fallback_pairs)
+        
+        self.logger.info(f"Tiered analysis: {len(primary_pairs)} primary, {len(secondary_pairs)} secondary, "
+                        f"{len(tertiary_pairs)} tertiary, {len(fallback_pairs)} fallback pairs. "
+                        f"Selected {len(all_pairs)} pairs for analysis.")
+        
+        return all_pairs
+
+    def _calculate_semantic_similarity_score(self, doc1: SearchResult, doc2: SearchResult, 
+                                           embeddings: Dict[str, List[float]]) -> float:
+        """Calculate semantic similarity score between two documents."""
+        # Try vector similarity first if embeddings are available
+        if (doc1.document_id in embeddings and doc2.document_id in embeddings):
+            vector_sim = self._calculate_vector_similarity(
+                embeddings[doc1.document_id], 
+                embeddings[doc2.document_id]
+            )
+            return vector_sim
+        
+        # Fallback to text-based similarity
+        return self._calculate_text_similarity(doc1, doc2)
+
+    def _calculate_text_similarity(self, doc1: SearchResult, doc2: SearchResult) -> float:
+        """Calculate text-based similarity as fallback when vectors aren't available."""
+        # Simple TF-IDF-like approach
+        words1 = set(doc1.text.lower().split())
+        words2 = set(doc2.text.lower().split())
+        
+        # Remove common stop words
+        stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being'}
+        words1 = words1 - stop_words
+        words2 = words2 - stop_words
+        
+        if not words1 or not words2:
+            return 0.0
+            
+        # Calculate Jaccard similarity
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        if union == 0:
+            return 0.0
+            
+        return intersection / union
+
+    async def detect_conflicts(self, documents: List[SearchResult]) -> ConflictAnalysis:
         """Detect conflicts between documents using tiered analysis strategy."""
         start_time = time.time()
         
         conflicts = ConflictAnalysis()
         
-        # Tiered analysis approach for better coverage
-        document_pairs = []
+        # Implement tiered conflict analysis strategy for broader coverage
+        candidate_pairs = await self._get_tiered_analysis_pairs(documents)
         
-        # Tier 1: Primary analysis - same project + shared entities/topics
-        primary_pairs = []
-        # Tier 2: Secondary analysis - semantic similarity 
-        secondary_pairs = []
-        # Tier 3: Tertiary analysis - content overlap
-        tertiary_pairs = []
-        
-        for i in range(len(documents)):
-            for j in range(i + 1, len(documents)):
-                doc1, doc2 = documents[i], documents[j]
-                
-                # Categorize pair by analysis tier
-                if self._is_primary_analysis_candidate(doc1, doc2):
-                    primary_pairs.append((doc1, doc2, "primary"))
-                elif self._is_secondary_analysis_candidate(doc1, doc2):
-                    secondary_pairs.append((doc1, doc2, "secondary"))
-                elif self._is_tertiary_analysis_candidate(doc1, doc2):
-                    tertiary_pairs.append((doc1, doc2, "tertiary"))
-        
-        # Analyze pairs in priority order
-        all_pairs = primary_pairs + secondary_pairs + tertiary_pairs
         analyzed_count = 0
+        conflicts_found = 0
+        max_conflicts = 20  # Limit to prevent performance issues
         
-        for doc1, doc2, tier in all_pairs:
-            conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
+        for doc1, doc2, analysis_tier, tier_score in candidate_pairs:
+            # Stop if we've found enough conflicts
+            if conflicts_found >= max_conflicts:
+                break
+                
+            # Try LLM-based conflict detection first, with fallback
+            conflict_info = None
+            if self.llm_enabled and analysis_tier in ["primary", "secondary"]:
+                try:
+                    conflict_info = await asyncio.wait_for(
+                        self._llm_analyze_conflicts(doc1, doc2, tier_score),
+                        timeout=35.0  # Total timeout including API call
+                    )
+                except (asyncio.TimeoutError, Exception) as e:
+                    self.logger.warning(f"LLM analysis failed or timed out: {e}, falling back to word-based analysis")
+                    conflict_info = None
+            
+            # Fallback to traditional analysis if LLM failed or not enabled for this tier
+            if conflict_info is None:
+                conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
+            
             if conflict_info:
                 # Use document_id if available, fallback to title-based ID for backward compatibility
                 doc1_id = doc1.document_id or f"{doc1.source_type}:{doc1.source_title}"
                 doc2_id = doc2.document_id or f"{doc2.source_type}:{doc2.source_title}"
                 
-                # Enhance conflict info with analysis tier
-                conflict_info["analysis_tier"] = tier
+                # Enhance conflict info with analysis tier information
+                conflict_info["tier_score"] = tier_score
+                conflict_info["analysis_tier"] = analysis_tier
                 conflicts.conflicting_pairs.append((doc1_id, doc2_id, conflict_info))
                 
                 # Categorize conflict
@@ -1423,6 +1658,8 @@ class ConflictDetector:
                 if conflict_type not in conflicts.conflict_categories:
                     conflicts.conflict_categories[conflict_type] = []
                 conflicts.conflict_categories[conflict_type].append((doc1_id, doc2_id))
+                
+                conflicts_found += 1
             
             analyzed_count += 1
         
@@ -1430,11 +1667,127 @@ class ConflictDetector:
         conflicts.resolution_suggestions = self._generate_resolution_suggestions(conflicts)
         
         processing_time = (time.time() - start_time) * 1000
-        self.logger.info(f"Detected {len(conflicts.conflicting_pairs)} conflicts from {analyzed_count} pairs "
-                        f"(Primary: {len(primary_pairs)}, Secondary: {len(secondary_pairs)}, "
-                        f"Tertiary: {len(tertiary_pairs)}) in {processing_time:.2f}ms")
+        self.logger.info(f"Detected {conflicts_found} conflicts from {analyzed_count} tiered analysis pairs "
+                        f"(from {len(candidate_pairs)} total candidates) in {processing_time:.2f}ms")
         
         return conflicts
+
+    async def _llm_analyze_conflicts(self, doc1: SearchResult, doc2: SearchResult, vector_similarity: float) -> Optional[Dict[str, Any]]:
+        """Use LLM to analyze potential conflicts between two documents."""
+        if not self.openai_client:
+            return None
+            
+        try:
+            # Prepare the prompt for conflict analysis
+            prompt = f"""
+Analyze these two documents for potential conflicts, contradictions, or inconsistencies:
+
+DOCUMENT 1:
+Title: {doc1.source_title}
+Content: {doc1.text[:2000]}...
+
+DOCUMENT 2:
+Title: {doc2.source_title} 
+Content: {doc2.text[:2000]}...
+
+Vector Similarity Score: {vector_similarity:.3f}
+
+Please identify:
+1. Any contradictory statements, guidance, or recommendations
+2. Conflicting timelines, versions, or specifications
+3. Inconsistent requirements or approaches to the same problem
+4. Different answers to the same question
+
+For each conflict found, provide:
+- Type of conflict (guidance_conflict, version_conflict, requirement_conflict, etc.)
+- Specific quotes from each document that conflict
+- Confidence score (0.0-1.0)
+- Brief explanation of the conflict
+
+Return your analysis in JSON format:
+{{
+    "has_conflicts": true/false,
+    "conflicts": [
+        {{
+            "type": "conflict_type",
+            "confidence": 0.0-1.0,
+            "doc1_snippet": "exact quote from document 1",
+            "doc2_snippet": "exact quote from document 2", 
+            "explanation": "brief explanation"
+        }}
+    ]
+}}
+
+If no significant conflicts are found, return {{"has_conflicts": false, "conflicts": []}}.
+"""
+
+            # Add timeout to prevent hanging
+            response = await asyncio.wait_for(
+                self.openai_client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are an expert document analyst specialized in identifying conflicts and contradictions between documents."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.1,
+                    max_tokens=1500
+                ),
+                timeout=30.0  # 30 second timeout
+            )
+            
+            result_text = response.choices[0].message.content.strip()
+            
+            # Try to parse JSON response
+            import json
+            try:
+                result = json.loads(result_text)
+            except json.JSONDecodeError:
+                # Fallback: try to extract JSON from the response
+                import re
+                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                if json_match:
+                    result = json.loads(json_match.group())
+                else:
+                    self.logger.warning("Failed to parse LLM response as JSON")
+                    return None
+            
+            if not result.get("has_conflicts", False):
+                return None
+                
+            # Convert LLM result to our conflict format
+            conflicts = result.get("conflicts", [])
+            if not conflicts:
+                return None
+                
+            # Use the first/strongest conflict
+            primary_conflict = conflicts[0]
+            
+            # Create structured indicators for compatibility
+            structured_indicators = []
+            for conflict in conflicts:
+                structured_indicators.append({
+                    "type": conflict.get("type", "llm_detected_conflict"),
+                    "doc1_snippet": conflict.get("doc1_snippet", "[LLM analysis]"),
+                    "doc2_snippet": conflict.get("doc2_snippet", "[LLM analysis]"),
+                    "summary": conflict.get("explanation", "LLM detected conflict"),
+                    "confidence": conflict.get("confidence", 0.7)
+                })
+            
+            return {
+                "type": primary_conflict.get("type", "llm_detected_conflict"),
+                "indicators": [conflict.get("explanation", "LLM detected conflict") for conflict in conflicts],
+                "structured_indicators": structured_indicators,
+                "confidence": primary_conflict.get("confidence", 0.7),
+                "description": primary_conflict.get("explanation", "LLM detected conflict"),
+                "analysis_method": "llm_validation"
+            }
+            
+        except asyncio.TimeoutError:
+            self.logger.warning("LLM conflict analysis timed out")
+            return None
+        except Exception as e:
+            self.logger.warning(f"LLM conflict analysis failed: {e}")
+            return None
     
     def _analyze_document_pair_for_conflicts(self, doc1: SearchResult, 
                                            doc2: SearchResult) -> Optional[Dict[str, Any]]:
@@ -1475,34 +1828,24 @@ class ConflictDetector:
         return None
     
     def _should_analyze_for_conflicts(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Determine if two documents should be analyzed for conflicts."""
-        # Same project
-        if doc1.project_id and doc2.project_id and doc1.project_id == doc2.project_id:
-            return True
+        """Determine if two documents should be analyzed for conflicts.
         
-        # Shared entities
-        entities1 = self._extract_entity_texts(doc1.entities)
-        entities2 = self._extract_entity_texts(doc2.entities)
-        if len(set(entities1) & set(entities2)) > 0:
-            return True
+        Note: This method is now more permissive since tiered analysis handles prioritization.
+        The tiered approach ensures we analyze the most promising pairs first while still
+        providing broader coverage than the old restrictive approach.
+        """
+        # Basic validation - skip obviously irrelevant pairs
+        # Skip if documents are too short to have meaningful conflicts
+        if (not doc1.text or not doc2.text or 
+            len(doc1.text.strip()) < 50 or len(doc2.text.strip()) < 50):
+            return False
         
-        # Shared topics
-        topics1 = self._extract_topic_texts(doc1.topics)
-        topics2 = self._extract_topic_texts(doc2.topics)
-        if len(set(topics1) & set(topics2)) > 0:
-            return True
+        # Skip if documents are identical
+        if doc1.text == doc2.text:
+            return False
         
-        # Both documents from same source type and seem related by content
-        if (doc1.source_type == doc2.source_type and 
-            self._have_content_overlap(doc1, doc2)):
-            return True
-        
-        # Documents with similar titles or content themes
-        if self._have_semantic_similarity(doc1, doc2):
-            return True
-        
-        # If documents came from the same search query, they're likely semantically related
-        # Always analyze at least some pairs to avoid completely empty results
+        # With tiered analysis, we can be more permissive here
+        # The tiering logic will prioritize the most promising pairs
         return True
     
     def _is_primary_analysis_candidate(self, doc1: SearchResult, doc2: SearchResult) -> bool:
@@ -1911,10 +2254,16 @@ class CrossDocumentIntelligenceEngine:
     """Main engine that orchestrates cross-document intelligence analysis."""
     
     def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer, 
-                 knowledge_graph: Optional[DocumentKnowledgeGraph] = None):
+                 knowledge_graph: Optional[DocumentKnowledgeGraph] = None,
+                 qdrant_client: Optional[AsyncQdrantClient] = None,
+                 openai_client: Optional[AsyncOpenAI] = None,
+                 collection_name: str = "documents"):
         """Initialize the cross-document intelligence engine."""
         self.spacy_analyzer = spacy_analyzer
         self.knowledge_graph = knowledge_graph
+        self.qdrant_client = qdrant_client
+        self.openai_client = openai_client
+        self.collection_name = collection_name
         self.logger = LoggingConfig.get_logger(__name__)
         
         # Initialize component analyzers
@@ -1922,7 +2271,12 @@ class CrossDocumentIntelligenceEngine:
         self.cluster_analyzer = DocumentClusterAnalyzer(self.similarity_calculator)
         self.citation_analyzer = CitationNetworkAnalyzer()
         self.complementary_finder = ComplementaryContentFinder(self.similarity_calculator, knowledge_graph)
-        self.conflict_detector = ConflictDetector(spacy_analyzer)
+        self.conflict_detector = ConflictDetector(
+            spacy_analyzer,
+            qdrant_client,
+            openai_client,
+            collection_name
+        )
         
     def analyze_document_relationships(self, documents: List[HybridSearchResult]) -> Dict[str, Any]:
         """Lightweight relationship analysis focusing on essential relationships."""

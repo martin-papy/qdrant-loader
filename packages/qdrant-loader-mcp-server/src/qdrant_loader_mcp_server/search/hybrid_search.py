@@ -161,7 +161,10 @@ class HybridSearchEngine:
         # Cross-document intelligence
         self.cross_document_engine = CrossDocumentIntelligenceEngine(
             self.spacy_analyzer,
-            self.knowledge_graph
+            self.knowledge_graph,
+            self.qdrant_client,
+            self.openai_client,
+            self.collection_name
         )
         logger.info("Cross-document intelligence ENABLED")
 
@@ -559,7 +562,7 @@ class HybridSearchEngine:
     ) -> dict[str, Any]:
         """Detect conflicts between documents."""
         try:
-            conflict_analysis = self.cross_document_engine.conflict_detector.detect_conflicts(documents)
+            conflict_analysis = await self.cross_document_engine.conflict_detector.detect_conflicts(documents)
             return {
                 "conflicting_pairs": conflict_analysis.conflicting_pairs,
                 "conflict_categories": conflict_analysis.conflict_categories,

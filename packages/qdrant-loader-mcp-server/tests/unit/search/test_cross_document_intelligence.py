@@ -406,32 +406,35 @@ class TestConflictDetector:
         """Create a ConflictDetector instance."""
         return ConflictDetector(mock_spacy_analyzer)
 
-    def test_detect_conflicts(self, conflict_detector):
+    @pytest.mark.asyncio
+    async def test_detect_conflicts(self, conflict_detector):
         """Test detection of conflicts between documents."""
         docs = create_conflicting_docs()  # Contains conflicting token expiry policies
         
-        conflicts = conflict_detector.detect_conflicts(docs)
+        conflicts = await conflict_detector.detect_conflicts(docs)
         
         # Use the correct way to access total conflicts
         conflict_summary = conflicts.get_conflict_summary()
         assert conflict_summary["total_conflicts"] >= 0
         assert len(conflicts.conflicting_pairs) >= 0
 
-    def test_no_conflicts_in_consistent_docs(self, conflict_detector):
+    @pytest.mark.asyncio
+    async def test_no_conflicts_in_consistent_docs(self, conflict_detector):
         """Test that no conflicts are detected in consistent documents."""
         docs = create_authentication_docs()  # Consistent documents
         
-        conflicts = conflict_detector.detect_conflicts(docs)
+        conflicts = await conflict_detector.detect_conflicts(docs)
         
         # Should have minimal or no conflicts
         conflict_summary = conflicts.get_conflict_summary()
         assert conflict_summary["total_conflicts"] >= 0
 
-    def test_conflict_confidence_scoring(self, conflict_detector):
+    @pytest.mark.asyncio
+    async def test_conflict_confidence_scoring(self, conflict_detector):
         """Test confidence scoring for detected conflicts."""
         docs = create_conflicting_docs()
         
-        conflicts = conflict_detector.detect_conflicts(docs)
+        conflicts = await conflict_detector.detect_conflicts(docs)
         
         for doc1_id, doc2_id, conflict_info in conflicts.conflicting_pairs:
             confidence = conflict_info.get("confidence", 0)
