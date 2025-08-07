@@ -123,7 +123,7 @@ class TestCrossDocumentIntelligenceIntegration:
         docs = create_conflicting_docs()
         
         conflict_detector = ConflictDetector(intelligence_engine.spacy_analyzer)
-        conflicts = conflict_detector.detect_conflicts(docs)
+        conflicts = await conflict_detector.detect_conflicts(docs)
         
         # Should detect conflicts appropriately
         conflict_summary = conflicts.get_conflict_summary()
@@ -356,7 +356,7 @@ class TestCrossDocumentIntelligenceIntegration:
         
         async def run_conflict_analysis():
             conflict_detector = ConflictDetector(intelligence_engine.spacy_analyzer)
-            return conflict_detector.detect_conflicts(create_conflicting_docs())
+            return await conflict_detector.detect_conflicts(create_conflicting_docs())
         
         # Run tasks concurrently
         start_time = time.time()
