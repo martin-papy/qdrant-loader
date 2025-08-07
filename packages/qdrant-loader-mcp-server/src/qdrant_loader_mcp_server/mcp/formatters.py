@@ -286,6 +286,178 @@ class MCPFormatters:
         return formatted
 
     @staticmethod
+    def create_lightweight_conflict_results(
+        conflicts: dict[str, Any], 
+        query: str = "",
+        documents: list = None
+    ) -> dict[str, Any]:
+        """Create lightweight conflict results for fast navigation and lazy loading."""
+        
+        conflicting_pairs = conflicts.get("conflicting_pairs", [])
+        
+        # Create conflict index with comprehensive information
+        conflict_index = []
+        involved_document_ids = set()
+        
+        for i, (doc1_id, doc2_id, conflict_info) in enumerate(conflicting_pairs):
+            conflict_id = f"conf_{i+1:03d}"
+            
+            # Extract document titles from IDs or use the IDs themselves
+            title_1 = doc1_id.split(":", 1)[-1] if ":" in doc1_id else doc1_id
+            title_2 = doc2_id.split(":", 1)[-1] if ":" in doc2_id else doc2_id
+            
+            # Create rich conflict entry
+            conflict_entry = {
+                "conflict_id": conflict_id,
+                "document_1_id": doc1_id,
+                "document_2_id": doc2_id,
+                "conflict_type": conflict_info.get("type", "unknown"),
+                "confidence_score": conflict_info.get("confidence", 0.0),
+                "title_1": title_1[:100] + "..." if len(title_1) > 100 else title_1,
+                "title_2": title_2[:100] + "..." if len(title_2) > 100 else title_2,
+                "summary": conflict_info.get("description", "Potential conflict detected"),
+                "conflict_indicators": conflict_info.get("indicators", []),
+                "analysis_tier": conflict_info.get("analysis_tier", "unknown")
+            }
+            
+            conflict_index.append(conflict_entry)
+            involved_document_ids.add(doc1_id)
+            involved_document_ids.add(doc2_id)
+        
+        # Create document index for involved documents
+        document_index = []
+        if documents:
+            # Create a lookup for document details
+            doc_lookup = {}
+            for doc in documents:
+                doc_id = doc.document_id or f"{doc.source_type}:{doc.source_title}"
+                doc_lookup[doc_id] = doc
+            
+            # Build document index for involved documents
+            for doc_id in involved_document_ids:
+                if doc_id in doc_lookup:
+                    doc = doc_lookup[doc_id]
+                    document_index.append({
+                        "document_id": doc_id,
+                        "title": doc.source_title or "Untitled",
+                        "source_type": doc.source_type,
+                        "text_length": len(doc.text) if doc.text else 0,
+                        "conflict_count": sum(1 for conflict in conflict_index 
+                                             if conflict["document_1_id"] == doc_id or conflict["document_2_id"] == doc_id),
+                        "last_modified": doc.last_modified if hasattr(doc, 'last_modified') else None
+                    })
+                else:
+                    # Fallback for documents not in the lookup
+                    document_index.append({
+                        "document_id": doc_id,
+                        "title": doc_id.split(":", 1)[-1] if ":" in doc_id else doc_id,
+                        "source_type": doc_id.split(":", 1)[0] if ":" in doc_id else "unknown",
+                        "text_length": 0,
+                        "conflict_count": sum(1 for conflict in conflict_index 
+                                             if conflict["document_1_id"] == doc_id or conflict["document_2_id"] == doc_id),
+                        "last_modified": None
+                    })
+        
+        # Create conflict summary
+        conflict_types = {}
+        for conflict in conflict_index:
+            conflict_type = conflict["conflict_type"]
+            conflict_types[conflict_type] = conflict_types.get(conflict_type, 0) + 1
+        
+        conflict_summary = {
+            "total_documents_analyzed": conflicts.get("query_metadata", {}).get("document_count", 0),
+            "documents_with_conflicts": len(involved_document_ids),
+            "total_conflicts_found": len(conflict_index),
+            "conflict_types": conflict_types,
+            "highest_confidence_score": max([c["confidence_score"] for c in conflict_index], default=0.0)
+        }
+        
+        # Analysis metadata
+        analysis_metadata = conflicts.get("query_metadata", {})
+        analysis_metadata.update({
+            "analysis_strategy": "tiered_analysis",
+            "response_type": "lightweight"
+        })
+        
+        # Convert conflict_index to the expected schema format
+        conflicts_detected = []
+        for conflict in conflict_index:
+            # Find document details for the conflicting documents
+            doc1_info = next((doc for doc in document_index if doc["document_id"] == conflict["document_1_id"]), None)
+            doc2_info = next((doc for doc in document_index if doc["document_id"] == conflict["document_2_id"]), None)
+            
+            conflicts_detected.append({
+                "conflict_id": conflict["conflict_id"],
+                "document_1": {
+                    "title": doc1_info["title"] if doc1_info else conflict["title_1"],
+                    "content_preview": "",  # Can be populated if needed
+                    "source_type": doc1_info["source_type"] if doc1_info else "unknown",
+                    "document_id": conflict["document_1_id"]  # Add this for expand_document compatibility
+                },
+                "document_2": {
+                    "title": doc2_info["title"] if doc2_info else conflict["title_2"],
+                    "content_preview": "",  # Can be populated if needed
+                    "source_type": doc2_info["source_type"] if doc2_info else "unknown",
+                    "document_id": conflict["document_2_id"]  # Add this for expand_document compatibility
+                },
+                "conflict_type": conflict["conflict_type"],
+                "conflict_score": conflict["confidence_score"],
+                "conflict_description": conflict["summary"],
+                "conflicting_statements": MCPFormatters._extract_conflicting_statements(conflict_info),
+                "analysis_tier": conflict["analysis_tier"]  # Keep our enhancement
+            })
+        
+        # Update conflict summary to match expected format
+        updated_conflict_summary = {
+            "total_documents_analyzed": conflict_summary["total_documents_analyzed"],
+            "conflicts_found": conflict_summary["total_conflicts_found"],
+            "conflict_types": list(conflict_summary["conflict_types"].keys()),
+            "highest_conflict_score": conflict_summary["highest_confidence_score"]
+        }
+        
+        return {
+            "conflicts_detected": conflicts_detected,
+            "conflict_summary": updated_conflict_summary,
+            "analysis_metadata": analysis_metadata,
+            "document_index": document_index,  # Keep for our enhancement
+            "navigation": {
+                "total_conflicts": len(conflict_index),
+                "max_displayed": len(conflict_index),
+                "can_expand_documents": True,
+                "expand_tool": "expand_document"
+            }
+        }
+
+    @staticmethod
+    def _extract_conflicting_statements(conflict_info: dict[str, Any]) -> list[dict[str, str]]:
+        """Extract actual conflicting statements from structured conflict data."""
+        statements = []
+        
+        # Check if we have new structured indicators
+        structured_indicators = conflict_info.get("structured_indicators", [])
+        
+        if structured_indicators:
+            # Use the new structured data with actual text snippets
+            for indicator in structured_indicators[:3]:  # Limit to 3 for brevity
+                doc1_snippet = indicator.get("doc1_snippet", "[Content not available]")
+                doc2_snippet = indicator.get("doc2_snippet", "[Content not available]")
+                
+                statements.append({
+                    "from_doc1": doc1_snippet,
+                    "from_doc2": doc2_snippet
+                })
+        else:
+            # Fallback to old format (summary only)
+            indicators = conflict_info.get("indicators", [])
+            for indicator in indicators[:3]:
+                statements.append({
+                    "from_doc1": indicator,
+                    "from_doc2": indicator
+                })
+        
+        return statements
+
+    @staticmethod
     def format_complementary_content(complementary: list[dict[str, Any]]) -> str:
         """Format complementary content results for display."""
         if not complementary:

@@ -298,6 +298,12 @@ class IntelligenceHandler:
             
             logger.info(f"Conflict detection completed successfully")
 
+            # Create lightweight structured content for MCP compliance
+            original_documents = conflict_results.get("original_documents", [])
+            structured_content = self.formatters.create_lightweight_conflict_results(
+                conflict_results, params["query"], original_documents
+            )
+
             return self.protocol.create_response(
                 request_id,
                 result={
@@ -307,7 +313,7 @@ class IntelligenceHandler:
                             "text": self.formatters.format_conflict_analysis(conflict_results),
                         }
                     ],
-                    "structuredContent": conflict_results,
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )

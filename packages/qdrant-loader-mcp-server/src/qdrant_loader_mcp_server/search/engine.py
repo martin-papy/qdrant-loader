@@ -610,13 +610,16 @@ class SearchEngine:
             # Detect conflicts
             conflicts = await self.hybrid_search.detect_document_conflicts(documents)
             
-            # Add query metadata
+            # Add query metadata and original documents for formatting
             conflicts["query_metadata"] = {
                 "original_query": query,
                 "document_count": len(documents),
                 "source_types": source_types,
                 "project_ids": project_ids
             }
+            
+            # Store original documents for lightweight formatter
+            conflicts["original_documents"] = documents
             
             return conflicts
             
