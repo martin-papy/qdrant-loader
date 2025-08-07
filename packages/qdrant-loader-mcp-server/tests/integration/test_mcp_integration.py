@@ -430,14 +430,18 @@ async def test_find_complementary_content_mcp_integration(integration_handler):
         )
         
         # Mock complementary content response with correct structure
-        mock_complementary.return_value = [
-            {
-                "document": mock_document,
-                "relevance_score": 0.9,
-                "recommendation_reason": "complements authentication with data security",
-                "strategy": "mixed"
-            }
-        ]
+        mock_complementary.return_value = {
+            "complementary_recommendations": [
+                {
+                    "document": mock_document,
+                    "relevance_score": 0.9,
+                    "recommendation_reason": "complements authentication with data security",
+                    "strategy": "mixed"
+                }
+            ],
+            "target_document": mock_document,
+            "context_documents_analyzed": 10
+        }
         
         request = {
             "jsonrpc": "2.0",

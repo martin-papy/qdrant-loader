@@ -586,26 +586,51 @@ class HybridSearchEngine:
             )
             recommendations = complementary_content.get_top_recommendations(max_recommendations)
             
-            # Create lookup dictionary for documents by ID
-            doc_lookup = {f"{doc.source_type}:{doc.source_title}": doc for doc in documents}
+            # Build robust document lookup with multiple key strategies
+            doc_lookup = self._build_document_lookup(documents)
             
             # Enhance recommendations with full document objects
             enhanced_recommendations = []
             for rec in recommendations:
                 doc_id = rec["document_id"]
-                if doc_id in doc_lookup:
+                document = doc_lookup.get(doc_id)
+                
+                if document:
                     enhanced_rec = {
-                        "document": doc_lookup[doc_id],
+                        "document": document,
                         "relevance_score": rec["relevance_score"],
                         "recommendation_reason": rec["recommendation_reason"],
                         "strategy": rec["strategy"]
                     }
                     enhanced_recommendations.append(enhanced_rec)
+                else:
+                    self.logger.warning(f"Document not found in lookup for ID: {doc_id}")
             
+            self.logger.info(f"Enhanced {len(enhanced_recommendations)} out of {len(recommendations)} recommendations")
             return enhanced_recommendations
         except Exception as e:
             self.logger.error("Error finding complementary content", error=str(e))
             raise
+    
+    def _build_document_lookup(self, documents: list[HybridSearchResult]) -> dict[str, HybridSearchResult]:
+        """Build multiple lookup strategies for robust document matching."""
+        lookup = {}
+        
+        for doc in documents:
+            # Primary lookup by composite key (current format)
+            composite_key = f"{doc.source_type}:{doc.source_title}"
+            lookup[composite_key] = doc
+            
+            # Secondary lookup by document_id if available
+            if doc.document_id:
+                lookup[doc.document_id] = doc
+                
+            # Tertiary lookup by source_title only (fallback)
+            if doc.source_title:
+                lookup[doc.source_title] = doc
+        
+        self.logger.debug(f"Built document lookup with {len(lookup)} keys for {len(documents)} documents")
+        return lookup
     
     async def cluster_documents(
         self,

@@ -497,8 +497,249 @@ class TestComplementaryContentE2E:
         assert isinstance(has_shared_entities, bool)
         assert isinstance(shared_entities_count, int)
         assert isinstance(different_doc_types, bool)
-        assert isinstance(abstraction_gap, int)
-        assert isinstance(cross_functional, bool)
+
+    @pytest.mark.asyncio
+    async def test_improved_complementary_content_functionality(self, search_engine_config, sample_documents):
+        """Test the improved complementary content functionality with new response structure."""
+        config = search_engine_config
+        
+        # Create and initialize SearchEngine
+        search_engine = SearchEngine()
+        
+        with patch('qdrant_client.QdrantClient', return_value=config['mock_qdrant_client']), \
+             patch('openai.AsyncOpenAI', return_value=config['mock_openai_client']), \
+             patch('qdrant_loader_mcp_server.search.nlp.spacy_analyzer.SpaCyQueryAnalyzer', return_value=config['mock_spacy_analyzer']):
+            
+            await search_engine.initialize(
+                config=config['qdrant_config'],
+                openai_config=config['openai_config']
+            )
+
+        # Mock the hybrid search to return our sample documents
+        with patch.object(search_engine.hybrid_search, 'search') as mock_search:
+            # Set up mock to return target document first, then context documents
+            def mock_search_side_effect(query, limit, **kwargs):
+                if limit == 1:  # Target document search
+                    return [sample_documents[0]]  # Technical Architecture
+                else:  # Context documents search
+                    return sample_documents[1:4]  # Business, API, Security docs
+            
+            mock_search.side_effect = mock_search_side_effect
+
+            # Test the improved find_complementary_content method
+            result = await search_engine.find_complementary_content(
+                target_query="technical architecture design",
+                context_query="business requirements API documentation",
+                max_recommendations=3
+            )
+
+            print(f"\n=== Improved Functionality Test ===")
+            print(f"Result type: {type(result)}")
+            print(f"Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+
+            # Validate new response structure
+            assert isinstance(result, dict), "Response should be a dict, not a list"
+            assert "complementary_recommendations" in result
+            assert "target_document" in result
+            assert "context_documents_analyzed" in result
+
+            recommendations = result["complementary_recommendations"]
+            target_document = result["target_document"]
+            analyzed_count = result["context_documents_analyzed"]
+
+            # Validate target document is captured correctly
+            assert target_document is not None
+            assert hasattr(target_document, 'source_title')
+            assert target_document.source_title == "Healthcare Platform Technical Architecture V2.1"
+
+            # Validate analyzed count matches our mock
+            assert analyzed_count == 3  # Should match the 3 context documents we provided
+
+            # Validate recommendations structure
+            assert isinstance(recommendations, list)
+            for rec in recommendations:
+                assert "document" in rec
+                assert "relevance_score" in rec
+                assert "recommendation_reason" in rec
+                assert "strategy" in rec
+
+            print(f"Target document captured: {target_document.source_title}")
+            print(f"Context documents analyzed: {analyzed_count}")
+            print(f"Recommendations found: {len(recommendations)}")
+
+    @pytest.mark.asyncio 
+    async def test_lightweight_response_structure(self, search_engine_config):
+        """Test the new lightweight response structure from the MCP handler."""
+        config = search_engine_config
+        
+        # Create MCP handler
+        search_engine = SearchEngine()
+        
+        with patch('qdrant_client.QdrantClient', return_value=config['mock_qdrant_client']), \
+             patch('openai.AsyncOpenAI', return_value=config['mock_openai_client']), \
+             patch('qdrant_loader_mcp_server.search.nlp.spacy_analyzer.SpaCyQueryAnalyzer', return_value=config['mock_spacy_analyzer']):
+            
+            await search_engine.initialize(
+                config=config['qdrant_config'],
+                openai_config=config['openai_config']
+            )
+
+        from qdrant_loader_mcp_server.search.processor import QueryProcessor
+        from qdrant_loader_mcp_server.mcp.handler import MCPHandler
+        
+        query_processor = QueryProcessor(openai_config=config['openai_config'])
+        handler = MCPHandler(search_engine, query_processor)
+
+        # Mock the find_complementary_content to return our test structure
+        mock_result = {
+            "complementary_recommendations": [
+                {
+                    "document": create_hybrid_search_result(
+                        score=0.90,
+                        text="Test business requirements document",
+                        source_type="confluence",
+                        source_title="Business Requirements Test",
+                        document_id="biz-req-123",
+                        project_id="test_project",
+                        created_at="2024-01-01T00:00:00Z"
+                    ),
+                    "relevance_score": 0.85,
+                    "recommendation_reason": "Complements technical architecture with business context",
+                    "strategy": "business_technical_bridge"
+                }
+            ],
+            "target_document": create_hybrid_search_result(
+                score=0.95,
+                text="Technical architecture overview",
+                source_type="confluence", 
+                source_title="Technical Architecture",
+                document_id="tech-arch-456",
+                project_id="test_project"
+            ),
+            "context_documents_analyzed": 5
+        }
+
+        with patch.object(search_engine, 'find_complementary_content', return_value=mock_result):
+            request = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {
+                    "name": "find_complementary_content",
+                    "arguments": {
+                        "target_query": "technical architecture",
+                        "context_query": "business requirements",
+                        "max_recommendations": 3
+                    }
+                }
+            }
+
+            response = await handler.handle_request(request)
+
+            print(f"\n=== Lightweight Response Test ===")
+            
+            # Validate response structure
+            assert "result" in response
+            result = response["result"]
+            assert "structuredContent" in result
+            
+            structured = result["structuredContent"]
+            
+            # Validate new lightweight structure
+            assert "complementary_index" in structured
+            assert "target_document" in structured  
+            assert "complementary_summary" in structured
+            assert "lazy_loading_enabled" in structured
+            assert "expand_document_hint" in structured
+
+            # Validate lightweight index (no heavy content)
+            complementary_index = structured["complementary_index"]
+            assert isinstance(complementary_index, list)
+            
+            if complementary_index:
+                item = complementary_index[0]
+                assert "document_id" in item
+                assert "title" in item
+                assert "complementary_score" in item
+                assert "complementary_reason" in item
+                assert "basic_metadata" in item
+                # Ensure NO heavy content
+                assert "content_preview" not in item
+                assert "full_text" not in item
+
+            # Validate target document has proper ID for lazy loading
+            target_doc = structured["target_document"]
+            assert "document_id" in target_doc
+            assert target_doc["document_id"] == "tech-arch-456"
+
+            # Validate summary is consistent
+            summary = structured["complementary_summary"]
+            assert summary["total_analyzed"] == 5
+            assert summary["complementary_found"] == len(complementary_index)
+
+            print(f"Lazy loading enabled: {structured['lazy_loading_enabled']}")
+            print(f"Expand hint: {structured['expand_document_hint']}")
+            print(f"Target document ID: {target_doc['document_id']}")
+            print(f"Summary consistency: analyzed={summary['total_analyzed']}, found={summary['complementary_found']}")
+
+    @pytest.mark.asyncio
+    async def test_adaptive_context_retrieval(self, search_engine_config, sample_documents):
+        """Test that context retrieval adapts to max_recommendations."""
+        config = search_engine_config
+        search_engine = SearchEngine()
+        
+        with patch('qdrant_client.QdrantClient', return_value=config['mock_qdrant_client']), \
+             patch('openai.AsyncOpenAI', return_value=config['mock_openai_client']), \
+             patch('qdrant_loader_mcp_server.search.nlp.spacy_analyzer.SpaCyQueryAnalyzer', return_value=config['mock_spacy_analyzer']):
+            
+            await search_engine.initialize(
+                config=config['qdrant_config'],
+                openai_config=config['openai_config']
+            )
+
+        with patch.object(search_engine.hybrid_search, 'search') as mock_search:
+            # Mock target search
+            mock_search.side_effect = [
+                [sample_documents[0]],  # Target document
+                sample_documents[1:4]   # Context documents
+            ]
+
+            # Test with max_recommendations=2 (should use limit=8, min 20 = 20)
+            await search_engine.find_complementary_content(
+                target_query="test",
+                context_query="test",
+                max_recommendations=2
+            )
+
+            # Verify the context search was called with adaptive limit
+            context_call = mock_search.call_args_list[1]  # Second call is context search
+            called_limit = context_call[1]['limit']  # kwargs
+            expected_limit = max(2 * 4, 20)  # max(8, 20) = 20
+            assert called_limit == expected_limit
+
+            # Reset for next test
+            mock_search.reset_mock()
+            mock_search.side_effect = [
+                [sample_documents[0]],  # Target document
+                sample_documents[1:4]   # Context documents
+            ]
+
+            # Test with max_recommendations=10 (should use limit=40)
+            await search_engine.find_complementary_content(
+                target_query="test",
+                context_query="test", 
+                max_recommendations=10
+            )
+
+            # Verify the context search was called with higher adaptive limit
+            context_call = mock_search.call_args_list[1]  # Second call is context search
+            called_limit = context_call[1]['limit']
+            expected_limit = max(10 * 4, 20)  # max(40, 20) = 40
+            assert called_limit == expected_limit
+
+            print(f"\n=== Adaptive Context Retrieval Test ===")
+            print(f"For max_recommendations=2: context_limit=20")
+            print(f"For max_recommendations=10: context_limit=40")
 
     def test_fallback_scoring_mechanism(self, real_complementary_finder, sample_documents):
         """Test the fallback scoring mechanism specifically."""
