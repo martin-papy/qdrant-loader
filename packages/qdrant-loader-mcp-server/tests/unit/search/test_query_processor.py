@@ -81,6 +81,97 @@ async def test_process_query_empty_query(query_processor):
     assert result["source_type"] is None
     assert result["processed"] is False
 
+    @pytest.mark.asyncio
+    async def test_process_query_success_with_spacy(self, processor):
+        """Test successful query processing with spaCy features."""
+        with (
+            patch.object(processor, '_clean_query', return_value="cleaned query"),
+            patch.object(processor, '_infer_intent_spacy', return_value=("search", False)),
+            patch.object(processor, '_infer_source_type', return_value="git")
+        ):
+            result = await processor.process_query("test query")
+            
+            # Verify successful processing
+            assert result["query"] == "cleaned query"
+            assert result["intent"] == "search"
+            assert result["source_type"] == "git"
+            assert result["processed"] is True
+            assert result["uses_spacy"] is True
+
+    def test_clean_query_whitespace_removal(self, processor):
+        """Test query cleaning removes extra whitespace."""
+        query = "  test   query   with   spaces  "
+        cleaned = processor._clean_query(query)
+        assert cleaned == "test query with spaces"
+
+    def test_clean_query_edge_cases(self, processor):
+        """Test query cleaning edge cases."""
+        # Empty query
+        assert processor._clean_query("") == ""
+        # Only whitespace
+        assert processor._clean_query("   ") == ""
+        # Normal query
+        assert processor._clean_query("normal query") == "normal query"
+
+    @pytest.mark.asyncio
+    async def test_infer_intent_spacy_code_keywords(self, processor):
+        """Test intent inference for code-related queries."""
+        intent, failed = await processor._infer_intent_spacy("function definition")
+        assert intent == "code"
+        assert failed is False
+
+    @pytest.mark.asyncio
+    async def test_infer_intent_spacy_documentation_keywords(self, processor):
+        """Test intent inference for documentation-related queries."""
+        intent, failed = await processor._infer_intent_spacy("how to guide")
+        assert intent == "documentation"
+        assert failed is False
+
+    @pytest.mark.asyncio
+    async def test_infer_intent_spacy_general_fallback(self, processor):
+        """Test intent inference fallback to general."""
+        intent, failed = await processor._infer_intent_spacy("random unrelated query")
+        assert intent == "general"
+        assert failed is False
+
+    @pytest.mark.asyncio
+    async def test_infer_intent_spacy_no_analyzer(self, processor):
+        """Test intent inference when analyzer is not available."""
+        # Mock no analyzer
+        processor.spacy_analyzer = None
+        intent, failed = await processor._infer_intent_spacy("test query")
+        assert intent == "general"
+        assert failed is True
+
+    def test_infer_source_type_git_patterns(self, processor):
+        """Test source type inference for git-related patterns."""
+        source_type = processor._infer_source_type("repository commit")
+        assert source_type == "git"
+        
+        source_type = processor._infer_source_type("branch code")
+        assert source_type == "git"
+
+    def test_infer_source_type_confluence_patterns(self, processor):
+        """Test source type inference for confluence-related patterns."""
+        source_type = processor._infer_source_type("wiki page")
+        assert source_type == "confluence"
+        
+        source_type = processor._infer_source_type("documentation space")
+        assert source_type == "confluence"
+
+    def test_infer_source_type_jira_patterns(self, processor):
+        """Test source type inference for jira-related patterns."""
+        source_type = processor._infer_source_type("ticket issue")
+        assert source_type == "jira"
+        
+        source_type = processor._infer_source_type("bug report")
+        assert source_type == "jira"
+
+    def test_infer_source_type_no_match(self, processor):
+        """Test source type inference when no patterns match."""
+        source_type = processor._infer_source_type("general query")
+        assert source_type is None
+
 
 @pytest.mark.asyncio
 async def test_process_query_confluence_detection(query_processor, mock_openai_client):
