@@ -2,22 +2,17 @@
 
 import pytest
 import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, AsyncMock
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     DocumentSimilarityCalculator,
     DocumentClusterAnalyzer,
     CitationNetworkAnalyzer,
-    ComplementaryContentFinder,
     ConflictDetector,
-    CrossDocumentIntelligenceEngine,
-    ClusteringStrategy,
-    SimilarityMetric,
     RelationshipType
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
 from qdrant_loader_mcp_server.search.components.search_result_models import (
-    HybridSearchResult, create_hybrid_search_result
+    create_hybrid_search_result
 )
 
 

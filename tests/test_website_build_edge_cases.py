@@ -5,16 +5,10 @@ These tests focus on error conditions, edge cases, and exception handling.
 """
 
 import pytest
-import tempfile
-import shutil
 from pathlib import Path
-import json
 import os
-import sys
-import subprocess
 import importlib.util
-from unittest.mock import patch, MagicMock, mock_open
-import re
+from unittest.mock import patch
 
 
 def import_website_builder():

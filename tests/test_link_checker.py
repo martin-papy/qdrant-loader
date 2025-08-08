@@ -6,10 +6,9 @@ Tests for the link checker script.
 import pytest
 import requests
 import responses
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from pathlib import Path
 import sys
-import os
 
 # Add website directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

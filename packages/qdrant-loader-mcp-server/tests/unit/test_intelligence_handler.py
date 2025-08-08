@@ -2,7 +2,6 @@
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-import json
 
 from qdrant_loader_mcp_server.mcp.intelligence_handler import IntelligenceHandler
 from qdrant_loader_mcp_server.search.engine import SearchEngine

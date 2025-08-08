@@ -31,6 +31,28 @@ class StateManager:
         self._session_factory = None
         self.logger = LoggingConfig.get_logger(__name__)
 
+    @property
+    def is_initialized(self) -> bool:
+        """Public accessor for initialization state used by callers/tests."""
+        return self._initialized
+
+    async def get_session(self):
+        """Return an async session context manager, initializing if needed.
+
+        This method allows callers to use:
+            async with await state_manager.get_session() as session:
+                ...
+        """
+        if not self._initialized:
+            await self.initialize()
+        if self._session_factory is None:
+            raise RuntimeError("State manager session factory is not available")
+        return self._session_factory()
+
+    async def create_session(self):
+        """Alias for get_session for backward compatibility."""
+        return await self.get_session()
+
     async def __aenter__(self):
         """Async context manager entry."""
         self.logger.debug("=== StateManager.__aenter__() called ===")

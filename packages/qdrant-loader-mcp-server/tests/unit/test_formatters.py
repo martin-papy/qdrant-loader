@@ -11,9 +11,7 @@ Tests for all formatting methods including:
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
-from datetime import datetime
-from typing import Any, Dict, List
+from unittest.mock import Mock
 
 from qdrant_loader_mcp_server.mcp.formatters import MCPFormatters
 from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult

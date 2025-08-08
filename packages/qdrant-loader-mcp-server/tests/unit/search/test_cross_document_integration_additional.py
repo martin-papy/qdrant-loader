@@ -1,9 +1,7 @@
 """Additional integration tests for cross-document intelligence to boost coverage."""
 
 import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
+from unittest.mock import Mock, AsyncMock
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     DocumentSimilarityCalculator,
@@ -12,16 +10,10 @@ from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import
     ComplementaryContentFinder,
     CrossDocumentIntelligenceEngine,
     SimilarityMetric,
-    ClusteringStrategy,
-    RelationshipType
+    ClusteringStrategy
 )
 from qdrant_loader_mcp_server.search.components.search_result_models import (
-    HybridSearchResult, create_hybrid_search_result
-)
-from tests.fixtures.cross_document_test_data import (
-    create_authentication_docs,
-    create_database_docs,
-    create_minimal_test_dataset
+    create_hybrid_search_result
 )
 
 

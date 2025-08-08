@@ -4,7 +4,6 @@ Tests for the favicon generation script.
 """
 
 import pytest
-import tempfile
 import shutil
 from pathlib import Path
 import os

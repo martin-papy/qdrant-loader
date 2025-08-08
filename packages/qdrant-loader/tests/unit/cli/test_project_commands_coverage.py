@@ -1,7 +1,7 @@
 """Tests for CLI project commands to improve coverage."""
 
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 from datetime import datetime
 
 from qdrant_loader.cli.project_commands import (

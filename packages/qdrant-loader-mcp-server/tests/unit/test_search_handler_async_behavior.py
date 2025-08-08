@@ -1,8 +1,7 @@
 """Async behavior and request handling tests for SearchHandler."""
 
 import asyncio
-from unittest.mock import AsyncMock, Mock, patch, call
-from typing import Any, Dict
+from unittest.mock import AsyncMock, Mock, patch
 import time
 
 import pytest

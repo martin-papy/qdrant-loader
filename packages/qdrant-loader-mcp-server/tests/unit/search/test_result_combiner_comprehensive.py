@@ -1,8 +1,7 @@
 """Comprehensive tests for result combiner functionality with 80%+ coverage."""
 
 import pytest
-from unittest.mock import MagicMock, patch, Mock
-from typing import Any
+from unittest.mock import MagicMock, patch
 
 from qdrant_loader_mcp_server.search.components.result_combiner import ResultCombiner
 from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result

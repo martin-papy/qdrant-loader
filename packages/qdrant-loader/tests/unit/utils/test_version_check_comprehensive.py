@@ -1,13 +1,9 @@
 """Comprehensive tests for version_check.py to achieve high coverage."""
 
-import json
-import time
-import threading
 from pathlib import Path
 from unittest.mock import Mock, patch, mock_open, MagicMock
 from urllib.error import HTTPError, URLError
 
-import pytest
 from packaging.version import InvalidVersion
 
 from qdrant_loader.utils.version_check import VersionChecker, check_version_async

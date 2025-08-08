@@ -1,7 +1,6 @@
 """Field query parser for handling field-specific search syntax."""
 
 import re
-from typing import Any, Optional, Tuple
 from dataclasses import dataclass
 
 from qdrant_client.http import models

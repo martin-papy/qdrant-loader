@@ -16,8 +16,6 @@ class TestVersionHandling:
 
     def test_version_import_fallback(self):
         """Test version fallback when importlib.metadata import fails - covers lines 9-11."""
-        import sys
-        import importlib.util
         
         # Test the ImportError handling by simulating the exact code from __init__.py
         # This tests lines 9-11 in the __init__.py file

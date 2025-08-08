@@ -1,7 +1,5 @@
 """Comprehensive tests for config.py models to achieve 100% coverage."""
 
-import pytest
-from pydantic import ValidationError
 
 # Import directly from config.py to ensure coverage
 from qdrant_loader.config import (
@@ -178,7 +176,6 @@ class TestSettings:
     def test_settings_class_exists(self):
         """Test that Settings class exists and can be imported - covers lines 46-79."""
         # Import the Settings class directly from the config.py file
-        import sys
         import importlib.util
         from pathlib import Path
         

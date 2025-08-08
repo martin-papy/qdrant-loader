@@ -7,12 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 
-from .document_parser import DocumentParser, HierarchyBuilder
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
 
 logger = structlog.get_logger(__name__)
+
+# Re-export classes for easier patching in tests
+from .document_parser import DocumentParser, HierarchyBuilder  # noqa: E402,F401
 
 # Markdown configuration placeholder - can be imported from settings if needed
 class MarkdownConfig:

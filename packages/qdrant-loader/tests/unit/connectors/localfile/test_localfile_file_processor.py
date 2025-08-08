@@ -4,7 +4,6 @@ import os
 import tempfile
 from unittest.mock import Mock, patch
 
-import pytest
 from pydantic import AnyUrl
 
 from qdrant_loader.connectors.localfile.config import LocalFileConfig

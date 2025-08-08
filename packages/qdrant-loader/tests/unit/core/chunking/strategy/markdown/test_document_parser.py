@@ -1,6 +1,5 @@
 """Comprehensive tests for Markdown Document Parser to achieve 80%+ coverage."""
 
-import pytest
 
 from qdrant_loader.core.chunking.strategy.markdown.document_parser import (
     DocumentParser,
