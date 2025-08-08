@@ -339,8 +339,11 @@ class SearchHandler:
             # Apply depth filter - use folder depth for localfiles
             if "depth" in hierarchy_filter:
                 # For localfiles, calculate depth from file_path folder structure
-                if result.source_type == "localfile" and result.file_path:
-                    folder_depth = len([p for p in result.file_path.split('/') if p]) - 1  # Exclude filename
+                if result.source_type == "localfile" and getattr(result, 'file_path', None):
+                    # Depth = number of folders before filename
+                    path_parts = [p for p in result.file_path.split('/') if p]
+                    # Depth definition: number of folders before filename minus 1
+                    folder_depth = max(0, len(path_parts) - 2)
                     if folder_depth != hierarchy_filter["depth"]:
                         continue
                 elif hasattr(result, 'depth') and result.depth != hierarchy_filter["depth"]:
@@ -582,7 +585,7 @@ class SearchHandler:
         logger.debug("Handling expand document with params", params=params)
 
         # Validate required parameter
-        if "document_id" not in params:
+        if "document_id" not in params or params["document_id"] is None or params["document_id"] == "":
             logger.error("Missing required parameter: document_id")
             return self.protocol.create_response(
                 request_id,

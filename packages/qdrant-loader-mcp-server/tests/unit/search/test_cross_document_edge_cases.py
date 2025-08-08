@@ -252,8 +252,34 @@ class TestDocumentClusterAnalyzerEdgeCases:
         mock_similarity.shared_entities = ["test"]
         mock_similarity.shared_topics = ["topic"]
         calc.calculate_similarity.return_value = mock_similarity
-        calc._extract_entity_texts.return_value = ["test"]
-        calc._extract_topic_texts.return_value = ["topic"]
+        
+        # Make the extract methods behave more realistically
+        def extract_entity_texts(entities):
+            if entities is None or entities == []:
+                return []
+            # For non-empty entities, extract text
+            texts = []
+            for entity in entities:
+                if isinstance(entity, dict):
+                    texts.append(entity.get("text", "").lower())
+                elif isinstance(entity, str):
+                    texts.append(entity.lower())
+            return [t for t in texts if t]
+            
+        def extract_topic_texts(topics):
+            if topics is None or topics == []:
+                return []
+            # For non-empty topics, extract text  
+            texts = []
+            for topic in topics:
+                if isinstance(topic, dict):
+                    texts.append(topic.get("text", "").lower())
+                elif isinstance(topic, str):
+                    texts.append(topic.lower())
+            return [t for t in texts if t]
+        
+        calc._extract_entity_texts.side_effect = extract_entity_texts
+        calc._extract_topic_texts.side_effect = extract_topic_texts
         return calc
 
     @pytest.fixture

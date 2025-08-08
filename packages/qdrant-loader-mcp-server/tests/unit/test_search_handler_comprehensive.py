@@ -288,7 +288,7 @@ class TestHandleHierarchySearch:
             search_handler.search_engine.search.assert_called_once_with(
                 query="test query",
                 source_types=["confluence", "localfile"],
-                limit=80  # max(limit * 2, 40)
+                limit=40  # max(limit * 2, 40) = max(10 * 2, 40) = max(20, 40) = 40
             )
 
     @pytest.mark.asyncio
