@@ -1,6 +1,5 @@
 """Tests for the config sources module."""
 
-import pytest
 from unittest.mock import patch
 
 from qdrant_loader.config.sources import SourcesConfig

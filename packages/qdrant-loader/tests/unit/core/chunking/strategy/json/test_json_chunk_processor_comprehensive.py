@@ -1,14 +1,11 @@
 """Comprehensive tests for JSONChunkProcessor to achieve 80%+ coverage."""
 
-import json
 from unittest.mock import Mock, patch
 
-import pytest
 
 from qdrant_loader.core.chunking.strategy.json.json_chunk_processor import JSONChunkProcessor
 from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONElement, JSONElementType
 from qdrant_loader.core.document import Document
-from qdrant_loader.config import Settings
 
 
 class TestJSONChunkProcessor:

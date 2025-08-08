@@ -1,9 +1,7 @@
 """Comprehensive tests for Markdown SectionSplitter to achieve 80%+ coverage."""
 
-import re
 from unittest.mock import Mock, patch
 
-import pytest
 
 from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
     BaseSplitter,
@@ -14,8 +12,6 @@ from qdrant_loader.core.chunking.strategy.markdown.section_splitter import (
     SectionSplitter,
     StandardSplitter,
 )
-from qdrant_loader.core.document import Document
-from qdrant_loader.config import Settings
 
 
 class TestHeaderAnalysis:

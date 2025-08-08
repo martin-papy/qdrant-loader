@@ -4,7 +4,6 @@ from typing import Any
 
 import numpy as np
 from qdrant_client import QdrantClient
-from qdrant_client.http import models
 from rank_bm25 import BM25Okapi
 
 from ...utils.logging import LoggingConfig

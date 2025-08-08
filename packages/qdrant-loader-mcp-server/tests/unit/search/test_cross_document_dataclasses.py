@@ -1,8 +1,6 @@
 """Unit tests for cross-document intelligence data classes."""
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock
 import networkx as nx
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (

@@ -1,7 +1,6 @@
 """Tests for the config base module."""
 
 import pytest
-from typing import Any
 
 from qdrant_loader.config.base import (
     BaseConfig,

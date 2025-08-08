@@ -1,26 +1,22 @@
 """Unit tests for cross-document intelligence algorithms and scoring methods."""
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 import time
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
-    DocumentSimilarityCalculator,
     DocumentClusterAnalyzer,
     ComplementaryContentFinder,
     ConflictDetector,
     CrossDocumentIntelligenceEngine,
     ClusteringStrategy,
-    SimilarityMetric,
     RelationshipType
 )
-from qdrant_loader_mcp_server.search.models import SearchResult
 from qdrant_loader_mcp_server.search.components.search_result_models import (
-    HybridSearchResult, create_hybrid_search_result
+    create_hybrid_search_result
 )
 from tests.fixtures.cross_document_test_data import (
     create_authentication_docs,
-    create_database_docs,
     create_minimal_test_dataset
 )
 

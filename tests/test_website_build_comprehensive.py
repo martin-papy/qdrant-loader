@@ -5,17 +5,13 @@ Tests all aspects of the GitHub Actions docs workflow.
 """
 
 import pytest
-import tempfile
 import shutil
 from pathlib import Path
-import json
 import os
 import sys
 import subprocess
 import importlib.util
-from unittest.mock import patch, MagicMock, mock_open, Mock
-import re
-from datetime import datetime
+from unittest.mock import patch, MagicMock, Mock
 
 
 def import_website_builder():

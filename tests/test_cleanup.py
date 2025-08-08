@@ -4,7 +4,6 @@ Test cleanup functionality to ensure test artifacts are properly removed.
 """
 
 import pytest
-from pathlib import Path
 import os
 
 

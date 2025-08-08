@@ -2,7 +2,6 @@
 
 from unittest.mock import Mock
 
-import pytest
 
 from qdrant_loader.core.chunking.strategy.code.code_metadata_extractor import CodeMetadataExtractor
 from qdrant_loader.core.document import Document

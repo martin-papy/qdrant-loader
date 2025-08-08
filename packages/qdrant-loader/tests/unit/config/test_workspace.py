@@ -1,6 +1,5 @@
 """Tests for the workspace configuration module."""
 
-import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch

@@ -1,6 +1,5 @@
 """Tests for the main module."""
 
-import sys
 from unittest.mock import patch
 
 def test_main_module_cli_import():

@@ -8,7 +8,7 @@ import os
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 import argparse
 import re
 
@@ -45,7 +45,6 @@ class WebsiteBuilder:
         """Convert markdown to HTML with Bootstrap styling."""
         try:
             import markdown
-            from markdown.extensions import codehilite, toc, tables, fenced_code
 
             md = markdown.Markdown(
                 extensions=[

@@ -146,32 +146,29 @@ class AsyncIngestionPipeline:
             # Initialize project manager
             if not self.project_manager._initialized:
                 logger.debug("Initializing project manager")
-                try:
-                    session_ctx = await self.state_manager.create_session()
-                except Exception:
-                    session_ctx = None
-                if session_ctx:
-                    try:
-                        async with session_ctx as session:
-                            await self.project_manager.initialize(session)
-                        logger.debug("Project manager initialization completed")
-                    except Exception as e:
-                        # Standardized error logging: user-friendly message + technical details + stack trace
-                        logger.error(
-                            "Failed to initialize project manager during pipeline startup",
-                            error=str(e),
-                            error_type=type(e).__name__,
-                            suggestion="Check database connectivity and project configuration",
-                            exc_info=True
-                        )
-                        raise
-                else:
-                    # Standardized error logging: user-friendly message + technical context
+                # Prefer direct use of session factory to match existing tests/mocks
+                session_factory = getattr(self.state_manager, "_session_factory", None)
+                if session_factory is None:
                     logger.error(
                         "State manager session factory is not available during initialization",
-                        suggestion="Check database configuration and ensure proper state manager setup"
+                        suggestion="Check database configuration and ensure proper state manager setup",
                     )
                     raise RuntimeError("State manager session factory is not available")
+
+                try:
+                    async with session_factory() as session:  # type: ignore
+                        await self.project_manager.initialize(session)
+                    logger.debug("Project manager initialization completed")
+                except Exception as e:
+                    # Standardized error logging: user-friendly message + technical details + stack trace
+                    logger.error(
+                        "Failed to initialize project manager during pipeline startup",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        suggestion="Check database connectivity and project configuration",
+                        exc_info=True,
+                    )
+                    raise
         except Exception as e:
             # Standardized error logging: user-friendly message + technical details + stack trace
             logger.error(

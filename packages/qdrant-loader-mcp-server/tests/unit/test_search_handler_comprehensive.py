@@ -1,8 +1,6 @@
 """Comprehensive tests for SearchHandler class to achieve 80%+ coverage."""
 
-import asyncio
 from unittest.mock import AsyncMock, Mock, patch
-from typing import Any, Dict
 
 import pytest
 from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler

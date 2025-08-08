@@ -1,14 +1,13 @@
 """Advanced tests for the search engine implementation to reach 80% coverage."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
-from typing import Any
 
 import pytest
 from qdrant_loader_mcp_server.config import OpenAIConfig, QdrantConfig, SearchConfig
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 from qdrant_loader_mcp_server.search.enhanced.topic_search_chain import TopicSearchChain, TopicChainLink, ChainStrategy
-from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import SimilarityMetric, ClusteringStrategy
+from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import ClusteringStrategy
 
 
 @pytest.fixture

@@ -10,7 +10,6 @@ from pathlib import Path
 try:
     import cairosvg
     from PIL import Image
-    import io
 except ImportError:
     print("Missing dependencies. Install with: pip install cairosvg pillow")
     exit(1)
