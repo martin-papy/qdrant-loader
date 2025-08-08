@@ -61,6 +61,18 @@ def realistic_search_results():
     result1.is_root_document = Mock(return_value=True)
     result1.has_children = Mock(return_value=True)
     result1.get_file_type = Mock(return_value=None)
+    # Add numeric attributes needed by formatters
+    result1.chunk_index = 0
+    result1.total_chunks = 3
+    result1.chunking_strategy = "paragraph"
+    result1.word_count = 150
+    result1.has_code_blocks = False
+    result1.has_tables = True
+    result1.has_images = False
+    result1.vector_score = 0.85
+    result1.keyword_score = 0.92
+    result1.created_at = "2024-01-15T10:30:00Z"
+    result1.last_modified = "2024-01-20T14:45:00Z"
 
     result2 = Mock()
     result2.document_id = "confluence-doc-456"
@@ -86,6 +98,18 @@ def realistic_search_results():
     result2.is_root_document = Mock(return_value=False)
     result2.has_children = Mock(return_value=False)
     result2.get_file_type = Mock(return_value=None)
+    # Add numeric attributes needed by formatters
+    result2.chunk_index = 1
+    result2.total_chunks = 2
+    result2.chunking_strategy = "section"
+    result2.word_count = 120
+    result2.has_code_blocks = True
+    result2.has_tables = False
+    result2.has_images = False
+    result2.vector_score = 0.80
+    result2.keyword_score = 0.87
+    result2.created_at = "2024-01-15T11:00:00Z"
+    result2.last_modified = "2024-01-18T16:30:00Z"
 
     result3 = Mock()
     result3.document_id = "localfile-789"
@@ -111,6 +135,18 @@ def realistic_search_results():
     result3.is_root_document = Mock(return_value=False)
     result3.has_children = Mock(return_value=False)
     result3.get_file_type = Mock(return_value="yaml")
+    # Add numeric attributes needed by formatters
+    result3.chunk_index = 0
+    result3.total_chunks = 1
+    result3.chunking_strategy = "file"
+    result3.word_count = 80
+    result3.has_code_blocks = False
+    result3.has_tables = False
+    result3.has_images = False
+    result3.vector_score = 0.70
+    result3.keyword_score = 0.75
+    result3.created_at = "2024-01-10T09:15:00Z"
+    result3.last_modified = "2024-01-22T13:20:00Z"
 
     result4 = Mock()
     result4.document_id = "attachment-101"
@@ -136,6 +172,18 @@ def realistic_search_results():
     result4.is_root_document = Mock(return_value=False)
     result4.has_children = Mock(return_value=False)
     result4.get_file_type = Mock(return_value="json")
+    # Add numeric attributes needed by formatters
+    result4.chunk_index = 2
+    result4.total_chunks = 4
+    result4.chunking_strategy = "json"
+    result4.word_count = 200
+    result4.has_code_blocks = True
+    result4.has_tables = False
+    result4.has_images = False
+    result4.vector_score = 0.78
+    result4.keyword_score = 0.83
+    result4.created_at = "2024-01-12T14:00:00Z"
+    result4.last_modified = "2024-01-25T10:45:00Z"
 
     return [result1, result2, result3, result4]
 

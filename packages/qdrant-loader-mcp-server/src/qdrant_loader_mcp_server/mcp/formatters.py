@@ -210,15 +210,17 @@ class MCPFormatters:
             # Handle both HybridSearchResult objects and dict formats
             if hasattr(document, 'document_id'):
                 doc_id = document.document_id
-                title = document.source_title or "Untitled"
+                title = getattr(document, 'source_title', None) or "Untitled"
                 source_type = document.source_type
-                text_length = len(document.text) if document.text else 0
+                text_val = getattr(document, 'text', None)
+                text_length = len(text_val) if isinstance(text_val, str) else (int(text_val) if isinstance(text_val, (int, float)) else 0)
             else:
                 # Fallback for dict format
                 doc_id = document.get("document_id") or doc_info.get("document_id")
                 title = document.get("source_title", "Untitled") 
                 source_type = document.get("source_type", "unknown")
-                text_length = len(document.get("text", ""))
+                text_val = document.get("text", "")
+                text_length = len(text_val) if isinstance(text_val, str) else (int(text_val) if isinstance(text_val, (int, float)) else 0)
             
             similarity_index.append({
                 "document_id": doc_id,
@@ -648,47 +650,47 @@ class MCPFormatters:
         return [
             {
                 # 🔥 ROOT LEVEL FIELDS (matching Qdrant structure)
-                "score": result.score,
-                "document_id": result.document_id or "",
-                "title": result.get_display_title(),
-                "content": result.text,
-                "source_type": result.source_type,
-                "source": result.repo_name or "",
-                "url": result.source_url or "",
-                "created_at": result.created_at or "",
-                "updated_at": result.last_modified or "",
+                "score": getattr(result, 'score', 0.0),
+                "document_id": getattr(result, 'document_id', '') or "",
+                "title": result.get_display_title() if hasattr(result, 'get_display_title') else (getattr(result, 'source_title', None) or "Untitled"),
+                "content": getattr(result, 'text', None) or "",
+                "source_type": getattr(result, 'source_type', 'unknown'),
+                "source": getattr(result, 'repo_name', None) or "",
+                "url": getattr(result, 'source_url', None) or "",
+                "created_at": getattr(result, 'created_at', None) or "",
+                "updated_at": getattr(result, 'last_modified', None) or "",
                 
                 # 🔥 NESTED METADATA (matching Qdrant structure)
                 "metadata": {
                     # Project information
-                    "project_id": result.project_id or "",
-                    "project_name": result.project_name or "",
-                    "project_description": result.project_description or "",
-                    "collection_name": result.collection_name or "",
+                    "project_id": getattr(result, 'project_id', None) or "",
+                    "project_name": getattr(result, 'project_name', None) or "",
+                    "project_description": getattr(result, 'project_description', None) or "",
+                    "collection_name": getattr(result, 'collection_name', None) or "",
                     
                     # File information (from rich Qdrant metadata)
-                    "file_path": result.file_path or "",
-                    "file_name": result.original_filename or "",
-                    "file_type": result.original_file_type or "",
-                    "file_size": result.file_size,
+                    "file_path": getattr(result, 'file_path', None) or "",
+                    "file_name": getattr(result, 'original_filename', None) or "",
+                    "file_type": getattr(result, 'original_file_type', None) or "",
+                    "file_size": getattr(result, 'file_size', None),
                     
                     # Content analysis (from rich Qdrant metadata)
-                    "word_count": result.word_count,
-                    "char_count": result.char_count,
-                    "estimated_read_time": result.estimated_read_time,
+                    "word_count": getattr(result, 'word_count', None),
+                    "char_count": getattr(result, 'char_count', None),
+                    "estimated_read_time": getattr(result, 'estimated_read_time', None),
                     
                     # Chunking information (from rich Qdrant metadata)
-                    "chunk_index": result.chunk_index,
-                    "total_chunks": result.total_chunks,
-                    "chunk_info": f"Chunk {result.chunk_index + 1}/{result.total_chunks}" if result.chunk_index is not None and result.total_chunks is not None else None,
-                    "chunking_strategy": result.chunking_strategy or "",
+                    "chunk_index": getattr(result, 'chunk_index', None),
+                    "total_chunks": getattr(result, 'total_chunks', None),
+                    "chunk_info": (f"Chunk {getattr(result, 'chunk_index', 0) + 1}/{getattr(result, 'total_chunks', 1)}" if isinstance(getattr(result, 'chunk_index', None), int) and isinstance(getattr(result, 'total_chunks', None), int) else None),
+                    "chunking_strategy": getattr(result, 'chunking_strategy', None) or "",
                     
                     # Enhanced context and analysis
-                    "hierarchy_context": result.get_hierarchy_info(),
-                    "content_analysis": result.get_content_info(),
-                    "semantic_analysis": result.get_semantic_info(),
-                    "section_context": result.get_section_context(),
-                    "attachment_info": result.get_attachment_info(),
+                    "hierarchy_context": result.get_hierarchy_info() if hasattr(result, 'get_hierarchy_info') else {},
+                    "content_analysis": result.get_content_info() if hasattr(result, 'get_content_info') else {},
+                    "semantic_analysis": result.get_semantic_info() if hasattr(result, 'get_semantic_info') else {},
+                    "section_context": result.get_section_context() if hasattr(result, 'get_section_context') else "",
+                    "attachment_info": result.get_attachment_info() if hasattr(result, 'get_attachment_info') else {},
                 }
             }
             for result in results
@@ -706,16 +708,16 @@ class MCPFormatters:
         hierarchy_index = []
         for result in filtered_results[:20]:
             hierarchy_index.append({
-                "document_id": result.document_id,
-                "title": result.source_title or "Untitled",
-                "score": result.score,
+                "document_id": getattr(result, 'document_id', ''),
+                "title": getattr(result, 'source_title', None) or "Untitled",
+                "score": getattr(result, 'score', 0.0),
                 "hierarchy_info": {
                     "depth": MCPFormatters._extract_synthetic_depth(result),
                     "parent_id": MCPFormatters._extract_synthetic_parent_id(result),
                     "parent_title": MCPFormatters._extract_synthetic_parent_title(result),
                     "breadcrumb": MCPFormatters._extract_synthetic_breadcrumb(result),
                     "has_children": MCPFormatters._extract_has_children(result),
-                    "source_type": result.source_type
+                    "source_type": getattr(result, 'source_type', 'unknown')
                 },
                 "navigation_hints": {
                     "group": MCPFormatters._get_group_key(result),
@@ -745,7 +747,7 @@ class MCPFormatters:
             "total_found": len(filtered_results),
             "query_metadata": {
                 "search_query": query,
-                "source_types_found": list(set(r.source_type for r in filtered_results))
+                "source_types_found": list(set(getattr(r, 'source_type', 'unknown') for r in filtered_results))
             }
         }
     
@@ -946,15 +948,15 @@ class MCPFormatters:
             return result.breadcrumb_text
             
         # For localfiles, create breadcrumb from file path
-        if result.source_type == "localfile" and result.file_path:
+        if getattr(result, 'source_type', None) == "localfile" and getattr(result, 'file_path', None):
             path_parts = [p for p in result.file_path.split('/') if p and p != '.']
             if len(path_parts) > 1:
                 return " > ".join(path_parts[:-1])  # Exclude filename
                 
         # For confluence with section context, create from section info
-        if result.source_type == "confluence":
+        if getattr(result, 'source_type', None) == "confluence":
             section_context = getattr(result, 'section_context', '')
-            if section_context:
+            if isinstance(section_context, str) and section_context:
                 # Extract section title from context like "[H2] Functions - Beta release"
                 if ']' in section_context:
                     section_title = section_context.split(']', 1)[1].strip()
@@ -1113,15 +1115,17 @@ class MCPFormatters:
     def _extract_safe_filename(result: HybridSearchResult) -> str:
         """Fast filename extraction with minimal processing."""
         # Quick priority check - avoid expensive validation
-        if result.original_filename and len(result.original_filename) < 200:
-            return result.original_filename
+        original = getattr(result, 'original_filename', None)
+        if isinstance(original, str) and len(original) < 200:
+            return original
         
-        if result.file_path:
+        file_path = getattr(result, 'file_path', None)
+        if isinstance(file_path, str) and file_path:
             import os
-            return os.path.basename(result.file_path)
+            return os.path.basename(file_path)
         
         # Fallback to source title but clean it
-        title = result.source_title or "untitled"
+        title = getattr(result, 'source_title', None) or "untitled"
         # Quick clean - remove obvious chunk indicators
         if "(Chunk " in title:
             title = title.split("(Chunk ")[0].strip()
@@ -1132,14 +1136,18 @@ class MCPFormatters:
     def _extract_file_type_minimal(result: HybridSearchResult) -> str:
         """Fast file type detection - minimal processing."""
         # Priority order with early returns for performance
-        if result.mime_type:
-            return result.mime_type.split('/')[-1]  # Get extension from MIME
+        mime_type = getattr(result, 'mime_type', None)
+        if isinstance(mime_type, str) and mime_type:
+            return mime_type.split('/')[-1]  # Get extension from MIME
         
         # Try multiple filename sources for extension extraction
+        file_path = getattr(result, 'file_path', None)
+        source_title = getattr(result, 'source_title', None)
+        original_filename = getattr(result, 'original_filename', None)
         filename_candidates = [
-            result.original_filename,
-            result.source_title,
-            result.file_path.split('/')[-1] if result.file_path else None
+            original_filename if isinstance(original_filename, str) else None,
+            source_title if isinstance(source_title, str) else None,
+            (file_path.split('/')[-1] if isinstance(file_path, str) and file_path else None)
         ]
         
         for filename in filename_candidates:
