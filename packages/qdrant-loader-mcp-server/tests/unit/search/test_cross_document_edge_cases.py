@@ -717,7 +717,7 @@ class TestConflictDetectorEdgeCases:
         """Test LLM analysis timeout handling."""
         # Mock OpenAI client to raise TimeoutError
         conflict_detector.openai_client = AsyncMock()
-        conflict_detector.openai_client.chat.completions.create.side_effect = asyncio.TimeoutError()
+        conflict_detector.openai_client.chat.completions.create.side_effect = TimeoutError()
         
         doc1 = create_hybrid_search_result(
             score=0.8,

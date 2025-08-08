@@ -1,5 +1,7 @@
 """Refactored hybrid search implementation using modular components."""
 
+import time
+
 from datetime import datetime
 from typing import Any
 
@@ -640,7 +642,6 @@ class HybridSearchEngine:
         min_cluster_size: int = 2
     ) -> dict[str, Any]:
         """Cluster documents based on similarity and relationships."""
-        import time
         start_time = time.time()
         
         try:

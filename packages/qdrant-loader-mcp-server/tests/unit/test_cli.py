@@ -582,7 +582,7 @@ class TestCLICommand:
         mock_new_event_loop.return_value = mock_loop
 
         runner = CliRunner()
-        result = runner.invoke(cli, [])
+        runner.invoke(cli, [])
 
         # Verify exit was called with error code - the CLI may call exit multiple times
         # once for the actual error and once during cleanup/normal exit flow

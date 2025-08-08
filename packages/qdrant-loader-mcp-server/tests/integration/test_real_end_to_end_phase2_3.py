@@ -12,7 +12,6 @@ import pytest_asyncio
 import time
 import os
 from unittest.mock import AsyncMock, MagicMock
-from typing import List
 from dotenv import load_dotenv
 
 # Load test environment variables
@@ -25,7 +24,7 @@ from qdrant_loader_mcp_server.search.processor import QueryProcessor
 from qdrant_loader_mcp_server.config import QdrantConfig, OpenAIConfig
 
 # Generic test data (no confidential client information)
-def create_generic_test_documents() -> List[HybridSearchResult]:
+def create_generic_test_documents() -> list[HybridSearchResult]:
     """Create generic test documents for cross-document intelligence testing."""
     return [
         create_hybrid_search_result(

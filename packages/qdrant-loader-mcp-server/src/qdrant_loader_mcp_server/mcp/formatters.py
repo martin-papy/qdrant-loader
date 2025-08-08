@@ -275,8 +275,9 @@ class MCPFormatters:
         # Compute text_length robustly
         if isinstance(text_val, str):
             text_length = len(text_val)
-        elif isinstance(text_val, (int, float)):
-            text_length = int(text_val)
+        elif isinstance(text_val, int | float):
+            # Treat numeric and all non-string types as missing content
+            text_length = 0
 
         return {
             "document_id": doc_id,
