@@ -203,62 +203,86 @@ class MCPFormatters:
         """Return minimal similar documents data for fast navigation."""
         
         # Create similarity index with minimal data
-        similarity_index = []
+        similarity_index: list[dict[str, Any]] = []
         for doc_info in similar_docs:
             document = doc_info.get("document", {})
-            
-            # Handle both HybridSearchResult objects and dict formats
-            if hasattr(document, 'document_id'):
-                doc_id = document.document_id
-                title = getattr(document, 'source_title', None) or "Untitled"
-                source_type = document.source_type
-                text_val = getattr(document, 'text', None)
-                text_length = len(text_val) if isinstance(text_val, str) else (int(text_val) if isinstance(text_val, (int, float)) else 0)
-            else:
-                # Fallback for dict format
-                doc_id = document.get("document_id") or doc_info.get("document_id")
-                title = document.get("source_title", "Untitled") 
-                source_type = document.get("source_type", "unknown")
-                text_val = document.get("text", "")
-                text_length = len(text_val) if isinstance(text_val, str) else (int(text_val) if isinstance(text_val, (int, float)) else 0)
-            
+            fields = MCPFormatters._extract_minimal_doc_fields(document, context=doc_info)
+
             similarity_index.append({
-                "document_id": doc_id,
-                "title": title,
-                "similarity_score": doc_info.get("similarity_score", 0),
+                "document_id": fields["document_id"],
+                "title": fields["title"],
+                "similarity_score": doc_info.get("similarity_score", 0.0),
                 "similarity_info": {
                     "metric_scores": doc_info.get("metric_scores", {}),
                     "similarity_reasons": doc_info.get("similarity_reasons", []),
-                    "source_type": source_type
+                    "source_type": fields["source_type"],
                 },
                 "navigation_hints": {
                     "can_expand": True,
-                    "has_content": text_length > 0,
-                    "content_length": text_length,
-                    "expand_tool": "search"  # Tool to get full document content
-                }
+                    "has_content": fields["text_length"] > 0,
+                    "content_length": fields["text_length"],
+                    "expand_tool": "search",  # Tool to get full document content
+                },
             })
-        
+
         # Extract similarity metrics used
-        metrics_used = []
+        metrics_used: list[str] = []
         if similar_docs:
             first_doc_metrics = similar_docs[0].get("metric_scores", {})
             metrics_used = list(first_doc_metrics.keys())
-        
+
         return {
             "similarity_index": similarity_index,
             "query_info": {
                 "target_query": target_query,
                 "comparison_query": comparison_query,
                 "total_found": len(similarity_index),
-                "metrics_used": metrics_used
+                "metrics_used": metrics_used,
             },
             "navigation": {
                 "supports_lazy_loading": True,
                 "expand_document_tool": "search",  # Tool to get full document content
                 "sort_order": "similarity_desc",
-                "max_displayed": len(similarity_index)
-            }
+                "max_displayed": len(similarity_index),
+            },
+        }
+
+    @staticmethod
+    def _extract_minimal_doc_fields(document: Any, context: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Extract minimal document fields from either an object or a dict.
+
+        Returns a dict with keys: document_id, title, source_type, text_length.
+        """
+        # Defaults
+        doc_id = ""
+        title = "Untitled"
+        source_type = "unknown"
+        text_length = 0
+
+        # Object-like document (e.g., HybridSearchResult)
+        if document is not None and not isinstance(document, dict):
+            doc_id = getattr(document, "document_id", None) or ""
+            title = getattr(document, "source_title", None) or title
+            source_type = getattr(document, "source_type", None) or source_type
+            text_val = getattr(document, "text", None)
+        else:
+            # Dict-like document
+            doc_id = (document or {}).get("document_id") or (context or {}).get("document_id", "")
+            title = (document or {}).get("source_title") or (document or {}).get("title") or title
+            source_type = (document or {}).get("source_type") or source_type
+            text_val = (document or {}).get("text", None)
+
+        # Compute text_length robustly
+        if isinstance(text_val, str):
+            text_length = len(text_val)
+        elif isinstance(text_val, (int, float)):
+            text_length = int(text_val)
+
+        return {
+            "document_id": doc_id,
+            "title": title,
+            "source_type": source_type,
+            "text_length": text_length,
         }
 
     @staticmethod
