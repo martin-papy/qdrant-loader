@@ -3,6 +3,7 @@
 import hashlib
 import time
 from typing import Any
+from dataclasses import dataclass
 
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
@@ -10,6 +11,12 @@ from qdrant_client.http import models
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
+
+
+@dataclass
+class FilterResult:
+    score: float
+    payload: dict
 
 
 class VectorSearchService:
@@ -198,12 +205,6 @@ class VectorSearchService:
             
             results = []
             for point in scroll_results[0]:  # scroll_results is (points, next_page_offset)
-                # Create a result object similar to search results
-                class FilterResult:
-                    def __init__(self, score: float, payload: dict):
-                        self.score = score
-                        self.payload = payload
-                
                 results.append(FilterResult(1.0, point.payload))
         else:
             # Hybrid search (vector search + field filters)

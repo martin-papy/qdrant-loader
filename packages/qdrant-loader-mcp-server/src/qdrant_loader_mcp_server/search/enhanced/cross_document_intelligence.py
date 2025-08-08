@@ -23,7 +23,7 @@ from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, List, Dict, Tuple, Union
 
 import networkx as nx
 from qdrant_client import AsyncQdrantClient
@@ -77,9 +77,9 @@ class DocumentSimilarity:
     doc1_id: str
     doc2_id: str
     similarity_score: float  # 0.0 - 1.0
-    metric_scores: Dict[SimilarityMetric, float] = field(default_factory=dict)
-    shared_entities: List[str] = field(default_factory=list)
-    shared_topics: List[str] = field(default_factory=list)
+    metric_scores: dict[SimilarityMetric, float] = field(default_factory=dict)
+    shared_entities: list[str] = field(default_factory=list)
+    shared_topics: list[str] = field(default_factory=list)
     relationship_type: RelationshipType = RelationshipType.SEMANTIC_SIMILARITY
     explanation: str = ""
     
@@ -105,15 +105,15 @@ class DocumentCluster:
     """Represents a cluster of related documents."""
     cluster_id: str
     name: str
-    documents: List[str] = field(default_factory=list)  # Document IDs
-    shared_entities: List[str] = field(default_factory=list)
-    shared_topics: List[str] = field(default_factory=list)
+    documents: list[str] = field(default_factory=list)  # Document IDs
+    shared_entities: list[str] = field(default_factory=list)
+    shared_topics: list[str] = field(default_factory=list)
     cluster_strategy: ClusteringStrategy = ClusteringStrategy.MIXED_FEATURES
     coherence_score: float = 0.0  # 0.0 - 1.0
     representative_doc_id: str = ""
     cluster_description: str = ""
     
-    def get_cluster_summary(self) -> Dict[str, Any]:
+    def get_cluster_summary(self) -> dict[str, Any]:
         """Get summary information about the cluster."""
         return {
             "cluster_id": self.cluster_id,
@@ -130,12 +130,12 @@ class DocumentCluster:
 @dataclass
 class CitationNetwork:
     """Represents a citation/reference network between documents."""
-    nodes: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # doc_id -> metadata
-    edges: List[Tuple[str, str, Dict[str, Any]]] = field(default_factory=list)  # (from, to, metadata)
+    nodes: dict[str, dict[str, Any]] = field(default_factory=dict)  # doc_id -> metadata
+    edges: list[tuple[str, str, dict[str, Any]]] = field(default_factory=list)  # (from, to, metadata)
     graph: Optional[nx.DiGraph] = None
-    authority_scores: Dict[str, float] = field(default_factory=dict)
-    hub_scores: Dict[str, float] = field(default_factory=dict)
-    pagerank_scores: Dict[str, float] = field(default_factory=dict)
+    authority_scores: dict[str, float] = field(default_factory=dict)
+    hub_scores: dict[str, float] = field(default_factory=dict)
+    pagerank_scores: dict[str, float] = field(default_factory=dict)
     
     def build_graph(self) -> nx.DiGraph:
         """Build NetworkX graph from nodes and edges."""
@@ -195,11 +195,11 @@ class CitationNetwork:
 class ComplementaryContent:
     """Represents complementary content recommendations."""
     target_doc_id: str
-    recommendations: List[Tuple[str, float, str]] = field(default_factory=list)  # (doc_id, score, reason)
+    recommendations: list[tuple[str, float, str]] = field(default_factory=list)  # (doc_id, score, reason)
     recommendation_strategy: str = "mixed"
     generated_at: datetime = field(default_factory=datetime.now)
     
-    def get_top_recommendations(self, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_top_recommendations(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get top N recommendations with detailed information."""
         top_recs = sorted(self.recommendations, key=lambda x: x[1], reverse=True)[:limit]
         return [
@@ -216,11 +216,11 @@ class ComplementaryContent:
 @dataclass
 class ConflictAnalysis:
     """Represents analysis of conflicting information between documents."""
-    conflicting_pairs: List[Tuple[str, str, Dict[str, Any]]] = field(default_factory=list)  # (doc1, doc2, conflict_info)
-    conflict_categories: Dict[str, List[Tuple[str, str]]] = field(default_factory=dict)
-    resolution_suggestions: Dict[str, str] = field(default_factory=dict)
+    conflicting_pairs: list[tuple[str, str, dict[str, Any]]] = field(default_factory=list)  # (doc1, doc2, conflict_info)
+    conflict_categories: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
+    resolution_suggestions: dict[str, str] = field(default_factory=dict)
     
-    def get_conflict_summary(self) -> Dict[str, Any]:
+    def get_conflict_summary(self) -> dict[str, Any]:
         """Get summary of detected conflicts."""
         return {
             "total_conflicts": len(self.conflicting_pairs),
@@ -229,7 +229,7 @@ class ConflictAnalysis:
             "resolution_suggestions": list(self.resolution_suggestions.values())[:3]
         }
     
-    def _get_most_common_conflicts(self) -> List[str]:
+    def _get_most_common_conflicts(self) -> list[str]:
         """Get the most common types of conflicts."""
         return sorted(self.conflict_categories.keys(), 
                      key=lambda x: len(self.conflict_categories[x]), 
@@ -736,7 +736,7 @@ class DocumentClusterAnalyzer:
         
         return clusters
     
-    def _generate_intelligent_cluster_name(self, entities: List[str], topics: List[str], 
+    def _generate_intelligent_cluster_name(self, entities: list[str], topics: list[str], 
                                          cluster_type: str, index: int, 
                                          context_key: str = "") -> str:
         """Generate an intelligent, descriptive name for a cluster."""
@@ -775,7 +775,8 @@ class DocumentClusterAnalyzer:
                 return f"{clean_topics[0]} Topics"
         
         # Mixed or unknown type naming - try to use provided entities/topics
-        if cluster_type not in ["entity", "topic", "project"]:
+        # Recognize known types first to avoid early-return blocking specialized handling
+        if cluster_type not in ["entity", "topic", "project", "hierarchy", "mixed"]:
             first_entity = _normalize_acronym(entities[0]) if entities else None
             clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
             first_topic = clean_topics[0] if clean_topics else None
@@ -797,8 +798,6 @@ class DocumentClusterAnalyzer:
             return f"Entity Cluster {index}"
         if cluster_type == "topic" and not topics:
             return f"Topic Cluster {index}"
-        return f"Cluster {index}"
-        
         # Hierarchy-based naming
         if cluster_type == "hierarchy" and context_key:
             if context_key == "root":

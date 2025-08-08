@@ -431,7 +431,7 @@ class MCPFormatters:
                 "conflict_type": conflict["conflict_type"],
                 "conflict_score": conflict["confidence_score"],
                 "conflict_description": conflict["summary"],
-                "conflicting_statements": MCPFormatters._extract_conflicting_statements(conflict_info),
+                "conflicting_statements": conflict.get("conflicting_statements", []),
                 "analysis_tier": conflict["analysis_tier"]  # Keep our enhancement
             })
         

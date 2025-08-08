@@ -116,6 +116,7 @@ class TestSearchErrorHandling:
         
         # Should validate and reject
         search_handler_with_mocks.protocol.create_response.assert_called_once()
+        assert "error" in result
 
     @pytest.mark.asyncio
     async def test_handle_search_empty_query_string(self, search_handler_with_mocks):

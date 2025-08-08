@@ -208,8 +208,8 @@ class TestAsyncHierarchySearchBehavior:
         # Mock the filtering to be slow
         original_filter = async_search_handler._apply_hierarchy_filters
         
-        def slow_filter(results, filter_dict):
-            time.sleep(0.05)  # Simulate slow filtering
+        async def slow_filter(results, filter_dict):
+            await asyncio.sleep(0.05)  # Simulate slow filtering
             return original_filter(results, filter_dict)
         
         with patch.object(async_search_handler, '_apply_hierarchy_filters', side_effect=slow_filter):
@@ -268,8 +268,8 @@ class TestAsyncAttachmentSearchBehavior:
             async def slow_organize(results):
                 await asyncio.sleep(0.05)  # Simulate slow organization
                 return [{"group_name": "Test Files", "document_ids": ["doc1"]}]
-            
-            mock_organize.side_effect = lambda x: [{"group_name": "Test Files", "document_ids": ["doc1"]}]
+
+            mock_organize.side_effect = slow_organize
             
             with patch.object(async_search_handler.formatters, 'create_lightweight_attachment_results'):
                 start_time = time.time()

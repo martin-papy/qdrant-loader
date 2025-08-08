@@ -245,9 +245,18 @@ Final paragraph with special characters: éñüñøß
             metadata = extractor._extract_repo_metadata("/test/file.md")
             assert metadata == {}
         
-        # Test with empty config
-        base_config.base_url = HttpUrl("https://example.com")
-        metadata = extractor._extract_repo_metadata("/test/file.md")
+        # Test with empty config - avoid mutating shared fixture by creating a copy
+        local_config = GitRepoConfig(
+            base_url=HttpUrl("https://example.com"),
+            branch=base_config.branch,
+            file_types=base_config.file_types,
+            token=base_config.token,
+            source=base_config.source,
+            source_type=base_config.source_type,
+            temp_dir=base_config.temp_dir,
+        )
+        extractor2 = GitMetadataExtractor(local_config)
+        metadata = extractor2._extract_repo_metadata("/test/file.md")
         assert metadata == {}
 
     def test_extract_git_metadata_comprehensive(self, base_config):

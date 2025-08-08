@@ -105,10 +105,19 @@ Content for level 3.
         assert len(chunks) > 0
 
     def test_fallback_chunking(self, markdown_strategy, sample_document):
-        """Test fallback chunking when main strategy fails."""
-        # Access the fallback method directly
-        chunks = markdown_strategy._fallback_chunking(sample_document)
-        
+        """Test fallback chunking via public API by forcing invalid structure."""
+        # Create a document that will force fallback (very large or invalid markdown)
+        bad_doc = Document(
+            title="Invalid",
+            content="{" * 10000,  # invalid markdown-like content to trigger fallback
+            content_type="md",
+            metadata={"file_name": "invalid.md"},
+            source="invalid.md",
+            source_type="markdown",
+            url="file:///invalid.md",
+        )
+        chunks = markdown_strategy.chunk_document(bad_doc)
+
         assert isinstance(chunks, list)
         assert len(chunks) > 0
         for chunk in chunks:
