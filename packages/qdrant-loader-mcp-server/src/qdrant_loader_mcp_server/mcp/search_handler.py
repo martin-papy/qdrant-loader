@@ -1,6 +1,7 @@
 """Search operations handler for MCP server."""
 
 from typing import Any
+import inspect
 
 from ..search.engine import SearchEngine
 from ..search.components.search_result_models import HybridSearchResult
@@ -165,8 +166,9 @@ class SearchHandler:
                 limit=max(limit * 2, 40),  # Get enough results to filter for hierarchy navigation
             )
 
-            # Apply hierarchy filters
-            filtered_results = self._apply_hierarchy_filters(results, hierarchy_filter)
+            # Apply hierarchy filters (support sync or async patched functions in tests)
+            maybe_filtered = self._apply_hierarchy_filters(results, hierarchy_filter)
+            filtered_results = await maybe_filtered if inspect.isawaitable(maybe_filtered) else maybe_filtered
 
             # For hierarchy search, prioritize returning more documents for better hierarchy navigation
             # Limit to maximum of 20 documents for hierarchy index (not just the user's limit)

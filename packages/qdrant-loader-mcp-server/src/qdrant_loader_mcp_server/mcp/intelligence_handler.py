@@ -524,5 +524,9 @@ class IntelligenceHandler:
             logger.error("Error expanding cluster", exc_info=True)
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal server error"},
-            ) 
+                error={
+                    "code": -32603,
+                    "message": "Internal server error",
+                    "data": str(e),
+                },
+            )

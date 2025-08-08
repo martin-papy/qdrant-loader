@@ -45,7 +45,7 @@ def _get_all_sources_from_config(sources_config):
 async def _get_project_document_count(state_manager: StateManager, project_id: str) -> int:
     """Get the count of non-deleted documents for a project."""
     try:
-        async with state_manager._session_factory() as session:
+        async with await state_manager.get_session() as session:
             result = await session.execute(
                 select(func.count(DocumentStateRecord.id))
                 .filter_by(project_id=project_id)
@@ -61,7 +61,7 @@ async def _get_project_document_count(state_manager: StateManager, project_id: s
 async def _get_project_latest_ingestion(state_manager: StateManager, project_id: str) -> str | None:
     """Get the latest ingestion timestamp for a project."""
     try:
-        async with state_manager._session_factory() as session:
+        async with await state_manager.get_session() as session:
             result = await session.execute(
                 select(IngestionHistory.last_successful_ingestion)
                 .filter_by(project_id=project_id)

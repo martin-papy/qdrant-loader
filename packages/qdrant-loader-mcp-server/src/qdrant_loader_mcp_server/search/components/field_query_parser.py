@@ -74,12 +74,15 @@ class FieldQueryParser:
         """
         field_queries = []
         remaining_text = query
-        
-        # Find all field:value patterns
-        for match in self.FIELD_PATTERN.finditer(query):
+
+        # Find all field:value patterns and collect spans to remove safely
+        matches = list(self.FIELD_PATTERN.finditer(query))
+        spans_to_remove: list[tuple[int, int]] = []
+
+        for match in matches:
             field_name = match.group(1)
             field_value = match.group(2) or match.group(3)  # quoted or unquoted value
-            
+
             if field_name in self.SUPPORTED_FIELDS:
                 field_query = FieldQuery(
                     field_name=field_name,
@@ -87,13 +90,21 @@ class FieldQueryParser:
                     original_query=match.group(0)
                 )
                 field_queries.append(field_query)
-                
-                # Remove this field query from the remaining text
-                remaining_text = remaining_text.replace(match.group(0), "").strip()
-                
+                spans_to_remove.append(match.span())
                 self.logger.debug(f"Parsed field query: {field_name}={field_value}")
             else:
                 self.logger.warning(f"Unsupported field: {field_name}")
+
+        # Remove matched substrings from remaining_text by slicing in reverse order
+        if spans_to_remove:
+            parts = []
+            last_index = len(query)
+            for start, end in sorted(spans_to_remove, key=lambda s: s[0], reverse=True):
+                # Append segment after this match
+                parts.append(query[end:last_index])
+                last_index = start
+            parts.append(query[:last_index])
+            remaining_text = "".join(reversed(parts)).strip()
         
         # Clean up remaining text (remove extra spaces)
         text_query = re.sub(r'\s+', ' ', remaining_text).strip()

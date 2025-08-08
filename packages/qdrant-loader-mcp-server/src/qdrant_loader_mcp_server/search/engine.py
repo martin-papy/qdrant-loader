@@ -55,22 +55,14 @@ class SearchEngine:
                     ),
                 )
 
-            # Initialize hybrid search
+            # Initialize hybrid search (single path; pass through search_config which may be None)
             if self.client and self.openai_client:
-                # Use search config if provided, otherwise use defaults
-                if search_config:
-                    self.hybrid_search = HybridSearchEngine(
-                        qdrant_client=self.client,
-                        openai_client=self.openai_client,
-                        collection_name=config.collection_name,
-                        search_config=search_config,
-                    )
-                else:
-                    self.hybrid_search = HybridSearchEngine(
-                        qdrant_client=self.client,
-                        openai_client=self.openai_client,
-                        collection_name=config.collection_name,
-                    )
+                self.hybrid_search = HybridSearchEngine(
+                    qdrant_client=self.client,
+                    openai_client=self.openai_client,
+                    collection_name=config.collection_name,
+                    search_config=search_config,
+                )
 
             self.logger.info("Successfully connected to Qdrant", url=config.url)
         except Exception as e:

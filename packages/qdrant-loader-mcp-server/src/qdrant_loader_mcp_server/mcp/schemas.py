@@ -699,7 +699,7 @@ class MCPSchemas:
             }
         }
 
-    @staticmethod 
+    @staticmethod
     def get_expand_cluster_tool_schema() -> dict[str, Any]:
         """Get the expand cluster tool schema for lazy loading cluster documents."""
         return {
@@ -719,7 +719,7 @@ class MCPSchemas:
                         "default": 20,
                     },
                     "offset": {
-                        "type": "integer", 
+                        "type": "integer",
                         "description": "Number of documents to skip for pagination (default: 0)",
                         "default": 0,
                     },
@@ -747,7 +747,7 @@ class MCPSchemas:
                         "description": "Full list of documents in the cluster"
                     },
                     "pagination": {
-                        "type": "object", 
+                        "type": "object",
                         "description": "Pagination information"
                     }
                 }

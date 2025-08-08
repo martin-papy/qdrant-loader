@@ -139,16 +139,20 @@ class AsyncIngestionPipeline:
 
         try:
             # Initialize state manager first
-            if not self.state_manager._initialized:
+            if not self.state_manager.is_initialized:
                 logger.debug("Initializing state manager")
                 await self.state_manager.initialize()
 
             # Initialize project manager
             if not self.project_manager._initialized:
                 logger.debug("Initializing project manager")
-                if self.state_manager._session_factory:
+                try:
+                    session_ctx = await self.state_manager.create_session()
+                except Exception:
+                    session_ctx = None
+                if session_ctx:
                     try:
-                        async with self.state_manager._session_factory() as session:
+                        async with session_ctx as session:
                             await self.project_manager.initialize(session)
                         logger.debug("Project manager initialization completed")
                     except Exception as e:

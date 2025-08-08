@@ -12,7 +12,7 @@ import time
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional, Dict, List, Set, Tuple
 
 import networkx as nx
 
@@ -64,7 +64,7 @@ class GraphNode:
     node_type: NodeType
     title: str
     content: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     
     # Graph metrics (calculated)
     centrality_score: float = 0.0
@@ -72,10 +72,10 @@ class GraphNode:
     hub_score: float = 0.0
     
     # Content analysis
-    entities: List[str] = field(default_factory=list)
-    topics: List[str] = field(default_factory=list)
-    concepts: List[str] = field(default_factory=list)
-    keywords: List[str] = field(default_factory=list)
+    entities: list[str] = field(default_factory=list)
+    topics: list[str] = field(default_factory=list)
+    concepts: list[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
     
     def __post_init__(self):
         """Initialize derived properties."""
@@ -91,10 +91,10 @@ class GraphEdge:
     target_id: str
     relationship_type: RelationshipType
     weight: float = 1.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     
     # Evidence for the relationship
-    evidence: List[str] = field(default_factory=list)
+    evidence: list[str] = field(default_factory=list)
     confidence: float = 1.0
     
     def __post_init__(self):
@@ -117,13 +117,13 @@ class TraversalStrategy(Enum):
 class TraversalResult:
     """Result of graph traversal operation."""
     
-    path: List[str]                      # Node IDs in traversal order
-    nodes: List[GraphNode]               # Actual node objects
-    relationships: List[GraphEdge]       # Edges traversed
+    path: list[str]                      # Node IDs in traversal order
+    nodes: list[GraphNode]               # Actual node objects
+    relationships: list[GraphEdge]       # Edges traversed
     total_weight: float                  # Sum of edge weights
     semantic_score: float                # Semantic relevance to query
     hop_count: int                       # Number of hops from start
-    reasoning_path: List[str]            # Human-readable reasoning
+    reasoning_path: list[str]            # Human-readable reasoning
 
 
 class KnowledgeGraph:
@@ -132,11 +132,11 @@ class KnowledgeGraph:
     def __init__(self):
         """Initialize the knowledge graph."""
         self.graph = nx.MultiDiGraph()  # Allow multiple edges between nodes
-        self.nodes: Dict[str, GraphNode] = {}
-        self.edges: Dict[Tuple[str, str, str], GraphEdge] = {}  # (source, target, relationship)
-        self.node_type_index: Dict[NodeType, Set[str]] = defaultdict(set)
-        self.entity_index: Dict[str, Set[str]] = defaultdict(set)  # entity -> node_ids
-        self.topic_index: Dict[str, Set[str]] = defaultdict(set)   # topic -> node_ids
+        self.nodes: dict[str, GraphNode] = {}
+        self.edges: dict[tuple[str, str, str], GraphEdge] = {}  # (source, target, relationship)
+        self.node_type_index: dict[NodeType, set[str]] = defaultdict(set)
+        self.entity_index: dict[str, set[str]] = defaultdict(set)  # entity -> node_ids
+        self.topic_index: dict[str, set[str]] = defaultdict(set)   # topic -> node_ids
         
         logger.info("Initialized empty knowledge graph")
     
@@ -190,16 +190,16 @@ class KnowledgeGraph:
             logger.error(f"Failed to add edge {edge.source_id} -> {edge.target_id}: {e}")
             return False
     
-    def find_nodes_by_type(self, node_type: NodeType) -> List[GraphNode]:
+    def find_nodes_by_type(self, node_type: NodeType) -> list[GraphNode]:
         """Find all nodes of a specific type."""
         return [self.nodes[node_id] for node_id in self.node_type_index[node_type]]
     
-    def find_nodes_by_entity(self, entity: str) -> List[GraphNode]:
+    def find_nodes_by_entity(self, entity: str) -> list[GraphNode]:
         """Find all nodes containing a specific entity."""
         node_ids = self.entity_index.get(entity.lower(), set())
         return [self.nodes[node_id] for node_id in node_ids]
     
-    def find_nodes_by_topic(self, topic: str) -> List[GraphNode]:
+    def find_nodes_by_topic(self, topic: str) -> list[GraphNode]:
         """Find all nodes discussing a specific topic."""
         node_ids = self.topic_index.get(topic.lower(), set())
         return [self.nodes[node_id] for node_id in node_ids]
@@ -236,7 +236,7 @@ class KnowledgeGraph:
         except Exception as e:
             logger.error(f"Failed to calculate centrality scores: {e}")
     
-    def get_neighbors(self, node_id: str, relationship_types: Optional[List[RelationshipType]] = None) -> List[Tuple[str, GraphEdge]]:
+    def get_neighbors(self, node_id: str, relationship_types: Optional[list[RelationshipType]] = None) -> list[tuple[str, GraphEdge]]:
         """Get neighboring nodes with their connecting edges."""
         neighbors = []
         
@@ -256,7 +256,7 @@ class KnowledgeGraph:
         
         return neighbors
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get graph statistics."""
         stats = {
             "total_nodes": len(self.nodes),
@@ -292,7 +292,7 @@ class GraphTraverser:
         max_hops: int = 3,
         max_results: int = 20,
         min_weight: float = 0.1
-    ) -> List[TraversalResult]:
+    ) -> list[TraversalResult]:
         """Traverse the graph to find related content."""
         
         results = []
@@ -337,8 +337,8 @@ class GraphTraverser:
         max_hops: int, 
         max_results: int, 
         min_weight: float,
-        visited: Set[str]
-    ) -> List[TraversalResult]:
+        visited: set[str]
+    ) -> list[TraversalResult]:
         """Breadth-first traversal implementation."""
         
         results = []
@@ -390,8 +390,8 @@ class GraphTraverser:
         max_hops: int, 
         max_results: int, 
         min_weight: float,
-        visited: Set[str]
-    ) -> List[TraversalResult]:
+        visited: set[str]
+    ) -> list[TraversalResult]:
         """Weighted traversal prioritizing strong relationships."""
         
         results = []
@@ -447,8 +447,8 @@ class GraphTraverser:
         max_hops: int, 
         max_results: int, 
         min_weight: float,
-        visited: Set[str]
-    ) -> List[TraversalResult]:
+        visited: set[str]
+    ) -> list[TraversalResult]:
         """Traversal prioritizing high-centrality nodes."""
         
         results = []
@@ -505,8 +505,8 @@ class GraphTraverser:
         max_hops: int, 
         max_results: int, 
         min_weight: float,
-        visited: Set[str]
-    ) -> List[TraversalResult]:
+        visited: set[str]
+    ) -> list[TraversalResult]:
         """Traversal prioritizing semantic similarity to query."""
         
         if not query_analysis:
@@ -588,7 +588,7 @@ class GraphTraverser:
         
         return total_score
     
-    def _calculate_list_similarity(self, list1: List[Tuple[str, str]], list2: List[Tuple[str, str]]) -> float:
+    def _calculate_list_similarity(self, list1: list[tuple[str, str]], list2: list[tuple[str, str]]) -> float:
         """Calculate similarity between two lists of items."""
         if not list1 or not list2:
             return 0.0
@@ -601,7 +601,7 @@ class GraphTraverser:
         
         return intersection / max(union, 1)
     
-    def _build_reasoning_path(self, path: List[str], edges: List[GraphEdge]) -> List[str]:
+    def _build_reasoning_path(self, path: list[str], edges: list[GraphEdge]) -> list[str]:
         """Build human-readable reasoning path."""
         reasoning = []
         
@@ -625,7 +625,7 @@ class GraphBuilder:
         self.spacy_analyzer = spacy_analyzer or SpaCyQueryAnalyzer()
         logger.info("Initialized graph builder")
     
-    def build_from_search_results(self, search_results: List[SearchResult]) -> KnowledgeGraph:
+    def build_from_search_results(self, search_results: list[SearchResult]) -> KnowledgeGraph:
         """Build knowledge graph from search results metadata."""
         
         start_time = time.time()
@@ -666,7 +666,7 @@ class GraphBuilder:
             logger.error(f"Failed to build knowledge graph: {e}")
             return graph
     
-    def _create_document_nodes(self, search_results: List[SearchResult]) -> List[GraphNode]:
+    def _create_document_nodes(self, search_results: list[SearchResult]) -> list[GraphNode]:
         """Create document and section nodes from search results."""
         
         nodes = []
@@ -721,7 +721,7 @@ class GraphBuilder:
         
         return nodes
     
-    def _create_concept_nodes(self, search_results: List[SearchResult]) -> Tuple[List[GraphNode], List[GraphNode]]:
+    def _create_concept_nodes(self, search_results: list[SearchResult]) -> tuple[list[GraphNode], list[GraphNode]]:
         """Create entity and topic nodes from extracted metadata."""
         
         # Collect all entities and topics
@@ -765,7 +765,7 @@ class GraphBuilder:
         
         return entity_nodes, topic_nodes
     
-    def _create_relationships(self, search_results: List[SearchResult], graph: KnowledgeGraph) -> List[GraphEdge]:
+    def _create_relationships(self, search_results: list[SearchResult], graph: KnowledgeGraph) -> list[GraphEdge]:
         """Create relationships between graph nodes."""
         
         edges = []
@@ -800,7 +800,7 @@ class GraphBuilder:
         
         return edges
     
-    def _create_entity_relationships(self, search_results: List[SearchResult], graph: KnowledgeGraph) -> List[GraphEdge]:
+    def _create_entity_relationships(self, search_results: list[SearchResult], graph: KnowledgeGraph) -> list[GraphEdge]:
         """Create entity-related relationships."""
         
         edges = []
@@ -830,7 +830,7 @@ class GraphBuilder:
         
         return edges
     
-    def _create_topic_relationships(self, search_results: List[SearchResult], graph: KnowledgeGraph) -> List[GraphEdge]:
+    def _create_topic_relationships(self, search_results: list[SearchResult], graph: KnowledgeGraph) -> list[GraphEdge]:
         """Create topic-related relationships."""
         
         edges = []
@@ -856,7 +856,7 @@ class GraphBuilder:
         
         return edges
     
-    def _create_entity_cooccurrence(self, search_results: List[SearchResult], graph: KnowledgeGraph) -> List[GraphEdge]:
+    def _create_entity_cooccurrence(self, search_results: list[SearchResult], graph: KnowledgeGraph) -> list[GraphEdge]:
         """Create entity co-occurrence relationships."""
         
         edges = []
@@ -891,7 +891,7 @@ class GraphBuilder:
         
         return edges
     
-    def _create_similarity_relationships(self, graph: KnowledgeGraph) -> List[GraphEdge]:
+    def _create_similarity_relationships(self, graph: KnowledgeGraph) -> list[GraphEdge]:
         """Create semantic similarity relationships between nodes."""
         
         edges = []
@@ -937,7 +937,7 @@ class GraphBuilder:
         
         return total_similarity
     
-    def _jaccard_similarity(self, set1: Set[str], set2: Set[str]) -> float:
+    def _jaccard_similarity(self, set1: set[str], set2: set[str]) -> float:
         """Calculate Jaccard similarity between two sets."""
         if not set1 or not set2:
             return 0.0
@@ -947,7 +947,7 @@ class GraphBuilder:
         
         return intersection / max(union, 1)
     
-    def _extract_entities(self, result: SearchResult) -> List[str]:
+    def _extract_entities(self, result: SearchResult) -> list[str]:
         """Extract entities from search result fields."""
         entities = []
         
@@ -968,7 +968,7 @@ class GraphBuilder:
         
         return list(set(entities))  # Remove duplicates
     
-    def _extract_topics(self, result: SearchResult) -> List[str]:
+    def _extract_topics(self, result: SearchResult) -> list[str]:
         """Extract topics from search result fields."""
         topics = []
         
@@ -986,7 +986,7 @@ class GraphBuilder:
         
         return list(set(topics))
     
-    def _extract_concepts(self, result: SearchResult) -> List[str]:
+    def _extract_concepts(self, result: SearchResult) -> list[str]:
         """Extract concepts from search result fields."""
         concepts = []
         
@@ -999,7 +999,7 @@ class GraphBuilder:
         
         return list(set(concepts))
     
-    def _extract_keywords(self, result: SearchResult) -> List[str]:
+    def _extract_keywords(self, result: SearchResult) -> list[str]:
         """Extract keywords from search result text and titles."""
         keywords = []
         
@@ -1027,7 +1027,7 @@ class DocumentKnowledgeGraph:
         
         logger.info("Initialized document knowledge graph system")
     
-    def build_graph(self, search_results: List[SearchResult]) -> bool:
+    def build_graph(self, search_results: list[SearchResult]) -> bool:
         """Build knowledge graph from search results."""
         try:
             self.knowledge_graph = self.graph_builder.build_from_search_results(search_results)
@@ -1047,7 +1047,7 @@ class DocumentKnowledgeGraph:
         max_hops: int = 3, 
         max_results: int = 20,
         strategy: TraversalStrategy = TraversalStrategy.SEMANTIC
-    ) -> List[TraversalResult]:
+    ) -> list[TraversalResult]:
         """Find related content using graph traversal."""
         
         if not self.knowledge_graph or not self.traverser:
@@ -1081,7 +1081,7 @@ class DocumentKnowledgeGraph:
             logger.error(f"Failed to find related content: {e}")
             return []
     
-    def _find_query_start_nodes(self, query_analysis: QueryAnalysis) -> List[str]:
+    def _find_query_start_nodes(self, query_analysis: QueryAnalysis) -> list[str]:
         """Find starting nodes for graph traversal based on query analysis."""
         
         start_nodes = []
@@ -1105,7 +1105,7 @@ class DocumentKnowledgeGraph:
         
         return list(set(start_nodes))  # Remove duplicates
     
-    def get_graph_statistics(self) -> Optional[Dict[str, Any]]:
+    def get_graph_statistics(self) -> Optional[dict[str, Any]]:
         """Get knowledge graph statistics."""
         if self.knowledge_graph:
             return self.knowledge_graph.get_statistics()
