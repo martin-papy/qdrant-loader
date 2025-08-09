@@ -480,17 +480,17 @@ class SearchHandler:
         
         for result in results:
             # Quick attachment detection - avoid expensive checks
-            is_attachment = (
-                result.is_attachment or 
-                result.original_filename or 
-                (result.file_path and '.' in result.file_path and not result.file_path.endswith('/'))
-            )
+            _is_attachment_flag = bool(getattr(result, 'is_attachment', False))
+            _original_filename = getattr(result, 'original_filename', None)
+            _file_path = getattr(result, 'file_path', None)
+            _is_path_file = isinstance(_file_path, str) and '.' in _file_path and not _file_path.endswith('/')
+            is_attachment = _is_attachment_flag or bool(_original_filename) or _is_path_file
             
             if not is_attachment:
                 continue
             
             # Apply filters with early exits for performance
-            if attachment_filter.get('attachments_only') and not result.is_attachment:
+            if attachment_filter.get('attachments_only') and not bool(getattr(result, 'is_attachment', False)):
                 continue
                 
             if attachment_filter.get('file_type'):
@@ -499,23 +499,24 @@ class SearchHandler:
                     continue
             
             # Size filters with null checks
-            if attachment_filter.get('file_size_min') and result.file_size:
-                if result.file_size < attachment_filter['file_size_min']:
+            _file_size = getattr(result, 'file_size', None)
+            if attachment_filter.get('file_size_min') and _file_size:
+                if _file_size < attachment_filter['file_size_min']:
                     continue
                     
-            if attachment_filter.get('file_size_max') and result.file_size:
-                if result.file_size > attachment_filter['file_size_max']:
+            if attachment_filter.get('file_size_max') and _file_size:
+                if _file_size > attachment_filter['file_size_max']:
                     continue
             
             # Parent document filter (works across source types)
             if attachment_filter.get('parent_document_title'):
-                parent_title = result.parent_document_title or result.parent_title
+                parent_title = (getattr(result, 'parent_document_title', None) or getattr(result, 'parent_title', None))
                 if parent_title != attachment_filter['parent_document_title']:
                     continue
             
             # Author filter
             if attachment_filter.get('author'):
-                author = result.attachment_author or getattr(result, 'author', None)
+                author = (getattr(result, 'attachment_author', None) or getattr(result, 'author', None))
                 if author != attachment_filter['author']:
                     continue
                     

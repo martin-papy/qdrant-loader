@@ -1061,7 +1061,7 @@ class TestIntelligenceHandlerResponseFormatting:
             mock_create_clust.assert_called_once()
 
 
-class TestIntelligenceHandlerEdgeCases:
+class TestIntelligenceHandlerEdgeCasesMalformedData:
     """Test edge cases and malformed data handling."""
 
     @pytest.mark.asyncio

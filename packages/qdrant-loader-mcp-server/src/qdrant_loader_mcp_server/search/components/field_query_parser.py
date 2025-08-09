@@ -56,6 +56,25 @@ class FieldQueryParser:
     def __init__(self):
         """Initialize the field query parser."""
         self.logger = LoggingConfig.get_logger(__name__)
+        # Define fields that should be treated as numeric for exact matching
+        self._numeric_fields = {"chunk_index", "total_chunks"}
+
+    def _convert_value_for_key(self, payload_key: str, raw_value: str) -> int | str:
+        """Convert a raw string value to the correct type for the given payload key.
+
+        Handles both top-level and nested keys (e.g., metadata.chunk_index).
+        Currently coerces known numeric fields to int; leaves others as-is.
+        """
+        try:
+            key_name = payload_key.split(".")[-1]
+            if key_name in self._numeric_fields:
+                # Coerce to integer for numeric fields
+                return int(raw_value)
+        except (ValueError, TypeError):
+            self.logger.warning(
+                f"Expected numeric value for '{payload_key}', got '{raw_value}'. Using original value."
+            )
+        return raw_value
     
     def parse_query(self, query: str) -> ParsedQuery:
         """Parse a query string into field queries and text search.
@@ -133,10 +152,10 @@ class FieldQueryParser:
         if field_queries:
             for field_query in field_queries:
                 payload_key = self.SUPPORTED_FIELDS[field_query.field_name]
-                
+                match_value = self._convert_value_for_key(payload_key, field_query.field_value)
+
                 # Handle nested fields (e.g., metadata.chunk_index)
                 if "." in payload_key:
-                    # For nested fields, use nested condition
                     parts = payload_key.split(".", 1)
                     condition = models.NestedCondition(
                         nested=models.Nested(
@@ -145,7 +164,7 @@ class FieldQueryParser:
                                 must=[
                                     models.FieldCondition(
                                         key=parts[1],
-                                        match=models.MatchValue(value=field_query.field_value)
+                                        match=models.MatchValue(value=match_value)
                                     )
                                 ]
                             )
@@ -155,11 +174,11 @@ class FieldQueryParser:
                     # For top-level fields, use direct field condition
                     condition = models.FieldCondition(
                         key=payload_key,
-                        match=models.MatchValue(value=field_query.field_value)
+                        match=models.MatchValue(value=match_value)
                     )
-                
+
                 must_conditions.append(condition)
-                self.logger.debug(f"Added filter condition: {payload_key} = {field_query.field_value}")
+                self.logger.debug(f"Added filter condition: {payload_key} = {match_value}")
         
         # Add project ID filters if provided
         if project_ids:

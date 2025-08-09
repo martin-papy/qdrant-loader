@@ -28,9 +28,6 @@ class VectorSearchService:
         openai_client: AsyncOpenAI,
         collection_name: str,
         min_score: float = 0.3,
-        dense_vector_name: str = "dense",
-        sparse_vector_name: str = "sparse",
-        alpha: float = 0.5,
         cache_enabled: bool = True,
         cache_ttl: int = 300,
         cache_max_size: int = 500,
@@ -42,9 +39,6 @@ class VectorSearchService:
             openai_client: OpenAI client instance
             collection_name: Name of the Qdrant collection
             min_score: Minimum score threshold
-            dense_vector_name: Name of the dense vector field
-            sparse_vector_name: Name of the sparse vector field
-            alpha: Weight for dense search (1-alpha for sparse search)
             cache_enabled: Whether to enable search result caching
             cache_ttl: Cache time-to-live in seconds
             cache_max_size: Maximum number of cached results
@@ -53,9 +47,6 @@ class VectorSearchService:
         self.openai_client = openai_client
         self.collection_name = collection_name
         self.min_score = min_score
-        self.dense_vector_name = dense_vector_name
-        self.sparse_vector_name = sparse_vector_name
-        self.alpha = alpha
         
         # Search result caching configuration
         self.cache_enabled = cache_enabled

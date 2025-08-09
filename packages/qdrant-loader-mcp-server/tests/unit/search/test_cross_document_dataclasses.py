@@ -325,7 +325,8 @@ class TestCitationNetwork:
         # Create a problematic graph that might cause computation issues
         network = CitationNetwork(
             nodes={"doc1": {}},
-            edges=[]
+            # Include at least one edge so nx.hits and nx.pagerank are invoked
+            edges=[("doc1", "doc1", {})]
         )
         
         # Mock the networkx functions to raise an exception

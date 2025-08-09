@@ -5,6 +5,8 @@ from typing import Any
 import numpy as np
 from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
+import re
+import asyncio
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
@@ -33,7 +35,8 @@ class KeywordSearchService:
         self, 
         query: str, 
         limit: int, 
-        project_ids: list[str] | None = None
+        project_ids: list[str] | None = None,
+        max_candidates: int = 2000,
     ) -> list[dict[str, Any]]:
         """Perform keyword search using BM25.
         
@@ -41,6 +44,7 @@ class KeywordSearchService:
             query: Search query
             limit: Maximum number of results
             project_ids: Optional project ID filters
+            max_candidates: Maximum number of candidate documents to fetch from Qdrant before ranking
             
         Returns:
             List of search results with scores, text, metadata, and source_type
@@ -51,13 +55,39 @@ class KeywordSearchService:
         
         # Create filter combining field queries and project IDs
         query_filter = self.field_parser.create_qdrant_filter(parsed_query.field_queries, project_ids)
-        
-        scroll_results = await self.qdrant_client.scroll(
-            collection_name=self.collection_name,
-            limit=10000,
-            with_payload=True,
-            with_vectors=False,
-            scroll_filter=query_filter,
+
+        # Determine how many candidates to fetch per page: min(max_candidates, scaled_limit)
+        # Using a scale factor to over-fetch relative to requested limit for better ranking quality
+        scale_factor = 5
+        scaled_limit = max(limit * scale_factor, limit)
+        page_limit = min(max_candidates, scaled_limit)
+
+        # Paginate through Qdrant using scroll until we gather up to max_candidates
+        all_points = []
+        next_offset = None
+        total_fetched = 0
+        while total_fetched < max_candidates:
+            batch_limit = min(page_limit, max_candidates - total_fetched)
+            points, next_offset = await self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                limit=batch_limit,
+                with_payload=True,
+                with_vectors=False,
+                scroll_filter=query_filter,
+                offset=next_offset,
+            )
+
+            if not points:
+                break
+
+            all_points.extend(points)
+            total_fetched += len(points)
+
+            if not next_offset:
+                break
+
+        self.logger.debug(
+            f"Keyword search - fetched {len(all_points)} candidates (requested max {max_candidates}, limit {limit})"
         )
 
         documents = []
@@ -70,7 +100,7 @@ class KeywordSearchService:
         created_ats = []
         updated_ats = []
 
-        for point in scroll_results[0]:
+        for point in all_points:
             if point.payload:
                 content = point.payload.get("content", "")
                 metadata = point.payload.get("metadata", {})
@@ -103,15 +133,12 @@ class KeywordSearchService:
             # For filter-only searches, assign equal scores to all results
             scores = np.ones(len(documents))
         else:
-            # Use BM25 scoring for text queries
+            # Use BM25 scoring for text queries, offloaded to a thread
             search_query = parsed_query.text_query if parsed_query.text_query else query
-            tokenized_docs = [doc.split() for doc in documents]
-            bm25 = BM25Okapi(tokenized_docs)
-            
-            tokenized_query = search_query.split()
-            scores = bm25.get_scores(tokenized_query)
+            scores = await asyncio.to_thread(self._compute_bm25_scores, documents, search_query)
 
-        top_indices = np.argsort(scores)[-limit:][::-1]
+        # Stable sort for ranking to keep original order among ties
+        top_indices = np.array(sorted(range(len(scores)), key=lambda i: (scores[i], i), reverse=True)[:limit])
 
         results = []
         for idx in top_indices:
@@ -135,3 +162,20 @@ class KeywordSearchService:
         return results
 
     # Note: _build_filter method removed - now using FieldQueryParser.create_qdrant_filter()
+
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        """Tokenize text using regex-based word tokenization and lowercasing."""
+        if not isinstance(text, str):
+            return []
+        return re.findall(r"\b\w+\b", text.lower())
+
+    def _compute_bm25_scores(self, documents: list[str], query: str) -> np.ndarray:
+        """Compute BM25 scores for documents against the query.
+
+        Tokenizes documents and query with regex word tokenization and lowercasing.
+        """
+        tokenized_docs = [self._tokenize(doc) for doc in documents]
+        bm25 = BM25Okapi(tokenized_docs)
+        tokenized_query = self._tokenize(query)
+        return bm25.get_scores(tokenized_query)

@@ -476,7 +476,7 @@ class TestDocumentClusterAnalyzerAlgorithms:
         )
         
         # Should create some clusters
-        assert len(clusters) >= 0
+        assert len(clusters) > 0
         
         for cluster in clusters:
             assert len(cluster.documents) >= 2  # Meets min_cluster_size

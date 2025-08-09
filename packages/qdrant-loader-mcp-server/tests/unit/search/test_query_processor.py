@@ -62,14 +62,16 @@ class TestQueryProcessor:
     @pytest.mark.asyncio
     async def test_process_query_error_handling(self, query_processor, mock_openai_client):
         """Test query processing error handling."""
-        # With spaCy implementation, processing should succeed even if external APIs fail
-        result = await query_processor.process_query("test query")
+        # Simulate spaCy inference failure to exercise fallback path
+        with patch.object(query_processor, '_infer_intent_spacy', side_effect=Exception("spaCy failure")):
+            result = await query_processor.process_query("test query")
 
-        # Should process successfully with spaCy
-        assert result["query"] == "test query"
-        assert result["intent"] == "general"
-        assert result["source_type"] is None
-        assert result["processed"] is True  # spaCy processing succeeds
+            # Should return fallback response
+            assert result["query"] == "test query"
+            assert result["intent"] == "general"
+            assert result["source_type"] is None
+            assert result["processed"] is False
+            assert result.get("uses_spacy") is False
 
 
     @pytest.mark.asyncio

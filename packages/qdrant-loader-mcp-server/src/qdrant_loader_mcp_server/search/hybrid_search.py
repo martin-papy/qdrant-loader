@@ -52,9 +52,6 @@ class HybridSearchEngine:
         keyword_weight: float = 0.3,
         metadata_weight: float = 0.1,
         min_score: float = 0.3,
-        dense_vector_name: str = "dense",
-        sparse_vector_name: str = "sparse",
-        alpha: float = 0.5,
         # Enhanced search parameters
         knowledge_graph: DocumentKnowledgeGraph = None,
         enable_intent_adaptation: bool = True,
@@ -84,9 +81,8 @@ class HybridSearchEngine:
         self.keyword_weight = keyword_weight
         self.metadata_weight = metadata_weight
         self.min_score = min_score
-        self.dense_vector_name = dense_vector_name
-        self.sparse_vector_name = sparse_vector_name
-        self.alpha = alpha
+        self.dense_vector_name = "dense"
+        self.sparse_vector_name = "sparse"
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize spaCy query analyzer
@@ -102,9 +98,6 @@ class HybridSearchEngine:
                 openai_client=openai_client,
                 collection_name=collection_name,
                 min_score=min_score,
-                dense_vector_name=dense_vector_name,
-                sparse_vector_name=sparse_vector_name,
-                alpha=alpha,
                 cache_enabled=search_config.cache_enabled,
                 cache_ttl=search_config.cache_ttl,
                 cache_max_size=search_config.cache_max_size,
@@ -115,9 +108,6 @@ class HybridSearchEngine:
                 openai_client=openai_client,
                 collection_name=collection_name,
                 min_score=min_score,
-                dense_vector_name=dense_vector_name,
-                sparse_vector_name=sparse_vector_name,
-                alpha=alpha,
             )
         
         self.keyword_search_service = KeywordSearchService(
@@ -614,24 +604,44 @@ class HybridSearchEngine:
             self.logger.error("Error finding complementary content", error=str(e))
             raise
     
-    def _build_document_lookup(self, documents: list[HybridSearchResult]) -> dict[str, HybridSearchResult]:
-        """Build multiple lookup strategies for robust document matching."""
-        lookup = {}
-        
+    def _build_document_lookup(self, documents: list[HybridSearchResult], robust: bool = False) -> dict[str, HybridSearchResult]:
+        """Build document lookup with multiple key strategies.
+
+        When robust is True, handle None values for source_type/source_title,
+        and add a sanitized composite key variant in addition to the standard keys.
+        """
+        lookup: dict[str, HybridSearchResult] = {}
+
         for doc in documents:
-            # Primary lookup by composite key (current format)
-            composite_key = f"{doc.source_type}:{doc.source_title}"
+            # Choose handling of fields based on robustness
+            if robust:
+                source_type = doc.source_type or "unknown"
+                source_title = doc.source_title or ""
+            else:
+                source_type = doc.source_type
+                source_title = doc.source_title
+
+            # Primary lookup by composite key
+            composite_key = f"{source_type}:{source_title}"
             lookup[composite_key] = doc
-            
+
             # Secondary lookup by document_id if available
-            if doc.document_id:
+            if getattr(doc, 'document_id', None):
                 lookup[doc.document_id] = doc
-                
+
             # Tertiary lookup by source_title only (fallback)
-            if doc.source_title:
-                lookup[doc.source_title] = doc
-        
-        self.logger.debug(f"Built document lookup with {len(lookup)} keys for {len(documents)} documents")
+            if source_title:
+                lookup[source_title] = doc
+
+            # Quaternary lookup: sanitized composite key (robust mode only)
+            if robust and isinstance(source_type, str) and isinstance(source_title, str):
+                sanitized_key = f"{source_type.strip()}:{source_title.strip()}"
+                if sanitized_key and sanitized_key not in lookup:
+                    lookup[sanitized_key] = doc
+
+        self.logger.debug(
+            f"Built{' robust' if robust else ''} document lookup with {len(lookup)} keys for {len(documents)} documents"
+        )
         return lookup
     
     async def cluster_documents(
@@ -655,7 +665,7 @@ class HybridSearchEngine:
             )
             
             # Build comprehensive document lookup with multiple strategies
-            doc_lookup = self._build_robust_document_lookup(documents)
+            doc_lookup = self._build_document_lookup(documents, robust=True)
             
             cluster_data = []
             total_matched_docs = 0
@@ -726,34 +736,7 @@ class HybridSearchEngine:
             self.logger.error("Error clustering documents", error=str(e), exc_info=True)
             raise
 
-    def _build_robust_document_lookup(self, documents: list[HybridSearchResult]) -> dict[str, HybridSearchResult]:
-        """Build comprehensive document lookup with multiple strategies."""
-        lookup = {}
-        
-        for doc in documents:
-            # Ensure we handle None values gracefully
-            source_type = doc.source_type or "unknown"
-            source_title = doc.source_title or ""
-            
-            # Primary lookup by composite key (standard format)
-            composite_key = f"{source_type}:{source_title}"
-            lookup[composite_key] = doc
-            
-            # Secondary lookup by document_id if available
-            if doc.document_id:
-                lookup[doc.document_id] = doc
-                
-            # Tertiary lookup by source_title only (fallback)
-            if source_title:
-                lookup[source_title] = doc
-                
-            # Quaternary lookup by sanitized composite key (handle special chars)
-            sanitized_key = f"{source_type.strip()}:{source_title.strip()}"
-            if sanitized_key != composite_key:
-                lookup[sanitized_key] = doc
-                
-        self.logger.debug(f"Built robust document lookup with {len(lookup)} keys for {len(documents)} documents")
-        return lookup
+    
     
     def _find_document_by_id(self, doc_id: str, doc_lookup: dict[str, HybridSearchResult]) -> HybridSearchResult | None:
         """Find document using multiple lookup strategies."""
