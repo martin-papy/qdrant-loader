@@ -582,7 +582,11 @@ class MCPFormatters:
                 
                 if hasattr(doc, 'document_id'):
                     doc_id = doc.document_id
-                    title = doc.source_title or doc.get_display_title()
+                    # Safely resolve title: prefer get_display_title() when available, otherwise fallback to source_title
+                    if hasattr(doc, "get_display_title"):
+                        title = doc.get_display_title() or getattr(doc, "source_title", "Untitled")
+                    else:
+                        title = getattr(doc, "source_title", "Untitled")
                     source_type = doc.source_type
                 elif hasattr(doc, 'source_title'):
                     doc_id = f"{doc.source_type}:{doc.source_title}"
