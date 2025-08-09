@@ -1011,11 +1011,12 @@ class HybridSearchEngine:
             return []
 
         relationships = []
-        doc_lookup = {f"{doc.source_type}:{doc.source_title}": doc for doc in documents}
+        # Use unified robust document lookup for consistency
+        doc_lookup = self._build_document_lookup(documents, robust=True)
 
         # Analyze pairwise cluster relationships
         for i, cluster_a in enumerate(clusters):
-            for _j, cluster_b in enumerate(clusters[i + 1 :], i + 1):
+            for _, cluster_b in enumerate(clusters[i + 1 :], i + 1):
                 relationship = self._analyze_cluster_pair(
                     cluster_a, cluster_b, doc_lookup
                 )
