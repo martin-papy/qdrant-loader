@@ -776,8 +776,8 @@ class StateManager:
                 result = await session.execute(
                     select(DocumentStateRecord).filter(
                         DocumentStateRecord.parent_document_id == parent_document_id,
-                        DocumentStateRecord.is_attachment,
-                        not DocumentStateRecord.is_deleted,
+                        DocumentStateRecord.is_attachment.is_(True),
+                        DocumentStateRecord.is_deleted.is_(False),
                     )
                 )
                 attachments = list(result.scalars().all())
@@ -802,8 +802,8 @@ class StateManager:
                 query = select(DocumentStateRecord).filter(
                     DocumentStateRecord.source_type == source_type,
                     DocumentStateRecord.source == source,
-                    DocumentStateRecord.is_converted,
-                    not DocumentStateRecord.is_deleted,
+                    DocumentStateRecord.is_converted.is_(True),
+                    DocumentStateRecord.is_deleted.is_(False),
                 )
                 if conversion_method:
                     query = query.filter(
