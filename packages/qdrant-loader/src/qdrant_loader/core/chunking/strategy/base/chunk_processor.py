@@ -1,7 +1,7 @@
 """Base class for chunk processing and analysis coordination."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qdrant_loader.config import Settings
@@ -29,7 +29,7 @@ class BaseChunkProcessor(ABC):
     @abstractmethod
     def create_chunk_document(self, original_doc: "Document", chunk_content: str, 
                             chunk_index: int, total_chunks: int, 
-                            chunk_metadata: Dict[str, Any], skip_nlp: bool = False) -> "Document":
+                            chunk_metadata: dict[str, Any], skip_nlp: bool = False) -> "Document":
         """Create a document for a chunk with all necessary metadata and processing.
         
         This method should:
@@ -98,7 +98,7 @@ class BaseChunkProcessor(ABC):
         return str(uuid.uuid5(uuid.NAMESPACE_DNS, base_id))
     
     def create_base_chunk_metadata(self, original_doc: "Document", chunk_index: int, 
-                                 total_chunks: int, chunk_metadata: Dict[str, Any]) -> Dict[str, Any]:
+                                 total_chunks: int, chunk_metadata: dict[str, Any]) -> dict[str, Any]:
         """Create base metadata that all chunks should have.
         
         Args:
@@ -150,7 +150,7 @@ class BaseChunkProcessor(ABC):
         
         return True
     
-    def should_skip_semantic_analysis(self, content: str, chunk_metadata: Dict[str, Any]) -> bool:
+    def should_skip_semantic_analysis(self, content: str, chunk_metadata: dict[str, Any]) -> bool:
         """Determine if semantic analysis should be skipped for this chunk.
         
         This method provides default heuristics for when to skip expensive

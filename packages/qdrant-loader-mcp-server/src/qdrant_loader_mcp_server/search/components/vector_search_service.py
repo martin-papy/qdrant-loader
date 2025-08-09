@@ -4,6 +4,7 @@ import hashlib
 import time
 from typing import Any
 from dataclasses import dataclass
+from asyncio import Lock
 
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
@@ -53,6 +54,7 @@ class VectorSearchService:
         self.cache_ttl = cache_ttl
         self.cache_max_size = cache_max_size
         self._search_cache: dict[str, dict[str, Any]] = {}
+        self._cache_lock: Lock = Lock()
         
         # Cache performance metrics
         self._cache_hits = 0
@@ -146,24 +148,26 @@ class VectorSearchService:
         cache_key = self._generate_cache_key(query, limit, project_ids)
         
         if self.cache_enabled:
-            self._cleanup_expired_cache()
-            
-            # Check cache for existing results
-            if cache_key in self._search_cache:
-                cached_entry = self._search_cache[cache_key]
-                current_time = time.time()
-                
-                # Verify cache entry is still valid
-                if current_time - cached_entry["timestamp"] <= self.cache_ttl:
-                    self._cache_hits += 1
-                    self.logger.debug(
-                        "Search cache hit",
-                        query=query[:50],  # Truncate for logging
-                        cache_hits=self._cache_hits,
-                        cache_misses=self._cache_misses,
-                        hit_rate=f"{self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%"
-                    )
-                    return cached_entry["results"]
+            # Guard cache reads/cleanup with the async lock
+            async with self._cache_lock:
+                self._cleanup_expired_cache()
+
+                # Check cache for existing results
+                cached_entry = self._search_cache.get(cache_key)
+                if cached_entry is not None:
+                    current_time = time.time()
+                    
+                    # Verify cache entry is still valid
+                    if current_time - cached_entry["timestamp"] <= self.cache_ttl:
+                        self._cache_hits += 1
+                        self.logger.debug(
+                            "Search cache hit",
+                            query=query[:50],  # Truncate for logging
+                            cache_hits=self._cache_hits,
+                            cache_misses=self._cache_misses,
+                            hit_rate=f"{self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%"
+                        )
+                        return cached_entry["results"]
         
         # Cache miss - perform actual search
         self._cache_misses += 1
@@ -237,17 +241,18 @@ class VectorSearchService:
         
         # Store results in cache if caching is enabled
         if self.cache_enabled:
-            self._search_cache[cache_key] = {
-                "results": extracted_results,
-                "timestamp": time.time()
-            }
-            
-            self.logger.debug(
-                "Cached search results",
-                query=query[:50],
-                results_count=len(extracted_results),
-                cache_size=len(self._search_cache)
-            )
+            async with self._cache_lock:
+                self._search_cache[cache_key] = {
+                    "results": extracted_results,
+                    "timestamp": time.time()
+                }
+                
+                self.logger.debug(
+                    "Cached search results",
+                    query=query[:50],
+                    results_count=len(extracted_results),
+                    cache_size=len(self._search_cache)
+                )
             
         return extracted_results
 

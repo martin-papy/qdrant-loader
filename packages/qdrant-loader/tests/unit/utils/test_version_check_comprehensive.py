@@ -1,5 +1,7 @@
 """Comprehensive tests for version_check.py to achieve high coverage."""
 
+import unittest.mock
+
 from pathlib import Path
 from unittest.mock import Mock, patch, mock_open, MagicMock
 from urllib.error import HTTPError, URLError
@@ -325,19 +327,34 @@ class TestCheckVersionAsync:
         # Should not raise exception
         check_version_async("1.0.0", silent=False)
 
-    @patch.object(VersionChecker, 'show_update_notification')
-    @patch.object(VersionChecker, 'check_for_updates')
-    def test_check_version_async_internal_function(self, mock_check_updates, mock_show_notification):
-        """Test the internal _check function behavior."""
+    @patch("threading.Thread")
+    @patch.object(VersionChecker, "show_update_notification")
+    @patch.object(VersionChecker, "check_for_updates")
+    def test_check_version_async_internal_function(self, mock_check_updates, mock_show_notification, mock_thread):
+        """Test that check_version_async executes internal function via a thread and triggers notification."""
         mock_check_updates.return_value = (True, "2.0.0")
-        
-        # Call the internal function directly
-        checker = VersionChecker("1.0.0")
-        has_update, latest_version = checker.check_for_updates(silent=False)
-        
-        if has_update and latest_version and not False:  # not silent
-            checker.show_update_notification(latest_version)
-        
+
+        captured = {}
+
+        def thread_ctor_side_effect(target=None, daemon=None, **kwargs):
+            captured["target"] = target
+            thread_mock = Mock()
+            # Simulate thread executing the target when start is called
+            thread_mock.start.side_effect = lambda: target()
+            return thread_mock
+
+        mock_thread.side_effect = thread_ctor_side_effect
+
+        # Call the public async API (no unsupported params)
+        check_version_async("1.0.0", silent=False)
+
+        # Verify a thread was created with daemon=True and a callable target
+        assert mock_thread.called
+        _, kwargs = mock_thread.call_args
+        assert kwargs.get("daemon") is True
+        assert callable(captured.get("target"))
+
+        # Since our mocked thread.start() runs the target, verify inner behavior
         mock_check_updates.assert_called_once_with(silent=False)
         mock_show_notification.assert_called_once_with("2.0.0")
 
@@ -357,17 +374,25 @@ class TestCheckVersionAsync:
     @patch.object(VersionChecker, 'show_update_notification')
     @patch.object(VersionChecker, 'check_for_updates')
     def test_check_version_async_silent_no_notification(self, mock_check_updates, mock_show_notification):
-        """Test internal function with silent=True doesn't show notification."""
+        """When silent=True, async check should not show notification even if update exists."""
         mock_check_updates.return_value = (True, "2.0.0")
-        
-        checker = VersionChecker("1.0.0") 
-        has_update, latest_version = checker.check_for_updates(silent=True)
-        
-        # Even with update, silent=True should prevent notification
-        if has_update and latest_version and not True:  # not silent (True)
-            checker.show_update_notification(latest_version)
-        
-        mock_show_notification.assert_not_called()
 
+        with patch("threading.Thread") as mock_thread:
+            captured = {}
 
-import unittest.mock  # Add this import for the assertion
+            def thread_ctor_side_effect(target=None, daemon=None, **kwargs):
+                captured["target"] = target
+                thread_mock = Mock()
+                # Execute the target immediately when start() is called
+                thread_mock.start.side_effect = lambda: target()
+                return thread_mock
+
+            mock_thread.side_effect = thread_ctor_side_effect
+
+            # Invoke public async API with silent=True
+            check_version_async("1.0.0", silent=True)
+
+            # Ensure the internal check was called with silent=True
+            mock_check_updates.assert_called_once_with(silent=True)
+            # No notification should be shown when silent
+            mock_show_notification.assert_not_called()

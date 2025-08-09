@@ -15,75 +15,57 @@ class TestVersionHandling:
         assert isinstance(qdrant_loader.__version__, str)
 
     def test_version_import_fallback(self):
-        """Test version fallback when importlib.metadata import fails - covers lines 9-11."""
-        
-        # Test the ImportError handling by simulating the exact code from __init__.py
-        # This tests lines 9-11 in the __init__.py file
-        
-        # Mock ImportError scenario by directly testing the try-except block logic
-        with patch('importlib.metadata.version', side_effect=ImportError("No module named 'importlib.metadata'")):
-            # Simulate the exact code from __init__.py lines 5-11
-            try:
-                from importlib.metadata import version
-                test_version = version("qdrant-loader")
-            except ImportError:
-                # This covers lines 9-11 - the fallback logic
-                test_version = "unknown"
-            
-            # Verify the fallback was triggered
-            assert test_version == "unknown"
+        """Patch importlib.metadata.version to raise ImportError and verify module fallback."""
+        import importlib
+        import sys
+
+        # Ensure fresh import under the patched environment
+        sys.modules.pop('qdrant_loader', None)
+
+        with patch('importlib.metadata.version', side_effect=ImportError("simulated ImportError")):
+            qdrant_loader = importlib.import_module('qdrant_loader')
+            assert getattr(qdrant_loader, '__version__') == "unknown"
 
 
 
-    def test_lazy_import_chunking_config(self):
-        """Test lazy import of ChunkingConfig."""
+    @pytest.mark.parametrize(
+        "attr_name, expected_path",
+        [
+            ("ChunkingConfig", "qdrant_loader.config:ChunkingConfig"),
+            ("GlobalConfig", "qdrant_loader.config:GlobalConfig"),
+            ("SemanticAnalysisConfig", "qdrant_loader.config:SemanticAnalysisConfig"),
+            ("Settings", "qdrant_loader.config:Settings"),
+            ("Document", "qdrant_loader.core:Document"),
+            ("EmbeddingService", "qdrant_loader.core.embedding:EmbeddingService"),
+            ("QdrantManager", "qdrant_loader.core.qdrant_manager:QdrantManager"),
+        ],
+    )
+    def test_lazy_imports_resolve_to_expected_symbols(self, attr_name, expected_path):
+        """Parameterised verification that lazy-imported attributes resolve to the correct symbols.
+
+        Confirms that each lazily imported attribute is the exact object from its
+        defining module and that it is a class or callable (function/class).
+        """
+        import importlib
+        import inspect
         import qdrant_loader
-        
+
         # Access should trigger lazy import
-        chunking_config = qdrant_loader.ChunkingConfig
-        assert chunking_config is not None
+        resolved_symbol = getattr(qdrant_loader, attr_name)
 
-    def test_lazy_import_global_config(self):
-        """Test lazy import of GlobalConfig."""
-        import qdrant_loader
-        
-        global_config = qdrant_loader.GlobalConfig
-        assert global_config is not None
+        module_path, _, symbol_name = expected_path.partition(":")
+        expected_module = importlib.import_module(module_path)
+        expected_symbol = getattr(expected_module, symbol_name)
 
-    def test_lazy_import_semantic_analysis_config(self):
-        """Test lazy import of SemanticAnalysisConfig."""
-        import qdrant_loader
-        
-        semantic_config = qdrant_loader.SemanticAnalysisConfig
-        assert semantic_config is not None
+        # Identity check: ensure we resolved to the exact exported symbol
+        assert (
+            resolved_symbol is expected_symbol
+        ), f"{attr_name} did not resolve to {expected_path}"
 
-    def test_lazy_import_settings(self):
-        """Test lazy import of Settings."""
-        import qdrant_loader
-        
-        settings = qdrant_loader.Settings
-        assert settings is not None
-
-    def test_lazy_import_document(self):
-        """Test lazy import of Document."""
-        import qdrant_loader
-        
-        document = qdrant_loader.Document
-        assert document is not None
-
-    def test_lazy_import_embedding_service(self):
-        """Test lazy import of EmbeddingService."""
-        import qdrant_loader
-        
-        embedding_service = qdrant_loader.EmbeddingService
-        assert embedding_service is not None
-
-    def test_lazy_import_qdrant_manager(self):
-        """Test lazy import of QdrantManager."""
-        import qdrant_loader
-        
-        qdrant_manager = qdrant_loader.QdrantManager
-        assert qdrant_manager is not None
+        # Type check: ensure symbol is a class or a function/callable
+        assert (
+            inspect.isclass(resolved_symbol) or inspect.isfunction(resolved_symbol) or callable(resolved_symbol)
+        ), f"{attr_name} is not a class or function"
 
     def test_lazy_import_invalid_attribute(self):
         """Test lazy import with invalid attribute raises AttributeError."""

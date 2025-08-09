@@ -485,18 +485,26 @@ class CodeMetadataExtractor(BaseMetadataExtractor):
         if total_loops >= 3:  # 3+ loops likely indicates nesting
             performance_indicators["potential_bottlenecks"].append("nested_loops")
         
-        # Detect recursion patterns
+        # Detect recursion patterns (exclude the definition line itself)
         lines = content.split('\n')
-        for line in lines:
-            line = line.strip()
-            if 'def ' in line:
-                func_name = line.split('def ')[1].split('(')[0].strip()
-                if func_name and func_name in content:
-                    # Check if function calls itself
-                    func_call_pattern = f"{func_name}("
-                    if content.count(func_call_pattern) > 1:  # Once for definition, once+ for calls
-                        performance_indicators["potential_bottlenecks"].append("recursion")
-                        break
+        def_pattern = re.compile(r'^\s*(?:async\s+)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(')
+        for idx, line in enumerate(lines):
+            match = def_pattern.match(line)
+            if not match:
+                continue
+            func_name = match.group(1)
+            # Count calls to the function name on lines other than the definition line
+            bare_call_regex = re.compile(r'\b' + re.escape(func_name) + r'\s*\(')
+            method_call_regex = re.compile(r'\.' + re.escape(func_name) + r'\s*\(')
+            call_count = 0
+            for j, other_line in enumerate(lines):
+                if j == idx:
+                    continue
+                if bare_call_regex.search(other_line) or method_call_regex.search(other_line):
+                    call_count += 1
+            if call_count > 0:
+                performance_indicators["potential_bottlenecks"].append("recursion")
+                break
         
         if content.count('database') > 5 or content.count('query') > 5:
             performance_indicators["potential_bottlenecks"].append("database_heavy")

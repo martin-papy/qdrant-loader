@@ -1,5 +1,6 @@
 """Enhanced comprehensive tests for CLI commands to achieve 80%+ coverage."""
 
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -61,7 +62,6 @@ class TestCreateDatabaseDirectory:
             # Change to temp dir and use relative path
             original_cwd = Path.cwd()
             try:
-                import os
                 os.chdir(temp_dir)
                 test_path = Path("relative_db_dir")
                 
