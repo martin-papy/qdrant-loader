@@ -3,12 +3,13 @@
 Tests for the favicon generation script.
 """
 
-import pytest
-import shutil
-from pathlib import Path
 import os
-import sys
+import shutil
 import subprocess
+import sys
+from pathlib import Path
+
+import pytest
 
 
 class TestFaviconGenerationScript:
@@ -24,7 +25,7 @@ class TestFaviconGenerationScript:
         """Test that the favicon generation script has valid Python syntax."""
         favicon_script = Path("website/assets/generate_favicons.py")
 
-        with open(favicon_script, "r") as f:
+        with open(favicon_script) as f:
             source = f.read()
 
         try:
@@ -243,7 +244,7 @@ class TestFaviconGenerationEdgeCases:
         assert file_size < 50000, "Script should be reasonably sized (< 50KB)"
 
         # Check line count (shouldn't be too complex)
-        with open(favicon_script, "r") as f:
+        with open(favicon_script) as f:
             line_count = len(f.readlines())
         assert line_count < 500, "Script should be reasonably sized (< 500 lines)"
 

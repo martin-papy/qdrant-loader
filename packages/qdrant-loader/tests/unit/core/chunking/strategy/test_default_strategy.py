@@ -25,14 +25,18 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking.chunk_size = 100
         settings.global_config.chunking.chunk_overlap = 20
         settings.global_config.chunking.max_chunks_per_document = 500
-        
+
         # Add strategy-specific configuration
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 50
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
-        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
-        
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
+            True
+        )
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = (
+            True
+        )
+
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"
         return settings
@@ -46,14 +50,18 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking.chunk_size = 50
         settings.global_config.chunking.chunk_overlap = 10
         settings.global_config.chunking.max_chunks_per_document = 500
-        
+
         # Add strategy-specific configuration
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 25
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
-        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
-        
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
+            True
+        )
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = (
+            True
+        )
+
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "none"
         return settings
@@ -141,8 +149,6 @@ class TestDefaultChunkingStrategy:
 
                 assert strategy.encoding is None
 
-
-
     def test_chunk_document_success(self, mock_settings, sample_document):
         """Test successful document chunking."""
         with patch(
@@ -201,7 +207,9 @@ class TestDefaultChunkingStrategy:
                 strategy = DefaultChunkingStrategy(mock_settings)
 
                 # Force the section splitter to return more chunks than the limit
-                with patch.object(strategy.section_splitter, "split_sections") as mock_split:
+                with patch.object(
+                    strategy.section_splitter, "split_sections"
+                ) as mock_split:
                     # Return more chunks than the limit
                     mock_chunks_metadata = [
                         {"content": "chunk", "metadata": {"section_type": "paragraph"}}
@@ -249,9 +257,14 @@ class TestDefaultChunkingStrategy:
                 strategy = DefaultChunkingStrategy(mock_settings)
 
                 # Create a longer document that will definitely be split
-                long_content = "This is a very long document with lots of content that should be split into multiple chunks when using character-based chunking. " * 5
+                long_content = (
+                    "This is a very long document with lots of content that should be split into multiple chunks when using character-based chunking. "
+                    * 5
+                )
                 sample_document.content = long_content
-                assert len(long_content) > 500  # Ensure it's much longer than chunk_size
+                assert (
+                    len(long_content) > 500
+                )  # Ensure it's much longer than chunk_size
 
                 result = strategy.chunk_document(sample_document)
 
@@ -288,7 +301,10 @@ class TestDefaultChunkingStrategy:
                 # Check that logging includes relevant information
                 # Find the chunk processing debug call (not shutdown or other calls)
                 chunk_processing_calls = [
-                    call for call in mock_logger.debug.call_args_list 
+                    call
+                    for call in mock_logger.debug.call_args_list
                     if len(call[0]) > 0 and "Analyzing document structure" in call[0][0]
                 ]
-                assert len(chunk_processing_calls) >= 1, f"Expected chunking debug call not found. Calls: {[call[0][0] for call in mock_logger.debug.call_args_list]}"
+                assert (
+                    len(chunk_processing_calls) >= 1
+                ), f"Expected chunking debug call not found. Calls: {[call[0][0] for call in mock_logger.debug.call_args_list]}"

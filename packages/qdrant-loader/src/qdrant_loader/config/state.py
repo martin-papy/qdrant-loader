@@ -77,7 +77,7 @@ class StateManagementConfig(BaseConfig):
                 try:
                     # Test if the path is valid by trying to resolve it
                     # Don't actually create the directory here
-                    resolved_parent = parent_dir.resolve()
+                    parent_dir.resolve()
 
                     # Basic validation: ensure the path is reasonable
                     # Note: We removed the arbitrary depth limit as it was too restrictive

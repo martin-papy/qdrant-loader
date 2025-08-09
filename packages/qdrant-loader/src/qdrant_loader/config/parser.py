@@ -84,10 +84,6 @@ class MultiProjectConfigParser:
             logger.error("Failed to parse global configuration", error=str(e))
             raise
 
-
-
-
-
     def _parse_projects(
         self, config_data: dict[str, Any], global_config: GlobalConfig
     ) -> ProjectsConfig:
@@ -136,7 +132,7 @@ class MultiProjectConfigParser:
         # Extract basic project information
         display_name = project_data.get("display_name", project_id)
         description = project_data.get("description")
-        collection_name = project_data.get("collection_name")
+        project_data.get("collection_name")
 
         # Parse project-specific sources with automatic field injection
         sources_data = project_data.get("sources", {})

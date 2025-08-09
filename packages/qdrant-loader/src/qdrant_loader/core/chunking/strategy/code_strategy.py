@@ -1,7 +1,5 @@
 """Code-specific chunking strategy for programming languages."""
 
-from typing import List
-
 import structlog
 
 from qdrant_loader.config import Settings
@@ -10,10 +8,10 @@ from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrat
 from qdrant_loader.core.document import Document
 
 from .code import (
+    CodeChunkProcessor,
     CodeDocumentParser,
-    CodeSectionSplitter,
     CodeMetadataExtractor,
-    CodeChunkProcessor
+    CodeSectionSplitter,
 )
 
 logger = structlog.get_logger(__name__)
@@ -21,7 +19,7 @@ logger = structlog.get_logger(__name__)
 
 class CodeChunkingStrategy(BaseChunkingStrategy):
     """Modern code chunking strategy using modular architecture.
-    
+
     This strategy uses AST parsing (primarily tree-sitter) to split code files into
     chunks based on semantic code elements, preserving the code structure and hierarchy.
     Uses modular components for parsing, splitting, metadata extraction, and chunk processing.
@@ -36,17 +34,19 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
         super().__init__(settings)
         self.logger = logger
         self.progress_tracker = ChunkingProgressTracker(logger)
-        
+
         # Initialize modular components
         self.document_parser = CodeDocumentParser(settings)
         self.section_splitter = CodeSectionSplitter(settings)
         self.metadata_extractor = CodeMetadataExtractor(settings)
         self.chunk_processor = CodeChunkProcessor(settings)
-        
+
         # Code-specific configuration
         self.code_config = settings.global_config.chunking.strategies.code
-        self.chunk_size_threshold = getattr(self.code_config, 'max_file_size_for_ast', 40000)
-        
+        self.chunk_size_threshold = getattr(
+            self.code_config, "max_file_size_for_ast", 40000
+        )
+
         logger.info(
             "CodeChunkingStrategy initialized with modular architecture",
             extra={
@@ -55,11 +55,11 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 "max_file_size_for_ast": self.code_config.max_file_size_for_ast,
                 "enable_ast_parsing": self.code_config.enable_ast_parsing,
                 "enable_dependency_analysis": self.code_config.enable_dependency_analysis,
-                "chunking_method": "intelligent_ast_parsing"
-            }
+                "chunking_method": "intelligent_ast_parsing",
+            },
         )
 
-    def chunk_document(self, document: Document) -> List[Document]:
+    def chunk_document(self, document: Document) -> list[Document]:
         """Chunk a code document using modern modular approach.
 
         Args:
@@ -92,18 +92,22 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 "estimated_chunks": estimated_chunks,
                 "chunk_size": self.settings.global_config.chunking.chunk_size,
                 "max_chunks_allowed": self.settings.global_config.chunking.max_chunks_per_document,
-                "file_type": "code"
-            }
+                "file_type": "code",
+            },
         )
 
         try:
             # Parse document structure first
             logger.debug("Analyzing code document structure")
-            document_structure = self.document_parser.parse_document_structure(document.content)
-            
+            document_structure = self.document_parser.parse_document_structure(
+                document.content
+            )
+
             # Split content into intelligent sections using the section splitter
             logger.debug("Splitting code into semantic sections")
-            chunks_metadata = self.section_splitter.split_sections(document.content, document)
+            chunks_metadata = self.section_splitter.split_sections(
+                document.content, document
+            )
 
             if not chunks_metadata:
                 self.progress_tracker.finish_chunking(document.id, 0, "code")
@@ -133,47 +137,57 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 )
 
                 # Add document structure info to chunk metadata
-                chunk_meta.update({
-                    "document_structure": document_structure,
-                    "chunking_strategy": "code_modular",
-                })
+                chunk_meta.update(
+                    {
+                        "document_structure": document_structure,
+                        "chunking_strategy": "code_modular",
+                    }
+                )
 
                 # Enhanced: Use hierarchical metadata extraction
-                enriched_metadata = self.metadata_extractor.extract_hierarchical_metadata(
-                    chunk_content, chunk_meta, document
+                enriched_metadata = (
+                    self.metadata_extractor.extract_hierarchical_metadata(
+                        chunk_content, chunk_meta, document
+                    )
                 )
 
                 # Create chunk document using the chunk processor
                 # Skip NLP for large code chunks or generated code
-                skip_nlp, skip_reason = self.chunk_processor.should_skip_semantic_analysis(
-                    chunk_content, enriched_metadata
+                skip_nlp, skip_reason = (
+                    self.chunk_processor.should_skip_semantic_analysis(
+                        chunk_content, enriched_metadata
+                    )
                 )
-                
+
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,
                     chunk_index=i,
                     total_chunks=len(chunks_metadata),
                     chunk_metadata=enriched_metadata,
-                    skip_nlp=skip_nlp
+                    skip_nlp=skip_nlp,
                 )
 
                 chunked_docs.append(chunk_doc)
 
             # Finish progress tracking
-            avg_chunk_size = sum(len(doc.content) for doc in chunked_docs) // len(chunked_docs) if chunked_docs else 0
-            self.progress_tracker.finish_chunking(
-                document.id, len(chunked_docs), f"code_modular"
+            avg_chunk_size = (
+                sum(len(doc.content) for doc in chunked_docs) // len(chunked_docs)
+                if chunked_docs
+                else 0
             )
-            
+            self.progress_tracker.finish_chunking(
+                document.id, len(chunked_docs), "code_modular"
+            )
+
             logger.info(
                 "Successfully chunked code document with modular architecture",
                 extra={
                     "document_id": document.id,
                     "num_chunks": len(chunked_docs),
                     "avg_chunk_size": avg_chunk_size,
-                    "strategy": "code_modular"
-                }
+                    "strategy": "code_modular",
+                },
             )
 
             return chunked_docs
@@ -186,35 +200,37 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 document.id, f"Code parsing failed: {str(e)}"
             )
             return self._fallback_chunking(document)
-    
 
-    
-    def _fallback_chunking(self, document: Document) -> List[Document]:
+    def _fallback_chunking(self, document: Document) -> list[Document]:
         """Fallback chunking using simple text-based approach.
-        
+
         Args:
             document: Document to chunk
-            
+
         Returns:
             List of chunked documents using fallback approach
         """
-        logger.info(f"Using fallback chunking for large code document: {document.title}")
-        
+        logger.info(
+            f"Using fallback chunking for large code document: {document.title}"
+        )
+
         # Use the section splitter's fallback method
         fallback_sections = self.section_splitter._fallback_text_split(document.content)
-        
+
         # Create chunk documents
         chunked_docs = []
         for i, section in enumerate(fallback_sections):
             chunk_content = section["content"]
             chunk_metadata = section["metadata"]
-            
+
             # Add fallback-specific metadata
-            chunk_metadata.update({
-                "chunking_strategy": "code_fallback",
-                "fallback_reason": "file_too_large"
-            })
-            
+            chunk_metadata.update(
+                {
+                    "chunking_strategy": "code_fallback",
+                    "fallback_reason": "file_too_large",
+                }
+            )
+
             # Create chunk document
             chunk_doc = self.chunk_processor.create_chunk_document(
                 original_doc=document,
@@ -222,20 +238,20 @@ class CodeChunkingStrategy(BaseChunkingStrategy):
                 chunk_index=i,
                 total_chunks=len(fallback_sections),
                 chunk_metadata=chunk_metadata,
-                skip_nlp=True  # Skip NLP for fallback chunks
+                skip_nlp=True,  # Skip NLP for fallback chunks
             )
-            
+
             chunked_docs.append(chunk_doc)
-        
+
         return chunked_docs
-    
+
     def shutdown(self):
         """Clean up resources used by the code chunking strategy."""
         logger.debug("Shutting down CodeChunkingStrategy")
-        
+
         # Clean up document parser resources
-        if hasattr(self.document_parser, '_parsers'):
+        if hasattr(self.document_parser, "_parsers"):
             self.document_parser._parsers.clear()
-        
+
         # No additional cleanup needed for other components
         logger.debug("CodeChunkingStrategy shutdown complete")

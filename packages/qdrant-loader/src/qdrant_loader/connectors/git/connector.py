@@ -145,7 +145,7 @@ class GitConnector(BaseConnector):
                 "Git repository setup failed due to invalid configuration",
                 error=str(e),
                 error_type="ValueError",
-                suggestion="Verify Git URL format, credentials, and repository accessibility"
+                suggestion="Verify Git URL format, credentials, and repository accessibility",
             )
             raise ValueError(str(e)) from e  # Re-raise with the same message
         except Exception as e:
@@ -155,7 +155,7 @@ class GitConnector(BaseConnector):
                 error=str(e),
                 error_type=type(e).__name__,
                 temp_dir=self.temp_dir,
-                suggestion="Check Git URL, network connectivity, authentication, and disk space"
+                suggestion="Check Git URL, network connectivity, authentication, and disk space",
             )
             # Clean up if something goes wrong
             if self.temp_dir:

@@ -3,8 +3,9 @@
 Test cleanup functionality to ensure test artifacts are properly removed.
 """
 
-import pytest
 import os
+
+import pytest
 
 
 def test_cleanup_session_fixture_removes_artifacts(project_root_dir):

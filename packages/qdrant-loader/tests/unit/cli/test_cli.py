@@ -300,7 +300,7 @@ class TestCLIIntegration:
         ):
             # Run the CLI with config command to trigger the main CLI function
             # This will fail due to missing config, but the CLI function will be called
-            result = runner.invoke(cli, ["config"])
+            runner.invoke(cli, ["config"])
 
             # Verify that version check was called
             mock_check_updates.assert_called_once()
@@ -319,7 +319,7 @@ class TestCLIIntegration:
             ) as mock_check_updates,
         ):
             # Should not raise exception even if version check fails
-            result = runner.invoke(cli, ["config"])
+            runner.invoke(cli, ["config"])
 
             # CLI should still work (even though config command will fail)
             # The important thing is that the version check exception doesn't break the CLI

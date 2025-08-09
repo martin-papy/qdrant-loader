@@ -114,7 +114,14 @@ class EmbeddingService:
 
                 return result
 
-            except (TimeoutError, requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError, ConnectionError, OSError) as e:
+            except (
+                TimeoutError,
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                ConnectionError,
+                OSError,
+            ) as e:
                 last_exception = e
 
                 if attempt == self.max_retries:

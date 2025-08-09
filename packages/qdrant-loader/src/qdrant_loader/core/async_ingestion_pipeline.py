@@ -33,7 +33,6 @@ class AsyncIngestionPipeline:
         settings: Settings,
         qdrant_manager: QdrantManager,
         state_manager: StateManager | None = None,
-
         max_chunk_workers: int = 10,
         max_embed_workers: int = 4,
         max_upsert_workers: int = 4,
@@ -59,7 +58,6 @@ class AsyncIngestionPipeline:
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
-
 
         # Validate that global configuration is available for pipeline operation.
         if not settings.global_config:
@@ -176,7 +174,7 @@ class AsyncIngestionPipeline:
                 error=str(e),
                 error_type=type(e).__name__,
                 suggestion="Check configuration, database connectivity, and system resources",
-                exc_info=True
+                exc_info=True,
             )
             raise
 
@@ -259,7 +257,7 @@ class AsyncIngestionPipeline:
                 error_type=type(e).__name__,
                 documents_attempted=len(documents),
                 suggestion="Check data source connectivity, document formats, and system resources",
-                exc_info=True
+                exc_info=True,
             )
             self.monitor.end_operation("ingestion_process", error=str(e))
             raise
@@ -328,7 +326,3 @@ class AsyncIngestionPipeline:
             logger.error(f"Error in resource manager cleanup: {e}")
 
         logger.info("Pipeline cleanup completed (sync)")
-
-
-
-

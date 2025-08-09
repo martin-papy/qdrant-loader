@@ -25,7 +25,7 @@ def mock_settings():
 
     # Mock strategy-specific config
     strategies_config = Mock()
-    
+
     # Mock HTML strategy config
     html_config = Mock()
     html_config.simple_parsing_threshold = 100000
@@ -33,7 +33,7 @@ def mock_settings():
     html_config.max_sections_to_process = 200
     html_config.max_chunk_size_for_nlp = 20000
     html_config.preserve_semantic_structure = True
-    
+
     strategies_config.html = html_config
     chunking_config.strategies = strategies_config
 
@@ -42,7 +42,7 @@ def mock_settings():
     semantic_analysis_config.num_topics = 5
     semantic_analysis_config.lda_passes = 10
     semantic_analysis_config.spacy_model = "en_core_web_sm"
-    
+
     # Mock embedding config
     embedding_config = Mock()
     embedding_config.tokenizer = "cl100k_base"
@@ -101,7 +101,7 @@ def sample_html_document():
     </body>
     </html>
     """
-    
+
     return Document(
         content=html_content,
         metadata={
@@ -112,7 +112,7 @@ def sample_html_document():
         source_type=SourceType.LOCALFILE,
         url="file://test.html",
         title="Test HTML Document",
-        content_type="text/html"
+        content_type="text/html",
     )
 
 
@@ -121,30 +121,30 @@ class TestHTMLChunkingStrategyModern:
 
     def test_initialization(self, mock_settings):
         """Test strategy initialization with modular components."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
-        
+
         # Verify modular components are initialized
-        assert hasattr(strategy, 'document_parser')
-        assert hasattr(strategy, 'section_splitter')
-        assert hasattr(strategy, 'metadata_extractor')
-        assert hasattr(strategy, 'chunk_processor')
-        assert hasattr(strategy, 'html_config')
-        
+        assert hasattr(strategy, "document_parser")
+        assert hasattr(strategy, "section_splitter")
+        assert hasattr(strategy, "metadata_extractor")
+        assert hasattr(strategy, "chunk_processor")
+        assert hasattr(strategy, "html_config")
+
         # Verify configuration is loaded
         assert strategy.max_html_size_for_parsing == 500000
 
     def test_chunk_document_success(self, mock_settings, sample_html_document):
         """Test successful HTML document chunking."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
-        
+
         chunks = strategy.chunk_document(sample_html_document)
-        
+
         # Verify chunks were created
         assert len(chunks) > 0
         assert all(isinstance(chunk, Document) for chunk in chunks)
-        
+
         # Verify chunk metadata
         for i, chunk in enumerate(chunks):
             assert chunk.metadata["chunk_index"] == i
@@ -154,16 +154,18 @@ class TestHTMLChunkingStrategyModern:
             assert "content_type" in chunk.metadata
             assert "document_structure" in chunk.metadata
 
-    def test_chunk_document_with_semantic_structure(self, mock_settings, sample_html_document):
+    def test_chunk_document_with_semantic_structure(
+        self, mock_settings, sample_html_document
+    ):
         """Test HTML chunking preserves semantic structure."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
-        
+
         chunks = strategy.chunk_document(sample_html_document)
-        
+
         # Check that semantic metadata is preserved
-        semantic_chunks = [chunk for chunk in chunks if chunk.metadata.get("is_semantic", False)]
-        
+        [chunk for chunk in chunks if chunk.metadata.get("is_semantic", False)]
+
         # Should have at least some chunks with semantic structure
         # Note: this might be 0 if the chunking is very granular, which is also valid
         assert len(chunks) > 0
@@ -172,7 +174,7 @@ class TestHTMLChunkingStrategyModern:
         """Test fallback behavior for very large HTML files."""
         # Create a very large HTML document
         large_html = "<html><body>" + "x" * 1000000 + "</body></html>"  # > 500KB
-        
+
         large_document = Document(
             content=large_html,
             metadata={"file_name": "large.html"},
@@ -180,16 +182,16 @@ class TestHTMLChunkingStrategyModern:
             source_type=SourceType.LOCALFILE,
             url="file://large.html",
             title="Large HTML Document",
-            content_type="text/html"
+            content_type="text/html",
         )
-        
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
             chunks = strategy.chunk_document(large_document)
-        
+
         # Should still produce chunks using fallback
         assert len(chunks) > 0
-        
+
         # Check fallback metadata
         for chunk in chunks:
             # Should indicate fallback was used
@@ -204,20 +206,22 @@ class TestHTMLChunkingStrategyModern:
             source_type=SourceType.LOCALFILE,
             url="file://empty.html",
             title="Empty HTML Document",
-            content_type="text/html"
+            content_type="text/html",
         )
-        
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
             chunks = strategy.chunk_document(empty_document)
-        
+
         # Should handle empty content gracefully
         assert isinstance(chunks, list)
 
     def test_chunk_document_malformed_html(self, mock_settings):
         """Test handling of malformed HTML."""
-        malformed_html = "<html><body><p>Unclosed paragraph<div>Mismatched tags</p></div>"
-        
+        malformed_html = (
+            "<html><body><p>Unclosed paragraph<div>Mismatched tags</p></div>"
+        )
+
         malformed_document = Document(
             content=malformed_html,
             metadata={"file_name": "malformed.html"},
@@ -225,13 +229,13 @@ class TestHTMLChunkingStrategyModern:
             source_type=SourceType.LOCALFILE,
             url="file://malformed.html",
             title="Malformed HTML Document",
-            content_type="text/html"
+            content_type="text/html",
         )
-        
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
             chunks = strategy.chunk_document(malformed_document)
-        
+
         # Should handle malformed HTML gracefully with fallback
         assert isinstance(chunks, list)
         if chunks:  # If any chunks are produced
@@ -240,29 +244,33 @@ class TestHTMLChunkingStrategyModern:
 
     def test_strategy_shutdown(self, mock_settings):
         """Test strategy shutdown and cleanup."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
-        
+
         # Should not raise any exceptions
         strategy.shutdown()
-        
+
         # Verify cleanup completed
         assert True  # If we get here, shutdown worked
 
     def test_components_integration(self, mock_settings, sample_html_document):
         """Test that all modular components work together."""
-        with patch('qdrant_loader.core.text_processing.text_processor.TextProcessor'):
+        with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"):
             strategy = HTMLChunkingStrategy(mock_settings)
-        
+
         # Test document parser
-        structure = strategy.document_parser.parse_document_structure(sample_html_document.content)
+        structure = strategy.document_parser.parse_document_structure(
+            sample_html_document.content
+        )
         assert isinstance(structure, dict)
         assert "structure_type" in structure
-        
+
         # Test section splitter
-        sections = strategy.section_splitter.split_sections(sample_html_document.content)
+        sections = strategy.section_splitter.split_sections(
+            sample_html_document.content
+        )
         assert isinstance(sections, list)
-        
+
         # Test full integration
         chunks = strategy.chunk_document(sample_html_document)
-        assert len(chunks) > 0 
+        assert len(chunks) > 0

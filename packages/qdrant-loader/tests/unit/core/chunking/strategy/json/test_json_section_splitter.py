@@ -4,11 +4,15 @@ import json
 from unittest.mock import Mock, patch
 
 import pytest
-
-from qdrant_loader.core.chunking.strategy.json.json_section_splitter import JSONSectionSplitter
-from qdrant_loader.core.chunking.strategy.json.json_document_parser import JSONElement, JSONElementType
-from qdrant_loader.core.document import Document
 from qdrant_loader.config import Settings
+from qdrant_loader.core.chunking.strategy.json.json_document_parser import (
+    JSONElement,
+    JSONElementType,
+)
+from qdrant_loader.core.chunking.strategy.json.json_section_splitter import (
+    JSONSectionSplitter,
+)
+from qdrant_loader.core.document import Document
 
 
 class TestJSONSectionSplitter:
@@ -18,7 +22,7 @@ class TestJSONSectionSplitter:
         """Set up test fixtures."""
         # Create mock settings with proper nested structure
         self.mock_settings = Mock(spec=Settings)
-        
+
         # Create nested mock structure for JSON config
         mock_json_strategy = Mock()
         mock_json_strategy.max_chunk_size_for_nlp = 1000
@@ -26,24 +30,24 @@ class TestJSONSectionSplitter:
         mock_json_strategy.max_objects_to_process = 100
         mock_json_strategy.max_object_keys_to_process = 50
         mock_json_strategy.max_array_items_per_chunk = 10
-        
+
         mock_strategies = Mock()
         mock_strategies.json_strategy = mock_json_strategy
-        
+
         mock_chunking = Mock()
         mock_chunking.strategies = mock_strategies
         mock_chunking.chunk_size = 1500
         mock_chunking.chunk_overlap = 100
         mock_chunking.max_chunks_per_document = 50
-        
+
         mock_global_config = Mock()
         mock_global_config.chunking = mock_chunking
-        
+
         self.mock_settings.global_config = mock_global_config
-        
+
         # Create splitter instance
         self.splitter = JSONSectionSplitter(self.mock_settings)
-        
+
         # Create test document
         self.test_doc = Document(
             content='{"test": "content"}',
@@ -52,14 +56,17 @@ class TestJSONSectionSplitter:
             title="Test Document",
             url="https://test.com",
             content_type="application/json",
-            metadata={"original": "metadata"}
+            metadata={"original": "metadata"},
         )
         self.test_doc.id = "test_doc_id"
 
     def test_init(self):
         """Test JSONSectionSplitter initialization."""
         assert self.splitter.settings is self.mock_settings
-        assert self.splitter.json_config is self.mock_settings.global_config.chunking.strategies.json_strategy
+        assert (
+            self.splitter.json_config
+            is self.mock_settings.global_config.chunking.strategies.json_strategy
+        )
         assert self.splitter.chunk_size == 1500
         assert self.splitter.chunk_overlap == 100
         assert self.splitter.min_chunk_size == 200
@@ -67,9 +74,9 @@ class TestJSONSectionSplitter:
     def test_split_sections_basic(self):
         """Test basic split_sections method (compatibility method)."""
         content = '{"key": "value", "number": 42}'
-        
+
         result = self.splitter.split_sections(content)
-        
+
         assert len(result) == 1
         assert result[0]["content"] == content
         assert result[0]["metadata"] == {}
@@ -77,16 +84,16 @@ class TestJSONSectionSplitter:
     def test_split_sections_with_document(self):
         """Test split_sections with document parameter."""
         content = '{"key": "value"}'
-        
+
         result = self.splitter.split_sections(content, self.test_doc)
-        
+
         assert len(result) == 1
         assert result[0]["content"] == content
 
     def test_split_json_elements_empty_list(self):
         """Test split_json_elements with empty input."""
         result = self.splitter.split_json_elements([])
-        
+
         assert result == []
 
     def test_split_json_elements_single_small_element(self):
@@ -99,11 +106,11 @@ class TestJSONSectionSplitter:
             path="$.test",
             level=1,
             size=50,
-            item_count=1
+            item_count=1,
         )
-        
+
         result = self.splitter.split_json_elements([element])
-        
+
         # Should be grouped since it's small
         assert len(result) == 1
         assert result[0].name == "test"  # Single element remains unchanged
@@ -119,12 +126,14 @@ class TestJSONSectionSplitter:
             path="$.large",
             level=1,
             size=2000,
-            item_count=1
+            item_count=1,
         )
-        
-        with patch.object(self.splitter, '_split_large_element', return_value=[element]) as mock_split:
+
+        with patch.object(
+            self.splitter, "_split_large_element", return_value=[element]
+        ) as mock_split:
             result = self.splitter.split_json_elements([element])
-            
+
             mock_split.assert_called_once_with(element)
             assert len(result) == 1
 
@@ -134,26 +143,28 @@ class TestJSONSectionSplitter:
         self.splitter.json_config.max_objects_to_process = 3
         elements = []
         for i in range(5):
-            elements.append(JSONElement(
-                name=f"element_{i}",
-                element_type=JSONElementType.VALUE,
-                content=f"content_{i}",
-                value=f"value_{i}",
-                path=f"$.element_{i}",
-                level=1,
-                size=100,
-                item_count=1
-            ))
-        
+            elements.append(
+                JSONElement(
+                    name=f"element_{i}",
+                    element_type=JSONElementType.VALUE,
+                    content=f"content_{i}",
+                    value=f"value_{i}",
+                    path=f"$.element_{i}",
+                    level=1,
+                    size=100,
+                    item_count=1,
+                )
+            )
+
         result = self.splitter.split_json_elements(elements)
-        
+
         # Should be limited to 3 elements (after grouping)
         assert len(result) <= 3
 
     def test_group_small_elements_empty_list(self):
         """Test _group_small_elements with empty input."""
         result = self.splitter._group_small_elements([])
-        
+
         assert result == []
 
     def test_group_small_elements_large_elements_stay_separate(self):
@@ -166,11 +177,11 @@ class TestJSONSectionSplitter:
             path="$.large",
             level=1,
             size=300,
-            item_count=1
+            item_count=1,
         )
-        
+
         result = self.splitter._group_small_elements([large_element])
-        
+
         assert len(result) == 1
         assert result[0] is large_element
 
@@ -184,22 +195,22 @@ class TestJSONSectionSplitter:
             path="$.obj",
             level=1,
             size=50,  # Small but should stay separate due to type
-            item_count=1
+            item_count=1,
         )
-        
+
         array_element = JSONElement(
             name="arr",
             element_type=JSONElementType.ARRAY,
-            content='[1, 2, 3]',
+            content="[1, 2, 3]",
             value=[1, 2, 3],
             path="$.arr",
             level=1,
             size=50,
-            item_count=3
+            item_count=3,
         )
-        
+
         result = self.splitter._group_small_elements([obj_element, array_element])
-        
+
         assert len(result) == 2
         assert result[0] is obj_element
         assert result[1] is array_element
@@ -214,11 +225,11 @@ class TestJSONSectionSplitter:
             path="$.many_keys",
             level=1,
             size=50,
-            item_count=100  # More than max_object_keys_to_process (50)
+            item_count=100,  # More than max_object_keys_to_process (50)
         )
-        
+
         result = self.splitter._group_small_elements([many_keys_element])
-        
+
         assert len(result) == 1
         assert result[0] is many_keys_element
 
@@ -226,18 +237,20 @@ class TestJSONSectionSplitter:
         """Test that small elements get accumulated and grouped."""
         small_elements = []
         for i in range(5):
-            small_elements.append(JSONElement(
-                name=f"small_{i}",
-                element_type=JSONElementType.VALUE,
-                content=f"value_{i}",
-                value=f"value_{i}",
-                path=f"$.small_{i}",
-                level=1,
-                size=20,
-                item_count=1
-            ))
-        
-        with patch.object(self.splitter, '_create_grouped_element') as mock_create:
+            small_elements.append(
+                JSONElement(
+                    name=f"small_{i}",
+                    element_type=JSONElementType.VALUE,
+                    content=f"value_{i}",
+                    value=f"value_{i}",
+                    path=f"$.small_{i}",
+                    level=1,
+                    size=20,
+                    item_count=1,
+                )
+            )
+
+        with patch.object(self.splitter, "_create_grouped_element") as mock_create:
             mock_grouped = JSONElement(
                 name="grouped",
                 element_type=JSONElementType.OBJECT,
@@ -246,12 +259,12 @@ class TestJSONSectionSplitter:
                 path="$.grouped",
                 level=1,
                 size=100,
-                item_count=5
+                item_count=5,
             )
             mock_create.return_value = mock_grouped
-            
+
             result = self.splitter._group_small_elements(small_elements)
-            
+
             mock_create.assert_called_once()
             assert len(result) == 1
             assert result[0] is mock_grouped
@@ -261,18 +274,20 @@ class TestJSONSectionSplitter:
         # Create elements that will exceed min_chunk_size when accumulated
         elements = []
         for i in range(3):
-            elements.append(JSONElement(
-                name=f"elem_{i}",
-                element_type=JSONElementType.VALUE,
-                content="x" * 80,  # 80 chars each, 240 total > 200 threshold
-                value=f"value_{i}",
-                path=f"$.elem_{i}",
-                level=1,
-                size=80,
-                item_count=1
-            ))
-        
-        with patch.object(self.splitter, '_create_grouped_element') as mock_create:
+            elements.append(
+                JSONElement(
+                    name=f"elem_{i}",
+                    element_type=JSONElementType.VALUE,
+                    content="x" * 80,  # 80 chars each, 240 total > 200 threshold
+                    value=f"value_{i}",
+                    path=f"$.elem_{i}",
+                    level=1,
+                    size=80,
+                    item_count=1,
+                )
+            )
+
+        with patch.object(self.splitter, "_create_grouped_element") as mock_create:
             mock_grouped = JSONElement(
                 name="grouped",
                 element_type=JSONElementType.OBJECT,
@@ -281,12 +296,12 @@ class TestJSONSectionSplitter:
                 path="$.grouped",
                 level=1,
                 size=240,
-                item_count=3
+                item_count=3,
             )
             mock_create.return_value = mock_grouped
-            
+
             result = self.splitter._group_small_elements(elements)
-            
+
             mock_create.assert_called_once()
             assert len(result) == 1
 
@@ -294,21 +309,23 @@ class TestJSONSectionSplitter:
         """Test grouping triggers when element count reaches threshold."""
         # Set low threshold for testing
         self.splitter.json_config.max_array_items_per_chunk = 3
-        
+
         elements = []
         for i in range(5):  # More than threshold
-            elements.append(JSONElement(
-                name=f"elem_{i}",
-                element_type=JSONElementType.VALUE,
-                content="small",
-                value=f"value_{i}",
-                path=f"$.elem_{i}",
-                level=1,
-                size=10,
-                item_count=1
-            ))
-        
-        with patch.object(self.splitter, '_create_grouped_element') as mock_create:
+            elements.append(
+                JSONElement(
+                    name=f"elem_{i}",
+                    element_type=JSONElementType.VALUE,
+                    content="small",
+                    value=f"value_{i}",
+                    path=f"$.elem_{i}",
+                    level=1,
+                    size=10,
+                    item_count=1,
+                )
+            )
+
+        with patch.object(self.splitter, "_create_grouped_element") as mock_create:
             mock_grouped = JSONElement(
                 name="grouped",
                 element_type=JSONElementType.OBJECT,
@@ -317,12 +334,12 @@ class TestJSONSectionSplitter:
                 path="$.grouped",
                 level=1,
                 size=50,
-                item_count=3
+                item_count=3,
             )
             mock_create.return_value = mock_grouped
-            
-            result = self.splitter._group_small_elements(elements)
-            
+
+            self.splitter._group_small_elements(elements)
+
             # Should be called at least once when threshold is reached
             assert mock_create.call_count >= 1
 
@@ -341,30 +358,32 @@ class TestJSONSectionSplitter:
             path="$.single",
             level=1,
             size=50,
-            item_count=1
+            item_count=1,
         )
-        
+
         result = self.splitter._create_grouped_element([element])
-        
+
         assert result is element
 
     def test_create_grouped_element_array_items(self):
         """Test _create_grouped_element with array items creates array."""
         array_items = []
         for i in range(3):
-            array_items.append(JSONElement(
-                name=f"item_{i}",
-                element_type=JSONElementType.ARRAY_ITEM,
-                content=f'"value_{i}"',
-                value=f"value_{i}",
-                path=f"$[{i}]",
-                level=2,
-                size=10,
-                item_count=1
-            ))
-        
+            array_items.append(
+                JSONElement(
+                    name=f"item_{i}",
+                    element_type=JSONElementType.ARRAY_ITEM,
+                    content=f'"value_{i}"',
+                    value=f"value_{i}",
+                    path=f"$[{i}]",
+                    level=2,
+                    size=10,
+                    item_count=1,
+                )
+            )
+
         result = self.splitter._create_grouped_element(array_items)
-        
+
         assert result.element_type == JSONElementType.ARRAY
         assert result.name == "grouped_items_3"
         assert result.item_count == 3
@@ -382,7 +401,7 @@ class TestJSONSectionSplitter:
                 path="$.prop1",
                 level=1,
                 size=10,
-                item_count=1
+                item_count=1,
             ),
             JSONElement(
                 name="prop2",
@@ -392,12 +411,12 @@ class TestJSONSectionSplitter:
                 path="$.prop2",
                 level=2,
                 size=10,
-                item_count=1
-            )
+                item_count=1,
+            ),
         ]
-        
+
         result = self.splitter._create_grouped_element(mixed_elements)
-        
+
         assert result.element_type == JSONElementType.OBJECT
         assert result.name == "grouped_elements_2"
         assert result.item_count == 2
@@ -414,7 +433,7 @@ class TestJSONSectionSplitter:
                 path="$.root",
                 level=1,
                 size=10,
-                item_count=1
+                item_count=1,
             ),
             JSONElement(
                 name="normal",
@@ -424,12 +443,12 @@ class TestJSONSectionSplitter:
                 path="$.normal",
                 level=1,
                 size=10,
-                item_count=1
-            )
+                item_count=1,
+            ),
         ]
-        
+
         result = self.splitter._create_grouped_element(elements_with_root)
-        
+
         # Should handle root name by replacing with item_0
         assert isinstance(result.value, dict)
         assert "item_0" in result.value or "root" in result.value
@@ -447,7 +466,7 @@ class TestJSONSectionSplitter:
                 path="$.problem1",
                 level=1,
                 size=10,
-                item_count=1
+                item_count=1,
             ),
             JSONElement(
                 name="problem2",
@@ -457,12 +476,12 @@ class TestJSONSectionSplitter:
                 path="$.problem2",
                 level=1,
                 size=10,
-                item_count=1
-            )
+                item_count=1,
+            ),
         ]
-        
+
         result = self.splitter._create_grouped_element(problematic_elements)
-        
+
         # Should fall back to string representation
         assert isinstance(result.content, str)
         assert result.element_type == JSONElementType.OBJECT
@@ -477,11 +496,11 @@ class TestJSONSectionSplitter:
             path="$.small",
             level=1,
             size=100,  # Less than chunk_size (1500)
-            item_count=1
+            item_count=1,
         )
-        
+
         result = self.splitter._split_large_element(small_element)
-        
+
         assert len(result) == 1
         assert result[0] is small_element
 
@@ -496,11 +515,11 @@ class TestJSONSectionSplitter:
             path="$.large_array",
             level=1,
             size=2000,
-            item_count=25
+            item_count=25,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Should be split into chunks of max_array_items_per_chunk (10) each
         # 25 items = 3 chunks (10, 10, 5)
         assert len(result) == 3
@@ -520,11 +539,11 @@ class TestJSONSectionSplitter:
             path="$.large_object",
             level=1,
             size=2000,
-            item_count=20
+            item_count=20,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Should be split into multiple object chunks
         assert len(result) >= 1
         for chunk in result:
@@ -543,11 +562,11 @@ class TestJSONSectionSplitter:
             path="$.large_text",
             level=1,
             size=len(large_content),
-            item_count=1
+            item_count=1,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Check if the element was actually large enough to be split
         if element.size > self.splitter.chunk_size:
             # Should be split by lines
@@ -572,11 +591,11 @@ class TestJSONSectionSplitter:
             path="$.problematic_array",
             level=1,
             size=2000,
-            item_count=5
+            item_count=5,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Should handle error gracefully and still create chunks
         assert len(result) >= 1
         for chunk in result:
@@ -587,18 +606,18 @@ class TestJSONSectionSplitter:
         # Create object with non-serializable values
         problematic_object = {"key1": "value1", "key2": object()}
         element = JSONElement(
-            name="problematic_object", 
+            name="problematic_object",
             element_type=JSONElementType.OBJECT,
             content='{"problematic": "content"}',
             value=problematic_object,
             path="$.problematic_object",
             level=1,
             size=2000,
-            item_count=2
+            item_count=2,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Should handle error gracefully
         assert len(result) >= 1
         for chunk in result:
@@ -615,11 +634,11 @@ class TestJSONSectionSplitter:
             path="$.edge_case",
             level=1,
             size=2000,  # Claims to be large but empty
-            item_count=0
+            item_count=0,
         )
-        
+
         result = self.splitter._split_large_element(element)
-        
+
         # Should handle gracefully - either return original or create valid chunk
         assert len(result) >= 1
         if len(result) == 1 and result[0] is element:
@@ -634,18 +653,18 @@ class TestJSONSectionSplitter:
     def test_merge_small_sections_empty_list(self):
         """Test merge_small_sections with empty input."""
         result = self.splitter.merge_small_sections([])
-        
+
         assert result == []
 
     def test_merge_small_sections_large_sections_stay_separate(self):
         """Test merge_small_sections keeps large sections separate."""
         large_section = {
             "content": "x" * 300,  # Larger than min_chunk_size (200)
-            "metadata": {"type": "large"}
+            "metadata": {"type": "large"},
         }
-        
+
         result = self.splitter.merge_small_sections([large_section])
-        
+
         assert len(result) == 1
         assert result[0] == large_section
 
@@ -654,11 +673,11 @@ class TestJSONSectionSplitter:
         small_sections = [
             {"content": "Section 1", "metadata": {"index": 1}},
             {"content": "Section 2", "metadata": {"index": 2}},
-            {"content": "Section 3", "metadata": {"index": 3}}
+            {"content": "Section 3", "metadata": {"index": 3}},
         ]
-        
+
         result = self.splitter.merge_small_sections(small_sections)
-        
+
         assert len(result) == 1
         merged = result[0]
         assert "Section 1" in merged["content"]
@@ -672,11 +691,14 @@ class TestJSONSectionSplitter:
         # Create sections that together exceed chunk_size
         sections = [
             {"content": "x" * 800, "metadata": {"part": 1}},  # Small individually
-            {"content": "x" * 800, "metadata": {"part": 2}}   # But large together (1600 > 1500)
+            {
+                "content": "x" * 800,
+                "metadata": {"part": 2},
+            },  # But large together (1600 > 1500)
         ]
-        
+
         result = self.splitter.merge_small_sections(sections)
-        
+
         # Should create separate sections due to size limit
         assert len(result) == 2
 
@@ -685,11 +707,11 @@ class TestJSONSectionSplitter:
         sections = [
             {"content": "Part 1", "metadata": {"key1": "value1", "shared": "original"}},
             {"content": "Part 2", "metadata": {"key2": "value2", "shared": "updated"}},
-            {"content": "Part 3"}  # No metadata
+            {"content": "Part 3"},  # No metadata
         ]
-        
+
         result = self.splitter.merge_small_sections(sections)
-        
+
         assert len(result) == 1
         merged = result[0]
         metadata = merged.get("metadata", {})
@@ -702,11 +724,11 @@ class TestJSONSectionSplitter:
         sections = [
             {"content": "Valid content", "metadata": {"valid": True}},
             {"metadata": {"missing_content": True}},  # No content key
-            {"content": "", "metadata": {"empty": True}}  # Empty content
+            {"content": "", "metadata": {"empty": True}},  # Empty content
         ]
-        
+
         result = self.splitter.merge_small_sections(sections)
-        
+
         # Should handle gracefully without errors
         assert len(result) == 1
         assert "Valid content" in result[0]["content"]

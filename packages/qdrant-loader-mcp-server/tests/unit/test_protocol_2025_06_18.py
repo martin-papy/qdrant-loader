@@ -29,9 +29,9 @@ class TestProtocolVersionCompliance:
             },
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         assert response["jsonrpc"] == "2.0"
         assert response["id"] == 1
         assert "result" in response
@@ -47,17 +47,19 @@ class TestProtocolVersionCompliance:
             "params": {"protocolVersion": "2025-06-18"},
             "id": 1,
         }
-        
+
         # Test with valid protocol version header
         headers = {"mcp-protocol-version": "2025-06-18"}
         response = await mcp_handler.handle_request(request, headers=headers)
         assert response["result"]["protocolVersion"] == "2025-06-18"
-        
+
         # Test with older supported version
         headers = {"mcp-protocol-version": "2024-11-05"}
         response = await mcp_handler.handle_request(request, headers=headers)
-        assert response["result"]["protocolVersion"] == "2025-06-18"  # Server returns its version
-        
+        assert (
+            response["result"]["protocolVersion"] == "2025-06-18"
+        )  # Server returns its version
+
         # Test without header (backward compatibility)
         response = await mcp_handler.handle_request(request)
         assert response["result"]["protocolVersion"] == "2025-06-18"
@@ -71,11 +73,11 @@ class TestProtocolVersionCompliance:
             "params": {"protocolVersion": "2025-06-18"},
             "id": 1,
         }
-        
+
         # Test with unsupported version - should still work but log warning
         headers = {"mcp-protocol-version": "unsupported-version"}
         response = await mcp_handler.handle_request(request, headers=headers)
-        
+
         # Should still return successful response
         assert response["result"]["protocolVersion"] == "2025-06-18"
 
@@ -92,20 +94,24 @@ class TestToolBehavioralAnnotations:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         assert "result" in response
         assert "tools" in response["result"]
-        
+
         tools = response["result"]["tools"]
         assert len(tools) > 0
-        
+
         # Check that every tool has annotations
         for tool in tools:
             assert "annotations" in tool, f"Tool '{tool['name']}' missing annotations"
-            assert isinstance(tool["annotations"], dict), f"Tool '{tool['name']}' annotations should be an object"
-            assert len(tool["annotations"]) > 0, f"Tool '{tool['name']}' should have at least one annotation"
+            assert isinstance(
+                tool["annotations"], dict
+            ), f"Tool '{tool['name']}' annotations should be an object"
+            assert (
+                len(tool["annotations"]) > 0
+            ), f"Tool '{tool['name']}' should have at least one annotation"
 
     @pytest.mark.asyncio
     async def test_search_tool_annotations(self, mcp_handler):
@@ -116,10 +122,10 @@ class TestToolBehavioralAnnotations:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         search_tool = next((tool for tool in tools if tool["name"] == "search"), None)
         assert search_tool is not None, "Search tool not found"
         assert "read-only" in search_tool["annotations"]
@@ -134,23 +140,28 @@ class TestToolBehavioralAnnotations:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         # Tools that should be marked as compute-intensive
-        compute_intensive_tools = [
-            "detect_document_conflicts", 
-            "cluster_documents"
-        ]
-        
+        compute_intensive_tools = ["detect_document_conflicts", "cluster_documents"]
+
         for tool_name in compute_intensive_tools:
             tool = next((tool for tool in tools if tool["name"] == tool_name), None)
             assert tool is not None, f"Tool '{tool_name}' not found"
-            assert "read-only" in tool["annotations"], f"Tool '{tool_name}' should be read-only"
-            assert tool["annotations"]["read-only"] is True, f"Tool '{tool_name}' should be read-only"
-            assert "compute-intensive" in tool["annotations"], f"Tool '{tool_name}' should be compute-intensive"
-            assert tool["annotations"]["compute-intensive"] is True, f"Tool '{tool_name}' should be compute-intensive"
+            assert (
+                "read-only" in tool["annotations"]
+            ), f"Tool '{tool_name}' should be read-only"
+            assert (
+                tool["annotations"]["read-only"] is True
+            ), f"Tool '{tool_name}' should be read-only"
+            assert (
+                "compute-intensive" in tool["annotations"]
+            ), f"Tool '{tool_name}' should be compute-intensive"
+            assert (
+                tool["annotations"]["compute-intensive"] is True
+            ), f"Tool '{tool_name}' should be compute-intensive"
 
     @pytest.mark.asyncio
     async def test_all_tools_are_read_only(self, mcp_handler):
@@ -161,13 +172,17 @@ class TestToolBehavioralAnnotations:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         for tool in tools:
-            assert "read-only" in tool["annotations"], f"Tool '{tool['name']}' should be read-only"
-            assert tool["annotations"]["read-only"] is True, f"Tool '{tool['name']}' should be read-only"
+            assert (
+                "read-only" in tool["annotations"]
+            ), f"Tool '{tool['name']}' should be read-only"
+            assert (
+                tool["annotations"]["read-only"] is True
+            ), f"Tool '{tool['name']}' should be read-only"
 
 
 class TestToolOutputSchemas:
@@ -182,16 +197,22 @@ class TestToolOutputSchemas:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         # All tools should have outputSchema for 2025-06-18 compliance
         for tool in tools:
             assert "outputSchema" in tool, f"Tool '{tool['name']}' missing outputSchema"
-            assert isinstance(tool["outputSchema"], dict), f"Tool '{tool['name']}' outputSchema should be a dict"
-            assert "type" in tool["outputSchema"], f"Tool '{tool['name']}' outputSchema should have 'type'"
-            assert tool["outputSchema"]["type"] == "object", f"Tool '{tool['name']}' outputSchema should be object type"
+            assert isinstance(
+                tool["outputSchema"], dict
+            ), f"Tool '{tool['name']}' outputSchema should be a dict"
+            assert (
+                "type" in tool["outputSchema"]
+            ), f"Tool '{tool['name']}' outputSchema should have 'type'"
+            assert (
+                tool["outputSchema"]["type"] == "object"
+            ), f"Tool '{tool['name']}' outputSchema should be object type"
 
     @pytest.mark.asyncio
     async def test_search_tool_output_schema(self, mcp_handler):
@@ -202,27 +223,27 @@ class TestToolOutputSchemas:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         search_tool = next((tool for tool in tools if tool["name"] == "search"), None)
         assert search_tool is not None
-        
+
         schema = search_tool["outputSchema"]
         assert "properties" in schema
-        
+
         # Check for expected properties in search output schema
         properties = schema["properties"]
         assert "results" in properties
         assert "total_found" in properties
         assert "query_context" in properties
-        
+
         # Check results array structure
         results_schema = properties["results"]
         assert results_schema["type"] == "array"
         assert "items" in results_schema
-        
+
         # Check result item structure
         item_schema = results_schema["items"]
         assert item_schema["type"] == "object"
@@ -242,20 +263,22 @@ class TestToolOutputSchemas:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
+
         # Test analyze_relationships schema
-        analyze_tool = next((tool for tool in tools if tool["name"] == "analyze_relationships"), None)
+        analyze_tool = next(
+            (tool for tool in tools if tool["name"] == "analyze_relationships"), None
+        )
         assert analyze_tool is not None
-        
+
         schema = analyze_tool["outputSchema"]
         properties = schema["properties"]
         assert "relationships" in properties
         assert "total_analyzed" in properties
         assert "summary" in properties
-        
+
         # Check relationships structure
         relationships = properties["relationships"]["items"]["properties"]
         assert "document_1" in relationships
@@ -264,7 +287,7 @@ class TestToolOutputSchemas:
         assert "score" in relationships
         assert "description" in relationships
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_cluster_tool_output_schema(self, mcp_handler):
         """Test cluster tool has appropriate output schema."""
         request = {
@@ -273,23 +296,25 @@ class TestToolOutputSchemas:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
         tools = response["result"]["tools"]
-        
-        cluster_tool = next((tool for tool in tools if tool["name"] == "cluster_documents"), None)
+
+        cluster_tool = next(
+            (tool for tool in tools if tool["name"] == "cluster_documents"), None
+        )
         assert cluster_tool is not None
-        
+
         schema = cluster_tool["outputSchema"]
         properties = schema["properties"]
         assert "clusters" in properties
         assert "clustering_metadata" in properties
         assert "cluster_relationships" in properties
-        
+
         # Check clusters array structure
         clusters_schema = properties["clusters"]
         assert clusters_schema["type"] == "array"
-        
+
         cluster_item = clusters_schema["items"]["properties"]
         assert "cluster_id" in cluster_item
         assert "cluster_name" in cluster_item
@@ -309,9 +334,9 @@ class TestToolCapabilities:
             "params": {"protocolVersion": "2025-06-18"},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         assert "capabilities" in response["result"]
         capabilities = response["result"]["capabilities"]
         assert "tools" in capabilities
@@ -327,14 +352,14 @@ class TestToolCapabilities:
             "params": {},
             "id": 1,
         }
-        
+
         tools_response = await mcp_handler.handle_request(tools_list_request)
         tools_count = len(tools_response["result"]["tools"])
-        
+
         # Should have exactly 10 tools (3 search + 5 analysis + 2 lazy loading)
         expected_tools = [
             "search",
-            "hierarchy_search", 
+            "hierarchy_search",
             "attachment_search",
             "analyze_relationships",
             "find_similar_documents",
@@ -342,15 +367,17 @@ class TestToolCapabilities:
             "find_complementary_content",
             "cluster_documents",
             "expand_document",
-            "expand_cluster"
+            "expand_cluster",
         ]
-        
+
         assert tools_count == len(expected_tools)
-        
+
         # Check all expected tools are present
         tool_names = [tool["name"] for tool in tools_response["result"]["tools"]]
         for expected_tool in expected_tools:
-            assert expected_tool in tool_names, f"Expected tool '{expected_tool}' not found"
+            assert (
+                expected_tool in tool_names
+            ), f"Expected tool '{expected_tool}' not found"
 
 
 class TestProtocolCompliance:
@@ -365,9 +392,9 @@ class TestProtocolCompliance:
             "params": {"protocolVersion": "2025-06-18"},
             "id": "test-id-123",
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         # JSON-RPC 2.0 compliance checks
         assert response["jsonrpc"] == "2.0"
         assert response["id"] == "test-id-123"  # ID should be preserved
@@ -382,9 +409,9 @@ class TestProtocolCompliance:
             "params": {},
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         assert response["jsonrpc"] == "2.0"
         assert response["id"] == 1
         assert "error" in response
@@ -394,14 +421,14 @@ class TestProtocolCompliance:
     async def test_invalid_params_handling(self, mcp_handler):
         """Test proper handling of invalid parameters."""
         request = {
-            "jsonrpc": "2.0", 
+            "jsonrpc": "2.0",
             "method": "search",
             "params": {},  # Missing required 'query' parameter
             "id": 1,
         }
-        
+
         response = await mcp_handler.handle_request(request)
-        
+
         assert response["jsonrpc"] == "2.0"
         assert response["id"] == 1
         assert "error" in response
@@ -413,11 +440,11 @@ class TestProtocolCompliance:
         notification = {
             "jsonrpc": "2.0",
             "method": "some/notification",
-            "params": {}
+            "params": {},
             # No id = notification
         }
-        
+
         response = await mcp_handler.handle_request(notification)
-        
+
         # Notifications should not return a response
-        assert response is None or (isinstance(response, dict) and "id" not in response) 
+        assert response is None or (isinstance(response, dict) and "id" not in response)

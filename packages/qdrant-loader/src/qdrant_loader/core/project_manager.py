@@ -84,8 +84,8 @@ class ProjectManager:
     async def _discover_projects(self, session: AsyncSession) -> None:
         """Discover projects from configuration and create project contexts."""
         self.logger.debug(
-            "Discovering projects from configuration", 
-            project_count=len(self.projects_config.projects)
+            "Discovering projects from configuration",
+            project_count=len(self.projects_config.projects),
         )
 
         for project_id, project_config in self.projects_config.projects.items():

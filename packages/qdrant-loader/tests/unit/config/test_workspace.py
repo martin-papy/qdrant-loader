@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from qdrant_loader.config.workspace import (
     WorkspaceConfig,
     create_workspace_structure,
@@ -24,16 +23,16 @@ class TestWorkspaceConfig:
         """Create a temporary workspace directory with required files."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
-            
+
             # Create config.yaml
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             # Create basic directory structure
             (workspace_path / "logs").mkdir()
             (workspace_path / "metrics").mkdir()
             (workspace_path / "data").mkdir()
-            
+
             yield workspace_path
 
     @pytest.fixture
@@ -50,9 +49,9 @@ class TestWorkspaceConfig:
 
     def test_workspace_config_initialization(self, valid_workspace_config_data):
         """Test WorkspaceConfig initialization with valid data."""
-        with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
             config = WorkspaceConfig(**valid_workspace_config_data)
-            
+
             assert config.workspace_path.is_absolute()
             assert config.config_path == valid_workspace_config_data["config_path"]
             assert config.env_path is None
@@ -76,7 +75,7 @@ class TestWorkspaceConfig:
         """Test WorkspaceConfig with workspace path pointing to a file."""
         file_path = temp_workspace / "somefile.txt"
         file_path.write_text("content")
-        
+
         with pytest.raises(ValueError, match="Workspace path is not a directory"):
             WorkspaceConfig(
                 workspace_path=file_path,
@@ -105,7 +104,7 @@ class TestWorkspaceConfig:
     def test_workspace_config_readonly_workspace(self, temp_workspace):
         """Test WorkspaceConfig with read-only workspace."""
         # Mock os.access to return False for write permissions
-        with patch('os.access', return_value=False):
+        with patch("os.access", return_value=False):
             with pytest.raises(ValueError, match="Cannot write to workspace directory"):
                 WorkspaceConfig(
                     workspace_path=temp_workspace,
@@ -120,7 +119,7 @@ class TestWorkspaceConfig:
         """Test WorkspaceConfig with env_path set."""
         env_file = temp_workspace / ".env"
         env_file.write_text("TEST_VAR=value")
-        
+
         config = WorkspaceConfig(
             workspace_path=temp_workspace,
             config_path=temp_workspace / "config.yaml",
@@ -129,7 +128,7 @@ class TestWorkspaceConfig:
             metrics_path=temp_workspace / "metrics",
             database_path=temp_workspace / "data" / "qdrant-loader.db",
         )
-        
+
         assert config.env_path == env_file
 
 
@@ -141,25 +140,31 @@ class TestSetupWorkspace:
         """Create a temporary workspace directory with required files."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
-            
+
             # Create config.yaml
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             yield workspace_path
 
     def test_setup_workspace_success(self, temp_workspace):
         """Test successful workspace setup."""
-        with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
             config = setup_workspace(temp_workspace)
-            
+
             assert isinstance(config, WorkspaceConfig)
             assert config.workspace_path == temp_workspace.resolve()
             assert config.config_path == temp_workspace.resolve() / "config.yaml"
-            assert config.logs_path == temp_workspace.resolve() / "logs" / "qdrant-loader.log"
+            assert (
+                config.logs_path
+                == temp_workspace.resolve() / "logs" / "qdrant-loader.log"
+            )
             assert config.metrics_path == temp_workspace.resolve() / "metrics"
-            assert config.database_path == temp_workspace.resolve() / "data" / "qdrant-loader.db"
-            
+            assert (
+                config.database_path
+                == temp_workspace.resolve() / "data" / "qdrant-loader.db"
+            )
+
             # Verify logging
             mock_logger.debug.assert_called()
 
@@ -167,9 +172,9 @@ class TestSetupWorkspace:
         """Test workspace setup with existing .env file."""
         env_file = temp_workspace / ".env"
         env_file.write_text("TEST_VAR=value")
-        
+
         config = setup_workspace(temp_workspace)
-        
+
         assert config.env_path == env_file.resolve()
 
     def test_setup_workspace_without_env_file(self, temp_workspace):
@@ -178,9 +183,9 @@ class TestSetupWorkspace:
         env_file = temp_workspace / ".env"
         if env_file.exists():
             env_file.unlink()
-        
+
         config = setup_workspace(temp_workspace)
-        
+
         assert config.env_path is None
 
     def test_setup_workspace_relative_path(self, temp_workspace):
@@ -190,7 +195,7 @@ class TestSetupWorkspace:
         try:
             relative_path = temp_workspace.relative_to(current_dir)
             config = setup_workspace(relative_path)
-            
+
             # Should be resolved to absolute path
             assert config.workspace_path.is_absolute()
             assert config.workspace_path == temp_workspace.resolve()
@@ -201,7 +206,7 @@ class TestSetupWorkspace:
     def test_setup_workspace_invalid_directory(self):
         """Test workspace setup with invalid directory."""
         nonexistent_path = Path("/nonexistent/workspace")
-        
+
         with pytest.raises(ValueError):
             setup_workspace(nonexistent_path)
 
@@ -214,11 +219,11 @@ class TestValidateWorkspace:
         """Create a temporary workspace directory with required files."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
-            
+
             # Create config.yaml
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             yield workspace_path
 
     def test_validate_workspace_valid(self, temp_workspace):
@@ -229,10 +234,10 @@ class TestValidateWorkspace:
     def test_validate_workspace_invalid(self):
         """Test workspace validation with invalid workspace."""
         nonexistent_path = Path("/nonexistent/workspace")
-        
-        with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+
+        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
             result = validate_workspace(nonexistent_path)
-            
+
             assert result is False
             mock_logger.debug.assert_called()
             # Check that error was logged
@@ -243,7 +248,7 @@ class TestValidateWorkspace:
         """Test workspace validation with missing config file."""
         # Remove config file
         (temp_workspace / "config.yaml").unlink()
-        
+
         result = validate_workspace(temp_workspace)
         assert result is False
 
@@ -255,17 +260,17 @@ class TestCreateWorkspaceStructure:
         """Test creating workspace structure in new directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "new_workspace"
-            
-            with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+
+            with patch("qdrant_loader.config.workspace.logger") as mock_logger:
                 create_workspace_structure(workspace_path)
-                
+
                 # Verify directories were created
                 assert workspace_path.exists()
                 assert workspace_path.is_dir()
                 assert (workspace_path / "logs").exists()
                 assert (workspace_path / "metrics").exists()
                 assert (workspace_path / "data").exists()
-                
+
                 # Verify logging
                 mock_logger.debug.assert_called()
 
@@ -273,12 +278,12 @@ class TestCreateWorkspaceStructure:
         """Test creating workspace structure in existing directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
-            
+
             # Pre-create some directories
             (workspace_path / "logs").mkdir()
-            
+
             create_workspace_structure(workspace_path)
-            
+
             # Verify all directories exist
             assert (workspace_path / "logs").exists()
             assert (workspace_path / "metrics").exists()
@@ -288,9 +293,9 @@ class TestCreateWorkspaceStructure:
         """Test creating workspace structure with parent directories."""
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir) / "parent" / "child" / "workspace"
-            
+
             create_workspace_structure(workspace_path)
-            
+
             # Verify nested structure was created
             assert workspace_path.exists()
             assert (workspace_path / "logs").exists()
@@ -305,9 +310,9 @@ class TestGetWorkspaceEnvOverride:
         """Test getting workspace environment overrides."""
         workspace_path = Path("/test/workspace")
         database_path = workspace_path / "data" / "qdrant-loader.db"
-        
+
         # Mock the __post_init__ validation to avoid directory checks
-        with patch.object(WorkspaceConfig, '__post_init__', return_value=None):
+        with patch.object(WorkspaceConfig, "__post_init__", return_value=None):
             config = WorkspaceConfig(
                 workspace_path=workspace_path,
                 config_path=workspace_path / "config.yaml",
@@ -316,14 +321,14 @@ class TestGetWorkspaceEnvOverride:
                 metrics_path=workspace_path / "metrics",
                 database_path=database_path,
             )
-        
-        with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+
+        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
             overrides = get_workspace_env_override(config)
-            
+
             expected = {
                 "STATE_DB_PATH": str(database_path),
             }
-            
+
             assert overrides == expected
             mock_logger.debug.assert_called()
 
@@ -332,11 +337,11 @@ class TestGetWorkspaceEnvOverride:
         with tempfile.TemporaryDirectory() as temp_dir:
             workspace_path = Path(temp_dir)
             database_path = workspace_path / "data" / "qdrant-loader.db"
-            
+
             # Create config.yaml file
             config_file = workspace_path / "config.yaml"
             config_file.write_text("projects: {}")
-            
+
             config = WorkspaceConfig(
                 workspace_path=workspace_path,
                 config_path=workspace_path / "config.yaml",
@@ -345,9 +350,9 @@ class TestGetWorkspaceEnvOverride:
                 metrics_path=workspace_path / "metrics",
                 database_path=database_path,
             )
-            
+
             overrides = get_workspace_env_override(config)
-            
+
             assert "STATE_DB_PATH" in overrides
             assert overrides["STATE_DB_PATH"] == str(database_path)
 
@@ -357,12 +362,10 @@ class TestValidateWorkspaceFlags:
 
     def test_validate_workspace_flags_no_conflicts(self):
         """Test workspace flag validation with no conflicts."""
-        with patch('qdrant_loader.config.workspace.logger') as mock_logger:
+        with patch("qdrant_loader.config.workspace.logger") as mock_logger:
             # Test with only workspace
             validate_workspace_flags(
-                workspace=Path("/workspace"),
-                config=None,
-                env=None
+                workspace=Path("/workspace"), config=None, env=None
             )
             mock_logger.debug.assert_called()
 
@@ -370,44 +373,38 @@ class TestValidateWorkspaceFlags:
         """Test workspace flag validation with no workspace flag."""
         # Should not raise any errors
         validate_workspace_flags(
-            workspace=None,
-            config=Path("/config.yaml"),
-            env=Path("/.env")
+            workspace=None, config=Path("/config.yaml"), env=Path("/.env")
         )
 
     def test_validate_workspace_flags_workspace_with_config(self):
         """Test workspace flag validation with conflicting config flag."""
-        with pytest.raises(ValueError, match="Cannot use --workspace with --config flag"):
+        with pytest.raises(
+            ValueError, match="Cannot use --workspace with --config flag"
+        ):
             validate_workspace_flags(
-                workspace=Path("/workspace"),
-                config=Path("/config.yaml"),
-                env=None
+                workspace=Path("/workspace"), config=Path("/config.yaml"), env=None
             )
 
     def test_validate_workspace_flags_workspace_with_env(self):
         """Test workspace flag validation with conflicting env flag."""
         with pytest.raises(ValueError, match="Cannot use --workspace with --env flag"):
             validate_workspace_flags(
-                workspace=Path("/workspace"),
-                config=None,
-                env=Path("/.env")
+                workspace=Path("/workspace"), config=None, env=Path("/.env")
             )
 
     def test_validate_workspace_flags_workspace_with_both(self):
         """Test workspace flag validation with both conflicting flags."""
         # Should raise error for config flag first
-        with pytest.raises(ValueError, match="Cannot use --workspace with --config flag"):
+        with pytest.raises(
+            ValueError, match="Cannot use --workspace with --config flag"
+        ):
             validate_workspace_flags(
                 workspace=Path("/workspace"),
                 config=Path("/config.yaml"),
-                env=Path("/.env")
+                env=Path("/.env"),
             )
 
     def test_validate_workspace_flags_all_none(self):
         """Test workspace flag validation with all flags None."""
         # Should not raise any errors
-        validate_workspace_flags(
-            workspace=None,
-            config=None,
-            env=None
-        )
+        validate_workspace_flags(workspace=None, config=None, env=None)

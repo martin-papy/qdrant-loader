@@ -36,9 +36,7 @@ class ConfigValidator:
 
         # Validate that we have projects section
         if "projects" not in config_data:
-            raise ValueError(
-                "Configuration must contain 'projects' section"
-            )
+            raise ValueError("Configuration must contain 'projects' section")
 
         # Validate projects section
         self._validate_projects_section(config_data["projects"])

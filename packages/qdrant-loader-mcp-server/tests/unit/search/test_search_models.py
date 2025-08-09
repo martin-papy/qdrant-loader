@@ -1,7 +1,9 @@
 """Tests for search models."""
 
+from qdrant_loader_mcp_server.search.components.search_result_models import (
+    create_hybrid_search_result,
+)
 from qdrant_loader_mcp_server.search.models import SearchResult
-from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
 
 
 class TestSearchResult:
@@ -150,7 +152,7 @@ class TestSearchResult:
             source_type="confluence",
             source_title="Document",
             children_count=0,
-            subsections=["Sub 1", "Sub 2"]
+            subsections=["Sub 1", "Sub 2"],
         )
 
         assert result.has_children() is True
@@ -163,7 +165,7 @@ class TestSearchResult:
             source_type="confluence",
             source_title="Child Document",
             parent_id="parent-123",
-            parent_document_id="doc-456"
+            parent_document_id="doc-456",
         )
 
         assert result.is_root_document() is False
@@ -467,11 +469,14 @@ class TestSearchResultEnhancedFeatures:
             project_id="proj-123",
             project_name="Test Project",
             project_description="A test project",
-            collection_name="test_collection"
+            collection_name="test_collection",
         )
-        
+
         project_info = result.get_project_info()
-        assert project_info == "Project: Test Project - A test project (Collection: test_collection)"
+        assert (
+            project_info
+            == "Project: Test Project - A test project (Collection: test_collection)"
+        )
 
     def test_get_project_info_minimal(self):
         """Test project info with minimal fields."""
@@ -480,21 +485,18 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         project_info = result.get_project_info()
         assert project_info == "Project: proj-123"
 
     def test_get_project_info_none(self):
         """Test project info when no project_id."""
         result = SearchResult(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="test.py"
+            score=0.8, text="Test content", source_type="git", source_title="test.py"
         )
-        
+
         project_info = result.get_project_info()
         assert project_info is None
 
@@ -510,9 +512,9 @@ class TestSearchResultEnhancedFeatures:
             has_images=True,
             has_links=True,
             word_count=500,
-            estimated_read_time=3
+            estimated_read_time=3,
         )
-        
+
         content_info = result.get_content_info()
         assert "Contains: Code, Tables, Images, Links" in content_info
         assert "500 words" in content_info
@@ -527,9 +529,9 @@ class TestSearchResultEnhancedFeatures:
             source_title="code.py",
             has_code_blocks=True,
             has_tables=False,
-            word_count=200
+            word_count=200,
         )
-        
+
         content_info = result.get_content_info()
         assert "Contains: Code" in content_info
         assert "200 words" in content_info
@@ -538,12 +540,9 @@ class TestSearchResultEnhancedFeatures:
     def test_get_content_info_none(self):
         """Test content info when no content features."""
         result = SearchResult(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="simple.txt"
+            score=0.8, text="Test content", source_type="git", source_title="simple.txt"
         )
-        
+
         content_info = result.get_content_info()
         assert content_info is None
 
@@ -555,13 +554,21 @@ class TestSearchResultEnhancedFeatures:
             source_type="confluence",
             source_title="Analysis Doc",
             entities=["Company A", "Product B", "Location C"],
-            topics=["machine learning", "data analysis", "visualization", "extra topic"],
-            key_phrases=["key phrase 1", "key phrase 2"]
+            topics=[
+                "machine learning",
+                "data analysis",
+                "visualization",
+                "extra topic",
+            ],
+            key_phrases=["key phrase 1", "key phrase 2"],
         )
-        
+
         semantic_info = result.get_semantic_info()
         assert "3 entities" in semantic_info
-        assert "Topics: machine learning, data analysis, visualization (+1 more)" in semantic_info
+        assert (
+            "Topics: machine learning, data analysis, visualization (+1 more)"
+            in semantic_info
+        )
         assert "2 key phrases" in semantic_info
 
     def test_get_semantic_info_dict_format(self):
@@ -574,22 +581,22 @@ class TestSearchResultEnhancedFeatures:
             topics=[
                 {"text": "machine learning", "confidence": 0.9},
                 {"text": "data analysis", "confidence": 0.8},
-                {"name": "visualization"}  # Different key structure
-            ]
+                {"name": "visualization"},  # Different key structure
+            ],
         )
-        
+
         semantic_info = result.get_semantic_info()
-        assert "Topics: machine learning, data analysis, {'name': 'visualization'}" in semantic_info
+        assert (
+            "Topics: machine learning, data analysis, {'name': 'visualization'}"
+            in semantic_info
+        )
 
     def test_get_semantic_info_none(self):
         """Test semantic info when no semantic data."""
         result = SearchResult(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="simple.py"
+            score=0.8, text="Test content", source_type="git", source_title="simple.py"
         )
-        
+
         semantic_info = result.get_semantic_info()
         assert semantic_info is None
 
@@ -603,9 +610,9 @@ class TestSearchResultEnhancedFeatures:
             previous_section="Section 1",
             next_section="Section 3",
             sibling_sections=["Section 2a", "Section 2b"],
-            subsections=["Subsection 1", "Subsection 2", "Subsection 3"]
+            subsections=["Subsection 1", "Subsection 2", "Subsection 3"],
         )
-        
+
         navigation_info = result.get_navigation_info()
         assert "Previous: Section 1" in navigation_info
         assert "Next: Section 3" in navigation_info
@@ -620,9 +627,9 @@ class TestSearchResultEnhancedFeatures:
             source_type="confluence",
             source_title="Last Section",
             previous_section="Previous Section",
-            subsections=["Sub 1"]
+            subsections=["Sub 1"],
         )
-        
+
         navigation_info = result.get_navigation_info()
         assert "Previous: Previous Section" in navigation_info
         assert "1 subsections" in navigation_info
@@ -634,9 +641,9 @@ class TestSearchResultEnhancedFeatures:
             score=0.8,
             text="Test content",
             source_type="git",
-            source_title="standalone.py"
+            source_title="standalone.py",
         )
-        
+
         navigation_info = result.get_navigation_info()
         assert navigation_info is None
 
@@ -647,9 +654,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         assert result.belongs_to_project("proj-123") is True
 
     def test_belongs_to_project_false(self):
@@ -659,20 +666,17 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         assert result.belongs_to_project("proj-456") is False
 
     def test_belongs_to_project_no_project(self):
         """Test project membership check when no project_id."""
         result = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="test.py"
+            score=0.8, text="Test content", source_type="git", source_title="test.py"
         )
-        
+
         assert result.belongs_to_project("proj-123") is False
 
     def test_belongs_to_any_project_true(self):
@@ -682,9 +686,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         assert result.belongs_to_any_project(["proj-123", "proj-456"]) is True
 
     def test_belongs_to_any_project_false(self):
@@ -694,20 +698,17 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-789"
+            project_id="proj-789",
         )
-        
+
         assert result.belongs_to_any_project(["proj-123", "proj-456"]) is False
 
     def test_belongs_to_any_project_no_project(self):
         """Test multiple project membership check when no project_id."""
         result = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="test.py"
+            score=0.8, text="Test content", source_type="git", source_title="test.py"
         )
-        
+
         assert result.belongs_to_any_project(["proj-123", "proj-456"]) is False
 
     def test_is_code_content_code_blocks(self):
@@ -717,9 +718,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="git",
             source_title="code.py",
-            has_code_blocks=True
+            has_code_blocks=True,
         )
-        
+
         assert result.is_code_content() is True
 
     def test_is_code_content_section_type(self):
@@ -729,9 +730,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="confluence",
             source_title="Code Section",
-            section_type="code"
+            section_type="code",
         )
-        
+
         assert result.is_code_content() is True
 
     def test_is_code_content_false(self):
@@ -740,9 +741,9 @@ class TestSearchResultEnhancedFeatures:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="Documentation"
+            source_title="Documentation",
         )
-        
+
         assert result.is_code_content() is False
 
     def test_is_documentation_confluence(self):
@@ -751,9 +752,9 @@ class TestSearchResultEnhancedFeatures:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="User Guide"
+            source_title="User Guide",
         )
-        
+
         assert result.is_documentation() is True
 
     def test_is_documentation_localfile(self):
@@ -762,9 +763,9 @@ class TestSearchResultEnhancedFeatures:
             score=0.8,
             text="Test content",
             source_type="localfile",
-            source_title="README.md"
+            source_title="README.md",
         )
-        
+
         assert result.is_documentation() is True
 
     def test_is_documentation_with_code(self):
@@ -774,20 +775,17 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="confluence",
             source_title="API Guide",
-            has_code_blocks=True
+            has_code_blocks=True,
         )
-        
+
         assert result.is_documentation() is False
 
     def test_is_documentation_false(self):
         """Test documentation detection - negative case."""
         result = create_hybrid_search_result(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="source.py"
+            score=0.8, text="Test content", source_type="git", source_title="source.py"
         )
-        
+
         assert result.is_documentation() is False
 
     def test_is_structured_data_tables(self):
@@ -797,9 +795,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="confluence",
             source_title="Data Report",
-            has_tables=True
+            has_tables=True,
         )
-        
+
         assert result.is_structured_data() is True
 
     def test_is_structured_data_excel(self):
@@ -809,9 +807,9 @@ class TestSearchResultEnhancedFeatures:
             text="Test content",
             source_type="localfile",
             source_title="data.xlsx",
-            is_excel_sheet=True
+            is_excel_sheet=True,
         )
-        
+
         assert result.is_structured_data() is True
 
     def test_is_structured_data_false(self):
@@ -820,9 +818,9 @@ class TestSearchResultEnhancedFeatures:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="Plain Text"
+            source_title="Plain Text",
         )
-        
+
         assert result.is_structured_data() is False
 
 
@@ -836,9 +834,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="git",
             source_title="",
-            file_path="/path/to/config.py"
+            file_path="/path/to/config.py",
         )
-        
+
         display_title = result.get_display_title()
         assert display_title == "config.py"
 
@@ -849,9 +847,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="git",
             source_title="",
-            repo_name="my-repo"
+            repo_name="my-repo",
         )
-        
+
         display_title = result.get_display_title()
         assert display_title == "my-repo"
 
@@ -861,9 +859,9 @@ class TestSearchResultMissingCoverage:
             score=0.8,
             text="Test content",
             source_type="git",
-            source_title="   "  # Whitespace only
+            source_title="   ",  # Whitespace only
         )
-        
+
         display_title = result.get_display_title()
         assert display_title == "Untitled"
 
@@ -874,9 +872,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            hierarchy_context="Some context"
+            hierarchy_context="Some context",
         )
-        
+
         hierarchy_info = result.get_hierarchy_info()
         assert hierarchy_info is None
 
@@ -890,9 +888,9 @@ class TestSearchResultMissingCoverage:
             hierarchy_context="Path: Root > Parent | Depth: 2",
             section_breadcrumb="Document > Section > Subsection",
             chunk_index=1,
-            total_chunks=3
+            total_chunks=3,
         )
-        
+
         hierarchy_info = result.get_hierarchy_info()
         assert "Path: Root > Parent | Depth: 2" in hierarchy_info
         assert "Section: Document > Section > Subsection" in hierarchy_info
@@ -905,9 +903,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="Document",
-            hierarchy_context="Path: Root > Parent"
+            hierarchy_context="Path: Root > Parent",
         )
-        
+
         hierarchy_info = result.get_hierarchy_info()
         assert hierarchy_info == "Path: Root > Parent"
 
@@ -920,9 +918,9 @@ class TestSearchResultMissingCoverage:
             source_title="data.xlsx",
             original_file_type="xlsx",
             is_converted=True,
-            conversion_method="openpyxl"
+            conversion_method="openpyxl",
         )
-        
+
         file_type = result.get_file_type()
         assert file_type == "xlsx (converted via openpyxl)"
 
@@ -934,9 +932,9 @@ class TestSearchResultMissingCoverage:
             source_type="localfile",
             source_title="document.pdf",
             original_file_type="pdf",
-            is_converted=False
+            is_converted=False,
         )
-        
+
         file_type = result.get_file_type()
         assert file_type == "pdf"
 
@@ -947,9 +945,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="localfile",
             source_title="Document",
-            mime_type="application/pdf"
+            mime_type="application/pdf",
         )
-        
+
         file_type = result.get_file_type()
         assert file_type == "application/pdf"
 
@@ -960,9 +958,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="localfile",
             source_title="Document",
-            original_filename="document.docx"
+            original_filename="document.docx",
         )
-        
+
         file_type = result.get_file_type()
         assert file_type == "docx"
 
@@ -973,9 +971,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="localfile",
             source_title="Document",
-            original_filename="README"
+            original_filename="README",
         )
-        
+
         file_type = result.get_file_type()
         assert file_type is None
 
@@ -986,9 +984,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         assert result.belongs_to_project("proj-123") is True
         assert result.belongs_to_project("proj-456") is False
 
@@ -999,21 +997,18 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="git",
             source_title="test.py",
-            project_id="proj-123"
+            project_id="proj-123",
         )
-        
+
         assert result.belongs_to_any_project(["proj-123", "proj-456"]) is True
         assert result.belongs_to_any_project(["proj-789", "proj-456"]) is False
 
     def test_belongs_to_any_project_no_project_id(self):
         """Test project membership when result has no project_id."""
         result = SearchResult(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="test.py"
+            score=0.8, text="Test content", source_type="git", source_title="test.py"
         )
-        
+
         assert result.belongs_to_any_project(["proj-123", "proj-456"]) is False
 
     def test_is_code_content_via_has_code_blocks(self):
@@ -1023,9 +1018,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="Documentation",
-            has_code_blocks=True
+            has_code_blocks=True,
         )
-        
+
         assert result.is_code_content() is True
 
     def test_is_code_content_via_section_type(self):
@@ -1035,9 +1030,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="Code Section",
-            section_type="code"
+            section_type="code",
         )
-        
+
         assert result.is_code_content() is True
 
     def test_is_documentation_confluence_source(self):
@@ -1046,9 +1041,9 @@ class TestSearchResultMissingCoverage:
             score=0.8,
             text="Test content",
             source_type="confluence",
-            source_title="User Guide"
+            source_title="User Guide",
         )
-        
+
         assert result.is_documentation() is True
 
     def test_is_documentation_localfile_source(self):
@@ -1057,9 +1052,9 @@ class TestSearchResultMissingCoverage:
             score=0.8,
             text="Test content",
             source_type="localfile",
-            source_title="README.md"
+            source_title="README.md",
         )
-        
+
         assert result.is_documentation() is True
 
     def test_is_documentation_with_code_blocks(self):
@@ -1069,9 +1064,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="API Guide",
-            has_code_blocks=True
+            has_code_blocks=True,
         )
-        
+
         assert result.is_documentation() is False
 
     def test_is_structured_data_via_has_tables(self):
@@ -1081,9 +1076,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="Data Report",
-            has_tables=True
+            has_tables=True,
         )
-        
+
         assert result.is_structured_data() is True
 
     def test_is_structured_data_via_is_excel_sheet(self):
@@ -1093,9 +1088,9 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="localfile",
             source_title="data.xlsx",
-            is_excel_sheet=True
+            is_excel_sheet=True,
         )
-        
+
         assert result.is_structured_data() is True
 
     def test_get_section_context_full(self):
@@ -1108,9 +1103,9 @@ class TestSearchResultMissingCoverage:
             section_title="Authentication Methods",
             section_type="h2",
             section_level=2,
-            section_anchor="auth-methods"
+            section_anchor="auth-methods",
         )
-        
+
         section_context = result.get_section_context()
         assert section_context == "[H2] Authentication Methods (#auth-methods)"
 
@@ -1121,20 +1116,17 @@ class TestSearchResultMissingCoverage:
             text="Test content",
             source_type="confluence",
             source_title="Guide",
-            section_title="Overview"
+            section_title="Overview",
         )
-        
+
         section_context = result.get_section_context()
         assert section_context == "Overview"
 
     def test_get_section_context_none(self):
         """Test section context when no section title."""
         result = SearchResult(
-            score=0.8,
-            text="Test content",
-            source_type="git",
-            source_title="code.py"
+            score=0.8, text="Test content", source_type="git", source_title="code.py"
         )
-        
+
         section_context = result.get_section_context()
         assert section_context is None

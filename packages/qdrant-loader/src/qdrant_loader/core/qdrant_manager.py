@@ -125,25 +125,33 @@ class QdrantManager:
             # Create payload indexes for optimal search performance
             indexes_to_create = [
                 # Essential performance indexes
-                ("document_id", {"type": "keyword"}),  # Existing index, kept for backward compatibility
-                ("project_id", {"type": "keyword"}),   # Critical for multi-tenant filtering
+                (
+                    "document_id",
+                    {"type": "keyword"},
+                ),  # Existing index, kept for backward compatibility
+                (
+                    "project_id",
+                    {"type": "keyword"},
+                ),  # Critical for multi-tenant filtering
                 ("source_type", {"type": "keyword"}),  # Document type filtering
-                ("source", {"type": "keyword"}),       # Source path filtering
-                ("title", {"type": "keyword"}),        # Title-based search and filtering
-                ("created_at", {"type": "keyword"}),   # Temporal filtering
-                ("updated_at", {"type": "keyword"}),   # Temporal filtering
-                
+                ("source", {"type": "keyword"}),  # Source path filtering
+                ("title", {"type": "keyword"}),  # Title-based search and filtering
+                ("created_at", {"type": "keyword"}),  # Temporal filtering
+                ("updated_at", {"type": "keyword"}),  # Temporal filtering
                 # Secondary performance indexes
-                ("is_attachment", {"type": "bool"}),           # Attachment filtering
-                ("parent_document_id", {"type": "keyword"}),   # Hierarchical relationships
-                ("original_file_type", {"type": "keyword"}),   # File type filtering
-                ("is_converted", {"type": "bool"}),            # Conversion status filtering
+                ("is_attachment", {"type": "bool"}),  # Attachment filtering
+                (
+                    "parent_document_id",
+                    {"type": "keyword"},
+                ),  # Hierarchical relationships
+                ("original_file_type", {"type": "keyword"}),  # File type filtering
+                ("is_converted", {"type": "bool"}),  # Conversion status filtering
             ]
-            
+
             # Create indexes with proper error handling
             created_indexes = []
             failed_indexes = []
-            
+
             for field_name, field_schema in indexes_to_create:
                 try:
                     client.create_payload_index(
@@ -155,19 +163,23 @@ class QdrantManager:
                     self.logger.debug(f"Created payload index for field: {field_name}")
                 except Exception as e:
                     failed_indexes.append((field_name, str(e)))
-                    self.logger.warning(f"Failed to create index for {field_name}", error=str(e))
-            
+                    self.logger.warning(
+                        f"Failed to create index for {field_name}", error=str(e)
+                    )
+
             # Log index creation summary
             self.logger.info(
                 f"Collection {self.collection_name} created with indexes",
                 created_indexes=created_indexes,
-                failed_indexes=[name for name, _ in failed_indexes] if failed_indexes else None,
+                failed_indexes=(
+                    [name for name, _ in failed_indexes] if failed_indexes else None
+                ),
                 total_indexes_created=len(created_indexes),
             )
-            
+
             if failed_indexes:
                 self.logger.warning(
-                    f"Some indexes failed to create but collection is functional",
+                    "Some indexes failed to create but collection is functional",
                     failed_details=failed_indexes,
                 )
         except Exception as e:

@@ -50,7 +50,7 @@ class TestDocumentStateManagerInitialization:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         # Should be empty for a new in-memory database
-        tables = cursor.fetchall()
+        cursor.fetchall()
         conn.close()
 
 

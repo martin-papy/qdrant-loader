@@ -137,8 +137,8 @@ class ProjectStats(BaseModel):
     storage_size: int | None = Field(None, description="Storage size in bytes")
 
     model_config = ConfigDict()
-    
-    @field_serializer('last_updated')
+
+    @field_serializer("last_updated")
     def serialize_last_updated(self, value: datetime | None) -> str | None:
         return value.isoformat() if value else None
 
@@ -155,8 +155,8 @@ class ProjectInfo(BaseModel):
     last_updated: datetime | None = Field(None, description="Last update timestamp")
 
     model_config = ConfigDict()
-    
-    @field_serializer('last_updated')
+
+    @field_serializer("last_updated")
     def serialize_last_updated(self, value: datetime | None) -> str | None:
         return value.isoformat() if value else None
 

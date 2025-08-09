@@ -1,7 +1,6 @@
 """Tests for the publicdocs config module."""
 
 import pytest
-
 from qdrant_loader.connectors.publicdocs.config import PublicDocsSourceConfig
 
 
@@ -27,10 +26,10 @@ class TestPublicDocsSourceConfig:
         """Test content type validation is case insensitive."""
         result = PublicDocsSourceConfig.validate_content_type("HTML")
         assert result == "html"
-        
+
         result = PublicDocsSourceConfig.validate_content_type("MARKDOWN")
         assert result == "markdown"
-        
+
         result = PublicDocsSourceConfig.validate_content_type("RST")
         assert result == "rst"
 
@@ -56,7 +55,7 @@ class TestPublicDocsSourceConfig:
             source="test_docs",
             base_url="https://example.com/docs",
             version="v1.0",
-            content_type="html"
+            content_type="html",
         )
         assert str(config.base_url) == "https://example.com/docs"
         assert config.content_type == "html"
@@ -70,5 +69,5 @@ class TestPublicDocsSourceConfig:
                 source="test_docs",
                 base_url="https://example.com/docs",
                 version="v1.0",
-                content_type="invalid_type"
+                content_type="invalid_type",
             )

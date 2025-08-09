@@ -25,9 +25,6 @@ from .utils import LoggingConfig, get_version
 logging.getLogger("asyncio").setLevel(logging.WARNING)
 
 
-
-
-
 def _setup_logging(log_level: str) -> None:
     """Set up logging configuration."""
     try:
@@ -53,7 +50,9 @@ async def read_stdin():
     return reader
 
 
-async def shutdown(loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Event = None):
+async def shutdown(
+    loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Event = None
+):
     """Handle graceful shutdown."""
     logger = LoggingConfig.get_logger(__name__)
     logger.info("Shutting down...")
@@ -78,7 +77,9 @@ async def shutdown(loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Even
             results = await asyncio.gather(*tasks, return_exceptions=True)
             # Only log non-CancelledError exceptions during shutdown
             for result in results:
-                if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+                if isinstance(result, Exception) and not isinstance(
+                    result, asyncio.CancelledError
+                ):
                     logger.error(f"Error during task cleanup: {result}", exc_info=True)
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
@@ -88,19 +89,21 @@ async def shutdown(loop: asyncio.AbstractEventLoop, shutdown_event: asyncio.Even
     loop.stop()
 
 
-async def start_http_server(config: Config, log_level: str, host: str, port: int, shutdown_event: asyncio.Event):
+async def start_http_server(
+    config: Config, log_level: str, host: str, port: int, shutdown_event: asyncio.Event
+):
     """Start MCP server with HTTP transport."""
     logger = LoggingConfig.get_logger(__name__)
     search_engine = None
-    
+
     try:
         logger.info(f"Starting HTTP server on {host}:{port}")
-        
+
         # Initialize components
         search_engine = SearchEngine()
         query_processor = QueryProcessor(config.openai)
         mcp_handler = MCPHandler(search_engine, query_processor)
-        
+
         # Initialize search engine
         try:
             await search_engine.initialize(config.qdrant, config.openai)
@@ -108,28 +111,24 @@ async def start_http_server(config: Config, log_level: str, host: str, port: int
         except Exception as e:
             logger.error("Failed to initialize search engine", exc_info=True)
             raise RuntimeError("Failed to initialize search engine") from e
-        
+
         # Create HTTP transport handler
-        http_handler = HTTPTransportHandler(
-            mcp_handler,
-            host=host,
-            port=port
-        )
-        
+        http_handler = HTTPTransportHandler(mcp_handler, host=host, port=port)
+
         # Start the FastAPI server using uvicorn
         import uvicorn
-        
+
         uvicorn_config = uvicorn.Config(
             app=http_handler.app,
             host=host,
             port=port,
             log_level=log_level.lower(),
-            access_log=log_level.upper() == "DEBUG"
+            access_log=log_level.upper() == "DEBUG",
         )
-        
+
         server = uvicorn.Server(uvicorn_config)
         logger.info(f"HTTP MCP server ready at http://{host}:{port}/mcp")
-        
+
         # Create a task to monitor shutdown event
         async def shutdown_monitor():
             await shutdown_event.wait()
@@ -137,15 +136,15 @@ async def start_http_server(config: Config, log_level: str, host: str, port: int
             # Signal uvicorn to stop gracefully
             server.should_exit = True
             # Also trigger the shutdown procedure
-            if hasattr(server, 'force_exit'):
+            if hasattr(server, "force_exit"):
                 # Give it a moment to shutdown gracefully
                 await asyncio.sleep(0.5)
                 if not server.should_exit:
                     server.force_exit = True
-        
+
         # Start shutdown monitor task
         monitor_task = asyncio.create_task(shutdown_monitor())
-        
+
         try:
             # Run the server until shutdown
             await server.serve()
@@ -164,7 +163,7 @@ async def start_http_server(config: Config, log_level: str, host: str, port: int
                     await monitor_task
                 except asyncio.CancelledError:
                     pass
-        
+
     except Exception as e:
         if not shutdown_event.is_set():
             logger.error(f"Error in HTTP server: {e}", exc_info=True)
@@ -369,7 +368,14 @@ async def handle_stdio(config: Config, log_level: str):
     version=get_version(),
     message="QDrant Loader MCP Server v%(version)s",
 )
-def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "stdio", host: str = "127.0.0.1", port: int = 8080, env: Path | None = None) -> None:
+def cli(
+    log_level: str = "INFO",
+    config: Path | None = None,
+    transport: str = "stdio",
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    env: Path | None = None,
+) -> None:
     """QDrant Loader MCP Server.
 
     A Model Context Protocol (MCP) server that provides RAG capabilities
@@ -410,7 +416,7 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
         if env:
             load_dotenv(env)
             click.echo(f"Loaded environment variables from: {env}")
-        
+
         # Setup logging
         _setup_logging(log_level)
 
@@ -435,7 +441,9 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
         if transport.lower() == "stdio":
             loop.run_until_complete(handle_stdio(config_obj, log_level))
         elif transport.lower() == "http":
-            loop.run_until_complete(start_http_server(config_obj, log_level, host, port, shutdown_event))
+            loop.run_until_complete(
+                start_http_server(config_obj, log_level, host, port, shutdown_event)
+            )
         else:
             raise ValueError(f"Unsupported transport: {transport}")
     except Exception:
@@ -451,7 +459,9 @@ def cli(log_level: str = "INFO", config: Path | None = None, transport: str = "s
                     task.cancel()
 
                 # Run the loop until all tasks are done
-                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True)
+                )
             except Exception:
                 logger = LoggingConfig.get_logger(__name__)
                 logger.error("Error during final cleanup", exc_info=True)

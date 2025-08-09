@@ -3,8 +3,8 @@
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
 from qdrant_loader_mcp_server.mcp.protocol import MCPProtocol
+from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
 
 
 @pytest.fixture
@@ -147,10 +147,12 @@ def sample_search_results():
 class TestSearchHandlerInit:
     """Test SearchHandler initialization."""
 
-    def test_init_creates_handler_with_components(self, mock_search_engine, mock_query_processor, mock_protocol):
+    def test_init_creates_handler_with_components(
+        self, mock_search_engine, mock_query_processor, mock_protocol
+    ):
         """Test that SearchHandler initializes correctly with all components."""
         handler = SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
-        
+
         assert handler.search_engine == mock_search_engine
         assert handler.query_processor == mock_query_processor
         assert handler.protocol == mock_protocol
@@ -164,36 +166,44 @@ class TestHandleSearch:
     async def test_handle_search_success(self, search_handler, sample_search_results):
         """Test successful search request handling."""
         # Setup mocks
-        search_handler.query_processor.process_query.return_value = {"query": "test query"}
+        search_handler.query_processor.process_query.return_value = {
+            "query": "test query"
+        }
         search_handler.search_engine.search.return_value = sample_search_results[:2]
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "result": {"content": [{"type": "text", "text": "Found 2 results"}]}
+            "result": {"content": [{"type": "text", "text": "Found 2 results"}]},
         }
 
         # Mock formatters
-        with patch.object(search_handler.formatters, 'create_structured_search_results') as mock_structured:
-            with patch.object(search_handler.formatters, 'format_search_result') as mock_format:
+        with patch.object(
+            search_handler.formatters, "create_structured_search_results"
+        ) as mock_structured:
+            with patch.object(
+                search_handler.formatters, "format_search_result"
+            ) as mock_format:
                 mock_structured.return_value = []
                 mock_format.return_value = "Formatted result"
-                
+
                 params = {
                     "query": "test query",
                     "source_types": ["confluence"],
                     "project_ids": ["proj1"],
-                    "limit": 10
+                    "limit": 10,
                 }
-                
-                result = await search_handler.handle_search(1, params)
-                
+
+                await search_handler.handle_search(1, params)
+
                 # Verify calls
-                search_handler.query_processor.process_query.assert_called_once_with("test query")
+                search_handler.query_processor.process_query.assert_called_once_with(
+                    "test query"
+                )
                 search_handler.search_engine.search.assert_called_once_with(
                     query="test query",
                     source_types=["confluence"],
                     project_ids=["proj1"],
-                    limit=10
+                    limit=10,
                 )
                 search_handler.protocol.create_response.assert_called_once()
 
@@ -203,13 +213,13 @@ class TestHandleSearch:
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"}
+            "error": {"code": -32602, "message": "Invalid params"},
         }
-        
+
         params = {"source_types": ["confluence"]}
-        
-        result = await search_handler.handle_search(1, params)
-        
+
+        await search_handler.handle_search(1, params)
+
         # Verify error response
         search_handler.protocol.create_response.assert_called_once_with(
             1,
@@ -217,48 +227,53 @@ class TestHandleSearch:
                 "code": -32602,
                 "message": "Invalid params",
                 "data": "Missing required parameter: query",
-            }
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_handle_search_with_defaults(self, search_handler, sample_search_results):
+    async def test_handle_search_with_defaults(
+        self, search_handler, sample_search_results
+    ):
         """Test search request with default parameters."""
         search_handler.query_processor.process_query.return_value = {"query": "test"}
         search_handler.search_engine.search.return_value = sample_search_results[:1]
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'create_structured_search_results'):
-            with patch.object(search_handler.formatters, 'format_search_result'):
+        with patch.object(
+            search_handler.formatters, "create_structured_search_results"
+        ):
+            with patch.object(search_handler.formatters, "format_search_result"):
                 params = {"query": "test"}
-                
+
                 await search_handler.handle_search(1, params)
-                
+
                 # Verify defaults were used
                 search_handler.search_engine.search.assert_called_once_with(
-                    query="test",
-                    source_types=[],
-                    project_ids=[],
-                    limit=10
+                    query="test", source_types=[], project_ids=[], limit=10
                 )
 
     @pytest.mark.asyncio
     async def test_handle_search_exception(self, search_handler):
         """Test search request that raises an exception."""
-        search_handler.query_processor.process_query.side_effect = Exception("Test error")
+        search_handler.query_processor.process_query.side_effect = Exception(
+            "Test error"
+        )
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32603, "message": "Internal error"}
+            "error": {"code": -32603, "message": "Internal error"},
         }
-        
+
         params = {"query": "test"}
-        
-        result = await search_handler.handle_search(1, params)
-        
+
+        await search_handler.handle_search(1, params)
+
         # Verify error response
         search_handler.protocol.create_response.assert_called_once_with(
-            1,
-            error={"code": -32603, "message": "Internal error", "data": "Test error"}
+            1, error={"code": -32603, "message": "Internal error", "data": "Test error"}
         )
 
 
@@ -266,27 +281,36 @@ class TestHandleHierarchySearch:
     """Test hierarchical search functionality."""
 
     @pytest.mark.asyncio
-    async def test_handle_hierarchy_search_success(self, search_handler, sample_search_results):
+    async def test_handle_hierarchy_search_success(
+        self, search_handler, sample_search_results
+    ):
         """Test successful hierarchy search request."""
-        search_handler.query_processor.process_query.return_value = {"query": "test query"}
+        search_handler.query_processor.process_query.return_value = {
+            "query": "test query"
+        }
         search_handler.search_engine.search.return_value = sample_search_results
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'create_lightweight_hierarchy_results'):
+        with patch.object(
+            search_handler.formatters, "create_lightweight_hierarchy_results"
+        ):
             params = {
                 "query": "test query",
                 "hierarchy_filter": {"depth": 0},
                 "organize_by_hierarchy": True,
-                "limit": 10
+                "limit": 10,
             }
-            
-            result = await search_handler.handle_hierarchy_search(1, params)
-            
+
+            await search_handler.handle_hierarchy_search(1, params)
+
             # Verify search was called with confluence and localfile types
             search_handler.search_engine.search.assert_called_once_with(
                 query="test query",
                 source_types=["confluence", "localfile"],
-                limit=40  # max(limit * 2, 40) = max(10 * 2, 40) = max(20, 40) = 40
+                limit=40,  # max(limit * 2, 40) = max(10 * 2, 40) = max(20, 40) = 40
             )
 
     @pytest.mark.asyncio
@@ -295,39 +319,44 @@ class TestHandleHierarchySearch:
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"}
+            "error": {"code": -32602, "message": "Invalid params"},
         }
-        
+
         params = {"hierarchy_filter": {"depth": 0}}
-        
-        result = await search_handler.handle_hierarchy_search(1, params)
-        
+
+        await search_handler.handle_hierarchy_search(1, params)
+
         search_handler.protocol.create_response.assert_called_once_with(
             1,
             error={
                 "code": -32602,
                 "message": "Invalid params",
                 "data": "Missing required parameter: query",
-            }
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_handle_hierarchy_search_with_defaults(self, search_handler, sample_search_results):
+    async def test_handle_hierarchy_search_with_defaults(
+        self, search_handler, sample_search_results
+    ):
         """Test hierarchy search with default parameters."""
         search_handler.query_processor.process_query.return_value = {"query": "test"}
         search_handler.search_engine.search.return_value = sample_search_results
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'create_lightweight_hierarchy_results'):
+        with patch.object(
+            search_handler.formatters, "create_lightweight_hierarchy_results"
+        ):
             params = {"query": "test"}
-            
+
             await search_handler.handle_hierarchy_search(1, params)
-            
+
             # Verify defaults were used
             search_handler.search_engine.search.assert_called_once_with(
-                query="test",
-                source_types=["confluence", "localfile"],
-                limit=40
+                query="test", source_types=["confluence", "localfile"], limit=40
             )
 
 
@@ -335,30 +364,43 @@ class TestHandleAttachmentSearch:
     """Test attachment search functionality."""
 
     @pytest.mark.asyncio
-    async def test_handle_attachment_search_success(self, search_handler, sample_search_results):
+    async def test_handle_attachment_search_success(
+        self, search_handler, sample_search_results
+    ):
         """Test successful attachment search request."""
-        search_handler.query_processor.process_query.return_value = {"query": "test query"}
+        search_handler.query_processor.process_query.return_value = {
+            "query": "test query"
+        }
         search_handler.search_engine.search.return_value = sample_search_results
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'create_lightweight_attachment_results'):
-            with patch.object(search_handler.formatters, '_organize_attachments_by_type') as mock_organize:
-                mock_organize.return_value = [{"group_name": "PDF Files", "document_ids": ["doc4"]}]
-                
+        with patch.object(
+            search_handler.formatters, "create_lightweight_attachment_results"
+        ):
+            with patch.object(
+                search_handler.formatters, "_organize_attachments_by_type"
+            ) as mock_organize:
+                mock_organize.return_value = [
+                    {"group_name": "PDF Files", "document_ids": ["doc4"]}
+                ]
+
                 params = {
                     "query": "test query",
                     "attachment_filter": {"file_type": "pdf"},
                     "include_parent_context": True,
-                    "limit": 10
+                    "limit": 10,
                 }
-                
-                result = await search_handler.handle_attachment_search(1, params)
-                
+
+                await search_handler.handle_attachment_search(1, params)
+
                 # Verify search was called
                 search_handler.search_engine.search.assert_called_once_with(
                     query="test query",
                     source_types=None,  # Search all sources
-                    limit=20  # limit * 2
+                    limit=20,  # limit * 2
                 )
 
     @pytest.mark.asyncio
@@ -367,20 +409,20 @@ class TestHandleAttachmentSearch:
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"}
+            "error": {"code": -32602, "message": "Invalid params"},
         }
-        
+
         params = {"attachment_filter": {"file_type": "pdf"}}
-        
-        result = await search_handler.handle_attachment_search(1, params)
-        
+
+        await search_handler.handle_attachment_search(1, params)
+
         search_handler.protocol.create_response.assert_called_once_with(
             1,
             error={
                 "code": -32602,
                 "message": "Invalid params",
                 "data": "Missing required parameter: query",
-            }
+            },
         )
 
 
@@ -388,25 +430,33 @@ class TestHandleExpandDocument:
     """Test document expansion functionality."""
 
     @pytest.mark.asyncio
-    async def test_handle_expand_document_success(self, search_handler, sample_search_results):
+    async def test_handle_expand_document_success(
+        self, search_handler, sample_search_results
+    ):
         """Test successful document expansion."""
         target_result = sample_search_results[0]
         search_handler.search_engine.search.return_value = [target_result]
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'format_search_result') as mock_format:
-            with patch.object(search_handler.formatters, 'create_structured_search_results') as mock_structured:
+        with patch.object(
+            search_handler.formatters, "format_search_result"
+        ) as mock_format:
+            with patch.object(
+                search_handler.formatters, "create_structured_search_results"
+            ) as mock_structured:
                 mock_format.return_value = "Formatted result"
                 mock_structured.return_value = []
-                
+
                 params = {"document_id": "doc1"}
-                
-                result = await search_handler.handle_expand_document(1, params)
-                
+
+                await search_handler.handle_expand_document(1, params)
+
                 # Verify search was called with document_id field search
                 search_handler.search_engine.search.assert_called_with(
-                    query="document_id:doc1",
-                    limit=10
+                    query="document_id:doc1", limit=10
                 )
 
     @pytest.mark.asyncio
@@ -416,20 +466,20 @@ class TestHandleExpandDocument:
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32604, "message": "Document not found"}
+            "error": {"code": -32604, "message": "Document not found"},
         }
-        
+
         params = {"document_id": "nonexistent"}
-        
-        result = await search_handler.handle_expand_document(1, params)
-        
+
+        await search_handler.handle_expand_document(1, params)
+
         search_handler.protocol.create_response.assert_called_once_with(
             1,
             error={
                 "code": -32604,
                 "message": "Document not found",
                 "data": "No document found with ID: nonexistent",
-            }
+            },
         )
 
     @pytest.mark.asyncio
@@ -438,37 +488,44 @@ class TestHandleExpandDocument:
         search_handler.protocol.create_response.return_value = {
             "jsonrpc": "2.0",
             "id": 1,
-            "error": {"code": -32602, "message": "Invalid params"}
+            "error": {"code": -32602, "message": "Invalid params"},
         }
-        
+
         params = {}
-        
-        result = await search_handler.handle_expand_document(1, params)
-        
+
+        await search_handler.handle_expand_document(1, params)
+
         search_handler.protocol.create_response.assert_called_once_with(
             1,
             error={
                 "code": -32602,
                 "message": "Invalid params",
                 "data": "Missing required parameter: document_id",
-            }
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_handle_expand_document_fallback_search(self, search_handler, sample_search_results):
+    async def test_handle_expand_document_fallback_search(
+        self, search_handler, sample_search_results
+    ):
         """Test document expansion with fallback to general search."""
         target_result = sample_search_results[0]
-        
+
         # First search returns no exact matches, second search returns the document
         search_handler.search_engine.search.side_effect = [[], [target_result]]
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": 1}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": 1,
+        }
 
-        with patch.object(search_handler.formatters, 'format_search_result'):
-            with patch.object(search_handler.formatters, 'create_structured_search_results'):
+        with patch.object(search_handler.formatters, "format_search_result"):
+            with patch.object(
+                search_handler.formatters, "create_structured_search_results"
+            ):
                 params = {"document_id": "doc1"}
-                
-                result = await search_handler.handle_expand_document(1, params)
-                
+
+                await search_handler.handle_expand_document(1, params)
+
                 # Verify both searches were called
                 assert search_handler.search_engine.search.call_count == 2
 
@@ -479,51 +536,71 @@ class TestHierarchyFilters:
     def test_apply_hierarchy_filters_depth(self, search_handler, sample_search_results):
         """Test filtering by depth."""
         hierarchy_filter = {"depth": 0}
-        filtered = search_handler._apply_hierarchy_filters(sample_search_results, hierarchy_filter)
-        
+        filtered = search_handler._apply_hierarchy_filters(
+            sample_search_results, hierarchy_filter
+        )
+
         # Should return confluence results with depth 0
         confluence_depth_0 = [r for r in filtered if r.depth == 0]
         assert len(confluence_depth_0) == 1
         assert confluence_depth_0[0].source_title == "Developer Guide"
 
-    def test_apply_hierarchy_filters_localfile_depth(self, search_handler, sample_search_results):
+    def test_apply_hierarchy_filters_localfile_depth(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering localfiles by folder depth."""
         # Create a localfile with specific folder structure
         localfile_result = Mock()
         localfile_result.source_type = "localfile"
         localfile_result.file_path = "project/docs/README.md"  # depth 1 (2 folders - 1)
-        
+
         hierarchy_filter = {"depth": 1}
-        filtered = search_handler._apply_hierarchy_filters([localfile_result], hierarchy_filter)
-        
+        filtered = search_handler._apply_hierarchy_filters(
+            [localfile_result], hierarchy_filter
+        )
+
         assert len(filtered) == 1
         assert filtered[0].source_type == "localfile"
 
-    def test_apply_hierarchy_filters_parent_title(self, search_handler, sample_search_results):
+    def test_apply_hierarchy_filters_parent_title(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering by parent title."""
         hierarchy_filter = {"parent_title": "Developer Guide"}
-        filtered = search_handler._apply_hierarchy_filters(sample_search_results, hierarchy_filter)
-        
+        filtered = search_handler._apply_hierarchy_filters(
+            sample_search_results, hierarchy_filter
+        )
+
         # Should return confluence results with "Developer Guide" as parent
-        parent_matches = [r for r in filtered if getattr(r, 'parent_title', None) == "Developer Guide"]
+        parent_matches = [
+            r for r in filtered if getattr(r, "parent_title", None) == "Developer Guide"
+        ]
         assert len(parent_matches) == 1
         assert parent_matches[0].source_title == "API Reference"
 
-    def test_apply_hierarchy_filters_root_only(self, search_handler, sample_search_results):
+    def test_apply_hierarchy_filters_root_only(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering for root documents only."""
         hierarchy_filter = {"root_only": True}
-        filtered = search_handler._apply_hierarchy_filters(sample_search_results, hierarchy_filter)
-        
+        filtered = search_handler._apply_hierarchy_filters(
+            sample_search_results, hierarchy_filter
+        )
+
         # Should return confluence root documents
         root_docs = [r for r in filtered if r.is_root_document()]
         assert len(root_docs) == 1
         assert root_docs[0].source_title == "Developer Guide"
 
-    def test_apply_hierarchy_filters_has_children(self, search_handler, sample_search_results):
+    def test_apply_hierarchy_filters_has_children(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering for documents with children."""
         hierarchy_filter = {"has_children": True}
-        filtered = search_handler._apply_hierarchy_filters(sample_search_results, hierarchy_filter)
-        
+        filtered = search_handler._apply_hierarchy_filters(
+            sample_search_results, hierarchy_filter
+        )
+
         # Should return confluence documents with children
         docs_with_children = [r for r in filtered if r.has_children()]
         assert len(docs_with_children) == 1
@@ -531,9 +608,13 @@ class TestHierarchyFilters:
 
     def test_organize_by_hierarchy(self, search_handler, sample_search_results):
         """Test organizing results by hierarchy."""
-        confluence_results = [r for r in sample_search_results if r.source_type in ["confluence", "localfile"]]
+        confluence_results = [
+            r
+            for r in sample_search_results
+            if r.source_type in ["confluence", "localfile"]
+        ]
         organized = search_handler._organize_by_hierarchy(confluence_results)
-        
+
         # Should have groups based on root/breadcrumb
         assert len(organized) >= 1
         assert "Developer Guide" in organized or "project" in organized
@@ -542,31 +623,47 @@ class TestHierarchyFilters:
 class TestAttachmentFilters:
     """Test attachment filtering methods."""
 
-    def test_apply_lightweight_attachment_filters_basic(self, search_handler, sample_search_results):
+    def test_apply_lightweight_attachment_filters_basic(
+        self, search_handler, sample_search_results
+    ):
         """Test basic attachment filtering."""
         attachment_filter = {}
-        filtered = search_handler._apply_lightweight_attachment_filters(sample_search_results, attachment_filter)
-        
+        filtered = search_handler._apply_lightweight_attachment_filters(
+            sample_search_results, attachment_filter
+        )
+
         # Should return attachments and files with extensions
-        attachment_results = [r for r in filtered if r.is_attachment or r.original_filename]
+        attachment_results = [
+            r for r in filtered if r.is_attachment or r.original_filename
+        ]
         assert len(attachment_results) >= 1
 
-    def test_apply_lightweight_attachment_filters_file_type(self, search_handler, sample_search_results):
+    def test_apply_lightweight_attachment_filters_file_type(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering by file type."""
         attachment_filter = {"file_type": "pdf"}
-        
-        with patch.object(search_handler.formatters, '_extract_file_type_minimal') as mock_extract:
+
+        with patch.object(
+            search_handler.formatters, "_extract_file_type_minimal"
+        ) as mock_extract:
             mock_extract.return_value = "pdf"
-            filtered = search_handler._apply_lightweight_attachment_filters(sample_search_results, attachment_filter)
-            
+            search_handler._apply_lightweight_attachment_filters(
+                sample_search_results, attachment_filter
+            )
+
             # Should call file type extraction
             assert mock_extract.called
 
-    def test_apply_lightweight_attachment_filters_file_size(self, search_handler, sample_search_results):
+    def test_apply_lightweight_attachment_filters_file_size(
+        self, search_handler, sample_search_results
+    ):
         """Test filtering by file size."""
         attachment_filter = {"file_size_min": 1000000, "file_size_max": 3000000}
-        filtered = search_handler._apply_lightweight_attachment_filters(sample_search_results, attachment_filter)
-        
+        filtered = search_handler._apply_lightweight_attachment_filters(
+            sample_search_results, attachment_filter
+        )
+
         # Should filter by size for results that have file_size
         for result in filtered:
             if result.file_size:
@@ -579,21 +676,29 @@ class TestFormattingMethods:
     def test_format_lightweight_attachment_text_empty(self, search_handler):
         """Test formatting attachment text with no results."""
         result = search_handler._format_lightweight_attachment_text({}, 0)
-        
+
         assert "Found 0 attachments" in result
         assert "Use the structured data below" in result
 
-    def test_format_lightweight_attachment_text_with_results(self, search_handler, sample_search_results):
+    def test_format_lightweight_attachment_text_with_results(
+        self, search_handler, sample_search_results
+    ):
         """Test formatting attachment text with results."""
         organized_results = {"PDF Files": sample_search_results[:2]}
-        
-        with patch.object(search_handler.formatters, '_extract_safe_filename') as mock_filename:
-            with patch.object(search_handler.formatters, '_extract_file_type_minimal') as mock_type:
+
+        with patch.object(
+            search_handler.formatters, "_extract_safe_filename"
+        ) as mock_filename:
+            with patch.object(
+                search_handler.formatters, "_extract_file_type_minimal"
+            ) as mock_type:
                 mock_filename.return_value = "test.pdf"
                 mock_type.return_value = "pdf"
-                
-                result = search_handler._format_lightweight_attachment_text(organized_results, 2)
-                
+
+                result = search_handler._format_lightweight_attachment_text(
+                    organized_results, 2
+                )
+
                 assert "2 attachments" in result
                 assert "PDF Files" in result
                 assert "Usage:" in result
@@ -601,19 +706,25 @@ class TestFormattingMethods:
     def test_format_lightweight_hierarchy_text_empty(self, search_handler):
         """Test formatting hierarchy text with no results."""
         result = search_handler._format_lightweight_hierarchy_text({}, 0)
-        
+
         assert "Found 0 documents" in result
         assert "Use the structured data below" in result
 
-    def test_format_lightweight_hierarchy_text_with_results(self, search_handler, sample_search_results):
+    def test_format_lightweight_hierarchy_text_with_results(
+        self, search_handler, sample_search_results
+    ):
         """Test formatting hierarchy text with results."""
         organized_results = {"Developer Guide": sample_search_results[:2]}
-        
-        with patch.object(search_handler.formatters, '_generate_clean_group_name') as mock_clean:
+
+        with patch.object(
+            search_handler.formatters, "_generate_clean_group_name"
+        ) as mock_clean:
             mock_clean.return_value = "Developer Guide"
-            
-            result = search_handler._format_lightweight_hierarchy_text(organized_results, 2)
-            
+
+            result = search_handler._format_lightweight_hierarchy_text(
+                organized_results, 2
+            )
+
             assert "2 documents" in result
             assert "Developer Guide" in result
             assert "Usage:" in result
@@ -623,18 +734,25 @@ class TestEdgeCases:
     """Test edge cases and error scenarios."""
 
     @pytest.mark.asyncio
-    async def test_search_with_none_request_id(self, search_handler, sample_search_results):
+    async def test_search_with_none_request_id(
+        self, search_handler, sample_search_results
+    ):
         """Test search with None request ID."""
         search_handler.query_processor.process_query.return_value = {"query": "test"}
         search_handler.search_engine.search.return_value = sample_search_results[:1]
-        search_handler.protocol.create_response.return_value = {"jsonrpc": "2.0", "id": None}
+        search_handler.protocol.create_response.return_value = {
+            "jsonrpc": "2.0",
+            "id": None,
+        }
 
-        with patch.object(search_handler.formatters, 'create_structured_search_results'):
-            with patch.object(search_handler.formatters, 'format_search_result'):
+        with patch.object(
+            search_handler.formatters, "create_structured_search_results"
+        ):
+            with patch.object(search_handler.formatters, "format_search_result"):
                 params = {"query": "test"}
-                
-                result = await search_handler.handle_search(None, params)
-                
+
+                await search_handler.handle_search(None, params)
+
                 # Should handle None request ID
                 search_handler.protocol.create_response.assert_called_once()
 
@@ -642,21 +760,25 @@ class TestEdgeCases:
         """Test hierarchy filters with empty results list."""
         hierarchy_filter = {"depth": 0}
         filtered = search_handler._apply_hierarchy_filters([], hierarchy_filter)
-        
+
         assert filtered == []
 
     def test_organize_hierarchy_with_empty_results(self, search_handler):
         """Test organize hierarchy with empty results list."""
         organized = search_handler._organize_by_hierarchy([])
-        
+
         assert organized == {}
 
-    def test_attachment_filters_with_none_values(self, search_handler, sample_search_results):
+    def test_attachment_filters_with_none_values(
+        self, search_handler, sample_search_results
+    ):
         """Test attachment filters with None values in filter."""
         attachment_filter = {"file_type": None, "file_size_min": None}
-        
+
         # Should not crash with None values
-        filtered = search_handler._apply_lightweight_attachment_filters(sample_search_results, attachment_filter)
-        
+        filtered = search_handler._apply_lightweight_attachment_filters(
+            sample_search_results, attachment_filter
+        )
+
         # Should return some results
         assert isinstance(filtered, list)

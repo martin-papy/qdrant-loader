@@ -28,14 +28,14 @@ logger = structlog.get_logger(__name__)
 
 class DefaultChunkingStrategy(BaseChunkingStrategy):
     """Modern default text chunking strategy using modular architecture.
-    
+
     This strategy intelligently splits text documents into chunks while preserving
     semantic meaning and structure. Each chunk includes:
     - Intelligent text analysis and boundaries
     - Enhanced metadata with text-specific features
     - Content quality metrics and readability analysis
     - Semantic analysis results when appropriate
-    
+
     The strategy uses a modular architecture with focused components:
     - TextDocumentParser: Handles text structure analysis
     - TextSectionSplitter: Manages intelligent text splitting strategies
@@ -57,12 +57,12 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         self.section_splitter = TextSectionSplitter(settings)
         self.metadata_extractor = TextMetadataExtractor()
         self.chunk_processor = TextChunkProcessor(settings)
-        
+
         # Give section splitter access to tokenizer
         self.section_splitter._parent_strategy = self
-        
+
         # Apply any chunk overlap that was set before components were initialized
-        if hasattr(self, '_chunk_overlap'):
+        if hasattr(self, "_chunk_overlap"):
             self.chunk_overlap = self._chunk_overlap
 
         # Log configuration for debugging
@@ -116,14 +116,18 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 "estimated_chunks": estimated_chunks,
                 "chunk_size": self.settings.global_config.chunking.chunk_size,
                 "max_chunks_allowed": self.settings.global_config.chunking.max_chunks_per_document,
-            }
+            },
         )
 
         try:
             # Parse document structure and split into sections
             logger.debug("Analyzing document structure and splitting into sections")
-            document_structure = self.document_parser.parse_document_structure(document.content)
-            chunks_metadata = self.section_splitter.split_sections(document.content, document)
+            document_structure = self.document_parser.parse_document_structure(
+                document.content
+            )
+            chunks_metadata = self.section_splitter.split_sections(
+                document.content, document
+            )
 
             if not chunks_metadata:
                 self.progress_tracker.finish_chunking(document.id, 0, "default")
@@ -153,14 +157,18 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 )
 
                 # Add document structure info to chunk metadata
-                chunk_meta.update({
-                    "document_structure": document_structure,
-                    "chunking_strategy": "default_modular",
-                })
+                chunk_meta.update(
+                    {
+                        "document_structure": document_structure,
+                        "chunking_strategy": "default_modular",
+                    }
+                )
 
                 # Enhanced: Use hierarchical metadata extraction
-                enriched_metadata = self.metadata_extractor.extract_hierarchical_metadata(
-                    chunk_content, chunk_meta, document
+                enriched_metadata = (
+                    self.metadata_extractor.extract_hierarchical_metadata(
+                        chunk_content, chunk_meta, document
+                    )
                 )
 
                 # Create chunk document using the chunk processor
@@ -168,7 +176,7 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 skip_nlp = self.chunk_processor.should_skip_semantic_analysis(
                     chunk_content, enriched_metadata
                 )
-                
+
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,
                     chunk_content=chunk_content,
@@ -193,7 +201,11 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
                 document_id=document.id,
                 num_chunks=len(chunked_docs),
                 strategy="default_modular",
-                avg_chunk_size=sum(len(doc.content) for doc in chunked_docs) // len(chunked_docs) if chunked_docs else 0,
+                avg_chunk_size=(
+                    sum(len(doc.content) for doc in chunked_docs) // len(chunked_docs)
+                    if chunked_docs
+                    else 0
+                ),
             )
 
             return chunked_docs
@@ -213,7 +225,9 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         logger.debug("Shutting down DefaultChunkingStrategy")
         try:
             # Clean up modular components
-            if hasattr(self, 'chunk_processor') and hasattr(self.chunk_processor, 'shutdown'):
+            if hasattr(self, "chunk_processor") and hasattr(
+                self.chunk_processor, "shutdown"
+            ):
                 self.chunk_processor.shutdown()
         except Exception as e:
             logger.warning(f"Error during DefaultChunkingStrategy shutdown: {e}")
@@ -225,5 +239,3 @@ class DefaultChunkingStrategy(BaseChunkingStrategy):
         except Exception:
             # Ignore errors during cleanup in destructor
             pass
-
-

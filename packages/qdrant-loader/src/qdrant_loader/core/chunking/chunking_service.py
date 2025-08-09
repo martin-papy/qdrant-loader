@@ -187,7 +187,7 @@ class ChunkingService:
 
         # Get the appropriate strategy for the document type
         strategy = self._get_strategy(document)
-        
+
         # Optimized: Only log detailed chunking info when debug logging is enabled
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             self.logger.debug(
@@ -202,7 +202,7 @@ class ChunkingService:
         try:
             # Chunk the document using the selected strategy
             chunked_docs = strategy.chunk_document(document)
-            
+
             # Optimized: Only calculate and log detailed metrics when debug logging is enabled
             if logging.getLogger().isEnabledFor(logging.DEBUG):
                 self.logger.debug(
@@ -211,7 +211,8 @@ class ChunkingService:
                         "doc_id": document.id,
                         "chunk_count": len(chunked_docs),
                         "avg_chunk_size": (
-                            sum(len(d.content) for d in chunked_docs) / len(chunked_docs)
+                            sum(len(d.content) for d in chunked_docs)
+                            / len(chunked_docs)
                             if chunked_docs
                             else 0
                         ),

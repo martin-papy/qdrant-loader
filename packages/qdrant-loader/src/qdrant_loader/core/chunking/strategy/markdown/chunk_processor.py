@@ -24,7 +24,7 @@ class ChunkProcessor:
             settings: Configuration settings
         """
         self.settings = settings
-        
+
         # Initialize semantic analyzer
         self.semantic_analyzer = SemanticAnalyzer(
             spacy_model=settings.global_config.semantic_analysis.spacy_model,
@@ -115,47 +115,54 @@ class ChunkProcessor:
             content_type=original_doc.content_type,
             metadata=original_doc.metadata.copy(),
         )
-        
+
         # 🔥 FIX: Manually assign chunk ID (following pattern from other strategies)
         chunk_doc.id = Document.generate_chunk_id(original_doc.id, chunk_index)
 
         # Add chunk-specific metadata
         chunk_doc.metadata.update(chunk_metadata)
-        chunk_doc.metadata.update({
-            "chunk_index": chunk_index,
-            "total_chunks": total_chunks,
-            "chunk_size": len(chunk_content),
-            "parent_document_id": original_doc.id,
-            "chunking_strategy": "markdown",
-        })
+        chunk_doc.metadata.update(
+            {
+                "chunk_index": chunk_index,
+                "total_chunks": total_chunks,
+                "chunk_size": len(chunk_content),
+                "parent_document_id": original_doc.id,
+                "chunking_strategy": "markdown",
+            }
+        )
 
         # Perform semantic analysis if not skipped
         if not skip_nlp:
-            semantic_results = self.process_chunk(chunk_content, chunk_index, total_chunks)
+            semantic_results = self.process_chunk(
+                chunk_content, chunk_index, total_chunks
+            )
             chunk_doc.metadata.update(semantic_results)
 
         return chunk_doc
 
     def estimate_chunk_count(self, content: str) -> int:
         """Estimate the number of chunks that will be generated.
-        
+
         Args:
             content: The content to estimate chunks for
-            
+
         Returns:
             int: Estimated number of chunks
         """
         chunk_size = self.settings.global_config.chunking.chunk_size
-        
+
         # Simple estimation: total chars / chunk_size
         # This is approximate since we split by paragraphs and have overlap
         estimated = len(content) // chunk_size
-        
+
         # Add some buffer for overlap and paragraph boundaries
         # Apply estimation buffer from configuration
-        buffer_factor = 1.0 + self.settings.global_config.chunking.strategies.markdown.estimation_buffer
+        buffer_factor = (
+            1.0
+            + self.settings.global_config.chunking.strategies.markdown.estimation_buffer
+        )
         estimated = int(estimated * buffer_factor)
-        
+
         return max(1, estimated)  # At least 1 chunk
 
     def shutdown(self):
@@ -163,10 +170,10 @@ class ChunkProcessor:
         if hasattr(self, "_executor") and self._executor:
             self._executor.shutdown(wait=True)
             self._executor = None
-        
+
         if hasattr(self, "semantic_analyzer"):
             self.semantic_analyzer.shutdown()  # Use shutdown() instead of clear_cache() for complete cleanup
 
     def __del__(self):
         """Cleanup on deletion."""
-        self.shutdown() 
+        self.shutdown()

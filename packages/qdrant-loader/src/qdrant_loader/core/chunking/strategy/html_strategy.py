@@ -8,13 +8,11 @@ from qdrant_loader.core.chunking.strategy.base_strategy import BaseChunkingStrat
 from qdrant_loader.core.document import Document
 
 from .html import (
-    HTMLDocumentParser,
-    HTMLSectionSplitter,
-    HTMLMetadataExtractor,
     HTMLChunkProcessor,
+    HTMLDocumentParser,
+    HTMLMetadataExtractor,
+    HTMLSectionSplitter,
 )
-
-
 
 logger = structlog.get_logger(__name__)
 
@@ -24,7 +22,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
     This strategy leverages HTML-specific components for intelligent document processing:
     - HTMLDocumentParser: Analyzes HTML DOM structure and semantic elements
-    - HTMLSectionSplitter: Splits content based on semantic boundaries  
+    - HTMLSectionSplitter: Splits content based on semantic boundaries
     - HTMLMetadataExtractor: Extracts HTML-specific metadata and accessibility features
     - HTMLChunkProcessor: Creates enhanced chunk documents with DOM context
 
@@ -59,7 +57,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                 "chunk_overlap": self.chunk_overlap,
                 "max_html_size_for_parsing": self.max_html_size_for_parsing,
                 "preserve_semantic_structure": self.html_config.preserve_semantic_structure,
-            }
+            },
         )
 
     def chunk_document(self, document: Document) -> list[Document]:
@@ -100,8 +98,10 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
             # Parse document structure for analysis
             self.logger.debug("Analyzing HTML document structure")
-            document_structure = self.document_parser.parse_document_structure(document.content)
-            
+            document_structure = self.document_parser.parse_document_structure(
+                document.content
+            )
+
             # Split content into semantic sections
             self.logger.debug("Splitting HTML content into sections")
             sections = self.section_splitter.split_sections(document.content, document)
@@ -131,7 +131,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                     chunk_metadata=section,
                     chunk_index=i,
                     total_chunks=len(sections),
-                    skip_nlp=False  # Let the processor decide based on content analysis
+                    skip_nlp=False,  # Let the processor decide based on content analysis
                 )
 
                 # Add document structure context to metadata
@@ -144,25 +144,33 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             self.progress_tracker.finish_chunking(
                 document.id, len(chunked_docs), "html_modular"
             )
-            
+
             self.logger.info(
                 "Successfully chunked HTML document with modular architecture",
                 extra={
                     "document_id": document.id,
                     "total_chunks": len(chunked_docs),
-                    "document_structure_type": document_structure.get("structure_type", "unknown"),
-                    "has_semantic_elements": len(document_structure.get("semantic_elements", [])) > 0,
-                    "accessibility_features": len(document_structure.get("accessibility_features", {})) > 0,
-                }
+                    "document_structure_type": document_structure.get(
+                        "structure_type", "unknown"
+                    ),
+                    "has_semantic_elements": len(
+                        document_structure.get("semantic_elements", [])
+                    )
+                    > 0,
+                    "accessibility_features": len(
+                        document_structure.get("accessibility_features", {})
+                    )
+                    > 0,
+                },
             )
-            
+
             return chunked_docs
 
         except Exception as e:
             self.progress_tracker.log_error(document.id, str(e))
             self.logger.error(
-                "HTML chunking failed, using fallback strategy", 
-                extra={"document_id": document.id, "error": str(e)}
+                "HTML chunking failed, using fallback strategy",
+                extra={"document_id": document.id, "error": str(e)},
             )
             # Fallback to simple chunking
             self.progress_tracker.log_fallback(
@@ -196,7 +204,7 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
             chunked_docs = []
             for i, section in enumerate(sections):
                 chunk_content = section["content"]
-                
+
                 # Validate chunk content
                 if not chunk_content or not chunk_content.strip():
                     self.logger.warning(f"Skipping empty fallback chunk {i+1}")
@@ -209,14 +217,16 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                     chunk_metadata=section,
                     chunk_index=i,
                     total_chunks=len(sections),
-                    skip_nlp=True  # Skip NLP for fallback chunks
+                    skip_nlp=True,  # Skip NLP for fallback chunks
                 )
 
                 # Mark as fallback chunking
-                chunk_doc.metadata.update({
-                    "chunking_strategy": "html_fallback",
-                    "chunking_method": "fallback_modular",
-                })
+                chunk_doc.metadata.update(
+                    {
+                        "chunking_strategy": "html_fallback",
+                        "chunking_method": "fallback_modular",
+                    }
+                )
 
                 chunked_docs.append(chunk_doc)
 
@@ -246,22 +256,24 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
                 title=document.title,
                 content_type=document.content_type,
             )
-            
+
             chunk_doc.id = Document.generate_chunk_id(document.id, 0)
-            chunk_doc.metadata.update({
-                "chunk_index": 0,
-                "total_chunks": 1,
-                "parent_document_id": document.id,
-                "chunking_strategy": "html_single_fallback",
-                "chunking_method": "fallback_single",
-                "entities": [],
-                "nlp_skipped": True,
-                "skip_reason": "fallback_error",
-                "content_type": "html",
-            })
-            
+            chunk_doc.metadata.update(
+                {
+                    "chunk_index": 0,
+                    "total_chunks": 1,
+                    "parent_document_id": document.id,
+                    "chunking_strategy": "html_single_fallback",
+                    "chunking_method": "fallback_single",
+                    "entities": [],
+                    "nlp_skipped": True,
+                    "skip_reason": "fallback_error",
+                    "content_type": "html",
+                }
+            )
+
             return [chunk_doc]
-            
+
         except Exception as e:
             self.logger.error(f"Single chunk fallback failed: {e}")
             # If even this fails, return empty list
@@ -274,14 +286,14 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
 
     def _split_text(self, text: str) -> list[str]:
         """Split text into chunks using the section splitter.
-        
+
         This method implements the abstract method from BaseChunkingStrategy
         for backward compatibility, though the main chunking is handled by
         the modular chunk_document method.
-        
+
         Args:
             text: Text to split
-            
+
         Returns:
             List of text chunks
         """
@@ -297,11 +309,11 @@ class HTMLChunkingStrategy(BaseChunkingStrategy):
     def shutdown(self):
         """Shutdown the strategy and clean up resources."""
         # Clean up any cached data from components
-        if hasattr(self, 'section_splitter'):
+        if hasattr(self, "section_splitter"):
             # Section splitter cleanup if needed
             pass
-        
-        if hasattr(self, 'chunk_processor'):
+
+        if hasattr(self, "chunk_processor"):
             # Chunk processor cleanup if needed
             pass
 

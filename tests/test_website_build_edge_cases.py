@@ -4,11 +4,12 @@ Edge case and error handling tests for the website build system.
 These tests focus on error conditions, edge cases, and exception handling.
 """
 
-import pytest
-from pathlib import Path
-import os
 import importlib.util
+import os
+from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 
 def import_website_builder():

@@ -226,7 +226,7 @@ class ChunkingWorker(BaseWorker):
             base_timeout *= 1.5  # Give HTML files 50% more time
 
         # Special handling for converted files which often have complex markdown
-        if hasattr(document, 'metadata') and document.metadata.get('conversion_method'):
+        if hasattr(document, "metadata") and document.metadata.get("conversion_method"):
             base_timeout *= 1.5  # Give converted files 50% more time
 
         # Additional scaling factors
@@ -236,4 +236,6 @@ class ChunkingWorker(BaseWorker):
         adaptive_timeout = base_timeout * (1 + size_factor)
 
         # Increased maximum timeout to handle complex documents
-        return min(adaptive_timeout, 600.0)  # 10 minute maximum (increased from 5 minutes)
+        return min(
+            adaptive_timeout, 600.0
+        )  # 10 minute maximum (increased from 5 minutes)

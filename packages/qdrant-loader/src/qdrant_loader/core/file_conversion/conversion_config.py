@@ -1,6 +1,5 @@
 """Configuration models for file conversion settings."""
 
-
 from pydantic import BaseModel, Field
 
 

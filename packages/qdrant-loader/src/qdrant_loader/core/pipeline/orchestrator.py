@@ -135,7 +135,9 @@ class PipelineOrchestrator:
 
             # Detect changes in documents (bypass if force=True)
             if force:
-                logger.warning(f"🔄 Force mode enabled: bypassing change detection, processing all {len(documents)} documents")
+                logger.warning(
+                    f"🔄 Force mode enabled: bypassing change detection, processing all {len(documents)} documents"
+                )
             else:
                 documents = await self._detect_document_changes(
                     documents, filtered_config, current_project_id
@@ -165,7 +167,10 @@ class PipelineOrchestrator:
             raise
 
     async def _process_all_projects(
-        self, source_type: str | None = None, source: str | None = None, force: bool = False
+        self,
+        source_type: str | None = None,
+        source: str | None = None,
+        force: bool = False,
     ) -> list[Document]:
         """Process documents from all configured projects."""
         if not self.project_manager:
