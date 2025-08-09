@@ -14,6 +14,7 @@ Key Features:
 - Conflict detection between documents
 - Cross-project relationship discovery
 """
+from __future__ import annotations
 import time
 import warnings
 import numpy as np
@@ -22,11 +23,17 @@ from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, List, Dict, Tuple, Union
+from typing import Any, Optional, List, Dict, Tuple, Union, TYPE_CHECKING
 
 import networkx as nx
-from qdrant_client import AsyncQdrantClient
-from openai import AsyncOpenAI
+
+# Soft-import async clients to avoid hard dependency at import time
+if TYPE_CHECKING:
+    from qdrant_client import AsyncQdrantClient
+    from openai import AsyncOpenAI
+else:
+    AsyncQdrantClient = None  # type: ignore[assignment]
+    AsyncOpenAI = None  # type: ignore[assignment]
 
 from ...utils.logging import LoggingConfig
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
@@ -1522,7 +1529,7 @@ class ComplementaryContentFinder:
             return "technical_spec"
         elif any(keyword in title for keyword in ["architecture", "design", "system"]):
             return "architecture"
-        elif any(keyword in title for keyword in ["workflow", "process", "procedure", "guide:"]):
+        elif any(keyword in title for keyword in ["workflow", "process", "procedure", "guide"]):
             return "process"
         elif any(keyword in title for keyword in ["requirement"]):  # More general, check last
             return "user_story"
@@ -1780,7 +1787,8 @@ class ConflictDetector:
         spacy_analyzer: SpaCyQueryAnalyzer,
         qdrant_client: Optional[AsyncQdrantClient] = None,
         openai_client: Optional[AsyncOpenAI] = None,
-        collection_name: str = "documents"
+        collection_name: str = "documents",
+        preferred_vector_name: Optional[str] = "dense",
     ):
         """Initialize the enhanced conflict detector.
         
@@ -1795,6 +1803,7 @@ class ConflictDetector:
         self.openai_client = openai_client
         self.collection_name = collection_name
         self.logger = LoggingConfig.get_logger(__name__)
+        self.preferred_vector_name = preferred_vector_name
         
         # Vector similarity thresholds
         self.MIN_VECTOR_SIMILARITY = 0.6  # Minimum similarity to consider for conflict analysis
@@ -1817,18 +1826,29 @@ class ConflictDetector:
                     result = await asyncio.wait_for(
                         self.qdrant_client.retrieve(
                             collection_name=self.collection_name,
-                            ids=[doc_id]
+                            ids=[doc_id],
+                            with_vectors=True,
+                            with_payload=False,
                         ),
-                        timeout=5.0  # 5 second timeout per document
+                        timeout=5.0,  # 5 second timeout per document
                     )
                     if result and len(result) > 0:
-                        # Extract dense vector embedding
-                        vector = result[0].vector
-                        if isinstance(vector, dict) and "dense" in vector:
-                            embeddings[doc_id] = vector["dense"]
-                        elif isinstance(vector, list):
-                            embeddings[doc_id] = vector
-                except asyncio.TimeoutError:
+                        # Extract vector embedding supporting named vectors
+                        point = result[0]
+                        vectors = getattr(point, "vectors", None)
+                        if isinstance(vectors, dict) and vectors:
+                            if self.preferred_vector_name and self.preferred_vector_name in vectors:
+                                embeddings[doc_id] = vectors[self.preferred_vector_name]
+                            else:
+                                first_vec = next(iter(vectors.values()), None)
+                                if isinstance(first_vec, list):
+                                    embeddings[doc_id] = first_vec
+                        else:
+                            # Fallback to single unnamed vector attribute if present
+                            single_vector = getattr(point, "vector", None)
+                            if isinstance(single_vector, list):
+                                embeddings[doc_id] = single_vector
+                except TimeoutError:
                     self.logger.warning(f"Timeout retrieving embedding for document {doc_id}")
                     continue
                         
@@ -2035,7 +2055,7 @@ class ConflictDetector:
                         self._llm_analyze_conflicts(doc1, doc2, tier_score),
                         timeout=35.0  # Total timeout including API call
                     )
-                except (asyncio.TimeoutError, Exception) as e:
+                except (TimeoutError, Exception) as e:
                     self.logger.warning(f"LLM analysis failed or timed out: {e}, falling back to word-based analysis")
                     conflict_info = None
             
@@ -2182,7 +2202,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                 "analysis_method": "llm_validation"
             }
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.logger.warning("LLM conflict analysis timed out")
             return None
         except Exception as e:

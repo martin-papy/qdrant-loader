@@ -146,20 +146,9 @@ class OpenAIConfig(BaseModel):
 class Config(BaseModel):
     """Main configuration class."""
 
-    server: ServerConfig
-    qdrant: QdrantConfig
-    openai: OpenAIConfig
-    search: SearchConfig
-
-    def __init__(self, **data):
-        """Initialize configuration with environment variables."""
-        # Initialize sub-configs if not provided
-        if "server" not in data:
-            data["server"] = ServerConfig()
-        if "qdrant" not in data:
-            data["qdrant"] = QdrantConfig()
-        if "openai" not in data:
-            data["openai"] = {"api_key": os.getenv("OPENAI_API_KEY")}
-        if "search" not in data:
-            data["search"] = SearchConfig()
-        super().__init__(**data)
+    server: ServerConfig = Field(default_factory=ServerConfig)
+    qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
+    openai: OpenAIConfig = Field(
+        default_factory=lambda: OpenAIConfig(api_key=os.getenv("OPENAI_API_KEY"))
+    )
+    search: SearchConfig = Field(default_factory=SearchConfig)

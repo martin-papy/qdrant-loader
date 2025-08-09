@@ -1,5 +1,7 @@
 """Cross-document intelligence operations handler for MCP server."""
 
+import hashlib
+import json
 from typing import Any
 
 from ..search.engine import SearchEngine
@@ -19,6 +21,44 @@ class IntelligenceHandler:
         self.search_engine = search_engine
         self.protocol = protocol
         self.formatters = MCPFormatters()
+
+    def _get_or_create_document_id(self, doc: dict[str, Any]) -> str:
+        """Return a stable, collision-resistant document id.
+
+        Preference order:
+        1) Existing `document_id`
+        2) Fallback composed of `source_type` + `source_title` + short content hash
+
+        The hash is computed from a subset of stable attributes to minimize collisions
+        while remaining deterministic across calls.
+        """
+        # Prefer explicit id if present and non-empty
+        explicit_id = doc.get("document_id")
+        if explicit_id:
+            return explicit_id
+
+        source_type = doc.get("source_type", "unknown")
+        source_title = doc.get("source_title", "unknown")
+
+        # Include commonly available distinguishing attributes
+        candidate_fields = {
+            "title": doc.get("title"),
+            "source_type": source_type,
+            "source_title": source_title,
+            "source_url": doc.get("source_url"),
+            "file_path": doc.get("file_path"),
+            "repo_name": doc.get("repo_name"),
+            "parent_id": doc.get("parent_id"),
+            "original_filename": doc.get("original_filename"),
+            "id": doc.get("id"),
+        }
+
+        # Deterministic JSON for hashing
+        payload = json.dumps({k: v for k, v in candidate_fields.items() if v is not None},
+                             sort_keys=True, ensure_ascii=False)
+        short_hash = hashlib.sha1(payload.encode("utf-8")).hexdigest()[:10]
+
+        return f"{source_type}:{source_title}:{short_hash}"
 
     async def handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -65,9 +105,9 @@ class IntelligenceHandler:
                     # Create similarity relationships between documents in the same cluster
                     for i, doc1 in enumerate(cluster_docs):
                         for doc2 in cluster_docs[i+1:]:
-                            # Extract document IDs for lazy loading
-                            doc1_id = doc1.get("document_id") or f"{doc1.get('source_type', 'unknown')}:{doc1.get('source_title', 'unknown')}"
-                            doc2_id = doc2.get("document_id") or f"{doc2.get('source_type', 'unknown')}:{doc2.get('source_title', 'unknown')}"
+                            # Extract document IDs for lazy loading (with collision-resistant fallback)
+                            doc1_id = self._get_or_create_document_id(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2)
                             
                             # Extract titles for preview (truncated)
                             doc1_title = doc1.get("title", doc1.get("source_title", "Unknown"))[:100]
@@ -93,9 +133,9 @@ class IntelligenceHandler:
                             doc1, doc2 = conflict[0], conflict[1]
                             conflict_info = conflict[2] if len(conflict) > 2 else {}
                             
-                            # Extract document IDs if available
-                            doc1_id = doc1.get("document_id") if isinstance(doc1, dict) else str(doc1)
-                            doc2_id = doc2.get("document_id") if isinstance(doc2, dict) else str(doc2)
+                            # Extract document IDs if available (with safe fallback for dicts)
+                            doc1_id = self._get_or_create_document_id(doc1) if isinstance(doc1, dict) else str(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2) if isinstance(doc2, dict) else str(doc2)
                             doc1_title = doc1.get("title", str(doc1))[:100] if isinstance(doc1, dict) else str(doc1)[:100]
                             doc2_title = doc2.get("title", str(doc2))[:100] if isinstance(doc2, dict) else str(doc2)[:100]
                             
@@ -356,6 +396,17 @@ class IntelligenceHandler:
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
             )
+            
+            # Defensive check to ensure we received the expected result type
+            if not isinstance(result, dict):
+                logger.error(
+                    "Unexpected complementary content result type",
+                    got_type=str(type(result)),
+                )
+                return self.protocol.create_response(
+                    request_id,
+                    error={"code": -32603, "message": "Internal server error"},
+                )
             
             complementary_recommendations = result.get("complementary_recommendations", [])
             target_document = result.get("target_document")

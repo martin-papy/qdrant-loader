@@ -333,26 +333,8 @@ class MCPFormatters:
             title_1 = doc1_id.split(":", 1)[-1] if ":" in doc1_id else doc1_id
             title_2 = doc2_id.split(":", 1)[-1] if ":" in doc2_id else doc2_id
             
-            # Extract conflicting statements from structured indicators
-            conflicting_statements = []
-            structured_indicators = conflict_info.get("structured_indicators", [])
-            
-            for indicator in structured_indicators:
-                if isinstance(indicator, dict) and "doc1_snippet" in indicator and "doc2_snippet" in indicator:
-                    conflicting_statements.append({
-                        "from_doc1": indicator["doc1_snippet"],
-                        "from_doc2": indicator["doc2_snippet"]
-                    })
-            
-            # If no structured indicators, try to extract from basic indicators
-            if not conflicting_statements and conflict_info.get("indicators"):
-                # Fallback: create generic conflicting statements
-                indicators = conflict_info.get("indicators", [])
-                if indicators:
-                    conflicting_statements.append({
-                        "from_doc1": f"Document contains: {indicators[0] if indicators else 'conflicting information'}",
-                        "from_doc2": f"Document contains: {indicators[1] if len(indicators) > 1 else 'different information'}"
-                    })
+            # Extract conflicting statements using centralized helper
+            conflicting_statements = MCPFormatters._extract_conflicting_statements(conflict_info)
             
             # Create rich conflict entry with comprehensive information
             conflict_entry = {
@@ -1116,7 +1098,7 @@ class MCPFormatters:
                     "source_type": result.source_type
                 },
                 "navigation_hints": {
-                    "parent_document": result.parent_document_title or result.parent_title,
+                    "parent_document": (getattr(result, 'parent_document_title', None) or getattr(result, 'parent_title', None)),
                     "project_context": result.project_name or result.project_id,
                     "content_preview": result.text[:100] + "..." if result.text else None
                 }

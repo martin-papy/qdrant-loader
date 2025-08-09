@@ -299,8 +299,13 @@ class TestDocumentClusterAnalyzerEdgeCases:
         
         clusters = cluster_analyzer.create_clusters([doc], min_cluster_size=1)
         
-        # Should handle single document gracefully
-        assert len(clusters) >= 0
+        # Should handle single document gracefully: either 0 clusters
+        # or exactly 1 cluster that contains the single document id
+        assert len(clusters) in (0, 1)
+        if len(clusters) == 1:
+            assert isinstance(clusters[0].documents, list)
+            assert len(clusters[0].documents) == 1
+            assert clusters[0].documents[0] == "confluence:Single Doc"
 
     def test_create_clusters_insufficient_documents_for_min_size(self, cluster_analyzer):
         """Test clustering when documents don't meet min_cluster_size."""
