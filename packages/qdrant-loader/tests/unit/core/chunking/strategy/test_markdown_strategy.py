@@ -1,9 +1,11 @@
 """Tests for MarkdownChunkingStrategy."""
 
-import pytest
 from unittest.mock import Mock, patch
 
-from qdrant_loader.core.chunking.strategy.markdown.markdown_strategy import MarkdownChunkingStrategy
+import pytest
+from qdrant_loader.core.chunking.strategy.markdown.markdown_strategy import (
+    MarkdownChunkingStrategy,
+)
 from qdrant_loader.core.document import Document
 
 
@@ -17,7 +19,7 @@ def settings():
     mock_settings.global_config.embedding.tokenizer = "none"
     mock_settings.global_config.semantic_analysis.spacy_model = "en_core_web_sm"
     mock_settings.global_config.semantic_analysis.enable_entity_extraction = True
-    
+
     # Create proper mock object structure for markdown strategy settings
     markdown_config = Mock()
     markdown_config.min_chunk_size = 50
@@ -31,16 +33,18 @@ def settings():
     markdown_config.enable_cross_reference_extraction = True
     markdown_config.max_workers = 4
     markdown_config.estimation_buffer = 0.2  # 20% estimation buffer
-    
+
     mock_settings.global_config.chunking.strategies.markdown = markdown_config
     return mock_settings
 
 
-@pytest.fixture  
+@pytest.fixture
 def markdown_strategy(settings):
     """Create a MarkdownChunkingStrategy instance for testing."""
-    with patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"), \
-         patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
+    with (
+        patch("qdrant_loader.core.text_processing.text_processor.TextProcessor"),
+        patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"),
+    ):
         return MarkdownChunkingStrategy(settings)
 
 
@@ -53,7 +57,7 @@ def sample_document():
         content_type="md",
         metadata={"file_name": "test.md"},
         source="test.md",
-        source_type="markdown", 
+        source_type="markdown",
         url="file:///test.md",
     )
 
@@ -64,15 +68,15 @@ class TestMarkdownChunkingStrategy:
     def test_initialization(self, markdown_strategy):
         """Test that MarkdownChunkingStrategy initializes properly."""
         assert markdown_strategy is not None
-        assert hasattr(markdown_strategy, 'document_parser')
-        assert hasattr(markdown_strategy, 'section_splitter')
-        assert hasattr(markdown_strategy, 'metadata_extractor') 
-        assert hasattr(markdown_strategy, 'chunk_processor')
+        assert hasattr(markdown_strategy, "document_parser")
+        assert hasattr(markdown_strategy, "section_splitter")
+        assert hasattr(markdown_strategy, "metadata_extractor")
+        assert hasattr(markdown_strategy, "chunk_processor")
 
     def test_chunk_document_basic(self, markdown_strategy, sample_document):
         """Test basic document chunking functionality."""
         chunks = markdown_strategy.chunk_document(sample_document)
-        
+
         assert isinstance(chunks, list)
         assert len(chunks) > 0
         for chunk in chunks:
@@ -84,7 +88,7 @@ class TestMarkdownChunkingStrategy:
         content = """# Level 1 Header
 Content for level 1.
 
-## Level 2 Header  
+## Level 2 Header
 Content for level 2.
 
 ### Level 3 Header
@@ -99,7 +103,7 @@ Content for level 3.
             source_type="markdown",
             url="file:///multi.md",
         )
-        
+
         chunks = markdown_strategy.chunk_document(document)
         assert isinstance(chunks, list)
         assert len(chunks) > 0
@@ -136,5 +140,5 @@ Content for level 3.
 
     def test_destructor_method(self, markdown_strategy):
         """Test destructor method doesn't raise exceptions."""
-        # Should not raise an exception  
+        # Should not raise an exception
         del markdown_strategy

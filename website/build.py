@@ -4,13 +4,12 @@ Website builder for QDrant Loader documentation site.
 Uses templates with replaceable content to generate static HTML pages.
 """
 
-import os
+import argparse
 import json
+import os
+import re
 import shutil
 from pathlib import Path
-from typing import Dict, Optional
-import argparse
-import re
 
 
 class WebsiteBuilder:
@@ -30,10 +29,10 @@ class WebsiteBuilder:
         if not template_path.exists():
             raise FileNotFoundError(f"Template not found: {template_path}")
 
-        with open(template_path, "r", encoding="utf-8") as f:
+        with open(template_path, encoding="utf-8") as f:
             return f.read()
 
-    def replace_placeholders(self, content: str, replacements: Dict[str, str]) -> str:
+    def replace_placeholders(self, content: str, replacements: dict[str, str]) -> str:
         """Replace placeholders in content with actual values."""
         for placeholder, value in replacements.items():
             content = content.replace(f"{{{{ {placeholder} }}}}", str(value))
@@ -215,7 +214,6 @@ class WebsiteBuilder:
         # Paragraphs
         lines = html.split("\n")
         processed_lines = []
-        in_list = False
 
         for line in lines:
             line = line.strip()
@@ -339,7 +337,7 @@ class WebsiteBuilder:
         page_title: str,
         page_description: str,
         output_file: str,
-        additional_replacements: Optional[Dict[str, str]] = None,
+        additional_replacements: dict[str, str] | None = None,
     ) -> None:
         """Build a complete page using base template and content template."""
 
@@ -408,9 +406,9 @@ class WebsiteBuilder:
         self,
         markdown_file: str,
         output_file: str,
-        page_title: Optional[str] = None,
-        page_description: Optional[str] = None,
-        breadcrumb: Optional[str] = None,
+        page_title: str | None = None,
+        page_description: str | None = None,
+        breadcrumb: str | None = None,
     ) -> None:
         """Build a page from a markdown file using the documentation template."""
 
@@ -420,7 +418,7 @@ class WebsiteBuilder:
             print(f"⚠️  Markdown file not found: {markdown_file}")
             return
 
-        with open(markdown_path, "r", encoding="utf-8") as f:
+        with open(markdown_path, encoding="utf-8") as f:
             markdown_content = f.read()
 
         # Extract title if not provided
@@ -516,7 +514,7 @@ class WebsiteBuilder:
                                 {html_content}
                             </div>
                         </div>
-                        
+
                         <!-- Navigation footer -->
                         <div class="d-flex justify-content-between align-items-center mt-4">
                             <a href="{docs_url}" class="btn btn-outline-primary">
@@ -603,9 +601,9 @@ class WebsiteBuilder:
 
     def generate_project_info(
         self,
-        version: Optional[str] = None,
-        commit_sha: Optional[str] = None,
-        commit_date: Optional[str] = None,
+        version: str | None = None,
+        commit_sha: str | None = None,
+        commit_date: str | None = None,
     ) -> None:
         """Generate project information JSON file."""
         import subprocess
@@ -664,7 +662,7 @@ class WebsiteBuilder:
         with open(project_info_path, "w", encoding="utf-8") as f:
             json.dump(project_info, f, indent=2)
 
-        print(f"📊 Generated: project-info.json")
+        print("📊 Generated: project-info.json")
 
     def build_license_page(
         self,
@@ -681,7 +679,7 @@ class WebsiteBuilder:
             print(f"⚠️  License file not found: {license_file}")
             return
 
-        with open(license_path, "r", encoding="utf-8") as f:
+        with open(license_path, encoding="utf-8") as f:
             license_content = f.read()
 
         # Wrap license content in a code block for proper display
@@ -691,21 +689,21 @@ class WebsiteBuilder:
                 <i class="bi bi-shield-check me-2"></i>License Information
             </h4>
             <p class="mb-0">
-                This project is licensed under the GNU General Public License v3.0. 
+                This project is licensed under the GNU General Public License v3.0.
                 The full license text is provided below.
             </p>
         </div>
-        
+
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <pre class="bg-light p-4 rounded" style="white-space: pre-wrap; font-size: 0.9em; line-height: 1.4;">{license_content}</pre>
             </div>
         </div>
-        
+
         <div class="mt-4">
             <p class="text-muted">
                 <i class="bi bi-info-circle me-1"></i>
-                For more information about the GNU GPLv3 license, visit 
+                For more information about the GNU GPLv3 license, visit
                 <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" class="text-decoration-none">
                     https://www.gnu.org/licenses/gpl-3.0.html
                 </a>
@@ -748,16 +746,16 @@ class WebsiteBuilder:
                                 <li class="breadcrumb-item active" aria-current="page">{page_title}</li>
                             </ol>
                         </nav>
-                        
+
                         <div class="mb-4">
                             <h1 class="display-5 fw-bold text-primary">
                                 <i class="bi bi-shield-check me-3"></i>{page_title}
                             </h1>
                             <p class="lead text-muted">{page_description}</p>
                         </div>
-                        
+
                         {html_content}
-                        
+
                         <!-- Navigation footer -->
                         <div class="d-flex justify-content-between align-items-center mt-4">
                             <a href="{docs_url}" class="btn btn-outline-primary">
@@ -888,7 +886,7 @@ class WebsiteBuilder:
                 self.build_markdown_page(source, output, title, description, title)
 
     def build_coverage_structure(
-        self, coverage_artifacts_dir: Optional[str] = None
+        self, coverage_artifacts_dir: str | None = None
     ) -> None:
         """Build coverage reports structure."""
         coverage_output = self.output_dir / "coverage"
@@ -1347,8 +1345,8 @@ class WebsiteBuilder:
 
     def build_site(
         self,
-        coverage_artifacts_dir: Optional[str] = None,
-        test_results_dir: Optional[str] = None,
+        coverage_artifacts_dir: str | None = None,
+        test_results_dir: str | None = None,
     ) -> None:
         """Build the complete website."""
         print("🏗️  Building QDrant Loader website...")
@@ -1456,7 +1454,7 @@ class WebsiteBuilder:
             if dest_path.exists():
                 shutil.rmtree(dest_path)
             shutil.copytree(test_results_dir, dest_path)
-            print(f"📊 Copied: test results")
+            print("📊 Copied: test results")
 
         # Generate SEO files after all pages are built
         self.generate_seo_files()
@@ -1478,7 +1476,7 @@ class WebsiteBuilder:
         for readme_file in readme_files:
             # Skip the main docs/README.html since docs/index.html is custom-built
             if readme_file.parent == docs_path:
-                print(f"⏭️  Skipping main docs/README.html (custom index exists)")
+                print("⏭️  Skipping main docs/README.html (custom index exists)")
                 continue
 
             # Create index.html in the same directory as README.html
@@ -1486,7 +1484,7 @@ class WebsiteBuilder:
 
             # Copy README.html content to index.html
             try:
-                with open(readme_file, "r", encoding="utf-8") as f:
+                with open(readme_file, encoding="utf-8") as f:
                     content = f.read()
 
                 with open(index_file, "w", encoding="utf-8") as f:

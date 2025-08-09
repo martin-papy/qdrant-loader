@@ -1,18 +1,18 @@
 """Unit tests for cross-document intelligence data classes."""
 
 from datetime import datetime
-import networkx as nx
 from unittest.mock import patch
 
+import networkx as nx
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
-    DocumentSimilarity,
-    DocumentCluster,
     CitationNetwork,
+    ClusteringStrategy,
     ComplementaryContent,
     ConflictAnalysis,
+    DocumentCluster,
+    DocumentSimilarity,
+    RelationshipType,
     SimilarityMetric,
-    ClusteringStrategy,
-    RelationshipType
 )
 
 
@@ -22,11 +22,9 @@ class TestDocumentSimilarity:
     def test_document_similarity_creation(self):
         """Test creation of DocumentSimilarity with default values."""
         similarity = DocumentSimilarity(
-            doc1_id="doc1",
-            doc2_id="doc2",
-            similarity_score=0.8
+            doc1_id="doc1", doc2_id="doc2", similarity_score=0.8
         )
-        
+
         assert similarity.doc1_id == "doc1"
         assert similarity.doc2_id == "doc2"
         assert similarity.similarity_score == 0.8
@@ -40,9 +38,9 @@ class TestDocumentSimilarity:
         """Test DocumentSimilarity with all fields populated."""
         metric_scores = {
             SimilarityMetric.ENTITY_OVERLAP: 0.7,
-            SimilarityMetric.TOPIC_OVERLAP: 0.6
+            SimilarityMetric.TOPIC_OVERLAP: 0.6,
         }
-        
+
         similarity = DocumentSimilarity(
             doc1_id="doc1",
             doc2_id="doc2",
@@ -51,9 +49,9 @@ class TestDocumentSimilarity:
             shared_entities=["OAuth", "JWT"],
             shared_topics=["authentication", "security"],
             relationship_type=RelationshipType.COMPLEMENTARY,
-            explanation="Both documents discuss OAuth implementation"
+            explanation="Both documents discuss OAuth implementation",
         )
-        
+
         assert similarity.metric_scores == metric_scores
         assert similarity.shared_entities == ["OAuth", "JWT"]
         assert similarity.shared_topics == ["authentication", "security"]
@@ -66,9 +64,9 @@ class TestDocumentSimilarity:
             doc1_id="doc1",
             doc2_id="doc2",
             similarity_score=0.8,
-            explanation="Custom explanation"
+            explanation="Custom explanation",
         )
-        
+
         assert similarity.get_display_explanation() == "Custom explanation"
 
     def test_get_display_explanation_with_entities_and_topics(self):
@@ -78,9 +76,9 @@ class TestDocumentSimilarity:
             doc2_id="doc2",
             similarity_score=0.8,
             shared_entities=["OAuth", "JWT", "Token", "Refresh"],
-            shared_topics=["authentication", "security", "authorization"]
+            shared_topics=["authentication", "security", "authorization"],
         )
-        
+
         explanation = similarity.get_display_explanation()
         assert "Shared entities: OAuth, JWT, Token" in explanation
         assert "Shared topics: authentication, security, authorization" in explanation
@@ -90,27 +88,25 @@ class TestDocumentSimilarity:
         metric_scores = {
             SimilarityMetric.ENTITY_OVERLAP: 0.7,
             SimilarityMetric.TOPIC_OVERLAP: 0.9,
-            SimilarityMetric.SEMANTIC_SIMILARITY: 0.6
+            SimilarityMetric.SEMANTIC_SIMILARITY: 0.6,
         }
-        
+
         similarity = DocumentSimilarity(
             doc1_id="doc1",
             doc2_id="doc2",
             similarity_score=0.8,
-            metric_scores=metric_scores
+            metric_scores=metric_scores,
         )
-        
+
         explanation = similarity.get_display_explanation()
         assert "High topic_overlap: 0.90" in explanation
 
     def test_get_display_explanation_empty_fallback(self):
         """Test get_display_explanation fallback when no data available."""
         similarity = DocumentSimilarity(
-            doc1_id="doc1",
-            doc2_id="doc2",
-            similarity_score=0.8
+            doc1_id="doc1", doc2_id="doc2", similarity_score=0.8
         )
-        
+
         assert similarity.get_display_explanation() == "Semantic similarity"
 
     def test_get_display_explanation_partial_data(self):
@@ -120,9 +116,9 @@ class TestDocumentSimilarity:
             doc2_id="doc2",
             similarity_score=0.8,
             shared_entities=["OAuth"],
-            metric_scores={SimilarityMetric.ENTITY_OVERLAP: 0.5}
+            metric_scores={SimilarityMetric.ENTITY_OVERLAP: 0.5},
         )
-        
+
         explanation = similarity.get_display_explanation()
         assert "Shared entities: OAuth" in explanation
         assert "High entity_overlap: 0.50" in explanation
@@ -133,11 +129,8 @@ class TestDocumentCluster:
 
     def test_document_cluster_creation(self):
         """Test creation of DocumentCluster with default values."""
-        cluster = DocumentCluster(
-            cluster_id="cluster_1",
-            name="Test Cluster"
-        )
-        
+        cluster = DocumentCluster(cluster_id="cluster_1", name="Test Cluster")
+
         assert cluster.cluster_id == "cluster_1"
         assert cluster.name == "Test Cluster"
         assert cluster.documents == []
@@ -159,9 +152,9 @@ class TestDocumentCluster:
             cluster_strategy=ClusteringStrategy.ENTITY_BASED,
             coherence_score=0.85,
             representative_doc_id="doc1",
-            cluster_description="Documents about OAuth authentication"
+            cluster_description="Documents about OAuth authentication",
         )
-        
+
         assert cluster.documents == ["doc1", "doc2", "doc3"]
         assert cluster.shared_entities == ["OAuth", "JWT"]
         assert cluster.shared_topics == ["authentication", "security"]
@@ -180,17 +173,28 @@ class TestDocumentCluster:
             shared_topics=["database", "sql", "performance", "optimization"],
             cluster_strategy=ClusteringStrategy.TOPIC_BASED,
             coherence_score=0.92,
-            cluster_description="Database design and optimization documents"
+            cluster_description="Database design and optimization documents",
         )
-        
+
         summary = cluster.get_cluster_summary()
-        
+
         assert summary["cluster_id"] == "cluster_3"
         assert summary["name"] == "Database Cluster"
         assert summary["document_count"] == 2
         assert summary["coherence_score"] == 0.92
-        assert summary["primary_entities"] == ["PostgreSQL", "Schema", "Migration", "Index", "Query"]
-        assert summary["primary_topics"] == ["database", "sql", "performance", "optimization"]
+        assert summary["primary_entities"] == [
+            "PostgreSQL",
+            "Schema",
+            "Migration",
+            "Index",
+            "Query",
+        ]
+        assert summary["primary_topics"] == [
+            "database",
+            "sql",
+            "performance",
+            "optimization",
+        ]
         assert summary["strategy"] == "topic_based"
         assert summary["description"] == "Database design and optimization documents"
 
@@ -201,11 +205,11 @@ class TestDocumentCluster:
             name="Large Cluster",
             documents=["doc1"],
             shared_entities=["E1", "E2", "E3", "E4", "E5", "E6", "E7"],
-            shared_topics=["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"]
+            shared_topics=["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
         )
-        
+
         summary = cluster.get_cluster_summary()
-        
+
         assert len(summary["primary_entities"]) == 5
         assert summary["primary_entities"] == ["E1", "E2", "E3", "E4", "E5"]
         assert len(summary["primary_topics"]) == 5
@@ -213,13 +217,10 @@ class TestDocumentCluster:
 
     def test_get_cluster_summary_empty_cluster(self):
         """Test get_cluster_summary with empty cluster."""
-        cluster = DocumentCluster(
-            cluster_id="empty_cluster",
-            name="Empty"
-        )
-        
+        cluster = DocumentCluster(cluster_id="empty_cluster", name="Empty")
+
         summary = cluster.get_cluster_summary()
-        
+
         assert summary["document_count"] == 0
         assert summary["primary_entities"] == []
         assert summary["primary_topics"] == []
@@ -231,7 +232,7 @@ class TestCitationNetwork:
     def test_citation_network_creation(self):
         """Test creation of CitationNetwork with default values."""
         network = CitationNetwork()
-        
+
         assert network.nodes == {}
         assert network.edges == []
         assert network.graph is None
@@ -243,12 +244,9 @@ class TestCitationNetwork:
         """Test CitationNetwork with initial data."""
         nodes = {"doc1": {"title": "Document 1"}, "doc2": {"title": "Document 2"}}
         edges = [("doc1", "doc2", {"weight": 1.0})]
-        
-        network = CitationNetwork(
-            nodes=nodes,
-            edges=edges
-        )
-        
+
+        network = CitationNetwork(nodes=nodes, edges=edges)
+
         assert network.nodes == nodes
         assert network.edges == edges
 
@@ -256,11 +254,11 @@ class TestCitationNetwork:
         """Test building NetworkX graph from nodes and edges."""
         network = CitationNetwork(
             nodes={"doc1": {"title": "Doc 1"}, "doc2": {"title": "Doc 2"}},
-            edges=[("doc1", "doc2", {"weight": 1.0})]
+            edges=[("doc1", "doc2", {"weight": 1.0})],
         )
-        
+
         graph = network.build_graph()
-        
+
         assert isinstance(graph, nx.DiGraph)
         assert "doc1" in graph.nodes
         assert "doc2" in graph.nodes
@@ -270,21 +268,18 @@ class TestCitationNetwork:
 
     def test_build_graph_caching(self):
         """Test that build_graph caches the graph object."""
-        network = CitationNetwork(
-            nodes={"doc1": {"title": "Doc 1"}},
-            edges=[]
-        )
-        
+        network = CitationNetwork(nodes={"doc1": {"title": "Doc 1"}}, edges=[])
+
         graph1 = network.build_graph()
         graph2 = network.build_graph()
-        
+
         assert graph1 is graph2  # Same object reference
 
     def test_calculate_centrality_scores_empty_graph(self):
         """Test centrality calculation with empty graph."""
         network = CitationNetwork()
         network.calculate_centrality_scores()
-        
+
         # Should handle empty graph gracefully
         assert network.authority_scores == {}
         assert network.hub_scores == {}
@@ -292,13 +287,10 @@ class TestCitationNetwork:
 
     def test_calculate_centrality_scores_no_edges(self):
         """Test centrality calculation with nodes but no edges."""
-        network = CitationNetwork(
-            nodes={"doc1": {}, "doc2": {}},
-            edges=[]
-        )
-        
+        network = CitationNetwork(nodes={"doc1": {}, "doc2": {}}, edges=[])
+
         network.calculate_centrality_scores()
-        
+
         # Should use degree centrality fallback
         assert "doc1" in network.authority_scores
         assert "doc2" in network.authority_scores
@@ -308,17 +300,20 @@ class TestCitationNetwork:
         """Test centrality calculation with actual edges."""
         network = CitationNetwork(
             nodes={"doc1": {}, "doc2": {}, "doc3": {}},
-            edges=[("doc1", "doc2", {}), ("doc2", "doc3", {}), ("doc1", "doc3", {})]
+            edges=[("doc1", "doc2", {}), ("doc2", "doc3", {}), ("doc1", "doc3", {})],
         )
-        
+
         network.calculate_centrality_scores()
-        
+
         assert len(network.authority_scores) == 3
         assert len(network.hub_scores) == 3
         assert len(network.pagerank_scores) == 3
-        
+
         # Basic sanity checks
-        assert all(isinstance(score, (int, float)) for score in network.authority_scores.values())
+        assert all(
+            isinstance(score, int | float)
+            for score in network.authority_scores.values()
+        )
         assert all(score >= 0 for score in network.pagerank_scores.values())
 
     def test_calculate_centrality_scores_error_handling(self):
@@ -327,19 +322,22 @@ class TestCitationNetwork:
         network = CitationNetwork(
             nodes={"doc1": {}},
             # Include at least one edge so nx.hits and nx.pagerank are invoked
-            edges=[("doc1", "doc1", {})]
+            edges=[("doc1", "doc1", {})],
         )
-        
+
         # Mock the networkx functions to raise an exception using context managers
-        with patch(
-            "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.hits",
-            side_effect=ValueError("Test error"),
-        ), patch(
-            "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.pagerank",
-            side_effect=ValueError("Test error"),
+        with (
+            patch(
+                "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.hits",
+                side_effect=ValueError("Test error"),
+            ),
+            patch(
+                "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.pagerank",
+                side_effect=ValueError("Test error"),
+            ),
         ):
             network.calculate_centrality_scores()
-            
+
             # Should fall back to degree centrality
             assert "doc1" in network.authority_scores
             assert "doc1" in network.hub_scores
@@ -356,7 +354,7 @@ class TestComplementaryContent:
     def test_complementary_content_creation(self):
         """Test creation of ComplementaryContent."""
         content = ComplementaryContent(target_doc_id="doc1")
-        
+
         assert content.target_doc_id == "doc1"
         assert content.recommendations == []
         assert content.recommendation_strategy == "mixed"
@@ -367,15 +365,15 @@ class TestComplementaryContent:
         recommendations = [
             ("doc2", 0.8, "Similar topic"),
             ("doc3", 0.7, "Complementary approach"),
-            ("doc4", 0.6, "Related technology")
+            ("doc4", 0.6, "Related technology"),
         ]
-        
+
         content = ComplementaryContent(
             target_doc_id="doc1",
             recommendations=recommendations,
-            recommendation_strategy="entity_based"
+            recommendation_strategy="entity_based",
         )
-        
+
         assert content.recommendations == recommendations
         assert content.recommendation_strategy == "entity_based"
 
@@ -386,43 +384,41 @@ class TestComplementaryContent:
             ("doc3", 0.7, "Medium similarity"),
             ("doc4", 0.8, "Good match"),
             ("doc5", 0.6, "Low similarity"),
-            ("doc6", 0.75, "Decent match")
+            ("doc6", 0.75, "Decent match"),
         ]
-        
+
         content = ComplementaryContent(
-            target_doc_id="doc1",
-            recommendations=recommendations
+            target_doc_id="doc1", recommendations=recommendations
         )
-        
+
         top_3 = content.get_top_recommendations(3)
-        
+
         assert len(top_3) == 3
         assert top_3[0]["document_id"] == "doc2"
         assert top_3[0]["relevance_score"] == 0.9
         assert top_3[0]["recommendation_reason"] == "High similarity"
         assert top_3[0]["strategy"] == "mixed"
-        
+
         assert top_3[1]["document_id"] == "doc4"  # Second highest score
         assert top_3[1]["relevance_score"] == 0.8
 
     def test_get_top_recommendations_empty(self):
         """Test get_top_recommendations with empty recommendations."""
         content = ComplementaryContent(target_doc_id="doc1")
-        
+
         top_recs = content.get_top_recommendations(5)
-        
+
         assert top_recs == []
 
     def test_get_top_recommendations_fewer_than_limit(self):
         """Test get_top_recommendations when fewer recommendations than limit."""
         recommendations = [("doc2", 0.8, "Good match")]
         content = ComplementaryContent(
-            target_doc_id="doc1",
-            recommendations=recommendations
+            target_doc_id="doc1", recommendations=recommendations
         )
-        
+
         top_5 = content.get_top_recommendations(5)
-        
+
         assert len(top_5) == 1
         assert top_5[0]["document_id"] == "doc2"
 
@@ -433,7 +429,7 @@ class TestConflictAnalysis:
     def test_conflict_analysis_creation(self):
         """Test creation of ConflictAnalysis."""
         analysis = ConflictAnalysis()
-        
+
         assert analysis.conflicting_pairs == []
         assert analysis.conflict_categories == {}
         assert analysis.resolution_suggestions == {}
@@ -442,25 +438,25 @@ class TestConflictAnalysis:
         """Test ConflictAnalysis with conflict data."""
         conflicting_pairs = [
             ("doc1", "doc2", {"type": "version", "confidence": 0.8}),
-            ("doc1", "doc3", {"type": "procedural", "confidence": 0.7})
+            ("doc1", "doc3", {"type": "procedural", "confidence": 0.7}),
         ]
-        
+
         conflict_categories = {
             "version": [("doc1", "doc2")],
-            "procedural": [("doc1", "doc3")]
+            "procedural": [("doc1", "doc3")],
         }
-        
+
         resolution_suggestions = {
             "version": "Update to latest version",
-            "procedural": "Clarify procedure steps"
+            "procedural": "Clarify procedure steps",
         }
-        
+
         analysis = ConflictAnalysis(
             conflicting_pairs=conflicting_pairs,
             conflict_categories=conflict_categories,
-            resolution_suggestions=resolution_suggestions
+            resolution_suggestions=resolution_suggestions,
         )
-        
+
         assert analysis.conflicting_pairs == conflicting_pairs
         assert analysis.conflict_categories == conflict_categories
         assert analysis.resolution_suggestions == resolution_suggestions
@@ -470,29 +466,29 @@ class TestConflictAnalysis:
         conflicting_pairs = [
             ("doc1", "doc2", {"type": "version"}),
             ("doc1", "doc3", {"type": "procedural"}),
-            ("doc2", "doc4", {"type": "version"})
+            ("doc2", "doc4", {"type": "version"}),
         ]
-        
+
         conflict_categories = {
             "version": [("doc1", "doc2"), ("doc2", "doc4")],
-            "procedural": [("doc1", "doc3")]
+            "procedural": [("doc1", "doc3")],
         }
-        
+
         resolution_suggestions = {
             "1": "First suggestion",
             "2": "Second suggestion",
             "3": "Third suggestion",
-            "4": "Fourth suggestion"
+            "4": "Fourth suggestion",
         }
-        
+
         analysis = ConflictAnalysis(
             conflicting_pairs=conflicting_pairs,
             conflict_categories=conflict_categories,
-            resolution_suggestions=resolution_suggestions
+            resolution_suggestions=resolution_suggestions,
         )
-        
+
         summary = analysis.get_conflict_summary()
-        
+
         assert summary["total_conflicts"] == 3
         assert summary["conflict_categories"]["version"] == 2
         assert summary["conflict_categories"]["procedural"] == 1
@@ -504,21 +500,21 @@ class TestConflictAnalysis:
         conflict_categories = {
             "procedural": [("doc1", "doc2")],
             "version": [("doc1", "doc3"), ("doc2", "doc4"), ("doc3", "doc5")],
-            "data": [("doc1", "doc4"), ("doc2", "doc5")]
+            "data": [("doc1", "doc4"), ("doc2", "doc5")],
         }
-        
+
         analysis = ConflictAnalysis(conflict_categories=conflict_categories)
-        
+
         most_common = analysis._get_most_common_conflicts()
-        
+
         assert most_common == ["version", "data", "procedural"]  # Sorted by frequency
 
     def test_get_conflict_summary_empty(self):
         """Test get_conflict_summary with empty analysis."""
         analysis = ConflictAnalysis()
-        
+
         summary = analysis.get_conflict_summary()
-        
+
         assert summary["total_conflicts"] == 0
         assert summary["conflict_categories"] == {}
         assert summary["most_common_conflicts"] == []

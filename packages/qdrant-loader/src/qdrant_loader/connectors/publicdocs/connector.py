@@ -464,7 +464,7 @@ class PublicDocsConnector(BaseConnector):
             self.logger.debug(
                 "Found title tags during HTML parsing",
                 count=len(title_tags),
-                html_length=len(html)
+                html_length=len(html),
             )
 
         # First try to find the title in head/title

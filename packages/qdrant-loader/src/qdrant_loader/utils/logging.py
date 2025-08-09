@@ -97,9 +97,9 @@ class WindowsSafeConsoleHandler(logging.StreamHandler):
         """Emit a record, handling Windows console encoding issues."""
         try:
             # Check if stream is still open before writing
-            if hasattr(self.stream, 'closed') and self.stream.closed:
+            if hasattr(self.stream, "closed") and self.stream.closed:
                 return  # Skip logging if stream is closed
-                
+
             # Get the formatted message
             msg = self.format(record)
 
@@ -158,9 +158,9 @@ class CleanFileHandler(logging.FileHandler):
         """Emit a record, stripping ANSI codes from the message."""
         try:
             # Check if stream is still open before writing
-            if hasattr(self.stream, 'closed') and self.stream.closed:
+            if hasattr(self.stream, "closed") and self.stream.closed:
                 return  # Skip logging if stream is closed
-                
+
             # Get the formatted message
             msg = self.format(record)
             # Strip ANSI escape sequences

@@ -1,12 +1,12 @@
 """Keyword search service for hybrid search."""
 
+import asyncio
+import re
 from typing import Any
 
 import numpy as np
 from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
-import re
-import asyncio
 
 from ...utils.logging import LoggingConfig
 from .field_query_parser import FieldQueryParser
@@ -21,7 +21,7 @@ class KeywordSearchService:
         collection_name: str,
     ):
         """Initialize the keyword search service.
-        
+
         Args:
             qdrant_client: Qdrant client instance
             collection_name: Name of the Qdrant collection
@@ -32,29 +32,33 @@ class KeywordSearchService:
         self.logger = LoggingConfig.get_logger(__name__)
 
     async def keyword_search(
-        self, 
-        query: str, 
-        limit: int, 
+        self,
+        query: str,
+        limit: int,
         project_ids: list[str] | None = None,
         max_candidates: int = 2000,
     ) -> list[dict[str, Any]]:
         """Perform keyword search using BM25.
-        
+
         Args:
             query: Search query
             limit: Maximum number of results
             project_ids: Optional project ID filters
             max_candidates: Maximum number of candidate documents to fetch from Qdrant before ranking
-            
+
         Returns:
             List of search results with scores, text, metadata, and source_type
         """
         # ✅ Parse query for field-specific filters
         parsed_query = self.field_parser.parse_query(query)
-        self.logger.debug(f"Keyword search - parsed query: {len(parsed_query.field_queries)} field queries, text: '{parsed_query.text_query}'")
-        
+        self.logger.debug(
+            f"Keyword search - parsed query: {len(parsed_query.field_queries)} field queries, text: '{parsed_query.text_query}'"
+        )
+
         # Create filter combining field queries and project IDs
-        query_filter = self.field_parser.create_qdrant_filter(parsed_query.field_queries, project_ids)
+        query_filter = self.field_parser.create_qdrant_filter(
+            parsed_query.field_queries, project_ids
+        )
 
         # Determine how many candidates to fetch per page: min(max_candidates, scaled_limit)
         # Using a scale factor to over-fetch relative to requested limit for better ranking quality
@@ -112,7 +116,7 @@ class KeywordSearchService:
                 source = point.payload.get("source", "")
                 created_at = point.payload.get("created_at", "")
                 updated_at = point.payload.get("updated_at", "")
-                
+
                 documents.append(content)
                 metadata_list.append(metadata)
                 source_types.append(source_type)
@@ -129,16 +133,24 @@ class KeywordSearchService:
 
         # Handle filter-only searches (no text query for BM25)
         if self.field_parser.should_use_filter_only(parsed_query):
-            self.logger.debug("Filter-only search - assigning equal scores to all results")
+            self.logger.debug(
+                "Filter-only search - assigning equal scores to all results"
+            )
             # For filter-only searches, assign equal scores to all results
             scores = np.ones(len(documents))
         else:
             # Use BM25 scoring for text queries, offloaded to a thread
             search_query = parsed_query.text_query if parsed_query.text_query else query
-            scores = await asyncio.to_thread(self._compute_bm25_scores, documents, search_query)
+            scores = await asyncio.to_thread(
+                self._compute_bm25_scores, documents, search_query
+            )
 
         # Stable sort for ranking to keep original order among ties
-        top_indices = np.array(sorted(range(len(scores)), key=lambda i: (scores[i], i), reverse=True)[:limit])
+        top_indices = np.array(
+            sorted(range(len(scores)), key=lambda i: (scores[i], i), reverse=True)[
+                :limit
+            ]
+        )
 
         results = []
         for idx in top_indices:
@@ -156,9 +168,9 @@ class KeywordSearchService:
                     "created_at": created_ats[idx],
                     "updated_at": updated_ats[idx],
                 }
-                
+
                 results.append(result)
-        
+
         return results
 
     # Note: _build_filter method removed - now using FieldQueryParser.create_qdrant_filter()

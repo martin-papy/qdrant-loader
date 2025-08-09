@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import tiktoken
+
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.text_processing.text_processor import TextProcessor
 from qdrant_loader.utils.logging import LoggingConfig
@@ -475,5 +476,3 @@ class BaseChunkingStrategy(ABC):
         raise NotImplementedError(
             "Chunking strategy must implement chunk_document method"
         )
-
-

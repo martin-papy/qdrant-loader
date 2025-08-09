@@ -9,6 +9,7 @@ from ..config import OpenAIConfig
 from ..utils.logging import LoggingConfig
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 
+
 class QueryProcessor:
     """Query processor for handling search queries with spaCy-powered intelligence."""
 
@@ -18,7 +19,7 @@ class QueryProcessor:
             api_key=openai_config.api_key
         )
         self.logger = LoggingConfig.get_logger(__name__)
-        
+
         # 🔥 NEW: Initialize spaCy analyzer for fast, local intent detection
         self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_md")
 
@@ -93,34 +94,41 @@ class QueryProcessor:
         try:
             # Use spaCy analyzer for comprehensive query analysis
             query_analysis = self.spacy_analyzer.analyze_query_semantic(query)
-            
+
             # Get primary intent from spaCy analysis
-            primary_intent = query_analysis.intent_signals.get("primary_intent", "general")
+            primary_intent = query_analysis.intent_signals.get(
+                "primary_intent", "general"
+            )
             confidence = query_analysis.intent_signals.get("confidence", 0.0)
-            
+
             # Map spaCy intents to our system's intent categories
             intent_mapping = {
                 "technical_lookup": "code",
-                "business_context": "documentation", 
+                "business_context": "documentation",
                 "vendor_evaluation": "documentation",
                 "procedural": "documentation",
                 "informational": "general",
             }
-            
+
             # Map to our system's categories
             mapped_intent = intent_mapping.get(primary_intent, "general")
 
             # Heuristic overrides to satisfy common patterns used in tests
             query_lower = query.lower()
-            if any(k in query_lower for k in ["function", "class", "definition", "code"]):
+            if any(
+                k in query_lower for k in ["function", "class", "definition", "code"]
+            ):
                 mapped_intent = "code"
             elif any(k in query_lower for k in ["how to", "guide", "documentation"]):
                 mapped_intent = "documentation"
-            
+
             # Use confidence to determine if we trust the spaCy-derived intent when no heuristic matched
-            if mapped_intent == intent_mapping.get(primary_intent, "general") and confidence < 0.3:
+            if (
+                mapped_intent == intent_mapping.get(primary_intent, "general")
+                and confidence < 0.3
+            ):
                 mapped_intent = "general"
-            
+
             self.logger.debug(
                 "🔥 spaCy intent inference",
                 query=query[:50],
@@ -129,14 +137,12 @@ class QueryProcessor:
                 confidence=confidence,
                 processing_time_ms=query_analysis.processing_time_ms,
             )
-            
+
             return mapped_intent, False
-            
+
         except Exception as e:
             self.logger.warning(f"spaCy intent inference failed: {e}")
             return "general", True
-
-
 
     def _extract_source_type(self, query: str, intent: str) -> str | None:
         """🔥 ENHANCED: Extract source type using improved keyword matching.
@@ -150,24 +156,53 @@ class QueryProcessor:
         """
         # Enhanced source type keywords with more variations
         source_keywords = {
-            "git": ["git", "code", "repository", "repo", "github", "gitlab", "bitbucket", "source"],
-            "confluence": ["confluence", "doc", "documentation", "wiki", "page", "space"],
+            "git": [
+                "git",
+                "code",
+                "repository",
+                "repo",
+                "github",
+                "gitlab",
+                "bitbucket",
+                "source",
+            ],
+            "confluence": [
+                "confluence",
+                "doc",
+                "documentation",
+                "wiki",
+                "page",
+                "space",
+            ],
             "jira": ["jira", "issue", "ticket", "bug", "story", "task", "epic"],
-            "localfile": ["localfile", "local", "file", "files", "filesystem", "disk", "folder", "directory"],
+            "localfile": [
+                "localfile",
+                "local",
+                "file",
+                "files",
+                "filesystem",
+                "disk",
+                "folder",
+                "directory",
+            ],
         }
 
         # Check for explicit source type mentions
         query_lower = query.lower()
         for source_type, keywords in source_keywords.items():
             if any(keyword in query_lower for keyword in keywords):
-                self.logger.debug(f"🔥 Source type detected: {source_type}", query=query[:50])
+                self.logger.debug(
+                    f"🔥 Source type detected: {source_type}", query=query[:50]
+                )
                 return source_type
 
         # 🔥 NEW: Intent-based source type inference
         if intent == "code":
             # Code-related queries likely target git repositories
             return "git"
-        elif intent == "documentation" and any(word in query_lower for word in ["requirements", "spec", "design"]):
+        elif intent == "documentation" and any(
+            word in query_lower for word in ["requirements", "spec", "design"]
+        ):
             # Documentation queries about requirements/design likely target confluence
             return "confluence"
         elif intent == "issue" or "issue" in query_lower:
@@ -183,7 +218,9 @@ class QueryProcessor:
         cleaned = self._clean_query(query)
         # If explicit jira/bug terms present, force jira for compatibility
         jl = cleaned.lower()
-        if any(k in jl for k in ["jira", "ticket", "bug", "issue", "story", "task", "epic"]):
+        if any(
+            k in jl for k in ["jira", "ticket", "bug", "issue", "story", "task", "epic"]
+        ):
             return "jira"
         return self._extract_source_type(cleaned, intent="general")
 

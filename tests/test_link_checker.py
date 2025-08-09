@@ -3,12 +3,13 @@
 Tests for the link checker script.
 """
 
+import sys
+from pathlib import Path
+from unittest.mock import Mock, patch
+
 import pytest
 import requests
 import responses
-from unittest.mock import Mock, patch
-from pathlib import Path
-import sys
 
 # Add website directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

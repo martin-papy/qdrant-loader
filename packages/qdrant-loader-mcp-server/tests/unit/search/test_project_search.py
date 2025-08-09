@@ -7,11 +7,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from openai import AsyncOpenAI
 from qdrant_client import QdrantClient
+from qdrant_loader_mcp_server.search.components.search_result_models import (
+    HybridSearchResult,
+    create_hybrid_search_result,
+)
 from qdrant_loader_mcp_server.search.engine import SearchEngine
 from qdrant_loader_mcp_server.search.hybrid_search import (
     HybridSearchEngine,
 )
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
 
 
 @pytest.fixture
@@ -50,7 +53,7 @@ def mock_qdrant_client():
     # Set up async mock methods
     client.search = AsyncMock(return_value=mock_points)
     client.scroll = AsyncMock(return_value=(mock_points, None))
-    
+
     # Mock collection operations for SearchEngine initialization
     collections_response = MagicMock()
     collections_response.collections = []

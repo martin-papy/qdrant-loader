@@ -196,8 +196,6 @@ class TestAsyncIngestionPipeline:
             # Verify metrics server was not started
             mock_prometheus.start_metrics_server.assert_not_called()
 
-
-
     @pytest.mark.asyncio
     async def test_initialize_method(self, mock_settings, mock_qdrant_manager):
         """Test the initialize method (no-op in new architecture)."""
@@ -341,7 +339,12 @@ class TestAsyncIngestionPipeline:
             mock_monitor.start_batch.assert_called_once_with(
                 "document_batch",
                 batch_size=2,
-                metadata={"source_type": "git", "source": None, "project_id": None, "force": False},
+                metadata={
+                    "source_type": "git",
+                    "source": None,
+                    "project_id": None,
+                    "force": False,
+                },
             )
             mock_monitor.end_batch.assert_called_once_with("document_batch", 2, 0, [])
 
@@ -611,10 +614,6 @@ class TestAsyncIngestionPipeline:
             mock_monitor.save_metrics.assert_called_once()
             # Note: stop_metrics_server may not be called if save_metrics fails first
             mock_resource_manager._cleanup.assert_called_once()
-
-
-
-
 
     def test_configuration_validation(self, mock_qdrant_manager):
         """Test that configuration validation works correctly."""

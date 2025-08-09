@@ -42,7 +42,9 @@ def _get_all_sources_from_config(sources_config):
     return all_sources
 
 
-async def _get_project_document_count(state_manager: StateManager, project_id: str) -> int:
+async def _get_project_document_count(
+    state_manager: StateManager, project_id: str
+) -> int:
     """Get the count of non-deleted documents for a project."""
     try:
         # Prefer direct session factory if available (matches tests/mocks)
@@ -64,7 +66,9 @@ async def _get_project_document_count(state_manager: StateManager, project_id: s
         return 0
 
 
-async def _get_project_latest_ingestion(state_manager: StateManager, project_id: str) -> str | None:
+async def _get_project_latest_ingestion(
+    state_manager: StateManager, project_id: str
+) -> str | None:
     """Get the latest ingestion timestamp for a project."""
     try:
         # Prefer direct session factory if available (matches tests/mocks)
@@ -116,7 +120,9 @@ async def list(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize project management components.
-        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, _ = await _setup_project_manager(
+            workspace, config, env
+        )
 
         # Retrieve all configured project contexts for display.
         project_contexts = project_manager.get_all_project_contexts()
@@ -173,10 +179,10 @@ async def list(
         logger = LoggingConfig.get_logger(__name__)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
-            "Failed to list projects from configuration", 
+            "Failed to list projects from configuration",
             error=str(e),
             error_type=type(e).__name__,
-            suggestion="Try running 'qdrant-loader project validate' to check configuration"
+            suggestion="Try running 'qdrant-loader project validate' to check configuration",
         )
         raise ClickException(f"Failed to list projects: {str(e)!s}") from e
 
@@ -216,7 +222,9 @@ async def status(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize components
-        settings, project_manager, state_manager = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, state_manager = await _setup_project_manager(
+            workspace, config, env
+        )
 
         # Get project contexts
         if project_id:
@@ -232,9 +240,13 @@ async def status(
             status_data = []
             for context in project_contexts.values():
                 # Query database for real stats
-                document_count = await _get_project_document_count(state_manager, context.project_id)
-                latest_ingestion = await _get_project_latest_ingestion(state_manager, context.project_id)
-                
+                document_count = await _get_project_document_count(
+                    state_manager, context.project_id
+                )
+                latest_ingestion = await _get_project_latest_ingestion(
+                    state_manager, context.project_id
+                )
+
                 status_data.append(
                     {
                         "project_id": context.project_id,
@@ -264,8 +276,12 @@ async def status(
                 )
 
                 # Query database for real stats
-                document_count = await _get_project_document_count(state_manager, context.project_id)
-                latest_ingestion = await _get_project_latest_ingestion(state_manager, context.project_id)
+                document_count = await _get_project_document_count(
+                    state_manager, context.project_id
+                )
+                latest_ingestion = await _get_project_latest_ingestion(
+                    state_manager, context.project_id
+                )
                 latest_ingestion_display = latest_ingestion or "Never"
 
                 # Create project panel
@@ -285,10 +301,10 @@ async def status(
         logger = LoggingConfig.get_logger(__name__)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
-            "Failed to retrieve project status information", 
+            "Failed to retrieve project status information",
             error=str(e),
             error_type=type(e).__name__,
-            suggestion="Verify project configuration and database connectivity"
+            suggestion="Verify project configuration and database connectivity",
         )
         raise ClickException(f"Failed to get project status: {str(e)!s}") from e
 
@@ -321,7 +337,9 @@ async def validate(
         validate_workspace_flags(workspace, config, env)
 
         # Load configuration and initialize components
-        settings, project_manager, _ = await _setup_project_manager(workspace, config, env)
+        settings, project_manager, _ = await _setup_project_manager(
+            workspace, config, env
+        )
 
         # Get project contexts to validate
         if project_id:
@@ -418,10 +436,10 @@ async def validate(
         logger = LoggingConfig.get_logger(__name__)
         # Standardized error logging: user-friendly message + technical details + troubleshooting hint
         logger.error(
-            "Failed to validate project configurations", 
+            "Failed to validate project configurations",
             error=str(e),
             error_type=type(e).__name__,
-            suggestion="Check config.yaml syntax and data source accessibility"
+            suggestion="Check config.yaml syntax and data source accessibility",
         )
         raise ClickException(f"Failed to validate projects: {str(e)!s}") from e
 

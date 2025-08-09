@@ -226,7 +226,7 @@ class TestAttachmentStateTracking:
             },
         ]
 
-        for i, att_data in enumerate(attachments_data):
+        for _i, att_data in enumerate(attachments_data):
             attachment_doc = Document(
                 title=att_data["title"],
                 content=f"# {att_data['title']}\n\nProcessed attachment content.",

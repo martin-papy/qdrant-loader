@@ -2,6 +2,7 @@
 
 import logging
 from unittest.mock import Mock
+
 from qdrant_loader.utils.logging import CleanFormatter, CustomConsoleRenderer
 
 

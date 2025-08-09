@@ -4,9 +4,9 @@ import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
-from qdrant_loader_mcp_server.mcp.protocol import MCPProtocol
 from qdrant_loader_mcp_server.mcp.formatters import MCPFormatters
+from qdrant_loader_mcp_server.mcp.protocol import MCPProtocol
+from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
 
 
 @pytest.fixture
@@ -26,10 +26,10 @@ def integration_search_handler(real_protocol):
     """Create a SearchHandler with real protocol but mocked engine/processor."""
     mock_search_engine = Mock()
     mock_search_engine.search = AsyncMock()
-    
+
     mock_query_processor = Mock()
     mock_query_processor.process_query = AsyncMock()
-    
+
     return SearchHandler(mock_search_engine, mock_query_processor, real_protocol)
 
 
@@ -191,27 +191,31 @@ class TestSearchIntegration:
     """Integration tests for basic search functionality."""
 
     @pytest.mark.asyncio
-    async def test_search_integration_full_flow(self, integration_search_handler, realistic_search_results):
+    async def test_search_integration_full_flow(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test complete search flow with real formatters and protocol."""
         # Setup realistic query processing
         integration_search_handler.query_processor.process_query.return_value = {
             "query": "API authentication methods",
             "intent": "informational",
-            "entities": ["API", "authentication"]
+            "entities": ["API", "authentication"],
         }
-        
+
         # Setup realistic search results
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         params = {
             "query": "How to authenticate with the API?",
             "source_types": ["confluence"],
             "project_ids": ["main-docs"],
-            "limit": 5
+            "limit": 5,
         }
-        
+
         result = await integration_search_handler.handle_search("req-123", params)
-        
+
         # Verify response structure
         assert result["jsonrpc"] == "2.0"
         assert result["id"] == "req-123"
@@ -219,31 +223,38 @@ class TestSearchIntegration:
         assert "content" in result["result"]
         assert "structuredContent" in result["result"]
         assert result["result"]["isError"] is False
-        
+
         # Verify content structure
         content = result["result"]["content"]
         assert len(content) == 1
         assert content[0]["type"] == "text"
         assert "Found 4 results" in content[0]["text"]
-        
+
         # Verify structured content
         structured = result["result"]["structuredContent"]
         assert "results" in structured
         assert "total_found" in structured
         assert "query_context" in structured
         assert structured["total_found"] == 4
-        assert structured["query_context"]["original_query"] == "How to authenticate with the API?"
+        assert (
+            structured["query_context"]["original_query"]
+            == "How to authenticate with the API?"
+        )
 
     @pytest.mark.asyncio
-    async def test_search_integration_error_propagation(self, integration_search_handler):
+    async def test_search_integration_error_propagation(
+        self, integration_search_handler
+    ):
         """Test that errors from components are properly handled and formatted."""
         # Setup query processor to fail
-        integration_search_handler.query_processor.process_query.side_effect = ConnectionError("OpenAI API unavailable")
-        
+        integration_search_handler.query_processor.process_query.side_effect = (
+            ConnectionError("OpenAI API unavailable")
+        )
+
         params = {"query": "test query"}
-        
+
         result = await integration_search_handler.handle_search("req-456", params)
-        
+
         # Verify error response
         assert result["jsonrpc"] == "2.0"
         assert result["id"] == "req-456"
@@ -255,18 +266,20 @@ class TestSearchIntegration:
     @pytest.mark.asyncio
     async def test_search_integration_empty_results(self, integration_search_handler):
         """Test search integration with empty results."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "no results query"}
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "no results query"
+        }
         integration_search_handler.search_engine.search.return_value = []
-        
+
         params = {"query": "no results query"}
-        
+
         result = await integration_search_handler.handle_search("req-789", params)
-        
+
         # Verify response for empty results
         assert result["result"]["isError"] is False
         content = result["result"]["content"][0]["text"]
         assert "Found 0 results" in content
-        
+
         structured = result["result"]["structuredContent"]
         assert structured["total_found"] == 0
         assert len(structured["results"]) == 0
@@ -276,51 +289,67 @@ class TestHierarchySearchIntegration:
     """Integration tests for hierarchy search functionality."""
 
     @pytest.mark.asyncio
-    async def test_hierarchy_search_integration_with_organization(self, integration_search_handler, realistic_search_results):
+    async def test_hierarchy_search_integration_with_organization(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test hierarchy search with result organization."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "API documentation"}
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "API documentation"
+        }
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         params = {
             "query": "API documentation structure",
             "hierarchy_filter": {"depth": 0},
             "organize_by_hierarchy": True,
-            "limit": 10
+            "limit": 10,
         }
-        
-        result = await integration_search_handler.handle_hierarchy_search("hier-123", params)
-        
+
+        result = await integration_search_handler.handle_hierarchy_search(
+            "hier-123", params
+        )
+
         # Verify hierarchy-specific response structure
         assert result["result"]["isError"] is False
-        
+
         content = result["result"]["content"][0]["text"]
         assert "Hierarchy Search Results" in content
-        
+
         structured = result["result"]["structuredContent"]
         assert "hierarchy_index" in structured or "hierarchy_groups" in structured
 
     @pytest.mark.asyncio
-    async def test_hierarchy_search_integration_localfile_filtering(self, integration_search_handler, realistic_search_results):
+    async def test_hierarchy_search_integration_localfile_filtering(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test hierarchy search with localfile filtering."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "config files"}
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "config files"
+        }
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         params = {
             "query": "configuration files",
             "hierarchy_filter": {"root_only": True},
             "organize_by_hierarchy": False,
-            "limit": 5
+            "limit": 5,
         }
-        
-        result = await integration_search_handler.handle_hierarchy_search("hier-456", params)
-        
+
+        result = await integration_search_handler.handle_hierarchy_search(
+            "hier-456", params
+        )
+
         # Verify search called with correct source types
         integration_search_handler.search_engine.search.assert_called_once_with(
             query="config files",
             source_types=["confluence", "localfile"],
-            limit=40  # max(5 * 2, 40)
+            limit=40,  # max(5 * 2, 40)
         )
-        
+
         assert result["result"]["isError"] is False
 
 
@@ -328,57 +357,79 @@ class TestAttachmentSearchIntegration:
     """Integration tests for attachment search functionality."""
 
     @pytest.mark.asyncio
-    async def test_attachment_search_integration_with_grouping(self, integration_search_handler, realistic_search_results):
+    async def test_attachment_search_integration_with_grouping(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test attachment search with attachment grouping."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "API specifications"}
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "API specifications"
+        }
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # Mock the attachment grouping
-        with patch.object(integration_search_handler.formatters, '_organize_attachments_by_type') as mock_organize:
+        with patch.object(
+            integration_search_handler.formatters, "_organize_attachments_by_type"
+        ) as mock_organize:
             mock_organize.return_value = [
                 {"group_name": "JSON Files", "document_ids": ["attachment-101"]},
-                {"group_name": "YAML Files", "document_ids": ["localfile-789"]}
+                {"group_name": "YAML Files", "document_ids": ["localfile-789"]},
             ]
-            
+
             params = {
                 "query": "API specification files",
                 "attachment_filter": {"file_type": "json"},
                 "include_parent_context": True,
-                "limit": 10
+                "limit": 10,
             }
-            
-            result = await integration_search_handler.handle_attachment_search("attach-123", params)
-            
+
+            result = await integration_search_handler.handle_attachment_search(
+                "attach-123", params
+            )
+
             # Verify attachment-specific response
             assert result["result"]["isError"] is False
-            
+
             content = result["result"]["content"][0]["text"]
             assert "Attachment Search Results" in content
-            
+
             # Verify attachment grouping was called
             mock_organize.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_attachment_search_integration_lightweight_filtering(self, integration_search_handler, realistic_search_results):
+    async def test_attachment_search_integration_lightweight_filtering(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test attachment search with lightweight filtering."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "files"}
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "files"
+        }
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # Mock file type extraction
-        with patch.object(integration_search_handler.formatters, '_extract_file_type_minimal') as mock_extract:
-            mock_extract.side_effect = lambda x: "json" if "json" in x.source_title else "yaml"
-            
+        with patch.object(
+            integration_search_handler.formatters, "_extract_file_type_minimal"
+        ) as mock_extract:
+            mock_extract.side_effect = lambda x: (
+                "json" if "json" in x.source_title else "yaml"
+            )
+
             params = {
                 "query": "configuration and specification files",
                 "attachment_filter": {"file_type": "json", "file_size_max": 1048576},
-                "limit": 5
+                "limit": 5,
             }
-            
-            result = await integration_search_handler.handle_attachment_search("attach-456", params)
-            
+
+            result = await integration_search_handler.handle_attachment_search(
+                "attach-456", params
+            )
+
             # Verify filtering was applied
             assert result["result"]["isError"] is False
-            
+
             # Verify file type extraction was called
             assert mock_extract.called
 
@@ -387,54 +438,69 @@ class TestExpandDocumentIntegration:
     """Integration tests for document expansion functionality."""
 
     @pytest.mark.asyncio
-    async def test_expand_document_integration_exact_match(self, integration_search_handler, realistic_search_results):
+    async def test_expand_document_integration_exact_match(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test document expansion with exact document ID match."""
         target_document = realistic_search_results[0]
-        
+
         # Setup search to return exact match first
         integration_search_handler.search_engine.search.return_value = [target_document]
-        
+
         params = {"document_id": "confluence-doc-123"}
-        
-        result = await integration_search_handler.handle_expand_document("expand-123", params)
-        
+
+        result = await integration_search_handler.handle_expand_document(
+            "expand-123", params
+        )
+
         # Verify exact match response
         assert result["result"]["isError"] is False
-        
+
         content = result["result"]["content"][0]["text"]
         assert "Found 1 document" in content
-        
+
         structured = result["result"]["structuredContent"]
         assert structured["total_found"] == 1
         assert structured["query_context"]["is_document_expansion"] is True
-        assert structured["query_context"]["original_query"] == "expand_document:confluence-doc-123"
+        assert (
+            structured["query_context"]["original_query"]
+            == "expand_document:confluence-doc-123"
+        )
 
     @pytest.mark.asyncio
-    async def test_expand_document_integration_fallback_search(self, integration_search_handler, realistic_search_results):
+    async def test_expand_document_integration_fallback_search(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test document expansion with fallback to general search."""
         target_document = realistic_search_results[1]
-        
+
         # Setup field search to fail, general search to succeed
         search_results = [[], [target_document]]
         integration_search_handler.search_engine.search.side_effect = search_results
-        
+
         params = {"document_id": "confluence-doc-456"}
-        
-        result = await integration_search_handler.handle_expand_document("expand-456", params)
-        
+
+        result = await integration_search_handler.handle_expand_document(
+            "expand-456", params
+        )
+
         # Verify fallback search was used
         assert integration_search_handler.search_engine.search.call_count == 2
         assert result["result"]["isError"] is False
 
     @pytest.mark.asyncio
-    async def test_expand_document_integration_not_found(self, integration_search_handler):
+    async def test_expand_document_integration_not_found(
+        self, integration_search_handler
+    ):
         """Test document expansion when document is not found."""
         integration_search_handler.search_engine.search.side_effect = [[], []]
-        
+
         params = {"document_id": "nonexistent-doc"}
-        
-        result = await integration_search_handler.handle_expand_document("expand-789", params)
-        
+
+        result = await integration_search_handler.handle_expand_document(
+            "expand-789", params
+        )
+
         # Verify not found error
         assert "error" in result
         assert result["error"]["code"] == -32604
@@ -446,104 +512,128 @@ class TestRealWorldScenarios:
     """Integration tests simulating real-world usage scenarios."""
 
     @pytest.mark.asyncio
-    async def test_developer_workflow_api_search(self, integration_search_handler, realistic_search_results):
+    async def test_developer_workflow_api_search(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test a typical developer workflow searching for API information."""
         # Simulate developer searching for API authentication
         integration_search_handler.query_processor.process_query.return_value = {
             "query": "API authentication OAuth JWT",
             "intent": "technical_implementation",
-            "entities": ["API", "authentication", "OAuth", "JWT"]
+            "entities": ["API", "authentication", "OAuth", "JWT"],
         }
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # First search: General API search
         params1 = {
             "query": "How do I authenticate with your API?",
             "source_types": ["confluence"],
-            "limit": 10
+            "limit": 10,
         }
-        
-        result1 = await integration_search_handler.handle_search("dev-search-1", params1)
+
+        result1 = await integration_search_handler.handle_search(
+            "dev-search-1", params1
+        )
         assert result1["result"]["isError"] is False
-        
+
         # Second search: Hierarchy search for related documents
         params2 = {
             "query": "API authentication methods",
             "hierarchy_filter": {"parent_title": "API Integration Guide"},
             "organize_by_hierarchy": True,
-            "limit": 5
+            "limit": 5,
         }
-        
-        result2 = await integration_search_handler.handle_hierarchy_search("dev-search-2", params2)
+
+        result2 = await integration_search_handler.handle_hierarchy_search(
+            "dev-search-2", params2
+        )
         assert result2["result"]["isError"] is False
-        
+
         # Third search: Look for specification files
         params3 = {
             "query": "API specification OpenAPI",
             "attachment_filter": {"file_type": "json"},
-            "limit": 5
+            "limit": 5,
         }
-        
-        result3 = await integration_search_handler.handle_attachment_search("dev-search-3", params3)
+
+        result3 = await integration_search_handler.handle_attachment_search(
+            "dev-search-3", params3
+        )
         assert result3["result"]["isError"] is False
 
     @pytest.mark.asyncio
-    async def test_content_manager_workflow(self, integration_search_handler, realistic_search_results):
+    async def test_content_manager_workflow(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test a content manager workflow organizing documentation."""
         integration_search_handler.query_processor.process_query.return_value = {
             "query": "documentation organization structure",
-            "intent": "content_management"
+            "intent": "content_management",
         }
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # Search for root documents to understand structure
         params = {
             "query": "documentation structure overview",
             "hierarchy_filter": {"root_only": True, "has_children": True},
             "organize_by_hierarchy": True,
-            "limit": 20
+            "limit": 20,
         }
-        
-        result = await integration_search_handler.handle_hierarchy_search("content-mgr-1", params)
-        
+
+        result = await integration_search_handler.handle_hierarchy_search(
+            "content-mgr-1", params
+        )
+
         assert result["result"]["isError"] is False
         structured = result["result"]["structuredContent"]
         # Should have hierarchy organization for content management
         assert "hierarchy_index" in structured or "hierarchy_groups" in structured
 
     @pytest.mark.asyncio
-    async def test_support_team_workflow(self, integration_search_handler, realistic_search_results):
+    async def test_support_team_workflow(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test a support team workflow finding specific documentation."""
         integration_search_handler.query_processor.process_query.return_value = {
             "query": "customer support troubleshooting guide",
-            "intent": "support"
+            "intent": "support",
         }
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # Start with broad search
         params1 = {
             "query": "customer having authentication issues",
             "source_types": ["confluence", "localfile"],
-            "limit": 15
+            "limit": 15,
         }
-        
+
         result1 = await integration_search_handler.handle_search("support-1", params1)
         assert result1["result"]["isError"] is False
-        
+
         # Expand specific document for details
         params2 = {"document_id": "confluence-doc-456"}  # Authentication Methods doc
-        
-        result2 = await integration_search_handler.handle_expand_document("support-2", params2)
+
+        result2 = await integration_search_handler.handle_expand_document(
+            "support-2", params2
+        )
         assert result2["result"]["isError"] is False
-        
+
         # Look for related attachments/resources
         params3 = {
             "query": "authentication troubleshooting resources",
             "attachment_filter": {"parent_document_title": "API Integration Guide"},
-            "limit": 10
+            "limit": 10,
         }
-        
-        result3 = await integration_search_handler.handle_attachment_search("support-3", params3)
+
+        result3 = await integration_search_handler.handle_attachment_search(
+            "support-3", params3
+        )
         assert result3["result"]["isError"] is False
 
 
@@ -568,14 +658,16 @@ class TestPerformanceScenarios:
             result.is_root_document = Mock(return_value=i < 10)
             result.has_children = Mock(return_value=i < 5)
             large_result_set.append(result)
-        
-        integration_search_handler.query_processor.process_query.return_value = {"query": "large dataset"}
+
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "large dataset"
+        }
         integration_search_handler.search_engine.search.return_value = large_result_set
-        
+
         params = {"query": "find all documents", "limit": 50}
-        
+
         result = await integration_search_handler.handle_search("perf-1", params)
-        
+
         # Should handle large result set without issues
         assert result["result"]["isError"] is False
         structured = result["result"]["structuredContent"]
@@ -583,21 +675,27 @@ class TestPerformanceScenarios:
         assert len(structured["results"]) <= 100  # Formatter may limit
 
     @pytest.mark.asyncio
-    async def test_concurrent_requests(self, integration_search_handler, realistic_search_results):
+    async def test_concurrent_requests(
+        self, integration_search_handler, realistic_search_results
+    ):
         """Test handling of concurrent search requests."""
-        integration_search_handler.query_processor.process_query.return_value = {"query": "concurrent test"}
-        integration_search_handler.search_engine.search.return_value = realistic_search_results
-        
+        integration_search_handler.query_processor.process_query.return_value = {
+            "query": "concurrent test"
+        }
+        integration_search_handler.search_engine.search.return_value = (
+            realistic_search_results
+        )
+
         # Create multiple concurrent requests
         tasks = []
         for i in range(5):
             params = {"query": f"concurrent search {i}", "limit": 5}
             task = integration_search_handler.handle_search(f"concurrent-{i}", params)
             tasks.append(task)
-        
+
         # Execute all requests concurrently
         results = await asyncio.gather(*tasks)
-        
+
         # All requests should complete successfully
         for i, result in enumerate(results):
             assert result["result"]["isError"] is False

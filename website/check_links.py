@@ -3,13 +3,14 @@
 Link checker script to scan the website for dead links (404 errors).
 """
 
-import requests
 import re
-from urllib.parse import urljoin, urlparse
-from pathlib import Path
+import sys
 import time
 from collections import defaultdict
-import sys
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+
+import requests
 
 
 class LinkChecker:

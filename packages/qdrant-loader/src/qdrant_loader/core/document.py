@@ -31,7 +31,9 @@ class Document(BaseModel):
     def __init__(self, **data):
         # Generate ID only if not provided
         if "id" not in data or not data["id"]:
-            data["id"] = self.generate_id(data["source_type"], data["source"], data["url"])
+            data["id"] = self.generate_id(
+                data["source_type"], data["source"], data["url"]
+            )
 
         # Calculate content hash
         data["content_hash"] = self.calculate_content_hash(

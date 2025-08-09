@@ -58,7 +58,7 @@ def generate_ico(png_files: list, ico_path: str):
         favicon_img = images[0]
         print(f"  No 32x32 found, using {favicon_img.width}x{favicon_img.height}")
     else:
-        print(f"  Using 32x32 for favicon.ico")
+        print("  Using 32x32 for favicon.ico")
 
     # Save as ICO with single size for maximum compatibility
     favicon_img.save(ico_path, format="ICO")

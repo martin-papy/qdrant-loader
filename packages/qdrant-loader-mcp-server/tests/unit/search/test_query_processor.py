@@ -44,9 +44,10 @@ class TestQueryProcessor:
             assert result["source_type"] is None
             assert result["processed"] is True
 
-
     @pytest.mark.asyncio
-    async def test_process_query_with_source_detection(self, query_processor, mock_openai_client):
+    async def test_process_query_with_source_detection(
+        self, query_processor, mock_openai_client
+    ):
         """Test query processing with source type detection."""
         # With spaCy implementation, no need for OpenAI mocking
         result = await query_processor.process_query("show me git commits")
@@ -55,15 +56,23 @@ class TestQueryProcessor:
         # spaCy implementation may return "general" if intent confidence is low
         assert result["intent"] in ["general", "code", "git"]
         # Source type detection should still work based on keywords
-        assert result["source_type"] in ["git", None]  # May detect git or fallback to None
+        assert result["source_type"] in [
+            "git",
+            None,
+        ]  # May detect git or fallback to None
         assert result["processed"] is True
 
-
     @pytest.mark.asyncio
-    async def test_process_query_error_handling(self, query_processor, mock_openai_client):
+    async def test_process_query_error_handling(
+        self, query_processor, mock_openai_client
+    ):
         """Test query processing error handling."""
         # Simulate spaCy inference failure to exercise fallback path
-        with patch.object(query_processor, '_infer_intent_spacy', side_effect=Exception("spaCy failure")):
+        with patch.object(
+            query_processor,
+            "_infer_intent_spacy",
+            side_effect=Exception("spaCy failure"),
+        ):
             result = await query_processor.process_query("test query")
 
             # Should return fallback response
@@ -72,7 +81,6 @@ class TestQueryProcessor:
             assert result["source_type"] is None
             assert result["processed"] is False
             assert result.get("uses_spacy") is False
-
 
     @pytest.mark.asyncio
     async def test_process_query_empty_query(self, query_processor):
@@ -88,12 +96,14 @@ class TestQueryProcessor:
     async def test_process_query_success_with_spacy(self, query_processor):
         """Test successful query processing with spaCy features."""
         with (
-            patch.object(query_processor, '_clean_query', return_value="cleaned query"),
-            patch.object(query_processor, '_infer_intent_spacy', return_value=("search", False)),
-            patch.object(query_processor, '_infer_source_type', return_value="git")
+            patch.object(query_processor, "_clean_query", return_value="cleaned query"),
+            patch.object(
+                query_processor, "_infer_intent_spacy", return_value=("search", False)
+            ),
+            patch.object(query_processor, "_infer_source_type", return_value="git"),
         ):
             result = await query_processor.process_query("test query")
-            
+
             # Verify successful processing
             assert result["query"] == "cleaned query"
             assert result["intent"] == "search"
@@ -119,7 +129,9 @@ class TestQueryProcessor:
     @pytest.mark.asyncio
     async def test_infer_intent_spacy_code_keywords(self, query_processor):
         """Test intent inference for code-related queries."""
-        intent, failed = await query_processor._infer_intent_spacy("function definition")
+        intent, failed = await query_processor._infer_intent_spacy(
+            "function definition"
+        )
         assert intent == "code"
         assert failed is False
 
@@ -133,7 +145,9 @@ class TestQueryProcessor:
     @pytest.mark.asyncio
     async def test_infer_intent_spacy_general_fallback(self, query_processor):
         """Test intent inference fallback to general."""
-        intent, failed = await query_processor._infer_intent_spacy("random unrelated query")
+        intent, failed = await query_processor._infer_intent_spacy(
+            "random unrelated query"
+        )
         assert intent == "general"
         assert failed is False
 
@@ -150,7 +164,7 @@ class TestQueryProcessor:
         """Test source type inference for git-related patterns."""
         source_type = query_processor._infer_source_type("repository commit")
         assert source_type == "git"
-        
+
         source_type = query_processor._infer_source_type("branch code")
         assert source_type == "git"
 
@@ -158,7 +172,7 @@ class TestQueryProcessor:
         """Test source type inference for confluence-related patterns."""
         source_type = query_processor._infer_source_type("wiki page")
         assert source_type == "confluence"
-        
+
         source_type = query_processor._infer_source_type("documentation space")
         assert source_type == "confluence"
 
@@ -166,7 +180,7 @@ class TestQueryProcessor:
         """Test source type inference for jira-related patterns."""
         source_type = query_processor._infer_source_type("ticket issue")
         assert source_type == "jira"
-        
+
         source_type = query_processor._infer_source_type("bug report")
         assert source_type == "jira"
 

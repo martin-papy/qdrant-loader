@@ -1,1 +1,1 @@
-"""Search unit tests package.""" 
+"""Search unit tests package."""

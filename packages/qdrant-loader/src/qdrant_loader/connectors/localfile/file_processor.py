@@ -103,11 +103,11 @@ class LocalFileFileProcessor:
                 for pattern in self.config.file_types:
                     self.logger.debug(f"Checking file type pattern: {pattern}")
                     # Handle patterns that start with a dot (e.g., ".txt")
-                    if pattern.startswith('.'):
+                    if pattern.startswith("."):
                         pattern_ext = pattern.lower()
                     else:
                         pattern_ext = os.path.splitext(pattern)[1].lower()
-                    
+
                     if pattern_ext and file_ext == pattern_ext:
                         file_type_match = True
                         self.logger.debug(

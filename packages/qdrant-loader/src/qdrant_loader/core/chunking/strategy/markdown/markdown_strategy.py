@@ -50,9 +50,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         self.section_splitter = SectionSplitter(settings)
         self.metadata_extractor = MetadataExtractor(settings)
         self.chunk_processor = ChunkProcessor(settings)
-        
+
         # Apply any chunk overlap that was set before components were initialized
-        if hasattr(self, '_chunk_overlap'):
+        if hasattr(self, "_chunk_overlap"):
             self.chunk_overlap = self._chunk_overlap
 
     def chunk_document(self, document: Document) -> list[Document]:
@@ -88,13 +88,15 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 "estimated_chunks": estimated_chunks,
                 "chunk_size": self.settings.global_config.chunking.chunk_size,
                 "max_chunks_allowed": self.settings.global_config.chunking.max_chunks_per_document,
-            }
+            },
         )
 
         try:
             # Split text into semantic chunks using the section splitter
             logger.debug("Splitting document into sections")
-            chunks_metadata = self.section_splitter.split_sections(document.content, document)
+            chunks_metadata = self.section_splitter.split_sections(
+                document.content, document
+            )
 
             if not chunks_metadata:
                 self.progress_tracker.finish_chunking(document.id, 0, "markdown")
@@ -126,21 +128,29 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 # Extract section title
                 section_title = chunk_meta.get("title")
                 if not section_title:
-                    section_title = self.document_parser.extract_section_title(chunk_content)
+                    section_title = self.document_parser.extract_section_title(
+                        chunk_content
+                    )
                 chunk_meta["section_title"] = section_title
 
                 # 🔥 ENHANCED: Use hierarchical metadata extraction
-                enriched_metadata = self.metadata_extractor.extract_hierarchical_metadata(
-                    chunk_content, chunk_meta, document
+                enriched_metadata = (
+                    self.metadata_extractor.extract_hierarchical_metadata(
+                        chunk_content, chunk_meta, document
+                    )
                 )
 
                 # Create chunk document using the chunk processor
                 # 🔥 FIX: Skip NLP for small documents or documents that might cause LDA issues
-                markdown_config = self.settings.global_config.chunking.strategies.markdown
+                markdown_config = (
+                    self.settings.global_config.chunking.strategies.markdown
+                )
                 skip_nlp = (
-                    len(chunk_content) < markdown_config.min_content_length_for_nlp or
-                    len(chunk_content.split()) < markdown_config.min_word_count_for_nlp or
-                    chunk_content.count('\n') < markdown_config.min_line_count_for_nlp
+                    len(chunk_content) < markdown_config.min_content_length_for_nlp
+                    or len(chunk_content.split())
+                    < markdown_config.min_word_count_for_nlp
+                    or chunk_content.count("\n")
+                    < markdown_config.min_line_count_for_nlp
                 )
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,
@@ -204,8 +214,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         # Use the fallback splitter from section splitter
         chunks = self.section_splitter.fallback_splitter.split_content(
-            document.content, 
-            self.settings.global_config.chunking.chunk_size
+            document.content, self.settings.global_config.chunking.chunk_size
         )
 
         # Create chunked documents
@@ -223,24 +232,20 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         return chunked_docs
 
-
-
-
-
     @property
     def chunk_overlap(self):
         """Get chunk overlap setting."""
-        if hasattr(self, 'section_splitter'):
+        if hasattr(self, "section_splitter"):
             return self.section_splitter.standard_splitter.chunk_overlap
-        return getattr(self, '_chunk_overlap', 200)
+        return getattr(self, "_chunk_overlap", 200)
 
     @chunk_overlap.setter
     def chunk_overlap(self, value):
         """Set chunk overlap setting."""
         # Store the value for when components are initialized
         self._chunk_overlap = value
-        
-        if hasattr(self, 'section_splitter'):
+
+        if hasattr(self, "section_splitter"):
             self.section_splitter.standard_splitter.chunk_overlap = value
             self.section_splitter.excel_splitter.chunk_overlap = value
             self.section_splitter.fallback_splitter.chunk_overlap = value
@@ -252,4 +257,4 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
     def __del__(self):
         """Cleanup on deletion."""
-        self.shutdown() 
+        self.shutdown()

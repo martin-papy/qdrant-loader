@@ -314,7 +314,7 @@ class TestQdrantManager:
                 collection_name="test_collection",
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
-            
+
             # Verify all expected payload indexes are created
             expected_index_calls = [
                 # Essential performance indexes
@@ -331,10 +331,12 @@ class TestQdrantManager:
                 ("original_file_type", {"type": "keyword"}),
                 ("is_converted", {"type": "bool"}),
             ]
-            
+
             # Verify create_payload_index was called the correct number of times
-            assert mock_qdrant_client.create_payload_index.call_count == len(expected_index_calls)
-            
+            assert mock_qdrant_client.create_payload_index.call_count == len(
+                expected_index_calls
+            )
+
             # Verify each expected call was made
             actual_calls = mock_qdrant_client.create_payload_index.call_args_list
             for i, (field_name, field_schema) in enumerate(expected_index_calls):
@@ -344,7 +346,9 @@ class TestQdrantManager:
                     "field_schema": field_schema,
                 }
                 actual_call_kwargs = actual_calls[i].kwargs
-                assert actual_call_kwargs == expected_call, f"Call {i+1} mismatch: expected {expected_call}, got {actual_call_kwargs}"
+                assert (
+                    actual_call_kwargs == expected_call
+                ), f"Call {i+1} mismatch: expected {expected_call}, got {actual_call_kwargs}"
 
     def test_create_collection_exists(
         self, mock_settings, mock_qdrant_client, mock_global_config

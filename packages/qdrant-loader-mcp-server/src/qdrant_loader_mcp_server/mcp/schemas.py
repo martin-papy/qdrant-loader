@@ -67,23 +67,29 @@ class MCPSchemas:
                                         "file_path": {"type": "string"},
                                         "project_id": {"type": "string"},
                                         "created_at": {"type": "string"},
-                                        "last_modified": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
+                                        "last_modified": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
                     },
                     "total_found": {"type": "integer"},
                     "query_context": {
                         "type": "object",
                         "properties": {
                             "original_query": {"type": "string"},
-                            "source_types_filtered": {"type": "array", "items": {"type": "string"}},
-                            "project_ids_filtered": {"type": "array", "items": {"type": "string"}}
-                        }
-                    }
-                }
-            }
+                            "source_types_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "project_ids_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -153,22 +159,25 @@ class MCPSchemas:
                                         "space_key": {"type": "string"},
                                         "project_id": {"type": "string"},
                                         "page_id": {"type": "string"},
-                                        "hierarchy_level": {"type": "integer"}
-                                    }
-                                }
-                            }
-                        }
+                                        "hierarchy_level": {"type": "integer"},
+                                    },
+                                },
+                            },
+                        },
                     },
                     "total_found": {"type": "integer"},
                     "hierarchy_organization": {
                         "type": "object",
                         "properties": {
                             "organized_by_hierarchy": {"type": "boolean"},
-                            "hierarchy_groups": {"type": "array", "items": {"type": "object"}}
-                        }
-                    }
-                }
-            }
+                            "hierarchy_groups": {
+                                "type": "array",
+                                "items": {"type": "object"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -244,8 +253,8 @@ class MCPSchemas:
                                         "filename": {"type": "string"},
                                         "file_type": {"type": "string"},
                                         "file_size": {"type": "integer"},
-                                        "parent_document": {"type": "string"}
-                                    }
+                                        "parent_document": {"type": "string"},
+                                    },
                                 },
                                 "metadata": {
                                     "type": "object",
@@ -253,23 +262,26 @@ class MCPSchemas:
                                         "file_path": {"type": "string"},
                                         "project_id": {"type": "string"},
                                         "upload_date": {"type": "string"},
-                                        "author": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
+                                        "author": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
                     },
                     "total_found": {"type": "integer"},
                     "attachment_summary": {
                         "type": "object",
                         "properties": {
                             "total_attachments": {"type": "integer"},
-                            "file_types": {"type": "array", "items": {"type": "string"}},
-                            "attachments_only": {"type": "boolean"}
-                        }
-                    }
-                }
-            }
+                            "file_types": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "attachments_only": {"type": "boolean"},
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -316,14 +328,14 @@ class MCPSchemas:
                                 "document_2": {"type": "string"},
                                 "relationship_type": {"type": "string"},
                                 "score": {"type": "number"},
-                                "description": {"type": "string"}
-                            }
-                        }
+                                "description": {"type": "string"},
+                            },
+                        },
                     },
                     "total_analyzed": {"type": "integer"},
-                    "summary": {"type": "string"}
-                }
-            }
+                    "summary": {"type": "string"},
+                },
+            },
         }
 
     @staticmethod
@@ -348,7 +360,14 @@ class MCPSchemas:
                         "type": "array",
                         "items": {
                             "type": "string",
-                            "enum": ["entity_overlap", "topic_overlap", "semantic_similarity", "metadata_similarity", "hierarchical_distance", "content_features"]
+                            "enum": [
+                                "entity_overlap",
+                                "topic_overlap",
+                                "semantic_similarity",
+                                "metadata_similarity",
+                                "hierarchical_distance",
+                                "content_features",
+                            ],
                         },
                         "description": "Similarity metrics to use",
                     },
@@ -387,21 +406,21 @@ class MCPSchemas:
                                         "entity_overlap": {"type": "number"},
                                         "topic_overlap": {"type": "number"},
                                         "semantic_similarity": {"type": "number"},
-                                        "metadata_similarity": {"type": "number"}
-                                    }
+                                        "metadata_similarity": {"type": "number"},
+                                    },
                                 },
                                 "similarity_reason": {"type": "string"},
-                                "content_preview": {"type": "string"}
-                            }
-                        }
+                                "content_preview": {"type": "string"},
+                            },
+                        },
                     },
                     "target_document": {
                         "type": "object",
                         "properties": {
                             "title": {"type": "string"},
                             "content_preview": {"type": "string"},
-                            "source_type": {"type": "string"}
-                        }
+                            "source_type": {"type": "string"},
+                        },
                     },
                     "similarity_summary": {
                         "type": "object",
@@ -409,11 +428,14 @@ class MCPSchemas:
                             "total_compared": {"type": "integer"},
                             "similar_found": {"type": "integer"},
                             "highest_similarity": {"type": "number"},
-                            "metrics_used": {"type": "array", "items": {"type": "string"}}
-                        }
-                    }
-                }
-            }
+                            "metrics_used": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -462,16 +484,16 @@ class MCPSchemas:
                                     "properties": {
                                         "title": {"type": "string"},
                                         "content_preview": {"type": "string"},
-                                        "source_type": {"type": "string"}
-                                    }
+                                        "source_type": {"type": "string"},
+                                    },
                                 },
                                 "document_2": {
-                                    "type": "object", 
+                                    "type": "object",
                                     "properties": {
                                         "title": {"type": "string"},
                                         "content_preview": {"type": "string"},
-                                        "source_type": {"type": "string"}
-                                    }
+                                        "source_type": {"type": "string"},
+                                    },
                                 },
                                 "conflict_type": {"type": "string"},
                                 "conflict_score": {"type": "number"},
@@ -482,32 +504,35 @@ class MCPSchemas:
                                         "type": "object",
                                         "properties": {
                                             "from_doc1": {"type": "string"},
-                                            "from_doc2": {"type": "string"}
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                                            "from_doc2": {"type": "string"},
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
                     "conflict_summary": {
                         "type": "object",
                         "properties": {
                             "total_documents_analyzed": {"type": "integer"},
                             "conflicts_found": {"type": "integer"},
-                            "conflict_types": {"type": "array", "items": {"type": "string"}},
-                            "highest_conflict_score": {"type": "number"}
-                        }
+                            "conflict_types": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "highest_conflict_score": {"type": "number"},
+                        },
                     },
                     "analysis_metadata": {
                         "type": "object",
                         "properties": {
                             "query_used": {"type": "string"},
                             "analysis_date": {"type": "string"},
-                            "processing_time_ms": {"type": "number"}
-                        }
-                    }
-                }
-            }
+                            "processing_time_ms": {"type": "number"},
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -566,19 +591,19 @@ class MCPSchemas:
                                     "properties": {
                                         "project_id": {"type": "string"},
                                         "created_date": {"type": "string"},
-                                        "author": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
+                                        "author": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
                     },
                     "target_document": {
                         "type": "object",
                         "properties": {
                             "title": {"type": "string"},
                             "content_preview": {"type": "string"},
-                            "source_type": {"type": "string"}
-                        }
+                            "source_type": {"type": "string"},
+                        },
                     },
                     "complementary_summary": {
                         "type": "object",
@@ -586,11 +611,14 @@ class MCPSchemas:
                             "total_analyzed": {"type": "integer"},
                             "complementary_found": {"type": "integer"},
                             "highest_score": {"type": "number"},
-                            "relationship_types": {"type": "array", "items": {"type": "string"}}
-                        }
-                    }
-                }
-            }
+                            "relationship_types": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -609,7 +637,14 @@ class MCPSchemas:
                     },
                     "strategy": {
                         "type": "string",
-                        "enum": ["mixed_features", "entity_based", "topic_based", "project_based", "hierarchical", "adaptive"],
+                        "enum": [
+                            "mixed_features",
+                            "entity_based",
+                            "topic_based",
+                            "project_based",
+                            "hierarchical",
+                            "adaptive",
+                        ],
                         "description": "Clustering strategy to use (adaptive automatically selects the best strategy)",
                         "default": "mixed_features",
                     },
@@ -663,14 +698,17 @@ class MCPSchemas:
                                             "title": {"type": "string"},
                                             "content_preview": {"type": "string"},
                                             "source_type": {"type": "string"},
-                                            "cluster_relevance": {"type": "number"}
-                                        }
-                                    }
+                                            "cluster_relevance": {"type": "number"},
+                                        },
+                                    },
                                 },
-                                "cluster_keywords": {"type": "array", "items": {"type": "string"}},
-                                "cluster_summary": {"type": "string"}
-                            }
-                        }
+                                "cluster_keywords": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "cluster_summary": {"type": "string"},
+                            },
+                        },
                     },
                     "clustering_metadata": {
                         "type": "object",
@@ -680,8 +718,8 @@ class MCPSchemas:
                             "strategy": {"type": "string"},
                             "unclustered_documents": {"type": "integer"},
                             "clustering_quality": {"type": "number"},
-                            "processing_time_ms": {"type": "number"}
-                        }
+                            "processing_time_ms": {"type": "number"},
+                        },
                     },
                     "cluster_relationships": {
                         "type": "array",
@@ -691,12 +729,12 @@ class MCPSchemas:
                                 "cluster_1": {"type": "string"},
                                 "cluster_2": {"type": "string"},
                                 "relationship_type": {"type": "string"},
-                                "relationship_strength": {"type": "number"}
-                            }
-                        }
-                    }
-                }
-            }
+                                "relationship_strength": {"type": "number"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -727,7 +765,7 @@ class MCPSchemas:
                         "type": "boolean",
                         "description": "Include detailed metadata for each document (default: true)",
                         "default": True,
-                    }
+                    },
                 },
                 "required": ["cluster_id"],
             },
@@ -736,22 +774,22 @@ class MCPSchemas:
                 "properties": {
                     "cluster_id": {
                         "type": "string",
-                        "description": "The expanded cluster ID"
+                        "description": "The expanded cluster ID",
                     },
                     "cluster_info": {
                         "type": "object",
-                        "description": "Detailed cluster information"
+                        "description": "Detailed cluster information",
                     },
                     "documents": {
                         "type": "array",
-                        "description": "Full list of documents in the cluster"
+                        "description": "Full list of documents in the cluster",
                     },
                     "pagination": {
                         "type": "object",
-                        "description": "Pagination information"
-                    }
-                }
-            }
+                        "description": "Pagination information",
+                    },
+                },
+            },
         }
 
     @staticmethod
@@ -774,15 +812,15 @@ class MCPSchemas:
                         "default": True,
                     },
                     "include_hierarchy": {
-                        "type": "boolean", 
+                        "type": "boolean",
                         "description": "Include hierarchy information for Confluence documents (default: true)",
                         "default": True,
                     },
                     "include_attachments": {
                         "type": "boolean",
-                        "description": "Include attachment information if available (default: true)", 
+                        "description": "Include attachment information if available (default: true)",
                         "default": True,
-                    }
+                    },
                 },
                 "required": ["document_id"],
             },
@@ -804,23 +842,29 @@ class MCPSchemas:
                                         "file_path": {"type": "string"},
                                         "project_id": {"type": "string"},
                                         "created_at": {"type": "string"},
-                                        "last_modified": {"type": "string"}
-                                    }
-                                }
-                            }
-                        }
+                                        "last_modified": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
                     },
                     "total_found": {"type": "integer"},
                     "query_context": {
                         "type": "object",
                         "properties": {
                             "original_query": {"type": "string"},
-                            "source_types_filtered": {"type": "array", "items": {"type": "string"}},
-                            "project_ids_filtered": {"type": "array", "items": {"type": "string"}}
-                        }
-                    }
-                }
-            }
+                            "source_types_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "project_ids_filtered": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
+            },
         }
 
     @classmethod
@@ -836,5 +880,5 @@ class MCPSchemas:
             cls.get_find_complementary_tool_schema(),
             cls.get_cluster_documents_tool_schema(),
             cls.get_expand_document_tool_schema(),  # ✅ Add expand_document tool
-            cls.get_expand_cluster_tool_schema(),   # ✅ Add expand_cluster tool
-        ] 
+            cls.get_expand_cluster_tool_schema(),  # ✅ Add expand_cluster tool
+        ]

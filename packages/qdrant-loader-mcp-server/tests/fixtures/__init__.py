@@ -1,1 +1,1 @@
-"""Test fixtures package.""" 
+"""Test fixtures package."""

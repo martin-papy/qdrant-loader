@@ -131,9 +131,7 @@ class AttachmentDownloader:
         # In the future, this could be configurable by file type
         return True
 
-    async def download_attachment(
-        self, attachment: AttachmentMetadata
-    ) -> str | None:
+    async def download_attachment(self, attachment: AttachmentMetadata) -> str | None:
         """Download an attachment to a temporary file.
 
         Args:

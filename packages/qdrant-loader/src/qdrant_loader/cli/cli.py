@@ -613,7 +613,7 @@ async def ingest(
                 error=error_msg,
                 error_type=type(e).__name__,
                 suggestion="Check data sources, configuration, and system resources. Run 'qdrant-loader project validate' to verify setup",
-                exc_info=True
+                exc_info=True,
             )
             raise ClickException(f"Failed to run ingestion: {error_msg}") from e
         finally:
@@ -627,7 +627,7 @@ async def ingest(
         LoggingConfig.get_logger(__name__).error(
             "Command-line operation failed",
             error=str(e),
-            suggestion="Check command syntax and parameters"
+            suggestion="Check command syntax and parameters",
         )
         raise e from None
     except Exception as e:
@@ -639,7 +639,7 @@ async def ingest(
             error=error_msg,
             error_type=type(e).__name__,
             suggestion="Check logs above for specific error details and verify system configuration",
-            exc_info=True
+            exc_info=True,
         )
         raise ClickException(f"Failed to run ingestion: {error_msg}") from e
 
