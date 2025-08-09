@@ -544,11 +544,11 @@ class SearchHandler:
 
             # Size filters with null checks
             _file_size = getattr(result, "file_size", None)
-            if attachment_filter.get("file_size_min") and _file_size is not None:
+            if "file_size_min" in attachment_filter and _file_size is not None:
                 if _file_size < attachment_filter["file_size_min"]:
                     continue
 
-            if attachment_filter.get("file_size_max") and _file_size is not None:
+            if "file_size_max" in attachment_filter and _file_size is not None:
                 if _file_size > attachment_filter["file_size_max"]:
                     continue
 

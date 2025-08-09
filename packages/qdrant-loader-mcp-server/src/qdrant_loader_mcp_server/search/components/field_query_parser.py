@@ -189,13 +189,22 @@ class FieldQueryParser:
                     f"Added filter condition: {payload_key} = {match_value}"
                 )
 
-        # Add project ID filters if provided
-        if project_ids:
+        # Add project ID filters if provided and not already specified in field queries
+        has_project_id_field_query = (
+            any(fq.field_name == "project_id" for fq in field_queries)
+            if field_queries
+            else False
+        )
+        if project_ids and not has_project_id_field_query:
             project_condition = models.FieldCondition(
                 key="project_id", match=models.MatchAny(any=project_ids)
             )
             must_conditions.append(project_condition)
             self.logger.debug(f"Added project filter: {project_ids}")
+        elif project_ids and has_project_id_field_query:
+            self.logger.debug(
+                "Skipping project filter because a project_id field query is present"
+            )
 
         # Return filter if we have conditions
         if must_conditions:
