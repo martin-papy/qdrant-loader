@@ -486,16 +486,18 @@ class SearchHandler:
                     continue
 
             # Apply file size filter
+            _min_size = attachment_filter.get("file_size_min")
             if (
-                "file_size_min" in attachment_filter
+                _min_size is not None
                 and result.file_size is not None
-                and result.file_size < attachment_filter["file_size_min"]
+                and result.file_size < _min_size
             ):
                 continue
+            _max_size = attachment_filter.get("file_size_max")
             if (
-                "file_size_max" in attachment_filter
+                _max_size is not None
                 and result.file_size is not None
-                and result.file_size > attachment_filter["file_size_max"]
+                and result.file_size > _max_size
             ):
                 continue
 
@@ -542,14 +544,20 @@ class SearchHandler:
                 if file_type != attachment_filter["file_type"]:
                     continue
 
-            # Size filters with null checks
+            # Size filters with null checks (include zero-byte files)
             _file_size = getattr(result, "file_size", None)
-            if "file_size_min" in attachment_filter and _file_size is not None:
-                if _file_size < attachment_filter["file_size_min"]:
+            if (
+                attachment_filter.get("file_size_min") is not None
+                and _file_size is not None
+                and _file_size < attachment_filter["file_size_min"]
+            ):
                     continue
 
-            if "file_size_max" in attachment_filter and _file_size is not None:
-                if _file_size > attachment_filter["file_size_max"]:
+            if (
+                attachment_filter.get("file_size_max") is not None
+                and _file_size is not None
+                and _file_size > attachment_filter["file_size_max"]
+            ):
                     continue
 
             # Parent document filter (works across source types)
