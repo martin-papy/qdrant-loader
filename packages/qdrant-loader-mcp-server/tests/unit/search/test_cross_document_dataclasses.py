@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import networkx as nx
+from unittest.mock import patch
 
 from qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence import (
     DocumentSimilarity,
@@ -329,20 +330,14 @@ class TestCitationNetwork:
             edges=[("doc1", "doc1", {})]
         )
         
-        # Mock the networkx functions to raise an exception
-        original_hits = nx.hits
-        original_pagerank = nx.pagerank
-        
-        def mock_hits(*args, **kwargs):
-            raise ValueError("Test error")
-            
-        def mock_pagerank(*args, **kwargs):
-            raise ValueError("Test error")
-        
-        try:
-            nx.hits = mock_hits
-            nx.pagerank = mock_pagerank
-            
+        # Mock the networkx functions to raise an exception using context managers
+        with patch(
+            "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.hits",
+            side_effect=ValueError("Test error"),
+        ), patch(
+            "qdrant_loader_mcp_server.search.enhanced.cross_document_intelligence.nx.pagerank",
+            side_effect=ValueError("Test error"),
+        ):
             network.calculate_centrality_scores()
             
             # Should fall back to degree centrality
@@ -353,10 +348,6 @@ class TestCitationNetwork:
             assert network.authority_scores["doc1"] >= 0.0
             assert network.hub_scores["doc1"] >= 0.0
             assert network.pagerank_scores["doc1"] >= 0.0
-            
-        finally:
-            nx.hits = original_hits
-            nx.pagerank = original_pagerank
 
 
 class TestComplementaryContent:
