@@ -48,8 +48,8 @@ class QueryProcessor:
             # 🔥 Use spaCy for fast, local intent inference
             intent, inference_failed = await self._infer_intent_spacy(cleaned_query)
 
-            # Extract source type if present (use compat shim so tests can patch)
-            source_type = self._infer_source_type(cleaned_query, intent)
+            # Extract source type if present (use explicit extractor here; keep compat shim for tests)
+            source_type = self._extract_source_type(cleaned_query, intent)
 
             return {
                 "query": cleaned_query,
@@ -208,6 +208,9 @@ class QueryProcessor:
         elif intent == "issue" or "issue" in query_lower:
             # Issue-related queries target jira
             return "jira"
+        elif any(word in query_lower for word in ["local files", "local file", "local files", "localfile"]):
+            # Explicit local files phrasing
+            return "localfile"
 
         # Return None to search across all source types
         return None
