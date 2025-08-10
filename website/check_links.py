@@ -14,7 +14,7 @@ import requests
 
 
 class LinkChecker:
-    def __init__(self, base_url="http://localhost:8000", max_depth=3):
+    def __init__(self, base_url="http://127.0.0.1:3000/website/site/", max_depth=3):
         self.base_url = base_url.rstrip("/")
         self.max_depth = max_depth
         self.visited_urls = set()
@@ -178,7 +178,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Check website for broken links")
     parser.add_argument(
-        "--url", default="http://localhost:8000", help="Base URL to check"
+        "--url", default="http://127.0.0.1:3000/website/site", help="Base URL to check"
     )
     parser.add_argument("--depth", type=int, default=3, help="Maximum crawl depth")
     parser.add_argument(
