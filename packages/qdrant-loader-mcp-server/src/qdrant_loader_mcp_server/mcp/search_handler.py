@@ -367,11 +367,10 @@ class SearchHandler:
             # Apply depth filter - use folder depth for localfiles
             if "depth" in hierarchy_filter:
                 # For localfiles, calculate depth from file_path folder structure
-                if result.source_type == "localfile" and getattr(
-                    result, "file_path", None
-                ):
+                file_path_val = getattr(result, "file_path", None)
+                if result.source_type == "localfile" and file_path_val:
                     # Depth = number of folders before filename
-                    path_parts = [p for p in result.file_path.split("/") if p]
+                    path_parts = [p for p in file_path_val.split("/") if p]
                     # Depth definition: number of folders before filename minus 1
                     folder_depth = max(0, len(path_parts) - 2)
                     if folder_depth != hierarchy_filter["depth"]:
@@ -384,23 +383,24 @@ class SearchHandler:
 
             # Apply parent title filter - for localfiles use parent folder
             if "parent_title" in hierarchy_filter:
-                if result.source_type == "localfile" and result.file_path:
+                file_path_val = getattr(result, "file_path", None)
+                if result.source_type == "localfile" and file_path_val:
                     # Get parent folder name
-                    path_parts = [p for p in result.file_path.split("/") if p]
+                    path_parts = [p for p in file_path_val.split("/") if p]
                     parent_folder = path_parts[-2] if len(path_parts) > 1 else ""
                     if parent_folder != hierarchy_filter["parent_title"]:
                         continue
-                elif (
-                    hasattr(result, "parent_title")
-                    and result.parent_title != hierarchy_filter["parent_title"]
-                ):
-                    continue
+                else:
+                    parent_title_val = getattr(result, "parent_title", None)
+                    if parent_title_val is not None and parent_title_val != hierarchy_filter["parent_title"]:
+                        continue
 
             # Apply root only filter
             if hierarchy_filter.get("root_only", False):
                 # For localfiles, check if it's in the root folder
-                if result.source_type == "localfile" and result.file_path:
-                    path_parts = [p for p in result.file_path.split("/") if p]
+                file_path_val = getattr(result, "file_path", None)
+                if result.source_type == "localfile" and file_path_val:
+                    path_parts = [p for p in file_path_val.split("/") if p]
                     is_root = len(path_parts) <= 2  # Root folder + filename
                     if not is_root:
                         continue
@@ -424,9 +424,10 @@ class SearchHandler:
 
         for result in results:
             # Group by root ancestor or use the document title if it's a root
-            if result.source_type == "localfile" and result.file_path:
+            file_path_val = getattr(result, "file_path", None)
+            if result.source_type == "localfile" and file_path_val:
                 # For localfiles, use top-level folder as root
-                path_parts = [p for p in result.file_path.split("/") if p]
+                path_parts = [p for p in file_path_val.split("/") if p]
                 root_title = path_parts[0] if path_parts else "Root"
             elif result.breadcrumb_text:
                 # Extract the root from breadcrumb
@@ -446,8 +447,9 @@ class SearchHandler:
 
             def sort_key(x):
                 # Calculate depth for localfiles from folder structure
-                if x.source_type == "localfile" and x.file_path:
-                    folder_depth = len([p for p in x.file_path.split("/") if p]) - 1
+                x_file_path = getattr(x, "file_path", None)
+                if x.source_type == "localfile" and x_file_path:
+                    folder_depth = len([p for p in x_file_path.split("/") if p]) - 1
                     return (folder_depth, x.source_title)
                 else:
                     return (x.depth or 0, x.source_title)

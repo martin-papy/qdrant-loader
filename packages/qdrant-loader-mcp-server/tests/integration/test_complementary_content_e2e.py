@@ -694,12 +694,13 @@ class TestComplementaryContentE2E:
                 analyzed_count == 3
             )  # Should match the 3 context documents we provided
 
-            # Validate recommendations structure
+            # Validate recommendations structure (JSON-safe engine output)
             assert isinstance(recommendations, list)
             for rec in recommendations:
-                assert "document" in rec
+                assert "document_id" in rec
+                assert "title" in rec
                 assert "relevance_score" in rec
-                assert "recommendation_reason" in rec
+                assert "reason" in rec
                 assert "strategy" in rec
 
             target_title = (

@@ -881,7 +881,11 @@ async def test_find_complementary_content_success(
         assert "target_document" in result
         assert "context_documents_analyzed" in result
 
-        assert result["complementary_recommendations"] == mock_complementary
+        # Engine now returns JSON-safe recommendation dicts; ensure non-empty and keys exist
+        recs = result["complementary_recommendations"]
+        assert isinstance(recs, list) and len(recs) == len(mock_complementary)
+        for r in recs:
+            assert set(["document_id", "title", "relevance_score", "reason", "strategy"]) <= set(r.keys())
         # target_document is now a lightweight dict
         assert isinstance(result["target_document"], dict)
         assert result["target_document"].get("document_id") == sample_search_results[0].document_id

@@ -23,35 +23,47 @@ class IntelligenceHandler:
         self.protocol = protocol
         self.formatters = MCPFormatters()
 
-    def _get_or_create_document_id(self, doc: dict[str, Any]) -> str:
+    def _get_or_create_document_id(self, doc: Any) -> str:
         """Return a stable, collision-resistant document id.
+
+        Supports both dict-like and object-like inputs (e.g., HybridSearchResult).
 
         Preference order:
         1) Existing `document_id`
-        2) Fallback composed of `source_type` + `source_title` + short content hash
+        2) Fallback composed of sanitized `source_type` + sanitized `source_title` + short content hash
 
-        The hash is computed from a subset of stable attributes to minimize collisions
-        while remaining deterministic across calls.
+        The hash is computed deterministically from a subset of stable attributes.
         """
+        # Helper to access fields on dict or object safely
+        def get_field(obj: Any, key: str, default: Any = None) -> Any:
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
         # Prefer explicit id if present and non-empty
-        explicit_id = doc.get("document_id")
+        explicit_id = get_field(doc, "document_id", None)
         if explicit_id:
             return explicit_id
 
-        source_type = doc.get("source_type", "unknown")
-        source_title = doc.get("source_title", "unknown")
+        # Extract core fields with sensible defaults
+        raw_source_type = get_field(doc, "source_type", "unknown")
+        raw_source_title = get_field(doc, "source_title", "unknown")
 
-        # Include commonly available distinguishing attributes
+        # Sanitize to avoid ambiguity with colon-separated ID format
+        source_type = str(raw_source_type or "unknown").replace(":", "-")
+        source_title = str(raw_source_title or "unknown").replace(":", "-")
+
+        # Collect commonly available distinguishing attributes
         candidate_fields = {
-            "title": doc.get("title"),
+            "title": get_field(doc, "title", None),
             "source_type": source_type,
             "source_title": source_title,
-            "source_url": doc.get("source_url"),
-            "file_path": doc.get("file_path"),
-            "repo_name": doc.get("repo_name"),
-            "parent_id": doc.get("parent_id"),
-            "original_filename": doc.get("original_filename"),
-            "id": doc.get("id"),
+            "source_url": get_field(doc, "source_url", None),
+            "file_path": get_field(doc, "file_path", None),
+            "repo_name": get_field(doc, "repo_name", None),
+            "parent_id": get_field(doc, "parent_id", None),
+            "original_filename": get_field(doc, "original_filename", None),
+            "id": get_field(doc, "id", None),
         }
 
         # Deterministic JSON for hashing
@@ -60,13 +72,9 @@ class IntelligenceHandler:
             sort_keys=True,
             ensure_ascii=False,
         )
-        # Use SHA-256 for improved collision resistance (keep short for readability)
         short_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:10]
 
-        # Sanitize title to avoid ambiguity with colon-separated ID format
-        safe_title = str(source_title).replace(":", "-")
-
-        return f"{source_type}:{safe_title}:{short_hash}"
+        return f"{source_type}:{source_title}:{short_hash}"
 
     async def handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
@@ -163,17 +171,9 @@ class IntelligenceHandler:
                             if emitted_pairs >= max_pairs:
                                 break
 
-                            # Extract document IDs for lazy loading (with collision-resistant fallback)
-                            doc1_id = (
-                                self._get_or_create_document_id(doc1)
-                                if isinstance(doc1, dict)
-                                else str(doc1)
-                            )
-                            doc2_id = (
-                                self._get_or_create_document_id(doc2)
-                                if isinstance(doc2, dict)
-                                else str(doc2)
-                            )
+                            # Extract stable document IDs using unified helper for any input type
+                            doc1_id = self._get_or_create_document_id(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2)
 
                             # Extract titles for preview (truncated)
                             if isinstance(doc1, dict):
@@ -221,27 +221,17 @@ class IntelligenceHandler:
                             doc1, doc2 = conflict[0], conflict[1]
                             conflict_info = conflict[2] if len(conflict) > 2 else {}
 
-                            # Extract document IDs if available (with safe fallback for dicts)
-                            doc1_id = (
-                                self._get_or_create_document_id(doc1)
-                                if isinstance(doc1, dict)
-                                else str(doc1)
-                            )
-                            doc2_id = (
-                                self._get_or_create_document_id(doc2)
-                                if isinstance(doc2, dict)
-                                else str(doc2)
-                            )
-                            doc1_title = (
-                                doc1.get("title", str(doc1))[:100]
-                                if isinstance(doc1, dict)
-                                else str(doc1)[:100]
-                            )
-                            doc2_title = (
-                                doc2.get("title", str(doc2))[:100]
-                                if isinstance(doc2, dict)
-                                else str(doc2)[:100]
-                            )
+                            # Extract stable document IDs using unified helper for any input type
+                            doc1_id = self._get_or_create_document_id(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2)
+                            # Extract titles for preview (prefer title/source_title attributes)
+                            def _display_title(d: Any) -> str:
+                                if isinstance(d, dict):
+                                    return (d.get("title") or d.get("source_title") or str(d))[:100]
+                                return (getattr(d, "source_title", None) or getattr(d, "title", None) or str(d))[:100]
+
+                            doc1_title = _display_title(doc1)
+                            doc2_title = _display_title(doc2)
 
                             relationships.append(
                                 {

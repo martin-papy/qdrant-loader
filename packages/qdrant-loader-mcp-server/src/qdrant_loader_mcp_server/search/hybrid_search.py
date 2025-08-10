@@ -1340,23 +1340,15 @@ class HybridSearchEngine:
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
-        """Backward compatibility: Delegate to result combiner."""
-        # Sync min_score for consistent scoring behavior
-        original_min_score = self.result_combiner.min_score
-        self.result_combiner.min_score = self.min_score
-
-        try:
-            return await self.result_combiner.combine_results(
-                vector_results,
-                keyword_results,
-                query_context,
-                limit,
-                source_types,
-                project_ids,
-            )
-        finally:
-            # Restore original min_score
-            self.result_combiner.min_score = original_min_score
+        """Backward compatibility: Delegate to result combiner without overriding adaptive min_score."""
+        return await self.result_combiner.combine_results(
+            vector_results,
+            keyword_results,
+            query_context,
+            limit,
+            source_types,
+            project_ids,
+        )
 
     def _extract_metadata_info(self, metadata: dict) -> dict:
         """Backward compatibility: Delegate to metadata extractor."""

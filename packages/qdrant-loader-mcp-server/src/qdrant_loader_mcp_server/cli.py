@@ -137,10 +137,9 @@ async def start_http_server(
             server.should_exit = True
             # Also trigger the shutdown procedure
             if hasattr(server, "force_exit"):
-                # Give it a moment to shutdown gracefully
+                # Give it a moment to shutdown gracefully, then force exit
                 await asyncio.sleep(0.5)
-                if not server.should_exit:
-                    server.force_exit = True
+                server.force_exit = True
 
         # Start shutdown monitor task
         monitor_task = asyncio.create_task(shutdown_monitor())
@@ -454,7 +453,8 @@ def cli(
         if loop:
             try:
                 # Cancel all remaining tasks
-                pending = asyncio.all_tasks(loop)
+                asyncio.set_event_loop(loop)
+                pending = asyncio.all_tasks()
                 for task in pending:
                     task.cancel()
 
