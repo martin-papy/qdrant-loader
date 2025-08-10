@@ -827,7 +827,9 @@ class SearchEngine:
                 min_cluster_size=min_cluster_size,
             )
 
-            # Add query metadata
+            # Add query metadata (ensure key exists and is a dict)
+            if not isinstance(cluster_results.get("clustering_metadata"), dict):
+                cluster_results["clustering_metadata"] = {}
             cluster_results["clustering_metadata"].update(
                 {
                     "original_query": query,

@@ -6,6 +6,7 @@ import logging
 import os
 import signal
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -133,13 +134,58 @@ async def start_http_server(
         async def shutdown_monitor():
             await shutdown_event.wait()
             logger.info("Shutdown signal received, stopping HTTP server...")
+
             # Signal uvicorn to stop gracefully
             server.should_exit = True
-            # Also trigger the shutdown procedure
+
+            # Graceful drain logic: wait for in-flight requests to finish before forcing exit
+            # Configurable timeouts via environment variables
+            drain_timeout = float(os.getenv("MCP_HTTP_DRAIN_TIMEOUT_SECONDS", "10.0"))
+            max_shutdown_timeout = float(
+                os.getenv("MCP_HTTP_SHUTDOWN_TIMEOUT_SECONDS", "30.0")
+            )
+
+            start_ts = time.monotonic()
+
+            # 1) Prioritize draining non-streaming requests quickly
+            drained_non_stream = False
+            try:
+                while time.monotonic() - start_ts < drain_timeout:
+                    if not http_handler.has_inflight_non_streaming():
+                        drained_non_stream = True
+                        logger.info("Non-streaming requests drained; continuing shutdown")
+                        break
+                    await asyncio.sleep(0.1)
+            except Exception:
+                # On any error during drain check, fall through to timeout-based force
+                pass
+
+            if not drained_non_stream:
+                logger.warning(
+                    f"Non-streaming requests still in flight after {drain_timeout}s; proceeding with shutdown"
+                )
+
+            # 2) Allow additional time (up to max_shutdown_timeout total) for all requests to complete
+            total_deadline = start_ts + max_shutdown_timeout
+            try:
+                while time.monotonic() < total_deadline:
+                    counts = http_handler.get_inflight_request_counts()
+                    if counts.get("total", 0) == 0:
+                        logger.info("All in-flight requests drained; completing shutdown without force")
+                        break
+                    await asyncio.sleep(0.2)
+            except Exception:
+                pass
+
+            # 3) If still not finished after the max timeout, force the server to exit
             if hasattr(server, "force_exit"):
-                # Give it a moment to shutdown gracefully, then force exit
-                await asyncio.sleep(0.5)
-                server.force_exit = True
+                if time.monotonic() >= total_deadline:
+                    logger.warning(
+                        f"Forcing server exit after {max_shutdown_timeout}s shutdown timeout"
+                    )
+                    server.force_exit = True
+                else:
+                    logger.debug("Server drained gracefully; force_exit not required")
 
         # Start shutdown monitor task
         monitor_task = asyncio.create_task(shutdown_monitor())

@@ -34,6 +34,10 @@ class HTTPTransportHandler:
             version="1.0.0",
         )
         self.sessions: dict[str, dict[str, Any]] = {}
+        # Track in-flight requests to support graceful shutdown
+        self._inflight_requests: int = 0
+        self._inflight_non_stream_requests: int = 0
+        self._counter_lock = asyncio.Lock()
         self._setup_middleware()
         self._setup_routes()
         logger.info(f"HTTP transport handler initialized on {host}:{port}")
@@ -48,6 +52,31 @@ class HTTPTransportHandler:
             allow_methods=["GET", "POST", "OPTIONS"],
             allow_headers=["*"],
         )
+
+        @self.app.middleware("http")
+        async def _track_inflight_requests(request: Request, call_next):
+            """Track in-flight requests to enable graceful shutdown.
+
+            We treat GET /mcp as a streaming (SSE) request and track it separately so
+            shutdown logic can prioritize draining non-streaming requests first.
+            """
+            is_stream = request.method.upper() == "GET" and request.url.path == "/mcp"
+            async with self._counter_lock:
+                self._inflight_requests += 1
+                if not is_stream:
+                    self._inflight_non_stream_requests += 1
+
+            try:
+                response = await call_next(request)
+                return response
+            finally:
+                async with self._counter_lock:
+                    # Guard against going below zero in unexpected edge cases
+                    self._inflight_requests = max(0, self._inflight_requests - 1)
+                    if not is_stream:
+                        self._inflight_non_stream_requests = max(
+                            0, self._inflight_non_stream_requests - 1
+                        )
 
     def _setup_routes(self):
         """Setup FastAPI routes for MCP endpoints."""
@@ -195,6 +224,21 @@ class HTTPTransportHandler:
                 "X-Accel-Buffering": "no",  # Disable nginx buffering
             },
         )
+
+    def get_inflight_request_counts(self) -> dict[str, int]:
+        """Return current in-flight request counters.
+
+        - total: All requests currently being processed
+        - non_streaming: Requests that are not long-lived streams (e.g., SSE)
+        """
+        return {
+            "total": self._inflight_requests,
+            "non_streaming": self._inflight_non_stream_requests,
+        }
+
+    def has_inflight_non_streaming(self) -> bool:
+        """Whether there are non-streaming in-flight requests."""
+        return self._inflight_non_stream_requests > 0
 
     def _validate_origin(self, origin: str | None) -> bool:
         """Validate Origin header to prevent DNS rebinding attacks.
