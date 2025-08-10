@@ -1,0 +1,20 @@
+<section class="py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h1 class="display-4 fw-bold text-primary">Page Not Found</h1>
+        <p class="lead text-muted">The page you're looking for doesn't exist. Try the search below or go back to the documentation.</p>
+        <div class="my-4">
+          <button class="btn btn-primary" onclick="(function(){ document.dispatchEvent(new KeyboardEvent('keydown', {key: '/', bubbles: true})); })()">
+            <i class="bi bi-search me-2"></i>Search Docs
+          </button>
+          <a class="btn btn-outline-primary" href="{{ base_url }}docs/">
+            <i class="bi bi-book me-2"></i>Documentation
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+
