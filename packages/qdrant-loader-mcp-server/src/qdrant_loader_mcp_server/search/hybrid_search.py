@@ -1341,6 +1341,9 @@ class HybridSearchEngine:
         project_ids: list[str] | None = None,
     ) -> list[HybridSearchResult]:
         """Backward compatibility: Delegate to result combiner without overriding adaptive min_score."""
+        # Ensure combiner uses current engine min_score unless combiner already set to lower value explicitly
+        if self.result_combiner.min_score is None or self.result_combiner.min_score > self.min_score:
+            self.result_combiner.min_score = self.min_score
         return await self.result_combiner.combine_results(
             vector_results,
             keyword_results,

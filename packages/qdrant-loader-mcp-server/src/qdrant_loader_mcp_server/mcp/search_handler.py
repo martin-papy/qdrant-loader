@@ -383,16 +383,22 @@ class SearchHandler:
 
             # Apply parent title filter - for localfiles use parent folder
             if "parent_title" in hierarchy_filter:
-                file_path_val = getattr(result, "file_path", None)
-                if result.source_type == "localfile" and file_path_val:
-                    # Get parent folder name
-                    path_parts = [p for p in file_path_val.split("/") if p]
-                    parent_folder = path_parts[-2] if len(path_parts) > 1 else ""
-                    if parent_folder != hierarchy_filter["parent_title"]:
+                expected_parent = hierarchy_filter["parent_title"]
+                if result.source_type == "localfile":
+                    # For localfiles use folder structure only if path available
+                    file_path_val = getattr(result, "file_path", None)
+                    if file_path_val:
+                        path_parts = [p for p in file_path_val.split("/") if p]
+                        parent_folder = path_parts[-2] if len(path_parts) > 1 else ""
+                        if parent_folder != expected_parent:
+                            continue
+                    else:
+                        # Without a path we cannot assert parent folder match; skip
                         continue
                 else:
+                    # For non-localfile, use explicit parent_title attr only
                     parent_title_val = getattr(result, "parent_title", None)
-                    if parent_title_val is not None and parent_title_val != hierarchy_filter["parent_title"]:
+                    if parent_title_val != expected_parent:
                         continue
 
             # Apply root only filter

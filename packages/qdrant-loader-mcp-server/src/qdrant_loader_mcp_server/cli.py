@@ -452,16 +452,15 @@ def cli(
     finally:
         if loop:
             try:
-                # Cancel all remaining tasks
-                asyncio.set_event_loop(loop)
-                pending = asyncio.all_tasks()
-                for task in pending:
-                    task.cancel()
+                # Cancel all remaining tasks within the loop context without resetting event loop again
+                async def _cancel_and_gather_pending():
+                    pending_tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+                    for t in pending_tasks:
+                        t.cancel()
+                    if pending_tasks:
+                        await asyncio.gather(*pending_tasks, return_exceptions=True)
 
-                # Run the loop until all tasks are done
-                loop.run_until_complete(
-                    asyncio.gather(*pending, return_exceptions=True)
-                )
+                loop.run_until_complete(_cancel_and_gather_pending())
             except Exception:
                 logger = LoggingConfig.get_logger(__name__)
                 logger.error("Error during final cleanup", exc_info=True)
