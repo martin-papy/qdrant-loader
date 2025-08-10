@@ -66,8 +66,6 @@ class HybridSearchEngine:
             keyword_weight: Weight for keyword search scores (0-1)
             metadata_weight: Weight for metadata-based scoring (0-1)
             min_score: Minimum combined score threshold
-            dense_vector_name: Name of the dense vector field
-            sparse_vector_name: Name of the sparse vector field
             alpha: Weight for dense search (1-alpha for sparse search)
             knowledge_graph: Optional knowledge graph for integration
             enable_intent_adaptation: Enable intent-aware adaptive search
@@ -80,8 +78,6 @@ class HybridSearchEngine:
         self.keyword_weight = keyword_weight
         self.metadata_weight = metadata_weight
         self.min_score = min_score
-        self.dense_vector_name = "dense"
-        self.sparse_vector_name = "sparse"
         self.logger = LoggingConfig.get_logger(__name__)
 
         # Initialize spaCy query analyzer
@@ -1047,17 +1043,18 @@ class HybridSearchEngine:
         self, cluster_a, cluster_b, doc_lookup: dict
     ) -> dict[str, Any] | None:
         """Analyze the relationship between two clusters."""
-        # Get cluster documents
-        docs_a = [
-            doc_lookup.get(doc_id)
-            for doc_id in cluster_a.documents
-            if doc_id in doc_lookup
-        ]
-        docs_b = [
-            doc_lookup.get(doc_id)
-            for doc_id in cluster_b.documents
-            if doc_id in doc_lookup
-        ]
+        # Get cluster documents using robust lookup helper
+        docs_a = []
+        for doc_id in cluster_a.documents:
+            doc = self._find_document_by_id(doc_id, doc_lookup)
+            if doc:
+                docs_a.append(doc)
+
+        docs_b = []
+        for doc_id in cluster_b.documents:
+            doc = self._find_document_by_id(doc_id, doc_lookup)
+            if doc:
+                docs_b.append(doc)
 
         if not docs_a or not docs_b:
             return None

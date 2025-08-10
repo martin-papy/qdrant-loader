@@ -559,14 +559,14 @@ class SearchHandler:
                 and _file_size is not None
                 and _file_size < attachment_filter["file_size_min"]
             ):
-                    continue
+                continue
 
             if (
                 attachment_filter.get("file_size_max") is not None
                 and _file_size is not None
                 and _file_size > attachment_filter["file_size_max"]
             ):
-                    continue
+                continue
 
             # Parent document filter (works across source types)
             if attachment_filter.get("parent_document_title"):
