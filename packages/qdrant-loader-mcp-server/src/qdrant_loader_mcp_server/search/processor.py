@@ -49,7 +49,7 @@ class QueryProcessor:
             intent, inference_failed = await self._infer_intent_spacy(cleaned_query)
 
             # Extract source type if present (use compat shim so tests can patch)
-            source_type = self._infer_source_type(cleaned_query)
+            source_type = self._infer_source_type(cleaned_query, intent)
 
             return {
                 "query": cleaned_query,

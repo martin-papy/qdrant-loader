@@ -682,11 +682,12 @@ class TestComplementaryContentE2E:
 
             # Validate target document is captured correctly
             assert target_document is not None
-            assert hasattr(target_document, "source_title")
-            assert (
-                target_document.source_title
-                == "Healthcare Platform Technical Architecture V2.1"
-            )
+            expected_title = "Healthcare Platform Technical Architecture V2.1"
+            if isinstance(target_document, dict):
+                assert target_document.get("title") == expected_title
+            else:
+                assert hasattr(target_document, "source_title")
+                assert target_document.source_title == expected_title
 
             # Validate analyzed count matches our mock
             assert (
@@ -701,7 +702,12 @@ class TestComplementaryContentE2E:
                 assert "recommendation_reason" in rec
                 assert "strategy" in rec
 
-            print(f"Target document captured: {target_document.source_title}")
+            target_title = (
+                target_document.get("title")
+                if isinstance(target_document, dict)
+                else getattr(target_document, "source_title", "")
+            )
+            print(f"Target document captured: {target_title}")
             print(f"Context documents analyzed: {analyzed_count}")
             print(f"Recommendations found: {len(recommendations)}")
 
