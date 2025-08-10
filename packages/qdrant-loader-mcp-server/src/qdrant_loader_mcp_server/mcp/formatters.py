@@ -932,7 +932,7 @@ class MCPFormatters:
                     }
                 )
 
-        # Target document info
+        # Target document info (accept object or lightweight dict)
         target_info = {
             "title": target_query,  # Fallback to query
             "content_preview": "",
@@ -940,11 +940,19 @@ class MCPFormatters:
         }
 
         if target_document:
-            target_info = {
-                "document_id": target_document.document_id,
-                "title": target_document.source_title or target_query,
-                "source_type": target_document.source_type or "",
-            }
+            if isinstance(target_document, dict):
+                target_info = {
+                    "document_id": target_document.get("document_id", ""),
+                    "title": target_document.get("title", target_query),
+                    "source_type": target_document.get("source_type", ""),
+                }
+            else:
+                target_info = {
+                    "document_id": getattr(target_document, "document_id", ""),
+                    "title": getattr(target_document, "source_title", None)
+                    or target_query,
+                    "source_type": getattr(target_document, "source_type", "") or "",
+                }
 
         # Calculate summary statistics
         scores = [item.get("complementary_score", 0.0) for item in complementary_index]

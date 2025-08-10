@@ -548,10 +548,19 @@ class SearchEngine:
                 project_ids=project_ids,
             )
 
-            # Convert string metrics to SimilarityMetric enums
+            # Convert string metrics to SimilarityMetric enums with validation
             metrics = None
             if similarity_metrics:
-                metrics = [SimilarityMetric(metric) for metric in similarity_metrics]
+                valid_metrics = []
+                for metric in similarity_metrics:
+                    try:
+                        valid_metrics.append(SimilarityMetric(metric))
+                    except Exception:
+                        self.logger.warning(
+                            "Invalid similarity metric provided; skipping",
+                            metric=str(metric),
+                        )
+                metrics = valid_metrics if valid_metrics else None
 
             # Find similar documents
             similar_docs = await self.hybrid_search.find_similar_documents(
@@ -707,10 +716,20 @@ class SearchEngine:
                 f"✅ Found {len(complementary)} complementary recommendations"
             )
 
-            # Return structured result with target document info
+            # Return structured result with target document info (JSON-serializable)
+            target_doc_lightweight = {
+                "document_id": getattr(target_document, "document_id", "") or "",
+                "title": (
+                    target_document.get_display_title()
+                    if hasattr(target_document, "get_display_title")
+                    else (getattr(target_document, "source_title", None) or "Untitled")
+                ),
+                "source_type": getattr(target_document, "source_type", "unknown") or "unknown",
+            }
+
             return {
                 "complementary_recommendations": complementary,
-                "target_document": target_document,
+                "target_document": target_doc_lightweight,
                 "context_documents_analyzed": len(context_documents),
             }
 

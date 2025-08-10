@@ -882,7 +882,9 @@ async def test_find_complementary_content_success(
         assert "context_documents_analyzed" in result
 
         assert result["complementary_recommendations"] == mock_complementary
-        assert result["target_document"] == sample_search_results[0]
+        # target_document is now a lightweight dict
+        assert isinstance(result["target_document"], dict)
+        assert result["target_document"].get("document_id") == sample_search_results[0].document_id
         assert result["context_documents_analyzed"] == 2
 
 

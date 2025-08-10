@@ -100,6 +100,8 @@ class HybridSearchEngine:
                 cache_enabled=search_config.cache_enabled,
                 cache_ttl=search_config.cache_ttl,
                 cache_max_size=search_config.cache_max_size,
+                hnsw_ef=search_config.hnsw_ef,
+                use_exact_search=search_config.use_exact_search,
             )
         else:
             self.vector_search_service = VectorSearchService(
@@ -583,7 +585,7 @@ class HybridSearchEngine:
             )
 
             # Build robust document lookup with multiple key strategies
-            doc_lookup = self._build_document_lookup(documents)
+            doc_lookup = self._build_document_lookup(documents, robust=True)
 
             # Enhance recommendations with full document objects
             enhanced_recommendations = []

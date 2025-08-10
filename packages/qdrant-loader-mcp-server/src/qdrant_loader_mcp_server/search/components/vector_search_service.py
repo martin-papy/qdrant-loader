@@ -32,6 +32,8 @@ class VectorSearchService:
         cache_enabled: bool = True,
         cache_ttl: int = 300,
         cache_max_size: int = 500,
+        hnsw_ef: int = 128,
+        use_exact_search: bool = False,
     ):
         """Initialize the vector search service.
 
@@ -64,6 +66,10 @@ class VectorSearchService:
         self.field_parser = FieldQueryParser()
 
         self.logger = LoggingConfig.get_logger(__name__)
+
+        # Qdrant search parameters
+        self.hnsw_ef = hnsw_ef
+        self.use_exact_search = use_exact_search
 
     def _generate_cache_key(
         self, query: str, limit: int, project_ids: list[str] | None = None
@@ -213,7 +219,9 @@ class VectorSearchService:
             search_query = parsed_query.text_query if parsed_query.text_query else query
             query_embedding = await self.get_embedding(search_query)
 
-            search_params = models.SearchParams(hnsw_ef=128, exact=False)
+            search_params = models.SearchParams(
+                hnsw_ef=self.hnsw_ef, exact=bool(self.use_exact_search)
+            )
 
             # Combine field filters with project filters
             query_filter = self.field_parser.create_qdrant_filter(

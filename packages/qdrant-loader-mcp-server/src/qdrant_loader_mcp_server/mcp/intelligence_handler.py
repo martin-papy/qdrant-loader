@@ -3,6 +3,7 @@
 import hashlib
 import json
 from typing import Any
+import math
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
@@ -115,20 +116,83 @@ class IntelligenceHandler:
 
                 for cluster in clusters:
                     cluster_docs = cluster.get("documents", [])
-                    # Create similarity relationships between documents in the same cluster
-                    for i, doc1 in enumerate(cluster_docs):
-                        for doc2 in cluster_docs[i + 1 :]:
+
+                    # Limit emitted similarity pairs per cluster to reduce O(N^2) growth
+                    # Determine max pairs (default 50) and compute number of docs to consider (M)
+                    max_pairs: int = params.get("max_similarity_pairs_per_cluster", 50)
+
+                    def _doc_score(d: Any) -> float:
+                        try:
+                            if isinstance(d, dict):
+                                return float(
+                                    d.get("score")
+                                    or d.get("similarity")
+                                    or d.get("relevance")
+                                    or 0.0
+                                )
+                            # Object-like (e.g., HybridSearchResult)
+                            return float(
+                                getattr(d, "score", None)
+                                or getattr(d, "similarity", None)
+                                or getattr(d, "relevance", None)
+                                or 0.0
+                            )
+                        except Exception:
+                            return 0.0
+
+                    # Sort docs by an available score descending to approximate top-K relevance
+                    try:
+                        sorted_docs = sorted(cluster_docs, key=_doc_score, reverse=True)
+                    except Exception:
+                        sorted_docs = list(cluster_docs)
+
+                    # Compute M so that M*(M-1)/2 <= max_pairs
+                    if max_pairs is None or max_pairs <= 0:
+                        max_pairs = 0
+                    if max_pairs == 0:
+                        # Skip emitting similarity pairs for this cluster
+                        continue
+
+                    max_docs = int((1 + math.isqrt(1 + 8 * max_pairs)) // 2)
+                    max_docs = max(2, max_docs)  # need at least one pair if any
+                    docs_for_pairs = sorted_docs[:max_docs]
+
+                    emitted_pairs = 0
+                    for i, doc1 in enumerate(docs_for_pairs):
+                        for doc2 in docs_for_pairs[i + 1 :]:
+                            if emitted_pairs >= max_pairs:
+                                break
+
                             # Extract document IDs for lazy loading (with collision-resistant fallback)
-                            doc1_id = self._get_or_create_document_id(doc1)
-                            doc2_id = self._get_or_create_document_id(doc2)
+                            doc1_id = (
+                                self._get_or_create_document_id(doc1)
+                                if isinstance(doc1, dict)
+                                else str(doc1)
+                            )
+                            doc2_id = (
+                                self._get_or_create_document_id(doc2)
+                                if isinstance(doc2, dict)
+                                else str(doc2)
+                            )
 
                             # Extract titles for preview (truncated)
-                            doc1_title = doc1.get(
-                                "title", doc1.get("source_title", "Unknown")
-                            )[:100]
-                            doc2_title = doc2.get(
-                                "title", doc2.get("source_title", "Unknown")
-                            )[:100]
+                            if isinstance(doc1, dict):
+                                doc1_title = (
+                                    doc1.get("title")
+                                    or doc1.get("source_title")
+                                    or "Unknown"
+                                )[:100]
+                            else:
+                                doc1_title = str(getattr(doc1, "source_title", doc1))[:100]
+
+                            if isinstance(doc2, dict):
+                                doc2_title = (
+                                    doc2.get("title")
+                                    or doc2.get("source_title")
+                                    or "Unknown"
+                                )[:100]
+                            else:
+                                doc2_title = str(getattr(doc2, "source_title", doc2))[:100]
 
                             relationships.append(
                                 {
@@ -143,6 +207,7 @@ class IntelligenceHandler:
                                     "relationship_summary": f"Both documents belong to cluster: {cluster.get('theme', 'unnamed cluster')}",
                                 }
                             )
+                            emitted_pairs += 1
 
             # Extract conflict relationships
             if "conflict_analysis" in analysis_results:
@@ -152,7 +217,7 @@ class IntelligenceHandler:
                 if conflicts:
                     summary_parts.append(f"{len(conflicts)} conflicts detected")
                     for conflict in conflicts:
-                        if isinstance(conflict, list | tuple) and len(conflict) >= 2:
+                        if isinstance(conflict, (list, tuple)) and len(conflict) >= 2:
                             doc1, doc2 = conflict[0], conflict[1]
                             conflict_info = conflict[2] if len(conflict) > 2 else {}
 
