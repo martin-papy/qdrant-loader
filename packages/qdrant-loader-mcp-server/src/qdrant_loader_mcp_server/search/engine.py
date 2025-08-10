@@ -727,8 +727,36 @@ class SearchEngine:
                 "source_type": getattr(target_document, "source_type", "unknown") or "unknown",
             }
 
+            # Map recommendations to JSON-safe dictionaries
+            safe_recommendations = []
+            for rec in complementary:
+                try:
+                    doc = rec.get("document") if isinstance(rec, dict) else None
+                    doc_id = (
+                        getattr(doc, "document_id", None)
+                        if doc is not None
+                        else None
+                    ) or rec.get("document_id")
+                    title = (
+                        getattr(doc, "source_title", None)
+                        if doc is not None
+                        else None
+                    ) or rec.get("title", "Untitled")
+                    safe_recommendations.append(
+                        {
+                            "document_id": doc_id or "",
+                            "title": title or "Untitled",
+                            "relevance_score": rec.get("relevance_score", 0.0),
+                            "reason": rec.get("recommendation_reason", ""),
+                            "strategy": rec.get("strategy", "related"),
+                        }
+                    )
+                except Exception:
+                    # Skip malformed entries
+                    continue
+
             return {
-                "complementary_recommendations": complementary,
+                "complementary_recommendations": safe_recommendations,
                 "target_document": target_doc_lightweight,
                 "context_documents_analyzed": len(context_documents),
             }

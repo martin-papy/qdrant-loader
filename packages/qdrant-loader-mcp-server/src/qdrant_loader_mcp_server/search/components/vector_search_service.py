@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from openai import AsyncOpenAI
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
 
 from ...utils.logging import LoggingConfig
@@ -25,7 +25,7 @@ class VectorSearchService:
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
+        qdrant_client: AsyncQdrantClient,
         openai_client: AsyncOpenAI,
         collection_name: str,
         min_score: float = 0.3,
@@ -38,7 +38,7 @@ class VectorSearchService:
         """Initialize the vector search service.
 
         Args:
-            qdrant_client: Qdrant client instance
+            qdrant_client: Asynchronous Qdrant client instance (AsyncQdrantClient)
             openai_client: OpenAI client instance
             collection_name: Name of the Qdrant collection
             min_score: Minimum score threshold

@@ -226,7 +226,7 @@ class MCPFormatters:
                         "can_expand": True,
                         "has_content": fields["text_length"] > 0,
                         "content_length": fields["text_length"],
-                        "expand_tool": "search",  # Tool to get full document content
+                        "expand_tool": "expand_document",  # Unified expand tool
                     },
                 }
             )
@@ -247,7 +247,7 @@ class MCPFormatters:
             },
             "navigation": {
                 "supports_lazy_loading": True,
-                "expand_document_tool": "search",  # Tool to get full document content
+                "expand_document_tool": "expand_document",
                 "sort_order": "similarity_desc",
                 "max_displayed": len(similarity_index),
             },
@@ -458,8 +458,8 @@ class MCPFormatters:
             ),
         }
 
-        # Analysis metadata
-        analysis_metadata = conflicts.get("query_metadata", {})
+        # Analysis metadata (copy to avoid mutating input)
+        analysis_metadata = dict(conflicts.get("query_metadata", {}))
         analysis_metadata.update(
             {"analysis_strategy": "tiered_analysis", "response_type": "lightweight"}
         )
@@ -1227,8 +1227,11 @@ class MCPFormatters:
                             result, "original_filename", result.source_title or "Untitled"
                         )
                         or "Untitled",
-                        "file_type": getattr(result, "file_type", "unknown")
-                        or "unknown",
+                        "file_type": (
+                            getattr(result, "original_file_type", None)
+                            or MCPFormatters._extract_file_type_minimal(result)
+                            or "unknown"
+                        ),
                         "file_size": getattr(result, "file_size", 0) or 0,
                         "parent_document": (
                             (getattr(result, "parent_document_title", "") or "")
@@ -1250,7 +1253,11 @@ class MCPFormatters:
                 "total_attachments": len(filtered_results),
                 "file_types": list(
                     {
-                        getattr(result, "file_type", "unknown")
+                        (
+                            getattr(result, "original_file_type", None)
+                            or MCPFormatters._extract_file_type_minimal(result)
+                            or "unknown"
+                        )
                         for result in filtered_results
                     }
                 ),

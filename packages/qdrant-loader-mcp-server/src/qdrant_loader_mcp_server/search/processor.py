@@ -13,15 +13,38 @@ from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
 class QueryProcessor:
     """Query processor for handling search queries with spaCy-powered intelligence."""
 
-    def __init__(self, openai_config: OpenAIConfig):
-        """Initialize the query processor."""
+    def __init__(self, openai_config: OpenAIConfig, spacy_model: str = "en_core_web_md"):
+        """Initialize the query processor.
+
+        Args:
+            openai_config: OpenAI configuration
+            spacy_model: Preferred spaCy model to load (defaults to 'en_core_web_md').
+                         If loading fails, will attempt fallback to 'en_core_web_sm'.
+        """
         self.openai_client: AsyncOpenAI | None = AsyncOpenAI(
             api_key=openai_config.api_key
         )
         self.logger = LoggingConfig.get_logger(__name__)
 
-        # 🔥 NEW: Initialize spaCy analyzer for fast, local intent detection
-        self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_md")
+        # 🔥 Initialize spaCy analyzer with fallback to a smaller model
+        try:
+            self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model=spacy_model)
+        except Exception as primary_error:
+            self.logger.warning(
+                f"Failed to load spaCy model '{spacy_model}', attempting fallback to 'en_core_web_sm'",
+                error=str(primary_error),
+            )
+            try:
+                if spacy_model != "en_core_web_sm":
+                    self.spacy_analyzer = SpaCyQueryAnalyzer(spacy_model="en_core_web_sm")
+                else:
+                    raise primary_error
+            except Exception as fallback_error:
+                message = (
+                    f"Failed to load spaCy models '{spacy_model}' and 'en_core_web_sm': {fallback_error}"
+                )
+                self.logger.error(message)
+                raise RuntimeError(message)
 
     async def process_query(self, query: str) -> dict[str, Any]:
         """🔥 ENHANCED: Process a search query using spaCy for intelligent analysis.
@@ -164,22 +187,16 @@ class QueryProcessor:
                 "github",
                 "gitlab",
                 "bitbucket",
-                "source",
             ],
             "confluence": [
                 "confluence",
-                "doc",
+                "docs",
                 "documentation",
                 "wiki",
-                "page",
-                "space",
             ],
             "jira": ["jira", "issue", "ticket", "bug", "story", "task", "epic"],
             "localfile": [
                 "localfile",
-                "local",
-                "file",
-                "files",
                 "filesystem",
                 "disk",
                 "folder",
@@ -187,10 +204,13 @@ class QueryProcessor:
             ],
         }
 
-        # Check for explicit source type mentions
+        # Check for explicit source type mentions using whole-word matching to reduce false positives
         query_lower = query.lower()
         for source_type, keywords in source_keywords.items():
-            if any(keyword in query_lower for keyword in keywords):
+            if not keywords:
+                continue
+            pattern = r"\b(?:" + "|".join(re.escape(k) for k in keywords) + r")\b"
+            if re.search(pattern, query_lower):
                 self.logger.debug(
                     f"🔥 Source type detected: {source_type}", query=query[:50]
                 )
@@ -205,11 +225,23 @@ class QueryProcessor:
         ):
             # Documentation queries about requirements/design likely target confluence
             return "confluence"
-        elif intent == "issue" or "issue" in query_lower:
-            # Issue-related queries target jira
+        # Issue-related queries target jira – detect with whole-word regex including synonyms
+        issue_synonyms = [
+            "issue",
+            "ticket",
+            "bug",
+            "story",
+            "task",
+            "epic",
+            "incident",
+            "defect",
+        ]
+        issue_pattern = r"\b(?:" + "|".join(re.escape(k) for k in issue_synonyms) + r")\b"
+        if re.search(issue_pattern, query_lower):
             return "jira"
-        elif any(word in query_lower for word in ["local files", "local file", "local files", "localfile"]):
-            # Explicit local files phrasing
+
+        # Explicit local files phrasing
+        if re.search(r"\b(?:localfile|local files?)\b", query_lower):
             return "localfile"
 
         # Return None to search across all source types
