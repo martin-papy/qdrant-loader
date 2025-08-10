@@ -1216,7 +1216,7 @@ class MCPFormatters:
                     "content": result.text,
                     "attachment_info": {
                         "filename": getattr(
-                            result, "file_name", result.source_title or "Untitled"
+                            result, "original_filename", result.source_title or "Untitled"
                         )
                         or "Untitled",
                         "file_type": getattr(result, "file_type", "unknown")
