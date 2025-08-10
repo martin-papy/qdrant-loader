@@ -260,7 +260,7 @@ class QueryProcessor:
         return self._extract_source_type(cleaned, intent="general")
 
     def get_analyzer_stats(self) -> dict[str, Any]:
-        """🔥 NEW: Get spaCy analyzer statistics for monitoring."""
+        """ Get spaCy analyzer statistics for monitoring."""
         try:
             return {
                 "spacy_model": self.spacy_analyzer.spacy_model,
