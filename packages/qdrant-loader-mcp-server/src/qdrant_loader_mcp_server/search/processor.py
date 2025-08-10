@@ -48,8 +48,8 @@ class QueryProcessor:
             # 🔥 Use spaCy for fast, local intent inference
             intent, inference_failed = await self._infer_intent_spacy(cleaned_query)
 
-            # Extract source type if present (use explicit extractor here; keep compat shim for tests)
-            source_type = self._extract_source_type(cleaned_query, intent)
+            # Extract source type (compat shim allows tests to patch this method)
+            source_type = self._infer_source_type(cleaned_query)
 
             return {
                 "query": cleaned_query,
