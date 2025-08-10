@@ -307,7 +307,7 @@ class EntityQueryExpander:
                     and token.pos_ in {"NOUN", "VERB", "ADJ"}
                 )
             ]
-        except:
+        except Exception:
             # Fallback to simple splitting
             words = concept_text.lower().split()
             return [word for word in words if len(word) > 2 and word.isalpha()]
@@ -339,7 +339,7 @@ class EntityQueryExpander:
         if entity_type in type_synonyms:
             try:
                 synonyms = type_synonyms[entity_type](entity_text)
-            except:
+            except Exception:
                 synonyms = [entity_text.lower()]
         else:
             synonyms = [entity_text.lower()]

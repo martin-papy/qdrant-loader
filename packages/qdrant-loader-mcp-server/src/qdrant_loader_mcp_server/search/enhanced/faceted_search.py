@@ -229,16 +229,34 @@ class DynamicFacetGenerator:
                 "max_values": 15,
                 "min_count": 1,
             },
+            FacetType.REPOSITORY: {
+                "display_name": "Repository",
+                "description": "Source repository or code host",
+                "max_values": 15,
+                "min_count": 1,
+            },
             FacetType.ENTITIES: {
                 "display_name": "Entities",
                 "description": "Named entities found in content",
                 "max_values": 20,
                 "min_count": 1,
             },
+            FacetType.ENTITY_TYPES: {
+                "display_name": "Entity Types",
+                "description": "Types of named entities",
+                "max_values": 15,
+                "min_count": 1,
+            },
             FacetType.TOPICS: {
                 "display_name": "Topics",
                 "description": "Topics and themes",
                 "max_values": 15,
+                "min_count": 1,
+            },
+            FacetType.KEY_PHRASES: {
+                "display_name": "Key Phrases",
+                "description": "Key phrases extracted from content",
+                "max_values": 20,
                 "min_count": 1,
             },
             FacetType.HIERARCHY_DEPTH: {
