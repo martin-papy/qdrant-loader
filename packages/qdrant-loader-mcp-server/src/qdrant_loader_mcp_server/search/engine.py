@@ -336,7 +336,14 @@ class SearchEngine:
                 from .enhanced.faceted_search import FacetFilter, FacetType
 
                 for filter_dict in facet_filters:
-                    facet_type = FacetType(filter_dict["facet_type"])
+                    try:
+                        facet_type = FacetType(filter_dict["facet_type"])
+                    except Exception:
+                        self.logger.warning(
+                            "Invalid facet_type provided; skipping facet filter",
+                            facet_type=str(filter_dict.get("facet_type")),
+                        )
+                        continue
                     filter_objects.append(
                         FacetFilter(
                             facet_type=facet_type,
@@ -421,7 +428,14 @@ class SearchEngine:
                 from .enhanced.faceted_search import FacetFilter, FacetType
 
                 for filter_dict in current_filters:
-                    facet_type = FacetType(filter_dict["facet_type"])
+                    try:
+                        facet_type = FacetType(filter_dict["facet_type"])
+                    except Exception:
+                        self.logger.warning(
+                            "Invalid facet_type provided; skipping facet filter",
+                            facet_type=str(filter_dict.get("facet_type")),
+                        )
+                        continue
                     filter_objects.append(
                         FacetFilter(
                             facet_type=facet_type,

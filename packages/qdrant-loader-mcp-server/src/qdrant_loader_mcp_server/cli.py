@@ -58,16 +58,39 @@ async def shutdown(
     logger = LoggingConfig.get_logger(__name__)
     logger.info("Shutting down...")
 
-    # Set the shutdown event to signal other tasks to stop
+    # Determine configurable grace period for cooperative shutdown
+    # Priority: MCP_GRACEFUL_SHUTDOWN_SECONDS; otherwise align with HTTP shutdown timeout + small buffer
+    try:
+        graceful_env = os.getenv("MCP_GRACEFUL_SHUTDOWN_SECONDS")
+        if graceful_env is not None and graceful_env != "":
+            graceful_seconds = float(graceful_env)
+        else:
+            graceful_seconds = float(os.getenv("MCP_HTTP_SHUTDOWN_TIMEOUT_SECONDS", "30.0")) + 1.0
+    except Exception:
+        graceful_seconds = 5.0
+
+    # Signal other tasks to cooperatively shut down
     if shutdown_event:
         shutdown_event.set()
-        # Give the main server task time to handle the shutdown signal gracefully
-        await asyncio.sleep(0.2)
 
-    # Get all tasks except the current one
+    # Cooperative grace period: allow servers/handlers to drain before forced cancel
+    # Exit early if there are no other tasks remaining
+    start_time = time.monotonic()
+    try:
+        while True:
+            remaining = [t for t in asyncio.all_tasks() if t is not asyncio.current_task() and not t.done()]
+            if not remaining:
+                break
+            if time.monotonic() - start_time >= graceful_seconds:
+                break
+            await asyncio.sleep(0.2)
+    except asyncio.CancelledError:
+        # If shutdown itself is cancelled, proceed to finalization
+        pass
+
+    # After the grace period, cancel any remaining tasks except the current one
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
-    # Cancel all remaining tasks
     for task in tasks:
         if not task.done():
             task.cancel()
@@ -76,18 +99,14 @@ async def shutdown(
     if tasks:
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            # Only log non-CancelledError exceptions during shutdown
             for result in results:
-                if isinstance(result, Exception) and not isinstance(
-                    result, asyncio.CancelledError
-                ):
+                if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
                     logger.error(f"Error during task cleanup: {result}", exc_info=True)
         except Exception as e:
             if not isinstance(e, asyncio.CancelledError):
                 logger.error("Error during shutdown", exc_info=True)
 
-    # Stop the event loop
-    loop.stop()
+    logger.info("Shutdown sequence complete")
 
 
 async def start_http_server(
