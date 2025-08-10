@@ -285,8 +285,14 @@ class WebsiteBuilder:
         sort_children(tree)
         return tree
 
-    def render_docs_nav_html(self, nav_data: dict, active_url: str) -> str:
-        """Render the left sidebar navigation HTML. active_url is relative to docs/ root."""
+    def render_docs_nav_html(self, nav_data: dict, active_url: str, link_prefix: str = "") -> str:
+        """Render the left sidebar navigation HTML.
+
+        - active_url: path relative to docs/ root (e.g. "users/config.html")
+        - link_prefix: prefix to prepend to every href so links resolve from the current page
+          e.g. for a page under docs/users/x.html, use "../../docs/" so that hrefs
+          like "getting-started.html" point to the correct docs root.
+        """
 
         def render_node(node: dict, depth: int = 0) -> str:
             children = node.get("children", [])
@@ -301,14 +307,14 @@ class WebsiteBuilder:
                 items_html = "".join(render_node(child, depth + 1) for child in children)
                 return (
                     f'<li class="nav-item docs-nav-section depth-{depth}{active_class}">'  # section
-                    f'<a href="{url}" class="nav-link section-link">{title}</a>'
+                    f'<a href="{link_prefix}{url}" class="nav-link section-link">{title}</a>'
                     f'<ul class="nav flex-column ms-2">{items_html}</ul>'
                     f"</li>"
                 )
             else:
                 return (
                     f'<li class="nav-item depth-{depth}">'  # file
-                    f'<a href="{url}" class="nav-link{active_class}">{title}</a>'
+                    f'<a href="{link_prefix}{url}" class="nav-link{active_class}">{title}</a>'
                     f"</li>"
                 )
 
@@ -474,6 +480,31 @@ class WebsiteBuilder:
                 html_content = re.sub(r"(?<!http:)(?<!https:)//+", "/", html_content)
                 # Remove any double docs/ that may have slipped through
                 html_content = re.sub(r"docs/docs/", "docs/", html_content)
+
+        # Normalize links that mistakenly prefix with "docs/" when already under docs/
+        # Many pages link like href="docs/section/page.html" which, when resolved from
+        # a docs subpage, creates duplicated paths. Rewrite to be relative to docs root.
+        try:
+            if output_file.startswith("docs/"):
+                rel_parts = Path(output_file).relative_to("docs").parts
+                # Depth below docs root (exclude filename)
+                depth_to_docs_root = max(len(rel_parts) - 1, 0)
+                prefix_to_docs_root = "" if depth_to_docs_root == 0 else "../" * depth_to_docs_root
+                # Replace href="docs/..." with a link relative to docs root
+                html_content = re.sub(
+                    r'href="docs/([^"]+)"',
+                    lambda m: f'href="{prefix_to_docs_root}{m.group(1)}"',
+                    html_content,
+                )
+                # Replace href="/docs/..." with the same relative link
+                html_content = re.sub(
+                    r'href="/docs/([^"]+)"',
+                    lambda m: f'href="{prefix_to_docs_root}{m.group(1)}"',
+                    html_content,
+                )
+        except Exception:
+            # Best-effort normalization; ignore on failure
+            pass
 
         return html_content
 
@@ -776,8 +807,9 @@ class WebsiteBuilder:
         if self.docs_nav_data is None:
             # Build once if not available yet
             self.build_docs_nav()
-        left_nav_html = self.render_docs_nav_html(self.docs_nav_data or {}, active_url_rel)
-        right_toc_html = self.render_toc(html_content)
+        # Placeholder; will compute nav_link_prefix after page_base_url is known
+        left_nav_html = ""
+        right_toc_html = ""
 
         # Calculate relative paths based on output file location
         output_path = Path(output_file)
@@ -820,6 +852,20 @@ class WebsiteBuilder:
                 "../" * depth + self.base_url if self.base_url else "../" * depth
             )
 
+        # Determine link prefix so sidebar and prev/next links resolve correctly from this page
+        if output_file.startswith("docs/"):
+            rel_parts = Path(output_file).relative_to("docs").parts
+            subdirs_depth = max(len(rel_parts) - 1, 0)
+            if self.base_url:
+                nav_link_prefix = f"{page_base_url}docs/"
+            else:
+                nav_link_prefix = ("../" * subdirs_depth) if subdirs_depth > 0 else ""
+        else:
+            nav_link_prefix = ""
+
+        left_nav_html = self.render_docs_nav_html(self.docs_nav_data or {}, active_url_rel, nav_link_prefix)
+        right_toc_html = self.render_toc(html_content)
+
         # Create breadcrumb navigation
         breadcrumb_html = ""
         if breadcrumb:
@@ -860,6 +906,14 @@ class WebsiteBuilder:
             + feedback_body
         )
 
+        # Helper to adjust doc-root URLs (starting with "docs/") to be resolvable from current page
+        def adjust_doc_href(url: str) -> str:
+            if url.startswith("docs/"):
+                return f"{nav_link_prefix}{url[len('docs/'):]}"
+            if url.startswith("/docs/"):
+                return f"{nav_link_prefix}{url[len('/docs/') :]}"
+            return url
+
         # Create the documentation content template with sidebars
         doc_content = f"""
         <section class="py-5">
@@ -884,8 +938,8 @@ class WebsiteBuilder:
                             <a href="{docs_url}" class="btn btn-outline-primary">
                                 <i class="bi bi-arrow-left me-2"></i>Back to Documentation
                             </a>
-                                    {f'<a class="btn btn-outline-secondary" href="{prev_link["url"]}"><i class="bi bi-arrow-left-circle me-2"></i>Prev: {prev_link["title"]}</a>' if prev_link else ''}
-                                    {f'<a class="btn btn-outline-secondary" href="{next_link["url"]}">Next: {next_link["title"]} <i class="bi bi-arrow-right-circle ms-2"></i></a>' if next_link else ''}
+                                    {f'<a class="btn btn-outline-secondary" href="{adjust_doc_href(prev_link["url"]) }"><i class="bi bi-arrow-left-circle me-2"></i>Prev: {prev_link["title"]}</a>' if prev_link else ''}
+                                    {f'<a class="btn btn-outline-secondary" href="{adjust_doc_href(next_link["url"]) }">Next: {next_link["title"]} <i class="bi bi-arrow-right-circle ms-2"></i></a>' if next_link else ''}
                             </div>
                                 <div class="d-flex align-items-center gap-2">
                                     <a href="{edit_url}" target="_blank" class="btn btn-sm btn-outline-dark">
