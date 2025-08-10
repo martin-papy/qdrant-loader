@@ -106,7 +106,7 @@ async def start_http_server(
 
         # Initialize search engine
         try:
-            await search_engine.initialize(config.qdrant, config.openai)
+            await search_engine.initialize(config.qdrant, config.openai, config.search)
             logger.info("Search engine initialized successfully")
         except Exception as e:
             logger.error("Failed to initialize search engine", exc_info=True)
