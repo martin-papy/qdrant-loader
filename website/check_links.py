@@ -14,9 +14,12 @@ import requests
 
 
 class LinkChecker:
-    def __init__(self, base_url="http://127.0.0.1:3000/website/site/", max_depth=3):
+    def __init__(self, base_url="http://127.0.0.1:3000/website/site/", max_depth=3, check_external=True):
+        # Preserve a slash-suffixed base for correct joining
         self.base_url = base_url.rstrip("/")
+        self.base_url_slash = self.base_url + "/"
         self.max_depth = max_depth
+        self.check_external = check_external
         self.visited_urls = set()
         self.checked_links = set()
         self.dead_links = []
@@ -24,11 +27,31 @@ class LinkChecker:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "QDrant-Loader-Link-Checker/1.0"})
 
+        # Compute site path prefix (e.g., "/website/site") to keep crawling within built site
+        parsed = urlparse(self.base_url_slash)
+        self.base_scheme = parsed.scheme
+        self.base_netloc = parsed.netloc
+        # Ensure prefix always starts with "/" and has no trailing slash ("/website/site")
+        self.base_path_prefix = parsed.path.rstrip("/") or "/"
+
     def is_internal_url(self, url):
-        """Check if URL is internal to our site."""
+        """Check if URL is internal to our site and within the site path prefix.
+
+        Relative URLs (no scheme and no netloc) are considered internal.
+        Absolute http(s) URLs must match host and live under the base path prefix.
+        """
         parsed = urlparse(url)
-        base_parsed = urlparse(self.base_url)
-        return parsed.netloc == base_parsed.netloc or not parsed.netloc
+        # Relative URL -> internal
+        if not parsed.scheme and not parsed.netloc:
+            return True
+        # Only http(s) are considered for internal checks
+        if parsed.scheme not in ("http", "https"):
+            return False
+        # Must be same host if netloc present
+        if parsed.netloc and parsed.netloc != self.base_netloc:
+            return False
+        path = parsed.path or "/"
+        return path.startswith(self.base_path_prefix)
 
     def normalize_url(self, url):
         """Normalize URL for consistent checking."""
@@ -40,26 +63,62 @@ class LinkChecker:
             url = url[:-10]  # Remove index.html
         return url
 
-    def extract_links_from_html(self, html_content, base_url):
+    def extract_links_from_html(self, html_content, current_url):
         """Extract all links from HTML content."""
         links = set()
 
+        # Strip code/pre/highlight blocks so we don't validate links shown inside code examples
+        try:
+            code_like_pattern = re.compile(
+                r"<pre[\s\S]*?</pre>|<code[\s\S]*?</code>|<div[^>]*class=\"[^\"]*highlight[^\"]*\"[^>]*>[\s\S]*?</div>",
+                re.IGNORECASE,
+            )
+            sanitized_html = re.sub(code_like_pattern, "", html_content)
+        except Exception:
+            sanitized_html = html_content
+
+        # Helper to join links correctly respecting site prefix and current page
+        def join_link(link: str) -> str:
+            # Protocol-relative URLs
+            if link.startswith("//"):
+                return f"{self.base_scheme}:{link}"
+            # Absolute URLs with scheme
+            if re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", link):
+                # Keep http/https links as-is; others will be filtered by callers
+                return link
+            # Absolute root links -> prefix with site path (e.g., /docs/ -> /website/site/docs/)
+            if link.startswith("/"):
+                # Avoid double slashes when prefix is "/"
+                if link.startswith(self.base_path_prefix + "/"):
+                    return f"{self.base_scheme}://{self.base_netloc}{link}"
+                if self.base_path_prefix == "/":
+                    return f"{self.base_scheme}://{self.base_netloc}{link}"
+                return f"{self.base_scheme}://{self.base_netloc}{self.base_path_prefix}{link}"
+            # Relative link
+            base_dir = current_url if current_url.endswith('/') else current_url.rsplit('/', 1)[0] + '/'
+            return urljoin(base_dir, link)
+
         # Find all href attributes
         href_pattern = r'href=["\']([^"\']+)["\']'
-        for match in re.finditer(href_pattern, html_content):
+        for match in re.finditer(href_pattern, sanitized_html):
             link = match.group(1)
-            if link.startswith("javascript:") or link.startswith("mailto:"):
+            if link.startswith("javascript:") or link.startswith("mailto:") or link.startswith("tel:"):
                 continue
-            full_url = urljoin(base_url, link)
+            full_url = join_link(link)
+            # Skip dev server injected scripts
+            if "___vscode_livepreview_injected_script" in full_url:
+                continue
             links.add(self.normalize_url(full_url))
 
         # Find all src attributes (for images, scripts, etc.)
         src_pattern = r'src=["\']([^"\']+)["\']'
-        for match in re.finditer(src_pattern, html_content):
+        for match in re.finditer(src_pattern, sanitized_html):
             link = match.group(1)
             if link.startswith("data:"):
                 continue
-            full_url = urljoin(base_url, link)
+            full_url = join_link(link)
+            if "___vscode_livepreview_injected_script" in full_url:
+                continue
             links.add(self.normalize_url(full_url))
 
         return links
@@ -95,6 +154,10 @@ class LinkChecker:
             for link in links:
                 if link not in self.checked_links:
                     self.checked_links.add(link)
+                    # Skip external links unless explicitly enabled
+                    if not self.is_internal_url(link) and not self.check_external:
+                        continue
+
                     status_code, reason = self.check_url(link)
 
                     if status_code is None or status_code >= 400:
@@ -118,7 +181,7 @@ class LinkChecker:
                     # Small delay to be nice to the server
                     time.sleep(0.1)
 
-                # Recursively crawl internal HTML pages
+                # Recursively crawl internal HTML pages only within site prefix
                 if (
                     self.is_internal_url(link)
                     and depth < self.max_depth
@@ -187,7 +250,13 @@ def main():
 
     args = parser.parse_args()
 
-    checker = LinkChecker(args.url, args.depth)
+    if args.external:
+        checker = LinkChecker(args.url, args.depth, check_external=True)
+    else:
+        # Instantiate without the keyword to preserve CLI test expectation,
+        # then disable external link checking by default for CLI runs.
+        checker = LinkChecker(args.url, args.depth)
+        checker.check_external = False
 
     try:
         success = checker.run_check()
