@@ -5,5 +5,5 @@
 4) Developer Docs - Architecture (`docs/developers/architecture/`) - Extending (`docs/developers/extending/`) - Testing (`docs/developers/testing/`) - Deployment (`docs/developers/deployment/`) - CLI Development (`docs/developers/cli/`) - Documentation Guide (`docs/developers/documentation/`)
 5) Project & Community - Contributing (`CONTRIBUTING.md`) - Release Notes (`RELEASE_NOTES.md`)
 ---
-Last Updated: $(date +%F)
+Last Updated: 2025-08-11
 Maintainer: Martin Papy
