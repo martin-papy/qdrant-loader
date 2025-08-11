@@ -40,7 +40,7 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 - **Multi-project support**: Organize sources into projects with shared collections
 - **Flexible embeddings**: OpenAI, local models, and custom endpoints
 
-### 🔌 [QDrant Loader MCP Server](./packages/qdrant-loader-mcp-server/)
+### 🔌 [QDrant Loader MCP Server](./docs/packages/mcp-server/)
 
 _AI development integration layer_
 
