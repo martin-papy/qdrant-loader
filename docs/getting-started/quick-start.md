@@ -300,7 +300,7 @@ Congratulations! You now have QDrant Loader running with:
 
 ### Learn More
 
-- **[Core Concepts](./core-concepts.md)** - Understand how QDrant Loader works
+- **Core Concepts** - Summarized inline in Getting Started
 - **[Basic Configuration](./basic-configuration.md)** - Customize your setup
 - **[User Guides](../users/)** - Explore all features in detail
 - **[MCP Server Guide](../users/detailed-guides/mcp-server/)** - Advanced AI integration
@@ -418,4 +418,4 @@ If you encounter issues:
 
 **🎉 Quick Start Complete!**
 
-You're now ready to explore the full power of QDrant Loader. The next step is understanding the [Core Concepts](./core-concepts.md) to make the most of your setup, or dive into the [User Guides](../users/) for specific features and workflows.
+You're now ready to explore the full power of QDrant Loader. The next step is reviewing the Core Concepts summarized in Getting Started, or dive into the [User Guides](../users/) for specific features and workflows.

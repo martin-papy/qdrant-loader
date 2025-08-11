@@ -10,7 +10,7 @@ docs/developers/extending/README.md,Extension Guide,Developer,Developer: Extendi
 docs/developers/README.md,Developer Documentation,Developer,Developer,rewrite,not-started,docs/developers/README.md,Martin Papy,docs/_verification/developers_README.md.log,,,initial import
 docs/developers/testing/README.md,Testing Guide,Developer,Developer: Testing,rewrite,not-started,docs/developers/testing/README.md,Martin Papy,docs/_verification/developers_testing_README.md.log,,,initial import
 docs/getting-started/basic-configuration.md,Basic Configuration,User,Getting Started,rewrite,not-started,docs/getting-started/basic-configuration.md,Martin Papy,docs/_verification/getting-started_basic-configuration.md.log,,,initial import
-docs/getting-started/core-concepts.md,Core Concepts,User,Getting Started,rewrite,not-started,docs/getting-started/core-concepts.md,Martin Papy,docs/_verification/getting-started_core-concepts.md.log,,,initial import
+docs/getting-started/core-concepts.md,Core Concepts,User,Getting Started,retire,not-started,,Martin Papy,docs/_verification/getting-started_core-concepts.md.log,,,initial import
 docs/getting-started/installation.md,Installation Guide,User,Getting Started,rewrite,not-started,docs/getting-started/installation.md,Martin Papy,docs/_verification/getting-started_installation.md.log,,,initial import
 docs/getting-started/quick-start.md,Quick Start Guide,User,Getting Started,rewrite,not-started,docs/getting-started/quick-start.md,Martin Papy,docs/_verification/getting-started_quick-start.md.log,,,initial import
 docs/getting-started/README.md,Getting Started with QDrant Loader,User,Getting Started,rewrite,not-started,docs/getting-started/README.md,Martin Papy,docs/_verification/getting-started_README.md.log,,,initial import

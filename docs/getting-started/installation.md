@@ -475,7 +475,7 @@ pip install -e packages/qdrant-loader-mcp-server[dev]
 After successful installation:
 
 1. **[Quick Start Guide](./quick-start.md)** - Get up and running in 5 minutes
-2. **[Core Concepts](./core-concepts.md)** - Understand vector databases and embeddings
+2. **Core Concepts** - Key concepts are summarized inline in Getting Started
 3. **[Basic Configuration](./basic-configuration.md)** - Set up your first data sources
 4. **[User Guides](../users/)** - Explore detailed feature documentation
 

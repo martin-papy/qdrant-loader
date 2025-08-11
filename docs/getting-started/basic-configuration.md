@@ -607,7 +607,7 @@ projects:
 
 With your configuration complete:
 
-1. **[Core Concepts](./core-concepts.md)** - Understand how QDrant Loader works
+1. **Core Concepts** - Summarized inline in Getting Started
 2. **[User Guides](../users/)** - Explore specific features and workflows
 3. **[Data Source Guides](../users/detailed-guides/data-sources/)** - Configure specific connectors
 4. **[MCP Server Setup](../users/detailed-guides/mcp-server/)** - Set up AI tool integration

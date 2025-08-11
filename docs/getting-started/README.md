@@ -14,7 +14,7 @@ Welcome to QDrant Loader! This section will help you understand, install, and st
 
 ### 📚 I want to understand the concepts
 
-**[Core Concepts](./core-concepts.md)** - Understand vector databases, embeddings, and how QDrant Loader works.
+**Core Concepts** - Covered inline on this page and throughout Getting Started.
 
 ### 💻 I need detailed installation instructions
 
@@ -40,7 +40,7 @@ By the end of this section, you'll be able to:
 ### For Everyone (15 minutes)
 
 1. **[What is QDrant Loader?](./what-is-qdrant-loader.md)** *(3 min)* - Project overview
-2. **[Core Concepts](./core-concepts.md)** *(5 min)* - Key concepts explained
+2. **Core Concepts** *(5 min)* - Key concepts are summarized inline here
 3. **[Quick Start](./quick-start.md)** *(7 min)* - Hands-on setup
 
 ### For Users (Additional 10 minutes)
