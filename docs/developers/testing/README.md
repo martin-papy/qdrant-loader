@@ -18,14 +18,24 @@ QDrant Loader follows a comprehensive testing strategy to ensure reliability, pe
 # Clone the repository
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-# Install dependencies including test dependencies
-poetry install --with dev
-# Activate virtual environment
-poetry shell
-# Run all tests
-pytest
-# Run with coverage
-pytest --cov=qdrant_loader --cov-report=html
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+
+# Install packages in editable mode (workspace layout)
+pip install -e packages/qdrant-loader
+# Optional: MCP server if testing integration
+pip install -e packages/qdrant-loader-mcp-server
+
+# Install test tools
+pip install pytest pytest-asyncio pytest-cov pytest-mock requests-mock responses
+
+# Run all tests (verbose)
+pytest -v
+
+# Run with coverage (HTML report under htmlcov/)
+pytest -v --cov=packages --cov=website --cov-report=html
 ```
 ### Running Specific Test Categories
 ```bash
@@ -49,12 +59,7 @@ pytest tests/unit/core/test_qdrant_manager.py::TestQdrantManager::test_initializ
 | **requests-mock** | HTTP mocking | Mock external HTTP calls |
 | **pytest-timeout** | Test timeouts | Prevent hanging tests |
 ### Test Configuration
-The project uses `pyproject.toml` for pytest configuration:
-```toml
-[project.optional-dependencies]
-dev = [ "pytest>=7.0.0", "pytest-cov>=4.0.0", "pytest-mock>=3.10.0", "pytest-asyncio>=0.21.0", "pytest-timeout>=2.3.0", "responses>=0.24.1", "requests_mock>=1.11.0",
-]
-```
+Key settings live in `pyproject.toml` under `[tool.pytest.ini_options]` and coverage settings under `[tool.coverage.*]`.
 ### Test Structure
 ```
 tests/
