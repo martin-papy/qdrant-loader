@@ -18,8 +18,8 @@ Use this quick reference to identify your issue and jump to the right solution:
 💾 High memory usage                    → [Performance Issues](./performance-issues.md#memory-issues)
 🌐 Network timeouts                     → [Connection Problems](./connection-problems.md#network-issues)
 🛡️ Firewall blocking                   → [Connection Problems](./connection-problems.md#firewall-problems)
-📁 File permission errors               → [Error Messages](./error-messages-reference.md#file-system-errors)
-⚙️ Configuration problems               → [Error Messages](./error-messages-reference.md#configuration-errors)
+📁 File permission errors               → [Error Messages](./error-messages-reference.html#file-system-errors)
+⚙️ Configuration problems               → [Error Messages](./error-messages-reference.html#configuration-errors)
 ```
 
 ### Error Message Lookup

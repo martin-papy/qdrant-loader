@@ -1172,14 +1172,23 @@ class WebsiteBuilder:
         output_path = Path(output_file)
         depth = len(output_path.parts) - 1  # Number of directories deep
 
-        # Calculate relative path to root
+        # Calculate relative path to root and correct docs/ index link
         if depth == 0:
             home_url = self.base_url
             docs_url = f"{self.base_url}docs/"
             page_base_url = self.base_url
         else:
             home_url = "../" * depth + self.base_url if self.base_url else "../" * depth
-            docs_url = f"{self.base_url}docs/" if self.base_url else "docs/"
+            # If output is under docs/, compute proper relative link back to docs index
+            if output_file.startswith("docs/"):
+                parts = Path(output_file).parts
+                docs_depth = len(parts) - 2  # subtract filename and docs/
+                if docs_depth <= 0:
+                    docs_url = "./" if not self.base_url else f"{self.base_url}docs/"
+                else:
+                    docs_url = ("../" * docs_depth) if not self.base_url else f"{self.base_url}docs/"
+            else:
+                docs_url = f"{self.base_url}docs/" if self.base_url else "docs/"
             page_base_url = (
                 "../" * depth + self.base_url if self.base_url else "../" * depth
             )
