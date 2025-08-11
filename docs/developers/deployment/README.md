@@ -39,8 +39,9 @@ cd qdrant-loader-deployment
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate # On Windows: venv\Scripts\activate
-# Install QDrant Loader
-pip install qdrant-loader qdrant-loader-mcp-server
+# Install QDrant Loader (and optional MCP server)
+pip install qdrant-loader
+pip install qdrant-loader-mcp-server  # optional
 # Create workspace structure
 mkdir -p {data,logs}
 # Create configuration files
@@ -55,7 +56,9 @@ QDRANT_COLLECTION_NAME=documents
 OPENAI_API_KEY=your-openai-key
 REPO_TOKEN=your-github-token
 EOF
-# Initialize and startqdrant-loader init --workspace .qdrant-loader ingest --workspace .
+# Initialize and start
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 ```
 ### Production Environment Setup
 ```bash
@@ -71,7 +74,8 @@ source venv/bin/activate
 pip install qdrant-loader qdrant-loader-mcp-server
 # Setup configuration (see Configuration section below)
 # Edit config.yaml and .env with your settings
-# Initialize workspaceqdrant-loader init --workspace /opt/qdrant-loader
+# Initialize workspace
+qdrant-loader init --workspace /opt/qdrant-loader
 ```
 ## 🖥️ Environment Setup
 ### System Requirements
@@ -170,7 +174,7 @@ User=qdrant-loader
 Group=qdrant-loader
 WorkingDirectory=/opt/qdrant-loader
 Environment=PATH=/opt/qdrant-loader/venv/bin
-ExecStart=/opt/qdrant-loader/venv/binqdrant-loader ingest --workspace /opt/qdrant-loader/config
+ExecStart=/opt/qdrant-loader/venv/bin/qdrant-loader ingest --workspace /opt/qdrant-loader
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -245,8 +249,12 @@ LOG_FILE="/opt/qdrant-loader/logs/health-check.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 # Check QDrant Loader configuration
-ifqdrant-loader config --workspace "$WORKSPACE" >/dev/null 2>&1; then log "QDrant Loader: HEALTHY - Configuration valid" exit 0
-else log "QDrant Loader: UNHEALTHY - Configuration invalid" exit 1
+if qdrant-loader config --workspace "$WORKSPACE" >/dev/null 2>&1; then
+  log "QDrant Loader: HEALTHY - Configuration valid"
+  exit 0
+else
+  log "QDrant Loader: UNHEALTHY - Configuration invalid"
+  exit 1
 fi
 ```
 #### Cron Job for Health Checks
@@ -320,7 +328,10 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 ### Horizontal Scaling
 #### Multiple Worker Processes
 ```bash
-# Run multiple ingestion processes for different projectsqdrant-loader ingest --workspace /opt/qdrant-loader/config --project project1 &qdrant-loader ingest --workspace /opt/qdrant-loader/config --project project2 &qdrant-loader ingest --workspace /opt/qdrant-loader/config --project project3 &
+# Run multiple ingestion processes for different projects
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project1 &
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project2 &
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project3 &
 wait
 ```
 #### Load Balancing

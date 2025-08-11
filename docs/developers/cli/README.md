@@ -33,8 +33,10 @@ Options: --force Force reinitialization of existing collection --help Show help 
 ```
 **Examples:**
 ```bash
-# Workspace mode (recommended)qdrant-loader init --workspace .
-# Force re-initializationqdrant-loader init --workspace . --force
+# Workspace mode (recommended)
+qdrant-loader init --workspace .
+# Force re-initialization
+qdrant-loader init --workspace . --force
 # Traditional mode
 qdrant-loader --config config.yaml --env .env init
 # With debug logging
@@ -48,12 +50,18 @@ Options: --project ID Process specific project only --source-type TYPE Process s
 ```
 **Examples:**
 ```bash
-# Ingest all configured sourcesqdrant-loader ingest --workspace .
-# Ingest specific projectqdrant-loader ingest --workspace . --project my-project
-# Ingest specific source type from all projectsqdrant-loader ingest --workspace . --source-type git
-# Ingest specific source type from specific projectqdrant-loader ingest --workspace . --project my-project --source-type confluence
-# Ingest specific source from specific projectqdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
-# Enable performance profilingqdrant-loader ingest --workspace . --profile
+# Ingest all configured sources
+qdrant-loader ingest --workspace .
+# Ingest specific project
+qdrant-loader ingest --workspace . --project my-project
+# Ingest specific source type from all projects
+qdrant-loader ingest --workspace . --source-type git
+# Ingest specific source type from specific project
+qdrant-loader ingest --workspace . --project my-project --source-type confluence
+# Ingest specific source from specific project
+qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
+# Enable performance profiling
+qdrant-loader ingest --workspace . --profile
 # With debug logging
 qdrant-loader --log-level DEBUG --workspace . ingest
 ```
@@ -65,7 +73,8 @@ Options: --help Show help for this command
 ```
 **Examples:**
 ```bash
-# Show current configurationqdrant-loader config --workspace .
+# Show current configuration
+qdrant-loader config --workspace .
 # Traditional mode
 qdrant-loader --config config.yaml --env .env config
 # With debug logging to see configuration loading process
@@ -151,13 +160,13 @@ The CLI uses workspace mode for better organization:
 ```bash
 # Workspace structure
 my-workspace/
-├── config.yaml # Main configuration
-├── .env # Environment variables
-├── logs/ # Log files
-│ └── qdrant-loader.log
-├── data/ # State database
-│ └── state.db
-└── metrics/ # Performance metrics
+├── config.yaml        # Main configuration
+├── .env               # Environment variables
+├── logs/              # Log files
+│   └── qdrant-loader.log
+├── data/              # State database
+│   └── qdrant-loader.db
+└── metrics/           # Performance metrics
 ```
 ### Configuration Files
 The CLI looks for configuration in this order:
@@ -200,15 +209,16 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
 # Function to log messages
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
 # Validate configuration
 log "Validating configuration..."
-if !qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then log "ERROR: Configuration validation failed" exit 2
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
+  log "ERROR: Configuration validation failed"; exit 2
 fi
 # Validate projects
 log "Validating projects..."
-if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then log "ERROR: Project validation failed" exit 2
+if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
+  log "ERROR: Project validation failed"; exit 2
 fi
 # Initialize collection
 log "Initializing QDrant collection..."
@@ -227,14 +237,29 @@ log "Automation completed successfully"
 # project-processing.sh - Process specific projects
 WORKSPACE_DIR="${1:-$(pwd)}"
 PROJECT_ID="${2:-}"
-if [ -n "$PROJECT_ID" ]; then echo "Processing project: $PROJECT_ID" # Validate specific project qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID" # Process specific project qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$PROJECT_ID" # Check project status qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
-else echo "Processing all projects" # Get list of projects PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id') for project in $PROJECTS; do echo "Processing project: $project" qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$project" done
+if [ -n "$PROJECT_ID" ]; then
+  echo "Processing project: $PROJECT_ID"
+  # Validate specific project
+  qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID"
+  # Process specific project
+  qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$PROJECT_ID"
+  # Check project status
+  qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
+else
+  echo "Processing all projects"
+  # Get list of projects
+  PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id')
+  for project in $PROJECTS; do
+    echo "Processing project: $project"
+    qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$project"
+  done
 fi
 ```
 ### Error Handling and Debugging
 #### Configuration Validation
 ```bash
-# Check configuration syntaxqdrant-loader config --workspace .
+# Check configuration syntax
+qdrant-loader config --workspace .
 # Validate all projects
 qdrant-loader project validate --workspace .
 # Validate specific project with debug output
@@ -257,7 +282,21 @@ qdrant-loader --log-level DEBUG --workspace . ingest --profile
 ```bash
 #!/bin/bash
 # test-config.sh - Test configuration validity
-test_config() { local workspace_dir="$1" echo "Testing configuration in: $workspace_dir" # Test configuration loading ifqdrant-loader config --workspace "$workspace_dir" >/dev/null 2>&1; then echo "✅ Configuration is valid" else echo "❌ Configuration is invalid" return 1 fi # Test project validation if qdrant-loader project --workspace "$workspace_dir" validate; then echo "✅ All projects are valid" else echo "❌ Project validation failed" return 1 fi
+test_config() {
+  local workspace_dir="$1"
+  echo "Testing configuration in: $workspace_dir"
+  # Test configuration loading
+  if qdrant-loader config --workspace "$workspace_dir" >/dev/null 2>&1; then
+    echo "✅ Configuration is valid"
+  else
+    echo "❌ Configuration is invalid"; return 1
+  fi
+  # Test project validation
+  if qdrant-loader project --workspace "$workspace_dir" validate; then
+    echo "✅ All projects are valid"
+  else
+    echo "❌ Project validation failed"; return 1
+  fi
 }
 # Test multiple workspace configurations
 test_config "./test-workspace-1"
@@ -275,9 +314,11 @@ mkdir -p "$WORKSPACE_DIR"
 cp config.test.yaml "$WORKSPACE_DIR/config.yaml"
 cp .env.test "$WORKSPACE_DIR/.env"
 # Test initialization
-echo "Testing initialization..."qdrant-loader init --workspace "$WORKSPACE_DIR" --force
+echo "Testing initialization..."
+qdrant-loader init --workspace "$WORKSPACE_DIR" --force
 # Test ingestion
-echo "Testing ingestion..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$TEST_PROJECT"
+echo "Testing ingestion..."
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$TEST_PROJECT"
 # Test project commands
 echo "Testing project commands..."
 qdrant-loader project --workspace "$WORKSPACE_DIR" list
