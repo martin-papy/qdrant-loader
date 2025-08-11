@@ -78,7 +78,7 @@ pip install qdrant-loader-mcp-server  # MCP server only
 2. **Initialize workspace with templates**
 
    ```bash
-   qdrant-loader --workspace . init
+   qdrant-loader init --workspace .
    ```
 
 3. **Configure your environment** (edit `.env`)
@@ -92,7 +92,7 @@ pip install qdrant-loader-mcp-server  # MCP server only
 4. **Configure data sources** (edit `config.yaml`)
 
    ```yaml
-   global_config:
+   global:
      qdrant:
        url: "http://localhost:6333"
        collection_name: "my_docs"

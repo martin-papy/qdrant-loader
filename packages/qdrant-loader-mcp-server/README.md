@@ -71,7 +71,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Install in development mode
-pip install -e packages/qdrant-loader-mcp-server[dev]
+pip install -e packages/qdrant-loader-mcp-server
 ```
 
 ### Complete RAG Pipeline
