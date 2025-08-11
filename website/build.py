@@ -98,6 +98,13 @@ class WebsiteBuilder:
             # Avoid importing any modules here because tests may mock __import__ globally
             # Use only built-ins and our own helper methods
             html_content = self.basic_markdown_to_html(markdown_content)
+            # Ensure links to markdown files are mapped to their HTML counterparts
+            html_content = self.convert_markdown_links_to_html(
+                html_content, source_file, output_file
+            )
+            # Add heading ids and Bootstrap classes for consistent UX
+            html_content = self.ensure_heading_ids(html_content)
+            html_content = self.add_bootstrap_classes(html_content)
             return html_content
 
     def ensure_heading_ids(self, html_content: str) -> str:

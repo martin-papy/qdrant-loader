@@ -571,7 +571,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 
 ### Contributing to CLI
 
-- **[Contributing Guide](../../../CONTRIBUTING.md)** - How to contribute
+- **[Contributing Guide](/docs/CONTRIBUTING.md)** - How to contribute
 - **[Testing Guide](../testing/)** - Testing CLI functionality
 
 ---
