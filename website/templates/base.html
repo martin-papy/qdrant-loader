@@ -349,6 +349,11 @@
                                         class="text-light text-decoration-none">Documentation</a></li>
                                 <li><a href="{{ base_url }}coverage/" class="text-light text-decoration-none">Test
                                         Coverage</a></li>
+                                <li>
+                                    <a id="feedback-link" href="#" target="_blank" class="text-light text-decoration-none">
+                                        <i class="bi bi-chat-dots me-1"></i>Was this helpful? Give feedback
+                                    </a>
+                                </li>
                                 <li><a href="{{ base_url }}privacy-policy.html" class="text-light text-decoration-none">
                                         <i class="bi bi-shield-lock me-1"></i>Privacy Policy</a>
                                 </li>
@@ -417,6 +422,20 @@
                 const formattedDate = `${buildDate.getDate().toString().padStart(2, '0')}-${(buildDate.getMonth() + 1).toString().padStart(2, '0')}-${buildDate.getFullYear()}`;
                 document.getElementById('build-info').innerHTML =
                     `Version ${data.version} • Built ${formattedDate} • Commit ${data.commit.short}`;
+
+                // Configure feedback link to open a prefilled GitHub issue
+                try {
+                    const pageUrl = window.location.href;
+                    const title = encodeURIComponent(`[Docs Feedback] ${document.title}`);
+                    const body = encodeURIComponent(`Page: ${pageUrl}\nDocs commit: ${data.commit.short}\n\nFeedback:\n`);
+                    const issueUrl = `https://github.com/martin-papy/qdrant-loader/issues/new?assignees=martin-papy&labels=docs-feedback&title=${title}&body=${body}`;
+                    const feedbackEl = document.getElementById('feedback-link');
+                    if (feedbackEl) {
+                        feedbackEl.href = issueUrl;
+                    }
+                } catch (e) {
+                    // no-op
+                }
             })
             .catch(() => {
                 document.getElementById('build-info').innerHTML = 'Build information unavailable';
