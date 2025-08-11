@@ -70,14 +70,17 @@ STATE_DB_PATH=./workspace_state.db
 ```bash
 # Install QDrant Loader
 pip install qdrant-loader
-# Validate configurationqdrant-loader config --workspace .
+# Validate configuration
+qdrant-loader config --workspace .
 # Validate projects
 qdrant-loader project validate --workspace .
 ```
 #### 2.2 Initial Data Load
 ```bash
-# Initialize QDrant collectionqdrant-loader init --workspace .
-# Load documentation for the first timeqdrant-loader ingest --workspace .
+# Initialize QDrant collection
+qdrant-loader init --workspace .
+# Load documentation for the first time
+qdrant-loader ingest --workspace .
 # Check status
 qdrant-loader project status --workspace .
 # Start MCP server for development
@@ -281,14 +284,19 @@ qdrant-loader project list --workspace .
 qdrant-loader project status --workspace . --project-id documentation
 # Validate specific project
 qdrant-loader project validate --workspace . --project-id code-docs
-# Update only documentation projectqdrant-loader ingest --workspace . --project documentation
-# Update only code documentationqdrant-loader ingest --workspace . --project code-docs
+# Update only documentation project
+qdrant-loader ingest --workspace . --project documentation
+# Update only code documentation
+qdrant-loader ingest --workspace . --project code-docs
 ```
 ### Source-Specific Operations
 ```bash
-# Update only Git sourcesqdrant-loader ingest --workspace . --source-type git
-# Update specific Git source in documentation projectqdrant-loader ingest --workspace . --project documentation --source-type git --source main-docs
-# Update local files onlyqdrant-loader ingest --workspace . --source-type localfile
+# Update only Git sources
+qdrant-loader ingest --workspace . --source-type git
+# Update specific Git source in documentation project
+qdrant-loader ingest --workspace . --project documentation --source-type git --source main-docs
+# Update local files only
+qdrant-loader ingest --workspace . --source-type localfile
 ```
 ## 🔧 Troubleshooting
 ### Common Issues

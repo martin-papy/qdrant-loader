@@ -55,7 +55,7 @@ STATE_DB_PATH=./workspace_state.db
 ```
 ### Step 2: Onboarding Workflow
 #### 2.1 New Hire Onboarding Script
-````bash
+```bash
 #!/bin/bash
 # scripts/onboard-team-member.sh - Team member onboarding automation
 set -euo pipefail
@@ -321,8 +321,10 @@ main "$@"
 ### Step 3: Knowledge Management and Collaboration
 #### 3.1 Daily Collaboration Tasks
 ```bash
-# Update team knowledge basesqdrant-loader ingest --workspace .
-# Update specific team projectqdrant-loader ingest --workspace . --project product-team
+# Update team knowledge base
+qdrant-loader ingest --workspace .
+# Update specific team project
+qdrant-loader ingest --workspace . --project product-team
 # Check project status
 qdrant-loader project status --workspace .
 # Validate all projects
@@ -336,10 +338,14 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 echo "Starting weekly team knowledge synchronization..."
 # Update all team projects
-echo "Updating shared knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
-echo "Updating product team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project product-team
-echo "Updating engineering team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project engineering-team
-echo "Updating design team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project design-team
+echo "Updating shared knowledge..."
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
+echo "Updating product team knowledge..."
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project product-team
+echo "Updating engineering team knowledge..."
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project engineering-team
+echo "Updating design team knowledge..."
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project design-team
 # Check status of all projects
 echo ""
 echo "Project status summary:"
@@ -404,7 +410,8 @@ qdrant-loader project status --workspace .
 ```bash
 # Synchronize all team knowledge
 ./scripts/weekly-team-sync.sh
-# Update specific team onlyqdrant-loader ingest --workspace . --project engineering-team
+# Update specific team only
+qdrant-loader ingest --workspace . --project engineering-team
 # Validate all configurations
 qdrant-loader project validate --workspace .
 ```

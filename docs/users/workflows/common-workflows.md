@@ -228,7 +228,9 @@ graph TD A[User Intent] --> B[Semantic Search] B --> C[Related Content] C --> D[
 ```
 ### 3. Start Simple
 ```bash
-# Begin with basic workflow:qdrant-loader init --workspace .qdrant-loader ingest --workspace .
+# Begin with basic workflow
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 mcp-qdrant-loader
 ```
 ### 4. Iterate and Improve

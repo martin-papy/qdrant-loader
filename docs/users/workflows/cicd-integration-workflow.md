@@ -225,15 +225,55 @@ Test results are automatically processed and displayed:
 4. **Branch Protection**: Tests must pass before merging
 ## 🔧 Troubleshooting
 ### Common Issues
-1. **Test Failures** ```bash # Check test logs gh run view <run-id> --log # Run tests locally cd packages/qdrant-loader python -m pytest tests/ -v ```
-2. **Documentation Build Failures** ```bash # Check build logs gh run view <run-id> --log # Test build locally python website/build.py --output test-site ```
-3. **Publishing Failures** ```bash # Check release tag format git tag -l # Verify package build cd packages/qdrant-loader python -m build ```
-4. **Secret Configuration Issues** ```bash # Verify secrets are set gh secret list # Test with local environment cp tests/.env.test.template tests/.env.test # Edit with real values and test locally ```
-5. **Manual Deployment Issues** ```bash # Check if workflow_dispatch is enabled gh workflow list # View manual deployment run gh run list --workflow="Documentation Website" # Check deployment logs gh run view <run-id> --log # Force deploy without artifacts (emergency) gh workflow run "Documentation Website" --field force_deploy=true # Verify GitHub Pages is enabled gh api repos/:owner/:repo/pages ```
+1. **Test Failures**
+```bash
+# Check test logs
+gh run view <run-id> --log
+# Run tests locally
+cd packages/qdrant-loader
+python -m pytest tests/ -v
+```
+2. **Documentation Build Failures**
+```bash
+# Check build logs
+gh run view <run-id> --log
+# Test build locally
+python website/build.py --output test-site
+```
+3. **Publishing Failures**
+```bash
+# Check release tag format
+git tag -l
+# Verify package build
+cd packages/qdrant-loader
+python -m build
+```
+4. **Secret Configuration Issues**
+```bash
+# Verify secrets are set
+gh secret list
+# Test with local environment
+cp tests/.env.test.template tests/.env.test
+# Edit with real values and test locally
+```
+5. **Manual Deployment Issues**
+```bash
+# Check if workflow_dispatch is enabled
+gh workflow list
+# View manual deployment run
+gh run list --workflow="Documentation Website"
+# Check deployment logs
+gh run view <run-id> --log
+# Force deploy without artifacts (emergency)
+gh workflow run "Documentation Website" --field force_deploy=true
+# Verify GitHub Pages is enabled
+gh api repos/:owner/:repo/pages
+```
 ### Debugging Commands
 ```bash
 # Local testing with actual CLI commands
-qdrant-loader project --workspace . validateqdrant-loader config --workspace .
+qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
 qdrant-loader project status --workspace .
 # Check workflow artifacts
 gh run download <run-id> --name coverage-loader-<run-id>
