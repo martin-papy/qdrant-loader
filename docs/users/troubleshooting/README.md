@@ -9,13 +9,13 @@ Welcome to the QDrant Loader troubleshooting guide! This section provides compre
 Use this quick reference to identify your issue and jump to the right solution:
 
 ```
-❌ Installation fails                    → [Common Issues](./common-issues.md#installation-issues)
+❌ Installation fails                    → [Common Issues](./common-issues.html#installation-issues)
 🔌 Can't connect to QDrant              → [Connection Problems](./connection-problems.md#qdrant-connection-issues)
 🔑 Authentication errors                → [Connection Problems](./connection-problems.md#authentication-problems)
-📊 Data won't load                      → [Common Issues](./common-issues.md#data-loading-issues)
-🔍 Search returns no results            → [Common Issues](./common-issues.md#search-issues)
-🐌 Everything is slow                   → [Performance Issues](./performance-issues.md)
-💾 High memory usage                    → [Performance Issues](./performance-issues.md#memory-issues)
+📊 Data won't load                      → [Common Issues](./common-issues.html#data-loading-issues)
+🔍 Search returns no results            → [Common Issues](./common-issues.html#search-issues)
+🐌 Everything is slow                   → [Performance Issues](./performance-issues.html)
+💾 High memory usage                    → [Performance Issues](./performance-issues.html#memory-issues)
 🌐 Network timeouts                     → [Connection Problems](./connection-problems.md#network-issues)
 🛡️ Firewall blocking                   → [Connection Problems](./connection-problems.md#firewall-problems)
 📁 File permission errors               → [Error Messages](./error-messages-reference.html#file-system-errors)
@@ -36,7 +36,7 @@ grep -r "your error message" docs/users/troubleshooting/
 
 ## 📚 Troubleshooting Guides
 
-### 🔧 [Common Issues](./common-issues.md)
+### 🔧 [Common Issues](./common-issues.html)
 
 **Start here for most problems!** Covers the most frequently encountered issues with step-by-step solutions.
 
@@ -52,7 +52,7 @@ grep -r "your error message" docs/users/troubleshooting/
 
 ---
 
-### 🚀 [Performance Issues](./performance-issues.md)
+### 🚀 [Performance Issues](./performance-issues.html)
 
 Comprehensive guide for diagnosing and resolving performance problems.
 
@@ -86,7 +86,7 @@ Detailed solutions for connectivity and network-related issues.
 
 ---
 
-### 📖 [Error Messages Reference](./error-messages-reference.md)
+### 📖 [Error Messages Reference](./error-messages-reference.html)
 
 Comprehensive reference for all error messages with exact solutions.
 
@@ -182,7 +182,7 @@ docker ps | grep qdrant  # If using Docker
    - Environment variables not set
    - Invalid YAML syntax
    - Missing required fields
-   - → [Error Messages Reference](./error-messages-reference.md#configuration-errors)
+   - → [Error Messages Reference](./error-messages-reference.html#configuration-errors)
 
 2. **Connection Problems** (25%)
    - QDrant instance not accessible
@@ -194,44 +194,44 @@ docker ps | grep qdrant  # If using Docker
    - No documents found
    - File processing errors
    - Memory limitations
-   - → [Common Issues](./common-issues.md#data-loading-issues)
+   - → [Common Issues](./common-issues.html#data-loading-issues)
 
 4. **Performance Problems** (10%)
    - Slow loading or search
    - High resource usage
    - Timeout errors
-   - → [Performance Issues](./performance-issues.md)
+   - → [Performance Issues](./performance-issues.html)
 
 5. **Other Issues** (5%)
    - File permissions
    - SSL/TLS problems
    - Specific error messages
-   - → [Error Messages Reference](./error-messages-reference.md)
+   - → [Error Messages Reference](./error-messages-reference.html)
 
 ### By User Type
 
 #### **New Users**
 
-- Start with [Common Issues](./common-issues.md)
+- Start with [Common Issues](./common-issues.html)
 - Focus on installation and basic setup
 - Use quick fixes and simple solutions
 
 #### **Developers**
 
-- Check [Error Messages Reference](./error-messages-reference.md)
+- Check [Error Messages Reference](./error-messages-reference.html)
 - Use diagnostic tools and detailed logging
 - Implement error handling and monitoring
 
 #### **System Administrators**
 
-- Review [Performance Issues](./performance-issues.md)
+- Review [Performance Issues](./performance-issues.html)
 - Focus on [Connection Problems](./connection-problems.md)
 - Implement monitoring and alerting
 
 #### **Enterprise Users**
 
 - Emphasize [Connection Problems](./connection-problems.md) for proxy/firewall issues
-- Review [Performance Issues](./performance-issues.md) for optimization
+- Review [Performance Issues](./performance-issues.html) for optimization
 - Implement comprehensive monitoring
 
 ## 🛠️ Troubleshooting Methodology
@@ -441,10 +441,10 @@ qdrant-loader project --workspace . status --project-id PROJECT_ID
 
 ---
 
-**Need immediate help?** Start with the [Common Issues Guide](./common-issues.md) for quick solutions to the most frequent problems.
+**Need immediate help?** Start with the [Common Issues Guide](./common-issues.html) for quick solutions to the most frequent problems.
 
-**Got a specific error?** Jump directly to the [Error Messages Reference](./error-messages-reference.md) for detailed explanations and solutions.
+**Got a specific error?** Jump directly to the [Error Messages Reference](./error-messages-reference.html) for detailed explanations and solutions.
 
-**Performance problems?** Check the [Performance Issues Guide](./performance-issues.md) for optimization strategies.
+**Performance problems?** Check the [Performance Issues Guide](./performance-issues.html) for optimization strategies.
 
 **Connection troubles?** See the [Connection Problems Guide](./connection-problems.md) for network and authentication solutions.

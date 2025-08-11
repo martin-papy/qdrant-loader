@@ -145,7 +145,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 ### Quick Help
 
 - **[Common Issues](./troubleshooting/common-issues.md)** - Solutions to frequent problems
-- **[FAQ](./troubleshooting/common-issues.md#frequently-asked-questions)** - Quick answers to common questions
+- **[FAQ](./troubleshooting/common-issues.html#frequently-asked-questions)** - Quick answers to common questions
 
 ### Community Support
 
