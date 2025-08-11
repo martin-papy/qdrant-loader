@@ -31,8 +31,12 @@ cp packages/qdrant-loader/conf/.env.template .env
 QDrant Loader uses a **multi-project configuration** structure where all projects share a single Qdrant collection but are isolated through project metadata:
 ```yaml
 # config.yaml - Multi-project configuration
-global_config: qdrant: url: "http://localhost:6333" api_key: null # Optional for Qdrant Cloud collection_name: "my_documents" # Shared by all projects embedding: model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" vector_size: 1536
-projects: docs-project: project_id: "docs-project" display_name: "Documentation Project" description: "Company documentation" sources: git: docs-repo: base_url: "https://github.com/company/docs" branch: "main" include_paths: ["docs/**", "*.md"] token: "${GITHUB_TOKEN}" wiki-project: project_id: "wiki-project" display_name: "Wiki Project" description: "Internal wiki content" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" space_key: "WIKI" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
+global_config: qdrant: url: "http://localhost:6333" api_key: null # Optional for Qdrant Cloud collection_name: "my_documents" # Shared by all projects embedding:
+    model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" vector_size: 1536
+projects:
+  docs-project:
+    project_id: "docs-project" display_name: "Documentation Project" description: "Company documentation" sources:
+      git: docs-repo: base_url: "https://github.com/company/docs" branch: "main" include_paths: ["docs/**", "*.md"] token: "${GITHUB_TOKEN}" wiki-project: project_id: "wiki-project" display_name: "Wiki Project" description: "Internal wiki content" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" space_key: "WIKI" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
 ```
 ### Environment Variables
 ```bash
@@ -50,32 +54,32 @@ CONFLUENCE_EMAIL=your-email@company.com
 ## ⚙️ Workspace Commands
 ### Initialize Workspace
 ```bash
-# Initialize collection and prepare workspace\1init --workspace .
-# Force recreation of existing collection\1init --workspace . --force
+# Initialize collection and prepare workspaceqdrant-loader init --workspace .
+# Force recreation of existing collectionqdrant-loader init --workspace . --force
 ```
 ### Ingest Data
 ```bash
-# Process all projects and sources\1ingest --workspace .
-# Process specific project\1ingest --workspace . --project docs-project
-# Process specific source type across all projects\1ingest --workspace . --source-type git
-# Process specific source within a project\1ingest --workspace . --project docs-project --source docs-repo
-# Force processing of all documents (bypass change detection)\1ingest --workspace . --force
+# Process all projects and sourcesqdrant-loader ingest --workspace .
+# Process specific projectqdrant-loader ingest --workspace . --project docs-project
+# Process specific source type across all projectsqdrant-loader ingest --workspace . --source-type git
+# Process specific source within a projectqdrant-loader ingest --workspace . --project docs-project --source docs-repo
+# Force processing of all documents (bypass change detection)qdrant-loader ingest --workspace . --force
 ```
 ### Configuration Management
 ```bash
-# Show current configuration\1config --workspace .
+# Show current configurationqdrant-loader config --workspace .
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Show project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id docs-project
+qdrant-loader project status --workspace . --project-id docs-project
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id docs-project
+qdrant-loader project validate --workspace . --project-id docs-project
 # Output in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 ```
 ## 📁 Project Management
 ### Project Structure
@@ -87,17 +91,17 @@ Each project in the configuration has:
 ### Project Commands
 ```bash
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Show detailed project information
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id docs-project
+qdrant-loader project status --workspace . --project-id docs-project
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id docs-project
+qdrant-loader project validate --workspace . --project-id docs-project
 # Output in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 ```
 ### Project Isolation
 Projects are isolated through metadata, not separate collections:
@@ -109,7 +113,8 @@ Projects are isolated through metadata, not separate collections:
 ### Supported Source Types
 #### Git Repositories
 ```yaml
-sources: git: repo-name: base_url: "https://github.com/user/repo" branch: "main" include_paths: ["docs/**", "*.md"] exclude_paths: ["node_modules/**"] file_types: ["*.md", "*.rst", "*.txt"] token: "${GITHUB_TOKEN}" enable_file_conversion: true
+sources:
+      git: repo-name: base_url: "https://github.com/user/repo" branch: "main" include_paths: ["docs/**", "*.md"] exclude_paths: ["node_modules/**"] file_types: ["*.md", "*.rst", "*.txt"] token: "${GITHUB_TOKEN}" enable_file_conversion: true
 ```
 #### Confluence
 ```yaml
@@ -121,7 +126,9 @@ sources: jira: project-name: base_url: "https://company.atlassian.net" deploymen
 ```
 #### Local Files
 ```yaml
-sources: localfile: local-docs: base_url: "file:///path/to/files" include_paths: ["docs/**"] exclude_paths: ["tmp/**"] file_types: ["*.md", "*.txt"] max_file_size: 1048576 # 1MB enable_file_conversion: true
+sources: localfile:
+        local-docs:
+          base_url: "file:///path/to/files" include_paths: ["docs/**"] exclude_paths: ["tmp/**"] file_types: ["*.md", "*.txt"] max_file_size: 1048576 # 1MB enable_file_conversion: true
 ```
 #### Public Documentation
 ```yaml
@@ -130,7 +137,8 @@ sources: publicdocs: docs-site: base_url: "https://docs.example.com" version: "1
 ## 🔧 Advanced Configuration
 ### Global Settings
 ```yaml
-global_config: # Chunking configuration chunking: chunk_size: 1500 chunk_overlap: 200 # Embedding configuration embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # File conversion settings file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_api_key: "${OPENAI_API_KEY}"
+global_config: # Chunking configuration chunking:
+    chunk_size: 1500 chunk_overlap: 200 # Embedding configuration embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # File conversion settings file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_api_key: "${OPENAI_API_KEY}"
 ```
 ### State Management
 Workspace mode automatically manages the state database:
@@ -190,9 +198,9 @@ Workspace mode support for the MCP server is planned for future releases, which 
 - [ ] **Copy configuration template** to `config.yaml`
 - [ ] **Create environment file** with required credentials
 - [ ] **Configure projects** with your data sources
-- [ ] **Initialize collection** with `\1 init --workspace .`
-- [ ] **Ingest data** with `\1 ingest --workspace .`
-- [ ] **Verify setup** with `qdrant-loader project --workspace . list`
+- [ ] **Initialize collection** with `qdrant-loader init --workspace .`
+- [ ] **Ingest data** with `qdrant-loader ingest --workspace .`
+- [ ] **Verify setup** with `qdrant-loader project list --workspace .`
 - [ ] **Test search** through MCP server integration
 ## 🔗 Related Documentation
 - **[Configuration File Reference](./config-file-reference.md)** - Complete YAML configuration options

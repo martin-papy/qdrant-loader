@@ -189,7 +189,7 @@ source .env.development
 # Load production environment
 source .env.production
 # Load with prefix
-env $(cat .env.production | xargs)\1config --workspace .
+env $(cat .env.production | xargs)qdrant-loader config --workspace .
 ```
 ### Validation and Testing
 #### Check Required Variables for MCP Server
