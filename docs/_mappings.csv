@@ -1,6 +1,0 @@
-OldPath,NewPath,Status,Notes
-docs/developers/architecture.md,docs/developers/architecture/README.md,merged,Top-level page merged into section index
-docs/developers/deployment.md,docs/developers/deployment/README.md,merged,Top-level page merged into section index
-docs/developers/extending.md,docs/developers/extending/README.md,merged,Top-level page merged into section index
-docs/developers/testing.md,docs/developers/testing/README.md,merged,Top-level page merged into section index
-docs/getting-started/core-concepts.md,,retired,Removed in IA v2 (content redistributed)

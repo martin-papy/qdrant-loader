@@ -6,14 +6,14 @@ This documentation is organized to help you accomplish specific tasks and unders
 - **[Data Sources](./detailed-guides/data-sources/)** - Complete guides for all supported data sources
 - **[File Conversion](./detailed-guides/file-conversion/)** - Everything about processing different file types
 - **[MCP Server](./detailed-guides/mcp-server/)** - AI development integration and search capabilities
-- **Workflow Examples** - Coming later
+- **[Workflows](./workflows/)** - Common, CI/CD, content management, development, and team collaboration
 ### ⚙️ Configuration
 - **[Configuration Reference](./configuration/)** - Complete configuration options and examples
 - **[Environment Variables](./configuration/environment-variables.md)** - All environment settings explained
 ### 🖥️ Command Line Interface
 - **[CLI Reference](./cli-reference/)** - Complete command-line interface documentation
 - **[Commands](./cli-reference/commands.md)** - All commands with examples and options
-- **Automation** - Coming later
+- Automation scripts - See workflow guides
 ### 🔧 Troubleshooting
 - **[Troubleshooting Guide](./troubleshooting/)** - Solutions to common problems
 - **[Common Issues](./troubleshooting/common-issues.md)** - FAQ and quick fixes
@@ -27,10 +27,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 - [Local files](./detailed-guides/data-sources/local-files.md) - Documents and files on your system
 - [Public documentation](./detailed-guides/data-sources/public-docs.md) - External websites and docs
 #### 📄 **Process different file types**
-- PDF documents - Coming later
-- Office documents - Coming later
-- Images - Coming later
-- All supported formats - Coming later
+- [File conversion](./detailed-guides/file-conversion/)
 #### 🤖 **Integrate with AI tools**
 - Cursor IDE setup - Coming later
 - [Search capabilities](./detailed-guides/mcp-server/search-capabilities.md) - Semantic and intelligent search

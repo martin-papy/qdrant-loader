@@ -52,8 +52,10 @@ EOF
 ```
 ### Initialize and Test
 ```bash
-# Initialize QDrant collectionqdrant-loader init --workspace .
-# Display current configurationqdrant-loader config --workspace .
+# Initialize QDrant collection
+qdrant-loader init --workspace .
+# Display current configuration
+qdrant-loader config --workspace .
 # Check project status
 qdrant-loader project status --workspace .
 ```
@@ -69,7 +71,8 @@ projects: # Documentation project docs-project: project_id: "docs-project" displ
 ```
 ### Validate Configuration
 ```bash
-# Display current configurationqdrant-loader config --workspace .
+# Display current configuration
+qdrant-loader config --workspace .
 # Check project status and validate connections
 qdrant-loader project status --workspace .
 # List all configured projects
@@ -150,7 +153,9 @@ projects: prod-project: project_id: "prod-project" display_name: "Production Pro
 # Use specific configuration file
 qdrant-loader --config config-dev.yaml --env .env.dev init
 qdrant-loader --config config-prod.yaml --env .env.prod ingest
-# Use workspace mode with different environmentsqdrant-loader init --workspace ./dev-workspaceqdrant-loader ingest --workspace ./prod-workspace
+# Use workspace mode with different environments
+qdrant-loader init --workspace ./dev-workspace
+qdrant-loader ingest --workspace ./prod-workspace
 ```
 ## 🔧 Performance Tuning
 ### For Large Datasets
@@ -168,7 +173,8 @@ global: processing: chunk_size: 500 # Smaller chunks use less memory max_file_si
 ## ✅ Configuration Validation
 ### Test Your Configuration
 ```bash
-# Display current configurationqdrant-loader config --workspace .
+# Display current configuration
+qdrant-loader config --workspace .
 # Check project status and connections
 qdrant-loader project status --workspace .
 # List all projects
