@@ -305,7 +305,7 @@ curl http://localhost:6333/collections/documents
 
 - **[Setup Guide](./setup-and-integration.md)** - Complete setup instructions
 - **[Search Capabilities](./search-capabilities.md)** - Detailed feature documentation  
-- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup
+- **Cursor Integration** - Coming later
 - **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
 
 ## 🚀 Advanced Usage

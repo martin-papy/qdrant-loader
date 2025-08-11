@@ -576,9 +576,9 @@ qdrant-loader --workspace /opt/qdrant-loader/config ingest --project high-priori
 
 ### Detailed Deployment Guides
 
-- **[Environment Setup](./environment-setup.md)** - Complete environment setup guide
-- **[Monitoring and Observability](./monitoring.md)** - Comprehensive monitoring setup
-- **[Performance Tuning](./performance-tuning.md)** - Production optimization guide
+- **[Environment Setup](#environment-setup)** - Complete environment setup guide
+- **[Monitoring and Observability](#monitoring-and-observability)** - Comprehensive monitoring setup
+- **[Performance Optimization](#performance-optimization)** - Production optimization guide
 
 ### Best Practices
 
@@ -618,7 +618,7 @@ qdrant-loader --workspace /opt/qdrant-loader/config ingest --project high-priori
 
 ---
 
-**Ready to deploy?** Start with [Environment Setup](./environment-setup.md) for detailed setup instructions or jump to [Monitoring and Observability](./monitoring.md) for production monitoring. Don't forget to check [Performance Tuning](./performance-tuning.md) for optimization tips.
+**Ready to deploy?** Start with [Environment Setup](#environment-setup) for detailed setup instructions or jump to [Monitoring and Observability](#monitoring-and-observability) for production monitoring. Don't forget to check [Performance Optimization](#performance-optimization) for optimization tips.
 
 ### Performance Optimization
 
