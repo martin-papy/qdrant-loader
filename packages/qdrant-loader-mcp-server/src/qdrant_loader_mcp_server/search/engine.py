@@ -344,11 +344,37 @@ class SearchEngine:
                             facet_type=str(filter_dict.get("facet_type")),
                         )
                         continue
+
+                    # Validate and normalize values
+                    values_raw = filter_dict.get("values")
+                    if not values_raw:
+                        self.logger.warning(
+                            "Missing or empty 'values' for facet filter; skipping",
+                            facet_type=facet_type.value,
+                        )
+                        continue
+                    if isinstance(values_raw, (set, tuple)):
+                        values = list(values_raw)
+                    elif isinstance(values_raw, list):
+                        values = values_raw
+                    else:
+                        values = [values_raw]
+
+                    # Validate operator
+                    allowed_operators = {"OR", "AND"}
+                    operator = str(filter_dict.get("operator", "OR")).upper()
+                    if operator not in allowed_operators:
+                        self.logger.warning(
+                            "Invalid operator for facet filter; defaulting to 'OR'",
+                            operator=str(filter_dict.get("operator")),
+                        )
+                        operator = "OR"
+
                     filter_objects.append(
                         FacetFilter(
                             facet_type=facet_type,
-                            values=filter_dict["values"],
-                            operator=filter_dict.get("operator", "OR"),
+                            values=values,
+                            operator=operator,
                         )
                     )
 
@@ -436,11 +462,37 @@ class SearchEngine:
                             facet_type=str(filter_dict.get("facet_type")),
                         )
                         continue
+
+                    # Validate and normalize values
+                    values_raw = filter_dict.get("values")
+                    if not values_raw:
+                        self.logger.warning(
+                            "Missing or empty 'values' for facet filter; skipping",
+                            facet_type=facet_type.value,
+                        )
+                        continue
+                    if isinstance(values_raw, (set, tuple)):
+                        values = list(values_raw)
+                    elif isinstance(values_raw, list):
+                        values = values_raw
+                    else:
+                        values = [values_raw]
+
+                    # Validate operator
+                    allowed_operators = {"OR", "AND"}
+                    operator = str(filter_dict.get("operator", "OR")).upper()
+                    if operator not in allowed_operators:
+                        self.logger.warning(
+                            "Invalid operator for facet filter; defaulting to 'OR'",
+                            operator=str(filter_dict.get("operator")),
+                        )
+                        operator = "OR"
+
                     filter_objects.append(
                         FacetFilter(
                             facet_type=facet_type,
-                            values=filter_dict["values"],
-                            operator=filter_dict.get("operator", "OR"),
+                            values=values,
+                            operator=operator,
                         )
                     )
 
@@ -569,7 +621,7 @@ class SearchEngine:
                 for metric in similarity_metrics:
                     try:
                         valid_metrics.append(SimilarityMetric(metric))
-                    except Exception:
+                    except (ValueError, TypeError):
                         self.logger.warning(
                             "Invalid similarity metric provided; skipping",
                             metric=str(metric),
@@ -640,8 +692,45 @@ class SearchEngine:
                 "project_ids": project_ids,
             }
 
-            # Store original documents for lightweight formatter
-            conflicts["original_documents"] = documents
+            # Store lightweight, JSON-serializable representations of documents
+            # to keep payload minimal and avoid non-serializable objects
+            safe_documents: list[dict[str, Any]] = []
+            for doc in documents:
+                try:
+                    document_id = getattr(doc, "document_id", None)
+                    # Support either attribute or mapping style access
+                    if document_id is None and isinstance(doc, dict):
+                        document_id = doc.get("document_id") or doc.get("id")
+
+                    title = None
+                    if hasattr(doc, "get_display_title") and callable(
+                        getattr(doc, "get_display_title")
+                    ):
+                        try:
+                            title = doc.get_display_title()
+                        except Exception:
+                            title = None
+                    if not title:
+                        title = getattr(doc, "source_title", None)
+                    if not title and isinstance(doc, dict):
+                        title = doc.get("source_title") or doc.get("title")
+
+                    source_type = getattr(doc, "source_type", None)
+                    if source_type is None and isinstance(doc, dict):
+                        source_type = doc.get("source_type")
+
+                    safe_documents.append(
+                        {
+                            "document_id": document_id or "",
+                            "title": title or "Untitled",
+                            "source_type": source_type or "unknown",
+                        }
+                    )
+                except Exception:
+                    # Skip malformed entries
+                    continue
+
+            conflicts["original_documents"] = safe_documents
 
             return conflicts
 
@@ -830,8 +919,14 @@ class SearchEngine:
                 strategy = self._select_optimal_strategy(documents)
                 self.logger.info(f"Adaptive strategy selected: {strategy}")
 
-            # Convert strategy string to enum
-            clustering_strategy = ClusteringStrategy(strategy)
+            # Convert strategy string to enum with validation/fallback
+            try:
+                clustering_strategy = ClusteringStrategy(strategy)
+            except (ValueError, TypeError):
+                self.logger.warning(
+                    f"Unsupported clustering strategy '{strategy}', using 'mixed_features'"
+                )
+                clustering_strategy = ClusteringStrategy.MIXED_FEATURES
 
             # Cluster documents
             cluster_results = await self.hybrid_search.cluster_documents(
@@ -918,6 +1013,15 @@ class SearchEngine:
         self.logger.info(f"Strategy analysis: {analysis}")
         self.logger.info(f"Strategy scores: {strategy_scores}")
         self.logger.info(f"Selected strategy: {best_strategy}")
+
+        # Validate against ClusteringStrategy enum; fallback to safe default
+        try:
+            _ = ClusteringStrategy(best_strategy)
+        except Exception:
+            self.logger.warning(
+                f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'"
+            )
+            best_strategy = "mixed_features"
 
         return best_strategy
 

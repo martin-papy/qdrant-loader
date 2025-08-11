@@ -174,6 +174,8 @@ class TestAsyncFunctions:
             patch("asyncio.current_task") as mock_current_task,
             patch("asyncio.gather", new_callable=AsyncMock) as mock_gather,
             patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
+            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
         ):
 
             mock_logger = MagicMock()
@@ -194,11 +196,17 @@ class TestAsyncFunctions:
             # Mock shutdown event
             mock_shutdown_event = MagicMock()
 
+            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
+            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
+
             await shutdown(mock_loop, mock_shutdown_event)
 
             # Verify shutdown event was set and sleep was called
             mock_shutdown_event.set.assert_called_once()
-            mock_sleep.assert_called_once_with(0.2)
+            # Sleep should be awaited at least once with 0.2s during cooperative grace period
+            assert mock_sleep.await_count >= 1
+            for call in mock_sleep.await_args_list:
+                assert call.args == (0.2,)
 
             # Verify tasks were cancelled (only non-done tasks)
             mock_task1.cancel.assert_called_once()
@@ -210,8 +218,8 @@ class TestAsyncFunctions:
                 mock_task1, mock_task2, return_exceptions=True
             )
 
-            # Verify loop was stopped
-            mock_loop.stop.assert_called_once()
+            # No explicit loop.stop() should be called in cooperative shutdown
+            assert not getattr(mock_loop, "stop").called
 
     @pytest.mark.asyncio
     async def test_shutdown_with_exception(self):
@@ -227,6 +235,8 @@ class TestAsyncFunctions:
             patch("asyncio.current_task") as mock_current_task,
             patch("asyncio.gather", side_effect=mock_gather_error),
             patch("asyncio.sleep", new_callable=AsyncMock),
+            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
+            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
         ):
 
             mock_logger = MagicMock()
@@ -242,6 +252,9 @@ class TestAsyncFunctions:
             # Mock loop
             mock_loop = MagicMock()
 
+            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
+            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
+
             await shutdown(mock_loop)
 
             # Verify error was logged
@@ -249,8 +262,8 @@ class TestAsyncFunctions:
                 "Error during shutdown", exc_info=True
             )
 
-            # Verify loop was still stopped
-            mock_loop.stop.assert_called_once()
+            # No explicit loop.stop() should be called in cooperative shutdown
+            assert not getattr(mock_loop, "stop").called
 
 
 class TestStdioHandler:
