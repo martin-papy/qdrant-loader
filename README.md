@@ -154,7 +154,7 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 ### 🚀 Getting Started
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
-- **[Core Concepts](./docs/getting-started/core-concepts.md)** - Understanding the system
+- **Core Concepts** - Covered inline in Getting Started
 
 ### 👥 User Guides
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
