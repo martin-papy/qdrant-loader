@@ -65,7 +65,7 @@ qdrant-loader project --workspace . list
 ### Production Workflow
 ```bash
 # Use specific configuration files
-qdrant-loader --config /etc/qdrant-loader/config.yaml \ --env /etc/qdrant-loader/.env \ ingest
+qdrant-loader ingest --config /etc/qdrant-loader/config.yaml --env /etc/qdrant-loader/.env
 # Process specific project\1ingest --workspace . --project my-project
 # Process specific source type\1ingest --workspace . --source-type git
 # Force full re-processing\1init --workspace . --force\1ingest --workspace .
@@ -136,10 +136,10 @@ OPENAI_API_KEY=sk-proj-production-key \\1ingest --workspace .
 ### Multiple Workspaces
 ```bash
 # Process multiple workspaces
-for workspace in /data/workspaces/*/; do echo "Processing $workspace" \1ingest --workspace "$workspace"
+for workspace in /data/workspaces/*/; do echo \"Processing $workspace\" qdrant-loader ingest --workspace \"$workspace\"
 done
 # Parallel processing of workspaces
-find /data/workspaces -maxdepth 1 -type d | \ xargs -I {} -P 4\1ingest --workspace {}
+find /data/workspaces -maxdepth 1 -type d | \ xargs -I {} -P 4 qdrant-loader ingest --workspace {}
 ```
 ### Conditional Processing
 ```bash
@@ -225,9 +225,9 @@ qdrant-loader project --workspace . status --format json
 ```bash
 # Useful aliases
 alias ql='qdrant-loader --workspace .'
-alias qli=\1ingest --workspace .'
+alias qli='qdrant-loader --workspace . ingest'
 alias qlp='qdrant-loader project --workspace .'
-alias qlc=\1config --workspace .'
+alias qlc='qdrant-loader --workspace . config'
 # Useful functions
 function ql-quick() { qdrant-loader project --workspace . validate && \ \1ingest --workspace .
 }
