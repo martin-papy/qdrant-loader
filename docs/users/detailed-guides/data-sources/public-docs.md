@@ -26,6 +26,11 @@ projects:
   multi-docs: display_name: "Multi-Documentation Project" description: "Documentation from multiple external sources" collection_name: "multi-docs" sources: publicdocs: # Main API documentation api-docs: base_url: "https://api.example.com/docs" version: "v2" content_type: "html" path_pattern: "/docs/**" selectors: content: ".api-content" remove: [".sidebar", ".navigation"] download_attachments: false enable_file_conversion: false # Framework documentation framework-docs: base_url: "https://framework.example.com" version: "latest" content_type: "html" path_pattern: "/guide/**" selectors: content: ".documentation" remove: [".menu", ".footer"] download_attachments: false enable_file_conversion: false # Community wiki community-wiki: base_url: "https://wiki.example.com" version: "current" content_type: "html" exclude_paths: - "/wiki/user:**" - "/wiki/talk:**" selectors: content: ".wiki-content" remove: [".sidebar", ".edit-section"] download_attachments: false enable_file_conversion: false
 ```
 ## 🎯 Configuration Options
+
+### Validator Requirements
+- `content_type` allowed: `html`, `markdown`, or `rst`
+- `download_attachments` default: `false`
+- `attachment_selectors` have sensible defaults for common file types
 ### Required Settings
 | Option | Type | Description | Example |
 |--------|------|-------------|---------|

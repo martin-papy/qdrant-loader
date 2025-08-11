@@ -30,6 +30,9 @@ projects:
   my-project: sources: localfile: # Research papers research-papers: base_url: "file:///home/user/research/papers" file_types: - "*.pdf" - "*.tex" max_file_size: 104857600 # 100MB # Project documentation project-docs: base_url: "file:///home/user/projects/docs" file_types: - "*.md" - "*.rst" exclude_paths: - "build/**" - "_build/**" # Source code source-code: base_url: "file:///home/user/code" file_types: - "*.py" - "*.js" - "*.java" - "*.cpp" - "*.h" exclude_paths: - "node_modules/**" - "__pycache__/**" - ".git/**" - "build/**" - "dist/**"
 ```
 ## 🎯 Configuration Options
+
+### Base URL Requirements
+- `base_url` must start with `file://` (validator enforced)
 ### Connection Settings
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|
