@@ -4,28 +4,15 @@ This comprehensive guide shows how to implement effective team collaboration wor
 The team collaboration workflow focuses on breaking down knowledge silos, facilitating information sharing across teams, and creating efficient onboarding processes. This workflow is essential for organizations that need to maintain shared knowledge bases and enable effective collaboration across different departments and teams.
 ### Workflow Benefits
 ```text
-🤝 Cross-Team Knowledge   - Shared understanding across departments
-🚀 Faster Onboarding     - Streamlined new team member integration
-🔍 Knowledge Discovery   - Easy access to expertise and information
+🤝 Cross-Team Knowledge - Shared understanding across departments
+🚀 Faster Onboarding - Streamlined new team member integration
+🔍 Knowledge Discovery - Easy access to expertise and information
 📊 Collaboration Metrics - Track knowledge sharing effectiveness
-🎯 Reduced Silos         - Break down departmental barriers
+🎯 Reduced Silos - Break down departmental barriers
 ```
 ## 🏗️ Architecture Overview
 ```mermaid
-graph TD
-    A[Team A Knowledge] --> D[Shared Knowledge Hub]
-    B[Team B Knowledge] --> D
-    C[Team C Knowledge] --> D
-    D --> E[QDrant Loader]
-    E --> F[Vector Database]
-    F --> G[MCP Server]
-    G --> H[Team Members]
-    G --> I[New Hires]
-    G --> J[Cross-Team Projects]
-    K[Confluence] --> E
-    L[Git Repositories] --> E
-    M[Local Documentation] --> E
-    N[Public Documentation] --> E
+graph TD A[Team A Knowledge] --> D[Shared Knowledge Hub] B[Team B Knowledge] --> D C[Team C Knowledge] --> D D --> E[QDrant Loader] E --> F[Vector Database] F --> G[MCP Server] G --> H[Team Members] G --> I[New Hires] G --> J[Cross-Team Projects] K[Confluence] --> E L[Git Repositories] --> E M[Local Documentation] --> E N[Public Documentation] --> E
 ```
 ## 📋 Prerequisites
 ### Required Tools
@@ -49,183 +36,9 @@ graph TD
 #### 1.1 Team-Specific Projects Configuration
 ```yaml
 # config.yaml - Multi-project configuration for team collaboration
-global_config:
-  qdrant:
-    url: "${QDRANT_URL}"
-    api_key: "${QDRANT_API_KEY}"
-    collection_name: "team_collaboration"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 1536
-    tokenizer: "cl100k_base"
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
-  chunking:
-    chunk_size: 1200
-    chunk_overlap: 300
-  file_conversion:
-    max_file_size: 52428800 # 50MB
-    conversion_timeout: 300
-    markitdown:
-      enable_llm_descriptions: false
-      llm_model: "gpt-4o"
-      llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
-  state_management:
-    database_path: "${STATE_DB_PATH}"
-    table_prefix: "qdrant_loader_"
+global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "team_collaboration" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}" state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_"
 # Multi-project configuration for different teams
-projects:
-  # Shared knowledge across all teams
-  shared-knowledge:
-    project_id: "shared-knowledge"
-    display_name: "Shared Knowledge Base"
-    description: "Cross-team shared knowledge and documentation"
-    sources:
-      confluence:
-        shared-space:
-          base_url: "${CONFLUENCE_URL}"
-          deployment_type: "cloud"
-          space_key: "SHARED"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["shared", "cross-team", "onboarding"]
-          enable_file_conversion: true
-          download_attachments: true
-      git:
-        shared-docs:
-          base_url: "https://github.com/company/shared-docs.git"
-          branch: "main"
-          token: "${GITHUB_TOKEN}"
-          include_paths:
-            - "docs/**/*.md"
-            - "onboarding/**/*.md"
-            - "processes/**/*.md"
-            - "README.md"
-            - "CONTRIBUTING.md"
-          exclude_paths:
-            - "drafts/**"
-            - "*.draft.md"
-          file_types:
-            - "*.md"
-            - "*.rst"
-            - "*.txt"
-          max_file_size: 1048576
-          depth: 10
-          enable_file_conversion: true
-  # Product team knowledge
-  product-team:
-    project_id: "product-team"
-    display_name: "Product Team Knowledge"
-    description: "Product team documentation and processes"
-    sources:
-      confluence:
-        product-space:
-          base_url: "${CONFLUENCE_URL}"
-          deployment_type: "cloud"
-          space_key: "PRODUCT"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["product", "requirements", "roadmap"]
-          enable_file_conversion: true
-          download_attachments: true
-      git:
-        product-docs:
-          base_url: "https://github.com/company/product-docs.git"
-          branch: "main"
-          token: "${GITHUB_TOKEN}"
-          include_paths:
-            - "requirements/**/*.md"
-            - "roadmap/**/*.md"
-            - "user-stories/**/*.md"
-          file_types:
-            - "*.md"
-            - "*.txt"
-          max_file_size: 1048576
-          depth: 10
-          enable_file_conversion: true
-  # Engineering team knowledge
-  engineering-team:
-    project_id: "engineering-team"
-    display_name: "Engineering Team Knowledge"
-    description: "Engineering documentation, code, and technical guides"
-    sources:
-      confluence:
-        engineering-space:
-          base_url: "${CONFLUENCE_URL}"
-          deployment_type: "cloud"
-          space_key: "ENG"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page"]
-          include_labels: ["engineering", "technical", "architecture"]
-          enable_file_conversion: true
-          download_attachments: true
-      git:
-        engineering-docs:
-          base_url: "https://github.com/company/engineering.git"
-          branch: "main"
-          token: "${GITHUB_TOKEN}"
-          include_paths:
-            - "docs/**/*.md"
-            - "architecture/**/*.md"
-            - "api/**/*.yaml"
-            - "src/**/*.py"
-            - "src/**/*.js"
-            - "src/**/*.ts"
-            - "README.md"
-          exclude_paths:
-            - "src/test/**"
-            - "src/**/*.test.*"
-            - "node_modules/**"
-          file_types:
-            - "*.md"
-            - "*.py"
-            - "*.js"
-            - "*.ts"
-            - "*.yaml"
-            - "*.yml"
-          max_file_size: 1048576
-          depth: 10
-          enable_file_conversion: true
-  # Design team knowledge
-  design-team:
-    project_id: "design-team"
-    display_name: "Design Team Knowledge"
-    description: "Design documentation, guidelines, and assets"
-    sources:
-      confluence:
-        design-space:
-          base_url: "${CONFLUENCE_URL}"
-          deployment_type: "cloud"
-          space_key: "DESIGN"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["design", "guidelines", "assets"]
-          enable_file_conversion: true
-          download_attachments: true
-      localfile:
-        design-assets:
-          base_url: "file:///design/documentation"
-          include_paths:
-            - "**/*.md"
-            - "**/*.pdf"
-            - "**/*.txt"
-          exclude_paths:
-            - "**/*.tmp"
-            - "**/~*"
-          file_types:
-            - "*.md"
-            - "*.pdf"
-            - "*.txt"
-          max_file_size: 52428800
-          enable_file_conversion: true
+projects: # Shared knowledge across all teams shared-knowledge: project_id: "shared-knowledge" display_name: "Shared Knowledge Base" description: "Cross-team shared knowledge and documentation" sources: confluence: shared-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "SHARED" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["shared", "cross-team", "onboarding"] enable_file_conversion: true download_attachments: true git: shared-docs: base_url: "https://github.com/company/shared-docs.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "docs/**/*.md" - "onboarding/**/*.md" - "processes/**/*.md" - "README.md" - "CONTRIBUTING.md" exclude_paths: - "drafts/**" - "*.draft.md" file_types: - "*.md" - "*.rst" - "*.txt" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Product team knowledge product-team: project_id: "product-team" display_name: "Product Team Knowledge" description: "Product team documentation and processes" sources: confluence: product-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "PRODUCT" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["product", "requirements", "roadmap"] enable_file_conversion: true download_attachments: true git: product-docs: base_url: "https://github.com/company/product-docs.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "requirements/**/*.md" - "roadmap/**/*.md" - "user-stories/**/*.md" file_types: - "*.md" - "*.txt" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Engineering team knowledge engineering-team: project_id: "engineering-team" display_name: "Engineering Team Knowledge" description: "Engineering documentation, code, and technical guides" sources: confluence: engineering-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "ENG" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page"] include_labels: ["engineering", "technical", "architecture"] enable_file_conversion: true download_attachments: true git: engineering-docs: base_url: "https://github.com/company/engineering.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "docs/**/*.md" - "architecture/**/*.md" - "api/**/*.yaml" - "src/**/*.py" - "src/**/*.js" - "src/**/*.ts" - "README.md" exclude_paths: - "src/test/**" - "src/**/*.test.*" - "node_modules/**" file_types: - "*.md" - "*.py" - "*.js" - "*.ts" - "*.yaml" - "*.yml" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Design team knowledge design-team: project_id: "design-team" display_name: "Design Team Knowledge" description: "Design documentation, guidelines, and assets" sources: confluence: design-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DESIGN" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["design", "guidelines", "assets"] enable_file_conversion: true download_attachments: true localfile: design-assets: base_url: "file:///design/documentation" include_paths: - "**/*.md" - "**/*.pdf" - "**/*.txt" exclude_paths: - "**/*.tmp" - "**/~*" file_types: - "*.md" - "*.pdf" - "*.txt" max_file_size: 52428800 enable_file_conversion: true
 ```
 #### 1.2 Environment Variables
 ```bash
@@ -249,32 +62,10 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 ONBOARDING_DIR="${ONBOARDING_DIR:-./onboarding}"
 # Function to create onboarding package
-create_onboarding_package() {
-    local new_hire_email="$1"
-    local team="$2"
-    local mentor="${3:-}"
-    echo "Creating onboarding package for $new_hire_email (Team: $team)"
-    # Create personalized onboarding directory
-    local onboarding_path="$ONBOARDING_DIR/$new_hire_email"
-    mkdir -p "$onboarding_path"
-    # Generate team-specific knowledge summary
-    generate_team_knowledge_summary "$team" "$onboarding_path"
-    # Create learning path
-    create_learning_path "$team" "$onboarding_path"
-    # Set up AI assistant access
-    setup_ai_assistant_access "$new_hire_email" "$team"
-    # Generate onboarding checklist
-    generate_onboarding_checklist "$team" "$onboarding_path"
-    echo "Onboarding package created: $onboarding_path"
+create_onboarding_package() { local new_hire_email="$1" local team="$2" local mentor="${3:-}" echo "Creating onboarding package for $new_hire_email (Team: $team)" # Create personalized onboarding directory local onboarding_path="$ONBOARDING_DIR/$new_hire_email" mkdir -p "$onboarding_path" # Generate team-specific knowledge summary generate_team_knowledge_summary "$team" "$onboarding_path" # Create learning path create_learning_path "$team" "$onboarding_path" # Set up AI assistant access setup_ai_assistant_access "$new_hire_email" "$team" # Generate onboarding checklist generate_onboarding_checklist "$team" "$onboarding_path" echo "Onboarding package created: $onboarding_path"
 }
 # Function to generate team knowledge summary
-generate_team_knowledge_summary() {
-    local team="$1"
-    local output_dir="$2"
-    echo "Generating knowledge summary for $team team..."
-    # Get project status to understand available knowledge
-    local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
-    cat > "$output_dir/knowledge-summary.md" << EOF
+generate_team_knowledge_summary() { local team="$1" local output_dir="$2" echo "Generating knowledge summary for $team team..." # Get project status to understand available knowledge local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]") cat > "$output_dir/knowledge-summary.md" << EOF
 # $team Team Knowledge Summary
 ## Welcome to the $team Team!
 This summary provides an overview of the knowledge and resources available to help you get started.
@@ -331,14 +122,10 @@ This summary provides an overview of the knowledge and resources available to he
 - **Team Contacts**: [See onboarding checklist]
 ---
 **Welcome to the team!** 🎉
-EOF
-    echo "Knowledge summary generated: $output_dir/knowledge-summary.md"
+EOF echo "Knowledge summary generated: $output_dir/knowledge-summary.md"
 }
 # Function to create learning path
-create_learning_path() {
-    local team="$1"
-    local output_dir="$2"
-    cat > "$output_dir/learning-path.md" << EOF
+create_learning_path() { local team="$1" local output_dir="$2" cat > "$output_dir/learning-path.md" << EOF
 # $team Team Learning Path
 ## Week 1: Foundation
 - [ ] Read team knowledge summary
@@ -394,67 +181,26 @@ Search for information about:
 5. **Share Feedback**: Help improve the onboarding process for future hires
 ---
 **Happy Learning!** 📚
-EOF
-    echo "Learning path created: $output_dir/learning-path.md"
+EOF echo "Learning path created: $output_dir/learning-path.md"
 }
 # Function to setup AI assistant access
-setup_ai_assistant_access() {
-    local user_email="$1"
-    local team="$2"
-    echo "Setting up AI assistant access for $user_email"
-    # Create user-specific MCP configuration for Cursor
-    cat > "$ONBOARDING_DIR/$user_email/cursor-mcp-config.json" << EOF
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "${QDRANT_URL}",
-        "QDRANT_API_KEY": "${QDRANT_API_KEY}",
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-      }
-    }
-  }
+setup_ai_assistant_access() { local user_email="$1" local team="$2" echo "Setting up AI assistant access for $user_email" # Create user-specific MCP configuration for Cursor cat > "$ONBOARDING_DIR/$user_email/cursor-mcp-config.json" << EOF
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "${QDRANT_URL}", "QDRANT_API_KEY": "${QDRANT_API_KEY}", "OPENAI_API_KEY": "${OPENAI_API_KEY}" } } }
 }
-EOF
-    # Create user-specific MCP configuration for Claude Desktop
-    cat > "$ONBOARDING_DIR/$user_email/claude-desktop-config.json" << EOF
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "${QDRANT_URL}",
-        "QDRANT_API_KEY": "${QDRANT_API_KEY}",
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-      }
-    }
-  }
+EOF # Create user-specific MCP configuration for Claude Desktop cat > "$ONBOARDING_DIR/$user_email/claude-desktop-config.json" << EOF
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "${QDRANT_URL}", "QDRANT_API_KEY": "${QDRANT_API_KEY}", "OPENAI_API_KEY": "${OPENAI_API_KEY}" } } }
 }
-EOF
-    # Create setup instructions
-    cat > "$ONBOARDING_DIR/$user_email/ai-assistant-setup.md" << EOF
+EOF # Create setup instructions cat > "$ONBOARDING_DIR/$user_email/ai-assistant-setup.md" << EOF
 # AI Assistant Setup Instructions
 ## Overview
 Your AI assistant can help you search and discover information from the team's knowledge base using QDrant Loader's MCP server.
 ## Setup for Cursor IDE
-1. Copy the configuration to Cursor's MCP settings:
-   \`\`\`bash
-   cp cursor-mcp-config.json ~/.cursor/mcp_settings.json
-   \`\`\`
+1. Copy the configuration to Cursor's MCP settings: \`\`\`bash cp cursor-mcp-config.json ~/.cursor/mcp_settings.json \`\`\`
 2. Update the API keys in the configuration file
 3. Restart Cursor IDE
 4. The QDrant Loader tools will be available in Cursor
 ## Setup for Claude Desktop
-1. Copy the configuration to Claude Desktop's config directory:
-   **macOS:**
-   \`\`\`bash
-   cp claude-desktop-config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
-   \`\`\`
-   **Linux:**
-   \`\`\`bash
-   cp claude-desktop-config.json ~/.config/claude/claude_desktop_config.json
-   \`\`\`
+1. Copy the configuration to Claude Desktop's config directory: **macOS:** \`\`\`bash cp claude-desktop-config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json \`\`\` **Linux:** \`\`\`bash cp claude-desktop-config.json ~/.config/claude/claude_desktop_config.json \`\`\`
 2. Update the API keys in the configuration file
 3. Restart Claude Desktop
 4. The QDrant Loader tools will be available in Claude Desktop
@@ -481,14 +227,10 @@ If you have issues with the AI assistant setup:
 4. Check the troubleshooting documentation
 ---
 **Happy Searching!** 🔍
-EOF
-    echo "AI assistant configured for $user_email"
+EOF echo "AI assistant configured for $user_email"
 }
 # Function to generate onboarding checklist
-generate_onboarding_checklist() {
-    local team="$1"
-    local output_dir="$2"
-    cat > "$output_dir/onboarding-checklist.md" << EOF
+generate_onboarding_checklist() { local team="$1" local output_dir="$2" cat > "$output_dir/onboarding-checklist.md" << EOF
 # $team Team Onboarding Checklist
 ## Pre-Start (HR/Manager)
 - [ ] Send welcome email with onboarding package
@@ -570,40 +312,17 @@ By the end of your first month, you should:
 ---
 **Welcome to the $team team!** 🎉
 We're excited to have you join us and look forward to your contributions!
-EOF
-    echo "Onboarding checklist created: $output_dir/onboarding-checklist.md"
+EOF echo "Onboarding checklist created: $output_dir/onboarding-checklist.md"
 }
 # Main function
-main() {
-    local command="${1:-help}"
-    case "$command" in
-        onboard)
-            if [ $# -lt 3 ]; then
-                echo "Usage: $0 onboard <email> <team> [mentor]"
-                echo "Example: $0 onboard john.doe@company.com engineering jane.smith@company.com"
-                exit 1
-            fi
-            create_onboarding_package "$2" "$3" "${4:-}"
-            ;;
-        help|*)
-            echo "Team Member Onboarding"
-            echo ""
-            echo "Commands:"
-            echo "  onboard <email> <team> [mentor]  - Create onboarding package"
-            echo "  help                             - Show this help"
-            echo ""
-            echo "Available teams: shared-knowledge, product-team, engineering-team, design-team"
-            ;;
-    esac
+main() { local command="${1:-help}" case "$command" in onboard) if [ $# -lt 3 ]; then echo "Usage: $0 onboard <email> <team> [mentor]" echo "Example: $0 onboard john.doe@company.com engineering jane.smith@company.com" exit 1 fi create_onboarding_package "$2" "$3" "${4:-}" ;; help|*) echo "Team Member Onboarding" echo "" echo "Commands:" echo " onboard <email> <team> [mentor] - Create onboarding package" echo " help - Show this help" echo "" echo "Available teams: shared-knowledge, product-team, engineering-team, design-team" ;; esac
 }
 main "$@"
 ### Step 3: Knowledge Management and Collaboration
 #### 3.1 Daily Collaboration Tasks
 ```bash
-# Update team knowledge bases
-\1 ingest --workspace .
-# Update specific team project
-\1 ingest --workspace . --project product-team
+# Update team knowledge bases\1ingest --workspace .
+# Update specific team project\1ingest --workspace . --project product-team
 # Check project status
 qdrant-loader project --workspace . status
 # Validate all projects
@@ -617,14 +336,10 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 echo "Starting weekly team knowledge synchronization..."
 # Update all team projects
-echo "Updating shared knowledge..."
-\1 ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
-echo "Updating product team knowledge..."
-\1 ingest --workspace "$WORKSPACE_DIR" --project product-team
-echo "Updating engineering team knowledge..."
-\1 ingest --workspace "$WORKSPACE_DIR" --project engineering-team
-echo "Updating design team knowledge..."
-\1 ingest --workspace "$WORKSPACE_DIR" --project design-team
+echo "Updating shared knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
+echo "Updating product team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project product-team
+echo "Updating engineering team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project engineering-team
+echo "Updating design team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project design-team
 # Check status of all projects
 echo ""
 echo "Project status summary:"
@@ -689,8 +404,7 @@ qdrant-loader project --workspace . status
 ```bash
 # Synchronize all team knowledge
 ./scripts/weekly-team-sync.sh
-# Update specific team only
-\1 ingest --workspace . --project engineering-team
+# Update specific team only\1ingest --workspace . --project engineering-team
 # Validate all configurations
 qdrant-loader project --workspace . validate
 ```
@@ -709,24 +423,20 @@ qdrant-loader project --workspace . list
 ```bash
 # Check project status
 qdrant-loader project --workspace . status
-# Validate configuration
-\1 config --workspace .
+# Validate configuration\1config --workspace .
 # Verify MCP server is running
 mcp-qdrant-loader
 ```
 **Issue: Knowledge not updating**
 ```bash
-# Force re-initialization
-\1 init --workspace . --force
-# Re-ingest all content
-\1 ingest --workspace .
+# Force re-initialization\1init --workspace . --force
+# Re-ingest all content\1ingest --workspace .
 # Check specific project
 qdrant-loader project --workspace . status --project-id team-name
 ```
 **Issue: Onboarding package creation fails**
 ```bash
-# Check workspace configuration
-\1 config --workspace .
+# Check workspace configuration\1config --workspace .
 # Verify project exists
 qdrant-loader project --workspace . list
 # Check environment variables

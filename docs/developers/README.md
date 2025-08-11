@@ -13,26 +13,26 @@ Welcome to the QDrant Loader developer documentation! This guide provides everyt
 QDrant Loader follows a modular architecture designed for multi-project document ingestion and vector storage:
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader Core                       │
+│ QDrant Loader Core │
 ├─────────────────────────────────────────────────────────────┤
-│  Data Sources    │  Processing      │  Vector Storage       │
-│  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
-│  │ Connectors  │ │  │ Processors  │ │  │ QDrant Client   │  │
-│  │ - Local     │ │  │ - MarkItDown│ │  │ - Collections   │  │
-│  │ - Git       │ │  │ - Text      │ │  │ - Vectors       │  │
-│  │ - Confluence│ │  │ - Chunking  │ │  │ - Search        │  │
-│  │ - Jira      │ │  │ - Embedding │ │  │ - Metadata      │  │
-│  │ - PublicDocs│ │  │             │ │  │                 │  │
-│  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
+│ Data Sources │ Processing │ Vector Storage │
+│ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────────┐ │
+│ │ Connectors │ │ │ Processors │ │ │ QDrant Client │ │
+│ │ - Local │ │ │ - MarkItDown│ │ │ - Collections │ │
+│ │ - Git │ │ │ - Text │ │ │ - Vectors │ │
+│ │ - Confluence│ │ │ - Chunking │ │ │ - Search │ │
+│ │ - Jira │ │ │ - Embedding │ │ │ - Metadata │ │
+│ │ - PublicDocs│ │ │ │ │ │ │ │
+│ └─────────────┘ │ └─────────────┘ │ └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  MCP Server      │  CLI Interface   │  Configuration       │
-│  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
-│  │ Search APIs │ │  │ Commands    │ │  │ YAML Config     │  │
-│  │ - Semantic  │ │  │ - init      │ │  │ - Multi-project │  │
-│  │ - Hierarchy │ │  │ - ingest    │ │  │ - Workspace     │  │
-│  │ - Attachment│ │  │ - config    │ │  │ - Environment   │  │
-│  │             │ │  │ - project   │ │  │ - Validation    │  │
-│  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
+│ MCP Server │ CLI Interface │ Configuration │
+│ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────────┐ │
+│ │ Search APIs │ │ │ Commands │ │ │ YAML Config │ │
+│ │ - Semantic │ │ │ - init │ │ │ - Multi-project │ │
+│ │ - Hierarchy │ │ │ - ingest │ │ │ - Workspace │ │
+│ │ - Attachment│ │ │ - config │ │ │ - Environment │ │
+│ │ │ │ │ - project │ │ │ - Validation │ │
+│ └─────────────┘ │ └─────────────┘ │ └─────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 ## 🚀 Getting Started for Developers
@@ -43,7 +43,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 # Install development dependencies
 cd packages/qdrant-loader
 pip install -e ".[dev]"
@@ -81,52 +81,18 @@ mypy src/
 ## 📚 Core Concepts for Developers
 ### Data Flow Architecture
 Understanding the data flow is crucial for development:
-1. **Configuration Phase**
-   - Multi-project workspace configuration
-   - Global settings and project-specific sources
-   - Environment variable management
-   - Validation and initialization
-2. **Ingestion Phase**
-   - Connectors fetch documents from data sources
-   - File conversion using MarkItDown library
-   - Content extraction and cleaning
-   - Chunking strategies for large documents
-   - Metadata extraction and enrichment
-3. **Embedding Phase**
-   - Text content converted to embeddings via OpenAI
-   - Batch processing for efficiency
-   - Error handling and retries
-   - Progress tracking and metrics
-4. **Storage Phase**
-   - Vectors stored in QDrant collections
-   - Metadata indexed for filtering
-   - Project-based organization
-   - State tracking and change detection
-5. **Search Phase (MCP Server)**
-   - Semantic similarity search
-   - Hierarchy-aware search
-   - Attachment-specific search
-   - Project filtering and organization
+1. **Configuration Phase** - Multi-project workspace configuration - Global settings and project-specific sources - Environment variable management - Validation and initialization
+2. **Ingestion Phase** - Connectors fetch documents from data sources - File conversion using MarkItDown library - Content extraction and cleaning - Chunking strategies for large documents - Metadata extraction and enrichment
+3. **Embedding Phase** - Text content converted to embeddings via OpenAI - Batch processing for efficiency - Error handling and retries - Progress tracking and metrics
+4. **Storage Phase** - Vectors stored in QDrant collections - Metadata indexed for filtering - Project-based organization - State tracking and change detection
+5. **Search Phase (MCP Server)** - Semantic similarity search - Hierarchy-aware search - Attachment-specific search - Project filtering and organization
 ### Connector System
 QDrant Loader uses a connector-based architecture for data sources:
 ```python
 # Example connector implementation
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.core.document import Document
-class CustomConnector(BaseConnector):
-    async def get_documents(self) -> list[Document]:
-        """Get documents from the source."""
-        documents = []
-        # Your custom logic here
-        for item in self.fetch_data():
-            doc = Document(
-                content=item.content,
-                metadata=item.metadata,
-                source_type="custom",
-                source_name=self.config.name
-            )
-            documents.append(doc)
-        return documents
+class CustomConnector(BaseConnector): async def get_documents(self) -> list[Document]: """Get documents from the source.""" documents = [] # Your custom logic here for item in self.fetch_data(): doc = Document( content=item.content, metadata=item.metadata, source_type="custom", source_name=self.config.name ) documents.append(doc) return documents
 ```
 Available connectors:
 - `LocalFileConnector` - Local file system
@@ -136,64 +102,14 @@ Available connectors:
 - `PublicDocsConnector` - Public documentation sites
 ## 🔧 Development Workflows
 ### Contributing to Core
-1. **Fork and Clone**
-   ```bash
-   git clone https://github.com/your-username/qdrant-loader.git
-   cd qdrant-loader
-   git remote add upstream https://github.com/martin-papy/qdrant-loader.git
-   ```
-2. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Development Cycle**
-   ```bash
-   # Make changes
-   # Run tests
-   make test
-   # Check code quality
-   make lint
-   # Commit changes
-   git commit -m "feat: add new feature"
-   ```
-4. **Submit Pull Request**
-   - Ensure all tests pass
-   - Update documentation
-   - Add changelog entry
-   - Request review
+1. **Fork and Clone** ```bash git clone https://github.com/your-username/qdrant-loader.git cd qdrant-loader git remote add upstream https://github.com/martin-papy/qdrant-loader.git ```
+2. **Create Feature Branch** ```bash git checkout -b feature/your-feature-name ```
+3. **Development Cycle** ```bash # Make changes # Run tests make test # Check code quality make lint # Commit changes git commit -m "feat: add new feature" ```
+4. **Submit Pull Request** - Ensure all tests pass - Update documentation - Add changelog entry - Request review
 ### Custom Connector Development
-1. **Create Connector Structure**
-   ```
-   my-connector/
-   ├── src/
-   │   └── my_connector/
-   │       ├── __init__.py
-   │       ├── connector.py
-   │       └── config.py
-   ├── tests/
-   └── pyproject.toml
-   ```
-2. **Implement Connector Interface**
-   ```python
-   from qdrant_loader.connectors.base import BaseConnector
-   from qdrant_loader.config.source_config import SourceConfig
-   class MyConnector(BaseConnector):
-       def __init__(self, config: SourceConfig):
-           super().__init__(config)
-           # Initialize your connector
-       async def get_documents(self) -> list[Document]:
-           # Implement document fetching logic
-           pass
-   ```
-3. **Add Configuration Support**
-   ```python
-   from pydantic import BaseModel
-   class MyConnectorConfig(SourceConfig):
-       source_type: str = "my_connector"
-       api_key: str
-       base_url: str
-       # Add your configuration fields
-   ```
+1. **Create Connector Structure** ``` my-connector/ ├── src/ │ └── my_connector/ │ ├── __init__.py │ ├── connector.py │ └── config.py ├── tests/ └── pyproject.toml ```
+2. **Implement Connector Interface** ```python from qdrant_loader.connectors.base import BaseConnector from qdrant_loader.config.source_config import SourceConfig class MyConnector(BaseConnector): def __init__(self, config: SourceConfig): super().__init__(config) # Initialize your connector async def get_documents(self) -> list[Document]: # Implement document fetching logic pass ```
+3. **Add Configuration Support** ```python from pydantic import BaseModel class MyConnectorConfig(SourceConfig): source_type: str = "my_connector" api_key: str base_url: str # Add your configuration fields ```
 ## 📖 Detailed Guides
 ### [Architecture Guide](./architecture.md)
 Deep dive into system design, component interactions, and architectural decisions. Essential reading for understanding how QDrant Loader works internally.
@@ -230,55 +146,35 @@ Production deployment strategies, containerization, and operational best practic
 ## 🛠️ Development Tools and Utilities
 ### Available CLI Commands
 ```bash
-# Initialize QDrant collection
-\1 init --workspace .
-# Ingest documents
-\1 ingest --workspace .
-# View configuration
-\1 config --workspace .
-# Project management
-\1 project \3 --workspace \2
-\1 project \3 --workspace \2
-\1 project \3 --workspace \2
-# Start MCP server
+# Initialize QDrant collection\1init --workspace .
+# Ingest documents\1ingest --workspace .
+# View configuration\1config --workspace .
+# Project management\1project\1--workspace\1\1 project\1--workspace\1\1 project\1--workspace\1# Start MCP server
 mcp-qdrant-loader
 ```
 ### Debugging and Profiling
 ```bash
 # Enable debug logging
 qdrant-loader --log-level DEBUG --workspace . ingest
-# Profile performance
-\1 ingest --workspace . --profile
+# Profile performance\1ingest --workspace . --profile
 # Memory profiling (requires memory_profiler)
 python -m memory_profiler your_script.py
 ```
 ### Development Scripts
 ```bash
 # Makefile targets
-make test          # Run all tests
-make lint          # Run linting
-make format        # Format code
-make docs          # Build documentation
-make clean         # Clean build artifacts
+make test # Run all tests
+make lint # Run linting
+make format # Format code
+make docs # Build documentation
+make clean # Clean build artifacts
 ```
 ## 🔗 Integration Examples
 ### Workspace Configuration
 ```yaml
 # config.yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "my_collection"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  - project_id: "docs"
-    sources:
-      - source_type: "local_files"
-        name: "documentation"
-        config:
-          base_url: "file://./docs"
-          include_paths: ["**/*.md"]
+global_config: qdrant: url: "http://localhost:6333" collection_name: "my_collection" openai: api_key: "${OPENAI_API_KEY}"
+projects: - project_id: "docs" sources: - source_type: "local_files" name: "documentation" config: base_url: "file://./docs" include_paths: ["**/*.md"]
 ```
 ### Programmatic Usage
 ```python

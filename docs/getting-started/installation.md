@@ -19,9 +19,7 @@ QDrant Loader requires a QDrant instance to store vectors and metadata.
 **Option 1: Docker**
 ```bash
 # Start QDrant with Docker
-docker run -p 6333:6333 -p 6334:6334 \
-  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-  qdrant/qdrant
+docker run -p 6333:6333 -p 6334:6334 \ -v $(pwd)/qdrant_storage:/qdrant/storage:z \ qdrant/qdrant
 ```
 **Option 2: QDrant Cloud**
 1. Sign up at [QDrant Cloud](https://cloud.qdrant.io/)
@@ -76,7 +74,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 # Install in development mode
 pip install -e packages/qdrant-loader[dev]
 pip install -e packages/qdrant-loader-mcp-server[dev]
@@ -89,7 +87,7 @@ For users who want to keep QDrant Loader isolated:
 ```bash
 # Create dedicated virtual environment
 python -m venv qdrant-loader-env
-source qdrant-loader-env/bin/activate  # On Windows: qdrant-loader-env\Scripts\activate
+source qdrant-loader-env/bin/activate # On Windows: qdrant-loader-env\Scripts\activate
 # Install packages
 pip install qdrant-loader qdrant-loader-mcp-server
 # Create activation script for future use
@@ -196,8 +194,8 @@ mcp-qdrant-loader --help
 qdrant-loader project status
 # For basic testing, you would typically:
 # 1. Set up a workspace with config.yaml and .env
-# 2. Initialize the collection: \1 init --workspace .
-# 3. Run ingestion: \1 ingest --workspace .
+# 2. Initialize the collection:\1init --workspace .
+# 3. Run ingestion:\1ingest --workspace .
 ```
 ## 🔧 Configuration Setup
 After installation, you'll need to configure QDrant Loader:
@@ -215,27 +213,17 @@ Create a `.env` file or set environment variables:
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-openai-api-key"
 # Optional
-export QDRANT_API_KEY="your-qdrant-api-key"  # For QDrant Cloud
+export QDRANT_API_KEY="your-qdrant-api-key" # For QDrant Cloud
 export QDRANT_COLLECTION_NAME="documents"
 ```
 ### Configuration File
 Create `config.yaml` in your workspace or `~/.qdrant-loader/config.yaml`:
 ```yaml
 # Basic configuration
-qdrant:
-  url: "${QDRANT_URL}"
-  collection_name: "${QDRANT_COLLECTION_NAME}"
-openai:
-  api_key: "${OPENAI_API_KEY}"
-  model: "text-embedding-3-small"
+qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}"
+openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
 # Data sources
-sources:
-  git:
-    enabled: true
-  confluence:
-    enabled: false
-  local:
-    enabled: true
+sources: git: enabled: true confluence: enabled: false local: enabled: true
 ```
 ## 🔧 Troubleshooting Installation
 ### Common Issues
@@ -291,8 +279,7 @@ qdrant-loader config
 # Check API key is set
 echo $OPENAI_API_KEY
 # Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-  https://api.openai.com/v1/models
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models
 # Set API key
 export OPENAI_API_KEY="your-actual-api-key"
 ```

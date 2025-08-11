@@ -6,10 +6,10 @@ QDrant Loader uses environment variables in two ways:
 2. **Config substitution** - Variables substituted into YAML configuration files using `${VARIABLE_NAME}` syntax
 ### Configuration Priority
 ```text
-1. Command-line arguments    (highest priority)
-2. Environment variables     ← This guide
+1. Command-line arguments (highest priority)
+2. Environment variables ← This guide
 3. Configuration file
-4. Default values           (lowest priority)
+4. Default values (lowest priority)
 ```
 ## 🔧 Environment Variables Used Directly by Code
 These environment variables are read directly by the application code:
@@ -19,117 +19,77 @@ These environment variables are read directly by the application code:
 - **Used by**: MCP server configuration
 - **Required**: No (defaults to "http://localhost:6333")
 - **Format**: `http://host:port` or `https://host:port`
-- **Examples**:
-  ```bash
-  export QDRANT_URL="http://localhost:6333"
-  export QDRANT_URL="https://your-cluster.qdrant.io"
-  ```
+- **Examples**: ```bash export QDRANT_URL="http://localhost:6333" export QDRANT_URL="https://your-cluster.qdrant.io" ```
 #### QDRANT_API_KEY
 - **Description**: API key for QDrant Cloud or secured instances
 - **Used by**: MCP server configuration
 - **Required**: No (only for secured QDrant instances)
 - **Format**: String
-- **Examples**:
-  ```bash
-  export QDRANT_API_KEY="your-qdrant-cloud-api-key"
-  ```
+- **Examples**: ```bash export QDRANT_API_KEY="your-qdrant-cloud-api-key" ```
 #### QDRANT_COLLECTION_NAME
 - **Description**: Name of the QDrant collection to use
 - **Used by**: MCP server configuration
 - **Required**: No (defaults to "documents")
 - **Format**: String (alphanumeric, underscores, hyphens)
-- **Examples**:
-  ```bash
-  export QDRANT_COLLECTION_NAME="documents"
-  export QDRANT_COLLECTION_NAME="my_project_docs"
-  ```
+- **Examples**: ```bash export QDRANT_COLLECTION_NAME="documents" export QDRANT_COLLECTION_NAME="my_project_docs" ```
 ### OpenAI Configuration
 #### OPENAI_API_KEY
 - **Description**: OpenAI API key for embeddings and file conversion
 - **Used by**: MCP server configuration, file conversion fallback
 - **Required**: Yes (when using OpenAI models)
 - **Format**: String starting with "sk-"
-- **Examples**:
-  ```bash
-  export OPENAI_API_KEY="sk-your-openai-api-key"
-  ```
+- **Examples**: ```bash export OPENAI_API_KEY="sk-your-openai-api-key" ```
 ### Data Source Authentication
 #### CONFLUENCE_TOKEN
 - **Description**: Confluence API token for authentication
 - **Used by**: Confluence connector when not specified in config
 - **Required**: No (fallback only)
 - **Format**: String
-- **Examples**:
-  ```bash
-  export CONFLUENCE_TOKEN="your-confluence-api-token"
-  ```
+- **Examples**: ```bash export CONFLUENCE_TOKEN="your-confluence-api-token" ```
 #### CONFLUENCE_EMAIL
 - **Description**: Confluence user email for Cloud authentication
 - **Used by**: Confluence connector when not specified in config
 - **Required**: No (fallback only)
 - **Format**: Email address
-- **Examples**:
-  ```bash
-  export CONFLUENCE_EMAIL="user@company.com"
-  ```
+- **Examples**: ```bash export CONFLUENCE_EMAIL="user@company.com" ```
 #### JIRA_TOKEN
 - **Description**: JIRA API token for authentication
 - **Used by**: JIRA connector when not specified in config
 - **Required**: No (fallback only)
 - **Format**: String
-- **Examples**:
-  ```bash
-  export JIRA_TOKEN="your-jira-api-token"
-  ```
+- **Examples**: ```bash export JIRA_TOKEN="your-jira-api-token" ```
 #### JIRA_EMAIL
 - **Description**: JIRA user email for Cloud authentication
 - **Used by**: JIRA connector when not specified in config
 - **Required**: No (fallback only)
 - **Format**: Email address
-- **Examples**:
-  ```bash
-  export JIRA_EMAIL="user@company.com"
-  ```
+- **Examples**: ```bash export JIRA_EMAIL="user@company.com" ```
 ### MCP Server Logging
 #### MCP_LOG_LEVEL
 - **Description**: Log level for MCP server
 - **Used by**: MCP server logging configuration
 - **Required**: No (defaults to "INFO")
 - **Format**: String (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-- **Examples**:
-  ```bash
-  export MCP_LOG_LEVEL="INFO"
-  export MCP_LOG_LEVEL="DEBUG"
-  ```
+- **Examples**: ```bash export MCP_LOG_LEVEL="INFO" export MCP_LOG_LEVEL="DEBUG" ```
 #### MCP_LOG_FILE
 - **Description**: Path to MCP server log file
 - **Used by**: MCP server logging configuration
 - **Required**: No (console only if not set)
 - **Format**: File path
-- **Examples**:
-  ```bash
-  export MCP_LOG_FILE="/var/log/mcp-server.log"
-  export MCP_LOG_FILE="./logs/mcp.log"
-  ```
+- **Examples**: ```bash export MCP_LOG_FILE="/var/log/mcp-server.log" export MCP_LOG_FILE="./logs/mcp.log" ```
 #### MCP_DISABLE_CONSOLE_LOGGING
 - **Description**: Disable console logging for MCP server
 - **Used by**: MCP server logging configuration
 - **Required**: No (defaults to false)
 - **Format**: Boolean string ("true"/"false")
-- **Examples**:
-  ```bash
-  export MCP_DISABLE_CONSOLE_LOGGING="true"
-  ```
+- **Examples**: ```bash export MCP_DISABLE_CONSOLE_LOGGING="true" ```
 ### Development/Release Variables
 #### GITHUB_TOKEN
 - **Description**: GitHub token for release automation
 - **Used by**: Release script
 - **Required**: No (only for releases)
 - **Format**: String (ghp_* or github_pat_*)
-- **Examples**:
-  ```bash
-  export GITHUB_TOKEN="ghp_your-github-token"
-  ```
+- **Examples**: ```bash export GITHUB_TOKEN="ghp_your-github-token" ```
 ## 📝 Environment Variables for Config File Substitution
 These variables are substituted into YAML configuration files using `${VARIABLE_NAME}` syntax. They are not read directly by the code but can be used in config files:
 ### Common Substitution Variables
@@ -144,15 +104,8 @@ Any environment variable can be used for substitution in config files. Common ex
 - `JIRA_PAT` - JIRA Personal Access Tokens
 **Example config usage:**
 ```yaml
-global_config:
-  state_management:
-    database_path: "${STATE_DB_PATH}"
-sources:
-  confluence:
-    my-wiki:
-      base_url: "${CONFLUENCE_URL}"
-      space_key: "${CONFLUENCE_SPACE_KEY}"
-      token: "${CONFLUENCE_TOKEN}"
+global_config: state_management: database_path: "${STATE_DB_PATH}"
+sources: confluence: my-wiki: base_url: "${CONFLUENCE_URL}" space_key: "${CONFLUENCE_SPACE_KEY}" token: "${CONFLUENCE_TOKEN}"
 ```
 ## 📋 Environment File Templates
 ### Basic .env Template
@@ -222,9 +175,9 @@ GITHUB_TOKEN=ghp_your-production-github-token
 #### Using .env Files
 ```bash
 # Load from .env file
-set -a  # automatically export all variables
+set -a # automatically export all variables
 source .env
-set +a  # stop automatically exporting
+set +a # stop automatically exporting
 # Or use direnv (if installed)
 echo "source .env" > .envrc
 direnv allow
@@ -236,15 +189,13 @@ source .env.development
 # Load production environment
 source .env.production
 # Load with prefix
-env $(cat .env.production | xargs) \1 config --workspace .
+env $(cat .env.production | xargs)\1config --workspace .
 ```
 ### Validation and Testing
 #### Check Required Variables for MCP Server
 ```bash
 # Check if MCP server variables are set
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "Error: OPENAI_API_KEY not set (required for MCP server)"
-  exit 1
+if [ -z "$OPENAI_API_KEY" ]; then echo "Error: OPENAI_API_KEY not set (required for MCP server)" exit 1
 fi
 echo "✅ OPENAI_API_KEY is set"
 # Optional variables with defaults
@@ -258,11 +209,8 @@ echo "MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO (default)}"
 # check-env.sh - Validate environment variables
 echo "=== Core Variables (directly used by code) ==="
 # Required for MCP server
-if [ -z "$OPENAI_API_KEY" ]; then
-  echo "❌ OPENAI_API_KEY is not set (required for MCP server)"
-  exit 1
-else
-  echo "✅ OPENAI_API_KEY is set"
+if [ -z "$OPENAI_API_KEY" ]; then echo "❌ OPENAI_API_KEY is not set (required for MCP server)" exit 1
+else echo "✅ OPENAI_API_KEY is set"
 fi
 # Optional with defaults
 echo "✅ QDRANT_URL: ${QDRANT_URL:-http://localhost:6333 (default)}"
@@ -272,12 +220,7 @@ echo "✅ MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO (default)}"
 optional_vars=("QDRANT_API_KEY" "CONFLUENCE_TOKEN" "CONFLUENCE_EMAIL" "JIRA_TOKEN" "JIRA_EMAIL" "MCP_LOG_FILE" "MCP_DISABLE_CONSOLE_LOGGING")
 echo ""
 echo "=== Optional Variables ==="
-for var in "${optional_vars[@]}"; do
-  if [ -z "${!var}" ]; then
-    echo "⚠️  $var is not set (optional)"
-  else
-    echo "✅ $var is set"
-  fi
+for var in "${optional_vars[@]}"; do if [ -z "${!var}" ]; then echo "⚠️ $var is not set (optional)" else echo "✅ $var is set" fi
 done
 echo ""
 echo "Environment validation complete!"

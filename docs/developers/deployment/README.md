@@ -11,23 +11,23 @@ QDrant Loader supports the following deployment patterns:
 ### 🏗️ Architecture Patterns
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader Deployment                 │
+│ QDrant Loader Deployment │
 ├─────────────────────────────────────────────────────────────┤
-│  CLI Tool           │  MCP Server (Optional)                │
-│  ┌───────────────┐  │  ┌─────────────────────────────────┐  │
-│  │ qdrant-loader │  │  │ mcp-qdrant-loader               │  │
-│  │               │  │  │ (AI Assistant Integration)     │  │
-│  │ - init        │  │  │                                 │  │
-│  │ - ingest      │  │  │ - semantic_search               │  │
-│  │ - config      │  │  │ - hierarchy_search              │  │
-│  │ - project     │  │  │ - attachment_search             │  │
-│  └───────────────┘  │  └─────────────────────────────────┘  │
+│ CLI Tool │ MCP Server (Optional) │
+│ ┌───────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ qdrant-loader │ │ │ mcp-qdrant-loader │ │
+│ │ │ │ │ (AI Assistant Integration) │ │
+│ │ - init │ │ │ │ │
+│ │ - ingest │ │ │ - semantic_search │ │
+│ │ - config │ │ │ - hierarchy_search │ │
+│ │ - project │ │ │ - attachment_search │ │
+│ └───────────────┘ │ └─────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│                    External Dependencies                    │
-│  ┌───────────────┐  │  ┌─────────────────────────────────┐  │
-│  │ QDrant        │  │  │ OpenAI API                      │  │
-│  │ Vector DB     │  │  │ (Embeddings)                    │  │
-│  └───────────────┘  │  └─────────────────────────────────┘  │
+│ External Dependencies │
+│ ┌───────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ QDrant │ │ │ OpenAI API │ │
+│ │ Vector DB │ │ │ (Embeddings) │ │
+│ └───────────────┘ │ └─────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 ## 🚀 Quick Start Deployment
@@ -38,30 +38,15 @@ mkdir qdrant-loader-deployment
 cd qdrant-loader-deployment
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 # Install QDrant Loader
 pip install qdrant-loader qdrant-loader-mcp-server
 # Create workspace structure
 mkdir -p {data,logs}
 # Create configuration files
 cat > config.yaml << EOF
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-  state_management:
-    state_db_path: "./data/state.db"
-projects:
-  docs:
-    display_name: "Documentation"
-    sources:
-      git:
-        main-docs:
-          base_url: "https://github.com/company/docs"
-          branch: "main"
-          token: "${REPO_TOKEN}"
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "./data/state.db"
+projects: docs: display_name: "Documentation" sources: git: main-docs: base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}"
 EOF
 # Create environment file
 cat > .env << EOF
@@ -70,9 +55,7 @@ QDRANT_COLLECTION_NAME=documents
 OPENAI_API_KEY=your-openai-key
 REPO_TOKEN=your-github-token
 EOF
-# Initialize and start
-\1 init --workspace .
-\1 ingest --workspace .
+# Initialize and start\1init --workspace .\1ingest --workspace .
 ```
 ### Production Environment Setup
 ```bash
@@ -88,8 +71,7 @@ source venv/bin/activate
 pip install qdrant-loader qdrant-loader-mcp-server
 # Setup configuration (see Configuration section below)
 # Edit config.yaml and .env with your settings
-# Initialize workspace
-\1 init --workspace /opt/qdrant-loader
+# Initialize workspace\1init --workspace /opt/qdrant-loader
 ```
 ## 🖥️ Environment Setup
 ### System Requirements
@@ -134,9 +116,7 @@ pip install qdrant-loader[dev] qdrant-loader-mcp-server[dev]
 #### Local QDrant Installation
 ```bash
 # Using Docker (recommended)
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-    qdrant/qdrant
+docker run -p 6333:6333 -p 6334:6334 \ -v $(pwd)/qdrant_storage:/qdrant/storage:z \ qdrant/qdrant
 # Using binary installation
 wget https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-unknown-linux-gnu.tar.gz
 tar xzf qdrant-x86_64-unknown-linux-gnu.tar.gz
@@ -173,44 +153,8 @@ EOF
 ### Configuration File
 ```yaml
 # /opt/qdrant-loader/config.yaml
-global_config:
-  qdrant:
-    url: "${QDRANT_URL}"
-    api_key: "${QDRANT_API_KEY}"
-    collection_name: "${QDRANT_COLLECTION_NAME}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-  state_management:
-    state_db_path: "${STATE_DB_PATH}"
-  chunking:
-    chunk_size: 1200
-    chunk_overlap: 300
-  file_conversion:
-    max_file_size: "100MB"
-    conversion_timeout: 300
-projects:
-  production:
-    project_id: "production"
-    display_name: "Production Documentation"
-    description: "Production documentation and knowledge base"
-    sources:
-      git:
-        docs-repo:
-          source_type: "git"
-          source: "docs-repo"
-          base_url: "https://github.com/company/docs"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths: ["**/*.md", "**/*.rst"]
-      confluence:
-        company-wiki:
-          source_type: "confluence"
-          source: "company-wiki"
-          base_url: "https://company.atlassian.net/wiki"
-          deployment_type: "cloud"
-          space_key: "DOCS"
-          token: "${CONFLUENCE_TOKEN}"
-          email: "${CONFLUENCE_EMAIL}"
+global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "${STATE_DB_PATH}" chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
+projects: production: project_id: "production" display_name: "Production Documentation" description: "Production documentation and knowledge base" sources: git: docs-repo: source_type: "git" source: "docs-repo" base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}" include_paths: ["**/*.md", "**/*.rst"] confluence: company-wiki: source_type: "confluence" source: "company-wiki" base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
 ```
 ## 🔄 Service Management
 ### Systemd Service
@@ -226,7 +170,7 @@ User=qdrant-loader
 Group=qdrant-loader
 WorkingDirectory=/opt/qdrant-loader
 Environment=PATH=/opt/qdrant-loader/venv/bin
-ExecStart=/opt/qdrant-loader/venv/bin/\1 ingest --workspace /opt/qdrant-loader/config
+ExecStart=/opt/qdrant-loader/venv/bin\1ingest --workspace /opt/qdrant-loader/config
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -278,47 +222,15 @@ sudo systemctl restart mcp-qdrant-loader
 ```python
 # logging.yaml
 version: 1
-formatters:
-  default:
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  json:
-    format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
-handlers:
-  console:
-    class: logging.StreamHandler
-    level: INFO
-    formatter: json
-    stream: ext://sys.stdout
-  file:
-    class: logging.handlers.RotatingFileHandler
-    level: DEBUG
-    formatter: default
-    filename: /opt/qdrant-loader/logs/app.log
-    maxBytes: 10485760  # 10MB
-    backupCount: 5
-loggers:
-  qdrant_loader:
-    level: DEBUG
-    handlers: [console, file]
-    propagate: false
-root:
-  level: INFO
-  handlers: [console]
+formatters: default: format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' json: format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
+handlers: console: class: logging.StreamHandler level: INFO formatter: json stream: ext://sys.stdout file: class: logging.handlers.RotatingFileHandler level: DEBUG formatter: default filename: /opt/qdrant-loader/logs/app.log maxBytes: 10485760 # 10MB backupCount: 5
+loggers: qdrant_loader: level: DEBUG handlers: [console, file] propagate: false
+root: level: INFO handlers: [console]
 ```
 #### Log Rotation
 ```bash
 # /etc/logrotate.d/qdrant-loader
-/opt/qdrant-loader/logs/*.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 qdrant-loader qdrant-loader
-    postrotate
-        systemctl reload qdrant-loader
-    endscript
+/opt/qdrant-loader/logs/*.log { daily missingok rotate 30 compress delaycompress notifempty create 644 qdrant-loader qdrant-loader postrotate systemctl reload qdrant-loader endscript
 }
 ```
 ### Health Monitoring
@@ -330,16 +242,11 @@ set -e
 WORKSPACE="/opt/qdrant-loader/config"
 LOG_FILE="/opt/qdrant-loader/logs/health-check.log"
 # Function to log with timestamp
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 # Check QDrant Loader configuration
-if \1 config --workspace "$WORKSPACE" >/dev/null 2>&1; then
-    log "QDrant Loader: HEALTHY - Configuration valid"
-    exit 0
-else
-    log "QDrant Loader: UNHEALTHY - Configuration invalid"
-    exit 1
+if\1config --workspace "$WORKSPACE" >/dev/null 2>&1; then log "QDrant Loader: HEALTHY - Configuration valid" exit 0
+else log "QDrant Loader: UNHEALTHY - Configuration invalid" exit 1
 fi
 ```
 #### Cron Job for Health Checks
@@ -393,8 +300,8 @@ sudo chmod 755 /opt/qdrant-loader/bin/health-check.sh
 ```bash
 # Ubuntu/Debian (ufw)
 sudo ufw allow ssh
-sudo ufw allow 6333/tcp  # QDrant HTTP
-sudo ufw allow 6334/tcp  # QDrant gRPC
+sudo ufw allow 6333/tcp # QDrant HTTP
+sudo ufw allow 6334/tcp # QDrant gRPC
 sudo ufw enable
 # CentOS/RHEL (firewalld)
 sudo firewall-cmd --permanent --add-service=ssh
@@ -413,29 +320,16 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 ### Horizontal Scaling
 #### Multiple Worker Processes
 ```bash
-# Run multiple ingestion processes for different projects
-\1 ingest --workspace /opt/qdrant-loader/config --project project1 &
-\1 ingest --workspace /opt/qdrant-loader/config --project project2 &
-\1 ingest --workspace /opt/qdrant-loader/config --project project3 &
+# Run multiple ingestion processes for different projects\1ingest --workspace /opt/qdrant-loader/config --project project1 &\1ingest --workspace /opt/qdrant-loader/config --project project2 &\1ingest --workspace /opt/qdrant-loader/config --project project3 &
 wait
 ```
 #### Load Balancing
 ```bash
 # Use nginx for load balancing MCP servers
 # /etc/nginx/sites-available/qdrant-loader
-upstream mcp_servers {
-    server 127.0.0.1:8001;
-    server 127.0.0.1:8002;
-    server 127.0.0.1:8003;
+upstream mcp_servers { server 127.0.0.1:8001; server 127.0.0.1:8002; server 127.0.0.1:8003;
 }
-server {
-    listen 80;
-    server_name qdrant-loader.example.com;
-    location / {
-        proxy_pass http://mcp_servers;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
+server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pass http://mcp_servers; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
 }
 ```
 ### Vertical Scaling
@@ -444,11 +338,10 @@ server {
 # Optimize for high-memory systems
 # Configure larger chunk sizes in config.yaml:
 # global_config:
-#   chunking:
-#     chunk_size: 2000
-#     chunk_overlap: 400
-# Run ingestion with specific project
-\1 ingest --workspace /opt/qdrant-loader/config --project high-priority
+# chunking:
+# chunk_size: 2000
+# chunk_overlap: 400
+# Run ingestion with specific project\1ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
 ## 📚 Deployment Documentation
 ### Detailed Deployment Guides
@@ -488,11 +381,5 @@ server {
 Configure chunking and processing parameters in your workspace configuration:
 ```yaml
 # config.yaml - Performance tuning
-global_config:
-  chunking:
-    chunk_size: 1200
-    chunk_overlap: 300
-  file_conversion:
-    max_file_size: "100MB"
-    conversion_timeout: 300
+global_config: chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
 ```

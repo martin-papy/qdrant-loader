@@ -14,20 +14,20 @@ QDrant Loader consists of two main components working together:
 The **QDrant Loader** package collects and processes content from multiple sources:
 ```text
 Your Content Sources → QDrant Loader → Vector Database
-├── Git repositories        ├── File conversion    ├── Searchable vectors
-├── Confluence pages        ├── Smart chunking     ├── Metadata extraction
-├── JIRA tickets           ├── Change detection   ├── Incremental updates
-├── Documentation sites    └── Embedding creation └── Optimized storage
+├── Git repositories ├── File conversion ├── Searchable vectors
+├── Confluence pages ├── Smart chunking ├── Metadata extraction
+├── JIRA tickets ├── Change detection ├── Incremental updates
+├── Documentation sites └── Embedding creation └── Optimized storage
 └── Local files
 ```
 ### 2. 🔌 AI Integration Layer
 The **MCP Server** provides intelligent search capabilities to AI development tools:
 ```text
 AI Development Tools ← MCP Server ← Vector Database
-├── Cursor IDE              ├── Semantic search      ├── Your processed content
-├── Windsurf               ├── Hierarchy-aware      ├── Rich metadata
-├── GitHub Copilot         ├── Attachment-focused   ├── Relationship mapping
-└── Claude Desktop         └── Real-time responses  └── Context preservation
+├── Cursor IDE ├── Semantic search ├── Your processed content
+├── Windsurf ├── Hierarchy-aware ├── Rich metadata
+├── GitHub Copilot ├── Attachment-focused ├── Relationship mapping
+└── Claude Desktop └── Real-time responses └── Context preservation
 ```
 ## 🎯 Perfect Use Cases
 ### 🤖 AI-Powered Development

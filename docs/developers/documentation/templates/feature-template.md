@@ -34,22 +34,8 @@ qdrant-loader --workspace . [command] [basic-options]
 ### Minimal Configuration
 ```yaml
 # config.yaml - Multi-project configuration structure
-global:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "[collection-name]"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-projects:
-  [project-id]:
-    project_id: "[project-id]"
-    display_name: "[Project Display Name]"
-    description: "[Project description]"
-    sources:
-      [source-type]:
-        [source-name]:
-          [basic-option]: [value]
+global: qdrant: url: "http://localhost:6333" collection_name: "[collection-name]" openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
+projects: [project-id]: project_id: "[project-id]" display_name: "[Project Display Name]" description: "[Project description]" sources: [source-type]: [source-name]: [basic-option]: [value]
 ```
 ## ⚙️ Configuration
 ### Environment Variables
@@ -60,31 +46,13 @@ projects:
 ### Configuration File Options
 ```yaml
 # config.yaml - Multi-project structure
-global:
-  [feature-name]:
-    # [Description of this section]
-    [option-1]: [value]  # [Description of option]
-    [option-2]: [value]  # [Description of option]
-    # [Description of advanced options]
-    advanced:
-      [advanced-option]: [value]  # [When to use this]
-projects:
-  [project-id]:
-    project_id: "[project-id]"
-    display_name: "[Project Name]"
-    description: "[Project description]"
-    sources:
-      [source-type]:
-        [source-name]:
-          [source-option]: [value]  # [Description]
+global: [feature-name]: # [Description of this section] [option-1]: [value] # [Description of option] [option-2]: [value] # [Description of option] # [Description of advanced options] advanced: [advanced-option]: [value] # [When to use this]
+projects: [project-id]: project_id: "[project-id]" display_name: "[Project Name]" description: "[Project description]" sources: [source-type]: [source-name]: [source-option]: [value] # [Description]
 ```
 ### CLI Options
 ```bash
 # [Feature-specific command options]
-qdrant-loader --workspace . [command] \
-  --[option-1] [value] \      # [Description]
-  --[option-2] [value] \      # [Description]
-  --[flag]                    # [Description]
+qdrant-loader --workspace . [command] \ --[option-1] [value] \ # [Description] --[option-2] [value] \ # [Description] --[flag] # [Description]
 ```
 ## 📚 Examples
 ### Example 1: [Basic Usage Scenario]
@@ -100,21 +68,8 @@ qdrant-loader --workspace . [another-command] [options]
 **Scenario**: [Describe the more complex use case]
 ```yaml
 # config.yaml - Advanced configuration
-global:
-  [feature-name]:
-    [advanced-config]: [value]
-    [complex-option]:
-      - [item-1]
-      - [item-2]
-projects:
-  [project-id]:
-    project_id: "[project-id]"
-    display_name: "[Advanced Project]"
-    description: "[Advanced use case description]"
-    sources:
-      [source-type]:
-        [source-name]:
-          [advanced-option]: [value]
+global: [feature-name]: [advanced-config]: [value] [complex-option]: - [item-1] - [item-2]
+projects: [project-id]: project_id: "[project-id]" display_name: "[Advanced Project]" description: "[Advanced use case description]" sources: [source-type]: [source-name]: [advanced-option]: [value]
 ```
 ```bash
 # Execute with advanced configuration
@@ -125,9 +80,7 @@ qdrant-loader --workspace . [command]
 **Scenario**: [How this feature works with other features]
 ```bash
 # Combined usage with other features
-qdrant-loader --workspace . [command] \
-  --[feature-option] [value] \
-  --[other-feature-option] [value]
+qdrant-loader --workspace . [command] \ --[feature-option] [value] \ --[other-feature-option] [value]
 ```
 ## 🔍 Advanced Usage
 ### [Advanced Topic 1]
@@ -140,11 +93,8 @@ qdrant-loader --workspace . [complex-command-example]
 [Another advanced topic]
 ```yaml
 # config.yaml - Advanced configuration
-global:
-  [complex-config-example]
-projects:
-  [project-id]:
-    [complex-project-config]
+global: [complex-config-example]
+projects: [project-id]: [complex-project-config]
 ```
 ## 🔧 Troubleshooting
 ### Common Issues

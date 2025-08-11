@@ -4,8 +4,8 @@ This comprehensive reference covers all QDrant Loader commands with detailed exa
 QDrant Loader provides a focused command-line interface for data ingestion and management. Commands are organized into logical groups for different aspects of the system.
 ### Available Commands
 ```
-📊 Data Management    - init, ingest
-🔧 Configuration     - config
+📊 Data Management - init, ingest
+🔧 Configuration - config
 📁 Project Management - project list, project status, project validate
 ```
 ## 📊 Data Management Commands
@@ -220,22 +220,22 @@ Most commands support these common options:
 ### Configuration Options
 ```bash
 # Workspace mode (recommended)
---workspace PATH          # Workspace directory containing config.yaml and .env
+--workspace PATH # Workspace directory containing config.yaml and .env
 # Individual file mode
---config PATH             # Path to configuration file
---env PATH                # Path to environment file
+--config PATH # Path to configuration file
+--env PATH # Path to environment file
 # Logging
---log-level LEVEL         # Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+--log-level LEVEL # Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 ```
 ### Help and Version
 ```bash
 # Get help
-qdrant-loader --help                    # General help
-qdrant-loader init --help               # Command-specific help
-qdrant-loader project --help            # Project command help
-qdrant-loader project list --help       # Subcommand help
+qdrant-loader --help # General help
+qdrant-loader init --help # Command-specific help
+qdrant-loader project --help # Project command help
+qdrant-loader project list --help # Subcommand help
 # Get version
-qdrant-loader --version                 # Show version information
+qdrant-loader --version # Show version information
 ```
 ## 🎯 Common Workflows
 ### Initial Setup
@@ -268,8 +268,7 @@ qdrant-loader project status --workspace .
 ### Production Workflow
 ```bash
 # Use specific configuration files
-qdrant-loader ingest --config /etc/qdrant-loader/config.yaml \
-                     --env /etc/qdrant-loader/.env
+qdrant-loader ingest --config /etc/qdrant-loader/config.yaml \ --env /etc/qdrant-loader/.env
 # Process specific project
 qdrant-loader ingest --workspace . --project production-docs
 # Process specific source type

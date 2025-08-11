@@ -6,16 +6,16 @@ QDrant Loader uses a comprehensive documentation system designed to serve both e
 ### Structure Overview
 ```
 docs/
-├── README.md                           # Main project README (GitHub homepage)
-├── website/README.md                   # Website documentation
-├── packages/                           # Package-specific documentation
-│   ├── qdrant-loader/README.md        # Core loader package
-│   └── qdrant-loader-mcp-server/README.md # MCP server package
+├── README.md # Main project README (GitHub homepage)
+├── website/README.md # Website documentation
+├── packages/ # Package-specific documentation
+│ ├── qdrant-loader/README.md # Core loader package
+│ └── qdrant-loader-mcp-server/README.md # MCP server package
 ├── docs/
-│   ├── getting-started/               # Universal onboarding
-│   ├── users/                         # User-focused documentation
-│   └── developers/                    # Developer-focused documentation
-└── CONTRIBUTING.md                    # Contribution guidelines
+│ ├── getting-started/ # Universal onboarding
+│ ├── users/ # User-focused documentation
+│ └── developers/ # Developer-focused documentation
+└── CONTRIBUTING.md # Contribution guidelines
 ```
 ### Documentation Types
 | Type | Purpose | Audience | Update Frequency |
@@ -51,9 +51,7 @@ pip install qdrant-loader
 # Configure your environment
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-api-key"
-# Initialize and run ingestion
-\1 init --workspace .
-\1 ingest --workspace .
+# Initialize and run ingestion\1init --workspace .\1ingest --workspace .
 ```
 # ❌ Bad Example
 ```bash
@@ -132,9 +130,7 @@ qdrant-loader [command] [options]
 ## Configuration
 ```yaml
 # Configuration options
-feature:
-  enabled: true
-  option: value
+feature: enabled: true option: value
 ```
 ## Examples
 ### Basic Usage
@@ -143,8 +139,7 @@ feature:
 [Complex scenario example]
 ## Troubleshooting
 ### Common Issues
-- **Issue**: Description
-  **Solution**: How to fix it
+- **Issue**: Description **Solution**: How to fix it
 ```
 #### 2. Developer Documentation
 ```markdown
@@ -153,17 +148,7 @@ feature:
 How the feature fits into the overall system.
 ## Code Reference
 ```python
-def new_feature_function(param1: str, param2: int) -> Result:
-    """
-    Description of the function.
-    Args:
-        param1: Description
-        param2: Description
-    Returns:
-        Description of return value
-    Raises:
-        ExceptionType: When this happens
-    """
+def new_feature_function(param1: str, param2: int) -> Result: """ Description of the function. Args: param1: Description param2: Description Returns: Description of return value Raises: ExceptionType: When this happens """
 ```
 ## Extension Points
 How other developers can extend or customize the feature.
@@ -193,23 +178,13 @@ grep -r "old_api_name" docs/
 #### Link Validation
 ```bash
 # Check for broken internal links
-find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
-  xargs -I {} bash -c 'echo "Checking: {}"; grep -o "\[.*\](\.\/[^)]*)" {}'
+find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \ xargs -I {} bash -c 'echo "Checking: {}"; grep -o "\[.*\](\.\/[^)]*)" {}'
 ```
 ### Manual Review Process
 #### Monthly Documentation Audit
-1. **Accuracy Review**
-   - Test all getting started guides
-   - Verify all configuration examples
-   - Check all CLI references
-2. **Completeness Review**
-   - Identify missing documentation
-   - Check for outdated information
-   - Verify cross-references
-3. **User Experience Review**
-   - Test documentation with new users
-   - Identify confusing sections
-   - Improve navigation and structure
+1. **Accuracy Review** - Test all getting started guides - Verify all configuration examples - Check all CLI references
+2. **Completeness Review** - Identify missing documentation - Check for outdated information - Verify cross-references
+3. **User Experience Review** - Test documentation with new users - Identify confusing sections - Improve navigation and structure
 ## 📊 Documentation Metrics
 ### Quality Indicators
 | Metric | Target | How to Measure |
@@ -281,17 +256,17 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 ### Documentation Structure Quick Reference
 ```
 User Documentation:
-├── getting-started/     # Universal onboarding
-├── detailed-guides/     # Feature-specific guides
-├── configuration/       # Setup and config
-├── cli-reference/       # Command-line interface
-└── troubleshooting/     # Problem solving
+├── getting-started/ # Universal onboarding
+├── detailed-guides/ # Feature-specific guides
+├── configuration/ # Setup and config
+├── cli-reference/ # Command-line interface
+└── troubleshooting/ # Problem solving
 Developer Documentation:
-├── architecture/        # System design
-├── cli/                # CLI development
-├── deployment/         # Production setup
-├── extending/          # Customization
-├── testing/            # Quality assurance
-└── documentation/      # This guide
+├── architecture/ # System design
+├── cli/ # CLI development
+├── deployment/ # Production setup
+├── extending/ # Customization
+├── testing/ # Quality assurance
+└── documentation/ # This guide
 ```
 Remember: **Good documentation is code**. Treat it with the same care and attention you give to your implementation code.

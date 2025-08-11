@@ -4,17 +4,17 @@ Welcome to the QDrant Loader troubleshooting guide! This section provides compre
 ### Symptom Checker
 Use this quick reference to identify your issue and jump to the right solution:
 ```
-❌ Installation fails                    → [Common Issues](./common-issues.html#installation-issues)
-🔌 Can't connect to QDrant              → [Connection Problems](./connection-problems.md#qdrant-connection-issues)
-🔑 Authentication errors                → [Connection Problems](./connection-problems.md#authentication-problems)
-📊 Data won't load                      → [Common Issues](./common-issues.html#data-loading-issues)
-🔍 Search returns no results            → [Common Issues](./common-issues.html#search-issues)
-🐌 Everything is slow                   → [Performance Issues](./performance-issues.html)
-💾 High memory usage                    → [Performance Issues](./performance-issues.html#memory-issues)
-🌐 Network timeouts                     → [Connection Problems](./connection-problems.md#network-issues)
-🛡️ Firewall blocking                   → [Connection Problems](./connection-problems.md#firewall-problems)
-📁 File permission errors               → [Error Messages](./error-messages-reference.html#file-system-errors)
-⚙️ Configuration problems               → [Error Messages](./error-messages-reference.html#configuration-errors)
+❌ Installation fails → [Common Issues](./common-issues.html#installation-issues)
+🔌 Can't connect to QDrant → [Connection Problems](./connection-problems.md#qdrant-connection-issues)
+🔑 Authentication errors → [Connection Problems](./connection-problems.md#authentication-problems)
+📊 Data won't load → [Common Issues](./common-issues.html#data-loading-issues)
+🔍 Search returns no results → [Common Issues](./common-issues.html#search-issues)
+🐌 Everything is slow → [Performance Issues](./performance-issues.html)
+💾 High memory usage → [Performance Issues](./performance-issues.html#memory-issues)
+🌐 Network timeouts → [Connection Problems](./connection-problems.md#network-issues)
+🛡️ Firewall blocking → [Connection Problems](./connection-problems.md#firewall-problems)
+📁 File permission errors → [Error Messages](./error-messages-reference.html#file-system-errors)
+⚙️ Configuration problems → [Error Messages](./error-messages-reference.html#configuration-errors)
 ```
 ### Error Message Lookup
 Got a specific error message? Look it up directly:
@@ -69,14 +69,12 @@ Comprehensive reference for all error messages with exact solutions.
 ## 🚨 Emergency Quick Fixes
 ### When Everything Fails
 ```bash
-# 1. Check basic configuration
-\1 config --workspace .
+# 1. Check basic configuration\1config --workspace .
 # 2. Validate project configuration
 qdrant-loader project --workspace . validate
 # 3. Check system resources
 free -h && df -h && ps aux | grep qdrant-loader
-# 4. Reinitialize collection (WARNING: This will delete existing data)
-\1 init --workspace . --force
+# 4. Reinitialize collection (WARNING: This will delete existing data)\1init --workspace . --force
 ```
 ### Critical System Recovery
 ```bash
@@ -92,16 +90,14 @@ ls -la config.yaml .env
 ## 🔍 Diagnostic Tools
 ### Built-in Diagnostics
 ```bash
-# Check current configuration
-\1 config --workspace .
+# Check current configuration\1config --workspace .
 # List all projects
 qdrant-loader project --workspace . list
 # Check project status
 qdrant-loader project --workspace . status
 # Validate configuration
 qdrant-loader project --workspace . validate
-# Test with debug logging
-\1 config --workspace . --log-level DEBUG
+# Test with debug logging\1config --workspace . --log-level DEBUG
 ```
 ### Manual Diagnostics
 ```bash
@@ -115,36 +111,16 @@ ping your-qdrant-instance.com
 traceroute your-qdrant-instance.com
 nslookup your-qdrant-instance.com
 # Service status
-systemctl status qdrant  # If using systemd
-docker ps | grep qdrant  # If using Docker
+systemctl status qdrant # If using systemd
+docker ps | grep qdrant # If using Docker
 ```
 ## 📊 Problem Categories
 ### By Frequency (Most Common First)
-1. **Configuration Issues** (40%)
-   - Environment variables not set
-   - Invalid YAML syntax
-   - Missing required fields
-   - → [Error Messages Reference](./error-messages-reference.html#configuration-errors)
-2. **Connection Problems** (25%)
-   - QDrant instance not accessible
-   - Authentication failures
-   - Network timeouts
-   - → [Connection Problems](./connection-problems.md)
-3. **Data Loading Issues** (20%)
-   - No documents found
-   - File processing errors
-   - Memory limitations
-   - → [Common Issues](./common-issues.html#data-loading-issues)
-4. **Performance Problems** (10%)
-   - Slow loading or search
-   - High resource usage
-   - Timeout errors
-   - → [Performance Issues](./performance-issues.html)
-5. **Other Issues** (5%)
-   - File permissions
-   - SSL/TLS problems
-   - Specific error messages
-   - → [Error Messages Reference](./error-messages-reference.html)
+1. **Configuration Issues** (40%) - Environment variables not set - Invalid YAML syntax - Missing required fields - → [Error Messages Reference](./error-messages-reference.html#configuration-errors)
+2. **Connection Problems** (25%) - QDrant instance not accessible - Authentication failures - Network timeouts - → [Connection Problems](./connection-problems.md)
+3. **Data Loading Issues** (20%) - No documents found - File processing errors - Memory limitations - → [Common Issues](./common-issues.html#data-loading-issues)
+4. **Performance Problems** (10%) - Slow loading or search - High resource usage - Timeout errors - → [Performance Issues](./performance-issues.html)
+5. **Other Issues** (5%) - File permissions - SSL/TLS problems - Specific error messages - → [Error Messages Reference](./error-messages-reference.html)
 ### By User Type
 #### **New Users**
 - Start with [Common Issues](./common-issues.html)
@@ -164,32 +140,18 @@ docker ps | grep qdrant  # If using Docker
 - Implement comprehensive monitoring
 ## 🛠️ Troubleshooting Methodology
 ### Step-by-Step Approach
-1. **Identify the Problem**
-   - What exactly is failing?
-   - When did it start failing?
-   - What changed recently?
-2. **Gather Information**
-   - Check error messages
-   - Review logs
-   - Test basic connectivity
-3. **Apply Solutions**
-   - Start with simple fixes
-   - Test after each change
-   - Document what works
-4. **Verify Resolution**
-   - Test the original use case
-   - Monitor for recurrence
-   - Update documentation
+1. **Identify the Problem** - What exactly is failing? - When did it start failing? - What changed recently?
+2. **Gather Information** - Check error messages - Review logs - Test basic connectivity
+3. **Apply Solutions** - Start with simple fixes - Test after each change - Document what works
+4. **Verify Resolution** - Test the original use case - Monitor for recurrence - Update documentation
 ### Diagnostic Commands
 ```bash
-# Basic configuration check
-\1 config --workspace .
+# Basic configuration check\1config --workspace .
 # Project validation
 qdrant-loader project --workspace . validate
 # Project status check
 qdrant-loader project --workspace . status
-# Debug mode for detailed logging
-\1 ingest --workspace . --log-level DEBUG
+# Debug mode for detailed logging\1ingest --workspace . --log-level DEBUG
 ```
 ## 📈 Monitoring and Prevention
 ### Proactive Monitoring
@@ -202,27 +164,10 @@ qdrant-loader project --workspace . status
 watch -n 30 'free -h && df -h'
 ```
 ### Prevention Strategies
-1. **Regular Health Checks**
-   ```bash
-   # Daily configuration validation script
-   qdrant-loader project --workspace . validate >> daily-health.log 2>&1
-   ```
-2. **Configuration Validation**
-   ```bash
-   # Validate before deployment
-   qdrant-loader project --workspace . validate
-   ```
-3. **System Monitoring**
-   ```bash
-   # Monitor system resources
-   free -h && df -h && ps aux | grep qdrant-loader
-   ```
-4. **Backup Strategy**
-   ```bash
-   # Backup configuration files
-   cp config.yaml config.yaml.backup
-   cp .env .env.backup
-   ```
+1. **Regular Health Checks** ```bash # Daily configuration validation script qdrant-loader project --workspace . validate >> daily-health.log 2>&1 ```
+2. **Configuration Validation** ```bash # Validate before deployment qdrant-loader project --workspace . validate ```
+3. **System Monitoring** ```bash # Monitor system resources free -h && df -h && ps aux | grep qdrant-loader ```
+4. **Backup Strategy** ```bash # Backup configuration files cp config.yaml config.yaml.backup cp .env .env.backup ```
 ## 🔗 Getting Additional Help
 ### Community Resources
 - **GitHub Issues**: [Report bugs and get help](https://github.com/martin-papy/qdrant-loader/issues)
@@ -235,19 +180,8 @@ watch -n 30 'free -h && df -h'
 ### Before Asking for Help
 1. **Check this troubleshooting guide** - Most issues are covered here
 2. **Search existing issues** - Your problem might already be solved
-3. **Gather diagnostic information**:
-   ```bash
-   # Collect configuration and status information
-   \1 config --workspace . > diagnostics.txt
-   qdrant-loader project --workspace . list >> diagnostics.txt
-   qdrant-loader project --workspace . status >> diagnostics.txt
-   qdrant-loader project --workspace . validate >> diagnostics.txt 2>&1
-   ```
-4. **Provide clear details**:
-   - Exact error messages
-   - Steps to reproduce
-   - System information
-   - Configuration (sanitized)
+3. **Gather diagnostic information**: ```bash # Collect configuration and status information \1config --workspace . > diagnostics.txt qdrant-loader project --workspace . list >> diagnostics.txt qdrant-loader project --workspace . status >> diagnostics.txt qdrant-loader project --workspace . validate >> diagnostics.txt 2>&1 ```
+4. **Provide clear details**: - Exact error messages - Steps to reproduce - System information - Configuration (sanitized)
 ## 📋 Troubleshooting Checklist
 ### Pre-Troubleshooting Checklist
 - [ ] Read the error message carefully
@@ -271,8 +205,7 @@ curl -v "$QDRANT_URL/health"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 # Check environment variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
-# Test configuration
-\1 config --workspace .
+# Test configuration\1config --workspace .
 ```
 ### Performance Issues Quick Card
 ```bash
@@ -282,8 +215,7 @@ free -h && df -h && top
 ps aux | grep qdrant-loader
 # Check project status
 qdrant-loader project --workspace . status
-# Use debug logging for performance analysis
-\1 ingest --workspace . --log-level DEBUG --profile
+# Use debug logging for performance analysis\1ingest --workspace . --log-level DEBUG --profile
 ```
 ### Data Loading Quick Card
 ```bash
@@ -291,15 +223,12 @@ qdrant-loader project --workspace . status
 ls -la /path/to/docs
 # Validate configuration
 qdrant-loader project --workspace . validate
-# Check project configuration
-\1 config --workspace .
-# Load with verbose output
-\1 ingest --workspace . --log-level DEBUG
+# Check project configuration\1config --workspace .
+# Load with verbose output\1ingest --workspace . --log-level DEBUG
 ```
 ### Configuration Issues Quick Card
 ```bash
-# Display current configuration
-\1 config --workspace .
+# Display current configuration\1config --workspace .
 # Validate all projects
 qdrant-loader project --workspace . validate
 # List configured projects

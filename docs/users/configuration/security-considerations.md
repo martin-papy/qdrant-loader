@@ -5,10 +5,10 @@ QDrant Loader handles sensitive data including API keys, documents, and search q
 ### Security Areas
 ```
 🔐 Credential Management - API keys and tokens
-🌐 Network Security     - HTTPS connections
-📊 Data Protection     - Secure data handling
-🔍 Monitoring          - Basic logging capabilities
-🚨 Best Practices      - Configuration and usage security
+🌐 Network Security - HTTPS connections
+📊 Data Protection - Secure data handling
+🔍 Monitoring - Basic logging capabilities
+🚨 Best Practices - Configuration and usage security
 ```
 ## 🔐 Credential Management
 ### Environment Variables (Primary Method)
@@ -42,37 +42,13 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 #!/bin/bash
 # validate-keys.sh - Basic API key validation
 # Validate OpenAI API key format
-validate_openai_key() {
-    if [[ ! $OPENAI_API_KEY =~ ^sk-[a-zA-Z0-9-_]{20,}$ ]]; then
-        echo "❌ Invalid OpenAI API key format"
-        exit 1
-    fi
-    echo "✅ OpenAI API key format valid"
+validate_openai_key() { if [[ ! $OPENAI_API_KEY =~ ^sk-[a-zA-Z0-9-_]{20,}$ ]]; then echo "❌ Invalid OpenAI API key format" exit 1 fi echo "✅ OpenAI API key format valid"
 }
 # Test API connectivity
-test_connections() {
-    echo "Testing API connectivity..."
-    # Test OpenAI API
-    curl -s -H "Authorization: Bearer $OPENAI_API_KEY" \
-         https://api.openai.com/v1/models > /dev/null
-    if [ $? -eq 0 ]; then
-        echo "✅ OpenAI API key working"
-    else
-        echo "❌ OpenAI API key failed"
-        exit 1
-    fi
+test_connections() { echo "Testing API connectivity..." # Test OpenAI API curl -s -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models > /dev/null if [ $? -eq 0 ]; then echo "✅ OpenAI API key working" else echo "❌ OpenAI API key failed" exit 1 fi
 }
 # Validate configuration using QDrant Loader CLI
-validate_config() {
-    echo "Validating QDrant Loader configuration..."
-    # Validate workspace configuration
-    \1 project \3 --workspace \2
-    if [ $? -eq 0 ]; then
-        echo "✅ Configuration valid"
-    else
-        echo "❌ Configuration validation failed"
-        exit 1
-    fi
+validate_config() { echo "Validating QDrant Loader configuration..." # Validate workspace configuration \1project\1--workspace\1if [ $? -eq 0 ]; then echo "✅ Configuration valid" else echo "❌ Configuration validation failed" exit 1 fi
 }
 # Run validations
 validate_openai_key
@@ -89,18 +65,8 @@ QDrant Loader automatically uses HTTPS for all external API connections:
 URLs are configured in the YAML configuration file, not environment variables:
 ```yaml
 # config.yaml - Use HTTPS URLs for security
-global_config:
-  qdrant:
-    url: "https://your-qdrant-cluster.qdrant.io"  # Use HTTPS
-projects:
-  my-project:
-    sources:
-      confluence:
-        wiki:
-          base_url: "https://company.atlassian.net/wiki"  # Use HTTPS
-      jira:
-        project:
-          base_url: "https://company.atlassian.net"       # Use HTTPS
+global_config: qdrant: url: "https://your-qdrant-cluster.qdrant.io" # Use HTTPS
+projects: my-project: sources: confluence: wiki: base_url: "https://company.atlassian.net/wiki" # Use HTTPS jira: project: base_url: "https://company.atlassian.net" # Use HTTPS
 ```
 ### Required Network Access
 Ensure outbound access to required services:
@@ -122,21 +88,7 @@ gitlab.com:443
 ### MCP Server Security
 The MCP server uses environment variables for configuration. For Cursor integration:
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "/path/to/venv/bin/mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "https://your-qdrant-cluster.qdrant.io",
-        "QDRANT_API_KEY": "your-secure-api-key",
-        "OPENAI_API_KEY": "sk-your-secure-openai-key",
-        "QDRANT_COLLECTION_NAME": "documents",
-        "MCP_LOG_LEVEL": "INFO",
-        "MCP_LOG_FILE": "/secure/path/logs/mcp.log",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "/path/to/venv/bin/mcp-qdrant-loader", "env": { "QDRANT_URL": "https://your-qdrant-cluster.qdrant.io", "QDRANT_API_KEY": "your-secure-api-key", "OPENAI_API_KEY": "sk-your-secure-openai-key", "QDRANT_COLLECTION_NAME": "documents", "MCP_LOG_LEVEL": "INFO", "MCP_LOG_FILE": "/secure/path/logs/mcp.log", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
 }
 ```
 **Critical MCP Security Notes:**
@@ -151,9 +103,7 @@ QDrant Loader implements rate limiting for external API calls:
 - **Git operations**: No specific rate limiting
 **Jira Rate Limiting Configuration:**
 ```yaml
-jira:
-  my-project:
-    requests_per_minute: 60  # Configurable rate limit
+jira: my-project: requests_per_minute: 60 # Configurable rate limit
 ```
 The rate limiting is implemented in the embedding service and Jira connector. OpenAI rate limiting is not user-configurable, while Jira rate limiting can be adjusted per project.
 ## 📊 Data Protection
@@ -165,22 +115,19 @@ QDrant Loader processes documents with the following security considerations:
 4. **Vector Storage**: Stored in QDrant database
 ### Data Flow Security
 ```
-Local Files → Memory → OpenAI API → QDrant Database
-     ↓              ↓         ↓           ↓
-  File System   Temporary   External    Vector DB
-  Permissions   Processing   Service     Storage
+Local Files → Memory → OpenAI API → QDrant Database ↓ ↓ ↓ ↓ File System Temporary External Vector DB Permissions Processing Service Storage
 ```
 ### File Permissions
 ```bash
 # Secure file permissions for QDrant Loader files
-chmod 600 .env                    # Environment variables
-chmod 600 config.yaml             # Configuration file
-chmod 700 ~/.qdrant-loader/       # Application directory (if used)
-chmod 600 state.db                # State database
+chmod 600 .env # Environment variables
+chmod 600 config.yaml # Configuration file
+chmod 700 ~/.qdrant-loader/ # Application directory (if used)
+chmod 600 state.db # State database
 # For workspace mode (recommended)
-chmod 700 /path/to/workspace       # Workspace directory
-chmod 600 /path/to/workspace/.env  # Workspace environment file
-chmod 600 /path/to/workspace/config.yaml  # Workspace configuration
+chmod 700 /path/to/workspace # Workspace directory
+chmod 600 /path/to/workspace/.env # Workspace environment file
+chmod 600 /path/to/workspace/config.yaml # Workspace configuration
 ```
 ### Workspace Mode Security
 QDrant Loader supports **workspace mode** (recommended) which provides better organization and security:
@@ -198,9 +145,7 @@ chmod 700 .
 # Create configuration files
 touch .env config.yaml
 chmod 600 .env config.yaml
-# Run in workspace mode
-\1 project \3 --workspace \2
-\1 ingest --workspace .
+# Run in workspace mode\1project\1--workspace\1\1 ingest --workspace .
 ```
 **Important:** In workspace mode, `state_management.database_path` in config.yaml is ignored for security - the state database is automatically placed in the workspace directory.
 ## 🔍 Monitoring and Logging
@@ -210,7 +155,7 @@ QDrant Loader provides basic logging capabilities:
 # MCP Server logging
 export MCP_LOG_LEVEL=INFO
 export MCP_LOG_FILE=/path/to/logs/mcp.log
-export MCP_DISABLE_CONSOLE_LOGGING=true  # Required for Cursor integration
+export MCP_DISABLE_CONSOLE_LOGGING=true # Required for Cursor integration
 ```
 ### Monitoring API Usage
 Monitor API usage through provider dashboards:
@@ -234,8 +179,8 @@ chmod 600 .env
 chmod 600 config.yaml
 # 4. Use HTTPS URLs in config.yaml
 # global_config:
-#   qdrant:
-#     url: "https://your-qdrant-cluster.qdrant.io"
+# qdrant:
+# url: "https://your-qdrant-cluster.qdrant.io"
 ```
 #### Development Environment
 ```bash
@@ -244,9 +189,9 @@ chmod 600 config.yaml
 OPENAI_API_KEY=sk-dev-your-development-key
 # 2. Use test data collections in config.yaml
 # global_config:
-#   qdrant:
-#     url: "http://localhost:6333"
-#     collection_name: "dev_documents"
+# qdrant:
+# url: "http://localhost:6333"
+# collection_name: "dev_documents"
 # 3. Enable debug logging for MCP server
 MCP_LOG_LEVEL=DEBUG
 ```
@@ -258,19 +203,8 @@ OPENAI_API_KEY=sk-your-openai-api-key
 ```
 ```yaml
 # config.yaml - Minimal secure configuration
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-projects:
-  default-project:
-    project_id: "default-project"
-    display_name: "Default Project"
-    sources: {}
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
+projects: default-project: project_id: "default-project" display_name: "Default Project" sources: {}
 ```
 ### Production Security Configuration
 ```bash
@@ -292,42 +226,8 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ```
 ```yaml
 # config.yaml - Production secure configuration
-global_config:
-  qdrant:
-    url: "https://your-qdrant-cluster.qdrant.io"
-    api_key: "${QDRANT_API_KEY}"
-    collection_name: "production_documents"
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-  state_management:
-    database_path: "/secure/path/state.db"
-projects:
-  knowledge-base:
-    project_id: "knowledge-base"
-    display_name: "Company Knowledge Base"
-    sources:
-      confluence:
-        company-wiki:
-          base_url: "https://company.atlassian.net/wiki"
-          deployment_type: "cloud"
-          space_key: "DOCS"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_TOKEN}"
-      jira:
-        support-project:
-          base_url: "https://company.atlassian.net"
-          deployment_type: "cloud"
-          project_key: "SUPPORT"
-          email: "${JIRA_EMAIL}"
-          token: "${JIRA_TOKEN}"
-      git:
-        docs-repo:
-          base_url: "https://github.com/company/docs.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          file_types: ["*.md", "*.rst"]
+global_config: qdrant: url: "https://your-qdrant-cluster.qdrant.io" api_key: "${QDRANT_API_KEY}" collection_name: "production_documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" state_management: database_path: "/secure/path/state.db"
+projects: knowledge-base: project_id: "knowledge-base" display_name: "Company Knowledge Base" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" jira: support-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" email: "${JIRA_EMAIL}" token: "${JIRA_TOKEN}" git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.rst"]
 ```
 ## 🔗 Related Documentation
 - **[Environment Variables Reference](./environment-variables.md)** - Complete environment variable list

@@ -65,20 +65,9 @@ git commit -m "feat: add multi-project workspace support
 Closes #123"
 ```
 #### Documentation Checklist for New Features
-- [ ] **User Documentation**
-  - [ ] Feature overview and benefits
-  - [ ] Step-by-step setup guide
-  - [ ] Configuration options
-  - [ ] Usage examples
-  - [ ] Troubleshooting section
-- [ ] **Developer Documentation**
-  - [ ] Architecture explanation
-  - [ ] Extension points
-  - [ ] Testing guidelines
-- [ ] **Cross-References**
-  - [ ] Update related guides
-  - [ ] Add navigation links
-  - [ ] Update main README if needed
+- [ ] **User Documentation** - [ ] Feature overview and benefits - [ ] Step-by-step setup guide - [ ] Configuration options - [ ] Usage examples - [ ] Troubleshooting section
+- [ ] **Developer Documentation** - [ ] Architecture explanation - [ ] Extension points - [ ] Testing guidelines
+- [ ] **Cross-References** - [ ] Update related guides - [ ] Add navigation links - [ ] Update main README if needed
 ### 2. Modifying Existing Features
 #### Identify Documentation Impact
 ```bash
@@ -137,8 +126,7 @@ Fixes #456"
 ```bash
 # Ensure workspace config is in the correct location
 ls -la config.yaml
-# If missing, create with:
-\1 init --workspace .
+# If missing, create with:\1init --workspace .
 ```
 **Fixed In**: Version 1.2.1
 ```
@@ -216,10 +204,7 @@ Example:
 ## 🔧 Tools and Automation
 ### Manual Documentation Testing
 ```bash
-# Test CLI commands manually
-\1 init --workspace .
-\1 ingest --workspace .
-\1 config --workspace .
+# Test CLI commands manually\1init --workspace .\1ingest --workspace .\1config --workspace .
 # Validate YAML configuration files
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 # Check for broken internal links manually
@@ -230,27 +215,8 @@ The project uses GitHub Actions for documentation deployment:
 ```yaml
 # .github/workflows/docs.yml (actual workflow)
 name: Documentation Website
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'website/**'
-jobs:
-  build-docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Build website using templates
-        run: |
-          python website/build.py \
-            --output site \
-            --templates website/templates
+on: push: branches: [ main ] paths: - 'docs/**' - 'README.md' - 'website/**'
+jobs: build-docs: runs-on: ubuntu-latest steps: - uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v5 with: python-version: '3.12' - name: Build website using templates run: | python website/build.py \ --output site \ --templates website/templates
 ```
 ### Documentation Quality Checks
 Manual checks to ensure documentation quality:
@@ -260,10 +226,9 @@ qdrant-loader --help
 qdrant-loader init --help
 qdrant-loader ingest --help
 # Check configuration examples
-cd examples/workspace
-\1 config --workspace .
+cd examples/workspace\1config --workspace .
 # Validate project structure
-make test  # Run actual test suite
+make test # Run actual test suite
 ```
 ## 🚀 Common Scenarios
 ### Scenario 1: Adding a New CLI Command
@@ -288,8 +253,7 @@ grep -r "old_config_format" docs/ --include="*.md"
 ### Scenario 3: Adding a New Data Source
 ```bash
 # 1. Create new data source guide
-cp docs/users/detailed-guides/data-sources/git-repositories.md \
-   docs/users/detailed-guides/data-sources/new-source.md
+cp docs/users/detailed-guides/data-sources/git-repositories.md \ docs/users/detailed-guides/data-sources/new-source.md
 # 2. Update data sources overview
 # docs/users/detailed-guides/data-sources/README.md
 # 3. Add configuration documentation
@@ -323,10 +287,7 @@ cp docs/users/detailed-guides/data-sources/git-repositories.md \
 ## 📋 Quick Reference
 ### Common Commands
 ```bash
-# Test CLI commands
-\1 init --workspace .
-\1 ingest --workspace .
-\1 config --workspace .
+# Test CLI commands\1init --workspace .\1ingest --workspace .\1config --workspace .
 qdrant-loader project --workspace . list
 # Find references to a feature
 grep -r "feature_name" docs/ --include="*.md"
@@ -354,9 +315,9 @@ qdrant-loader project list [--format json]
 qdrant-loader project status [--project-id PROJECT] [--format json]
 qdrant-loader project validate [--project-id PROJECT]
 # Global options
---workspace PATH    # Workspace directory
---config PATH       # Configuration file (alternative to workspace)
---env PATH          # Environment file (alternative to workspace)
---log-level LEVEL   # Logging level
+--workspace PATH # Workspace directory
+--config PATH # Configuration file (alternative to workspace)
+--env PATH # Environment file (alternative to workspace)
+--log-level LEVEL # Logging level
 ```
 Remember: **Documentation is part of the feature**. Plan it, write it, test it, and maintain it with the same care you give to your code.

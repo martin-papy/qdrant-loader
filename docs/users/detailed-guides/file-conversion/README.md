@@ -51,39 +51,8 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 ### Global File Conversion Configuration
 File conversion is configured globally and applies to all projects and sources that enable it:
 ```yaml
-global_config:
-  # File conversion configuration
-  file_conversion:
-    # Maximum file size for conversion (in bytes)
-    max_file_size: 52428800  # 50MB
-    # Timeout for conversion operations (in seconds)
-    conversion_timeout: 300  # 5 minutes
-    # MarkItDown specific settings
-    markitdown:
-      # Enable LLM integration for image descriptions
-      enable_llm_descriptions: false
-      # LLM model for image descriptions (when enabled)
-      llm_model: "gpt-4o"
-      # LLM endpoint (when enabled)
-      llm_endpoint: "https://api.openai.com/v1"
-      # API key for LLM service (required when enable_llm_descriptions is True)
-      llm_api_key: "${OPENAI_API_KEY}"
-projects:
-  my-project:
-    display_name: "My Project"
-    description: "Project with file conversion enabled"
-    sources:
-      localfile:
-        documents:
-          base_url: "file:///path/to/documents"
-          file_types:
-            - "*.pdf"
-            - "*.docx"
-            - "*.pptx"
-            - "*.xlsx"
-          max_file_size: 52428800
-          # Enable file conversion for this source
-          enable_file_conversion: true
+global_config: # File conversion configuration file_conversion: # Maximum file size for conversion (in bytes) max_file_size: 52428800 # 50MB # Timeout for conversion operations (in seconds) conversion_timeout: 300 # 5 minutes # MarkItDown specific settings markitdown: # Enable LLM integration for image descriptions enable_llm_descriptions: false # LLM model for image descriptions (when enabled) llm_model: "gpt-4o" # LLM endpoint (when enabled) llm_endpoint: "https://api.openai.com/v1" # API key for LLM service (required when enable_llm_descriptions is True) llm_api_key: "${OPENAI_API_KEY}"
+projects: my-project: display_name: "My Project" description: "Project with file conversion enabled" sources: localfile: documents: base_url: "file:///path/to/documents" file_types: - "*.pdf" - "*.docx" - "*.pptx" - "*.xlsx" max_file_size: 52428800 # Enable file conversion for this source enable_file_conversion: true
 ```
 ### Configuration Options
 #### Global File Conversion Settings
@@ -106,154 +75,53 @@ Each data source can enable or disable file conversion:
 ## 🔧 How File Conversion Works
 ### Conversion Process
 ```text
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    File     │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
-│  Detection  │    │ Detection   │    │ Conversion  │    │  Content    │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ MIME Type   │    │ Extension   │    │ Text + OCR  │    │ Structured  │
-│ Detection   │    │ Mapping     │    │ + Audio     │    │ Text Output │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ File │───▶│ Format │───▶│ MarkItDown │───▶│ Markdown │
+│ Detection │ │ Detection │ │ Conversion │ │ Content │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ │ │ │ ▼ ▼ ▼ ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ MIME Type │ │ Extension │ │ Text + OCR │ │ Structured │
+│ Detection │ │ Mapping │ │ + Audio │ │ Text Output │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
 ```
 ### Processing Pipeline
-1. **File Detection**
-   - MIME type detection
-   - Extension analysis
-   - File size validation
-2. **Format-Specific Processing**
-   - **PDF**: Text extraction + OCR for images
-   - **Office Documents**: Document structure + embedded content
-   - **Images**: OCR text extraction
-   - **Audio**: Speech-to-text transcription
-   - **Archives**: Extraction + recursive processing
-3. **Content Extraction**
-   - Main text content
-   - Metadata (author, creation date, etc.)
-   - Structured data (tables, lists)
-   - Embedded objects (images, charts)
-4. **Output Generation**
-   - Markdown-formatted text
-   - Preserved formatting where possible
-   - Ready for chunking and vector storage
+1. **File Detection** - MIME type detection - Extension analysis - File size validation
+2. **Format-Specific Processing** - **PDF**: Text extraction + OCR for images - **Office Documents**: Document structure + embedded content - **Images**: OCR text extraction - **Audio**: Speech-to-text transcription - **Archives**: Extraction + recursive processing
+3. **Content Extraction** - Main text content - Metadata (author, creation date, etc.) - Structured data (tables, lists) - Embedded objects (images, charts)
+4. **Output Generation** - Markdown-formatted text - Preserved formatting where possible - Ready for chunking and vector storage
 ## 🚀 Usage Examples
 ### Basic Document Processing
 ```yaml
-global_config:
-  file_conversion:
-    max_file_size: 52428800  # 50MB
-    conversion_timeout: 300  # 5 minutes
-    markitdown:
-      enable_llm_descriptions: false
-projects:
-  documents:
-    display_name: "Document Processing"
-    description: "Process various document formats"
-    sources:
-      localfile:
-        office-docs:
-          base_url: "file:///documents/office"
-          file_types:
-            - "*.pdf"
-            - "*.docx"
-            - "*.pptx"
-            - "*.xlsx"
-          enable_file_conversion: true
+global_config: file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false
+projects: documents: display_name: "Document Processing" description: "Process various document formats" sources: localfile: office-docs: base_url: "file:///documents/office" file_types: - "*.pdf" - "*.docx" - "*.pptx" - "*.xlsx" enable_file_conversion: true
 ```
 ### Research Papers with LLM Enhancement
 ```yaml
-global_config:
-  file_conversion:
-    max_file_size: 104857600  # 100MB for large papers
-    conversion_timeout: 600   # 10 minutes
-    markitdown:
-      enable_llm_descriptions: true
-      llm_model: "gpt-4o"
-      llm_endpoint: "https://api.openai.com/v1"
-      llm_api_key: "${OPENAI_API_KEY}"
-projects:
-  research:
-    display_name: "Research Papers"
-    description: "Academic papers and research documents"
-    sources:
-      localfile:
-        papers:
-          base_url: "file:///research/papers"
-          file_types:
-            - "*.pdf"
-            - "*.tex"
-          enable_file_conversion: true
+global_config: file_conversion: max_file_size: 104857600 # 100MB for large papers conversion_timeout: 600 # 10 minutes markitdown: enable_llm_descriptions: true llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}"
+projects: research: display_name: "Research Papers" description: "Academic papers and research documents" sources: localfile: papers: base_url: "file:///research/papers" file_types: - "*.pdf" - "*.tex" enable_file_conversion: true
 ```
 ### Multimedia Content Processing
 ```yaml
-global_config:
-  file_conversion:
-    max_file_size: 52428800
-    conversion_timeout: 900  # 15 minutes for audio/video
-    markitdown:
-      enable_llm_descriptions: true
-      llm_model: "gpt-4o"
-      llm_api_key: "${OPENAI_API_KEY}"
-projects:
-  multimedia:
-    display_name: "Multimedia Content"
-    description: "Audio, images, and presentations"
-    sources:
-      localfile:
-        media:
-          base_url: "file:///media/content"
-          file_types:
-            - "*.mp3"
-            - "*.wav"
-            - "*.png"
-            - "*.jpg"
-            - "*.pptx"
-          enable_file_conversion: true
+global_config: file_conversion: max_file_size: 52428800 conversion_timeout: 900 # 15 minutes for audio/video markitdown: enable_llm_descriptions: true llm_model: "gpt-4o" llm_api_key: "${OPENAI_API_KEY}"
+projects: multimedia: display_name: "Multimedia Content" description: "Audio, images, and presentations" sources: localfile: media: base_url: "file:///media/content" file_types: - "*.mp3" - "*.wav" - "*.png" - "*.jpg" - "*.pptx" enable_file_conversion: true
 ```
 ### Confluence with Attachment Processing
 ```yaml
-global_config:
-  file_conversion:
-    max_file_size: 52428800
-    conversion_timeout: 300
-    markitdown:
-      enable_llm_descriptions: false
-projects:
-  confluence-docs:
-    display_name: "Confluence Documentation"
-    description: "Confluence pages and attachments"
-    sources:
-      confluence:
-        company-wiki:
-          base_url: "${CONFLUENCE_URL}"
-          deployment_type: "cloud"
-          space_key: "DOCS"
-          email: "${CONFLUENCE_EMAIL}"
-          token: "${CONFLUENCE_TOKEN}"
-          download_attachments: true
-          enable_file_conversion: true
+global_config: file_conversion: max_file_size: 52428800 conversion_timeout: 300 markitdown: enable_llm_descriptions: false
+projects: confluence-docs: display_name: "Confluence Documentation" description: "Confluence pages and attachments" sources: confluence: company-wiki: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" download_attachments: true enable_file_conversion: true
 ```
 ## 🧪 Testing and Validation
 ### Test File Conversion
 ```bash
-# Initialize the project
-\1 init --workspace .
-# Test ingestion with file conversion enabled
-\1 ingest --workspace . --project my-project
-# Check project status
-\1 project \3 --workspace \2 --project-id my-project
-# Enable debug logging to see conversion details
-\1 ingest --workspace . --log-level DEBUG --project my-project
+# Initialize the project\1init --workspace .
+# Test ingestion with file conversion enabled\1ingest --workspace . --project my-project
+# Check project status\1project\1--workspace\1--project-id my-project
+# Enable debug logging to see conversion details\1ingest --workspace . --log-level DEBUG --project my-project
 ```
 ### Validate Configuration
 ```bash
-# Validate project configuration
-\1 project \3 --workspace \2 --project-id my-project
-# Check all projects
-\1 project \3 --workspace \2
-# View current configuration
-\1 config --workspace .
+# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Check all projects\1project\1--workspace\1# View current configuration\1config --workspace .
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -261,79 +129,33 @@ projects:
 **Problem**: Files are too large to process
 **Solutions**:
 ```yaml
-global_config:
-  file_conversion:
-    # Increase size limit
-    max_file_size: 104857600  # 100MB
-    # Or filter at source level
-projects:
-  my-project:
-    sources:
-      localfile:
-        documents:
-          max_file_size: 20971520  # 20MB limit for this source
+global_config: file_conversion: # Increase size limit max_file_size: 104857600 # 100MB # Or filter at source level
+projects: my-project: sources: localfile: documents: max_file_size: 20971520 # 20MB limit for this source
 ```
 #### Conversion Timeout
 **Problem**: Large files timing out during conversion
 **Solutions**:
 ```yaml
-global_config:
-  file_conversion:
-    # Increase timeout
-    conversion_timeout: 900  # 15 minutes
+global_config: file_conversion: # Increase timeout conversion_timeout: 900 # 15 minutes
 ```
 #### LLM Integration Issues
 **Problem**: Image descriptions not working
 **Solutions**:
-1. **Check API key**:
-   ```bash
-   echo $OPENAI_API_KEY
-   ```
-2. **Verify configuration**:
-   ```yaml
-   global_config:
-     file_conversion:
-       markitdown:
-         enable_llm_descriptions: true
-         llm_api_key: "${OPENAI_API_KEY}"
-   ```
-3. **Test API access**:
-   ```bash
-   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-     https://api.openai.com/v1/models
-   ```
+1. **Check API key**: ```bash echo $OPENAI_API_KEY ```
+2. **Verify configuration**: ```yaml global_config: file_conversion: markitdown: enable_llm_descriptions: true llm_api_key: "${OPENAI_API_KEY}" ```
+3. **Test API access**: ```bash curl -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models ```
 #### Memory Issues
 **Problem**: Large files causing memory problems
 **Solutions**:
 ```yaml
-global_config:
-  file_conversion:
-    # Reduce file size limits
-    max_file_size: 20971520  # 20MB
-    # Reduce timeout to fail faster
-    conversion_timeout: 180  # 3 minutes
+global_config: file_conversion: # Reduce file size limits max_file_size: 20971520 # 20MB # Reduce timeout to fail faster conversion_timeout: 180 # 3 minutes
 ```
 #### Unsupported File Types
 **Problem**: Some files not being processed
 **Solutions**:
-1. **Check file types in source configuration**:
-   ```yaml
-   sources:
-     localfile:
-       documents:
-         file_types:
-           - "*.pdf"
-           - "*.docx"
-           - "*.txt"
-   ```
+1. **Check file types in source configuration**: ```yaml sources: localfile: documents: file_types: - "*.pdf" - "*.docx" - "*.txt" ```
 2. **Verify MarkItDown support** - Check if the file format is supported by MarkItDown
-3. **Enable file conversion**:
-   ```yaml
-   sources:
-     localfile:
-       documents:
-         enable_file_conversion: true
-   ```
+3. **Enable file conversion**: ```yaml sources: localfile: documents: enable_file_conversion: true ```
 ### Debugging Commands
 ```bash
 # Check file type detection
@@ -351,12 +173,8 @@ pip list | grep -E "(markitdown|tesseract|whisper)"
 ## 📊 Monitoring and Performance
 ### Check Processing Status
 ```bash
-# View project status
-\1 project \3 --workspace \2
-# Check specific project
-\1 project \3 --workspace \2 --project-id my-project
-# Monitor with debug logging
-\1 ingest --workspace . --log-level DEBUG --project my-project
+# View project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
+# Monitor with debug logging\1ingest --workspace . --log-level DEBUG --project my-project
 ```
 ### Performance Considerations
 Monitor these aspects for file conversion:
