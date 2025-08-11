@@ -50,7 +50,7 @@
 - **Improved HTML chunking**: Enhanced robust handling for empty content and malformed HTML with graceful degradation
 - **Code and JSON strategy overhaul**: Complete modular redesign with better handling of large documents and fallback mechanisms
 - **Enhanced chunk processing**: Added additional metadata fields (source_type, url, content_type, title) and improved semantic analysis handling
-- **Updated configuration templates**: Enhanced [config.template.yaml](packages/qdrant-loader/conf/config.template.yaml) and [configuration documentation](docs/users/configuration/config-file-reference.md) with new strategy-specific chunking options
+- **Updated configuration templates**: Enhanced [config.template.yaml](https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml) and [configuration documentation](docs/users/configuration/config-file-reference.md) with new strategy-specific chunking options
 
 ## Version 0.5.0 - July 25, 2025
 

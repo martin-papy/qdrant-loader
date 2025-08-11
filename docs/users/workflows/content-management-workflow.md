@@ -269,8 +269,8 @@ qdrant-loader --workspace . ingest --project documentation
 
 ## Related Content
 
-- [Related Guide 1](link)
-- [Related Guide 2](link)
+- Related Guide 1 - Coming later
+- Related Guide 2 - Coming later
 
 ## Feedback
 

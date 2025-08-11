@@ -136,7 +136,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 | Tool | Status | Documentation |
 |------|--------|---------------|
-| **Cursor IDE** | ✅ Full Support | [Guide](./detailed-guides/mcp-server/cursor-integration.md) |
+| **Cursor IDE** | ✅ Full Support | Guide coming later |
 | **Windsurf** | ✅ Compatible | [Guide](./detailed-guides/mcp-server/setup-and-integration.md) |
 | **Claude Desktop** | ✅ Compatible | [Guide](./detailed-guides/mcp-server/setup-and-integration.md) |
 
@@ -151,7 +151,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A and discussions
-- **[Getting Help Guide](./troubleshooting/getting-help.md)** - How to get effective support
+- Getting Help Guide - Coming later
 
 ### Documentation Feedback
 
