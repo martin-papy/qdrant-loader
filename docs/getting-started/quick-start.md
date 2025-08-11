@@ -58,8 +58,23 @@ QDrant Loader is a powerful tool for ingesting documents into vector databases.
 - AI-powered development workflows
 EOF
 # Create a basic configuration file
-cat > config.yaml << EOF
-projects: quickstart: display_name: "Quick Start Project" description: "Getting started with QDrant Loader" collection_name: "quickstart" sources: localfile: sample_docs: path: "." include_patterns: ["*.md"] recursive: false
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
+projects:
+  quickstart:
+    project_id: "quickstart"
+    display_name: "Quick Start Project"
+    description: "Getting started with QDrant Loader"
+    sources:
+      localfile:
+        sample_docs:
+          base_url: "file://."
+          include_paths: ["*.md"]
+          enable_file_conversion: false
 EOF
 # Ingest the document\1ingest --workspace .
 # Expected output:
@@ -70,8 +85,25 @@ EOF
 ### Option B: Ingest a Git Repository
 ```bash
 # Update config.yaml to include git source
-cat > config.yaml << EOF
-projects: quickstart: display_name: "Quick Start Project" description: "Getting started with QDrant Loader" collection_name: "quickstart" sources: git: qdrant_docs: url: "https://github.com/qdrant/qdrant-client" include_patterns: ["*.md", "*.rst"] exclude_patterns: ["node_modules/", ".git/"]
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
+projects:
+  quickstart:
+    project_id: "quickstart"
+    display_name: "Quick Start Project"
+    description: "Getting started with QDrant Loader"
+    sources:
+      git:
+        qdrant_docs:
+          base_url: "https://github.com/qdrant/qdrant-client.git"
+          branch: "main"
+          include_paths: ["**/*.md", "**/*.rst"]
+          exclude_paths: ["node_modules/**", ".git/**"]
+          file_types: ["*.md", "*.rst"]
 EOF
 # Ingest the repository\1ingest --workspace .
 # Expected output:
@@ -93,8 +125,23 @@ cat > my-project/docs/api.md << EOF
 Our API provides powerful search capabilities.
 EOF
 # Update config.yaml to include the directory
-cat > config.yaml << EOF
-projects: quickstart: display_name: "Quick Start Project" description: "Getting started with QDrant Loader" collection_name: "quickstart" sources: localfile: project_docs: path: "my-project/" include_patterns: ["*.md"] recursive: true
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
+projects:
+  quickstart:
+    project_id: "quickstart"
+    display_name: "Quick Start Project"
+    description: "Getting started with QDrant Loader"
+    sources:
+      localfile:
+        project_docs:
+          base_url: "file://./my-project"
+          include_paths: ["**/*.md"]
+          enable_file_conversion: false
 EOF
 # Ingest the entire directory\1ingest --workspace .
 # Expected output:
@@ -191,7 +238,8 @@ qdrant-loader project --workspace . status
 # Check API key
 echo $OPENAI_API_KEY
 # Test API key directly
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+  https://api.openai.com/v1/models
 # Update .env file with correct key
 ```
 #### No Documents Found
@@ -228,7 +276,7 @@ qdrant-loader project --workspace . list
 ```
 ### Getting Help
 If you encounter issues:
-1. **Check logs**: `\1 ingest --workspace . --log-level DEBUG`
+1. **Check logs**: `qdrant-loader ingest --workspace . --log-level DEBUG`
 2. **Verify setup**: `qdrant-loader project --workspace . status`
 3. **Search issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Ask for help**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
