@@ -19,7 +19,9 @@ QDrant Loader requires a QDrant instance to store vectors and metadata.
 **Option 1: Docker**
 ```bash
 # Start QDrant with Docker
-docker run -p 6333:6333 -p 6334:6334 \ -v $(pwd)/qdrant_storage:/qdrant/storage:z \ qdrant/qdrant
+docker run -p 6333:6333 -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+  qdrant/qdrant
 ```
 **Option 2: QDrant Cloud**
 1. Sign up at [QDrant Cloud](https://cloud.qdrant.io/)
@@ -64,7 +66,7 @@ mcp-qdrant-loader --version
 # Install both packages at once
 pip install qdrant-loader qdrant-loader-mcp-server
 # Or install with all optional dependencies
-pip install qdrant-loader[all] qdrant-loader-mcp-server[all]
+pip install qdrant-loader qdrant-loader-mcp-server
 ```
 ### Method 2: Development Installation
 For contributors or users who want the latest features:
@@ -194,8 +196,10 @@ mcp-qdrant-loader --help
 qdrant-loader project status
 # For basic testing, you would typically:
 # 1. Set up a workspace with config.yaml and .env
-# 2. Initialize the collection:\1init --workspace .
-# 3. Run ingestion:\1ingest --workspace .
+# 2. Initialize the collection:
+qdrant-loader init --workspace .
+# 3. Run ingestion:
+qdrant-loader ingest --workspace .
 ```
 ## 🔧 Configuration Setup
 After installation, you'll need to configure QDrant Loader:
@@ -220,10 +224,20 @@ export QDRANT_COLLECTION_NAME="documents"
 Create `config.yaml` in your workspace or `~/.qdrant-loader/config.yaml`:
 ```yaml
 # Basic configuration
-qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}"
-openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
+qdrant:
+  url: "${QDRANT_URL}"
+  collection_name: "${QDRANT_COLLECTION_NAME}"
+openai:
+  api_key: "${OPENAI_API_KEY}"
+  model: "text-embedding-3-small"
 # Data sources
-sources: git: enabled: true confluence: enabled: false local: enabled: true
+sources:
+  git:
+    enabled: true
+  confluence:
+    enabled: false
+  localfile:
+    enabled: true
 ```
 ## 🔧 Troubleshooting Installation
 ### Common Issues
@@ -279,7 +293,8 @@ qdrant-loader config
 # Check API key is set
 echo $OPENAI_API_KEY
 # Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+  https://api.openai.com/v1/models
 # Set API key
 export OPENAI_API_KEY="your-actual-api-key"
 ```
