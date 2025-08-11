@@ -1,12 +1,21 @@
 # Documentation Progress
-Totals by status are computed from `docs/_inventory.csv`.
+
+Updated: 2025-08-11
+
 ## Status Totals
-```bash
-awk -F, 'NR>1{c[$5]++} END{for (s in c) printf "%s,%d\n", s, c[s]}' docs/_inventory.csv | sort
-```
+- drafting: 17
+- in-review: 1
+- not-started: 32
+
+## Disposition Totals
+- keep: 2
+- retire: 1
+- rewrite: 47
+
 ## Blockers
 - None yet.
+
 ## Active PRs
 - None yet.
-Last Updated: $(date +%F)
+
 Maintainer: Martin Papy
