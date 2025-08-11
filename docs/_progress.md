@@ -3,8 +3,8 @@
 Updated: 2025-08-11
 
 ## Status Totals
-- drafting: 17
-- in-review: 1
+- drafting: 14
+- in-review: 4
 - not-started: 32
 
 ## Disposition Totals
