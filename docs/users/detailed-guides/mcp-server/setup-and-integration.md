@@ -50,12 +50,13 @@ pip install qdrant-loader-mcp-server
 ```bash
 # Option 1: Install standalone MCP server
 pip install qdrant-loader-mcp-server
-# Option 2: Install with QDrant Loader (includes MCP server)
-pip install qdrant-loader[mcp]
+# Option 2: Install with QDrant Loader and MCP server as separate packages
+pip install qdrant-loader qdrant-loader-mcp-server
 # Option 3: Install from source
-git clone https://github.com/your-org/qdrant-loader.git
+git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-pip install -e ".[mcp]"
+pip install -e packages/qdrant-loader
+pip install -e packages/qdrant-loader-mcp-server
 ```
 ### Verify Installation
 ```bash
