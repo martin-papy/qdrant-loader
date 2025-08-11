@@ -78,26 +78,28 @@ QDrant Loader is built on several key architectural principles:
 - **Data Sources** - Git repositories, Confluence, JIRA, local files, web content
 ## 🔧 Core Components
 ### Data Source Connectors
-**Purpose**: Fetch content from various external sources
+**Purpose**: Fetch content from external systems via a common abstraction
 **Key Features**:
-- Unified BaseConnector interface for all data sources
-- Authentication handling per source type
-- Rate limiting and retry logic
-- Incremental update support via state management
-- Metadata extraction and document creation
-**Supported Sources**:
-- Git repositories (GitHub, GitLab, Bitbucket)
-- Confluence (Cloud and Data Center)
-- JIRA (Cloud and Data Center)
-- Local file systems
-- Public documentation websites
-**Implementation**:
+- Unified `BaseConnector` interface for all sources
+- Per-source authentication and validation
+- Retry-aware HTTP and rate limiting (where relevant)
+- Incremental updates via state tracking
+- Rich metadata on every `Document`
+**Supported Sources**: Git, Confluence, Jira, Local Files, Public Docs
+**Interface (simplified)**:
 ```python
-# Actual BaseConnector interface
 from abc import ABC, abstractmethod
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document
-class BaseConnector(ABC): """Base class for all connectors.""" def __init__(self, config: SourceConfig): self.config = config self._initialized = False async def __aenter__(self): """Async context manager entry.""" self._initialized = True return self async def __aexit__(self, exc_type, exc_val, exc_tb): """Async context manager exit.""" self._initialized = False @abstractmethod async def get_documents(self) -> list[Document]: """Get documents from the source.""" pass
+from qdrant_loader.core.file_conversion import FileConversionConfig
+
+class BaseConnector(ABC):
+    def __init__(self, config: SourceConfig): ...
+    async def __aenter__(self): ...
+    async def __aexit__(self, exc_type, exc_val, exc_tb): ...
+    def set_file_conversion_config(self, cfg: FileConversionConfig) -> None: ...
+    @abstractmethod
+    async def get_documents(self) -> list[Document]: ...
 ```
 ### File Converters
 **Purpose**: Convert various file formats to text using MarkItDown
@@ -132,23 +134,11 @@ class BaseConnector(ABC): """Base class for all connectors.""" def __init__(self
 ### State Manager
 **Purpose**: Track processing state and enable incremental updates
 **Key Features**:
-- SQLite-based state storage with async support
-- Content change detection via hashing
-- Processing history tracking
-- Project-based organization
-- Concurrent access handling
-**Database Schema**:
-```sql
--- Projects table
-CREATE TABLE projects ( id TEXT PRIMARY KEY, display_name TEXT NOT NULL, description TEXT, collection_name TEXT NOT NULL, config_hash TEXT, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
-);
--- Document states table
-CREATE TABLE document_states ( id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, document_id TEXT NOT NULL, source_type TEXT NOT NULL, source TEXT NOT NULL, url TEXT NOT NULL, title TEXT NOT NULL, content_hash TEXT NOT NULL, is_deleted BOOLEAN DEFAULT FALSE, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, -- File conversion metadata is_converted BOOLEAN DEFAULT FALSE, conversion_method TEXT, original_file_type TEXT, -- Attachment metadata is_attachment BOOLEAN DEFAULT FALSE, parent_document_id TEXT, FOREIGN KEY (project_id) REFERENCES projects(id)
-);
--- Ingestion history table
-CREATE TABLE ingestion_history ( id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, source_type TEXT NOT NULL, source TEXT NOT NULL, last_successful_ingestion DATETIME NOT NULL, status TEXT NOT NULL, document_count INTEGER DEFAULT 0, error_message TEXT, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, FOREIGN KEY (project_id) REFERENCES projects(id)
-);
-```
+- SQLite + SQLAlchemy async engine
+- Content hashing for change detection
+- Ingestion history and per-document state
+- Project-aware queries and updates
+Implementation: `qdrant_loader/core/state/state_manager.py`
 ### QDrant Manager
 **Purpose**: Manage vector storage and collection operations
 **Key Features**:
@@ -227,10 +217,10 @@ class ConfluenceConnector(BaseConnector): """Confluence connector with authentic
 - **Access control** - Per-source authentication
 - **Local processing** - No data sent to external services except for embeddings
 ## 📚 Related Documentation
-- **[CLI Reference](../../users/cli-reference/README.md)** - Command-line interface
-- **[Configuration Guide](../../users/configuration/README.md)** - Configuration options
-- **[Extending Guide](../extending.md)** - How to extend functionality
-- **[Testing Guide](../testing.md)** - Testing framework and patterns
+- **[CLI Reference](../../users/cli-reference/)** - Command-line interface
+- **[Configuration Guide](../../users/configuration/)** - Configuration options
+- **[Extending Guide](../extending/)** - How to extend functionality
+- **[Testing Guide](../testing/)** - Testing framework and patterns
 ## 🔄 Architecture Evolution
 ### Current State (v0.4.x)
 - Multi-project workspace support

@@ -33,12 +33,13 @@ QDrant Loader currently supports extension through:
 # Clone the repository
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-# Install in development mode
-poetry install
-# Activate virtual environment
-poetry shell
-# Run tests to ensure everything works
-pytest
+# Recommended: venv + editable installs
+python -m venv .venv && source .venv/bin/activate
+pip install -e packages/qdrant-loader
+# Optional: MCP package if developing integration
+pip install -e packages/qdrant-loader-mcp-server
+# Run tests
+pytest -v
 ```
 ## 📊 Custom Data Source Connectors
 ### Creating a Custom Connector
@@ -62,15 +63,19 @@ logger = LoggingConfig.get_logger(__name__)
 class CustomAPIConnector(BaseConnector): """Connector for custom REST API data source.""" def __init__(self, config: SourceConfig): super().__init__(config) # Access configuration through config.config dict self.api_url = config.config["api_url"] self.api_key = config.config.get("api_key") self.batch_size = config.config.get("batch_size", 100) async def get_documents(self) -> list[Document]: """Fetch documents from the custom API.""" documents = [] headers = {} if self.api_key: headers["Authorization"] = f"Bearer {self.api_key}" async with httpx.AsyncClient() as client: try: response = await client.get( f"{self.api_url}/documents", headers=headers, params={"limit": self.batch_size} ) response.raise_for_status() data = response.json() for item in data.get("documents", []): document = self._convert_to_document(item) if document: documents.append(document) except httpx.RequestError as e: logger.error(f"API request failed: {e}") raise return documents def _convert_to_document(self, api_item: dict[str, Any]) -> Document: """Convert API response item to Document.""" return Document( title=api_item.get("title", "Untitled"), content_type="text/plain", content=api_item["content"], metadata={ "api_id": api_item["id"], "author": api_item.get("author"), "created_at": api_item.get("created_at"), "tags": api_item.get("tags", []), }, source_type="custom_api", source=self.config.source, url=f"{self.api_url}/documents/{api_item['id']}" )
 ```
 ### Integrating Custom Connectors
-To integrate a custom connector into QDrant Loader:
-1. **Create the connector class** implementing `BaseConnector`
-2. **Add configuration support** by extending the source configuration
-3. **Register the connector** in your project's connector factory
-Example connector factory extension:
+To integrate a custom connector:
+1. Implement `BaseConnector`
+2. Create a `SourceConfig` subclass with validation
+3. Wire it in your own pipeline or fork with a factory (core orchestrator directly instantiates known connectors)
+Example factory for forks/extensions:
 ```python
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.config.source_config import SourceConfig
-def create_connector(source_type: str, config: SourceConfig) -> BaseConnector: """Factory function to create connectors.""" if source_type == "custom_api": from .custom_api import CustomAPIConnector return CustomAPIConnector(config) elif source_type == "confluence": from qdrant_loader.connectors.confluence import ConfluenceConnector return ConfluenceConnector(config) # ... other existing connectors else: raise ValueError(f"Unknown source type: {source_type}")
+def create_connector(source_type: str, config: SourceConfig) -> BaseConnector:
+    if source_type == "custom_api":
+        from .custom_api import CustomAPIConnector
+        return CustomAPIConnector(config)
+    raise ValueError(f"Unknown source type: {source_type}")
 ```
 ## 📄 Document Model
 The `Document` model is the core data structure used throughout QDrant Loader. It uses Pydantic BaseModel:
@@ -137,7 +142,7 @@ async def test_custom_connector_fetch_documents(): """Test document fetching."""
 async def test_custom_connector_integration(): """Test full integration with QDrant Loader.""" from qdrant_loader.core.async_ingestion_pipeline import AsyncIngestionPipeline from qdrant_loader.config import Settings # Load test configuration settings = Settings.from_yaml("test_config.yaml") # Create pipeline with custom connector pipeline = AsyncIngestionPipeline(settings) result = await pipeline.process_documents(project_id="test-project") assert len(result) > 0
 ```
 ## 📦 Packaging Extensions
-### Creating a Package
+### Creating a Package (entry point optional)
 ```toml
 # pyproject.toml
 [project]
@@ -145,8 +150,9 @@ name = "qdrant-loader-custom-extension"
 version = "1.0.0"
 dependencies = [ "qdrant-loader>=1.0.0", "httpx>=0.24.0", "pydantic>=2.0.0"
 ]
-[project.entry-points."qdrant_loader.connectors"]
-custom_api = "my_extension.custom_api:CustomAPIConnector"
+# Optional entry-points block only if your fork discovers plugins
+# [project.entry-points."qdrant_loader.connectors"]
+# custom_api = "my_extension.custom_api:CustomAPIConnector"
 ```
 ### Distribution
 ```bash
