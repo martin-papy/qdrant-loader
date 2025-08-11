@@ -18,18 +18,24 @@ When you connect to JIRA, QDrant Loader can process:
 ## ⚙️ Configuration
 ### Basic Configuration
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
-projects: my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" download_attachments: true
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" download_attachments: true
 ```
 ### Advanced Configuration
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
-projects: my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Rate limiting requests_per_minute: 60 page_size: 50 # Attachment handling download_attachments: true # Issue filtering issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "Done" # File conversion (requires global file_conversion config) enable_file_conversion: true
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Rate limiting requests_per_minute: 60 page_size: 50 # Attachment handling download_attachments: true # Issue filtering issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "Done" # File conversion (requires global file_conversion config) enable_file_conversion: true
 ```
 ### Multiple JIRA Instances
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
-projects: my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Development JIRA Data Center dev-jira: base_url: "https://dev-jira.company.com" deployment_type: "datacenter" project_key: "DEV" token: "${DEV_JIRA_TOKEN}"
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Development JIRA Data Center dev-jira: base_url: "https://dev-jira.company.com" deployment_type: "datacenter" project_key: "DEV" token: "${DEV_JIRA_TOKEN}"
 ```
 ## 🎯 Configuration Options
 ### Connection Settings
@@ -55,18 +61,24 @@ projects: my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url
 ## 🚀 Usage Examples
 ### Software Development Team
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
-projects: development: sources: jira: dev-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "DEV" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on active work issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "In Review" - "Done" # Include attachments for documentation download_attachments: true enable_file_conversion: true
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  development: sources: jira: dev-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "DEV" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on active work issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "In Review" - "Done" # Include attachments for documentation download_attachments: true enable_file_conversion: true
 ```
 ### Product Management
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "product-docs" openai: api_key: "${OPENAI_API_KEY}"
-projects: product: sources: jira: product-backlog: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on planning items issue_types: - "Epic" - "Story" - "Initiative" # Include all content for context download_attachments: true enable_file_conversion: true
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "product-docs" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  product: sources: jira: product-backlog: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on planning items issue_types: - "Epic" - "Story" - "Initiative" # Include all content for context download_attachments: true enable_file_conversion: true
 ```
 ### Support Team
 ```yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "support-docs" openai: api_key: "${OPENAI_API_KEY}"
-projects: support: sources: jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUP" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Support-focused issue types issue_types: - "Bug" - "Support Request" - "Incident" - "Problem" # Include customer communications download_attachments: true
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "support-docs" openai: api_key: "${OPENAI_API_KEY}"
+projects:
+  support: sources: jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUP" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Support-focused issue types issue_types: - "Bug" - "Support Request" - "Incident" - "Problem" # Include customer communications download_attachments: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Configure
@@ -109,13 +121,15 @@ curl -u "your-email:your-token" \ "https://your-domain.atlassian.net/rest/api/2/
 **Problem**: `429 Too Many Requests`
 **Solutions**:
 ```yaml
-projects: my-project: sources: jira: my-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Reduce request rate requests_per_minute: 30 page_size: 25
+projects:
+  my-project: sources: jira: my-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Reduce request rate requests_per_minute: 30 page_size: 25
 ```
 #### Large Project Performance
 **Problem**: Processing takes too long or times out
 **Solutions**:
 ```yaml
-projects: my-project: sources: jira: my-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Optimize processing download_attachments: false page_size: 25 requests_per_minute: 30 # Filter to reduce scope issue_types: ["Story", "Bug"] include_statuses: ["Open", "In Progress"]
+projects:
+  my-project: sources: jira: my-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Optimize processing download_attachments: false page_size: 25 requests_per_minute: 30 # Filter to reduce scope issue_types: ["Story", "Bug"] include_statuses: ["Open", "In Progress"]
 ```
 ### Debugging Commands
 ```bash
