@@ -159,7 +159,7 @@ AI Development Tools ← MCP Server ← Vector Database
 
 Now that you understand what QDrant Loader can do for you, let's get you set up:
 
-- **Next**: [Core Concepts](./core-concepts.md) - Understand the key concepts
+- **Next**: Core Concepts - Summarized inline in Getting Started
 - **Quick path**: [Quick Start Guide](./quick-start.md) - Get running in 5 minutes
 - **Detailed path**: [Installation Guide](./installation.md) - Complete setup instructions
 
