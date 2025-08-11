@@ -63,8 +63,8 @@ This documentation is organized to help you accomplish specific tasks and unders
 #### 🔧 **Solve problems**
 
 - [Common issues](./troubleshooting/common-issues.md) - Quick solutions to frequent problems
-- [Data source problems](./troubleshooting/data-source-issues.md) - Source-specific troubleshooting
-- [Performance issues](./troubleshooting/performance-optimization.md) - Speed and memory problems
+- Data source problems - Coming later
+- Performance optimization - Coming later
 
 ## 🎯 User Personas and Workflows
 
