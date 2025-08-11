@@ -4,8 +4,8 @@ Updated: 2025-08-11
 
 ## Status Totals
 - drafting: 5
-- not-started: 18
-- verified: 27
+- not-started: 15
+- verified: 30
 
 ## Disposition Totals
 - keep: 2
