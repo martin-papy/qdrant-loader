@@ -57,10 +57,13 @@ Use emojis consistently for section types:
 Always specify the language for syntax highlighting:
 ```markdown
 ```bash
-# Good: Language specifiedqdrant-loader ingest --workspace .
+# Good: Language specified
+qdrant-loader ingest --workspace .
 ```
+
 ```
-# Bad: No language specifiedqdrant-loader ingest --workspace .
+# Bad: No language specified
+qdrant-loader ingest --workspace .
 ```
 ```
 ### Command Examples
@@ -79,9 +82,23 @@ pip install qdrant-loader
 - **Show both minimal and comprehensive configurations**
 ```yaml
 # Minimal configuration
-global: qdrant: url: "http://localhost:6333" collection_name: "my_documents"
+global:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "my_documents"
+
 # Comprehensive configuration
-global: qdrant: url: "http://localhost:6333" collection_name: "my_documents" api_key: "${QDRANT_API_KEY}" openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking: chunk_size: 1500 chunk_overlap: 200
+global:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "my_documents"
+    api_key: "${QDRANT_API_KEY}"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+  chunking:
+    chunk_size: 1500
+    chunk_overlap: 200
 ```
 ### File Paths and Names
 - Use **backticks** for file names: `config.yaml`
@@ -119,7 +136,7 @@ global: qdrant: url: "http://localhost:6333" collection_name: "my_documents" api
 - Test all links regularly
 ```markdown
 # Good: Descriptive and relative
-See the [Configuration Guide](/docs/users/configuration/) for details.
+See the [Configuration Guide](../../users/configuration/) for details.
 # Bad: Generic text and absolute
 Click [here](https://github.com/user/repo/docs/config.md) for more info.
 ```
@@ -173,8 +190,14 @@ Use consistent formatting for different types of callouts:
 # Good: Complete example with actual implementation
 from qdrant_loader.config import get_settings
 from qdrant_loader.core.qdrant_manager import QdrantManager
-try: settings = get_settings() manager = QdrantManager(settings) manager.create_collection() print(f"Successfully created collection: {settings.qdrant_collection_name}")
-except Exception as e: print(f"Failed to create collection: {e}")
+
+try:
+    settings = get_settings()
+    manager = QdrantManager(settings)
+    manager.create_collection()
+    print(f"Successfully created collection: {settings.qdrant_collection_name}")
+except Exception as e:
+    print(f"Failed to create collection: {e}")
 ```
 ## 🔧 Troubleshooting Documentation
 ### Error Messages

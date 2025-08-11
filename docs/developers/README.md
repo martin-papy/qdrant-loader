@@ -2,11 +2,11 @@
 Welcome to the QDrant Loader developer documentation! This guide provides everything you need to understand, extend, test, and deploy QDrant Loader. Whether you're contributing to the core project or building custom extensions, you'll find detailed technical information and practical examples here.
 ## 🎯 Quick Navigation
 ### Core Development
-- **[Architecture Guide](./architecture.md)** - System design, components, and data flow
-- **[Extending QDrant Loader](./extending.md)** - Custom connectors and processors
+- **[Architecture Guide](./architecture/)** - System design, components, and data flow
+- **[Extending QDrant Loader](./extending/)** - Custom connectors and processors
 ### Quality & Deployment
-- **[Testing Guide](./testing.md)** - Testing strategies, frameworks, and best practices
-- **[Deployment Guide](./deployment.md)** - Production deployment, containerization, and CI/CD
+- **[Testing Guide](./testing/)** - Testing strategies, frameworks, and best practices
+- **[Deployment Guide](./deployment/)** - Production deployment, containerization, and CI/CD
 ### Documentation
 - **[Documentation Maintenance](./documentation/)** - Maintaining and updating documentation
 ## 🏗️ Architecture Overview
@@ -146,17 +146,25 @@ Production deployment strategies, containerization, and operational best practic
 ## 🛠️ Development Tools and Utilities
 ### Available CLI Commands
 ```bash
-# Initialize QDrant collectionqdrant-loader init --workspace .
-# Ingest documentsqdrant-loader ingest --workspace .
-# View configurationqdrant-loader config --workspace .
-# Project managementqdrant-loader project --workspace qdrant-loader project --workspace qdrant-loader project --workspace # Start MCP server
+# Initialize QDrant collection
+qdrant-loader init --workspace .
+# Ingest documents
+qdrant-loader ingest --workspace .
+# View configuration
+qdrant-loader config --workspace .
+# Project management
+qdrant-loader project list --workspace .
+qdrant-loader project status --workspace .
+qdrant-loader project validate --workspace .
+# Start MCP server
 mcp-qdrant-loader
 ```
 ### Debugging and Profiling
 ```bash
 # Enable debug logging
 qdrant-loader --log-level DEBUG --workspace . ingest
-# Profile performanceqdrant-loader ingest --workspace . --profile
+# Profile performance
+qdrant-loader ingest --workspace . --profile
 # Memory profiling (requires memory_profiler)
 python -m memory_profiler your_script.py
 ```
