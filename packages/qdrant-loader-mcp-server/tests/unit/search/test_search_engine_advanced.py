@@ -774,8 +774,23 @@ async def test_detect_document_conflicts_success(
         assert query_metadata["original_query"] == "machine learning approaches"
         assert query_metadata["document_count"] == 3
 
-        # Verify original documents are stored
-        assert result["original_documents"] == sample_search_results
+        # Verify original documents are stored in lightweight form
+        original_docs = result["original_documents"]
+        assert isinstance(original_docs, list) and len(original_docs) == len(sample_search_results)
+        # Compare by IDs and safe fields only
+        expected = [
+            {
+                "document_id": d.document_id,
+                "title": (
+                    getattr(d, "get_display_title")()
+                    if hasattr(d, "get_display_title")
+                    else getattr(d, "source_title", None) or "Untitled"
+                ),
+                "source_type": getattr(d, "source_type", "unknown") or "unknown",
+            }
+            for d in sample_search_results
+        ]
+        assert original_docs == expected
 
 
 @pytest.mark.asyncio
