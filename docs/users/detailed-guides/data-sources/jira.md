@@ -38,6 +38,13 @@ projects:
   my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Development JIRA Data Center dev-jira: base_url: "https://dev-jira.company.com" deployment_type: "datacenter" project_key: "DEV" token: "${DEV_JIRA_TOKEN}"
 ```
 ## 🎯 Configuration Options
+
+### Validator Requirements
+- `email` + `token` required for `deployment_type: cloud`
+- `token` required for `deployment_type: datacenter`
+- `requests_per_minute` default: `60`
+- `page_size` default: `100`
+- Empty `issue_types` / `include_statuses` means all
 ### Connection Settings
 | Option | Type | Description | Default |
 |--------|------|-------------|---------|

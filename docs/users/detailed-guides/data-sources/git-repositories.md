@@ -57,6 +57,12 @@ projects:
 | `max_file_size` | int | Maximum file size in bytes | `1048576` (1MB) |
 | `depth` | int | Repository clone depth | `1` |
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `true` |
+### Validator Requirements
+- `file_types`: required, must be a non-empty list (validator enforced)
+- `token`: required for private repositories (env or explicit)
+- `depth`: default `1` (shallow clone)
+- `max_file_size`: default `1048576` bytes (1MB)
+
 ## 🚀 Usage Examples
 ### Software Development Team
 ```yaml

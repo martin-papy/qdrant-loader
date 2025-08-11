@@ -35,11 +35,18 @@ projects:
   multi-confluence: display_name: "Multi-Instance Documentation" description: "Documentation from multiple Confluence instances" collection_name: "multi-docs" sources: confluence: # Cloud instance cloud-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true # Data Center instance datacenter-wiki: base_url: "https://internal-confluence.company.com" deployment_type: "datacenter" space_key: "INTERNAL" token: "${CONFLUENCE_PAT}" content_types: ["page"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true
 ```
 ## 🎯 Configuration Options
+
+### Validator Requirements
+- `email` + `token` required for `deployment_type: cloud`
+- `token` required for `deployment_type: datacenter`
+- `content_types` allowed: `page`, `blogpost`, `comment` (validator enforced)
+- `deployment_type` default: `cloud`
+- `include_labels`/`exclude_labels` default: empty lists
 ### Required Settings
 | Option | Type | Description | Example |
 |--------|------|-------------|---------|
 | `base_url` | string | Confluence base URL | `https://company.atlassian.net/wiki` |
-| `deployment_type` | string | Deployment type: `cloud`, `datacenter`, or `server` | `cloud` |
+| `deployment_type` | string | Deployment type: `cloud`, `datacenter` | `cloud` |
 | `space_key` | string | Confluence space key to process | `DOCS` |
 | `token` | string | API token or Personal Access Token | `${CONFLUENCE_TOKEN}` |
 ### Cloud-Specific Settings
@@ -116,7 +123,7 @@ curl -H "Authorization: Bearer your-token" \ "https://confluence.company.com/res
 **Solutions**:
 1. **Verify project structure**: ```yaml projects:
   your-project: # Project ID sources: confluence: source-name: # Source name base_url: "..." # ... other settings ```
-2. **Check required fields**: - `base_url`: Must include `/wiki` for Cloud instances - `deployment_type`: Must be `cloud`, `datacenter`, or `server` - `space_key`: Must be a valid space key - `token`: Must be set via environment variable or directly
+2. **Check required fields**: - `base_url`: Must include `/wiki` for Cloud instances - `deployment_type`: Must be `cloud`, `datacenter` - `space_key`: Must be a valid space key - `token`: Must be set via environment variable or directly
 3. **Validate environment variables**: ```bash echo $CONFLUENCE_URL echo $CONFLUENCE_EMAIL echo $CONFLUENCE_TOKEN ```
 #### Rate Limiting
 **Problem**: `429 Too Many Requests`
