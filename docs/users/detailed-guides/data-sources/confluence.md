@@ -21,15 +21,18 @@ When you connect to Confluence, QDrant Loader can process:
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple Confluence sources.
 ### Basic Configuration
 ```yaml
-projects: my-project: display_name: "My Documentation Project" description: "Company documentation and knowledge base" collection_name: "my-docs" sources: confluence: company-wiki: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" # or "datacenter" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" # Required for Cloud token: "${CONFLUENCE_TOKEN}" content_types: - "page" - "blogpost" include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true
+projects:
+  my-project: display_name: "My Documentation Project" description: "Company documentation and knowledge base" collection_name: "my-docs" sources: confluence: company-wiki: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" # or "datacenter" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" # Required for Cloud token: "${CONFLUENCE_TOKEN}" content_types: - "page" - "blogpost" include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true
 ```
 ### Advanced Configuration
 ```yaml
-projects: documentation: display_name: "Documentation Hub" description: "All company documentation sources" collection_name: "docs-hub" sources: confluence: # Main documentation space main-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: - "page" - "blogpost" include_labels: [] exclude_labels: - "draft" - "obsolete" enable_file_conversion: true download_attachments: true # Technical documentation space tech-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "TECH" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: - "page" include_labels: - "api" - "architecture" exclude_labels: - "deprecated" enable_file_conversion: true download_attachments: true
+projects:
+  documentation: display_name: "Documentation Hub" description: "All company documentation sources" collection_name: "docs-hub" sources: confluence: # Main documentation space main-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: - "page" - "blogpost" include_labels: [] exclude_labels: - "draft" - "obsolete" enable_file_conversion: true download_attachments: true # Technical documentation space tech-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "TECH" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: - "page" include_labels: - "api" - "architecture" exclude_labels: - "deprecated" enable_file_conversion: true download_attachments: true
 ```
 ### Multiple Confluence Instances
 ```yaml
-projects: multi-confluence: display_name: "Multi-Instance Documentation" description: "Documentation from multiple Confluence instances" collection_name: "multi-docs" sources: confluence: # Cloud instance cloud-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true # Data Center instance datacenter-wiki: base_url: "https://internal-confluence.company.com" deployment_type: "datacenter" space_key: "INTERNAL" token: "${CONFLUENCE_PAT}" content_types: ["page"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true
+projects:
+  multi-confluence: display_name: "Multi-Instance Documentation" description: "Documentation from multiple Confluence instances" collection_name: "multi-docs" sources: confluence: # Cloud instance cloud-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true # Data Center instance datacenter-wiki: base_url: "https://internal-confluence.company.com" deployment_type: "datacenter" space_key: "INTERNAL" token: "${CONFLUENCE_PAT}" content_types: ["page"] include_labels: [] exclude_labels: [] enable_file_conversion: true download_attachments: true
 ```
 ## 🎯 Configuration Options
 ### Required Settings
@@ -57,11 +60,13 @@ projects: multi-confluence: display_name: "Multi-Instance Documentation" descrip
 ## 🚀 Usage Examples
 ### Documentation Team
 ```yaml
-projects: docs-team: display_name: "Documentation Team" description: "All documentation spaces" collection_name: "documentation" sources: confluence: user-guides: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "GUIDES" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page"] include_labels: ["published"] exclude_labels: ["draft", "archive"] enable_file_conversion: true download_attachments: true api-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "API" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["api", "reference"] exclude_labels: ["deprecated"] enable_file_conversion: true download_attachments: true
+projects:
+  docs-team: display_name: "Documentation Team" description: "All documentation spaces" collection_name: "documentation" sources: confluence: user-guides: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "GUIDES" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page"] include_labels: ["published"] exclude_labels: ["draft", "archive"] enable_file_conversion: true download_attachments: true api-docs: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "API" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["api", "reference"] exclude_labels: ["deprecated"] enable_file_conversion: true download_attachments: true
 ```
 ### Software Development Team
 ```yaml
-projects: dev-team: display_name: "Development Team" description: "Technical documentation and architecture" collection_name: "dev-docs" sources: confluence: architecture: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "ARCH" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page"] include_labels: ["architecture", "design"] exclude_labels: ["obsolete"] enable_file_conversion: true download_attachments: true development: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DEV" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["development", "guidelines"] exclude_labels: ["draft"] enable_file_conversion: true download_attachments: true
+projects:
+  dev-team: display_name: "Development Team" description: "Technical documentation and architecture" collection_name: "dev-docs" sources: confluence: architecture: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "ARCH" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page"] include_labels: ["architecture", "design"] exclude_labels: ["obsolete"] enable_file_conversion: true download_attachments: true development: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DEV" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["development", "guidelines"] exclude_labels: ["draft"] enable_file_conversion: true download_attachments: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Test Configuration
@@ -109,7 +114,8 @@ curl -H "Authorization: Bearer your-token" \ "https://confluence.company.com/res
 #### Configuration Issues
 **Problem**: Configuration validation errors
 **Solutions**:
-1. **Verify project structure**: ```yaml projects: your-project: # Project ID sources: confluence: source-name: # Source name base_url: "..." # ... other settings ```
+1. **Verify project structure**: ```yaml projects:
+  your-project: # Project ID sources: confluence: source-name: # Source name base_url: "..." # ... other settings ```
 2. **Check required fields**: - `base_url`: Must include `/wiki` for Cloud instances - `deployment_type`: Must be `cloud`, `datacenter`, or `server` - `space_key`: Must be a valid space key - `token`: Must be set via environment variable or directly
 3. **Validate environment variables**: ```bash echo $CONFLUENCE_URL echo $CONFLUENCE_EMAIL echo $CONFLUENCE_TOKEN ```
 #### Rate Limiting

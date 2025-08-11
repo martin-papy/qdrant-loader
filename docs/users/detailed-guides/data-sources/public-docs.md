@@ -12,15 +12,18 @@ When you configure public documentation processing, QDrant Loader can handle:
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple public documentation sources.
 ### Basic Configuration
 ```yaml
-projects: my-project: display_name: "My Documentation Project" description: "External documentation and knowledge sources" collection_name: "my-docs" sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" content_type: "html" selectors: content: "article, main, .content" remove: ["nav", "header", "footer", ".sidebar"] code_blocks: "pre code" download_attachments: false enable_file_conversion: false
+projects:
+  my-project: display_name: "My Documentation Project" description: "External documentation and knowledge sources" collection_name: "my-docs" sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" content_type: "html" selectors: content: "article, main, .content" remove: ["nav", "header", "footer", ".sidebar"] code_blocks: "pre code" download_attachments: false enable_file_conversion: false
 ```
 ### Advanced Configuration
 ```yaml
-projects: my-project: display_name: "My Documentation Project" description: "External documentation and knowledge sources" collection_name: "my-docs" sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" content_type: "html" # Path filtering path_pattern: "/docs/**" exclude_paths: - "/docs/archive/**" - "/docs/deprecated/**" - "/api/internal/**" # Content extraction selectors selectors: content: "article, main, .content" remove: ["nav", "header", "footer", ".sidebar", ".advertisement"] code_blocks: "pre code, .highlight code" # Attachment handling download_attachments: true attachment_selectors: - "a[href$='.pdf']" - "a[href$='.doc']" - "a[href$='.docx']" - "a[href$='.xlsx']" - "a[href$='.pptx']" # File conversion enable_file_conversion: true
+projects:
+  my-project: display_name: "My Documentation Project" description: "External documentation and knowledge sources" collection_name: "my-docs" sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" content_type: "html" # Path filtering path_pattern: "/docs/**" exclude_paths: - "/docs/archive/**" - "/docs/deprecated/**" - "/api/internal/**" # Content extraction selectors selectors: content: "article, main, .content" remove: ["nav", "header", "footer", ".sidebar", ".advertisement"] code_blocks: "pre code, .highlight code" # Attachment handling download_attachments: true attachment_selectors: - "a[href$='.pdf']" - "a[href$='.doc']" - "a[href$='.docx']" - "a[href$='.xlsx']" - "a[href$='.pptx']" # File conversion enable_file_conversion: true
 ```
 ### Multiple Documentation Sites
 ```yaml
-projects: multi-docs: display_name: "Multi-Documentation Project" description: "Documentation from multiple external sources" collection_name: "multi-docs" sources: publicdocs: # Main API documentation api-docs: base_url: "https://api.example.com/docs" version: "v2" content_type: "html" path_pattern: "/docs/**" selectors: content: ".api-content" remove: [".sidebar", ".navigation"] download_attachments: false enable_file_conversion: false # Framework documentation framework-docs: base_url: "https://framework.example.com" version: "latest" content_type: "html" path_pattern: "/guide/**" selectors: content: ".documentation" remove: [".menu", ".footer"] download_attachments: false enable_file_conversion: false # Community wiki community-wiki: base_url: "https://wiki.example.com" version: "current" content_type: "html" exclude_paths: - "/wiki/user:**" - "/wiki/talk:**" selectors: content: ".wiki-content" remove: [".sidebar", ".edit-section"] download_attachments: false enable_file_conversion: false
+projects:
+  multi-docs: display_name: "Multi-Documentation Project" description: "Documentation from multiple external sources" collection_name: "multi-docs" sources: publicdocs: # Main API documentation api-docs: base_url: "https://api.example.com/docs" version: "v2" content_type: "html" path_pattern: "/docs/**" selectors: content: ".api-content" remove: [".sidebar", ".navigation"] download_attachments: false enable_file_conversion: false # Framework documentation framework-docs: base_url: "https://framework.example.com" version: "latest" content_type: "html" path_pattern: "/guide/**" selectors: content: ".documentation" remove: [".menu", ".footer"] download_attachments: false enable_file_conversion: false # Community wiki community-wiki: base_url: "https://wiki.example.com" version: "current" content_type: "html" exclude_paths: - "/wiki/user:**" - "/wiki/talk:**" selectors: content: ".wiki-content" remove: [".sidebar", ".edit-section"] download_attachments: false enable_file_conversion: false
 ```
 ## 🎯 Configuration Options
 ### Required Settings
@@ -52,19 +55,23 @@ projects: multi-docs: display_name: "Multi-Documentation Project" description: "
 ## 🚀 Usage Examples
 ### API Documentation
 ```yaml
-projects: api-documentation: display_name: "API Documentation" description: "External API documentation sources" collection_name: "api-docs" sources: publicdocs: # REST API Documentation stripe-api: base_url: "https://stripe.com/docs/api" version: "2023-10-16" content_type: "html" path_pattern: "/docs/api/**" selectors: content: ".api-content" remove: [".sidebar", ".navigation", ".footer"] code_blocks: "pre code, .highlight code" download_attachments: false enable_file_conversion: false # OpenAPI/Swagger Documentation petstore-api: base_url: "https://petstore.swagger.io" version: "v3" content_type: "html" path_pattern: "/v3/**" selectors: content: ".swagger-ui" remove: [".topbar", ".information-container"] download_attachments: false enable_file_conversion: false
+projects:
+  api-documentation: display_name: "API Documentation" description: "External API documentation sources" collection_name: "api-docs" sources: publicdocs: # REST API Documentation stripe-api: base_url: "https://stripe.com/docs/api" version: "2023-10-16" content_type: "html" path_pattern: "/docs/api/**" selectors: content: ".api-content" remove: [".sidebar", ".navigation", ".footer"] code_blocks: "pre code, .highlight code" download_attachments: false enable_file_conversion: false # OpenAPI/Swagger Documentation petstore-api: base_url: "https://petstore.swagger.io" version: "v3" content_type: "html" path_pattern: "/v3/**" selectors: content: ".swagger-ui" remove: [".topbar", ".information-container"] download_attachments: false enable_file_conversion: false
 ```
 ### Framework Documentation
 ```yaml
-projects: frameworks: display_name: "Framework Documentation" description: "Documentation for development frameworks" collection_name: "framework-docs" sources: publicdocs: # React Documentation react-docs: base_url: "https://react.dev" version: "18" content_type: "html" path_pattern: "/learn/**" exclude_paths: - "/blog/**" - "/community/**" selectors: content: ".content" remove: [".sidebar", ".navigation"] download_attachments: false enable_file_conversion: false # Django Documentation django-docs: base_url: "https://docs.djangoproject.com" version: "stable" content_type: "html" path_pattern: "/en/stable/**" selectors: content: ".document" remove: [".sphinxsidebar", ".related"] download_attachments: false enable_file_conversion: false
+projects:
+  frameworks: display_name: "Framework Documentation" description: "Documentation for development frameworks" collection_name: "framework-docs" sources: publicdocs: # React Documentation react-docs: base_url: "https://react.dev" version: "18" content_type: "html" path_pattern: "/learn/**" exclude_paths: - "/blog/**" - "/community/**" selectors: content: ".content" remove: [".sidebar", ".navigation"] download_attachments: false enable_file_conversion: false # Django Documentation django-docs: base_url: "https://docs.djangoproject.com" version: "stable" content_type: "html" path_pattern: "/en/stable/**" selectors: content: ".document" remove: [".sphinxsidebar", ".related"] download_attachments: false enable_file_conversion: false
 ```
 ### Knowledge Bases and Wikis
 ```yaml
-projects: knowledge: display_name: "Knowledge Base" description: "External knowledge bases and wikis" collection_name: "knowledge-base" sources: publicdocs: # GitHub Wiki vscode-wiki: base_url: "https://github.com/microsoft/vscode/wiki" version: "current" content_type: "html" selectors: content: ".markdown-body" remove: [".gh-header", ".pagehead"] download_attachments: false enable_file_conversion: false # GitBook Documentation gitbook-docs: base_url: "https://docs.gitbook.com" version: "latest" content_type: "html" path_pattern: "/product-tour/**" selectors: content: ".page-content" remove: [".sidebar", ".header"] download_attachments: false enable_file_conversion: false
+projects:
+  knowledge: display_name: "Knowledge Base" description: "External knowledge bases and wikis" collection_name: "knowledge-base" sources: publicdocs: # GitHub Wiki vscode-wiki: base_url: "https://github.com/microsoft/vscode/wiki" version: "current" content_type: "html" selectors: content: ".markdown-body" remove: [".gh-header", ".pagehead"] download_attachments: false enable_file_conversion: false # GitBook Documentation gitbook-docs: base_url: "https://docs.gitbook.com" version: "latest" content_type: "html" path_pattern: "/product-tour/**" selectors: content: ".page-content" remove: [".sidebar", ".header"] download_attachments: false enable_file_conversion: false
 ```
 ### Technical Blogs and Release Notes
 ```yaml
-projects: technical-content: display_name: "Technical Content" description: "Technical blogs and release notes" collection_name: "tech-content" sources: publicdocs: # Engineering Blog engineering-blog: base_url: "https://engineering.example.com" version: "current" content_type: "html" path_pattern: "/posts/**" exclude_paths: - "/author/**" - "/tag/**" selectors: content: ".post-content" remove: [".sidebar", ".author-bio", ".related-posts"] download_attachments: false enable_file_conversion: false # Release Notes release-notes: base_url: "https://releases.example.com" version: "latest" content_type: "html" path_pattern: "/notes/**" selectors: content: ".release-content" remove: [".navigation", ".footer"] download_attachments: false enable_file_conversion: false
+projects:
+  technical-content: display_name: "Technical Content" description: "Technical blogs and release notes" collection_name: "tech-content" sources: publicdocs: # Engineering Blog engineering-blog: base_url: "https://engineering.example.com" version: "current" content_type: "html" path_pattern: "/posts/**" exclude_paths: - "/author/**" - "/tag/**" selectors: content: ".post-content" remove: [".sidebar", ".author-bio", ".related-posts"] download_attachments: false enable_file_conversion: false # Release Notes release-notes: base_url: "https://releases.example.com" version: "latest" content_type: "html" path_pattern: "/notes/**" selectors: content: ".release-content" remove: [".navigation", ".footer"] download_attachments: false enable_file_conversion: false
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Test Configuration
@@ -103,25 +110,29 @@ curl -s "https://example.com/page" | grep -A 10 -B 10 "class=\"content\""
 # Use browser developer tools to find correct selectors
 ```
 ```yaml
-projects: my-project: sources: publicdocs: example-docs: base_url: "https://example.com" version: "1.0" # Try multiple selectors selectors: content: "article, main, .content, .documentation, .md-content" remove: ["nav", "header", "footer", ".sidebar", ".menu"]
+projects:
+  my-project: sources: publicdocs: example-docs: base_url: "https://example.com" version: "1.0" # Try multiple selectors selectors: content: "article, main, .content, .documentation, .md-content" remove: ["nav", "header", "footer", ".sidebar", ".menu"]
 ```
 #### Path Pattern Issues
 **Problem**: No pages being processed due to incorrect path patterns
 **Solutions**:
 ```yaml
-projects: my-project: sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" # Use broader path pattern or remove it entirely path_pattern: "/**" # Allow all paths # Or be more specific # path_pattern: "/docs/**" # Check exclude patterns exclude_paths: - "/docs/archive/**" - "/api/internal/**"
+projects:
+  my-project: sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" # Use broader path pattern or remove it entirely path_pattern: "/**" # Allow all paths # Or be more specific # path_pattern: "/docs/**" # Check exclude patterns exclude_paths: - "/docs/archive/**" - "/api/internal/**"
 ```
 #### Configuration Issues
 **Problem**: Configuration validation errors
 **Solutions**:
-1. **Verify project structure**: ```yaml projects: your-project: # Project ID sources: publicdocs: source-name: # Source name base_url: "..." # ... other settings ```
+1. **Verify project structure**: ```yaml projects:
+  your-project: # Project ID sources: publicdocs: source-name: # Source name base_url: "..." # ... other settings ```
 2. **Check required fields**: - `base_url`: Must be a valid URL - `version`: Must be a non-empty string - `content_type`: Must be `html`, `markdown`, or `rst`
 3. **Validate selectors**: ```yaml selectors: content: "article, main, .content" # Valid CSS selector remove: ["nav", "header", "footer"] # List of CSS selectors code_blocks: "pre code" # Valid CSS selector ```
 #### Attachment Processing Issues
 **Problem**: Attachments not being downloaded or processed
 **Solutions**:
 ```yaml
-projects: my-project: sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" # Enable attachment processing download_attachments: true enable_file_conversion: true # Customize attachment selectors attachment_selectors: - "a[href$='.pdf']" - "a[href$='.doc']" - "a[href$='.docx']" - "a[href*='download']"
+projects:
+  my-project: sources: publicdocs: example-docs: base_url: "https://docs.example.com" version: "1.0" # Enable attachment processing download_attachments: true enable_file_conversion: true # Customize attachment selectors attachment_selectors: - "a[href$='.pdf']" - "a[href$='.doc']" - "a[href$='.docx']" - "a[href*='download']"
 ```
 ### Debugging Commands
 ```bash
