@@ -54,7 +54,7 @@ Complete reference for all available commands:
 - **`project status`** - Show project status and statistics
 - **`project validate`** - Validate project configurations
 
-### 🤖 [Scripting and Automation](./scripting-automation.md)
+### 🤖 Scripting and Automation (coming later)
 
 Using QDrant Loader in scripts and automated workflows:
 

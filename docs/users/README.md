@@ -11,7 +11,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 - **[Data Sources](./detailed-guides/data-sources/)** - Complete guides for all supported data sources
 - **[File Conversion](./detailed-guides/file-conversion/)** - Everything about processing different file types
 - **[MCP Server](./detailed-guides/mcp-server/)** - AI development integration and search capabilities
-- **[Workflow Examples](./detailed-guides/workflow-examples/)** - Real-world usage scenarios and best practices
+- **Workflow Examples** - Coming later
 
 ### ⚙️ Configuration
 
@@ -22,7 +22,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 - **[CLI Reference](./cli-reference/)** - Complete command-line interface documentation
 - **[Commands](./cli-reference/commands.md)** - All commands with examples and options
-- **[Automation](./cli-reference/scripting-automation.md)** - Scripting and automation examples
+- **Automation** - Coming later
 
 ### 🔧 Troubleshooting
 
@@ -44,10 +44,10 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 #### 📄 **Process different file types**
 
-- [PDF documents](./detailed-guides/file-conversion/pdf-processing.md) - Extract text and metadata
-- [Office documents](./detailed-guides/file-conversion/office-documents.md) - Word, Excel, PowerPoint
-- [Images](./detailed-guides/file-conversion/images-and-ai.md) - OCR and AI-powered analysis
-- [All supported formats](./detailed-guides/file-conversion/supported-formats.md) - Complete format list
+- PDF documents - Coming later
+- Office documents - Coming later
+- Images - Coming later
+- All supported formats - Coming later
 
 #### 🤖 **Integrate with AI tools**
 
@@ -76,7 +76,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Confluence integration](./detailed-guides/data-sources/confluence.md) - Connect your wiki
 2. [File conversion](./detailed-guides/file-conversion/) - Process existing documents
-3. [Content workflow](./detailed-guides/workflow-examples/content-team-workflow.md) - Best practices
+3. Content workflow - Coming later
 
 ### 🔬 Researchers and Analysts
 
@@ -86,7 +86,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Local files setup](./detailed-guides/data-sources/local-files.md) - Index your research materials
 2. [Advanced search](./detailed-guides/mcp-server/search-capabilities.md) - Powerful search tools
-3. [Research workflow](./detailed-guides/workflow-examples/research-workflow.md) - Research best practices
+3. Research workflow - Coming later
 
 ### 👨‍💻 Software Developers
 
@@ -95,8 +95,8 @@ This documentation is organized to help you accomplish specific tasks and unders
 **Recommended path**:
 
 1. [Git integration](./detailed-guides/data-sources/git-repositories.md) - Connect your repositories
-2. [Cursor setup](./detailed-guides/mcp-server/cursor-integration.md) - AI coding assistance
-3. [Multi-project setup](./detailed-guides/workflow-examples/multi-project-setup.md) - Managing multiple codebases
+2. Cursor setup - Coming later
+3. Multi-project setup - Coming later
 
 ### 🏢 System Administrators
 
@@ -106,7 +106,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Configuration reference](./configuration/) - Complete setup guide
 2. [Security considerations](./configuration/security-considerations.md) - Secure deployment
-3. [Performance optimization](./troubleshooting/performance-optimization.md) - Scale for your team
+3. Performance optimization - Coming later
 
 ## 📊 Feature Coverage
 
@@ -126,11 +126,11 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 | Category | Formats | Documentation |
 |----------|---------|---------------|
-| **Documents** | PDF, Word, PowerPoint, Excel | [Guide](./detailed-guides/file-conversion/office-documents.md) |
-| **Images** | PNG, JPEG, GIF, BMP, TIFF | [Guide](./detailed-guides/file-conversion/images-and-ai.md) |
-| **Archives** | ZIP, TAR, 7Z | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
-| **Data** | JSON, CSV, XML, YAML | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
-| **Audio** | MP3, WAV | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
+| **Documents** | PDF, Word, PowerPoint, Excel | Coming later |
+| **Images** | PNG, JPEG, GIF, BMP, TIFF | Coming later |
+| **Archives** | ZIP, TAR, 7Z | Coming later |
+| **Data** | JSON, CSV, XML, YAML | Coming later |
+| **Audio** | MP3, WAV | Coming later |
 
 ### AI Integration
 
