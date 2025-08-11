@@ -201,7 +201,7 @@ global_config:
 
 ```markdown
 # Good: Descriptive and relative
-See the [Configuration Guide](../configuration/README.md) for details.
+See the [Configuration Guide](/docs/users/configuration/) for details.
 
 # Bad: Generic text and absolute
 Click [here](https://github.com/user/repo/docs/config.md) for more info.

@@ -28,7 +28,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 - **[Troubleshooting Guide](./troubleshooting/)** - Solutions to common problems
 - **[Common Issues](./troubleshooting/common-issues.md)** - FAQ and quick fixes
-- **[Performance](./troubleshooting/performance-optimization.md)** - Speed and memory optimization
+- Performance optimization - Coming later
 
 ## 🚀 Quick Navigation
 
@@ -51,7 +51,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 #### 🤖 **Integrate with AI tools**
 
-- [Cursor IDE setup](./detailed-guides/mcp-server/cursor-integration.md) - AI-powered coding assistance
+- Cursor IDE setup - Coming later
 - [Search capabilities](./detailed-guides/mcp-server/search-capabilities.md) - Semantic and intelligent search
 - [Hierarchy navigation](./detailed-guides/mcp-server/hierarchy-search.md) - Document structure understanding
 
