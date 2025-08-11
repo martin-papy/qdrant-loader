@@ -1,11 +1,7 @@
 # Performance Issues Guide
-
 This guide helps you diagnose and resolve performance issues with QDrant Loader, including slow data loading, memory problems, and optimization strategies. Whether you're dealing with large datasets or need to improve processing times, this guide provides practical solutions using the actual CLI commands and configuration options.
-
 ## 🎯 Performance Issue Types
-
 ### Quick Diagnosis
-
 ```
 🐌 Slow data loading         → See [Loading Performance](#loading-performance-issues)
 💾 High memory usage         → See [Memory Issues](#memory-issues)
@@ -13,73 +9,52 @@ This guide helps you diagnose and resolve performance issues with QDrant Loader,
 📊 Poor throughput          → See [Throughput Optimization](#throughput-optimization)
 🌐 Network bottlenecks      → See [Network Performance](#network-performance)
 ```
-
 ## 📊 Performance Monitoring
-
 ### Basic Performance Metrics
-
 ```bash
 # Check system resources
 htop
 iostat -x 1
 free -h
-
 # Check project status and validation
-qdrant-loader --workspace . project status
-qdrant-loader --workspace . project validate
-
+\1 project \3 --workspace \2
+\1 project \3 --workspace \2
 # Monitor QDrant instance health
 curl -s "$QDRANT_URL/health"
 curl -s "$QDRANT_URL/metrics" | grep -E "(memory|cpu|disk)"
-
 # Monitor network usage
 iftop
 nethogs
 ```
-
 ### Performance Benchmarking
-
 ```bash
 # Benchmark data loading with timing
-time qdrant-loader --workspace . ingest --project my-project
-
+time \1 ingest --workspace . --project my-project
 # Test configuration validation
-time qdrant-loader --workspace . project validate --project-id my-project
-
+time \1 project \3 --workspace \2 --project-id my-project
 # Monitor file processing
 find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
 find ./docs -type f | wc -l
 ```
-
 ## 🚀 Loading Performance Issues
-
 ### Issue: Slow data loading
-
 **Symptoms:**
-
 - Ingestion takes much longer than expected
 - High CPU usage during processing
 - Memory usage grows continuously
 - Process appears to hang
-
 **Diagnostic Steps:**
-
 ```bash
 # Check file sizes and counts in your data sources
 find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
 find ./docs -type f | wc -l
-
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
-
+\1 project \3 --workspace \2 --project-id my-project
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+\1 project \3 --workspace \2 --project-id my-project
 ```
-
 **Optimization Solutions:**
-
 1. **Optimize file conversion settings:**
-
 ```yaml
 # In your workspace config file
 global_config:
@@ -89,9 +64,7 @@ global_config:
     markitdown:
       enable_llm_descriptions: false  # Disable for faster processing
 ```
-
 2. **Filter unnecessary files:**
-
 ```yaml
 # In your project configuration
 projects:
@@ -112,42 +85,30 @@ projects:
             - "txt"
           max_file_size: 5242880  # 5MB limit
 ```
-
 3. **Process in smaller batches:**
-
 ```bash
 # Process specific projects only
-qdrant-loader --workspace . ingest --project specific-project
-
+\1 ingest --workspace . --project specific-project
 # Use force flag to reprocess if needed
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest --project my-project
+\1 init --workspace . --force
+\1 ingest --workspace . --project my-project
 ```
-
 ### Issue: Memory usage grows during loading
-
 **Symptoms:**
-
 - RAM usage increases continuously
 - System becomes unresponsive
 - Out of memory errors
 - Swap usage increases
-
 **Solutions:**
-
 ```bash
 # Monitor memory usage during processing
 watch -n 1 'free -h && ps aux | grep qdrant-loader'
-
 # Process smaller datasets first
-qdrant-loader --workspace . ingest --project small-project
-
+\1 ingest --workspace . --project small-project
 # Check configuration for memory-intensive settings
-qdrant-loader --workspace . config
+\1 config --workspace .
 ```
-
 **Memory Optimization:**
-
 ```yaml
 # Memory-efficient configuration
 global_config:
@@ -156,7 +117,6 @@ global_config:
     conversion_timeout: 15    # Shorter timeout
     markitdown:
       enable_llm_descriptions: false  # Disable LLM processing
-
 projects:
   my-project:
     sources:
@@ -172,35 +132,26 @@ projects:
             - "*.zip"
             - "*.tar.gz"
 ```
-
 ### Issue: Loading fails with large files
-
 **Symptoms:**
-
 - Processing stops on specific large files
 - Timeout errors
 - Memory allocation errors
 - File conversion failures
-
 **Solutions:**
-
 ```bash
 # Identify large files
 find ./docs -type f -size +10M -exec ls -lh {} \;
-
 # Configure smaller file size limits
-qdrant-loader --workspace . config
+\1 config --workspace .
 ```
-
 **Large File Configuration:**
-
 ```yaml
 # Handle large files appropriately
 global_config:
   file_conversion:
     max_file_size: 5242880    # 5MB limit
     conversion_timeout: 60    # Longer timeout for large files
-
 projects:
   my-project:
     sources:
@@ -214,45 +165,32 @@ projects:
           exclude_paths:
             - "*.pdf"  # Skip PDFs that are too large
 ```
-
 ## 💾 Memory Issues
-
 ### Issue: High memory usage
-
 **Symptoms:**
-
 - QDrant Loader uses excessive RAM
 - System becomes slow
 - Other applications affected
 - Swap usage increases
-
 **Diagnostic Steps:**
-
 ```bash
 # Monitor memory usage
 ps aux | grep qdrant-loader
 free -h
-
 # Check project configuration for memory-intensive settings
-qdrant-loader --workspace . project validate --project-id my-project
+\1 project \3 --workspace \2 --project-id my-project
 ```
-
 **Solutions:**
-
 ```bash
 # Set system memory limits
 ulimit -m 2097152  # 2GB limit
-
 # Process projects individually
-qdrant-loader --workspace . ingest --project project1
-qdrant-loader --workspace . ingest --project project2
-
+\1 ingest --workspace . --project project1
+\1 ingest --workspace . --project project2
 # Use smaller file size limits
-qdrant-loader --workspace . config
+\1 config --workspace .
 ```
-
 **Memory-Efficient Configuration:**
-
 ```yaml
 # Optimize for lower memory usage
 global_config:
@@ -261,7 +199,6 @@ global_config:
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false
-
 projects:
   my-project:
     sources:
@@ -272,33 +209,23 @@ projects:
             - "md"
             - "txt"
 ```
-
 ## 🔥 CPU Issues
-
 ### Issue: High CPU usage
-
 **Symptoms:**
-
 - CPU usage consistently above 80%
 - System becomes unresponsive
 - Fan noise increases
 - Other processes slow down
-
 **Solutions:**
-
 ```bash
 # Limit CPU usage with nice
-nice -n 10 qdrant-loader --workspace . ingest
-
+nice -n 10 \1 ingest --workspace .
 # Process smaller batches
-qdrant-loader --workspace . ingest --project small-project
-
+\1 ingest --workspace . --project small-project
 # Use CPU throttling
-cpulimit -l 50 qdrant-loader --workspace . ingest
+cpulimit -l 50 \1 ingest --workspace .
 ```
-
 **CPU Optimization:**
-
 ```yaml
 # CPU-efficient configuration
 global_config:
@@ -306,7 +233,6 @@ global_config:
     conversion_timeout: 15    # Shorter processing time
     markitdown:
       enable_llm_descriptions: false  # Disable CPU-intensive LLM processing
-
 projects:
   my-project:
     sources:
@@ -321,23 +247,17 @@ projects:
             - "*.docx"
             - "*.pptx"
 ```
-
 ## 📈 Throughput Optimization
-
 ### Optimizing Data Loading Throughput
-
 ```bash
 # Process multiple projects efficiently
-qdrant-loader --workspace . project list
-qdrant-loader --workspace . ingest --project project1
-qdrant-loader --workspace . ingest --project project2
-
+\1 project \3 --workspace \2
+\1 ingest --workspace . --project project1
+\1 ingest --workspace . --project project2
 # Validate configuration before processing
-qdrant-loader --workspace . project validate
+\1 project \3 --workspace \2
 ```
-
 ### Configuration Optimization
-
 ```yaml
 # Optimized configuration for better throughput
 global_config:
@@ -345,16 +265,13 @@ global_config:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
-  
   file_conversion:
     max_file_size: 5242880    # 5MB - balance between size and processing time
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false  # Faster processing
-
 projects:
   my-project:
     sources:
@@ -374,33 +291,23 @@ projects:
             - ".git/**"
             - "*.log"
 ```
-
 ## 🌐 Network Performance
-
 ### Issue: Slow network operations
-
 **Symptoms:**
-
 - Slow loading from remote sources (Git, Confluence, JIRA)
 - Timeouts connecting to QDrant
 - High network latency
 - Connection drops
-
 **Diagnostic Steps:**
-
 ```bash
 # Test QDrant connectivity
 curl -w "@curl-format.txt" -o /dev/null -s "$QDRANT_URL/health"
-
 # Test API endpoints
 curl -H "Authorization: Bearer $QDRANT_API_KEY" "$QDRANT_URL/collections"
-
 # Monitor network usage
 iftop -i eth0
 ```
-
 **Solutions:**
-
 ```yaml
 # Network-optimized configuration
 global_config:
@@ -408,7 +315,6 @@ global_config:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-
 projects:
   my-project:
     sources:
@@ -428,7 +334,6 @@ projects:
             - "md"
             - "txt"
           max_file_size: 1048576  # 1MB to reduce network load
-      
       confluence:
         my-confluence:
           base_url: "${CONFLUENCE_URL}"
@@ -441,11 +346,8 @@ projects:
             - "page"
           download_attachments: false  # Reduce network load
 ```
-
 ## 🔧 Advanced Optimization
-
 ### Project Structure Optimization
-
 ```yaml
 # Organize projects for optimal processing
 global_config:
@@ -453,16 +355,13 @@ global_config:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
-  
   file_conversion:
     max_file_size: 5242880
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false
-
 # Separate projects by data source type for better management
 projects:
   local-docs:
@@ -472,7 +371,6 @@ projects:
           base_url: "file:///path/to/docs"
           file_types: ["md", "txt"]
           max_file_size: 2097152
-  
   git-repos:
     sources:
       git:
@@ -481,7 +379,6 @@ projects:
           branch: "main"
           token: "${REPO_TOKEN}"
           file_types: ["md", "py", "js"]
-  
   confluence-content:
     sources:
       confluence:
@@ -493,28 +390,20 @@ projects:
           token: "${CONFLUENCE_TOKEN}"
           download_attachments: false
 ```
-
 ### System-Level Optimization
-
 ```bash
 # Increase file descriptor limits
 echo "* soft nofile 65536" >> /etc/security/limits.conf
 echo "* hard nofile 65536" >> /etc/security/limits.conf
-
 # Monitor system resources during processing
 top -p $(pgrep -f qdrant-loader)
-
 # Check disk space
 df -h
-
 # Monitor I/O
 iostat -x 1
 ```
-
 ## 📊 Performance Tuning Presets
-
 ### Small Dataset (< 1GB)
-
 ```yaml
 global_config:
   file_conversion:
@@ -522,7 +411,6 @@ global_config:
     conversion_timeout: 60
     markitdown:
       enable_llm_descriptions: true  # Can afford LLM processing
-
 projects:
   small-project:
     sources:
@@ -530,9 +418,7 @@ projects:
         docs:
           max_file_size: 5242880  # 5MB per file
 ```
-
 ### Medium Dataset (1-10GB)
-
 ```yaml
 global_config:
   file_conversion:
@@ -540,7 +426,6 @@ global_config:
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false  # Skip for performance
-
 projects:
   medium-project:
     sources:
@@ -551,9 +436,7 @@ projects:
             - "*.pdf"
             - "*.zip"
 ```
-
 ### Large Dataset (> 10GB)
-
 ```yaml
 global_config:
   file_conversion:
@@ -561,7 +444,6 @@ global_config:
     conversion_timeout: 15
     markitdown:
       enable_llm_descriptions: false
-
 projects:
   large-project:
     sources:
@@ -578,91 +460,66 @@ projects:
             - "*.zip"
             - "*.tar.gz"
 ```
-
 ## 🚨 Performance Emergency Procedures
-
 ### When System is Unresponsive
-
 ```bash
 # 1. Check system resources
 top
 df -h
 free -h
-
 # 2. Kill runaway processes
 pkill -f qdrant-loader
-
 # 3. Clear system caches
 sync && echo 3 > /proc/sys/vm/drop_caches
-
 # 4. Restart with minimal configuration
-qdrant-loader --workspace . project validate
-qdrant-loader --workspace . project status
+\1 project \3 --workspace \2
+\1 project \3 --workspace \2
 ```
-
 ### Performance Recovery
-
 ```bash
 # 1. Check system resources
 top
 df -h
 free -h
-
 # 2. Validate configuration
-qdrant-loader --workspace . project validate
-
+\1 project \3 --workspace \2
 # 3. Restart processing with smaller scope
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest --project small-project
-
+\1 init --workspace . --force
+\1 ingest --workspace . --project small-project
 # 4. Monitor progress
-qdrant-loader --workspace . project status
+\1 project \3 --workspace \2
 ```
-
 ## 📈 Performance Monitoring
-
 ### Key Metrics to Track
-
 ```bash
 # Monitor system resources
 htop
 free -h
 df -h
 iostat -x 1
-
 # Check project status
-qdrant-loader --workspace . project list
-qdrant-loader --workspace . project status
-
+\1 project \3 --workspace \2
+\1 project \3 --workspace \2
 # Validate configuration
-qdrant-loader --workspace . project validate
+\1 project \3 --workspace \2
 ```
-
 ### Performance Testing
-
 ```bash
 # Time the ingestion process
-time qdrant-loader --workspace . ingest --project test-project
-
+time \1 ingest --workspace . --project test-project
 # Monitor memory usage during processing
 watch -n 1 'free -h && ps aux | grep qdrant-loader'
-
 # Check file processing statistics
 find ./docs -type f -name "*.md" | wc -l
 du -sh ./docs
 ```
-
 ## 🔗 Related Documentation
-
 - **[Common Issues](./common-issues.md)** - General troubleshooting
 - **[Connection Problems](./connection-problems.md)** - Network and connectivity issues
 - **[Error Messages Reference](./error-messages-reference.md)** - Specific error solutions
 - **[CLI Reference](../cli-reference/README.md)** - Command-line options
 - **[Configuration Reference](../configuration/README.md)** - Configuration options
 - **[Installation Guide](../../getting-started/installation.md)** - System requirements
-
 ---
-
 **Performance optimized!** 🚀
-
 This guide covers comprehensive performance optimization strategies using actual QDrant Loader commands and configuration options. For specific error messages, check the [Error Messages Reference](./error-messages-reference.md), and for general issues, see the [Common Issues Guide](./common-issues.md).
