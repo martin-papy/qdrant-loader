@@ -66,16 +66,16 @@ projects: dev-team: display_name: "Development Team" description: "Technical doc
 ## 🧪 Testing and Validation
 ### Initialize and Test Configuration
 ```bash
-# Initialize the project (creates collection if needed)\1init --workspace .
-# Test ingestion with your Confluence configuration\1ingest --workspace . --project my-project
-# Check project status\1project\1--workspace\1--project-id my-project
-# List all configured projects\1project\1--workspace\1# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Initialize the project (creates collection if needed)qdrant-loader init --workspace .
+# Test ingestion with your Confluence configurationqdrant-loader ingest --workspace . --project my-project
+# Check project statusqdrant-loader project --workspace --project-id my-project
+# List all configured projectsqdrant-loader project --workspace # Validate project configurationqdrant-loader project --workspace --project-id my-project
 ```
 ### Debug Confluence Processing
 ```bash
-# Enable debug logging\1ingest --workspace . --log-level DEBUG --project my-project
-# Process specific project only\1ingest --workspace . --project my-project
-# Process specific source within a project\1ingest --workspace . --project my-project --source-type confluence --source company-wiki
+# Enable debug loggingqdrant-loader ingest --workspace . --log-level DEBUG --project my-project
+# Process specific project onlyqdrant-loader ingest --workspace . --project my-project
+# Process specific source within a projectqdrant-loader ingest --workspace . --project my-project --source-type confluence --source company-wiki
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -137,12 +137,12 @@ curl -u "email:token" \ "https://domain.atlassian.net/wiki/rest/api/content/PAGE
 ## 📊 Monitoring and Processing
 ### Check Processing Status
 ```bash
-# View project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
-# List all projects\1project\1--workspace\1```
+# View project statusqdrant-loader project --workspace # Check specific projectqdrant-loader project --workspace --project-id my-project
+# List all projectsqdrant-loader project --workspace ```
 ### Configuration Management
 ```bash
-# View current configuration\1config --workspace .
-# Validate all projects\1project\1--workspace\1```
+# View current configurationqdrant-loader config --workspace .
+# Validate all projectsqdrant-loader project --workspace ```
 ## 🔄 Best Practices
 ### Content Organization
 1. **Use descriptive space keys** - Make spaces easy to identify

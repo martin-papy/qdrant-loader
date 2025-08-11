@@ -146,17 +146,17 @@ Production deployment strategies, containerization, and operational best practic
 ## 🛠️ Development Tools and Utilities
 ### Available CLI Commands
 ```bash
-# Initialize QDrant collection\1init --workspace .
-# Ingest documents\1ingest --workspace .
-# View configuration\1config --workspace .
-# Project management\1project\1--workspace\1\1 project\1--workspace\1\1 project\1--workspace\1# Start MCP server
+# Initialize QDrant collectionqdrant-loader init --workspace .
+# Ingest documentsqdrant-loader ingest --workspace .
+# View configurationqdrant-loader config --workspace .
+# Project managementqdrant-loader project --workspace qdrant-loader project --workspace qdrant-loader project --workspace # Start MCP server
 mcp-qdrant-loader
 ```
 ### Debugging and Profiling
 ```bash
 # Enable debug logging
 qdrant-loader --log-level DEBUG --workspace . ingest
-# Profile performance\1ingest --workspace . --profile
+# Profile performanceqdrant-loader ingest --workspace . --profile
 # Memory profiling (requires memory_profiler)
 python -m memory_profiler your_script.py
 ```
@@ -173,7 +173,7 @@ make clean # Clean build artifacts
 ### Workspace Configuration
 ```yaml
 # config.yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "my_collection" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "my_collection" openai: api_key: "${OPENAI_API_KEY}"
 projects: - project_id: "docs" sources: - source_type: "local_files" name: "documentation" config: base_url: "file://./docs" include_paths: ["**/*.md"]
 ```
 ### Programmatic Usage

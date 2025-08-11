@@ -31,7 +31,7 @@ cp packages/qdrant-loader/conf/.env.template .env
 QDrant Loader uses a **multi-project configuration** structure where all projects share a single Qdrant collection but are isolated through project metadata:
 ```yaml
 # config.yaml - Multi-project configuration
-global_config: qdrant: url: "http://localhost:6333" api_key: null # Optional for Qdrant Cloud collection_name: "my_documents" # Shared by all projects embedding:
+global: qdrant: url: "http://localhost:6333" api_key: null # Optional for Qdrant Cloud collection_name: "my_documents" # Shared by all projects embedding:
     model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" vector_size: 1536
 projects:
   docs-project:
@@ -137,13 +137,13 @@ sources: publicdocs: docs-site: base_url: "https://docs.example.com" version: "1
 ## 🔧 Advanced Configuration
 ### Global Settings
 ```yaml
-global_config: # Chunking configuration chunking:
+global: # Chunking configuration chunking:
     chunk_size: 1500 chunk_overlap: 200 # Embedding configuration embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # File conversion settings file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_api_key: "${OPENAI_API_KEY}"
 ```
 ### State Management
 Workspace mode automatically manages the state database:
 ```yaml
-global_config: state_management: database_path: "${STATE_DB_PATH}" # Ignored in workspace mode table_prefix: "qdrant_loader_" connection_pool: size: 5 timeout: 30
+global: state_management: database_path: "${STATE_DB_PATH}" # Ignored in workspace mode table_prefix: "qdrant_loader_" connection_pool: size: 5 timeout: 30
 ```
 In workspace mode, the state database is automatically created as `qdrant-loader.db` in the `data/` directory within the workspace.
 ## 📊 Workspace Structure

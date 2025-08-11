@@ -104,7 +104,7 @@ class CustomAPIConfig(SourceConfig): """Configuration for custom API connector."
 ### Configuration Usage
 ```yaml
 # config.yaml
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "my-collection"
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "my-collection"
 projects: my-project: display_name: "My Custom API Project" description: "Project using custom API connector" sources: custom_api: my-api-source: base_url: "https://api.example.com" api_key: "${API_KEY}" batch_size: 50 timeout: 60 include_tags: ["published", "public"] exclude_tags: ["draft", "private"]
 ```
 ## 🔄 File Conversion Extensions

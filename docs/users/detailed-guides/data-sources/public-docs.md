@@ -69,16 +69,16 @@ projects: technical-content: display_name: "Technical Content" description: "Tec
 ## 🧪 Testing and Validation
 ### Initialize and Test Configuration
 ```bash
-# Initialize the project (creates collection if needed)\1init --workspace .
-# Test ingestion with your public docs configuration\1ingest --workspace . --project my-project
-# Check project status\1project\1--workspace\1--project-id my-project
-# List all configured projects\1project\1--workspace\1# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Initialize the project (creates collection if needed)qdrant-loader init --workspace .
+# Test ingestion with your public docs configurationqdrant-loader ingest --workspace . --project my-project
+# Check project statusqdrant-loader project --workspace --project-id my-project
+# List all configured projectsqdrant-loader project --workspace # Validate project configurationqdrant-loader project --workspace --project-id my-project
 ```
 ### Debug Public Documentation Processing
 ```bash
-# Enable debug logging\1ingest --workspace . --log-level DEBUG --project my-project
-# Process specific project only\1ingest --workspace . --project my-project
-# Process specific source within a project\1ingest --workspace . --project my-project --source-type publicdocs --source example-docs
+# Enable debug loggingqdrant-loader ingest --workspace . --log-level DEBUG --project my-project
+# Process specific project onlyqdrant-loader ingest --workspace . --project my-project
+# Process specific source within a projectqdrant-loader ingest --workspace . --project my-project --source-type publicdocs --source example-docs
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -135,12 +135,12 @@ curl -s "https://example.com" | grep -i javascript
 ## 📊 Monitoring and Processing
 ### Check Processing Status
 ```bash
-# View project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
-# List all projects\1project\1--workspace\1```
+# View project statusqdrant-loader project --workspace # Check specific projectqdrant-loader project --workspace --project-id my-project
+# List all projectsqdrant-loader project --workspace ```
 ### Configuration Management
 ```bash
-# View current configuration\1config --workspace .
-# Validate all projects\1project\1--workspace\1```
+# View current configurationqdrant-loader config --workspace .
+# Validate all projectsqdrant-loader project --workspace ```
 ## 🔄 Best Practices
 ### Site Selection
 1. **Choose stable documentation sites** - Avoid frequently changing sites

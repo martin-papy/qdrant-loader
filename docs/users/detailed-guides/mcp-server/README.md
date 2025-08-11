@@ -181,7 +181,7 @@ curl http://localhost:6333/health
 ```
 #### No Search Results
 ```bash
-# Verify documents are ingested\1project\1--workspace\1# Check collection exists
+# Verify documents are ingestedqdrant-loader project --workspace # Check collection exists
 curl http://localhost:6333/collections/documents
 ```
 #### Performance Issues

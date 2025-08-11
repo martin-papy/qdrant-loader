@@ -27,16 +27,16 @@ ConnectionError: Failed to connect to QDrant instance at http://localhost:6333
 ```bash
 # Check if QDrant is running
 curl -v "$QDRANT_URL/health"
-# Verify URL format in configuration\1config --workspace .
+# Verify URL format in configurationqdrant-loader config --workspace .
 # Test connectivity
 ping your-qdrant-instance.com
 telnet your-qdrant-instance.com 6333
-# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Validate project configurationqdrant-loader project --workspace --project-id my-project
 ```
 **Configuration Fix:**
 ```yaml
 # Correct QDrant configuration
-global_config: qdrant: url: "${QDRANT_URL}" # e.g., "http://localhost:6333" or "https://your-instance.qdrant.cloud" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
+global: qdrant: url: "${QDRANT_URL}" # e.g., "http://localhost:6333" or "https://your-instance.qdrant.cloud" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
 ```
 ### `ConnectionRefusedError: [Errno 111] Connection refused`
 **Full Error:**
@@ -56,7 +56,7 @@ netstat -tlnp | grep 6333
 ss -tlnp | grep 6333
 # Verify service status
 systemctl status qdrant # If installed as service
-# Check project status\1project\1--workspace\1```
+# Check project statusqdrant-loader project --workspace ```
 ### `TimeoutError: Connection timeout after 30 seconds`
 **Full Error:**
 ```
@@ -75,7 +75,7 @@ ping -c 10 your-qdrant-instance.com
 # Update your configuration file:
 ```
 ```yaml
-global_config: qdrant: url: "http://192.168.1.100:6333" # Use IP instead of hostname api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
+global: qdrant: url: "http://192.168.1.100:6333" # Use IP instead of hostname api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
 ```
 ## 🔑 Authentication Errors
 ### `AuthenticationError: Invalid API key`
@@ -97,10 +97,10 @@ echo $QDRANT_API_KEY | head -c 10
 curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/collections"
 # Set API key correctly
 export QDRANT_API_KEY="your-actual-api-key"
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 **Configuration Fix:**
 ```yaml
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" # Ensure this environment variable is set collection_name: "${QDRANT_COLLECTION_NAME}"
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" # Ensure this environment variable is set collection_name: "${QDRANT_COLLECTION_NAME}"
 ```
 ### `OpenAIError: Incorrect API key provided`
 **Full Error:**
@@ -120,10 +120,10 @@ echo $OPENAI_API_KEY | grep -E "^sk-"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/models"
 # Check account status
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/usage"
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 **Configuration Fix:**
 ```yaml
-global_config: openai: api_key: "${OPENAI_API_KEY}" # Ensure this environment variable is set correctly
+global: openai: api_key: "${OPENAI_API_KEY}" # Ensure this environment variable is set correctly
 ```
 ### `ConfluenceAuthError: 401 Unauthorized`
 **Full Error:**
@@ -144,7 +144,7 @@ echo "Email: $CONFLUENCE_EMAIL"
 echo "Token length: $(echo $CONFLUENCE_TOKEN | wc -c)"
 # Check permissions
 curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \ "$CONFLUENCE_URL/rest/api/user/current"
-# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Validate project configurationqdrant-loader project --workspace --project-id my-project
 ```
 **Configuration Fix:**
 ```yaml
@@ -166,8 +166,8 @@ DataLoadError: No documents found in source: /path/to/docs
 # Check directory contents
 ls -la /path/to/docs
 find /path/to/docs -name "*.md" | head -10
-# Check project configuration\1project\1--workspace\1--project-id my-project
-# Validate configuration\1project\1--workspace\1--project-id my-project
+# Check project configurationqdrant-loader project --workspace --project-id my-project
+# Validate configurationqdrant-loader project --workspace --project-id my-project
 ```
 **Configuration Fix:**
 ```yaml
@@ -187,12 +187,12 @@ FileConversionError: Failed to process document: document.pdf - File too large
 ```bash
 # Check file size
 ls -lh document.pdf
-# Check current file conversion settings\1config --workspace .
-# Process with different settings\1ingest --workspace . --project my-project
+# Check current file conversion settingsqdrant-loader config --workspace .
+# Process with different settingsqdrant-loader ingest --workspace . --project my-project
 ```
 **Configuration Fix:**
 ```yaml
-global_config: file_conversion: max_file_size: 52428800 # 50MB limit conversion_timeout: 60 # 60 seconds timeout markitdown: enable_llm_descriptions: false # Disable for large files
+global: file_conversion: max_file_size: 52428800 # 50MB limit conversion_timeout: 60 # 60 seconds timeout markitdown: enable_llm_descriptions: false # Disable for large files
 projects: my-project: sources: local_files: docs: max_file_size: 10485760 # 10MB per file exclude_paths: - "*.pdf" # Skip PDFs if too large
 ```
 ### `EmbeddingError: Failed to generate embeddings`
@@ -209,11 +209,11 @@ EmbeddingError: Failed to generate embeddings for chunk: Rate limit exceeded
 ```bash
 # Check API usage
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/usage"
-# Process smaller batches\1ingest --workspace . --project small-project
-# Check project status\1project\1--workspace\1```
+# Process smaller batchesqdrant-loader ingest --workspace . --project small-project
+# Check project statusqdrant-loader project --workspace ```
 **Configuration Fix:**
 ```yaml
-global_config: openai: api_key: "${OPENAI_API_KEY}" file_conversion: max_file_size: 2097152 # 2MB - smaller files for rate limiting conversion_timeout: 30 markitdown: enable_llm_descriptions: false # Reduce API calls
+global: openai: api_key: "${OPENAI_API_KEY}" file_conversion: max_file_size: 2097152 # 2MB - smaller files for rate limiting conversion_timeout: 30 markitdown: enable_llm_descriptions: false # Reduce API calls
 ```
 ## ⚙️ Configuration Errors
 ### `ConfigurationError: Invalid YAML syntax`
@@ -234,7 +234,7 @@ python -c "import yaml; yaml.safe_load(open('qdrant-loader.yaml'))"
 sed -n '15p' qdrant-loader.yaml
 # Use YAML validator
 yamllint qdrant-loader.yaml
-# Validate with QDrant Loader\1project\1--workspace\1```
+# Validate with QDrant Loaderqdrant-loader project --workspace ```
 ### `ValidationError: Missing required field 'qdrant.url'`
 **Full Error:**
 ```
@@ -247,16 +247,16 @@ ValidationError: Missing required field 'qdrant.url' in configuration
 - Environment variable not set
 **Solutions:**
 ```bash
-# Check configuration structure\1config --workspace .
+# Check configuration structureqdrant-loader config --workspace .
 # Set required environment variables
 export QDRANT_URL="http://localhost:6333"
 export QDRANT_API_KEY="your-api-key"
 export QDRANT_COLLECTION_NAME="your-collection"
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 **Configuration Fix:**
 ```yaml
 # Correct configuration structure
-global_config: qdrant: url: "${QDRANT_URL}" # Required api_key: "${QDRANT_API_KEY}" # Required collection_name: "${QDRANT_COLLECTION_NAME}" # Required openai: api_key: "${OPENAI_API_KEY}" # Required
+global: qdrant: url: "${QDRANT_URL}" # Required api_key: "${QDRANT_API_KEY}" # Required collection_name: "${QDRANT_COLLECTION_NAME}" # Required openai: api_key: "${OPENAI_API_KEY}" # Required
 ```
 ### `EnvironmentError: Environment variable not found`
 **Full Error:**
@@ -278,7 +278,7 @@ set -a && source .env && set +a
 echo $QDRANT_API_KEY
 # List all QDrant Loader related variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA|REPO)"
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 ## 💾 Memory and Resource Errors
 ### `MemoryError: Unable to allocate memory`
 **Full Error:**
@@ -294,13 +294,13 @@ MemoryError: Unable to allocate 2.5 GB for document processing
 ```bash
 # Check available memory
 free -h
-# Process smaller projects\1ingest --workspace . --project small-project
+# Process smaller projectsqdrant-loader ingest --workspace . --project small-project
 # Check system resources
 top -p $(pgrep -f qdrant-loader)
 ```
 **Configuration Fix:**
 ```yaml
-global_config: file_conversion: max_file_size: 1048576 # 1MB limit conversion_timeout: 30 markitdown: enable_llm_descriptions: false
+global: file_conversion: max_file_size: 1048576 # 1MB limit conversion_timeout: 30 markitdown: enable_llm_descriptions: false
 projects: my-project: sources: local_files: docs: max_file_size: 524288 # 512KB per file file_types: - "md" - "txt"
 ```
 ### `ResourceError: Too many open files`
@@ -321,7 +321,7 @@ ulimit -n
 ulimit -n 65536
 # Set system limits permanently
 echo "* soft nofile 65536" | sudo tee -a /etc/security/limits.conf
-# Process fewer files at once\1ingest --workspace . --project small-batch
+# Process fewer files at onceqdrant-loader ingest --workspace . --project small-batch
 ```
 ### `DiskSpaceError: No space left on device`
 **Full Error:**
@@ -343,7 +343,7 @@ rm -rf /tmp/qdrant-loader-*
 sudo journalctl --vacuum-time=7d
 # Use different temporary directory
 export TMPDIR="/path/to/larger/disk"
-# Check project status\1project\1--workspace\1```
+# Check project statusqdrant-loader project --workspace ```
 ## 📁 File System Errors
 ### `FileNotFoundError: No such file or directory`
 **Full Error:**
@@ -359,12 +359,12 @@ FileNotFoundError: [Errno 2] No such file or directory: '/path/to/docs'
 ```bash
 # Check if path exists
 ls -la /path/to/docs
-# Use absolute path\1config --workspace .
+# Use absolute pathqdrant-loader config --workspace .
 # Check permissions
 ls -ld /path/to/docs
 # Find correct path
 find / -name "docs" -type d 2>/dev/null
-# Validate project configuration\1project\1--workspace\1--project-id my-project
+# Validate project configurationqdrant-loader project --workspace --project-id my-project
 ```
 ### `PermissionError: Permission denied`
 **Full Error:**
@@ -385,7 +385,7 @@ chmod -R 755 /restricted/docs
 # Check file ownership
 ls -la /restricted/docs
 chown -R $USER:$USER /restricted/docs
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 ### `EncodingError: Unable to decode file`
 **Full Error:**
 ```
@@ -402,7 +402,7 @@ EncodingError: 'utf-8' codec can't decode byte 0xff in position 0
 file /path/to/problematic-file
 # Detect encoding
 chardet /path/to/problematic-file
-# Check project configuration\1config --workspace .
+# Check project configurationqdrant-loader config --workspace .
 ```
 **Configuration Fix:**
 ```yaml
@@ -428,10 +428,10 @@ dig invalid-host.com
 nslookup invalid-host.com 8.8.8.8
 # Check network connectivity
 ping 8.8.8.8
-# Validate configuration\1project\1--workspace\1```
+# Validate configurationqdrant-loader project --workspace ```
 **Configuration Fix:**
 ```yaml
-global_config: qdrant: url: "http://192.168.1.100:6333" # Use IP instead of hostname api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
+global: qdrant: url: "http://192.168.1.100:6333" # Use IP instead of hostname api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}"
 ```
 ### `SSLError: Certificate verification failed`
 **Full Error:**
@@ -456,7 +456,7 @@ date
 sudo ntpdate -s time.nist.gov
 # Temporary workaround (NOT for production)
 export PYTHONHTTPSVERIFY=0
-# Test configuration\1project\1--workspace\1```
+# Test configurationqdrant-loader project --workspace ```
 ### `ProxyError: Cannot connect to proxy`
 **Full Error:**
 ```
@@ -478,7 +478,7 @@ export HTTP_PROXY="http://username:password@proxy.company.com:8080"
 export NO_PROXY="localhost,127.0.0.1,.local"
 # Check proxy settings
 env | grep -i proxy
-# Test configuration\1project\1--workspace\1```
+# Test configurationqdrant-loader project --workspace ```
 ## 📊 Error Code Reference
 ### Exit Codes
 | Code | Meaning | Action |
@@ -512,12 +512,12 @@ env | grep -i proxy
 top
 df -h
 free -h
-# 2. Validate configuration\1project\1--workspace\1# 3. Check project status\1project\1--workspace\1# 4. Restart with minimal configuration\1init --workspace . --force\1ingest --workspace . --project small-project
+# 2. Validate configurationqdrant-loader project --workspace # 3. Check project statusqdrant-loader project --workspace # 4. Restart with minimal configurationqdrant-loader init --workspace . --forceqdrant-loader ingest --workspace . --project small-project
 ```
 ### Error Prevention
 ```bash
-# Pre-flight checks\1project\1--workspace\1# Configuration validation\1config --workspace .
-# Check project status before processing\1project\1--workspace\1# Monitor system resources
+# Pre-flight checksqdrant-loader project --workspace # Configuration validationqdrant-loader config --workspace .
+# Check project status before processingqdrant-loader project --workspace # Monitor system resources
 htop
 free -h
 df -h

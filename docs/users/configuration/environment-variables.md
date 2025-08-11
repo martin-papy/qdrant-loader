@@ -104,7 +104,7 @@ Any environment variable can be used for substitution in config files. Common ex
 - `JIRA_PAT` - JIRA Personal Access Tokens
 **Example config usage:**
 ```yaml
-global_config: state_management: database_path: "${STATE_DB_PATH}"
+global: state_management: database_path: "${STATE_DB_PATH}"
 sources: confluence: my-wiki: base_url: "${CONFLUENCE_URL}" space_key: "${CONFLUENCE_SPACE_KEY}" token: "${CONFLUENCE_TOKEN}"
 ```
 ## 📋 Environment File Templates

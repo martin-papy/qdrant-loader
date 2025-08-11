@@ -51,7 +51,7 @@ pip install qdrant-loader
 # Configure your environment
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-api-key"
-# Initialize and run ingestion\1init --workspace .\1ingest --workspace .
+# Initialize and run ingestionqdrant-loader init --workspace .qdrant-loader ingest --workspace .
 ```
 # ❌ Bad Example
 ```bash
