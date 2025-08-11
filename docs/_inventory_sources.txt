@@ -1,3 +1,5 @@
+.github/PULL_REQUEST_TEMPLATE.md
+docs/_progress.md
 docs/developers/architecture/README.md
 docs/developers/cli/README.md
 docs/developers/deployment/README.md
@@ -8,12 +10,13 @@ docs/developers/documentation/workflow-guide.md
 docs/developers/extending/README.md
 docs/developers/README.md
 docs/developers/testing/README.md
+docs/documentation-debt.md
 docs/getting-started/basic-configuration.md
-docs/getting-started/core-concepts.md
 docs/getting-started/installation.md
 docs/getting-started/quick-start.md
 docs/getting-started/README.md
 docs/getting-started/what-is-qdrant-loader.md
+docs/TOC.md
 docs/users/cli-reference/commands.md
 docs/users/cli-reference/README.md
 docs/users/configuration/config-file-reference.md
