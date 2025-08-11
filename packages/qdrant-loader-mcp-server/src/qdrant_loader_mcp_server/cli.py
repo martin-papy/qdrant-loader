@@ -496,7 +496,8 @@ def cli(
 
         # Set up signal handlers with shutdown event
         def signal_handler():
-            asyncio.create_task(shutdown(loop, shutdown_event))
+            # Schedule shutdown on the explicit loop for clarity and correctness
+            loop.create_task(shutdown(loop, shutdown_event))
 
         for sig in (signal.SIGTERM, signal.SIGINT):
             loop.add_signal_handler(sig, signal_handler)
