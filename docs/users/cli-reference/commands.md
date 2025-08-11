@@ -268,7 +268,8 @@ qdrant-loader project status --workspace .
 ### Production Workflow
 ```bash
 # Use specific configuration files
-qdrant-loader ingest --config /etc/qdrant-loader/config.yaml \ --env /etc/qdrant-loader/.env
+qdrant-loader ingest --config /etc/qdrant-loader/config.yaml \
+  --env /etc/qdrant-loader/.env
 # Process specific project
 qdrant-loader ingest --workspace . --project production-docs
 # Process specific source type
