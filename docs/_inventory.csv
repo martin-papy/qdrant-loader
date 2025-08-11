@@ -49,3 +49,4 @@ packages/qdrant-loader-mcp-server/README.md,QDrant Loader MCP Server,Developer,P
 packages/qdrant-loader/README.md,QDrant Loader,Developer,Package README,rewrite,verified,packages/qdrant-loader/README.md,Martin Papy,docs/_verification/packages_qdrant-loader_README.md.log,,2025-08-11,verified: CLI normalized; workspace-first; links valid
 website/assets/README.md,QDrant Loader Visual Assets,Developer,Website,keep,not-started,,Martin Papy,docs/_verification/website_assets_README.md.log,,,initial import
 website/README.md,QDrant Loader Documentation Website,Developer,Website,keep,not-started,,Martin Papy,docs/_verification/website_README.md.log,,,initial import
+docs/documentation-debt.md,Documentation Debt Log,Developer,Governance,keep,verified,docs/documentation-debt.md,Martin Papy,docs/_verification/docs_documentation-debt.md.log,,2025-08-11,verified: created for ongoing follow-ups
