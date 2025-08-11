@@ -2,18 +2,10 @@
 This style guide ensures consistency, clarity, and professionalism across all QDrant Loader documentation.
 ## 📝 Writing Style
 ### Voice and Tone
-- **Active Voice**: Use active voice whenever possible
-  - ✅ "QDrant Loader processes your files"
-  - ❌ "Your files are processed by QDrant Loader"
-- **Present Tense**: Write in present tense for current functionality
-  - ✅ "The system creates embeddings"
-  - ❌ "The system will create embeddings"
-- **Direct and Clear**: Be concise and specific
-  - ✅ "Configure your API key in the environment file"
-  - ❌ "You might want to consider setting up your API key"
-- **Professional but Approachable**: Maintain professionalism while being helpful
-  - ✅ "This guide helps you set up QDrant Loader quickly"
-  - ❌ "This awesome guide will totally help you set up QDrant Loader"
+- **Active Voice**: Use active voice whenever possible - ✅ "QDrant Loader processes your files" - ❌ "Your files are processed by QDrant Loader"
+- **Present Tense**: Write in present tense for current functionality - ✅ "The system creates embeddings" - ❌ "The system will create embeddings"
+- **Direct and Clear**: Be concise and specific - ✅ "Configure your API key in the environment file" - ❌ "You might want to consider setting up your API key"
+- **Professional but Approachable**: Maintain professionalism while being helpful - ✅ "This guide helps you set up QDrant Loader quickly" - ❌ "This awesome guide will totally help you set up QDrant Loader"
 ### Audience Considerations
 #### For Users
 - Focus on **what** and **how**
@@ -65,12 +57,10 @@ Use emojis consistently for section types:
 Always specify the language for syntax highlighting:
 ```markdown
 ```bash
-# Good: Language specified
-\1 ingest --workspace .
+# Good: Language specified\1ingest --workspace .
 ```
 ```
-# Bad: No language specified
-\1 ingest --workspace .
+# Bad: No language specified\1ingest --workspace .
 ```
 ```
 ### Command Examples
@@ -89,22 +79,9 @@ pip install qdrant-loader
 - **Show both minimal and comprehensive configurations**
 ```yaml
 # Minimal configuration
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "my_documents"
+global_config: qdrant: url: "http://localhost:6333" collection_name: "my_documents"
 # Comprehensive configuration
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "my_documents"
-    api_key: "${QDRANT_API_KEY}"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "text-embedding-3-small"
-  chunking:
-    chunk_size: 1500
-    chunk_overlap: 200
+global_config: qdrant: url: "http://localhost:6333" collection_name: "my_documents" api_key: "${QDRANT_API_KEY}" openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking: chunk_size: 1500 chunk_overlap: 200
 ```
 ### File Paths and Names
 - Use **backticks** for file names: `config.yaml`
@@ -132,8 +109,8 @@ global_config:
 ```markdown
 | Column 1 | Column 2 | Column 3 |
 |----------|----------|----------|
-| Value 1  | Value 2  | Value 3  |
-| Value 4  | Value 5  | Value 6  |
+| Value 1 | Value 2 | Value 3 |
+| Value 4 | Value 5 | Value 6 |
 ```
 ## 🔗 Links and References
 ### Internal Links
@@ -196,13 +173,8 @@ Use consistent formatting for different types of callouts:
 # Good: Complete example with actual implementation
 from qdrant_loader.config import get_settings
 from qdrant_loader.core.qdrant_manager import QdrantManager
-try:
-    settings = get_settings()
-    manager = QdrantManager(settings)
-    manager.create_collection()
-    print(f"Successfully created collection: {settings.qdrant_collection_name}")
-except Exception as e:
-    print(f"Failed to create collection: {e}")
+try: settings = get_settings() manager = QdrantManager(settings) manager.create_collection() print(f"Successfully created collection: {settings.qdrant_collection_name}")
+except Exception as e: print(f"Failed to create collection: {e}")
 ```
 ## 🔧 Troubleshooting Documentation
 ### Error Messages

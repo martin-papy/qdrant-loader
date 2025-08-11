@@ -5,13 +5,12 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 ### What Workspace Mode Provides
 ```text
 📁 Workspace Directory
-├── config.yaml          # Main configuration file
-├── .env                 # Environment variables (optional)
-├── logs/                # Application logs
-│   └── qdrant-loader.log
-├── metrics/             # Performance metrics
-└── data/                # State database
-    └── qdrant-loader.db
+├── config.yaml # Main configuration file
+├── .env # Environment variables (optional)
+├── logs/ # Application logs
+│ └── qdrant-loader.log
+├── metrics/ # Performance metrics
+└── data/ # State database └── qdrant-loader.db
 ```
 ### Benefits of Workspace Mode
 - **Auto-discovery**: Automatically finds `config.yaml` and `.env` files
@@ -32,45 +31,15 @@ cp packages/qdrant-loader/conf/.env.template .env
 QDrant Loader uses a **multi-project configuration** structure where all projects share a single Qdrant collection but are isolated through project metadata:
 ```yaml
 # config.yaml - Multi-project configuration
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    api_key: null  # Optional for Qdrant Cloud
-    collection_name: "my_documents"  # Shared by all projects
-  embedding:
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    vector_size: 1536
-projects:
-  docs-project:
-    project_id: "docs-project"
-    display_name: "Documentation Project"
-    description: "Company documentation"
-    sources:
-      git:
-        docs-repo:
-          base_url: "https://github.com/company/docs"
-          branch: "main"
-          include_paths: ["docs/**", "*.md"]
-          token: "${GITHUB_TOKEN}"
-  wiki-project:
-    project_id: "wiki-project"
-    display_name: "Wiki Project"
-    description: "Internal wiki content"
-    sources:
-      confluence:
-        company-wiki:
-          base_url: "https://company.atlassian.net/wiki"
-          space_key: "WIKI"
-          token: "${CONFLUENCE_TOKEN}"
-          email: "${CONFLUENCE_EMAIL}"
+global_config: qdrant: url: "http://localhost:6333" api_key: null # Optional for Qdrant Cloud collection_name: "my_documents" # Shared by all projects embedding: model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" vector_size: 1536
+projects: docs-project: project_id: "docs-project" display_name: "Documentation Project" description: "Company documentation" sources: git: docs-repo: base_url: "https://github.com/company/docs" branch: "main" include_paths: ["docs/**", "*.md"] token: "${GITHUB_TOKEN}" wiki-project: project_id: "wiki-project" display_name: "Wiki Project" description: "Internal wiki content" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" space_key: "WIKI" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
 ```
 ### Environment Variables
 ```bash
 # .env file
 # Required - QDrant Database
 QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your-qdrant-cloud-key  # Optional
+QDRANT_API_KEY=your-qdrant-cloud-key # Optional
 # Required - OpenAI API
 OPENAI_API_KEY=your-openai-api-key
 # Optional - Source credentials
@@ -81,28 +50,20 @@ CONFLUENCE_EMAIL=your-email@company.com
 ## ⚙️ Workspace Commands
 ### Initialize Workspace
 ```bash
-# Initialize collection and prepare workspace
-\1 init --workspace .
-# Force recreation of existing collection
-\1 init --workspace . --force
+# Initialize collection and prepare workspace\1init --workspace .
+# Force recreation of existing collection\1init --workspace . --force
 ```
 ### Ingest Data
 ```bash
-# Process all projects and sources
-\1 ingest --workspace .
-# Process specific project
-\1 ingest --workspace . --project docs-project
-# Process specific source type across all projects
-\1 ingest --workspace . --source-type git
-# Process specific source within a project
-\1 ingest --workspace . --project docs-project --source docs-repo
-# Force processing of all documents (bypass change detection)
-\1 ingest --workspace . --force
+# Process all projects and sources\1ingest --workspace .
+# Process specific project\1ingest --workspace . --project docs-project
+# Process specific source type across all projects\1ingest --workspace . --source-type git
+# Process specific source within a project\1ingest --workspace . --project docs-project --source docs-repo
+# Force processing of all documents (bypass change detection)\1ingest --workspace . --force
 ```
 ### Configuration Management
 ```bash
-# Show current configuration
-\1 config --workspace .
+# Show current configuration\1config --workspace .
 # List all projects
 qdrant-loader project --workspace . list
 # Show project status
@@ -148,121 +109,46 @@ Projects are isolated through metadata, not separate collections:
 ### Supported Source Types
 #### Git Repositories
 ```yaml
-sources:
-  git:
-    repo-name:
-      base_url: "https://github.com/user/repo"
-      branch: "main"
-      include_paths: ["docs/**", "*.md"]
-      exclude_paths: ["node_modules/**"]
-      file_types: ["*.md", "*.rst", "*.txt"]
-      token: "${GITHUB_TOKEN}"
-      enable_file_conversion: true
+sources: git: repo-name: base_url: "https://github.com/user/repo" branch: "main" include_paths: ["docs/**", "*.md"] exclude_paths: ["node_modules/**"] file_types: ["*.md", "*.rst", "*.txt"] token: "${GITHUB_TOKEN}" enable_file_conversion: true
 ```
 #### Confluence
 ```yaml
-sources:
-  confluence:
-    wiki-name:
-      base_url: "https://company.atlassian.net/wiki"
-      deployment_type: "cloud"
-      space_key: "DOCS"
-      content_types: ["page", "blogpost"]
-      token: "${CONFLUENCE_TOKEN}"
-      email: "${CONFLUENCE_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+sources: confluence: wiki-name: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" content_types: ["page", "blogpost"] token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" enable_file_conversion: true download_attachments: true
 ```
 #### JIRA
 ```yaml
-sources:
-  jira:
-    project-name:
-      base_url: "https://company.atlassian.net"
-      deployment_type: "cloud"
-      project_key: "PROJ"
-      token: "${JIRA_TOKEN}"
-      email: "${JIRA_EMAIL}"
-      enable_file_conversion: true
-      download_attachments: true
+sources: jira: project-name: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" enable_file_conversion: true download_attachments: true
 ```
 #### Local Files
 ```yaml
-sources:
-  localfile:
-    local-docs:
-      base_url: "file:///path/to/files"
-      include_paths: ["docs/**"]
-      exclude_paths: ["tmp/**"]
-      file_types: ["*.md", "*.txt"]
-      max_file_size: 1048576  # 1MB
-      enable_file_conversion: true
+sources: localfile: local-docs: base_url: "file:///path/to/files" include_paths: ["docs/**"] exclude_paths: ["tmp/**"] file_types: ["*.md", "*.txt"] max_file_size: 1048576 # 1MB enable_file_conversion: true
 ```
 #### Public Documentation
 ```yaml
-sources:
-  publicdocs:
-    docs-site:
-      base_url: "https://docs.example.com"
-      version: "1.0"
-      content_type: "html"
-      path_pattern: "/docs/{version}/**"
-      selectors:
-        content: "article.main-content"
-        remove: ["nav", "header", "footer"]
-      enable_file_conversion: true
-      download_attachments: true
+sources: publicdocs: docs-site: base_url: "https://docs.example.com" version: "1.0" content_type: "html" path_pattern: "/docs/{version}/**" selectors: content: "article.main-content" remove: ["nav", "header", "footer"] enable_file_conversion: true download_attachments: true
 ```
 ## 🔧 Advanced Configuration
 ### Global Settings
 ```yaml
-global_config:
-  # Chunking configuration
-  chunking:
-    chunk_size: 1500
-    chunk_overlap: 200
-  # Embedding configuration
-  embedding:
-    endpoint: "https://api.openai.com/v1"
-    model: "text-embedding-3-small"
-    api_key: "${OPENAI_API_KEY}"
-    batch_size: 100
-    vector_size: 1536
-    max_tokens_per_request: 8000
-    max_tokens_per_chunk: 8000
-  # File conversion settings
-  file_conversion:
-    max_file_size: 52428800  # 50MB
-    conversion_timeout: 300  # 5 minutes
-    markitdown:
-      enable_llm_descriptions: false
-      llm_model: "gpt-4o"
-      llm_api_key: "${OPENAI_API_KEY}"
+global_config: # Chunking configuration chunking: chunk_size: 1500 chunk_overlap: 200 # Embedding configuration embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # File conversion settings file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_api_key: "${OPENAI_API_KEY}"
 ```
 ### State Management
 Workspace mode automatically manages the state database:
 ```yaml
-global_config:
-  state_management:
-    database_path: "${STATE_DB_PATH}"  # Ignored in workspace mode
-    table_prefix: "qdrant_loader_"
-    connection_pool:
-      size: 5
-      timeout: 30
+global_config: state_management: database_path: "${STATE_DB_PATH}" # Ignored in workspace mode table_prefix: "qdrant_loader_" connection_pool: size: 5 timeout: 30
 ```
 In workspace mode, the state database is automatically created as `qdrant-loader.db` in the `data/` directory within the workspace.
 ## 📊 Workspace Structure
 ### Directory Layout
 ```text
 my-qdrant-workspace/
-├── config.yaml              # Main configuration
-├── .env                     # Environment variables
-├── logs/                    # Application logs
-│   └── qdrant-loader.log
-├── metrics/                 # Performance metrics
-│   └── ingestion_metrics_YYYYMMDD_HHMMSS.json
-└── data/
-    └── qdrant-loader.db     # Processing state database
+├── config.yaml # Main configuration
+├── .env # Environment variables
+├── logs/ # Application logs
+│ └── qdrant-loader.log
+├── metrics/ # Performance metrics
+│ └── ingestion_metrics_YYYYMMDD_HHMMSS.json
+└── data/ └── qdrant-loader.db # Processing state database
 ```
 ### Log Files
 Workspace mode automatically configures logging:
@@ -277,19 +163,7 @@ Performance metrics are stored in the `metrics/` directory:
 ## 🔗 MCP Server Integration
 The MCP server uses environment variables for configuration and does not currently support workspace mode directly. You need to configure it using environment variables:
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "QDRANT_API_KEY": "your-api-key",
-        "QDRANT_COLLECTION_NAME": "my_documents",
-        "OPENAI_API_KEY": "your-openai-key",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "http://localhost:6333", "QDRANT_API_KEY": "your-api-key", "QDRANT_COLLECTION_NAME": "my_documents", "OPENAI_API_KEY": "your-openai-key", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
 }
 ```
 ### MCP Server Environment Variables

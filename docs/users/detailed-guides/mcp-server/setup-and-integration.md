@@ -80,91 +80,20 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ## 🎨 Cursor IDE
 Cursor is an AI-powered code editor with excellent MCP support. It's the most popular choice for AI-assisted development.
 ### Installation
-1. **Download Cursor IDE**
-   - Visit [cursor.com](https://www.cursor.com/)
-   - Download for your platform (macOS, Windows, Linux)
-   - Install and launch Cursor
-2. **Verify MCP Support**
-   - Open Cursor Settings (`Cmd/Ctrl + ,`)
-   - Search for "MCP" to confirm MCP support is available
+1. **Download Cursor IDE** - Visit [cursor.com](https://www.cursor.com/) - Download for your platform (macOS, Windows, Linux) - Install and launch Cursor
+2. **Verify MCP Support** - Open Cursor Settings (`Cmd/Ctrl + ,`) - Search for "MCP" to confirm MCP support is available
 ### Configuration
 #### Method 1: Settings UI (Recommended)
-1. **Open Settings**
-   ```
-   Cursor → Preferences → Settings
-   Or press: Cmd/Ctrl + ,
-   ```
-2. **Navigate to MCP Configuration**
-   ```
-   Search: "MCP"
-   Or: Extensions → MCP Servers
-   ```
-3. **Add QDrant Loader Server**
-   ```json
-   {
-     "name": "qdrant-loader",
-     "command": "mcp-qdrant-loader",
-     "args": [],
-     "env": {
-       "QDRANT_URL": "http://localhost:6333",
-       "OPENAI_API_KEY": "your-openai-api-key",
-       "QDRANT_COLLECTION_NAME": "documents",
-       "MCP_DISABLE_CONSOLE_LOGGING": "true"
-     }
-   }
-   ```
+1. **Open Settings** ``` Cursor → Preferences → Settings Or press: Cmd/Ctrl + , ```
+2. **Navigate to MCP Configuration** ``` Search: "MCP" Or: Extensions → MCP Servers ```
+3. **Add QDrant Loader Server** ```json { "name": "qdrant-loader", "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "documents", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } ```
 #### Method 2: Configuration File
-1. **Locate Configuration Directory**
-   ```bash
-   # macOS
-   ~/.cursor/User/globalStorage/cursor.mcp/
-   # Windows
-   %APPDATA%\Cursor\User\globalStorage\cursor.mcp\
-   # Linux
-   ~/.config/Cursor/User/globalStorage/cursor.mcp/
-   ```
-2. **Create MCP Configuration**
-   Create or edit `mcp-servers.json`:
-   ```json
-   {
-     "mcpServers": {
-       "qdrant-loader": {
-         "command": "mcp-qdrant-loader",
-         "args": [],
-         "env": {
-           "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your-openai-api-key",
-           "QDRANT_COLLECTION_NAME": "documents",
-           "MCP_DISABLE_CONSOLE_LOGGING": "true"
-         }
-       }
-     }
-   }
-   ```
+1. **Locate Configuration Directory** ```bash # macOS ~/.cursor/User/globalStorage/cursor.mcp/ # Windows %APPDATA%\Cursor\User\globalStorage\cursor.mcp\ # Linux ~/.config/Cursor/User/globalStorage/cursor.mcp/ ```
+2. **Create MCP Configuration** Create or edit `mcp-servers.json`: ```json { "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "documents", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } } } ```
 ### Testing Cursor Integration
 1. **Restart Cursor** after configuration changes
-2. **Open Chat Interface**
-   ```
-   Press: Cmd/Ctrl + L
-   Or: Click the chat icon in the sidebar
-   ```
-3. **Test Advanced Search Capabilities**
-   **Basic Semantic Search:**
-   ```
-   You: "Can you search my knowledge base for information about API authentication?"
-   ```
-   **Hierarchy Navigation:**
-   ```
-   You: "Show me the structure of our API documentation and navigate to authentication sections"
-   ```
-   **Cross-Document Intelligence:**
-   ```
-   You: "Are there any conflicts or inconsistencies in our authentication documentation across different services?"
-   ```
-   **Document Clustering:**
-   ```
-   You: "Group our microservices documentation by related topics and show me the clusters"
-   ```
+2. **Open Chat Interface** ``` Press: Cmd/Ctrl + L Or: Click the chat icon in the sidebar ```
+3. **Test Advanced Search Capabilities** **Basic Semantic Search:** ``` You: "Can you search my knowledge base for information about API authentication?" ``` **Hierarchy Navigation:** ``` You: "Show me the structure of our API documentation and navigate to authentication sections" ``` **Cross-Document Intelligence:** ``` You: "Are there any conflicts or inconsistencies in our authentication documentation across different services?" ``` **Document Clustering:** ``` You: "Group our microservices documentation by related topics and show me the clusters" ```
 ### Advanced Cursor Workflow Examples
 #### Code Understanding Workflow
 ```text
@@ -204,103 +133,32 @@ I've analyzed your documentation for conflicts and inconsistencies.
 ## 🌊 Windsurf
 Windsurf is an AI development environment with MCP support.
 ### Installation
-1. **Download Windsurf**
-   - Visit the Windsurf website
-   - Download for your platform
-   - Install and launch Windsurf
+1. **Download Windsurf** - Visit the Windsurf website - Download for your platform - Install and launch Windsurf
 ### Configuration
-1. **Open Settings**
-   ```
-   Windsurf → Preferences → Settings
-   ```
-2. **Navigate to MCP Configuration**
-   ```
-   Search: "MCP" or "Model Context Protocol"
-   ```
-3. **Add QDrant Loader Server**
-   ```json
-   {
-     "mcp": {
-       "servers": {
-         "qdrant-loader": {
-           "command": "mcp-qdrant-loader",
-           "env": {
-             "QDRANT_URL": "http://localhost:6333",
-             "OPENAI_API_KEY": "your_openai_key",
-             "QDRANT_COLLECTION_NAME": "documents",
-             "MCP_DISABLE_CONSOLE_LOGGING": "true"
-           }
-         }
-       }
-     }
-   }
-   ```
+1. **Open Settings** ``` Windsurf → Preferences → Settings ```
+2. **Navigate to MCP Configuration** ``` Search: "MCP" or "Model Context Protocol" ```
+3. **Add QDrant Loader Server** ```json { "mcp": { "servers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "QDRANT_COLLECTION_NAME": "documents", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } } } } ```
 ### Testing Windsurf Integration
 1. **Restart Windsurf** after configuration
 2. **Open AI Chat**
-3. **Test Knowledge Access**
-   ```
-   Ask: "Can you search for information about deployment procedures?"
-   ```
+3. **Test Knowledge Access** ``` Ask: "Can you search for information about deployment procedures?" ```
 ## 🤖 Claude Desktop
 Claude Desktop is Anthropic's desktop AI assistant with MCP support.
 ### Installation
-1. **Download Claude Desktop**
-   - Visit [claude.ai](https://claude.ai/)
-   - Download the desktop application
-   - Install and launch Claude Desktop
+1. **Download Claude Desktop** - Visit [claude.ai](https://claude.ai/) - Download the desktop application - Install and launch Claude Desktop
 ### Configuration
-1. **Locate Configuration File**
-   ```bash
-   # macOS
-   ~/Library/Application Support/Claude/claude_desktop_config.json
-   # Windows
-   %APPDATA%\Claude\claude_desktop_config.json
-   # Linux
-   ~/.config/Claude/claude_desktop_config.json
-   ```
-2. **Edit Configuration File**
-   ```json
-   {
-     "mcpServers": {
-       "qdrant-loader": {
-         "command": "mcp-qdrant-loader",
-         "args": [],
-         "env": {
-           "QDRANT_URL": "http://localhost:6333",
-           "OPENAI_API_KEY": "your_openai_key",
-           "QDRANT_COLLECTION_NAME": "documents",
-           "MCP_DISABLE_CONSOLE_LOGGING": "true"
-         }
-       }
-     }
-   }
-   ```
+1. **Locate Configuration File** ```bash # macOS ~/Library/Application Support/Claude/claude_desktop_config.json # Windows %APPDATA%\Claude\claude_desktop_config.json # Linux ~/.config/Claude/claude_desktop_config.json ```
+2. **Edit Configuration File** ```json { "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "QDRANT_COLLECTION_NAME": "documents", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } } } ```
 ### Testing Claude Desktop Integration
 1. **Restart Claude Desktop** after configuration
 2. **Start a New Conversation**
-3. **Test Knowledge Access**
-   ```
-   Ask: "Can you search my knowledge base for information about API authentication?"
-   ```
+3. **Test Knowledge Access** ``` Ask: "Can you search my knowledge base for information about API authentication?" ```
 ## 🔧 Other MCP-Compatible Tools
 For other AI tools that support MCP, use this generic configuration approach:
 ### Generic MCP Configuration
 Most MCP-compatible tools use similar configuration patterns:
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "documents",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "documents", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
 }
 ```
 ### Command Line Testing
@@ -361,37 +219,17 @@ Example: "Cluster our microservices documentation by related topics"
 ### Supported Environment Variables
 ```bash
 # Required Configuration
-QDRANT_URL=http://localhost:6333           # QDrant instance URL
-OPENAI_API_KEY=sk-your-openai-api-key     # OpenAI API key for embeddings
+QDRANT_URL=http://localhost:6333 # QDrant instance URL
+OPENAI_API_KEY=sk-your-openai-api-key # OpenAI API key for embeddings
 # Optional Configuration
-QDRANT_COLLECTION_NAME=documents          # Collection name (default: "documents")
-QDRANT_API_KEY=your-qdrant-cloud-key     # For QDrant Cloud instances
-MCP_DISABLE_CONSOLE_LOGGING=true         # Disable console logs (recommended)
+QDRANT_COLLECTION_NAME=documents # Collection name (default: "documents")
+QDRANT_API_KEY=your-qdrant-cloud-key # For QDrant Cloud instances
+MCP_DISABLE_CONSOLE_LOGGING=true # Disable console logs (recommended)
 ```
 ### Multiple Knowledge Bases
 For different projects with different knowledge bases:
 ```json
-{
-  "mcpServers": {
-    "project-docs": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "project_docs"
-      }
-    },
-    "team-knowledge": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "team_knowledge"
-      }
-    }
-  }
+{ "mcpServers": { "project-docs": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "project_docs" } }, "team-knowledge": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "team_knowledge" } } }
 }
 ```
 ## 🔧 Troubleshooting
@@ -405,8 +243,7 @@ which mcp-qdrant-loader
 # Install if missing
 pip install qdrant-loader-mcp-server
 # Use full path in configuration if needed
-{
-  "command": "/path/to/venv/bin/mcp-qdrant-loader"
+{ "command": "/path/to/venv/bin/mcp-qdrant-loader"
 }
 ```
 #### 2. Connection Refused
@@ -427,13 +264,9 @@ qdrant-loader status
 # Check environment variable
 echo $OPENAI_API_KEY
 # Test API key
-curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-     https://api.openai.com/v1/models
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \ https://api.openai.com/v1/models
 # Set in configuration
-{
-  "env": {
-    "OPENAI_API_KEY": "sk-your-actual-api-key"
-  }
+{ "env": { "OPENAI_API_KEY": "sk-your-actual-api-key" }
 }
 ```
 #### 4. No Search Results
@@ -470,25 +303,12 @@ mcp-qdrant-loader
 > **Note**: Manual JSON-RPC testing is complex. Use AI tool integration for practical testing.
 ## 🚀 Performance Optimization
 ### For Large Knowledge Bases
-1. **Optimize Search Parameters**
-   - Use smaller `limit` values for faster responses
-   - Filter by `source_types` or `project_ids` for targeted searches
-   - Use specific search tools for targeted queries
-2. **Environment Configuration**
-   ```bash
-   # Essential for performance
-   export MCP_DISABLE_CONSOLE_LOGGING=true
-   ```
+1. **Optimize Search Parameters** - Use smaller `limit` values for faster responses - Filter by `source_types` or `project_ids` for targeted searches - Use specific search tools for targeted queries
+2. **Environment Configuration** ```bash # Essential for performance export MCP_DISABLE_CONSOLE_LOGGING=true ```
 ### For Real-time Usage
-1. **Keep MCP Server Running**
-   - Don't restart for each query
-   - Use persistent connections
-2. **Optimize QDrant Configuration**
-   - Use appropriate vector dimensions
-   - Configure proper indexing
-3. **Monitor Resource Usage**
-   - Watch memory consumption
-   - Monitor QDrant performance
+1. **Keep MCP Server Running** - Don't restart for each query - Use persistent connections
+2. **Optimize QDrant Configuration** - Use appropriate vector dimensions - Configure proper indexing
+3. **Monitor Resource Usage** - Watch memory consumption - Monitor QDrant performance
 ## 📊 Best Practices
 ### Effective Prompting
 #### 1. Be Specific and Contextual
@@ -519,19 +339,7 @@ mcp-qdrant-loader
 ### Configuration Management for Teams
 #### Team-Specific Settings
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://team-qdrant.internal:6333",
-        "OPENAI_API_KEY": "team-openai-key",
-        "QDRANT_COLLECTION_NAME": "team_knowledge",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://team-qdrant.internal:6333", "OPENAI_API_KEY": "team-openai-key", "QDRANT_COLLECTION_NAME": "team_knowledge", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
 }
 ```
 ## 📊 Available Search Tools Summary

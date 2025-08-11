@@ -10,120 +10,18 @@ When you configure local file processing, QDrant Loader can handle:
 ## 🔧 Setup and Configuration
 ### Basic Configuration
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  my-project:
-    sources:
-      localfile:
-        my-docs:
-          base_url: "file:///path/to/documents"
-          include_paths:
-            - "**"
-          exclude_paths:
-            - ".*"
-            - "~*"
-            - "*.tmp"
-          file_types:
-            - "*.pdf"
-            - "*.docx"
-            - "*.md"
-            - "*.txt"
-          max_file_size: 52428800  # 50MB
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects: my-project: sources: localfile: my-docs: base_url: "file:///path/to/documents" include_paths: - "**" exclude_paths: - ".*" - "~*" - "*.tmp" file_types: - "*.pdf" - "*.docx" - "*.md" - "*.txt" max_file_size: 52428800 # 50MB
 ```
 ### Advanced Configuration
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  my-project:
-    sources:
-      localfile:
-        my-docs:
-          base_url: "file:///path/to/documents"
-          # File filtering
-          include_paths:
-            - "**"  # Include all files recursively
-          exclude_paths:
-            - ".*"              # Hidden files
-            - "~*"              # Temporary files
-            - "*.tmp"           # Temporary files
-            - "node_modules/**" # Dependencies
-            - "__pycache__/**"  # Python cache
-            - "build/**"        # Build artifacts
-            - "dist/**"         # Distribution files
-          # File types to process
-          file_types:
-            - "*.pdf"
-            - "*.docx"
-            - "*.doc"
-            - "*.pptx"
-            - "*.ppt"
-            - "*.xlsx"
-            - "*.xls"
-            - "*.md"
-            - "*.txt"
-            - "*.py"
-            - "*.js"
-            - "*.json"
-            - "*.yaml"
-            - "*.yml"
-          # Size limits
-          max_file_size: 52428800  # 50MB
-          # File conversion (requires global file_conversion config)
-          enable_file_conversion: true
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects: my-project: sources: localfile: my-docs: base_url: "file:///path/to/documents" # File filtering include_paths: - "**" # Include all files recursively exclude_paths: - ".*" # Hidden files - "~*" # Temporary files - "*.tmp" # Temporary files - "node_modules/**" # Dependencies - "__pycache__/**" # Python cache - "build/**" # Build artifacts - "dist/**" # Distribution files # File types to process file_types: - "*.pdf" - "*.docx" - "*.doc" - "*.pptx" - "*.ppt" - "*.xlsx" - "*.xls" - "*.md" - "*.txt" - "*.py" - "*.js" - "*.json" - "*.yaml" - "*.yml" # Size limits max_file_size: 52428800 # 50MB # File conversion (requires global file_conversion config) enable_file_conversion: true
 ```
 ### Multiple Directory Sources
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documents"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  my-project:
-    sources:
-      localfile:
-        # Research papers
-        research-papers:
-          base_url: "file:///home/user/research/papers"
-          file_types:
-            - "*.pdf"
-            - "*.tex"
-          max_file_size: 104857600  # 100MB
-        # Project documentation
-        project-docs:
-          base_url: "file:///home/user/projects/docs"
-          file_types:
-            - "*.md"
-            - "*.rst"
-          exclude_paths:
-            - "build/**"
-            - "_build/**"
-        # Source code
-        source-code:
-          base_url: "file:///home/user/code"
-          file_types:
-            - "*.py"
-            - "*.js"
-            - "*.java"
-            - "*.cpp"
-            - "*.h"
-          exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - ".git/**"
-            - "build/**"
-            - "dist/**"
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+projects: my-project: sources: localfile: # Research papers research-papers: base_url: "file:///home/user/research/papers" file_types: - "*.pdf" - "*.tex" max_file_size: 104857600 # 100MB # Project documentation project-docs: base_url: "file:///home/user/projects/docs" file_types: - "*.md" - "*.rst" exclude_paths: - "build/**" - "_build/**" # Source code source-code: base_url: "file:///home/user/code" file_types: - "*.py" - "*.js" - "*.java" - "*.cpp" - "*.h" exclude_paths: - "node_modules/**" - "__pycache__/**" - ".git/**" - "build/**" - "dist/**"
 ```
 ## 🎯 Configuration Options
 ### Connection Settings
@@ -144,164 +42,38 @@ projects:
 ## 🚀 Usage Examples
 ### Research Team
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "research-docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  research:
-    sources:
-      localfile:
-        # Research papers and publications
-        research-papers:
-          base_url: "file:///research/papers"
-          file_types:
-            - "*.pdf"
-            - "*.tex"
-            - "*.bib"
-            - "*.md"
-          max_file_size: 104857600  # 100MB for large papers
-          enable_file_conversion: true
-        # Datasets and data files
-        research-data:
-          base_url: "file:///research/datasets"
-          file_types:
-            - "*.csv"
-            - "*.json"
-            - "*.xml"
-            - "*.xlsx"
-          exclude_paths:
-            - "raw/**"      # Skip raw data
-            - "temp/**"     # Skip temporary files
+global_config: qdrant: url: "http://localhost:6333" collection_name: "research-docs" openai: api_key: "${OPENAI_API_KEY}"
+projects: research: sources: localfile: # Research papers and publications research-papers: base_url: "file:///research/papers" file_types: - "*.pdf" - "*.tex" - "*.bib" - "*.md" max_file_size: 104857600 # 100MB for large papers enable_file_conversion: true # Datasets and data files research-data: base_url: "file:///research/datasets" file_types: - "*.csv" - "*.json" - "*.xml" - "*.xlsx" exclude_paths: - "raw/**" # Skip raw data - "temp/**" # Skip temporary files
 ```
 ### Documentation Team
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "documentation"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  documentation:
-    sources:
-      localfile:
-        # Main documentation
-        docs-content:
-          base_url: "file:///docs/content"
-          file_types:
-            - "*.md"
-            - "*.rst"
-            - "*.txt"
-            - "*.adoc"
-        # Legacy documents
-        legacy-docs:
-          base_url: "file:///docs/legacy"
-          file_types:
-            - "*.doc"
-            - "*.docx"
-            - "*.pdf"
-            - "*.ppt"
-            - "*.pptx"
-          enable_file_conversion: true
-          max_file_size: 20971520  # 20MB
+global_config: qdrant: url: "http://localhost:6333" collection_name: "documentation" openai: api_key: "${OPENAI_API_KEY}"
+projects: documentation: sources: localfile: # Main documentation docs-content: base_url: "file:///docs/content" file_types: - "*.md" - "*.rst" - "*.txt" - "*.adoc" # Legacy documents legacy-docs: base_url: "file:///docs/legacy" file_types: - "*.doc" - "*.docx" - "*.pdf" - "*.ppt" - "*.pptx" enable_file_conversion: true max_file_size: 20971520 # 20MB
 ```
 ### Software Development
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "dev-docs"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  development:
-    sources:
-      localfile:
-        # Source code
-        source-code:
-          base_url: "file:///projects/src"
-          file_types:
-            - "*.py"
-            - "*.js"
-            - "*.ts"
-            - "*.java"
-            - "*.cpp"
-            - "*.h"
-            - "*.md"
-            - "*.rst"
-          exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - "build/**"
-            - "dist/**"
-            - ".git/**"
-        # Configuration files
-        config-files:
-          base_url: "file:///projects/config"
-          file_types:
-            - "*.yaml"
-            - "*.yml"
-            - "*.json"
-            - "*.toml"
-            - "*.ini"
-            - "*.conf"
+global_config: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
+projects: development: sources: localfile: # Source code source-code: base_url: "file:///projects/src" file_types: - "*.py" - "*.js" - "*.ts" - "*.java" - "*.cpp" - "*.h" - "*.md" - "*.rst" exclude_paths: - "node_modules/**" - "__pycache__/**" - "build/**" - "dist/**" - ".git/**" # Configuration files config-files: base_url: "file:///projects/config" file_types: - "*.yaml" - "*.yml" - "*.json" - "*.toml" - "*.ini" - "*.conf"
 ```
 ### Personal Knowledge Base
 ```yaml
-global_config:
-  qdrant:
-    url: "http://localhost:6333"
-    collection_name: "personal-knowledge"
-  openai:
-    api_key: "${OPENAI_API_KEY}"
-projects:
-  personal:
-    sources:
-      localfile:
-        # Notes and writings
-        personal-notes:
-          base_url: "file:///personal/notes"
-          file_types:
-            - "*.md"
-            - "*.txt"
-            - "*.org"
-        # Books and references
-        personal-library:
-          base_url: "file:///personal/library"
-          file_types:
-            - "*.pdf"
-            - "*.epub"
-          max_file_size: 209715200  # 200MB for large books
-          enable_file_conversion: true
+global_config: qdrant: url: "http://localhost:6333" collection_name: "personal-knowledge" openai: api_key: "${OPENAI_API_KEY}"
+projects: personal: sources: localfile: # Notes and writings personal-notes: base_url: "file:///personal/notes" file_types: - "*.md" - "*.txt" - "*.org" # Books and references personal-library: base_url: "file:///personal/library" file_types: - "*.pdf" - "*.epub" max_file_size: 209715200 # 200MB for large books enable_file_conversion: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Configure
 ```bash
-# Initialize workspace
-\1 init --workspace .
-# Configure the project
-\1 config --workspace .
+# Initialize workspace\1init --workspace .
+# Configure the project\1config --workspace .
 ```
 ### Validate Configuration
 ```bash
-# Validate project configuration
-\1 project \3 --workspace \2
-# Check project status
-\1 project \3 --workspace \2
-# List all projects
-\1 project \3 --workspace \2
-```
+# Validate project configuration\1project\1--workspace\1# Check project status\1project\1--workspace\1# List all projects\1project\1--workspace\1```
 ### Process Local Files
 ```bash
-# Process all configured sources
-\1 ingest --workspace .
-# Process specific project
-\1 ingest --workspace . --project my-project
-# Process with verbose logging
-\1 ingest --workspace . --log-level debug
+# Process all configured sources\1ingest --workspace .
+# Process specific project\1ingest --workspace . --project my-project
+# Process with verbose logging\1ingest --workspace . --log-level debug
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -320,57 +92,19 @@ sudo -u qdrant-user ls /path/to/files
 **Problem**: Files are too large or processing is slow
 **Solutions**:
 ```yaml
-projects:
-  my-project:
-    sources:
-      localfile:
-        my-docs:
-          base_url: "file:///large_files"
-          # Increase size limits
-          max_file_size: 209715200  # 200MB
-          # Skip very large files
-          exclude_paths:
-            - "*.iso"
-            - "*.dmg"
-            - "*.vm*"
+projects: my-project: sources: localfile: my-docs: base_url: "file:///large_files" # Increase size limits max_file_size: 209715200 # 200MB # Skip very large files exclude_paths: - "*.iso" - "*.dmg" - "*.vm*"
 ```
 #### File Type Issues
 **Problem**: Files not being processed
 **Solutions**:
 ```yaml
-projects:
-  my-project:
-    sources:
-      localfile:
-        my-docs:
-          base_url: "file:///documents"
-          # Ensure file types are specified
-          file_types:
-            - "*.pdf"
-            - "*.docx"
-            - "*.txt"
-            - "*.md"
-          # Enable file conversion for additional formats
-          enable_file_conversion: true
+projects: my-project: sources: localfile: my-docs: base_url: "file:///documents" # Ensure file types are specified file_types: - "*.pdf" - "*.docx" - "*.txt" - "*.md" # Enable file conversion for additional formats enable_file_conversion: true
 ```
 #### Path Issues
 **Problem**: Files not found or incorrect paths
 **Solutions**:
 ```yaml
-projects:
-  my-project:
-    sources:
-      localfile:
-        my-docs:
-          # Use absolute path with file:// prefix
-          base_url: "file:///absolute/path/to/documents"
-          # Include all files recursively
-          include_paths:
-            - "**"
-          # Check exclude patterns
-          exclude_paths:
-            - ".*"  # Hidden files
-            - "~*"  # Temporary files
+projects: my-project: sources: localfile: my-docs: # Use absolute path with file:// prefix base_url: "file:///absolute/path/to/documents" # Include all files recursively include_paths: - "**" # Check exclude patterns exclude_paths: - ".*" # Hidden files - "~*" # Temporary files
 ```
 ### Debugging Commands
 ```bash
@@ -381,19 +115,13 @@ file /path/to/test.pdf
 head -100 /path/to/test.txt
 # Check disk space
 df -h /path/to/files
-# Monitor processing with verbose logging
-\1 ingest --workspace . --log-level debug
+# Monitor processing with verbose logging\1ingest --workspace . --log-level debug
 ```
 ## 📊 Monitoring and Performance
 ### Check Processing Status
 ```bash
-# Check project status
-\1 project \3 --workspace \2
-# Check specific project
-\1 project \3 --workspace \2 --project-id my-project
-# List all projects
-\1 project \3 --workspace \2
-```
+# Check project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
+# List all projects\1project\1--workspace\1```
 ### Performance Optimization
 Monitor these aspects for local file processing:
 - **Files processed per minute** - Processing throughput

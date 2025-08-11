@@ -27,31 +27,13 @@ mcp-qdrant-loader --version
 #### For Cursor IDE
 Add to your MCP servers configuration:
 ```json
-{
-  "name": "mcp-qdrant-loader",
-  "command": "mcp-qdrant-loader",
-  "args": [],
-  "env": {
-    "QDRANT_URL": "http://localhost:6333",
-    "OPENAI_API_KEY": "your-openai-api-key",
-    "QDRANT_COLLECTION_NAME": "documents"
-  }
+{ "name": "mcp-qdrant-loader", "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "documents" }
 }
 ```
 #### For Claude Desktop
 Add to your `claude_desktop_config.json`:
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key",
-        "QDRANT_COLLECTION_NAME": "documents"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your-openai-api-key", "QDRANT_COLLECTION_NAME": "documents" } } }
 }
 ```
 ### 4. Test Integration
@@ -175,32 +157,14 @@ This gives you a complete foundation for implementing notifications effectively.
 QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
 # Optional Configuration
-QDRANT_COLLECTION_NAME=documents        # Default: "documents"
-QDRANT_API_KEY=your-qdrant-cloud-key   # For QDrant Cloud
-MCP_DISABLE_CONSOLE_LOGGING=true       # Recommended for development tools
+QDRANT_COLLECTION_NAME=documents # Default: "documents"
+QDRANT_API_KEY=your-qdrant-cloud-key # For QDrant Cloud
+MCP_DISABLE_CONSOLE_LOGGING=true # Recommended for development tools
 ```
 ### Multi-Project Setup
 For teams with multiple knowledge bases:
 ```json
-{
-  "mcpServers": {
-    "project-docs": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "QDRANT_COLLECTION_NAME": "project_docs",
-        "OPENAI_API_KEY": "your-openai-api-key"
-      }
-    },
-    "team-knowledge": {
-      "command": "mcp-qdrant-loader",
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "QDRANT_COLLECTION_NAME": "team_knowledge",
-        "OPENAI_API_KEY": "your-openai-api-key"
-      }
-    }
-  }
+{ "mcpServers": { "project-docs": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "http://localhost:6333", "QDRANT_COLLECTION_NAME": "project_docs", "OPENAI_API_KEY": "your-openai-api-key" } }, "team-knowledge": { "command": "mcp-qdrant-loader", "env": { "QDRANT_URL": "http://localhost:6333", "QDRANT_COLLECTION_NAME": "team_knowledge", "OPENAI_API_KEY": "your-openai-api-key" } } }
 }
 ```
 ## 🔧 Troubleshooting
@@ -217,9 +181,7 @@ curl http://localhost:6333/health
 ```
 #### No Search Results
 ```bash
-# Verify documents are ingested
-\1 project \3 --workspace \2
-# Check collection exists
+# Verify documents are ingested\1project\1--workspace\1# Check collection exists
 curl http://localhost:6333/collections/documents
 ```
 #### Performance Issues

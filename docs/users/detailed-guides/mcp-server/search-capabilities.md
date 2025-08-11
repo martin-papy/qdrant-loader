@@ -67,14 +67,7 @@ Results:
 ```
 ### Parameters
 ```json
-{
-  "name": "search",
-  "parameters": {
-    "query": "string",              // Natural language query - be conversational!
-    "limit": 10,                    // Results to return (default: 5)
-    "source_types": ["git", "confluence", "jira", "documentation", "localfile"],
-    "project_ids": ["project1", "project2"]
-  }
+{ "name": "search", "parameters": { "query": "string", // Natural language query - be conversational! "limit": 10, // Results to return (default: 5) "source_types": ["git", "confluence", "jira", "documentation", "localfile"], "project_ids": ["project1", "project2"] }
 }
 ```
 ## 🏗️ Enhanced Hierarchy Search
@@ -92,12 +85,12 @@ Hierarchy Analysis:
 📁 API Documentation (Root)
 ├── 📄 Getting Started (3 children)
 ├── 📁 Authentication (5 children)
-│   ├── 📄 JWT Implementation
-│   ├── 📄 OAuth Setup
-│   └── 📄 API Keys
+│ ├── 📄 JWT Implementation
+│ ├── 📄 OAuth Setup
+│ └── 📄 API Keys
 ├── 📁 Endpoints (8 children)
-│   ├── 📁 User Management
-│   └── 📁 Data Operations
+│ ├── 📁 User Management
+│ └── 📁 Data Operations
 └── 📁 Examples (4 children)
 💡 Completeness Score: 85% - Missing error handling section
 ```
@@ -105,29 +98,13 @@ Hierarchy Analysis:
 ```
 Query: "Where should I add webhook security documentation?"
 Hierarchy Suggestions:
-1. **Primary Location**: API Documentation > Security > Webhooks
-   - Path: Consistent with existing security structure
-   - Related: Authentication, Authorization content
-2. **Alternative**: API Documentation > Webhooks > Security
-   - Path: Groups all webhook content together
-   - Context: If you have a dedicated Webhooks section
+1. **Primary Location**: API Documentation > Security > Webhooks - Path: Consistent with existing security structure - Related: Authentication, Authorization content
+2. **Alternative**: API Documentation > Webhooks > Security - Path: Groups all webhook content together - Context: If you have a dedicated Webhooks section
 Recommendation: Create under Security section for consistency
 ```
 ### Parameters
 ```json
-{
-  "name": "hierarchy_search",
-  "parameters": {
-    "query": "string",              // Search query
-    "limit": 10,                    // Number of results (default: 10)
-    "organize_by_hierarchy": false, // Group results by structure
-    "hierarchy_filter": {           // Hierarchy-specific filters
-      "depth": 3,                   // Filter by hierarchy depth
-      "has_children": true,         // Filter by whether pages have children
-      "parent_title": "API Documentation", // Filter by parent page
-      "root_only": false            // Show only root pages
-    }
-  }
+{ "name": "hierarchy_search", "parameters": { "query": "string", // Search query "limit": 10, // Number of results (default: 10) "organize_by_hierarchy": false, // Group results by structure "hierarchy_filter": { // Hierarchy-specific filters "depth": 3, // Filter by hierarchy depth "has_children": true, // Filter by whether pages have children "parent_title": "API Documentation", // Filter by parent page "root_only": false // Show only root pages } }
 }
 ```
 ## 📎 Enhanced Attachment Search
@@ -142,59 +119,26 @@ Attachment search provides **intelligent content analysis** including:
 ```
 Query: "architecture diagrams with security components"
 Content Analysis Results:
-1. 📄 system-architecture-v3.pdf (2.3 MB)
-   🧠 Content Analysis: "API gateway, authentication services, encrypted databases"
-   🏗️ Components: Security controls, data encryption, access management
-   📊 Security Coverage: 85% - Comprehensive security architecture
-2. 🖼️ security-flow-diagram.png (1.1 MB)
-   🧠 OCR Analysis: "User authentication flow with multi-factor authentication"
-   🏗️ Components: MFA, token validation, secure sessions
-   📊 Security Coverage: 92% - Detailed security implementation
+1. 📄 system-architecture-v3.pdf (2.3 MB) 🧠 Content Analysis: "API gateway, authentication services, encrypted databases" 🏗️ Components: Security controls, data encryption, access management 📊 Security Coverage: 85% - Comprehensive security architecture
+2. 🖼️ security-flow-diagram.png (1.1 MB) 🧠 OCR Analysis: "User authentication flow with multi-factor authentication" 🏗️ Components: MFA, token validation, secure sessions 📊 Security Coverage: 92% - Detailed security implementation
 ```
 **Code and Configuration Files**
 ```
 Query: "deployment configuration scripts"
 Content Analysis Results:
-1. 📋 deploy-production.yml (45 KB)
-   📁 Parent: Deployment Documentation
-   🧠 Content: "Production deployment configuration with security settings"
-   ⚠️ Risk Assessment: Medium - contains sensitive configuration
-2. 🔧 setup-environment.sh (12 KB)
-   📁 Parent: Environment Setup Guide
-   🧠 Content: "Environment initialization and dependency installation"
-   ✅ Risk Assessment: Low - standard setup procedures
+1. 📋 deploy-production.yml (45 KB) 📁 Parent: Deployment Documentation 🧠 Content: "Production deployment configuration with security settings" ⚠️ Risk Assessment: Medium - contains sensitive configuration
+2. 🔧 setup-environment.sh (12 KB) 📁 Parent: Environment Setup Guide 🧠 Content: "Environment initialization and dependency installation" ✅ Risk Assessment: Low - standard setup procedures
 ```
 ### Parameters
 ```json
-{
-  "name": "attachment_search",
-  "parameters": {
-    "query": "string",              // Search query
-    "limit": 10,                    // Number of results
-    "include_parent_context": true, // Include parent document info
-    "attachment_filter": {          // Attachment-specific filters
-      "file_type": "pdf",           // Filter by file type
-      "file_size_min": 1024,        // Minimum file size in bytes
-      "file_size_max": 10485760,    // Maximum file size in bytes
-      "attachments_only": true,     // Show only attachments
-      "author": "john.doe",         // Filter by author
-      "parent_document_title": "API Documentation"
-    }
-  }
+{ "name": "attachment_search", "parameters": { "query": "string", // Search query "limit": 10, // Number of results "include_parent_context": true, // Include parent document info "attachment_filter": { // Attachment-specific filters "file_type": "pdf", // Filter by file type "file_size_min": 1024, // Minimum file size in bytes "file_size_max": 10485760, // Maximum file size in bytes "attachments_only": true, // Show only attachments "author": "john.doe", // Filter by author "parent_document_title": "API Documentation" } }
 }
 ```
 ## 🤝 Cross-Document Intelligence Features
 ### Document Relationship Analysis
 **Purpose**: Comprehensive analysis of relationships between documents
 ```json
-{
-  "name": "analyze_document_relationships",
-  "parameters": {
-    "query": "search query to get documents for analysis",
-    "limit": 15,                    // Maximum documents to analyze
-    "source_types": ["confluence", "git"],
-    "project_ids": ["project1"]
-  }
+{ "name": "analyze_document_relationships", "parameters": { "query": "search query to get documents for analysis", "limit": 15, // Maximum documents to analyze "source_types": ["confluence", "git"], "project_ids": ["project1"] }
 }
 ```
 **Real-World Example**:
@@ -219,41 +163,21 @@ Relationship Analysis:
 ### Document Similarity Detection
 **Purpose**: Find documents with similar content for comparison or deduplication
 ```json
-{
-  "name": "find_similar_documents",
-  "parameters": {
-    "target_query": "target document to find similarities for",
-    "comparison_query": "documents to compare against",
-    "similarity_metrics": ["entity_overlap", "semantic_similarity"],
-    "max_similar": 5
-  }
+{ "name": "find_similar_documents", "parameters": { "target_query": "target document to find similarities for", "comparison_query": "documents to compare against", "similarity_metrics": ["entity_overlap", "semantic_similarity"], "max_similar": 5 }
 }
 ```
 **Real-World Example**:
 ```
 Target: "API Rate Limiting Guide"
 Similar Documents Found:
-1. "Rate Limiting Implementation" (Similarity: 0.92)
-   📊 Overlap: Same concepts, different implementation approach
-   🔄 Relationship: Alternative implementation strategy
-2. "API Throttling Configuration" (Similarity: 0.87)
-   📊 Overlap: Similar technical solution, different focus
-   🔄 Relationship: Configuration vs. implementation guide
-3. "API Performance Optimization" (Similarity: 0.75)
-   📊 Overlap: Rate limiting as part of broader strategy
-   🔄 Relationship: Specific technique within broader approach
+1. "Rate Limiting Implementation" (Similarity: 0.92) 📊 Overlap: Same concepts, different implementation approach 🔄 Relationship: Alternative implementation strategy
+2. "API Throttling Configuration" (Similarity: 0.87) 📊 Overlap: Similar technical solution, different focus 🔄 Relationship: Configuration vs. implementation guide
+3. "API Performance Optimization" (Similarity: 0.75) 📊 Overlap: Rate limiting as part of broader strategy 🔄 Relationship: Specific technique within broader approach
 ```
 ### Conflict Detection
 **Purpose**: Identify contradictions and inconsistencies across documents
 ```json
-{
-  "name": "detect_document_conflicts",
-  "parameters": {
-    "query": "search query to get documents for conflict analysis",
-    "limit": 15,
-    "source_types": ["confluence", "git"],
-    "project_ids": ["project1"]
-  }
+{ "name": "detect_document_conflicts", "parameters": { "query": "search query to get documents for conflict analysis", "limit": 15, "source_types": ["confluence", "git"], "project_ids": ["project1"] }
 }
 ```
 **Real-World Example**:
@@ -276,48 +200,22 @@ Conflicts Detected:
 ### Complementary Content Discovery
 **Purpose**: Find content that complements and enhances a target document
 ```json
-{
-  "name": "find_complementary_content",
-  "parameters": {
-    "target_query": "target document to analyze",
-    "context_query": "context for finding complements",
-    "max_recommendations": 5,
-    "source_types": ["confluence", "git"],
-    "project_ids": ["project1"]
-  }
+{ "name": "find_complementary_content", "parameters": { "target_query": "target document to analyze", "context_query": "context for finding complements", "max_recommendations": 5, "source_types": ["confluence", "git"], "project_ids": ["project1"] }
 }
 ```
 **Real-World Example**:
 ```
 Target Document: "User Authentication API Specification"
 Complementary Content Found:
-1. Implementation Guide (Relevance: 0.89)
-   📋 Reason: Provides implementation details for the API specification
-   🎯 Strategy: Requirements → Implementation relationship
-2. Security Testing Procedures (Relevance: 0.85)
-   📋 Reason: Covers security validation for authentication systems
-   🎯 Strategy: Specification → Validation relationship
-3. Authentication Troubleshooting Guide (Relevance: 0.82)
-   📋 Reason: Addresses common issues with authentication
-   🎯 Strategy: Implementation → Support relationship
-4. User Database Schema (Relevance: 0.78)
-   📋 Reason: Defines data structure supporting authentication
-   🎯 Strategy: API → Data Model relationship
+1. Implementation Guide (Relevance: 0.89) 📋 Reason: Provides implementation details for the API specification 🎯 Strategy: Requirements → Implementation relationship
+2. Security Testing Procedures (Relevance: 0.85) 📋 Reason: Covers security validation for authentication systems 🎯 Strategy: Specification → Validation relationship
+3. Authentication Troubleshooting Guide (Relevance: 0.82) 📋 Reason: Addresses common issues with authentication 🎯 Strategy: Implementation → Support relationship
+4. User Database Schema (Relevance: 0.78) 📋 Reason: Defines data structure supporting authentication 🎯 Strategy: API → Data Model relationship
 ```
 ### Document Clustering
 **Purpose**: Group related documents by topic, purpose, and relationships
 ```json
-{
-  "name": "cluster_documents",
-  "parameters": {
-    "query": "search query to get documents for clustering",
-    "strategy": "mixed_features",  // clustering strategy
-    "max_clusters": 10,
-    "min_cluster_size": 2,
-    "limit": 25,
-    "source_types": ["confluence"],
-    "project_ids": ["project1"]
-  }
+{ "name": "cluster_documents", "parameters": { "query": "search query to get documents for clustering", "strategy": "mixed_features", // clustering strategy "max_clusters": 10, "min_cluster_size": 2, "limit": 25, "source_types": ["confluence"], "project_ids": ["project1"] }
 }
 ```
 **Real-World Example**:
@@ -345,47 +243,39 @@ Document Clusters Created:
 ### Multi-Tool Workflow Examples
 #### Complete Feature Investigation
 ```
-1. Semantic Search: "user authentication implementation"
-   → Understand current authentication approach
-2. Hierarchy Search: "authentication system structure"
-   → Explore documentation organization
-3. Cross-Document Analysis: Find relationships for "authentication API guide"
-   → Get implementation guides, testing procedures, troubleshooting
-4. Conflict Detection: "authentication policies"
-   → Identify inconsistencies across documents
+1. Semantic Search: "user authentication implementation" → Understand current authentication approach
+2. Hierarchy Search: "authentication system structure" → Explore documentation organization
+3. Cross-Document Analysis: Find relationships for "authentication API guide" → Get implementation guides, testing procedures, troubleshooting
+4. Conflict Detection: "authentication policies" → Identify inconsistencies across documents
 Result: Complete understanding with identified gaps and conflicts
 ```
 #### Documentation Audit and Planning
 ```
-1. Hierarchy Search: "API documentation structure analysis"
-   → Understand current organization and find gaps
-2. Conflict Detection: "API versioning policies"
-   → Identify inconsistencies across documents
-3. Similarity Detection: Find similar documents to "API guide"
-   → Review for potential duplication
-4. Complementary Content: Find complements to "API reference"
-   → Discover missing supporting documentation
+1. Hierarchy Search: "API documentation structure analysis" → Understand current organization and find gaps
+2. Conflict Detection: "API versioning policies" → Identify inconsistencies across documents
+3. Similarity Detection: Find similar documents to "API guide" → Review for potential duplication
+4. Complementary Content: Find complements to "API reference" → Discover missing supporting documentation
 Result: Comprehensive audit with actionable improvement plan
 ```
 ### Search Quality Optimization
 #### Result Limit Guidelines
 ```yaml
 # Quick answers
-limit: 3-5           # Fast, focused results
+limit: 3-5 # Fast, focused results
 # Comprehensive search
-limit: 10-15         # Good coverage (recommended)
+limit: 10-15 # Good coverage (recommended)
 # Analysis operations
-limit: 20-30         # For cross-document intelligence
+limit: 20-30 # For cross-document intelligence
 ```
 #### Source Type Filtering
 ```yaml
 # Search specific sources
-source_types: ["git"]           # Only Git repositories
-source_types: ["confluence"]    # Only Confluence pages
-source_types: ["jira"]          # Only JIRA issues
-source_types: ["localfile"]     # Only local files
+source_types: ["git"] # Only Git repositories
+source_types: ["confluence"] # Only Confluence pages
+source_types: ["jira"] # Only JIRA issues
+source_types: ["localfile"] # Only local files
 # Cross-document analysis
-source_types: ["confluence", "git"]  # Documentation and code
+source_types: ["confluence", "git"] # Documentation and code
 ```
 ## 🔧 Advanced Configuration
 ### Environment Variables
@@ -395,20 +285,14 @@ The MCP server supports these configuration options:
 QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
 # Optional Configuration
-QDRANT_COLLECTION_NAME=documents        # Default: "documents"
-QDRANT_API_KEY=your-qdrant-cloud-key   # For QDrant Cloud
-MCP_DISABLE_CONSOLE_LOGGING=true       # Recommended for development tools
+QDRANT_COLLECTION_NAME=documents # Default: "documents"
+QDRANT_API_KEY=your-qdrant-cloud-key # For QDrant Cloud
+MCP_DISABLE_CONSOLE_LOGGING=true # Recommended for development tools
 ```
 ### Performance Optimization
 #### For Large Knowledge Bases
-1. **Optimize Search Parameters**
-   - Use appropriate `limit` values for your needs
-   - Filter by `source_types` or `project_ids` when possible
-   - Use specific search tools for targeted queries
-2. **Cross-Document Intelligence Tuning**
-   - Limit analysis scope with appropriate `limit` parameters
-   - Use specific queries to reduce processing overhead
-   - Filter by project or source type for focused analysis
+1. **Optimize Search Parameters** - Use appropriate `limit` values for your needs - Filter by `source_types` or `project_ids` when possible - Use specific search tools for targeted queries
+2. **Cross-Document Intelligence Tuning** - Limit analysis scope with appropriate `limit` parameters - Use specific queries to reduce processing overhead - Filter by project or source type for focused analysis
 ## 🚀 Performance Metrics
 ### Real-World Performance Results
 - **Semantic Search**: Sub-second response times for most queries

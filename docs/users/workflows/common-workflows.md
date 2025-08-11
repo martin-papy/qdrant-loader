@@ -4,22 +4,17 @@ This guide presents the most common workflows and usage patterns for QDrant Load
 QDrant Loader supports diverse workflows across different roles and use cases. Each workflow is designed to be practical, efficient, and scalable for your specific needs.
 ### Workflow Categories
 ```
-👨‍💻 Development Workflows    - Code documentation, API docs, development guides
-📝 Content Management      - Documentation updates, content curation, publishing
-👥 Team Collaboration      - Shared knowledge bases, cross-team documentation
-🔄 CI/CD Integration       - Automated documentation, deployment pipelines
-🔍 Search & Discovery      - Knowledge exploration, content finding, research
+👨‍💻 Development Workflows - Code documentation, API docs, development guides
+📝 Content Management - Documentation updates, content curation, publishing
+👥 Team Collaboration - Shared knowledge bases, cross-team documentation
+🔄 CI/CD Integration - Automated documentation, deployment pipelines
+🔍 Search & Discovery - Knowledge exploration, content finding, research
 ```
 ## 👨‍💻 Development Workflows
 ### Code Documentation Workflow
 **Use Case**: Automatically maintain up-to-date documentation from code repositories
 ```mermaid
-graph LR
-    A[Code Changes] --> B[Git Push]
-    B --> C[CI/CD Trigger]
-    C --> D[QDrant Loader Update]
-    D --> E[Vector Database]
-    E --> F[AI Tools Access]
+graph LR A[Code Changes] --> B[Git Push] B --> C[CI/CD Trigger] C --> D[QDrant Loader Update] D --> E[Vector Database] E --> F[AI Tools Access]
 ```
 **Key Steps**:
 1. **Setup**: Configure Git repository integration
@@ -37,13 +32,7 @@ graph LR
 ### API Documentation Workflow
 **Use Case**: Maintain comprehensive API documentation with examples and guides
 ```mermaid
-graph TD
-    A[OpenAPI Specs] --> B[QDrant Loader]
-    C[Code Examples] --> B
-    D[Integration Guides] --> B
-    B --> E[Vector Database]
-    E --> F[AI-Powered Search]
-    F --> G[Developer Tools]
+graph TD A[OpenAPI Specs] --> B[QDrant Loader] C[Code Examples] --> B D[Integration Guides] --> B B --> E[Vector Database] E --> F[AI-Powered Search] F --> G[Developer Tools]
 ```
 **Key Steps**:
 1. **Collection**: Gather OpenAPI specs, code examples, integration guides
@@ -61,12 +50,7 @@ graph TD
 ### Documentation Publishing Workflow
 **Use Case**: Streamlined content creation, review, and publishing process
 ```mermaid
-graph LR
-    A[Content Creation] --> B[Review Process]
-    B --> C[Approval]
-    C --> D[QDrant Loader Sync]
-    D --> E[Knowledge Base]
-    E --> F[User Access]
+graph LR A[Content Creation] --> B[Review Process] B --> C[Approval] C --> D[QDrant Loader Sync] D --> E[Knowledge Base] E --> F[User Access]
 ```
 **Key Steps**:
 1. **Creation**: Authors create content in Confluence, Git, or local files
@@ -83,12 +67,7 @@ graph LR
 ### Content Curation Workflow
 **Use Case**: Organize and maintain large content repositories
 ```mermaid
-graph TD
-    A[Multiple Sources] --> B[QDrant Loader]
-    B --> C[Content Analysis]
-    C --> D[Duplicate Detection]
-    D --> E[Quality Assessment]
-    E --> F[Curated Knowledge Base]
+graph TD A[Multiple Sources] --> B[QDrant Loader] B --> C[Content Analysis] C --> D[Duplicate Detection] D --> E[Quality Assessment] E --> F[Curated Knowledge Base]
 ```
 **Key Steps**:
 1. **Aggregation**: Collect content from multiple sources
@@ -106,13 +85,7 @@ graph TD
 ### Cross-Team Knowledge Sharing
 **Use Case**: Enable knowledge sharing across different teams and departments
 ```mermaid
-graph TD
-    A[Team A Docs] --> D[QDrant Loader]
-    B[Team B Docs] --> D
-    C[Team C Docs] --> D
-    D --> E[Unified Knowledge Base]
-    E --> F[Cross-Team Search]
-    F --> G[Knowledge Discovery]
+graph TD A[Team A Docs] --> D[QDrant Loader] B[Team B Docs] --> D C[Team C Docs] --> D D --> E[Unified Knowledge Base] E --> F[Cross-Team Search] F --> G[Knowledge Discovery]
 ```
 **Key Steps**:
 1. **Integration**: Connect documentation from all teams
@@ -129,12 +102,7 @@ graph TD
 ### Onboarding Workflow
 **Use Case**: Streamline new team member onboarding with comprehensive knowledge access
 ```mermaid
-graph LR
-    A[New Team Member] --> B[Onboarding Guide]
-    B --> C[AI-Powered Search]
-    C --> D[Relevant Documentation]
-    D --> E[Learning Path]
-    E --> F[Productive Team Member]
+graph LR A[New Team Member] --> B[Onboarding Guide] B --> C[AI-Powered Search] C --> D[Relevant Documentation] D --> E[Learning Path] E --> F[Productive Team Member]
 ```
 **Key Steps**:
 1. **Preparation**: Curate onboarding-specific content
@@ -152,12 +120,7 @@ graph LR
 ### Automated Documentation Pipeline
 **Use Case**: Fully automated documentation maintenance and deployment
 ```mermaid
-graph LR
-    A[Code/Content Changes] --> B[CI/CD Pipeline]
-    B --> C[QDrant Loader Update]
-    C --> D[Quality Checks]
-    D --> E[Deployment]
-    E --> F[Notification]
+graph LR A[Code/Content Changes] --> B[CI/CD Pipeline] B --> C[QDrant Loader Update] C --> D[Quality Checks] D --> E[Deployment] E --> F[Notification]
 ```
 **Key Steps**:
 1. **Trigger**: Changes in repositories trigger pipeline
@@ -174,14 +137,7 @@ graph LR
 ### Multi-Environment Workflow
 **Use Case**: Manage documentation across development, staging, and production environments
 ```mermaid
-graph TD
-    A[Development] --> B[QDrant Loader Dev]
-    B --> C[Testing]
-    C --> D[Staging]
-    D --> E[QDrant Loader Staging]
-    E --> F[Validation]
-    F --> G[Production]
-    G --> H[QDrant Loader Prod]
+graph TD A[Development] --> B[QDrant Loader Dev] B --> C[Testing] C --> D[Staging] D --> E[QDrant Loader Staging] E --> F[Validation] F --> G[Production] G --> H[QDrant Loader Prod]
 ```
 **Key Steps**:
 1. **Development**: Test documentation changes in dev environment
@@ -199,12 +155,7 @@ graph TD
 ### Research and Analysis Workflow
 **Use Case**: Comprehensive research using organizational knowledge
 ```mermaid
-graph LR
-    A[Research Question] --> B[AI-Powered Search]
-    B --> C[Relevant Content]
-    C --> D[Analysis]
-    D --> E[Insights]
-    E --> F[Documentation]
+graph LR A[Research Question] --> B[AI-Powered Search] B --> C[Relevant Content] C --> D[Analysis] D --> E[Insights] E --> F[Documentation]
 ```
 **Key Steps**:
 1. **Query**: Formulate research questions
@@ -221,11 +172,7 @@ graph LR
 ### Content Discovery Workflow
 **Use Case**: Help users discover relevant content they didn't know existed
 ```mermaid
-graph TD
-    A[User Intent] --> B[Semantic Search]
-    B --> C[Related Content]
-    C --> D[Content Exploration]
-    D --> E[Knowledge Expansion]
+graph TD A[User Intent] --> B[Semantic Search] B --> C[Related Content] C --> D[Content Exploration] D --> E[Knowledge Expansion]
 ```
 **Key Steps**:
 1. **Intent**: User expresses information need
@@ -281,9 +228,7 @@ graph TD
 ```
 ### 3. Start Simple
 ```bash
-# Begin with basic workflow:
-\1 init --workspace .
-\1 ingest --workspace .
+# Begin with basic workflow:\1init --workspace .\1ingest --workspace .
 mcp-qdrant-loader
 ```
 ### 4. Iterate and Improve

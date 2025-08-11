@@ -10,25 +10,12 @@ When you connect a Git repository, QDrant Loader can process:
 ## 🔧 Authentication Setup
 ### GitHub
 #### Personal Access Token (Recommended)
-1. **Create a Personal Access Token**:
-   - Go to GitHub Settings → Developer settings → Personal access tokens
-   - Click "Generate new token (classic)"
-   - Select scopes: `repo` (for private repos) or `public_repo` (for public repos only)
-   - Copy the token (starts with `ghp_`)
-2. **Set environment variable**:
-   ```bash
-   export REPO_TOKEN=ghp_your_github_token_here
-   ```
+1. **Create a Personal Access Token**: - Go to GitHub Settings → Developer settings → Personal access tokens - Click "Generate new token (classic)" - Select scopes: `repo` (for private repos) or `public_repo` (for public repos only) - Copy the token (starts with `ghp_`)
+2. **Set environment variable**: ```bash export REPO_TOKEN=ghp_your_github_token_here ```
 ### GitLab
 #### Personal Access Token
-1. **Create a Personal Access Token**:
-   - Go to GitLab Settings → Access Tokens
-   - Create token with `read_repository` scope
-   - Copy the token
-2. **Set environment variable**:
-   ```bash
-   export REPO_TOKEN=glpat_your_gitlab_token_here
-   ```
+1. **Create a Personal Access Token**: - Go to GitLab Settings → Access Tokens - Create token with `read_repository` scope - Copy the token
+2. **Set environment variable**: ```bash export REPO_TOKEN=glpat_your_gitlab_token_here ```
 ### Other Git Providers
 For other Git providers (Bitbucket, self-hosted), use their respective token systems:
 ```bash
@@ -38,127 +25,15 @@ export REPO_TOKEN=your_access_token_here
 QDrant Loader uses a **project-based configuration structure**. Each project can have multiple Git repository sources.
 ### Basic Configuration
 ```yaml
-projects:
-  my-project:
-    display_name: "My Code Project"
-    description: "Source code and documentation"
-    collection_name: "my-code"
-    sources:
-      git:
-        main-repo:
-          base_url: "https://github.com/your-org/your-repo.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "docs/**"
-            - "src/**"
-            - "README.md"
-          exclude_paths:
-            - "node_modules/**"
-            - "build/**"
-          file_types:
-            - "*.md"
-            - "*.py"
-            - "*.js"
-          max_file_size: 1048576  # 1MB
-          depth: 1
-          enable_file_conversion: true
+projects: my-project: display_name: "My Code Project" description: "Source code and documentation" collection_name: "my-code" sources: git: main-repo: base_url: "https://github.com/your-org/your-repo.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "docs/**" - "src/**" - "README.md" exclude_paths: - "node_modules/**" - "build/**" file_types: - "*.md" - "*.py" - "*.js" max_file_size: 1048576 # 1MB depth: 1 enable_file_conversion: true
 ```
 ### Advanced Configuration
 ```yaml
-projects:
-  development:
-    display_name: "Development Project"
-    description: "Multiple repositories for development"
-    collection_name: "dev-docs"
-    sources:
-      git:
-        # Frontend repository
-        frontend-repo:
-          base_url: "https://github.com/your-org/frontend.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "src/**"
-            - "docs/**"
-            - "README.md"
-          exclude_paths:
-            - "node_modules/**"
-            - "dist/**"
-            - "build/**"
-          file_types:
-            - "*.js"
-            - "*.jsx"
-            - "*.ts"
-            - "*.tsx"
-            - "*.md"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
-        # Backend repository
-        backend-repo:
-          base_url: "https://github.com/your-org/backend.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "src/**"
-            - "docs/**"
-            - "README.md"
-          exclude_paths:
-            - "__pycache__/**"
-            - "venv/**"
-            - ".pytest_cache/**"
-          file_types:
-            - "*.py"
-            - "*.md"
-            - "*.yaml"
-            - "*.json"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
+projects: development: display_name: "Development Project" description: "Multiple repositories for development" collection_name: "dev-docs" sources: git: # Frontend repository frontend-repo: base_url: "https://github.com/your-org/frontend.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "src/**" - "docs/**" - "README.md" exclude_paths: - "node_modules/**" - "dist/**" - "build/**" file_types: - "*.js" - "*.jsx" - "*.ts" - "*.tsx" - "*.md" max_file_size: 1048576 depth: 1 enable_file_conversion: true # Backend repository backend-repo: base_url: "https://github.com/your-org/backend.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "src/**" - "docs/**" - "README.md" exclude_paths: - "__pycache__/**" - "venv/**" - ".pytest_cache/**" file_types: - "*.py" - "*.md" - "*.yaml" - "*.json" max_file_size: 1048576 depth: 1 enable_file_conversion: true
 ```
 ### Multiple Repositories
 ```yaml
-projects:
-  multi-repo:
-    display_name: "Multi-Repository Project"
-    description: "Documentation from multiple repositories"
-    collection_name: "multi-repo-docs"
-    sources:
-      git:
-        # Documentation repository
-        docs-repo:
-          base_url: "https://github.com/your-org/docs.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "docs/**"
-            - "README.md"
-          exclude_paths: []
-          file_types:
-            - "*.md"
-            - "*.rst"
-            - "*.txt"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
-        # API documentation
-        api-docs:
-          base_url: "https://github.com/your-org/api-docs.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "**/*.md"
-            - "**/*.yaml"
-          exclude_paths:
-            - "archive/**"
-          file_types:
-            - "*.md"
-            - "*.yaml"
-            - "*.json"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
+projects: multi-repo: display_name: "Multi-Repository Project" description: "Documentation from multiple repositories" collection_name: "multi-repo-docs" sources: git: # Documentation repository docs-repo: base_url: "https://github.com/your-org/docs.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "docs/**" - "README.md" exclude_paths: [] file_types: - "*.md" - "*.rst" - "*.txt" max_file_size: 1048576 depth: 1 enable_file_conversion: true # API documentation api-docs: base_url: "https://github.com/your-org/api-docs.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "**/*.md" - "**/*.yaml" exclude_paths: - "archive/**" file_types: - "*.md" - "*.yaml" - "*.json" max_file_size: 1048576 depth: 1 enable_file_conversion: true
 ```
 ## 🎯 Configuration Options
 ### Required Settings
@@ -182,151 +57,29 @@ projects:
 ## 🚀 Usage Examples
 ### Software Development Team
 ```yaml
-projects:
-  dev-team:
-    display_name: "Development Team"
-    description: "Source code and technical documentation"
-    collection_name: "dev-code"
-    sources:
-      git:
-        # Main application repository
-        main-app:
-          base_url: "https://github.com/company/main-app.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "src/**"
-            - "docs/**"
-            - "README.md"
-            - "CHANGELOG.md"
-          exclude_paths:
-            - "tests/**"
-            - "node_modules/**"
-            - "__pycache__/**"
-          file_types:
-            - "*.py"
-            - "*.js"
-            - "*.ts"
-            - "*.md"
-            - "*.yaml"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
-        # Shared libraries
-        shared-libs:
-          base_url: "https://github.com/company/shared-libs.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "lib/**"
-            - "docs/**"
-          exclude_paths:
-            - "tests/**"
-          file_types:
-            - "*.py"
-            - "*.js"
-            - "*.md"
-          max_file_size: 524288  # 512KB
-          depth: 1
-          enable_file_conversion: true
+projects: dev-team: display_name: "Development Team" description: "Source code and technical documentation" collection_name: "dev-code" sources: git: # Main application repository main-app: base_url: "https://github.com/company/main-app.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "src/**" - "docs/**" - "README.md" - "CHANGELOG.md" exclude_paths: - "tests/**" - "node_modules/**" - "__pycache__/**" file_types: - "*.py" - "*.js" - "*.ts" - "*.md" - "*.yaml" max_file_size: 1048576 depth: 1 enable_file_conversion: true # Shared libraries shared-libs: base_url: "https://github.com/company/shared-libs.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "lib/**" - "docs/**" exclude_paths: - "tests/**" file_types: - "*.py" - "*.js" - "*.md" max_file_size: 524288 # 512KB depth: 1 enable_file_conversion: true
 ```
 ### Documentation Team
 ```yaml
-projects:
-  docs-team:
-    display_name: "Documentation Team"
-    description: "All documentation repositories"
-    collection_name: "documentation"
-    sources:
-      git:
-        # Main documentation
-        main-docs:
-          base_url: "https://github.com/company/documentation.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "docs/**"
-            - "guides/**"
-            - "README.md"
-          exclude_paths:
-            - "archive/**"
-          file_types:
-            - "*.md"
-            - "*.rst"
-            - "*.txt"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
-        # API documentation
-        api-docs:
-          base_url: "https://github.com/company/api-docs.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "**/*.md"
-            - "**/*.yaml"
-          exclude_paths: []
-          file_types:
-            - "*.md"
-            - "*.yaml"
-            - "*.json"
-          max_file_size: 1048576
-          depth: 1
-          enable_file_conversion: true
+projects: docs-team: display_name: "Documentation Team" description: "All documentation repositories" collection_name: "documentation" sources: git: # Main documentation main-docs: base_url: "https://github.com/company/documentation.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "docs/**" - "guides/**" - "README.md" exclude_paths: - "archive/**" file_types: - "*.md" - "*.rst" - "*.txt" max_file_size: 1048576 depth: 1 enable_file_conversion: true # API documentation api-docs: base_url: "https://github.com/company/api-docs.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "**/*.md" - "**/*.yaml" exclude_paths: [] file_types: - "*.md" - "*.yaml" - "*.json" max_file_size: 1048576 depth: 1 enable_file_conversion: true
 ```
 ### Research Team
 ```yaml
-projects:
-  research-team:
-    display_name: "Research Team"
-    description: "Research code and documentation"
-    collection_name: "research"
-    sources:
-      git:
-        # Analysis tools
-        analysis-tools:
-          base_url: "https://github.com/research-org/analysis-tools.git"
-          branch: "main"
-          token: "${REPO_TOKEN}"
-          include_paths:
-            - "src/**"
-            - "notebooks/**"
-            - "docs/**"
-            - "README.md"
-          exclude_paths:
-            - "data/**"
-            - "output/**"
-          file_types:
-            - "*.py"
-            - "*.ipynb"
-            - "*.md"
-            - "*.txt"
-          max_file_size: 2097152  # 2MB for notebooks
-          depth: 1
-          enable_file_conversion: true
+projects: research-team: display_name: "Research Team" description: "Research code and documentation" collection_name: "research" sources: git: # Analysis tools analysis-tools: base_url: "https://github.com/research-org/analysis-tools.git" branch: "main" token: "${REPO_TOKEN}" include_paths: - "src/**" - "notebooks/**" - "docs/**" - "README.md" exclude_paths: - "data/**" - "output/**" file_types: - "*.py" - "*.ipynb" - "*.md" - "*.txt" max_file_size: 2097152 # 2MB for notebooks depth: 1 enable_file_conversion: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Test Configuration
 ```bash
-# Initialize the project (creates collection if needed)
-\1 init --workspace .
-# Test ingestion with your Git configuration
-\1 ingest --workspace . --project my-project
-# Check project status
-\1 project \3 --workspace \2 --project-id my-project
-# List all configured projects
-\1 project \3 --workspace \2
-# Validate project configuration
-\1 project \3 --workspace \2 --project-id my-project
+# Initialize the project (creates collection if needed)\1init --workspace .
+# Test ingestion with your Git configuration\1ingest --workspace . --project my-project
+# Check project status\1project\1--workspace\1--project-id my-project
+# List all configured projects\1project\1--workspace\1# Validate project configuration\1project\1--workspace\1--project-id my-project
 ```
 ### Debug Git Processing
 ```bash
-# Enable debug logging
-\1 ingest --workspace . --log-level DEBUG --project my-project
-# Process specific project only
-\1 ingest --workspace . --project my-project
-# Process specific source within a project
-\1 ingest --workspace . --project my-project --source-type git --source main-repo
+# Enable debug logging\1ingest --workspace . --log-level DEBUG --project my-project
+# Process specific project only\1ingest --workspace . --project my-project
+# Process specific source within a project\1ingest --workspace . --project my-project --source-type git --source main-repo
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -348,99 +101,27 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 #### Repository Access Issues
 **Problem**: `Repository not found` or `No permission to access repository`
 **Solutions**:
-1. **Verify repository URL**:
-   - Ensure the URL is correct and includes `.git` extension
-   - Check if the repository is public or private
-   - Verify you have access to the repository
-2. **Check authentication**:
-   ```bash
-   # Test manual clone
-   git clone https://github.com/org/repo.git /tmp/test-clone
-   ```
-3. **Verify token permissions**:
-   - For GitHub: Ensure token has `repo` scope for private repos
-   - For GitLab: Ensure token has `read_repository` scope
+1. **Verify repository URL**: - Ensure the URL is correct and includes `.git` extension - Check if the repository is public or private - Verify you have access to the repository
+2. **Check authentication**: ```bash # Test manual clone git clone https://github.com/org/repo.git /tmp/test-clone ```
+3. **Verify token permissions**: - For GitHub: Ensure token has `repo` scope for private repos - For GitLab: Ensure token has `read_repository` scope
 #### Configuration Issues
 **Problem**: Configuration validation errors
 **Solutions**:
-1. **Verify project structure**:
-   ```yaml
-   projects:
-     your-project:  # Project ID
-       sources:
-         git:
-           source-name:  # Source name
-             base_url: "..."
-             # ... other settings
-   ```
-2. **Check required fields**:
-   - `base_url`: Must be a valid Git repository URL
-   - `branch`: Must be a valid branch name
-   - `token`: Must be set via environment variable
-   - `file_types`: Must be a non-empty list
-3. **Validate file patterns**:
-   ```yaml
-   file_types:
-     - "*.md"    # Correct
-     - "*.py"    # Correct
-   include_paths:
-     - "docs/**" # Correct glob pattern
-     - "src/**"  # Correct glob pattern
-   ```
+1. **Verify project structure**: ```yaml projects: your-project: # Project ID sources: git: source-name: # Source name base_url: "..." # ... other settings ```
+2. **Check required fields**: - `base_url`: Must be a valid Git repository URL - `branch`: Must be a valid branch name - `token`: Must be set via environment variable - `file_types`: Must be a non-empty list
+3. **Validate file patterns**: ```yaml file_types: - "*.md" # Correct - "*.py" # Correct include_paths: - "docs/**" # Correct glob pattern - "src/**" # Correct glob pattern ```
 #### Large Repository Performance
 **Problem**: Processing takes too long or uses too much memory
 **Solutions**:
-1. **Filter paths aggressively**:
-   ```yaml
-   git:
-     large-repo:
-       include_paths:
-         - "docs/**"
-         - "README.md"
-       exclude_paths:
-         - "node_modules/**"
-         - "build/**"
-         - "dist/**"
-         - ".git/**"
-   ```
-2. **Limit file types**:
-   ```yaml
-   git:
-     focused-repo:
-       file_types:
-         - "*.md"
-         - "*.py"
-       # Skip binary files, images, etc.
-   ```
-3. **Set file size limits**:
-   ```yaml
-   git:
-     size-limited:
-       max_file_size: 524288  # 512KB
-   ```
+1. **Filter paths aggressively**: ```yaml git: large-repo: include_paths: - "docs/**" - "README.md" exclude_paths: - "node_modules/**" - "build/**" - "dist/**" - ".git/**" ```
+2. **Limit file types**: ```yaml git: focused-repo: file_types: - "*.md" - "*.py" # Skip binary files, images, etc. ```
+3. **Set file size limits**: ```yaml git: size-limited: max_file_size: 524288 # 512KB ```
 #### File Processing Errors
 **Problem**: Some files fail to process
 **Solutions**:
-1. **Check file size limits**:
-   ```yaml
-   git:
-     repo-with-limits:
-       max_file_size: 1048576  # 1MB
-   ```
-2. **Verify file types**:
-   ```yaml
-   git:
-     text-only:
-       file_types:
-         - "*.md"
-         - "*.txt"
-         - "*.py"
-         - "*.js"
-       # Avoid binary files
-   ```
-3. **Check file paths**:
-   - Ensure include/exclude patterns are correct
-   - Verify files exist in the specified paths
+1. **Check file size limits**: ```yaml git: repo-with-limits: max_file_size: 1048576 # 1MB ```
+2. **Verify file types**: ```yaml git: text-only: file_types: - "*.md" - "*.txt" - "*.py" - "*.js" # Avoid binary files ```
+3. **Check file paths**: - Ensure include/exclude patterns are correct - Verify files exist in the specified paths
 ### Debugging Commands
 ```bash
 # Check Git configuration
@@ -450,26 +131,17 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 # Check file patterns locally
 find /tmp/test-repo -name "*.py" | head -10
 # Verify authentication
-curl -H "Authorization: token $REPO_TOKEN" \
-  https://api.github.com/repos/org/repo
+curl -H "Authorization: token $REPO_TOKEN" \ https://api.github.com/repos/org/repo
 ```
 ## 📊 Monitoring and Processing
 ### Check Processing Status
 ```bash
-# View project status
-\1 project \3 --workspace \2
-# Check specific project
-\1 project \3 --workspace \2 --project-id my-project
-# List all projects
-\1 project \3 --workspace \2
-```
+# View project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
+# List all projects\1project\1--workspace\1```
 ### Configuration Management
 ```bash
-# View current configuration
-\1 config --workspace .
-# Validate all projects
-\1 project \3 --workspace \2
-```
+# View current configuration\1config --workspace .
+# Validate all projects\1project\1--workspace\1```
 ## 🔄 Best Practices
 ### Repository Organization
 1. **Use specific branches** - Process stable branches like `main` or `release`
@@ -477,32 +149,10 @@ curl -H "Authorization: token $REPO_TOKEN" \
 3. **Set size limits** - Avoid processing very large files
 4. **Exclude build artifacts** - Skip generated files and dependencies
 ### Path Filtering
-1. **Include specific paths**:
-   ```yaml
-   include_paths:
-     - "docs/**"
-     - "src/**"
-     - "README.md"
-   ```
-2. **Exclude unnecessary paths**:
-   ```yaml
-   exclude_paths:
-     - "node_modules/**"
-     - "build/**"
-     - "dist/**"
-     - "__pycache__/**"
-     - ".git/**"
-   ```
+1. **Include specific paths**: ```yaml include_paths: - "docs/**" - "src/**" - "README.md" ```
+2. **Exclude unnecessary paths**: ```yaml exclude_paths: - "node_modules/**" - "build/**" - "dist/**" - "__pycache__/**" - ".git/**" ```
 ### File Type Selection
-1. **Focus on text files**:
-   ```yaml
-   file_types:
-     - "*.md"
-     - "*.py"
-     - "*.js"
-     - "*.yaml"
-     - "*.json"
-   ```
+1. **Focus on text files**: ```yaml file_types: - "*.md" - "*.py" - "*.js" - "*.yaml" - "*.json" ```
 2. **Avoid binary files** - They don't provide searchable content
 ### Performance Optimization
 1. **Use shallow clones** - Set `depth: 1` for faster cloning
