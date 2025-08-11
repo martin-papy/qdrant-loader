@@ -126,7 +126,8 @@ Fixes #456"
 ```bash
 # Ensure workspace config is in the correct location
 ls -la config.yaml
-# If missing, create with:qdrant-loader init --workspace .
+# If missing, create with:
+qdrant-loader init --workspace .
 ```
 **Fixed In**: Version 1.2.1
 ```
@@ -204,7 +205,10 @@ Example:
 ## 🔧 Tools and Automation
 ### Manual Documentation Testing
 ```bash
-# Test CLI commands manuallyqdrant-loader init --workspace .qdrant-loader ingest --workspace .qdrant-loader config --workspace .
+# Test CLI commands manually
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
+qdrant-loader config --workspace .
 # Validate YAML configuration files
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 # Check for broken internal links manually
@@ -226,7 +230,8 @@ qdrant-loader --help
 qdrant-loader init --help
 qdrant-loader ingest --help
 # Check configuration examples
-cd examples/workspaceqdrant-loader config --workspace .
+cd examples/workspace
+qdrant-loader config --workspace .
 # Validate project structure
 make test # Run actual test suite
 ```
@@ -287,7 +292,10 @@ cp docs/users/detailed-guides/data-sources/git-repositories.md \ docs/users/deta
 ## 📋 Quick Reference
 ### Common Commands
 ```bash
-# Test CLI commandsqdrant-loader init --workspace .qdrant-loader ingest --workspace .qdrant-loader config --workspace .
+# Test CLI commands
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
+qdrant-loader config --workspace .
 qdrant-loader project list --workspace .
 # Find references to a feature
 grep -r "feature_name" docs/ --include="*.md"
