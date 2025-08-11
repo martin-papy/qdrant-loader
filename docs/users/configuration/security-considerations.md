@@ -145,7 +145,7 @@ chmod 700 .
 # Create configuration files
 touch .env config.yaml
 chmod 600 .env config.yaml
-# Run in workspace mode\1project\1--workspace\1\1 ingest --workspace .
+# Run in workspace mode\1project\1--workspace\1qdrant-loader ingest --workspace .
 ```
 **Important:** In workspace mode, `state_management.database_path` in config.yaml is ignored for security - the state database is automatically placed in the workspace directory.
 ## 🔍 Monitoring and Logging
@@ -204,7 +204,9 @@ OPENAI_API_KEY=sk-your-openai-api-key
 ```yaml
 # config.yaml - Minimal secure configuration
 global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
-projects: default-project: project_id: "default-project" display_name: "Default Project" sources: {}
+projects:
+  default-project:
+    project_id: "default-project" display_name: "Default Project" sources: {}
 ```
 ### Production Security Configuration
 ```bash
@@ -227,7 +229,9 @@ MCP_DISABLE_CONSOLE_LOGGING=true
 ```yaml
 # config.yaml - Production secure configuration
 global_config: qdrant: url: "https://your-qdrant-cluster.qdrant.io" api_key: "${QDRANT_API_KEY}" collection_name: "production_documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" state_management: database_path: "/secure/path/state.db"
-projects: knowledge-base: project_id: "knowledge-base" display_name: "Company Knowledge Base" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" jira: support-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" email: "${JIRA_EMAIL}" token: "${JIRA_TOKEN}" git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.rst"]
+projects:
+  knowledge-base:
+    project_id: "knowledge-base" display_name: "Company Knowledge Base" sources: confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_TOKEN}" jira: support-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" email: "${JIRA_EMAIL}" token: "${JIRA_TOKEN}" git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.rst"]
 ```
 ## 🔗 Related Documentation
 - **[Environment Variables Reference](./environment-variables.md)** - Complete environment variable list

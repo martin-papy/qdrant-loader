@@ -22,23 +22,31 @@ projects: # Project definitions project-1: # Project ID project_id: "project-1" 
 ### Minimal Configuration
 ```yaml
 # config.yaml - Minimal multi-project configuration
-global: qdrant: url: "http://localhost:6333" collection_name: "documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
-projects: my-project: project_id: "my-project" display_name: "My Project" description: "Basic project setup" sources: git: my-repo: base_url: "https://github.com/user/repo.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.txt"]
+global:
+  qdrant: url: "http://localhost:6333" collection_name: "documents" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small"
+projects:
+  my-project:
+    project_id: "my-project" display_name: "My Project" description: "Basic project setup" sources:
+      git: my-repo: base_url: "https://github.com/user/repo.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.txt"]
 ```
 ### Complete Configuration Template
 ```yaml
 # config.yaml - Complete multi-project configuration template
-global: # QDrant vector database configuration qdrant: url: "http://localhost:6333" api_key: "${QDRANT_API_KEY}" # Optional: for QDrant Cloud collection_name: "documents" # Embedding model configuration embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # Text chunking configuration chunking: chunk_size: 1500 chunk_overlap: 200 max_chunks_per_document: 500 strategies: default: min_chunk_size: 100 enable_semantic_analysis: true enable_entity_extraction: true html: simple_parsing_threshold: 100000 max_html_size_for_parsing: 500000 max_sections_to_process: 200 max_chunk_size_for_nlp: 20000 preserve_semantic_structure: true code: max_file_size_for_ast: 75000 max_elements_to_process: 800 max_recursion_depth: 8 max_element_size: 20000 enable_ast_parsing: true enable_dependency_analysis: true json: max_json_size_for_parsing: 1000000 max_objects_to_process: 200 max_chunk_size_for_nlp: 20000 max_recursion_depth: 5 max_array_items_per_chunk: 50 max_object_keys_to_process: 100 enable_schema_inference: true markdown: min_content_length_for_nlp: 100 min_word_count_for_nlp: 20 min_line_count_for_nlp: 3 min_section_size: 500 max_chunks_per_section: 1000 max_overlap_percentage: 0.25 max_workers: 4 estimation_buffer: 0.2 words_per_minute_reading: 200 header_analysis_threshold_h1: 3 header_analysis_threshold_h3: 8 enable_hierarchical_metadata: true # Semantic analysis configuration semantic_analysis: num_topics: 3 lda_passes: 10 spacy_model: "en_core_web_md" # State management configuration state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_" connection_pool: size: 5 timeout: 30 # File conversion configuration file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}"
+global: # QDrant vector database configuration qdrant: url: "http://localhost:6333" api_key: "${QDRANT_API_KEY}" # Optional: for QDrant Cloud collection_name: "documents" # Embedding model configuration embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 # Text chunking configuration chunking:
+    chunk_size: 1500 chunk_overlap: 200 max_chunks_per_document: 500 strategies: default: min_chunk_size: 100 enable_semantic_analysis: true enable_entity_extraction: true html: simple_parsing_threshold: 100000 max_html_size_for_parsing: 500000 max_sections_to_process: 200 max_chunk_size_for_nlp: 20000 preserve_semantic_structure: true code: max_file_size_for_ast: 75000 max_elements_to_process: 800 max_recursion_depth: 8 max_element_size: 20000 enable_ast_parsing: true enable_dependency_analysis: true json: max_json_size_for_parsing: 1000000 max_objects_to_process: 200 max_chunk_size_for_nlp: 20000 max_recursion_depth: 5 max_array_items_per_chunk: 50 max_object_keys_to_process: 100 enable_schema_inference: true markdown: min_content_length_for_nlp: 100 min_word_count_for_nlp: 20 min_line_count_for_nlp: 3 min_section_size: 500 max_chunks_per_section: 1000 max_overlap_percentage: 0.25 max_workers: 4 estimation_buffer: 0.2 words_per_minute_reading: 200 header_analysis_threshold_h1: 3 header_analysis_threshold_h3: 8 enable_hierarchical_metadata: true # Semantic analysis configuration semantic_analysis: num_topics: 3 lda_passes: 10 spacy_model: "en_core_web_md" # State management configuration state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_" connection_pool: size: 5 timeout: 30 # File conversion configuration file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 # 5 minutes markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}"
 # Multi-project configuration
 # Define multiple projects, each with their own sources and settings
 # All projects use the global collection_name defined above
-projects: # Example project: Documentation docs-project: project_id: "docs-project" display_name: "Documentation Project" description: "Company documentation and guides" sources: # Git repository sources git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" include_paths: ["docs/**", "README.md"] exclude_paths: ["docs/archive/**"] file_types: ["*.md", "*.rst", "*.txt"] max_file_size: 1048576 # 1MB depth: 1 token: "${DOCS_REPO_TOKEN}" # Required for private repos enable_file_conversion: true # Confluence sources confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" content_types: ["page", "blogpost"] include_labels: [] exclude_labels: [] token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" enable_file_conversion: true download_attachments: true # Example project: Support Knowledge Base support-project: project_id: "support-project" display_name: "Support Knowledge Base" description: "Customer support documentation and tickets" sources: # JIRA sources jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" requests_per_minute: 60 page_size: 100 issue_types: ["Bug", "Story", "Task"] # Optional: filter by issue types include_statuses: ["Open", "In Progress", "Done"] # Optional: filter by status token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" enable_file_conversion: true download_attachments: true # Local file sources localfile: support-docs: base_url: "file:///path/to/support/docs" include_paths: ["**/*.md", "**/*.pdf"] exclude_paths: ["tmp/**", "archive/**"] file_types: ["*.md", "*.pdf", "*.txt"] max_file_size: 52428800 # 50MB enable_file_conversion: true
+projects: # Example project: Documentation docs-project: project_id: "docs-project" display_name: "Documentation Project" description: "Company documentation and guides" sources: # Git repository sources git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" include_paths: ["docs/**", "README.md"] exclude_paths: ["docs/archive/**"] file_types: ["*.md", "*.rst", "*.txt"] max_file_size: 1048576 # 1MB depth: 1 token: "${DOCS_REPO_TOKEN}" # Required for private repos enable_file_conversion: true # Confluence sources confluence: company-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" content_types: ["page", "blogpost"] include_labels: [] exclude_labels: [] token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" enable_file_conversion: true download_attachments: true # Example project: Support Knowledge Base support-project: project_id: "support-project" display_name: "Support Knowledge Base" description: "Customer support documentation and tickets" sources: # JIRA sources jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" requests_per_minute: 60 page_size: 100 issue_types: ["Bug", "Story", "Task"] # Optional: filter by issue types include_statuses: ["Open", "In Progress", "Done"] # Optional: filter by status token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" enable_file_conversion: true download_attachments: true # Local file sources localfile:
+        support-docs:
+          base_url: "file:///path/to/support/docs" include_paths: ["**/*.md", "**/*.pdf"] exclude_paths: ["tmp/**", "archive/**"] file_types: ["*.md", "*.pdf", "*.txt"] max_file_size: 52428800 # 50MB enable_file_conversion: true
 ```
 ## 🔧 Detailed Configuration Sections
 ### Global Configuration (`global`)
 #### QDrant Database Configuration
 ```yaml
-global: qdrant: # Required: URL of your QDrant database instance url: "http://localhost:6333" # Optional: API key for QDrant Cloud or secured instances api_key: "${QDRANT_API_KEY}" # Required: Name of the QDrant collection (shared by all projects) collection_name: "documents"
+global:
+  qdrant: # Required: URL of your QDrant database instance url: "http://localhost:6333" # Optional: API key for QDrant Cloud or secured instances api_key: "${QDRANT_API_KEY}" # Required: Name of the QDrant collection (shared by all projects) collection_name: "documents"
 ```
 **Required Fields:**
 - `url` - QDrant instance URL
@@ -128,7 +136,8 @@ projects: project-id: # Unique project identifier project_id: "project-id" # Mus
 QDrant Loader supports five data source types:
 ##### Git Repository Sources
 ```yaml
-sources: git: source-name: # Required: Repository URL base_url: "https://github.com/user/repo.git" # Required: Authentication token for accessing the repository token: "${REPO_TOKEN}" # Required: File extensions to process (at least one required) file_types: - "*.md" - "*.rst" - "*.txt" # Optional: Branch to process (default: "main") branch: "main" # Optional: Paths to include (glob patterns) include_paths: - "docs/**" - "README.md" # Optional: Paths to exclude (glob patterns) exclude_paths: - "node_modules/**" - ".git/**" # Optional: Maximum file size in bytes (default: 1MB) max_file_size: 1048576 # Optional: Maximum directory depth (default: 1) depth: 1 # Optional: Enable file conversion (default: false) enable_file_conversion: true
+sources:
+      git: source-name: # Required: Repository URL base_url: "https://github.com/user/repo.git" # Required: Authentication token for accessing the repository token: "${REPO_TOKEN}" # Required: File extensions to process (at least one required) file_types: - "*.md" - "*.rst" - "*.txt" # Optional: Branch to process (default: "main") branch: "main" # Optional: Paths to include (glob patterns) include_paths: - "docs/**" - "README.md" # Optional: Paths to exclude (glob patterns) exclude_paths: - "node_modules/**" - ".git/**" # Optional: Maximum file size in bytes (default: 1MB) max_file_size: 1048576 # Optional: Maximum directory depth (default: 1) depth: 1 # Optional: Enable file conversion (default: false) enable_file_conversion: true
 ```
 **Note:** The `token` field is required, even for public repositories.
 ##### Confluence Sources
@@ -157,7 +166,9 @@ mkdir my-workspace && cd my-workspace
 curl -o config.yaml https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml
 curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/.env.template
 # Edit configuration files
-# Then use workspace mode\1init --workspace .\1ingest --workspace .
+# Then use workspace mode
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 ```
 #### Traditional Mode
 ```bash
@@ -169,19 +180,19 @@ qdrant-loader --config /path/to/config.yaml --env /path/to/.env ingest
 #### Validate Configuration
 ```bash
 # Validate all project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
-# View current configuration\1config --workspace .
+qdrant-loader project validate --workspace . --project-id my-project
+# View current configurationqdrant-loader config --workspace .
 ```
 #### Project Management
 ```bash
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Show project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 ```
 ## 📋 Environment Variables
 Configuration files support environment variable substitution using `${VARIABLE_NAME}` syntax:
@@ -210,13 +221,24 @@ JIRA_EMAIL=your_email
 ## 🎯 Configuration Examples
 ### Single Project Setup
 ```yaml
-global: qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" state_management: database_path: "${STATE_DB_PATH}"
-projects: main: project_id: "main" display_name: "Main Project" description: "Primary documentation project" sources: git: docs: base_url: "https://github.com/company/docs.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.rst"] enable_file_conversion: true
+global:
+  qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" state_management: database_path: "${STATE_DB_PATH}"
+projects:
+  main:
+    project_id: "main" display_name: "Main Project" description: "Primary documentation project" sources:
+      git: docs: base_url: "https://github.com/company/docs.git" branch: "main" token: "${REPO_TOKEN}" file_types: ["*.md", "*.rst"] enable_file_conversion: true
 ```
 ### Multi-Project Setup
 ```yaml
-global: qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking: chunk_size: 1500 chunk_overlap: 200 max_chunks_per_document: 500 strategies: default: min_chunk_size: 100 enable_semantic_analysis: true enable_entity_extraction: true html: simple_parsing_threshold: 100000 max_html_size_for_parsing: 500000 max_sections_to_process: 200 max_chunk_size_for_nlp: 20000 preserve_semantic_structure: true code: max_file_size_for_ast: 75000 max_elements_to_process: 800 max_recursion_depth: 8 max_element_size: 20000 enable_ast_parsing: true enable_dependency_analysis: true json: max_json_size_for_parsing: 1000000 max_objects_to_process: 200 max_chunk_size_for_nlp: 20000 max_recursion_depth: 5 max_array_items_per_chunk: 50 max_object_keys_to_process: 100 enable_schema_inference: true markdown: min_content_length_for_nlp: 100 min_word_count_for_nlp: 20 min_line_count_for_nlp: 3 min_section_size: 500 max_chunks_per_section: 1000 max_overlap_percentage: 0.25 max_workers: 4 estimation_buffer: 0.2 words_per_minute_reading: 200 header_analysis_threshold_h1: 3 header_analysis_threshold_h3: 8 enable_hierarchical_metadata: true state_management: database_path: "${STATE_DB_PATH}" file_conversion: max_file_size: 52428800 markitdown: enable_llm_descriptions: false
-projects: documentation: project_id: "documentation" display_name: "Documentation" description: "Technical documentation and guides" sources: git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" include_paths: ["docs/**", "README.md"] token: "${DOCS_REPO_TOKEN}" file_types: ["*.md", "*.rst"] enable_file_conversion: true confluence: tech-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "TECH" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" enable_file_conversion: true support: project_id: "support" display_name: "Customer Support" description: "Support documentation and tickets" sources: jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" enable_file_conversion: true localfile: support-docs: base_url: "file:///path/to/support/docs" include_paths: ["**/*.md", "**/*.pdf"] file_types: ["*.md", "*.pdf"] enable_file_conversion: true
+global:
+  qdrant: url: "${QDRANT_URL}" collection_name: "${QDRANT_COLLECTION_NAME}" embedding: endpoint: "https://api.openai.com/v1" api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking:
+    chunk_size: 1500 chunk_overlap: 200 max_chunks_per_document: 500 strategies: default: min_chunk_size: 100 enable_semantic_analysis: true enable_entity_extraction: true html: simple_parsing_threshold: 100000 max_html_size_for_parsing: 500000 max_sections_to_process: 200 max_chunk_size_for_nlp: 20000 preserve_semantic_structure: true code: max_file_size_for_ast: 75000 max_elements_to_process: 800 max_recursion_depth: 8 max_element_size: 20000 enable_ast_parsing: true enable_dependency_analysis: true json: max_json_size_for_parsing: 1000000 max_objects_to_process: 200 max_chunk_size_for_nlp: 20000 max_recursion_depth: 5 max_array_items_per_chunk: 50 max_object_keys_to_process: 100 enable_schema_inference: true markdown: min_content_length_for_nlp: 100 min_word_count_for_nlp: 20 min_line_count_for_nlp: 3 min_section_size: 500 max_chunks_per_section: 1000 max_overlap_percentage: 0.25 max_workers: 4 estimation_buffer: 0.2 words_per_minute_reading: 200 header_analysis_threshold_h1: 3 header_analysis_threshold_h3: 8 enable_hierarchical_metadata: true state_management: database_path: "${STATE_DB_PATH}" file_conversion: max_file_size: 52428800 markitdown: enable_llm_descriptions: false
+projects:
+  documentation:
+    project_id: "documentation" display_name: "Documentation" description: "Technical documentation and guides" sources:
+      git: docs-repo: base_url: "https://github.com/company/docs.git" branch: "main" include_paths: ["docs/**", "README.md"] token: "${DOCS_REPO_TOKEN}" file_types: ["*.md", "*.rst"] enable_file_conversion: true confluence: tech-wiki: base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "TECH" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" enable_file_conversion: true support: project_id: "support" display_name: "Customer Support" description: "Support documentation and tickets" sources: jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUPPORT" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" enable_file_conversion: true localfile:
+        support-docs:
+          base_url: "file:///path/to/support/docs" include_paths: ["**/*.md", "**/*.pdf"] file_types: ["*.md", "*.pdf"] enable_file_conversion: true
 ```
 ## 🔗 Related Documentation
 - **[Environment Variables Reference](./environment-variables.md)** - Environment variable configuration
