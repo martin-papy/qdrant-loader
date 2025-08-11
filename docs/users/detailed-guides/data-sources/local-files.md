@@ -10,17 +10,17 @@ When you configure local file processing, QDrant Loader can handle:
 ## 🔧 Setup and Configuration
 ### Basic Configuration
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: localfile: my-docs: base_url: "file:///path/to/documents" include_paths: - "**" exclude_paths: - ".*" - "~*" - "*.tmp" file_types: - "*.pdf" - "*.docx" - "*.md" - "*.txt" max_file_size: 52428800 # 50MB
 ```
 ### Advanced Configuration
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: localfile: my-docs: base_url: "file:///path/to/documents" # File filtering include_paths: - "**" # Include all files recursively exclude_paths: - ".*" # Hidden files - "~*" # Temporary files - "*.tmp" # Temporary files - "node_modules/**" # Dependencies - "__pycache__/**" # Python cache - "build/**" # Build artifacts - "dist/**" # Distribution files # File types to process file_types: - "*.pdf" - "*.docx" - "*.doc" - "*.pptx" - "*.ppt" - "*.xlsx" - "*.xls" - "*.md" - "*.txt" - "*.py" - "*.js" - "*.json" - "*.yaml" - "*.yml" # Size limits max_file_size: 52428800 # 50MB # File conversion (requires global file_conversion config) enable_file_conversion: true
 ```
 ### Multiple Directory Sources
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: localfile: # Research papers research-papers: base_url: "file:///home/user/research/papers" file_types: - "*.pdf" - "*.tex" max_file_size: 104857600 # 100MB # Project documentation project-docs: base_url: "file:///home/user/projects/docs" file_types: - "*.md" - "*.rst" exclude_paths: - "build/**" - "_build/**" # Source code source-code: base_url: "file:///home/user/code" file_types: - "*.py" - "*.js" - "*.java" - "*.cpp" - "*.h" exclude_paths: - "node_modules/**" - "__pycache__/**" - ".git/**" - "build/**" - "dist/**"
 ```
 ## 🎯 Configuration Options
@@ -42,38 +42,38 @@ projects: my-project: sources: localfile: # Research papers research-papers: bas
 ## 🚀 Usage Examples
 ### Research Team
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "research-docs" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "research-docs" openai: api_key: "${OPENAI_API_KEY}"
 projects: research: sources: localfile: # Research papers and publications research-papers: base_url: "file:///research/papers" file_types: - "*.pdf" - "*.tex" - "*.bib" - "*.md" max_file_size: 104857600 # 100MB for large papers enable_file_conversion: true # Datasets and data files research-data: base_url: "file:///research/datasets" file_types: - "*.csv" - "*.json" - "*.xml" - "*.xlsx" exclude_paths: - "raw/**" # Skip raw data - "temp/**" # Skip temporary files
 ```
 ### Documentation Team
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documentation" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documentation" openai: api_key: "${OPENAI_API_KEY}"
 projects: documentation: sources: localfile: # Main documentation docs-content: base_url: "file:///docs/content" file_types: - "*.md" - "*.rst" - "*.txt" - "*.adoc" # Legacy documents legacy-docs: base_url: "file:///docs/legacy" file_types: - "*.doc" - "*.docx" - "*.pdf" - "*.ppt" - "*.pptx" enable_file_conversion: true max_file_size: 20971520 # 20MB
 ```
 ### Software Development
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
 projects: development: sources: localfile: # Source code source-code: base_url: "file:///projects/src" file_types: - "*.py" - "*.js" - "*.ts" - "*.java" - "*.cpp" - "*.h" - "*.md" - "*.rst" exclude_paths: - "node_modules/**" - "__pycache__/**" - "build/**" - "dist/**" - ".git/**" # Configuration files config-files: base_url: "file:///projects/config" file_types: - "*.yaml" - "*.yml" - "*.json" - "*.toml" - "*.ini" - "*.conf"
 ```
 ### Personal Knowledge Base
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "personal-knowledge" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "personal-knowledge" openai: api_key: "${OPENAI_API_KEY}"
 projects: personal: sources: localfile: # Notes and writings personal-notes: base_url: "file:///personal/notes" file_types: - "*.md" - "*.txt" - "*.org" # Books and references personal-library: base_url: "file:///personal/library" file_types: - "*.pdf" - "*.epub" max_file_size: 209715200 # 200MB for large books enable_file_conversion: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Configure
 ```bash
-# Initialize workspace\1init --workspace .
-# Configure the project\1config --workspace .
+# Initialize workspaceqdrant-loader init --workspace .
+# Configure the projectqdrant-loader config --workspace .
 ```
 ### Validate Configuration
 ```bash
-# Validate project configuration\1project\1--workspace\1# Check project status\1project\1--workspace\1# List all projects\1project\1--workspace\1```
+# Validate project configurationqdrant-loader project --workspace # Check project statusqdrant-loader project --workspace # List all projectsqdrant-loader project --workspace ```
 ### Process Local Files
 ```bash
-# Process all configured sources\1ingest --workspace .
-# Process specific project\1ingest --workspace . --project my-project
-# Process with verbose logging\1ingest --workspace . --log-level debug
+# Process all configured sourcesqdrant-loader ingest --workspace .
+# Process specific projectqdrant-loader ingest --workspace . --project my-project
+# Process with verbose loggingqdrant-loader ingest --workspace . --log-level debug
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -115,13 +115,13 @@ file /path/to/test.pdf
 head -100 /path/to/test.txt
 # Check disk space
 df -h /path/to/files
-# Monitor processing with verbose logging\1ingest --workspace . --log-level debug
+# Monitor processing with verbose loggingqdrant-loader ingest --workspace . --log-level debug
 ```
 ## 📊 Monitoring and Performance
 ### Check Processing Status
 ```bash
-# Check project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
-# List all projects\1project\1--workspace\1```
+# Check project statusqdrant-loader project --workspace # Check specific projectqdrant-loader project --workspace --project-id my-project
+# List all projectsqdrant-loader project --workspace ```
 ### Performance Optimization
 Monitor these aspects for local file processing:
 - **Files processed per minute** - Processing throughput

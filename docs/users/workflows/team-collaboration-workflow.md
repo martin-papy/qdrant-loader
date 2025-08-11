@@ -36,7 +36,7 @@ graph TD A[Team A Knowledge] --> D[Shared Knowledge Hub] B[Team B Knowledge] -->
 #### 1.1 Team-Specific Projects Configuration
 ```yaml
 # config.yaml - Multi-project configuration for team collaboration
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "team_collaboration" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}" state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_"
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "team_collaboration" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}" state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_"
 # Multi-project configuration for different teams
 projects: # Shared knowledge across all teams shared-knowledge: project_id: "shared-knowledge" display_name: "Shared Knowledge Base" description: "Cross-team shared knowledge and documentation" sources: confluence: shared-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "SHARED" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["shared", "cross-team", "onboarding"] enable_file_conversion: true download_attachments: true git: shared-docs: base_url: "https://github.com/company/shared-docs.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "docs/**/*.md" - "onboarding/**/*.md" - "processes/**/*.md" - "README.md" - "CONTRIBUTING.md" exclude_paths: - "drafts/**" - "*.draft.md" file_types: - "*.md" - "*.rst" - "*.txt" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Product team knowledge product-team: project_id: "product-team" display_name: "Product Team Knowledge" description: "Product team documentation and processes" sources: confluence: product-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "PRODUCT" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["product", "requirements", "roadmap"] enable_file_conversion: true download_attachments: true git: product-docs: base_url: "https://github.com/company/product-docs.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "requirements/**/*.md" - "roadmap/**/*.md" - "user-stories/**/*.md" file_types: - "*.md" - "*.txt" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Engineering team knowledge engineering-team: project_id: "engineering-team" display_name: "Engineering Team Knowledge" description: "Engineering documentation, code, and technical guides" sources: confluence: engineering-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "ENG" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page"] include_labels: ["engineering", "technical", "architecture"] enable_file_conversion: true download_attachments: true git: engineering-docs: base_url: "https://github.com/company/engineering.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "docs/**/*.md" - "architecture/**/*.md" - "api/**/*.yaml" - "src/**/*.py" - "src/**/*.js" - "src/**/*.ts" - "README.md" exclude_paths: - "src/test/**" - "src/**/*.test.*" - "node_modules/**" file_types: - "*.md" - "*.py" - "*.js" - "*.ts" - "*.yaml" - "*.yml" max_file_size: 1048576 depth: 10 enable_file_conversion: true # Design team knowledge design-team: project_id: "design-team" display_name: "Design Team Knowledge" description: "Design documentation, guidelines, and assets" sources: confluence: design-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "DESIGN" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["design", "guidelines", "assets"] enable_file_conversion: true download_attachments: true localfile: design-assets: base_url: "file:///design/documentation" include_paths: - "**/*.md" - "**/*.pdf" - "**/*.txt" exclude_paths: - "**/*.tmp" - "**/~*" file_types: - "*.md" - "*.pdf" - "*.txt" max_file_size: 52428800 enable_file_conversion: true
 ```
@@ -321,12 +321,12 @@ main "$@"
 ### Step 3: Knowledge Management and Collaboration
 #### 3.1 Daily Collaboration Tasks
 ```bash
-# Update team knowledge bases\1ingest --workspace .
-# Update specific team project\1ingest --workspace . --project product-team
+# Update team knowledge basesqdrant-loader ingest --workspace .
+# Update specific team projectqdrant-loader ingest --workspace . --project product-team
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Validate all projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 ````
 #### 3.2 Weekly Team Operations
 ```bash
@@ -336,10 +336,10 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 echo "Starting weekly team knowledge synchronization..."
 # Update all team projects
-echo "Updating shared knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
-echo "Updating product team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project product-team
-echo "Updating engineering team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project engineering-team
-echo "Updating design team knowledge..."\1ingest --workspace "$WORKSPACE_DIR" --project design-team
+echo "Updating shared knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
+echo "Updating product team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project product-team
+echo "Updating engineering team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project engineering-team
+echo "Updating design team knowledge..."qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project design-team
 # Check status of all projects
 echo ""
 echo "Project status summary:"
@@ -398,47 +398,47 @@ echo "Monthly review completed: $REVIEW_DIR/$(date +%Y-%m)/monthly-review.md"
 # Update team knowledge
 ./scripts/weekly-team-sync.sh
 # Check system status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 ### Weekly Team Operations
 ```bash
 # Synchronize all team knowledge
 ./scripts/weekly-team-sync.sh
-# Update specific team only\1ingest --workspace . --project engineering-team
+# Update specific team onlyqdrant-loader ingest --workspace . --project engineering-team
 # Validate all configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 ```
 ### Monthly Reviews
 ```bash
 # Generate monthly review
 ./scripts/monthly-knowledge-review.sh
 # Check project health
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 # List all available projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
 **Issue: Team member can't access knowledge base**
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
-# Validate configuration\1config --workspace .
+qdrant-loader project status --workspace .
+# Validate configurationqdrant-loader config --workspace .
 # Verify MCP server is running
 mcp-qdrant-loader
 ```
 **Issue: Knowledge not updating**
 ```bash
-# Force re-initialization\1init --workspace . --force
-# Re-ingest all content\1ingest --workspace .
+# Force re-initializationqdrant-loader init --workspace . --force
+# Re-ingest all contentqdrant-loader ingest --workspace .
 # Check specific project
-qdrant-loader project --workspace . status --project-id team-name
+qdrant-loader project status --workspace . --project-id team-name
 ```
 **Issue: Onboarding package creation fails**
 ```bash
-# Check workspace configuration\1config --workspace .
+# Check workspace configurationqdrant-loader config --workspace .
 # Verify project exists
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Check environment variables
 echo "QDRANT_URL: $QDRANT_URL"
 echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."

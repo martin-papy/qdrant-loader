@@ -157,12 +157,12 @@ qdrant-loader --workspace . [solution-command]
 QDrant Loader provides these commands:
 | Command | Purpose | Example |
 |---------|---------|---------|
-| `init` | Initialize QDrant collection | `\1 init --workspace . [--force]` |
-| `ingest` | Process and load data | `\1 ingest --workspace . [--project PROJECT]` |
-| `config` | Display configuration | `\1 config --workspace .` |
-| `project list` | List projects | `qdrant-loader project --workspace . list [--format json]` |
-| `project status` | Show project status | `qdrant-loader project --workspace . status [--project-id PROJECT]` |
-| `project validate` | Validate projects | `qdrant-loader project --workspace . validate [--project-id PROJECT]` |
+| `init` | Initialize QDrant collection | `qdrant-loader init --workspace . [--force]` |
+| `ingest` | Process and load data | `qdrant-loader ingest --workspace . [--project PROJECT]` |
+| `config` | Display configuration | `qdrant-loader config --workspace .` |
+| `project list` | List projects | `qdrant-loader project list --workspace . [--format json]` |
+| `project status` | Show project status | `qdrant-loader project status --workspace . [--project-id PROJECT]` |
+| `project validate` | Validate projects | `qdrant-loader project validate --workspace . [--project-id PROJECT]` |
 ### Global Options
 | Option | Description | Example |
 |--------|-------------|---------|

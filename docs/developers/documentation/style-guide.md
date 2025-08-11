@@ -57,10 +57,10 @@ Use emojis consistently for section types:
 Always specify the language for syntax highlighting:
 ```markdown
 ```bash
-# Good: Language specified\1ingest --workspace .
+# Good: Language specifiedqdrant-loader ingest --workspace .
 ```
 ```
-# Bad: No language specified\1ingest --workspace .
+# Bad: No language specifiedqdrant-loader ingest --workspace .
 ```
 ```
 ### Command Examples
@@ -79,9 +79,9 @@ pip install qdrant-loader
 - **Show both minimal and comprehensive configurations**
 ```yaml
 # Minimal configuration
-global_config: qdrant: url: "http://localhost:6333" collection_name: "my_documents"
+global: qdrant: url: "http://localhost:6333" collection_name: "my_documents"
 # Comprehensive configuration
-global_config: qdrant: url: "http://localhost:6333" collection_name: "my_documents" api_key: "${QDRANT_API_KEY}" openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking: chunk_size: 1500 chunk_overlap: 200
+global: qdrant: url: "http://localhost:6333" collection_name: "my_documents" api_key: "${QDRANT_API_KEY}" openai: api_key: "${OPENAI_API_KEY}" model: "text-embedding-3-small" chunking: chunk_size: 1500 chunk_overlap: 200
 ```
 ### File Paths and Names
 - Use **backticks** for file names: `config.yaml`
@@ -160,9 +160,9 @@ Use consistent formatting for different types of callouts:
 **Scenario**: You want to index documentation from a public GitHub repository.
 **Steps**:
 1. Configure your workspace with `config.yaml` and `.env`
-2. Run the initialization: `\1 init --workspace .`
-3. Run the ingestion: `\1 ingest --workspace .`
-4. Verify with project status: `qdrant-loader project --workspace . status`
+2. Run the initialization: `qdrant-loader init --workspace .`
+3. Run the ingestion: `qdrant-loader ingest --workspace .`
+4. Verify with project status: `qdrant-loader project status --workspace .`
 **Expected Outcome**: 150 documents indexed with embeddings generated.
 ```
 ### Code Examples
@@ -190,7 +190,7 @@ except Exception as e: print(f"Failed to create collection: {e}")
 - Network connectivity issues
 **Solution**:
 1. Verify Qdrant is running: `docker ps | grep qdrant`
-2. Check your configuration: `\1 config --workspace .`
+2. Check your configuration: `qdrant-loader config --workspace .`
 3. Test connectivity: `curl http://localhost:6333/health`
 ```
 ## 📏 Formatting Standards

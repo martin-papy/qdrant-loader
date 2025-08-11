@@ -119,7 +119,7 @@ All data sources that handle files benefit from QDrant Loader's comprehensive [f
 QDrant Loader uses a multi-project configuration structure. Here's the basic format:
 ```yaml
 # Global configuration
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}"
 # Project configurations
 projects: my-project: project_id: "my-project" display_name: "My Project" description: "Project description" sources: # Git repositories git: company-docs: source_type: "git" source: "company-docs" base_url: "https://github.com/company/docs" branch: "main" token: "${GITHUB_TOKEN}" # Confluence spaces confluence: tech-docs: source_type: "confluence" source: "tech-docs" base_url: "${CONFLUENCE_URL}" space_key: "TECH" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}" # JIRA projects jira: support: source_type: "jira" source: "support" base_url: "${JIRA_URL}" project_key: "SUP" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Local documentation localfile: local-docs: source_type: "localfile" source: "local-docs" base_url: "file:///docs/internal" include_paths: ["**/*.md", "**/*.pdf"] # Public API docs publicdocs: api-docs: source_type: "publicdocs" source: "api-docs" base_url: "https://api.example.com/docs" content_selector: ".api-content" include_paths: ["/docs/**"]
 ```
@@ -159,10 +159,10 @@ projects: research-team: project_id: "research-team" display_name: "Research Tea
 ## 🧪 Configuration Management
 ### Basic Commands
 ```bash
-# Show current configuration\1config --workspace .
-# Initialize collection (one-time setup)\1init --workspace .
-# Ingest data from all configured sources\1ingest --workspace .
-# Force full re-ingestion\1init --workspace . --force\1ingest --workspace .
+# Show current configurationqdrant-loader config --workspace .
+# Initialize collection (one-time setup)qdrant-loader init --workspace .
+# Ingest data from all configured sourcesqdrant-loader ingest --workspace .
+# Force full re-ingestionqdrant-loader init --workspace . --forceqdrant-loader ingest --workspace .
 ```
 ### Project Management
 ```bash
@@ -179,10 +179,10 @@ qdrant-loader project validate --workspace . --project-id my-project
 ```
 ### Selective Processing
 ```bash
-# Process specific project\1ingest --workspace . --project my-project
-# Process specific source type from all projects\1ingest --workspace . --source-type git
-# Process specific source type from specific project\1ingest --workspace . --project my-project --source-type git
-# Process specific source from specific project\1ingest --workspace . --project my-project --source-type git --source my-repo
+# Process specific projectqdrant-loader ingest --workspace . --project my-project
+# Process specific source type from all projectsqdrant-loader ingest --workspace . --source-type git
+# Process specific source type from specific projectqdrant-loader ingest --workspace . --project my-project --source-type git
+# Process specific source from specific projectqdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 ```
 ## 📊 Monitoring and Management
 ### Configuration Validation
@@ -198,7 +198,7 @@ qdrant-loader project status --workspace . --format json
 ### Performance Optimization
 ```yaml
 # Global performance settings in config.yaml
-global_config: # File conversion settings file_conversion: markitdown: enable_llm_descriptions: false # Disable for better performance # Processing settings processing: max_concurrent_sources: 3 max_concurrent_files: 5 batch_size: 100
+global: # File conversion settings file_conversion: markitdown: enable_llm_descriptions: false # Disable for better performance # Processing settings processing: max_concurrent_sources: 3 max_concurrent_files: 5 batch_size: 100
 # Source-specific optimization
 projects: my-project: sources: git: large-repo: source_type: "git" source: "large-repo" base_url: "https://github.com/large-repo" # Optimize for large repositories max_file_size: 10485760 # 10MB exclude_paths: ["**/node_modules/**", "**/target/**"] localfile: large-dataset: source_type: "localfile" source: "large-dataset" base_url: "file:///large-dataset" # Optimize for many files max_file_size: 52428800 # 50MB include_paths: ["**/*.md", "**/*.txt"]
 ```
@@ -234,7 +234,7 @@ projects: my-project: sources: git: large-repo: source_type: "git" source: "larg
 4. Validate configuration with `project validate`
 ### Getting Help
 ```bash
-# Enable verbose logging for debugging\1ingest --workspace . --log-level DEBUG
+# Enable verbose logging for debuggingqdrant-loader ingest --workspace . --log-level DEBUG
 # Check configuration syntax
 qdrant-loader project validate --workspace .
 # View project information

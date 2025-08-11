@@ -52,10 +52,10 @@ EOF
 ```
 ### Initialize and Test
 ```bash
-# Initialize QDrant collection\1init --workspace .
-# Display current configuration\1config --workspace .
+# Initialize QDrant collectionqdrant-loader init --workspace .
+# Display current configurationqdrant-loader config --workspace .
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 ## ⚙️ Advanced Setup (Multi-Project Configuration)
 ### Configuration File Structure
@@ -69,11 +69,11 @@ projects: # Documentation project docs-project: project_id: "docs-project" displ
 ```
 ### Validate Configuration
 ```bash
-# Display current configuration\1config --workspace .
+# Display current configurationqdrant-loader config --workspace .
 # Check project status and validate connections
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 ## 🎯 Common Configuration Scenarios
 ### Scenario 1: Personal Knowledge Base
@@ -150,7 +150,7 @@ projects: prod-project: project_id: "prod-project" display_name: "Production Pro
 # Use specific configuration file
 qdrant-loader --config config-dev.yaml --env .env.dev init
 qdrant-loader --config config-prod.yaml --env .env.prod ingest
-# Use workspace mode with different environments\1init --workspace ./dev-workspace\1ingest --workspace ./prod-workspace
+# Use workspace mode with different environmentsqdrant-loader init --workspace ./dev-workspaceqdrant-loader ingest --workspace ./prod-workspace
 ```
 ## 🔧 Performance Tuning
 ### For Large Datasets
@@ -168,13 +168,13 @@ global: processing: chunk_size: 500 # Smaller chunks use less memory max_file_si
 ## ✅ Configuration Validation
 ### Test Your Configuration
 ```bash
-# Display current configuration\1config --workspace .
+# Display current configurationqdrant-loader config --workspace .
 # Check project status and connections
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 ### Common Configuration Issues
 #### 1. Invalid YAML Syntax
@@ -202,7 +202,7 @@ export OPENAI_API_KEY="your-key-here"
 ```bash
 # Test QDrant connection
 curl http://localhost:6333/health
-# Check configuration\1config --workspace .
+# Check configurationqdrant-loader config --workspace .
 ```
 #### 4. Invalid Project Structure
 **Error**: `Legacy configuration format detected`

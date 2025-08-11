@@ -69,12 +69,12 @@ Comprehensive reference for all error messages with exact solutions.
 ## 🚨 Emergency Quick Fixes
 ### When Everything Fails
 ```bash
-# 1. Check basic configuration\1config --workspace .
+# 1. Check basic configurationqdrant-loader config --workspace .
 # 2. Validate project configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # 3. Check system resources
 free -h && df -h && ps aux | grep qdrant-loader
-# 4. Reinitialize collection (WARNING: This will delete existing data)\1init --workspace . --force
+# 4. Reinitialize collection (WARNING: This will delete existing data)qdrant-loader init --workspace . --force
 ```
 ### Critical System Recovery
 ```bash
@@ -90,14 +90,14 @@ ls -la config.yaml .env
 ## 🔍 Diagnostic Tools
 ### Built-in Diagnostics
 ```bash
-# Check current configuration\1config --workspace .
+# Check current configurationqdrant-loader config --workspace .
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Validate configuration
-qdrant-loader project --workspace . validate
-# Test with debug logging\1config --workspace . --log-level DEBUG
+qdrant-loader project validate --workspace .
+# Test with debug loggingqdrant-loader config --workspace . --log-level DEBUG
 ```
 ### Manual Diagnostics
 ```bash
@@ -146,26 +146,26 @@ docker ps | grep qdrant # If using Docker
 4. **Verify Resolution** - Test the original use case - Monitor for recurrence - Update documentation
 ### Diagnostic Commands
 ```bash
-# Basic configuration check\1config --workspace .
+# Basic configuration checkqdrant-loader config --workspace .
 # Project validation
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Project status check
-qdrant-loader project --workspace . status
-# Debug mode for detailed logging\1ingest --workspace . --log-level DEBUG
+qdrant-loader project status --workspace .
+# Debug mode for detailed loggingqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 ## 📈 Monitoring and Prevention
 ### Proactive Monitoring
 ```bash
 # Regular configuration validation
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Check project status regularly
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Monitor system resources
 watch -n 30 'free -h && df -h'
 ```
 ### Prevention Strategies
-1. **Regular Health Checks** ```bash # Daily configuration validation script qdrant-loader project --workspace . validate >> daily-health.log 2>&1 ```
-2. **Configuration Validation** ```bash # Validate before deployment qdrant-loader project --workspace . validate ```
+1. **Regular Health Checks** ```bash # Daily configuration validation script qdrant-loader project validate --workspace . >> daily-health.log 2>&1 ```
+2. **Configuration Validation** ```bash # Validate before deployment qdrant-loader project validate --workspace . ```
 3. **System Monitoring** ```bash # Monitor system resources free -h && df -h && ps aux | grep qdrant-loader ```
 4. **Backup Strategy** ```bash # Backup configuration files cp config.yaml config.yaml.backup cp .env .env.backup ```
 ## 🔗 Getting Additional Help
@@ -180,7 +180,7 @@ watch -n 30 'free -h && df -h'
 ### Before Asking for Help
 1. **Check this troubleshooting guide** - Most issues are covered here
 2. **Search existing issues** - Your problem might already be solved
-3. **Gather diagnostic information**: ```bash # Collect configuration and status information \1config --workspace . > diagnostics.txt qdrant-loader project --workspace . list >> diagnostics.txt qdrant-loader project --workspace . status >> diagnostics.txt qdrant-loader project --workspace . validate >> diagnostics.txt 2>&1 ```
+3. **Gather diagnostic information**: ```bash # Collect configuration and status information qdrant-loader config --workspace . > diagnostics.txt qdrant-loader project list --workspace . >> diagnostics.txt qdrant-loader project status --workspace . >> diagnostics.txt qdrant-loader project validate --workspace . >> diagnostics.txt 2>&1 ```
 4. **Provide clear details**: - Exact error messages - Steps to reproduce - System information - Configuration (sanitized)
 ## 📋 Troubleshooting Checklist
 ### Pre-Troubleshooting Checklist
@@ -205,7 +205,7 @@ curl -v "$QDRANT_URL/health"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 # Check environment variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
-# Test configuration\1config --workspace .
+# Test configurationqdrant-loader config --workspace .
 ```
 ### Performance Issues Quick Card
 ```bash
@@ -214,27 +214,27 @@ free -h && df -h && top
 # Monitor QDrant Loader process
 ps aux | grep qdrant-loader
 # Check project status
-qdrant-loader project --workspace . status
-# Use debug logging for performance analysis\1ingest --workspace . --log-level DEBUG --profile
+qdrant-loader project status --workspace .
+# Use debug logging for performance analysisqdrant-loader ingest --workspace . --log-level DEBUG --profile
 ```
 ### Data Loading Quick Card
 ```bash
 # Check source accessibility
 ls -la /path/to/docs
 # Validate configuration
-qdrant-loader project --workspace . validate
-# Check project configuration\1config --workspace .
-# Load with verbose output\1ingest --workspace . --log-level DEBUG
+qdrant-loader project validate --workspace .
+# Check project configurationqdrant-loader config --workspace .
+# Load with verbose outputqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 ### Configuration Issues Quick Card
 ```bash
-# Display current configuration\1config --workspace .
+# Display current configurationqdrant-loader config --workspace .
 # Validate all projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # List configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 # Check specific project
-qdrant-loader project --workspace . status --project-id PROJECT_ID
+qdrant-loader project status --workspace . --project-id PROJECT_ID
 ```
 ---
 **Need immediate help?** Start with the [Common Issues Guide](./common-issues.html) for quick solutions to the most frequent problems.

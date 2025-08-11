@@ -30,14 +30,14 @@ EOF
 ```
 ### Initialize Configuration
 ```bash
-# Initialize workspace with default configuration\1init --workspace .
+# Initialize workspace with default configurationqdrant-loader init --workspace .
 # Expected output:
 # ✅ Collection initialized successfully: quickstart
 ```
 ### Test Connection
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Expected output shows project configuration and connection status
 ```
 ## 📄 Step 2: Your First Document Ingestion
@@ -76,7 +76,7 @@ projects:
           include_paths: ["*.md"]
           enable_file_conversion: false
 EOF
-# Ingest the document\1ingest --workspace .
+# Ingest the documentqdrant-loader ingest --workspace .
 # Expected output:
 # 📄 Processing documents from configured sources
 # ✅ Ingested: 1 document, 4 chunks
@@ -105,7 +105,7 @@ projects:
           exclude_paths: ["node_modules/**", ".git/**"]
           file_types: ["*.md", "*.rst"]
 EOF
-# Ingest the repository\1ingest --workspace .
+# Ingest the repositoryqdrant-loader ingest --workspace .
 # Expected output:
 # 📁 Cloning repository...
 # 📄 Processing: multiple files found
@@ -143,7 +143,7 @@ projects:
           include_paths: ["**/*.md"]
           enable_file_conversion: false
 EOF
-# Ingest the entire directory\1ingest --workspace .
+# Ingest the entire directoryqdrant-loader ingest --workspace .
 # Expected output:
 # 📁 Scanning directory: my-project/
 # 📄 Processing: 2 files found
@@ -153,9 +153,9 @@ EOF
 ### Verify Ingestion
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # List configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 ## 🤖 Step 3: Set Up MCP Server
 ### Start the MCP Server
@@ -210,7 +210,7 @@ Congratulations! You now have QDrant Loader running with:
 - ✅ **Search working** across your content
 - ✅ **AI integration** providing intelligent responses
 ### Immediate Next Steps
-1. **Ingest more content**: ```bash # Add your actual project documentation to config.yaml # Then run ingestion \1ingest --workspace . ```
+1. **Ingest more content**: ```bash # Add your actual project documentation to config.yaml # Then run ingestion qdrant-loader ingest --workspace . ```
 2. **Explore AI tool features**: - Ask complex questions about your codebase - Request code examples from your documentation - Get summaries of specific topics - Find related documents and concepts
 3. **Configure additional data sources**: - [Confluence Integration](../users/detailed-guides/data-sources/confluence.md) - [JIRA Integration](../users/detailed-guides/data-sources/jira.md) - [Git Repository Setup](../users/detailed-guides/data-sources/git-repositories.md)
 ### Learn More
@@ -229,7 +229,7 @@ curl http://localhost:6333/health
 # Start QDrant with Docker if not running
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 # Verify connection
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 #### OpenAI API Errors
 **Problem**: `OpenAI API authentication failed`
@@ -250,7 +250,7 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 ls -la sample-doc.md
 # Check configuration file
 cat config.yaml
-# Use verbose mode for debugging\1ingest --workspace . --log-level DEBUG
+# Use verbose mode for debuggingqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 #### MCP Server Not Connecting
 **Problem**: AI tool can't connect to MCP server
@@ -269,15 +269,15 @@ mcp-qdrant-loader
 **Solution**:
 ```bash
 # Verify documents are ingested
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 # Check collection status
-qdrant-loader project --workspace . list
-# Re-ingest if needed\1ingest --workspace . --log-level DEBUG
+qdrant-loader project list --workspace .
+# Re-ingest if neededqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 ### Getting Help
 If you encounter issues:
 1. **Check logs**: `qdrant-loader ingest --workspace . --log-level DEBUG`
-2. **Verify setup**: `qdrant-loader project --workspace . status`
+2. **Verify setup**: `qdrant-loader project status --workspace .`
 3. **Search issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Ask for help**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
 ## 📋 Quick Start Checklist

@@ -45,7 +45,7 @@ pip install qdrant-loader qdrant-loader-mcp-server
 mkdir -p {data,logs}
 # Create configuration files
 cat > config.yaml << EOF
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "./data/state.db"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "./data/state.db"
 projects: docs: display_name: "Documentation" sources: git: main-docs: base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}"
 EOF
 # Create environment file
@@ -55,7 +55,7 @@ QDRANT_COLLECTION_NAME=documents
 OPENAI_API_KEY=your-openai-key
 REPO_TOKEN=your-github-token
 EOF
-# Initialize and start\1init --workspace .\1ingest --workspace .
+# Initialize and startqdrant-loader init --workspace .qdrant-loader ingest --workspace .
 ```
 ### Production Environment Setup
 ```bash
@@ -71,7 +71,7 @@ source venv/bin/activate
 pip install qdrant-loader qdrant-loader-mcp-server
 # Setup configuration (see Configuration section below)
 # Edit config.yaml and .env with your settings
-# Initialize workspace\1init --workspace /opt/qdrant-loader
+# Initialize workspaceqdrant-loader init --workspace /opt/qdrant-loader
 ```
 ## 🖥️ Environment Setup
 ### System Requirements
@@ -153,7 +153,7 @@ EOF
 ### Configuration File
 ```yaml
 # /opt/qdrant-loader/config.yaml
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "${STATE_DB_PATH}" chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "${STATE_DB_PATH}" chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
 projects: production: project_id: "production" display_name: "Production Documentation" description: "Production documentation and knowledge base" sources: git: docs-repo: source_type: "git" source: "docs-repo" base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}" include_paths: ["**/*.md", "**/*.rst"] confluence: company-wiki: source_type: "confluence" source: "company-wiki" base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
 ```
 ## 🔄 Service Management
@@ -170,7 +170,7 @@ User=qdrant-loader
 Group=qdrant-loader
 WorkingDirectory=/opt/qdrant-loader
 Environment=PATH=/opt/qdrant-loader/venv/bin
-ExecStart=/opt/qdrant-loader/venv/bin\1ingest --workspace /opt/qdrant-loader/config
+ExecStart=/opt/qdrant-loader/venv/binqdrant-loader ingest --workspace /opt/qdrant-loader/config
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -245,7 +245,7 @@ LOG_FILE="/opt/qdrant-loader/logs/health-check.log"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 # Check QDrant Loader configuration
-if\1config --workspace "$WORKSPACE" >/dev/null 2>&1; then log "QDrant Loader: HEALTHY - Configuration valid" exit 0
+ifqdrant-loader config --workspace "$WORKSPACE" >/dev/null 2>&1; then log "QDrant Loader: HEALTHY - Configuration valid" exit 0
 else log "QDrant Loader: UNHEALTHY - Configuration invalid" exit 1
 fi
 ```
@@ -320,7 +320,7 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 ### Horizontal Scaling
 #### Multiple Worker Processes
 ```bash
-# Run multiple ingestion processes for different projects\1ingest --workspace /opt/qdrant-loader/config --project project1 &\1ingest --workspace /opt/qdrant-loader/config --project project2 &\1ingest --workspace /opt/qdrant-loader/config --project project3 &
+# Run multiple ingestion processes for different projectsqdrant-loader ingest --workspace /opt/qdrant-loader/config --project project1 &qdrant-loader ingest --workspace /opt/qdrant-loader/config --project project2 &qdrant-loader ingest --workspace /opt/qdrant-loader/config --project project3 &
 wait
 ```
 #### Load Balancing
@@ -337,11 +337,11 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 ```bash
 # Optimize for high-memory systems
 # Configure larger chunk sizes in config.yaml:
-# global_config:
+# global:
 # chunking:
 # chunk_size: 2000
 # chunk_overlap: 400
-# Run ingestion with specific project\1ingest --workspace /opt/qdrant-loader/config --project high-priority
+# Run ingestion with specific projectqdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
 ## 📚 Deployment Documentation
 ### Detailed Deployment Guides
@@ -381,5 +381,5 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 Configure chunking and processing parameters in your workspace configuration:
 ```yaml
 # config.yaml - Performance tuning
-global_config: chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
+global: chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
 ```

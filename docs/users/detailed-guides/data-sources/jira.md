@@ -18,17 +18,17 @@ When you connect to JIRA, QDrant Loader can process:
 ## ⚙️ Configuration
 ### Basic Configuration
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" download_attachments: true
 ```
 ### Advanced Configuration
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: jira: my-jira: base_url: "https://your-domain.atlassian.net" deployment_type: "cloud" project_key: "PROJ" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Rate limiting requests_per_minute: 60 page_size: 50 # Attachment handling download_attachments: true # Issue filtering issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "Done" # File conversion (requires global file_conversion config) enable_file_conversion: true
 ```
 ### Multiple JIRA Instances
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}"
 projects: my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Development JIRA Data Center dev-jira: base_url: "https://dev-jira.company.com" deployment_type: "datacenter" project_key: "DEV" token: "${DEV_JIRA_TOKEN}"
 ```
 ## 🎯 Configuration Options
@@ -55,33 +55,33 @@ projects: my-project: sources: jira: # Production JIRA Cloud prod-jira: base_url
 ## 🚀 Usage Examples
 ### Software Development Team
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "dev-docs" openai: api_key: "${OPENAI_API_KEY}"
 projects: development: sources: jira: dev-project: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "DEV" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on active work issue_types: - "Story" - "Epic" - "Bug" - "Task" include_statuses: - "To Do" - "In Progress" - "In Review" - "Done" # Include attachments for documentation download_attachments: true enable_file_conversion: true
 ```
 ### Product Management
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "product-docs" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "product-docs" openai: api_key: "${OPENAI_API_KEY}"
 projects: product: sources: jira: product-backlog: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "PROD" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Focus on planning items issue_types: - "Epic" - "Story" - "Initiative" # Include all content for context download_attachments: true enable_file_conversion: true
 ```
 ### Support Team
 ```yaml
-global_config: qdrant: url: "http://localhost:6333" collection_name: "support-docs" openai: api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "http://localhost:6333" collection_name: "support-docs" openai: api_key: "${OPENAI_API_KEY}"
 projects: support: sources: jira: support-tickets: base_url: "https://company.atlassian.net" deployment_type: "cloud" project_key: "SUP" token: "${JIRA_TOKEN}" email: "${JIRA_EMAIL}" # Support-focused issue types issue_types: - "Bug" - "Support Request" - "Incident" - "Problem" # Include customer communications download_attachments: true
 ```
 ## 🧪 Testing and Validation
 ### Initialize and Configure
 ```bash
-# Initialize workspace\1init --workspace .
-# Configure the project\1config --workspace .
+# Initialize workspaceqdrant-loader init --workspace .
+# Configure the projectqdrant-loader config --workspace .
 ```
 ### Validate Configuration
 ```bash
-# Validate project configuration\1project\1--workspace\1# Check project status\1project\1--workspace\1# List all projects\1project\1--workspace\1```
+# Validate project configurationqdrant-loader project --workspace # Check project statusqdrant-loader project --workspace # List all projectsqdrant-loader project --workspace ```
 ### Process JIRA Data
 ```bash
-# Process all configured sources\1ingest --workspace .
-# Process specific project\1ingest --workspace . --project my-project
-# Process with verbose logging\1ingest --workspace . --log-level debug
+# Process all configured sourcesqdrant-loader ingest --workspace .
+# Process specific projectqdrant-loader ingest --workspace . --project my-project
+# Process with verbose loggingqdrant-loader ingest --workspace . --log-level debug
 ```
 ## 🔧 Troubleshooting
 ### Common Issues
@@ -129,8 +129,8 @@ curl -u "email:token" \ "https://domain.atlassian.net/rest/api/2/issue/PROJ-123"
 ## 📊 Monitoring and Performance
 ### Check Processing Status
 ```bash
-# Check project status\1project\1--workspace\1# Check specific project\1project\1--workspace\1--project-id my-project
-# List all projects\1project\1--workspace\1```
+# Check project statusqdrant-loader project --workspace # Check specific projectqdrant-loader project --workspace --project-id my-project
+# List all projectsqdrant-loader project --workspace ```
 ### Performance Optimization
 Monitor these aspects for JIRA processing:
 - **Issues processed per minute** - Processing throughput

@@ -33,7 +33,7 @@ graph TD A[Content Creation] --> B[Review Process] B --> C[Approval Workflow] C 
 #### 1.1 Multi-Project Setup
 ```yaml
 # config.yaml - Multi-project configuration
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "content_hub" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}" state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_"
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "content_hub" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}" batch_size: 100 vector_size: 1536 tokenizer: "cl100k_base" max_tokens_per_request: 8000 max_tokens_per_chunk: 8000 chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: 52428800 # 50MB conversion_timeout: 300 markitdown: enable_llm_descriptions: false llm_model: "gpt-4o" llm_endpoint: "https://api.openai.com/v1" llm_api_key: "${OPENAI_API_KEY}" state_management: database_path: "${STATE_DB_PATH}" table_prefix: "qdrant_loader_"
 # Multi-project configuration
 projects: # Documentation project documentation: project_id: "documentation" display_name: "Documentation Hub" description: "Company documentation and guides" sources: confluence: docs-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" # or "data_center" space_key: "DOCS" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page", "blogpost"] include_labels: ["published", "approved"] exclude_labels: ["draft", "archived"] enable_file_conversion: true download_attachments: true kb-space: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "KB" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page"] include_labels: ["knowledge-base"] enable_file_conversion: true download_attachments: true git: docs-repo: base_url: "https://github.com/company/documentation.git" branch: "main" token: "${GITHUB_TOKEN}" include_paths: - "content/**/*.md" - "docs/**/*.md" - "guides/**/*.md" - "README.md" exclude_paths: - "drafts/**" - "*.draft.md" - "node_modules/**" file_types: - "*.md" - "*.rst" - "*.txt" max_file_size: 1048576 depth: 10 enable_file_conversion: true localfile: published-content: base_url: "file:///content/published" include_paths: - "**/*.md" - "**/*.pdf" - "**/*.docx" exclude_paths: - "**/*.tmp" - "**/~*" file_types: - "*.md" - "*.pdf" - "*.docx" - "*.txt" max_file_size: 52428800 enable_file_conversion: true # Knowledge base project knowledge-base: project_id: "knowledge-base" display_name: "Knowledge Base" description: "Internal knowledge and procedures" sources: confluence: procedures: base_url: "${CONFLUENCE_URL}" deployment_type: "cloud" space_key: "PROC" email: "${CONFLUENCE_EMAIL}" token: "${CONFLUENCE_API_TOKEN}" content_types: ["page"] include_labels: ["procedure", "policy"] enable_file_conversion: true download_attachments: true localfile: policies: base_url: "file:///policies" include_paths: - "**/*.pdf" - "**/*.docx" file_types: - "*.pdf" - "*.docx" max_file_size: 52428800 enable_file_conversion: true
 ```
@@ -78,7 +78,7 @@ Content here...
 Content here...
 ## Examples
 ```bash
-# Code examples\1init --workspace .\1ingest --workspace . --project documentation
+# Code examplesqdrant-loader init --workspace .qdrant-loader ingest --workspace . --project documentation
 ```
 ## Related Content
 - Related Guide 1 - Coming later
@@ -143,19 +143,19 @@ set -euo pipefail
 WORKSPACE_DIR="${WORKSPACE_DIR:-./workspace}"
 APPROVED_DIR="${APPROVED_DIR:-./approved}"
 # Function to validate workspace configuration
-validate_configuration() { echo "Validating workspace configuration..." if !\1config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then echo "❌ Configuration validation failed" echo "Please check your config.yaml and .env files" return 1 fi echo "✅ Configuration validation passed"
+validate_configuration() { echo "Validating workspace configuration..." if !qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then echo "❌ Configuration validation failed" echo "Please check your config.yaml and .env files" return 1 fi echo "✅ Configuration validation passed"
 }
 # Function to validate projects
 validate_projects() { echo "Validating project configurations..." if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then echo "❌ Project validation failed" return 1 fi echo "✅ Project validation passed"
 }
 # Function to initialize QDrant collection
-initialize_collection() { local force_init="${1:-false}" echo "Initializing QDrant collection..." if [ "$force_init" = "true" ]; then \1init --workspace "$WORKSPACE_DIR" --force else \1init --workspace "$WORKSPACE_DIR" fi echo "✅ QDrant collection initialized"
+initialize_collection() { local force_init="${1:-false}" echo "Initializing QDrant collection..." if [ "$force_init" = "true" ]; then qdrant-loader init --workspace "$WORKSPACE_DIR" --force else qdrant-loader init --workspace "$WORKSPACE_DIR" fi echo "✅ QDrant collection initialized"
 }
 # Function to publish content from approved directory
-publish_approved_content() { echo "Publishing approved content..." if [ ! -d "$APPROVED_DIR" ] || [ -z "$(ls -A "$APPROVED_DIR" 2>/dev/null)" ]; then echo "No approved content found in $APPROVED_DIR" return 0 fi # Copy approved content to workspace for processing local temp_content_dir="$WORKSPACE_DIR/temp_content" mkdir -p "$temp_content_dir" cp -r "$APPROVED_DIR"/* "$temp_content_dir/" # Update local file source configuration to include temp content echo "Processing approved content through QDrant Loader..." # Ingest all projects \1ingest --workspace "$WORKSPACE_DIR" # Clean up temporary content rm -rf "$temp_content_dir" echo "✅ Content publishing completed"
+publish_approved_content() { echo "Publishing approved content..." if [ ! -d "$APPROVED_DIR" ] || [ -z "$(ls -A "$APPROVED_DIR" 2>/dev/null)" ]; then echo "No approved content found in $APPROVED_DIR" return 0 fi # Copy approved content to workspace for processing local temp_content_dir="$WORKSPACE_DIR/temp_content" mkdir -p "$temp_content_dir" cp -r "$APPROVED_DIR"/* "$temp_content_dir/" # Update local file source configuration to include temp content echo "Processing approved content through QDrant Loader..." # Ingest all projects qdrant-loader ingest --workspace "$WORKSPACE_DIR" # Clean up temporary content rm -rf "$temp_content_dir" echo "✅ Content publishing completed"
 }
 # Function to publish specific project
-publish_project() { local project_id="$1" echo "Publishing project: $project_id" # Validate specific project if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$project_id"; then echo "❌ Project validation failed for: $project_id" return 1 fi # Ingest specific project \1ingest --workspace "$WORKSPACE_DIR" --project "$project_id" echo "✅ Project publishing completed: $project_id"
+publish_project() { local project_id="$1" echo "Publishing project: $project_id" # Validate specific project if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$project_id"; then echo "❌ Project validation failed for: $project_id" return 1 fi # Ingest specific project qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$project_id" echo "✅ Project publishing completed: $project_id"
 }
 # Function to get project status
 get_project_status() { echo "Getting project status..." # List all projects echo "Available projects:" qdrant-loader project --workspace "$WORKSPACE_DIR" list echo "" echo "Project status:" qdrant-loader project --workspace "$WORKSPACE_DIR" status
@@ -173,7 +173,7 @@ main "$@"
 # .github/workflows/content-pipeline.yml
 name: Content Management Pipeline
 on: push: branches: [main] paths: ['content/**', 'approved/**'] pull_request: branches: [main] paths: ['content/**'] workflow_dispatch: inputs: environment: description: 'Deployment environment' required: true default: 'staging' type: choice options: - staging - production
-jobs: quality-check: runs-on: ubuntu-latest steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Validate configuration run: | \1config --workspace . env: QDRANT_URL: ${{ secrets.QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Validate projects run: | qdrant-loader project --workspace . validate deploy-staging: needs: quality-check runs-on: ubuntu-latest if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' environment: staging steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Initialize QDrant collection run: | \1init --workspace . --force env: QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Ingest content run: | \1ingest --workspace . env: QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }} CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }} CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }} GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} - name: Verify deployment run: | qdrant-loader project --workspace . status deploy-production: needs: deploy-staging runs-on: ubuntu-latest if: github.event.inputs.environment == 'production' environment: production steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Initialize QDrant collection run: | \1init --workspace . --force env: QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Ingest content run: | \1ingest --workspace . env: QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }} CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }} CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }} GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} - name: Verify production deployment run: | qdrant-loader project --workspace . status
+jobs: quality-check: runs-on: ubuntu-latest steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Validate configuration run: | qdrant-loader config --workspace . env: QDRANT_URL: ${{ secrets.QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Validate projects run: | qdrant-loader project validate --workspace . deploy-staging: needs: quality-check runs-on: ubuntu-latest if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' environment: staging steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Initialize QDrant collection run: | qdrant-loader init --workspace . --force env: QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Ingest content run: | qdrant-loader ingest --workspace . env: QDRANT_URL: ${{ secrets.STAGING_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.STAGING_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }} CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }} CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }} GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} - name: Verify deployment run: | qdrant-loader project status --workspace . deploy-production: needs: deploy-staging runs-on: ubuntu-latest if: github.event.inputs.environment == 'production' environment: production steps: - name: Checkout code uses: actions/checkout@v4 - name: Set up Python uses: actions/setup-python@v4 with: python-version: '3.11' - name: Install QDrant Loader run: | pip install qdrant-loader - name: Initialize QDrant collection run: | qdrant-loader init --workspace . --force env: QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} - name: Ingest content run: | qdrant-loader ingest --workspace . env: QDRANT_URL: ${{ secrets.PRODUCTION_QDRANT_URL }} QDRANT_API_KEY: ${{ secrets.PRODUCTION_QDRANT_API_KEY }} OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} CONFLUENCE_URL: ${{ secrets.CONFLUENCE_URL }} CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }} CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }} GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} - name: Verify production deployment run: | qdrant-loader project status --workspace .
 ```
 ### Step 5: Content Monitoring and Maintenance
 #### 5.1 Content Health Monitoring
@@ -187,7 +187,7 @@ LOG_FILE="${LOG_FILE:-./logs/content-monitoring.log}"
 log() { local level="$1" shift echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $*" | tee -a "$LOG_FILE"
 }
 # Function to check workspace health
-check_workspace_health() { log "INFO" "Checking workspace health..." # Check configuration if\1config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then log "INFO" "✅ Configuration is valid" else log "ERROR" "❌ Configuration validation failed" return 1 fi # Check project configurations if qdrant-loader project --workspace "$WORKSPACE_DIR" validate >/dev/null 2>&1; then log "INFO" "✅ All projects are valid" else log "ERROR" "❌ Project validation failed" return 1 fi log "INFO" "Workspace health check completed"
+check_workspace_health() { log "INFO" "Checking workspace health..." # Check configuration ifqdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then log "INFO" "✅ Configuration is valid" else log "ERROR" "❌ Configuration validation failed" return 1 fi # Check project configurations if qdrant-loader project --workspace "$WORKSPACE_DIR" validate >/dev/null 2>&1; then log "INFO" "✅ All projects are valid" else log "ERROR" "❌ Project validation failed" return 1 fi log "INFO" "Workspace health check completed"
 }
 # Function to generate content report
 generate_content_report() { log "INFO" "Generating content report..." local report_file="./reports/content-report-$(date +%Y%m%d-%H%M%S).json" mkdir -p "$(dirname "$report_file")" # Get project status local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --format json 2>/dev/null || echo "[]") # Create report cat > "$report_file" << EOF
@@ -210,12 +210,12 @@ main "$@"
 ### Multi-Environment Setup
 ```yaml
 # config.staging.yaml
-global_config: qdrant: url: "${STAGING_QDRANT_URL}" api_key: "${STAGING_QDRANT_API_KEY}" collection_name: "content_staging" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "${STAGING_QDRANT_URL}" api_key: "${STAGING_QDRANT_API_KEY}" collection_name: "content_staging" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}"
 projects: documentation: project_id: "documentation" display_name: "Documentation (Staging)" description: "Staging environment for documentation" sources: # Same source configuration as production # but potentially with different branches or spaces
 ```
 ```yaml
 # config.production.yaml
-global_config: qdrant: url: "${PRODUCTION_QDRANT_URL}" api_key: "${PRODUCTION_QDRANT_API_KEY}" collection_name: "content_production" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}"
+global: qdrant: url: "${PRODUCTION_QDRANT_URL}" api_key: "${PRODUCTION_QDRANT_API_KEY}" collection_name: "content_production" embedding: endpoint: "https://api.openai.com/v1" model: "text-embedding-3-small" api_key: "${OPENAI_API_KEY}"
 projects: documentation: project_id: "documentation" display_name: "Documentation (Production)" description: "Production documentation" sources: # Production source configuration
 ```
 ## 📊 Workflow Metrics and Analytics
@@ -254,16 +254,16 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 ```
 ### 2. Validate Configuration
 ```bash
-# Validate workspace configuration\1config --workspace .
+# Validate workspace configurationqdrant-loader config --workspace .
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 ```
 ### 3. Initialize and Ingest
 ```bash
-# Initialize QDrant collection\1init --workspace .
-# Ingest all content\1ingest --workspace .
+# Initialize QDrant collectionqdrant-loader init --workspace .
+# Ingest all contentqdrant-loader ingest --workspace .
 # Check status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 ### 4. Set Up MCP Server
 ```bash

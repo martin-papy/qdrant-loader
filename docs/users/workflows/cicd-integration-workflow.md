@@ -184,7 +184,7 @@ REPO_TOKEN=your_github_token
 #### 3.2 Test Configuration Templates
 ```yaml
 # tests/config.test.template.yaml
-global_config: qdrant: collection_name: ${QDRANT_COLLECTION_NAME} vector_size: 1536 distance: Cosine openai: model: text-embedding-3-small
+global: qdrant: collection_name: ${QDRANT_COLLECTION_NAME} vector_size: 1536 distance: Cosine openai: model: text-embedding-3-small
 projects: test-project: display_name: "Test Project" description: "Test configuration" collection_name: ${QDRANT_COLLECTION_NAME} sources: git: test-repo: base_url: "${REPO_URL}" branch: main include_paths: - "docs/**" file_types: - ".md"
 ```
 ```bash
@@ -233,8 +233,8 @@ Test results are automatically processed and displayed:
 ### Debugging Commands
 ```bash
 # Local testing with actual CLI commands
-qdrant-loader project --workspace . validate\1config --workspace .
-qdrant-loader project --workspace . status
+qdrant-loader project --workspace . validateqdrant-loader config --workspace .
+qdrant-loader project status --workspace .
 # Check workflow artifacts
 gh run download <run-id> --name coverage-loader-<run-id>
 gh run download <run-id> --name test-status-<run-id>

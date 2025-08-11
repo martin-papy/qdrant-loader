@@ -38,7 +38,7 @@ dig your-qdrant-instance.com
 export QDRANT_URL="http://localhost:6333"
 export QDRANT_URL="https://your-instance.qdrant.cloud"
 export QDRANT_URL="http://192.168.1.100:6333"
-# Test configuration\1config --workspace .
+# Test configurationqdrant-loader config --workspace .
 ```
 2. **Check QDrant instance status:**
 ```bash
@@ -67,7 +67,7 @@ sudo iptables -L
 Configure connection settings in your workspace configuration:
 ```yaml
 # config.yaml
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" timeout: 60 max_retries: 5 retry_delay: 2
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" timeout: 60 max_retries: 5 retry_delay: 2
 ```
 ### Issue: QDrant authentication fails
 **Symptoms:**
@@ -82,7 +82,7 @@ echo $QDRANT_API_KEY | wc -c # Should be reasonable length
 echo $QDRANT_API_KEY | head -c 10 # Check first few characters
 # Test authentication manually
 curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/collections"
-# Verify API key in configuration\1config --workspace .
+# Verify API key in configurationqdrant-loader config --workspace .
 # Check environment variables
 env | grep QDRANT
 ```
@@ -107,8 +107,8 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/usa
 ```bash
 # Verify API key is set correctly
 export OPENAI_API_KEY="sk-your-actual-key-here"
-# Check configuration\1config --workspace .
-# Test with debug logging\1ingest --workspace . --log-level DEBUG
+# Check configurationqdrant-loader config --workspace .
+# Test with debug loggingqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 ### Issue: Confluence authentication fails
 **Symptoms:**
@@ -125,7 +125,7 @@ echo $CONFLUENCE_TOKEN | wc -c
 curl -u "$CONFLUENCE_USERNAME:$CONFLUENCE_TOKEN" \ "$CONFLUENCE_URL/rest/api/content?limit=1"
 # Verify base URL format
 echo $CONFLUENCE_URL # Should be like https://company.atlassian.net
-# Check project configuration\1config --workspace .
+# Check project configurationqdrant-loader config --workspace .
 ```
 **Confluence authentication configuration:**
 ```yaml
@@ -145,7 +145,7 @@ git clone https://token:$GITHUB_TOKEN@github.com/user/repo.git
 # For SSH
 ssh-add ~/.ssh/id_rsa
 ssh -T git@github.com
-# Check project configuration\1config --workspace .
+# Check project configurationqdrant-loader config --workspace .
 ```
 **Git authentication configuration:**
 ```yaml
@@ -176,7 +176,7 @@ nethogs
 Configure timeouts in your workspace configuration:
 ```yaml
 # config.yaml
-global_config: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" timeout: 120 openai: api_key: "${OPENAI_API_KEY}" timeout: 60
+global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" timeout: 120 openai: api_key: "${OPENAI_API_KEY}" timeout: 60
 ```
 ### Issue: DNS resolution problems
 **Symptoms:**
@@ -261,7 +261,7 @@ curl --proxy "$HTTP_PROXY" -v "https://api.openai.com/v1/models"
 curl -v "https://api.openai.com/v1/models"
 # Check for rate limiting
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/usage"
-# Test with debug logging\1ingest --workspace . --log-level DEBUG
+# Test with debug loggingqdrant-loader ingest --workspace . --log-level DEBUG
 ```
 ### Issue: Confluence API connectivity
 **Symptoms:**
@@ -275,7 +275,7 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \ "https://api.openai.com/v1/usa
 curl "$CONFLUENCE_URL/rest/api/content?limit=1"
 # Check API capabilities
 curl "$CONFLUENCE_URL/rest/api/space"
-# Verify project configuration\1config --workspace .
+# Verify project configurationqdrant-loader config --workspace .
 ```
 ### Issue: JIRA API connectivity
 **Symptoms:**
@@ -289,7 +289,7 @@ curl "$CONFLUENCE_URL/rest/api/space"
 curl -u "$JIRA_EMAIL:$JIRA_TOKEN" \ "$JIRA_URL/rest/api/2/project"
 # Check project access
 curl -u "$JIRA_EMAIL:$JIRA_TOKEN" \ "$JIRA_URL/rest/api/2/project/PROJECTKEY"
-# Verify project configuration\1config --workspace .
+# Verify project configurationqdrant-loader config --workspace .
 ```
 **JIRA authentication configuration:**
 ```yaml
@@ -337,7 +337,7 @@ sudo systemctl restart NetworkManager
 sudo systemctl restart systemd-resolved
 # 4. Reset network configuration
 sudo dhclient -r && sudo dhclient
-# 5. Test configuration\1config --workspace .
+# 5. Test configurationqdrant-loader config --workspace .
 ```
 ### Connection recovery script
 ```bash
@@ -352,7 +352,7 @@ fi
 if ! nslookup google.com >/dev/null 2>&1; then echo "🔄 Restarting DNS services..." sudo systemctl restart systemd-resolved
 fi
 # Test QDrant connectivity
-if ! curl -s --max-time 10 "$QDRANT_URL/health" >/dev/null; then echo "🔄 QDrant connection failed, checking configuration..." \1config --workspace .
+if ! curl -s --max-time 10 "$QDRANT_URL/health" >/dev/null; then echo "🔄 QDrant connection failed, checking configuration..." qdrant-loader config --workspace .
 fi
 # Test OpenAI API
 if ! curl -s --max-time 10 "https://api.openai.com/v1/models" >/dev/null; then echo "🔄 OpenAI API connection failed"
@@ -363,10 +363,10 @@ echo "✅ Connection recovery completed"
 ### Basic monitoring
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
-# Test configuration\1config --workspace .
+qdrant-loader project status --workspace .
+# Test configurationqdrant-loader config --workspace .
 # Validate projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # Monitor system resources
 top -p $(pgrep -f qdrant-loader)
 ```
@@ -377,20 +377,20 @@ env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 # Test basic connectivity
 curl -s "$QDRANT_URL/health"
 curl -s "https://api.openai.com/v1/models"
-# Verify workspace configuration\1config --workspace .
+# Verify workspace configurationqdrant-loader config --workspace .
 ```
 ### Connection testing workflow
 ```bash
 # 1. Validate configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 # 2. Check environment variables
 env | grep -E "(QDRANT|OPENAI|CONFLUENCE|JIRA)"
 # 3. Test external connectivity
 curl -s "$QDRANT_URL/health"
 curl -s "https://api.openai.com/v1/models"
-# 4. Test with debug logging\1ingest --workspace . --log-level DEBUG --project test-project
+# 4. Test with debug loggingqdrant-loader ingest --workspace . --log-level DEBUG --project test-project
 # 5. Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 ## 🔗 Related Documentation
 - **[Common Issues](./common-issues.md)** - General troubleshooting
