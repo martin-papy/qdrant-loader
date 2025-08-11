@@ -351,7 +351,7 @@ echo "Environment validation complete!"
 ## 🔗 Related Documentation
 
 - **[Configuration File Reference](./config-file-reference.md)** - YAML configuration options and substitution
-- **[Basic Configuration](../getting-started/basic-configuration.md)** - Getting started guide
+- **[Basic Configuration](../../getting-started/basic-configuration.md)** - Getting started guide
 - **[MCP Server Setup](../detailed-guides/mcp-server/setup-and-integration.md)** - MCP server configuration
 
 ## 📋 Environment Variables Checklist
