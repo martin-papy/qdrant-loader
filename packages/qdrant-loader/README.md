@@ -64,7 +64,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Install in development mode
-pip install -e packages/qdrant-loader[dev]
+pip install -e packages/qdrant-loader
 ```
 
 ### With MCP Server
@@ -163,10 +163,10 @@ projects:
 
 ```bash
 # Initialize QDrant collection
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Load data from configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Check project status
 qdrant-loader project --workspace . status
@@ -232,19 +232,19 @@ JIRA_PAT=your_personal_access_token
 
 ```bash
 # Show current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Initialize collection (one-time setup)
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Ingest data from all configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Show help
 qdrant-loader --help
@@ -257,36 +257,36 @@ qdrant-loader --help
 qdrant-loader --config config.yaml --env .env ingest
 
 # Debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Force full re-ingestion
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 
 # Process specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source type
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Enable performance profiling
-qdrant-loader --workspace . ingest --profile
+qdrant-loader ingest --workspace . --profile
 ```
 
 ### Project Management
 
 ```bash
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 
 # Show project status in JSON format
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 
 # Show specific project status
-qdrant-loader project --workspace . status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 ```
 
 ## 🏗️ Architecture
