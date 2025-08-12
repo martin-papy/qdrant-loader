@@ -28,7 +28,7 @@ Both packages can be installed independently, but most users will want both for 
 
 QDrant Loader requires a QDrant instance to store vectors and metadata.
 
-**Option 1: Docker**
+##### Option 1: Docker
 
 ```bash
 # Start QDrant with Docker
@@ -37,13 +37,13 @@ docker run -p 6333:6333 -p 6334:6334 \
   qdrant/qdrant
 ```
 
-**Option 2: QDrant Cloud**
+##### Option 2: QDrant Cloud
 
 1. Sign up at [QDrant Cloud](https://cloud.qdrant.io/)
 2. Create a cluster
 3. Note your cluster URL and API key
 
-**Option 3: Local Installation**
+##### Option 3: Local Installation
 
 Follow the [QDrant installation guide](https://qdrant.tech/documentation/guides/installation/) for your platform.
 
@@ -74,7 +74,7 @@ node --version
 
 ### Method 1: pip Install (Recommended)
 
-This is the easiest method for most users.
+This is the easiest method for most users. Install the core package, the MCP server, or both together.
 
 #### Install Core Package
 
@@ -101,9 +101,13 @@ mcp-qdrant-loader --version
 ```bash
 # Install both packages at once
 pip install qdrant-loader qdrant-loader-mcp-server
+```
 
-# Or install with all optional dependencies
-pip install qdrant-loader[all] qdrant-loader-mcp-server[all]
+#### Install With Extras
+
+```bash
+# Install core with extras and the MCP server
+pip install "qdrant-loader[all]" qdrant-loader-mcp-server
 ```
 
 ### Method 2: Development Installation
@@ -117,7 +121,7 @@ cd qdrant-loader
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 
 # Install in development mode
 pip install -e packages/qdrant-loader[dev]
@@ -135,7 +139,7 @@ For users who want to keep QDrant Loader isolated:
 ```bash
 # Create dedicated virtual environment
 python -m venv qdrant-loader-env
-source qdrant-loader-env/bin/activate  # On Windows: qdrant-loader-env\Scripts\activate
+source qdrant-loader-env/bin/activate # On Windows: qdrant-loader-env\Scripts\activate
 
 # Install packages
 pip install qdrant-loader qdrant-loader-mcp-server
@@ -154,7 +158,6 @@ chmod +x activate-qdrant-loader.sh
 ```cmd
 # Install Python 3.12+ from python.org
 # Open Command Prompt as Administrator
-
 # Install packages
 pip install qdrant-loader qdrant-loader-mcp-server
 
@@ -291,8 +294,11 @@ qdrant-loader project status
 
 # For basic testing, you would typically:
 # 1. Set up a workspace with config.yaml and .env
-# 2. Initialize the collection: qdrant-loader --workspace . init
-# 3. Run ingestion: qdrant-loader --workspace . ingest
+# 2. Initialize the collection:
+qdrant-loader init --workspace .
+
+# 3. Run ingestion:
+qdrant-loader ingest --workspace .
 ```
 
 ## 🔧 Configuration Setup
@@ -304,6 +310,7 @@ After installation, you'll need to configure QDrant Loader:
 ```bash
 # Create configuration directory and files manually
 mkdir -p ~/.qdrant-loader
+
 # Copy template configuration files from the repository or create them manually
 # See the configuration examples below
 ```
@@ -318,7 +325,7 @@ export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-openai-api-key"
 
 # Optional
-export QDRANT_API_KEY="your-qdrant-api-key"  # For QDrant Cloud
+export QDRANT_API_KEY="your-qdrant-api-key" # For QDrant Cloud
 export QDRANT_COLLECTION_NAME="documents"
 ```
 
@@ -342,7 +349,7 @@ sources:
     enabled: true
   confluence:
     enabled: false
-  local:
+  localfile:
     enabled: true
 ```
 
@@ -475,7 +482,7 @@ pip install -e packages/qdrant-loader-mcp-server[dev]
 After successful installation:
 
 1. **[Quick Start Guide](./quick-start.md)** - Get up and running in 5 minutes
-2. **[Core Concepts](./core-concepts.md)** - Understand vector databases and embeddings
+2. **Core Concepts** - Key concepts are summarized inline in Getting Started
 3. **[Basic Configuration](./basic-configuration.md)** - Set up your first data sources
 4. **[User Guides](../users/)** - Explore detailed feature documentation
 

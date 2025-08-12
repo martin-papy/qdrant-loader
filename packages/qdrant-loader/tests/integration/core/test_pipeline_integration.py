@@ -248,7 +248,7 @@ async def test_pipeline_all_projects_processing(
         pipeline.orchestrator, "process_documents", side_effect=mock_process_documents
     ) as mock_process:
         # Process documents for all projects (no project_id specified)
-        result = await pipeline.process_documents()
+        await pipeline.process_documents()
 
         # Verify the orchestrator was called multiple times (once for each project)
         assert mock_process.call_count >= 1

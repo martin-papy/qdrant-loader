@@ -26,9 +26,9 @@ When you connect a Git repository, QDrant Loader can process:
 
 2. **Set environment variable**:
 
-   ```bash
-   export REPO_TOKEN=ghp_your_github_token_here
-   ```
+```bash
+export REPO_TOKEN=ghp_your_github_token_here
+```
 
 ### GitLab
 
@@ -41,9 +41,9 @@ When you connect a Git repository, QDrant Loader can process:
 
 2. **Set environment variable**:
 
-   ```bash
-   export REPO_TOKEN=glpat_your_gitlab_token_here
-   ```
+```bash
+export REPO_TOKEN=glpat_your_gitlab_token_here
+```
 
 ### Other Git Providers
 
@@ -65,7 +65,6 @@ projects:
     display_name: "My Code Project"
     description: "Source code and documentation"
     collection_name: "my-code"
-    
     sources:
       git:
         main-repo:
@@ -96,7 +95,6 @@ projects:
     display_name: "Development Project"
     description: "Multiple repositories for development"
     collection_name: "dev-docs"
-    
     sources:
       git:
         # Frontend repository
@@ -153,7 +151,6 @@ projects:
     display_name: "Multi-Repository Project"
     description: "Documentation from multiple repositories"
     collection_name: "multi-repo-docs"
-    
     sources:
       git:
         # Documentation repository
@@ -218,6 +215,13 @@ projects:
 | `depth` | int | Repository clone depth | `1` |
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `true` |
 
+### Validator Requirements
+
+- `file_types`: required, must be a non-empty list (validator enforced)
+- `token`: required for private repositories (env or explicit)
+- `depth`: default `1` (shallow clone)
+- `max_file_size`: default `1048576` bytes (1MB)
+
 ## 🚀 Usage Examples
 
 ### Software Development Team
@@ -228,7 +232,6 @@ projects:
     display_name: "Development Team"
     description: "Source code and technical documentation"
     collection_name: "dev-code"
-    
     sources:
       git:
         # Main application repository
@@ -282,7 +285,6 @@ projects:
     display_name: "Documentation Team"
     description: "All documentation repositories"
     collection_name: "documentation"
-    
     sources:
       git:
         # Main documentation
@@ -330,7 +332,6 @@ projects:
     display_name: "Research Team"
     description: "Research code and documentation"
     collection_name: "research"
-    
     sources:
       git:
         # Analysis tools
@@ -362,32 +363,32 @@ projects:
 
 ```bash
 # Initialize the project (creates collection if needed)
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Test ingestion with your Git configuration
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all configured projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project validate --project-id my-project
 ```
 
 ### Debug Git Processing
 
 ```bash
 # Enable debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 
 # Process specific project only
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source within a project
-qdrant-loader --workspace . ingest --project my-project --source-type git --source main-repo
+qdrant-loader ingest --workspace . --project my-project --source-type git --source main-repo
 ```
 
 ## 🔧 Troubleshooting
@@ -430,14 +431,15 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 
 2. **Check authentication**:
 
-   ```bash
-   # Test manual clone
-   git clone https://github.com/org/repo.git /tmp/test-clone
-   ```
+```bash
+# Test manual clone
+git clone https://github.com/org/repo.git /tmp/test-clone
+```
 
-3. **Verify token permissions**:
-   - For GitHub: Ensure token has `repo` scope for private repos
-   - For GitLab: Ensure token has `read_repository` scope
+1. **Verify token permissions**:
+
+- **GitHub**: Ensure token has `repo` scope for private repos
+- **GitLab**: Ensure token has `read_repository` scope
 
 #### Configuration Issues
 
@@ -447,32 +449,32 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 
 1. **Verify project structure**:
 
-   ```yaml
-   projects:
-     your-project:  # Project ID
-       sources:
-         git:
-           source-name:  # Source name
-             base_url: "..."
-             # ... other settings
-   ```
+```yaml
+projects:
+  your-project:  # Project ID
+    sources:
+      git:
+        source-name:  # Source name
+          base_url: "..."
+          # ... other settings
+```
 
-2. **Check required fields**:
+1. **Check required fields**:
    - `base_url`: Must be a valid Git repository URL
    - `branch`: Must be a valid branch name
    - `token`: Must be set via environment variable
    - `file_types`: Must be a non-empty list
 
-3. **Validate file patterns**:
+2. **Validate file patterns**:
 
-   ```yaml
-   file_types:
-     - "*.md"    # Correct
-     - "*.py"    # Correct
-   include_paths:
-     - "docs/**" # Correct glob pattern
-     - "src/**"  # Correct glob pattern
-   ```
+```yaml
+file_types:
+  - "*.md"  # Correct
+  - "*.py"  # Correct
+include_paths:
+  - "docs/**"  # Correct glob pattern
+  - "src/**"   # Correct glob pattern
+```
 
 #### Large Repository Performance
 
@@ -482,37 +484,36 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 
 1. **Filter paths aggressively**:
 
-   ```yaml
-   git:
-     large-repo:
-       include_paths:
-         - "docs/**"
-         - "README.md"
-       exclude_paths:
-         - "node_modules/**"
-         - "build/**"
-         - "dist/**"
-         - ".git/**"
-   ```
+```yaml
+git:
+  large-repo:
+    include_paths:
+      - "docs/**"
+      - "README.md"
+    exclude_paths:
+      - "node_modules/**"
+      - "build/**"
+      - "dist/**"
+      - ".git/**"
+```
 
-2. **Limit file types**:
+1. **Limit file types**:
 
-   ```yaml
-   git:
-     focused-repo:
-       file_types:
-         - "*.md"
-         - "*.py"
-       # Skip binary files, images, etc.
-   ```
+```yaml
+git:
+  focused-repo:
+    file_types:
+      - "*.md"
+      - "*.py"  # Skip binary files, images, etc.
+```
 
-3. **Set file size limits**:
+1. **Set file size limits**:
 
-   ```yaml
-   git:
-     size-limited:
-       max_file_size: 524288  # 512KB
-   ```
+```yaml
+git:
+  size-limited:
+    max_file_size: 524288  # 512KB
+```
 
 #### File Processing Errors
 
@@ -522,26 +523,25 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 
 1. **Check file size limits**:
 
-   ```yaml
-   git:
-     repo-with-limits:
-       max_file_size: 1048576  # 1MB
-   ```
+```yaml
+git:
+  repo-with-limits:
+    max_file_size: 1048576  # 1MB
+```
 
-2. **Verify file types**:
+1. **Verify file types**:
 
-   ```yaml
-   git:
-     text-only:
-       file_types:
-         - "*.md"
-         - "*.txt"
-         - "*.py"
-         - "*.js"
-       # Avoid binary files
-   ```
+```yaml
+git:
+  text-only:
+    file_types:
+      - "*.md"
+      - "*.txt"
+      - "*.py"
+      - "*.js"  # Avoid binary files
+```
 
-3. **Check file paths**:
+1. **Check file paths**:
    - Ensure include/exclude patterns are correct
    - Verify files exist in the specified paths
 
@@ -558,8 +558,7 @@ git clone https://github.com/org/repo.git /tmp/test-repo
 find /tmp/test-repo -name "*.py" | head -10
 
 # Verify authentication
-curl -H "Authorization: token $REPO_TOKEN" \
-  https://api.github.com/repos/org/repo
+curl -H "Authorization: token $REPO_TOKEN" https://api.github.com/repos/org/repo
 ```
 
 ## 📊 Monitoring and Processing
@@ -568,23 +567,23 @@ curl -H "Authorization: token $REPO_TOKEN" \
 
 ```bash
 # View project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
 ### Configuration Management
 
 ```bash
 # View current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader --workspace . project validate
+qdrant-loader project validate
 ```
 
 ## 🔄 Best Practices
@@ -596,42 +595,42 @@ qdrant-loader --workspace . project validate
 3. **Set size limits** - Avoid processing very large files
 4. **Exclude build artifacts** - Skip generated files and dependencies
 
-### Path Filtering
+### Best Practice Path Filtering
 
 1. **Include specific paths**:
 
-   ```yaml
-   include_paths:
-     - "docs/**"
-     - "src/**"
-     - "README.md"
-   ```
+```yaml
+include_paths:
+  - "docs/**"
+  - "src/**"
+  - "README.md"
+```
 
-2. **Exclude unnecessary paths**:
+1. **Exclude unnecessary paths**:
 
-   ```yaml
-   exclude_paths:
-     - "node_modules/**"
-     - "build/**"
-     - "dist/**"
-     - "__pycache__/**"
-     - ".git/**"
-   ```
+```yaml
+exclude_paths:
+  - "node_modules/**"
+  - "build/**"
+  - "dist/**"
+  - "__pycache__/**"
+  - ".git/**"
+```
 
 ### File Type Selection
 
 1. **Focus on text files**:
 
-   ```yaml
-   file_types:
-     - "*.md"
-     - "*.py"
-     - "*.js"
-     - "*.yaml"
-     - "*.json"
-   ```
+```yaml
+file_types:
+  - "*.md"
+  - "*.py"
+  - "*.js"
+  - "*.yaml"
+  - "*.json"
+```
 
-2. **Avoid binary files** - They don't provide searchable content
+1. **Avoid binary files** - They don't provide searchable content
 
 ### Performance Optimization
 

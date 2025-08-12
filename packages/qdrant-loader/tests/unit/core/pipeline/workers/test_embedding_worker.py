@@ -402,8 +402,9 @@ class TestEmbeddingWorker:
 
         # Create empty async iterator
         async def empty_iterator():
-            return
-            yield  # This line will never be reached
+            # Empty async generator - loop never executes but makes it a generator
+            for _ in []:
+                yield
 
         with patch(
             "qdrant_loader.core.pipeline.workers.embedding_worker.prometheus_metrics"

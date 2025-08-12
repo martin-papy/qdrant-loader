@@ -25,14 +25,18 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking.chunk_size = 100
         settings.global_config.chunking.chunk_overlap = 20
         settings.global_config.chunking.max_chunks_per_document = 500
-        
+
         # Add strategy-specific configuration
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 50
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
-        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
-        
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
+            True
+        )
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = (
+            True
+        )
+
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "cl100k_base"
         return settings
@@ -46,14 +50,18 @@ class TestDefaultChunkingStrategy:
         settings.global_config.chunking.chunk_size = 50
         settings.global_config.chunking.chunk_overlap = 10
         settings.global_config.chunking.max_chunks_per_document = 500
-        
+
         # Add strategy-specific configuration
         settings.global_config.chunking.strategies = Mock()
         settings.global_config.chunking.strategies.default = Mock()
         settings.global_config.chunking.strategies.default.min_chunk_size = 25
-        settings.global_config.chunking.strategies.default.enable_semantic_analysis = True
-        settings.global_config.chunking.strategies.default.enable_entity_extraction = True
-        
+        settings.global_config.chunking.strategies.default.enable_semantic_analysis = (
+            True
+        )
+        settings.global_config.chunking.strategies.default.enable_entity_extraction = (
+            True
+        )
+
         settings.global_config.embedding = Mock()
         settings.global_config.embedding.tokenizer = "none"
         return settings
@@ -141,119 +149,6 @@ class TestDefaultChunkingStrategy:
 
                 assert strategy.encoding is None
 
-    def test_split_text_empty_content(self, mock_settings_no_tokenizer):
-        """Test splitting empty text."""
-        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
-
-            result = strategy._split_text("")
-            assert result == [""]
-
-    def test_split_text_without_tokenizer_short_text(self, mock_settings_no_tokenizer):
-        """Test splitting short text without tokenizer."""
-        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
-
-            text = "Short text"
-            result = strategy._split_text(text)
-            assert result == [text]
-
-    def test_split_text_without_tokenizer_long_text(self, mock_settings_no_tokenizer):
-        """Test splitting long text without tokenizer."""
-        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
-
-            # Create text longer than chunk size (50 chars)
-            text = "a" * 100
-            result = strategy._split_text(text)
-
-            assert len(result) > 1
-            assert all(len(chunk) <= 50 for chunk in result)
-
-    def test_split_text_with_tokenizer_short_text(self, mock_settings):
-        """Test splitting short text with tokenizer."""
-        with patch(
-            "qdrant_loader.core.chunking.strategy.base_strategy.tiktoken"
-        ) as mock_tiktoken:
-            mock_encoding = Mock()
-            mock_encoding.encode.return_value = [1, 2, 3, 4, 5]  # 5 tokens
-            mock_tiktoken.get_encoding.return_value = mock_encoding
-
-            with patch(
-                "qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"
-            ):
-                strategy = DefaultChunkingStrategy(mock_settings)
-
-                text = "Short text"
-                result = strategy._split_text(text)
-                assert result == [text]
-
-    def test_split_text_with_tokenizer_long_text(self, mock_settings):
-        """Test splitting long text with tokenizer."""
-        with patch(
-            "qdrant_loader.core.chunking.strategy.base_strategy.tiktoken"
-        ) as mock_tiktoken:
-            mock_encoding = Mock()
-            # Mock tokenizer for boundary detection
-            def mock_encode(text):
-                # Return a token for each word
-                return list(range(len(text.split())))
-            
-            def mock_decode(tokens):
-                # For boundary detection, return text that's slightly shorter
-                # to simulate token boundary adjustment
-                return "adjusted_text_at_boundary"
-            
-            mock_encoding.encode.side_effect = mock_encode
-            mock_encoding.decode.side_effect = mock_decode
-            mock_tiktoken.get_encoding.return_value = mock_encoding
-
-            with patch(
-                "qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"
-            ):
-                strategy = DefaultChunkingStrategy(mock_settings)
-
-                # Create text that's definitely longer than chunk_size (100 chars)
-                text = "This is a very long text that should definitely be split into multiple chunks when using character-based chunking. " * 3
-                assert len(text) > 300  # Ensure it's much longer than chunk_size
-                
-                result = strategy._split_text(text)
-
-                assert len(result) > 1
-                # Verify that the tokenizer was used for boundary detection
-                assert mock_encoding.encode.call_count > 0
-
-    def test_split_text_with_overlap_edge_case(self, mock_settings_no_tokenizer):
-        """Test splitting text where overlap would cause infinite loop."""
-        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            # Set overlap equal to chunk size - 1 to test edge case
-            mock_settings_no_tokenizer.global_config.chunking.chunk_overlap = 49
-            strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
-
-            text = "a" * 100
-            result = strategy._split_text(text)
-
-            # Should still make progress and not get stuck
-            assert len(result) > 1
-
-    def test_split_text_max_chunks_limit(self, mock_settings_no_tokenizer):
-        """Test that splitting respects max_chunks_per_document limit."""
-        with patch("qdrant_loader.core.chunking.strategy.base_strategy.TextProcessor"):
-            # Create settings that would generate many chunks
-            mock_settings_no_tokenizer.global_config.chunking.chunk_size = 1
-            mock_settings_no_tokenizer.global_config.chunking.chunk_overlap = 0
-            # Also adjust min_chunk_size to allow single character chunks
-            mock_settings_no_tokenizer.global_config.chunking.strategies.default.min_chunk_size = 1
-            strategy = DefaultChunkingStrategy(mock_settings_no_tokenizer)
-
-            # Create text that would generate more than max_chunks_per_document
-            text = "a" * (MAX_CHUNKS_TO_PROCESS + 50)
-
-            result = strategy._split_text(text)
-
-            # The section splitter silently limits chunks to max_chunks_per_document
-            assert len(result) == MAX_CHUNKS_TO_PROCESS
-
     def test_chunk_document_success(self, mock_settings, sample_document):
         """Test successful document chunking."""
         with patch(
@@ -312,7 +207,9 @@ class TestDefaultChunkingStrategy:
                 strategy = DefaultChunkingStrategy(mock_settings)
 
                 # Force the section splitter to return more chunks than the limit
-                with patch.object(strategy.section_splitter, "split_sections") as mock_split:
+                with patch.object(
+                    strategy.section_splitter, "split_sections"
+                ) as mock_split:
                     # Return more chunks than the limit
                     mock_chunks_metadata = [
                         {"content": "chunk", "metadata": {"section_type": "paragraph"}}
@@ -360,9 +257,14 @@ class TestDefaultChunkingStrategy:
                 strategy = DefaultChunkingStrategy(mock_settings)
 
                 # Create a longer document that will definitely be split
-                long_content = "This is a very long document with lots of content that should be split into multiple chunks when using character-based chunking. " * 5
+                long_content = (
+                    "This is a very long document with lots of content that should be split into multiple chunks when using character-based chunking. "
+                    * 5
+                )
                 sample_document.content = long_content
-                assert len(long_content) > 500  # Ensure it's much longer than chunk_size
+                assert (
+                    len(long_content) > 500
+                )  # Ensure it's much longer than chunk_size
 
                 result = strategy.chunk_document(sample_document)
 
@@ -397,5 +299,12 @@ class TestDefaultChunkingStrategy:
                 assert mock_logger.debug.call_count >= 2  # Start and end logging
 
                 # Check that logging includes relevant information
-                start_call = mock_logger.debug.call_args_list[0]
-                assert "Analyzing document structure" in start_call[0][0]
+                # Find the chunk processing debug call (not shutdown or other calls)
+                chunk_processing_calls = [
+                    call
+                    for call in mock_logger.debug.call_args_list
+                    if len(call[0]) > 0 and "Analyzing document structure" in call[0][0]
+                ]
+                assert (
+                    len(chunk_processing_calls) >= 1
+                ), f"Expected chunking debug call not found. Calls: {[call[0][0] for call in mock_logger.debug.call_args_list]}"

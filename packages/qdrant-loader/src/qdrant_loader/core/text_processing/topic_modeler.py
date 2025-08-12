@@ -13,7 +13,9 @@ logger = LoggingConfig.get_logger(__name__)
 class TopicModeler:
     """Handles batched LDA topic modeling for document analysis."""
 
-    def __init__(self, num_topics: int = 3, passes: int = 10, spacy_model: str = "en_core_web_md"):
+    def __init__(
+        self, num_topics: int = 3, passes: int = 10, spacy_model: str = "en_core_web_md"
+    ):
         """Initialize the topic modeler.
 
         Args:
@@ -106,7 +108,7 @@ class TopicModeler:
                 chunksize=2000,
                 update_every=1,
                 alpha=0.1,  # Fixed positive value for document-topic density
-                eta=0.01,   # Fixed positive value for topic-word density
+                eta=0.01,  # Fixed positive value for topic-word density
                 decay=0.5,
                 offset=1.0,
                 eval_every=10,

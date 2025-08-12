@@ -12,25 +12,25 @@ QDrant Loader currently supports extension through:
 
 ### Current Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader CLI                        │
+│ QDrant Loader CLI                                           │
 ├─────────────────────────────────────────────────────────────┤
-│                  Project Manager                            │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
-│  │   Config    │ │   State     │ │ Monitoring  │          │
-│  │ Management  │ │ Management  │ │             │          │
-│  └─────────────┘ └─────────────┘ └─────────────┘          │
+│ Project Manager                                             │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ Config      │ │ State       │ │ Monitoring  │             │
+│ │ Management  │ │ Management  │ │             │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
 ├─────────────────────────────────────────────────────────────┤
-│                Async Ingestion Pipeline                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
-│  │ Connectors  │ │   Chunking  │ │ Embeddings  │          │
-│  │             │ │             │ │             │          │
-│  └─────────────┘ └─────────────┘ └─────────────┘          │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
-│  │    File     │ │   QDrant    │ │    State    │          │
-│  │ Conversion  │ │   Manager   │ │   Tracking  │          │
-│  └─────────────┘ └─────────────┘ └─────────────┘          │
+│ Async Ingestion Pipeline                                    │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ Connectors  │ │ Chunking    │ │ Embeddings  │             │
+│ │             │ │             │ │             │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             │
+│ │ File        │ │ QDrant      │ │ State       │             │
+│ │ Conversion  │ │ Manager     │ │ Tracking    │             │
+│ └─────────────┘ └─────────────┘ └─────────────┘             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,14 +43,15 @@ QDrant Loader currently supports extension through:
 git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
-# Install in development mode
-poetry install
+# Recommended: venv + editable installs
+python -m venv .venv && source .venv/bin/activate
+pip install -e packages/qdrant-loader
 
-# Activate virtual environment
-poetry shell
+# Optional: MCP package if developing integration
+pip install -e packages/qdrant-loader-mcp-server
 
-# Run tests to ensure everything works
-pytest
+# Run tests
+pytest -v
 ```
 
 ## 📊 Custom Data Source Connectors
@@ -66,20 +67,20 @@ from qdrant_loader.core.document import Document
 
 class BaseConnector(ABC):
     """Base class for all connectors."""
-
+    
     def __init__(self, config: SourceConfig):
         self.config = config
         self._initialized = False
-
+    
     async def __aenter__(self):
         """Async context manager entry."""
         self._initialized = True
         return self
-
+    
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         self._initialized = False
-
+    
     @abstractmethod
     async def get_documents(self) -> list[Document]:
         """Get documents from the source."""
@@ -109,11 +110,10 @@ class CustomAPIConnector(BaseConnector):
         self.api_url = config.config["api_url"]
         self.api_key = config.config.get("api_key")
         self.batch_size = config.config.get("batch_size", 100)
-        
+    
     async def get_documents(self) -> list[Document]:
         """Fetch documents from the custom API."""
         documents = []
-        
         headers = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -126,7 +126,6 @@ class CustomAPIConnector(BaseConnector):
                     params={"limit": self.batch_size}
                 )
                 response.raise_for_status()
-                
                 data = response.json()
                 
                 for item in data.get("documents", []):
@@ -160,30 +159,23 @@ class CustomAPIConnector(BaseConnector):
 
 ### Integrating Custom Connectors
 
-To integrate a custom connector into QDrant Loader:
+To integrate a custom connector:
 
-1. **Create the connector class** implementing `BaseConnector`
-2. **Add configuration support** by extending the source configuration
-3. **Register the connector** in your project's connector factory
+1. Implement `BaseConnector`
+2. Create a `SourceConfig` subclass with validation
+3. Wire it in your own pipeline or fork with a factory (core orchestrator directly instantiates known connectors)
 
-Example connector factory extension:
+Example factory for forks/extensions:
 
 ```python
 from qdrant_loader.connectors.base import BaseConnector
 from qdrant_loader.config.source_config import SourceConfig
 
 def create_connector(source_type: str, config: SourceConfig) -> BaseConnector:
-    """Factory function to create connectors."""
-    
     if source_type == "custom_api":
         from .custom_api import CustomAPIConnector
         return CustomAPIConnector(config)
-    elif source_type == "confluence":
-        from qdrant_loader.connectors.confluence import ConfluenceConnector
-        return ConfluenceConnector(config)
-    # ... other existing connectors
-    else:
-        raise ValueError(f"Unknown source type: {source_type}")
+    raise ValueError(f"Unknown source type: {source_type}")
 ```
 
 ## 📄 Document Model
@@ -197,7 +189,6 @@ from datetime import datetime, UTC
 
 class Document(BaseModel):
     """Document model with enhanced metadata support."""
-
     id: str  # Auto-generated from source_type, source, and url
     title: str
     content_type: str
@@ -253,7 +244,6 @@ from qdrant_loader.config.source_config import SourceConfig
 
 class CustomAPIConfig(SourceConfig):
     """Configuration for custom API connector."""
-    
     api_key: Optional[str] = None
     batch_size: int = 100
     timeout: int = 30
@@ -273,7 +263,7 @@ class CustomAPIConfig(SourceConfig):
 
 ```yaml
 # config.yaml
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -329,7 +319,7 @@ class CustomFileProcessor:
             # Custom processing logic
             with open(file_path, 'rb') as f:
                 content = f.read()
-                return self._parse_custom_format(content)
+            return self._parse_custom_format(content)
         else:
             # Fall back to MarkItDown
             return await self.converter.convert_file(file_path)
@@ -404,7 +394,7 @@ async def test_custom_connector_integration():
 
 ## 📦 Packaging Extensions
 
-### Creating a Package
+### Creating a Package (entry point optional)
 
 ```toml
 # pyproject.toml
@@ -417,8 +407,9 @@ dependencies = [
     "pydantic>=2.0.0"
 ]
 
-[project.entry-points."qdrant_loader.connectors"]
-custom_api = "my_extension.custom_api:CustomAPIConnector"
+# Optional entry-points block only if your fork discovers plugins
+# [project.entry-points."qdrant_loader.connectors"]
+# custom_api = "my_extension.custom_api:CustomAPIConnector"
 ```
 
 ### Distribution
@@ -527,7 +518,7 @@ QDrant Loader includes several built-in connectors you can reference:
 
 - **GitConnector** - Git repository processing with branch and path filtering
 - **ConfluenceConnector** - Atlassian Confluence space integration
-- **JiraConnector** - Atlassian Jira project integration  
+- **JiraConnector** - Atlassian Jira project integration
 - **LocalFileConnector** - Local file system processing
 - **PublicDocsConnector** - Public documentation websites
 

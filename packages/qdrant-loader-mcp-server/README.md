@@ -71,7 +71,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 
 # Install in development mode
-pip install -e packages/qdrant-loader-mcp-server[dev]
+pip install -e packages/qdrant-loader-mcp-server
 ```
 
 ### Complete RAG Pipeline
@@ -220,19 +220,19 @@ Ask your AI assistant:
 
 #### Semantic Search
 
-```
+```text
 Find information about rate limiting implementation
 ```
 
 #### Hierarchy Search
 
-```
+```text
 Show me all child pages under the API Documentation section
 ```
 
 #### Attachment Search
 
-```
+```text
 Find all Excel files uploaded by john.doe in the last month
 ```
 

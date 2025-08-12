@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.0.0 - July 30, 2025
+## Version 0.6.0 - August 12, 2025
 
 ### **MAJOR MILESTONE RELEASE**
 
@@ -50,7 +50,7 @@
 - **Improved HTML chunking**: Enhanced robust handling for empty content and malformed HTML with graceful degradation
 - **Code and JSON strategy overhaul**: Complete modular redesign with better handling of large documents and fallback mechanisms
 - **Enhanced chunk processing**: Added additional metadata fields (source_type, url, content_type, title) and improved semantic analysis handling
-- **Updated configuration templates**: Enhanced [config.template.yaml](packages/qdrant-loader/conf/config.template.yaml) and [configuration documentation](docs/users/configuration/config-file-reference.md) with new strategy-specific chunking options
+- **Updated configuration templates**: Enhanced [config.template.yaml](https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/packages/qdrant-loader/conf/config.template.yaml) and [configuration documentation](docs/users/configuration/config-file-reference.md) with new strategy-specific chunking options
 
 ## Version 0.5.0 - July 25, 2025
 
@@ -136,7 +136,7 @@
 - **Backward compatibility**: Regular markdown files continue to use H1-only sectioning, maintaining existing behavior
 - **Comprehensive testing**: Added 3 new test cases covering Excel chunking scenarios and ensuring regular markdown files are unaffected
 
-#### Technical Improvements
+#### Excel Chunking — Technical Improvements
 
 - **Context-aware splitting**: Different header level thresholds based on file type (H1 for markdown, H1+H2 for Excel)
 - **Enhanced metadata tracking**: Added `is_excel_sheet` metadata to identify Excel-derived chunks
@@ -156,7 +156,7 @@
 
 ## Version 0.4.11 - July 10, 2025
 
-### 🐛 Bug Fixes
+### 🐛 File Processing & Configuration Bug Fixes
 
 #### File Processing & Chunking
 
@@ -179,7 +179,7 @@
 
 ## Version 0.4.10 - June 18, 2025
 
-### 🐛 Bug Fixes
+### 🐛 Windows & File Processing Bug Fixes
 
 #### Windows Compatibility & Logging
 
@@ -217,7 +217,7 @@
 
 ### 🧹 Test Suite Improvements
 
-### 🐛 Bug Fixes
+### 🐛 CLI & User Experience Bug Fixes
 
 #### CLI and User Experience
 
@@ -272,27 +272,27 @@
 
 #### File Conversion & Processing Overhaul
 
-**Fixed Critical File Conversion Issues**
+##### Fixed Critical File Conversion Issues
 
 - **Fixed file conversion initialization**: Resolved issue where file conversion was not working due to missing `set_file_conversion_config` calls in the pipeline ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - **Enhanced strategy selection**: Converted files (Excel, Word, PDF, etc.) now correctly use `MarkdownChunkingStrategy` instead of `DefaultChunkingStrategy` ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - **Improved NLP processing**: Converted files now have full NLP processing enabled instead of being skipped with `content_type_inappropriate` ([7de3526](https://github.com/martin-papy/qdrant-loader/commit/7de3526))
 
-**Enhanced File Processing Pipeline**
+##### Enhanced File Processing Pipeline
 
 - Added proper file conversion configuration initialization in source processors ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Implemented automatic strategy selection based on conversion status ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Fixed metadata propagation for converted files ([7de3526](https://github.com/martin-papy/qdrant-loader/commit/7de3526))
 
-#### Chunking Strategy Improvements
+#### Chunking Strategy — Infinite Loop & Safety Fixes
 
-**Resolved Infinite Loop Issues**
+##### Resolved Infinite Loop Issues
 
 - **Fixed MarkdownChunkingStrategy infinite loops**: Resolved critical issue where documents with very long words would create infinite loops, hitting the 1000 chunk limit ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - **Added safety limits**: Implemented `MAX_CHUNKS_PER_SECTION = 100` and `MAX_CHUNKS_PER_DOCUMENT = 500` limits ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - **Enhanced error handling**: Added proper handling for words longer than `max_size` by truncating them with warnings ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 
-**Improved Chunking Logic**
+##### Improved Chunking Logic
 
 - Added safety checks to prevent infinite loops in `_split_large_section` method ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Enhanced logging for debugging chunking issues ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
@@ -300,7 +300,7 @@
 
 #### Workspace Management
 
-**Better Log Organization**
+##### Better Log Organization
 
 - **Fixed workspace logs location**: Logs are now stored in `workspace_path/logs/qdrant-loader.log` instead of cluttering the workspace root ([589ae4b](https://github.com/martin-papy/qdrant-loader/commit/589ae4b))
 - **Enhanced workspace structure**: Added automatic creation of logs directory ([589ae4b](https://github.com/martin-papy/qdrant-loader/commit/589ae4b))
@@ -308,13 +308,13 @@
 
 #### Resource Management & Stability
 
-**Fixed Pipeline Hanging Issues**
+##### Fixed Pipeline Hanging Issues
 
 - **Resolved ResourceManager cleanup**: Fixed issue where normal cleanup was setting shutdown events, causing workers to exit prematurely ([4844abf](https://github.com/martin-papy/qdrant-loader/commit/4844abf))
 - **Enhanced signal handling**: Distinguished between normal cleanup and signal-based shutdown ([4844abf](https://github.com/martin-papy/qdrant-loader/commit/4844abf))
 - **Improved graceful shutdown**: Workers now properly complete processing before shutdown ([4844abf](https://github.com/martin-papy/qdrant-loader/commit/4844abf))
 
-**Performance Optimizations**
+##### Performance Optimizations
 
 - Increased `MAX_CHUNKS_TO_PROCESS` from 100 to 1000 chunks to accommodate larger documents ([1bfe550](https://github.com/martin-papy/qdrant-loader/commit/1bfe550))
 - Better handling of large documents (up to ~1000KB text limit per document) ([1bfe550](https://github.com/martin-papy/qdrant-loader/commit/1bfe550))
@@ -324,14 +324,14 @@
 
 #### Code Quality & Testing
 
-**Enhanced Test Coverage**
+##### Enhanced Test Coverage
 
 - Added comprehensive tests for converted file NLP processing ([7de3526](https://github.com/martin-papy/qdrant-loader/commit/7de3526))
 - Added tests for chunking strategy selection ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Enhanced error handling test coverage ([4844abf](https://github.com/martin-papy/qdrant-loader/commit/4844abf))
 - All existing functionality preserved with 100% test pass rate
 
-**Architecture Improvements**
+##### Architecture Improvements
 
 - Enhanced base connector class with proper file conversion support ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Improved factory pattern for pipeline component creation ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
@@ -339,13 +339,13 @@
 
 #### Configuration & Setup
 
-**Improved File Conversion Support**
+##### Improved File Conversion Support
 
 - Enhanced connector initialization with file conversion configuration ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Better error handling for conversion failures ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Improved fallback mechanisms for unsupported file types ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 
-### 🐛 Bug Fixes
+### 🐛 Critical Pipeline & Processing Bug Fixes
 
 #### Critical Fixes
 

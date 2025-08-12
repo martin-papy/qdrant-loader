@@ -1,6 +1,7 @@
 import os
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 import chardet
 import git
@@ -21,7 +22,7 @@ class GitMetadataExtractor:
             config (GitRepoConfig): Configuration for the Git repository.
         """
         self.config = config
-        self.logger = LoggingConfig.get_logger(__name__)
+        self.logger = logger
 
     def extract_all_metadata(self, file_path: str, content: str) -> dict[str, Any]:
         """Extract all metadata for a file.
@@ -63,7 +64,16 @@ class GitMetadataExtractor:
         file_type = os.path.splitext(rel_path)[1]
         file_name = os.path.basename(rel_path)
         file_encoding = self._detect_encoding(content)
-        line_count = len(content.splitlines())
+        # Count lines using splitlines(), but handle special case for whitespace-only content
+        if not content:
+            line_count = 0
+        elif content.strip() == "" and "\n" in content:
+            # Special case: whitespace-only content with newlines
+            # Count newlines + 1 to include all whitespace segments
+            line_count = content.count("\n") + 1
+        else:
+            # Normal content: use splitlines() which handles trailing newlines correctly
+            line_count = len(content.splitlines())
         word_count = len(content.split())
         file_size = len(content.encode(file_encoding))
 
@@ -98,12 +108,40 @@ class GitMetadataExtractor:
             # Extract repository name and owner from normalized URL
             normalized_url = repo_url[:-4] if repo_url.endswith(".git") else repo_url
             repo_parts = normalized_url.split("/")
-            if len(repo_parts) >= 2:
-                repo_owner = repo_parts[-2]
-                repo_name = repo_parts[-1]
+
+            # Handle different Git hosting platforms using secure URL parsing
+            parsed_url = urlparse(repo_url)
+            hostname = parsed_url.hostname
+
+            if hostname == "dev.azure.com":
+                # Azure DevOps format: https://dev.azure.com/org/project/_git/repo
+                if len(repo_parts) >= 5 and "_git" in repo_parts:
+                    git_index = repo_parts.index("_git")
+                    if git_index >= 1:
+                        repo_owner = repo_parts[git_index - 2]  # org
+                        repo_name = repo_parts[git_index + 1]  # repo
+                    else:
+                        return {}
+                else:
+                    return {}
+            elif hostname in ["github.com", "gitlab.com"] or (
+                hostname and hostname.endswith(".github.com")
+            ):
+                # Standard format: github.com/owner/repo or gitlab.com/owner/repo
+                # Also handle GitHub Enterprise subdomains
+                if len(repo_parts) >= 2:
+                    repo_owner = repo_parts[-2]
+                    repo_name = repo_parts[-1]
+                else:
+                    return {}
             else:
-                repo_owner = ""
-                repo_name = normalized_url
+                # Handle other Git hosting platforms (GitLab self-hosted, etc.)
+                if len(repo_parts) >= 2:
+                    repo_owner = repo_parts[-2]
+                    repo_name = repo_parts[-1]
+                else:
+                    # Invalid URL format
+                    return {}
 
             # Initialize metadata with default values
             metadata = {
@@ -134,6 +172,10 @@ class GitMetadataExtractor:
                             config.get_value("core", "description", "")
                         )
                     self.logger.debug(f"Repository metadata extracted: {metadata!s}")
+            except git.InvalidGitRepositoryError:
+                # If the directory is not a valid Git repository, we can't extract any metadata
+                self.logger.error("Invalid Git repository directory")
+                return {}
             except Exception as e:
                 self.logger.error(f"Failed to read Git config: {e}")
 
@@ -160,7 +202,9 @@ class GitMetadataExtractor:
                         {
                             "last_commit_date": last_commit.committed_datetime.isoformat(),
                             "last_commit_author": last_commit.author.name,
-                            "last_commit_message": last_commit.message.strip(),
+                            "last_commit_message": last_commit.message.strip().split(
+                                "\n"
+                            )[0],
                         }
                     )
                 else:
@@ -172,7 +216,11 @@ class GitMetadataExtractor:
                             {
                                 "last_commit_date": last_commit.committed_datetime.isoformat(),
                                 "last_commit_author": last_commit.author.name,
-                                "last_commit_message": last_commit.message.strip(),
+                                "last_commit_message": last_commit.message.strip().split(
+                                    "\n"
+                                )[
+                                    0
+                                ],
                             }
                         )
                     else:
@@ -182,7 +230,11 @@ class GitMetadataExtractor:
                             {
                                 "last_commit_date": head_commit.committed_datetime.isoformat(),
                                 "last_commit_author": head_commit.author.name,
-                                "last_commit_message": head_commit.message.strip(),
+                                "last_commit_message": head_commit.message.strip().split(
+                                    "\n"
+                                )[
+                                    0
+                                ],
                             }
                         )
             except Exception as e:
@@ -194,7 +246,9 @@ class GitMetadataExtractor:
                         {
                             "last_commit_date": head_commit.committed_datetime.isoformat(),
                             "last_commit_author": head_commit.author.name,
-                            "last_commit_message": head_commit.message.strip(),
+                            "last_commit_message": head_commit.message.strip().split(
+                                "\n"
+                            )[0],
                         }
                     )
                 except Exception as e:
@@ -219,14 +273,20 @@ class GitMetadataExtractor:
         # 1. Start with 1-6 # characters at the start of a line or after a newline
         # 2. Are followed by whitespace and text
         # 3. Continue until the next newline or end of content
-        headings = re.findall(
-            r"(?:^|\n)\s*(#{1,6})\s+(.+?)(?:\n|$)", content, re.MULTILINE
-        )
+        headings = re.findall(r"^[ \t]*(#{1,6})[ \t]+(.+?)$", content, re.MULTILINE)
         self.logger.debug(f"Found {len(headings)!s} headers in content")
 
         if headings:
             self.logger.debug(f"Headers found: {headings!s}")
-            has_toc = "## Table of Contents" in content or "## Contents" in content
+            # Check for various TOC formats with different heading levels
+            toc_patterns = [
+                r"#+\s*Table\s+of\s+Contents",
+                r"#+\s*Contents",
+                r"#+\s*TOC",
+            ]
+            has_toc = any(
+                re.search(pattern, content, re.IGNORECASE) for pattern in toc_patterns
+            )
             heading_levels = [len(h[0]) for h in headings]
             sections_count = len(heading_levels)
             self.logger.debug(
@@ -359,7 +419,7 @@ class GitMetadataExtractor:
         except Exception as e:
             self.logger.debug(f"Failed to get repository description: {e}")
 
-        return "No description available"
+        return ""
 
     def _detect_encoding(self, content: str) -> str:
         """Detect file encoding."""

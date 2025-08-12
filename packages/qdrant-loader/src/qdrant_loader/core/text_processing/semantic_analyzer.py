@@ -1,7 +1,6 @@
 """Semantic analysis module for text processing."""
 
 import logging
-import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -227,19 +226,25 @@ class SemanticAnalyzer:
             # Skip topic extraction for very short texts
             if len(processed_text) < 5:
                 self.logger.debug("Text too short for topic extraction")
-                return [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
+                return [
+                    {
+                        "id": 0,
+                        "terms": [{"term": "general", "weight": 1.0}],
+                        "coherence": 0.5,
+                    }
+                ]
 
             # If we have existing models, use and update them
             if self.dictionary is not None and self.lda_model is not None:
                 # Add new documents to existing dictionary
                 self.dictionary.add_documents([processed_text])
-                
+
                 # Create corpus for the new text
                 corpus = [self.dictionary.doc2bow(processed_text)]
-                
+
                 # Update existing LDA model
                 self.lda_model.update(corpus)
-                
+
                 # Use the updated model for topic extraction
                 current_lda_model = self.lda_model
             else:
@@ -250,12 +255,14 @@ class SemanticAnalyzer:
                 # Create a fresh LDA model for this specific text
                 current_lda_model = LdaModel(
                     corpus,
-                    num_topics=min(self.num_topics, len(processed_text) // 2),  # Ensure reasonable topic count
+                    num_topics=min(
+                        self.num_topics, len(processed_text) // 2
+                    ),  # Ensure reasonable topic count
                     passes=self.passes,
                     id2word=temp_dictionary,
                     random_state=42,  # For reproducibility
                     alpha=0.1,  # Fixed positive value for document-topic density
-                    eta=0.01   # Fixed positive value for topic-word density
+                    eta=0.01,  # Fixed positive value for topic-word density
                 )
 
             # Get topics
@@ -279,12 +286,28 @@ class SemanticAnalyzer:
                     }
                 )
 
-            return topics if topics else [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
-            
+            return (
+                topics
+                if topics
+                else [
+                    {
+                        "id": 0,
+                        "terms": [{"term": "general", "weight": 1.0}],
+                        "coherence": 0.5,
+                    }
+                ]
+            )
+
         except Exception as e:
             self.logger.warning(f"Topic extraction failed: {e}", exc_info=True)
             # Return fallback topic
-            return [{"id": 0, "terms": [{"term": "general", "weight": 1.0}], "coherence": 0.5}]
+            return [
+                {
+                    "id": 0,
+                    "terms": [{"term": "general", "weight": 1.0}],
+                    "coherence": 0.5,
+                }
+            ]
 
     def _extract_key_phrases(self, doc: Doc) -> list[str]:
         """Extract key phrases from text.
@@ -326,11 +349,13 @@ class SemanticAnalyzer:
 
         for doc_id, cached_result in self._doc_cache.items():
             # Check if cached_result has entities and the first entity has context
-            if not cached_result.entities or not cached_result.entities[0].get("context"):
+            if not cached_result.entities or not cached_result.entities[0].get(
+                "context"
+            ):
                 continue
-                
+
             cached_doc = self.nlp(cached_result.entities[0]["context"])
-            
+
             if has_vectors:
                 # Use spaCy's built-in similarity which uses word vectors
                 similarity = doc.similarity(cached_doc)
@@ -338,54 +363,62 @@ class SemanticAnalyzer:
                 # Use alternative similarity calculation for models without word vectors
                 # This avoids the spaCy warning about missing word vectors
                 similarity = self._calculate_alternative_similarity(doc, cached_doc)
-            
+
             similarities[doc_id] = float(similarity)
 
         return similarities
 
     def _calculate_alternative_similarity(self, doc1: Doc, doc2: Doc) -> float:
         """Calculate similarity for models without word vectors.
-        
+
         Uses token overlap and shared entities as similarity metrics.
-        
+
         Args:
             doc1: First document
             doc2: Second document
-            
+
         Returns:
             Similarity score between 0 and 1
         """
         # Extract lemmatized tokens (excluding stop words and punctuation)
-        tokens1 = {token.lemma_.lower() for token in doc1 
-                  if not token.is_stop and not token.is_punct and token.is_alpha}
-        tokens2 = {token.lemma_.lower() for token in doc2 
-                  if not token.is_stop and not token.is_punct and token.is_alpha}
-        
+        tokens1 = {
+            token.lemma_.lower()
+            for token in doc1
+            if not token.is_stop and not token.is_punct and token.is_alpha
+        }
+        tokens2 = {
+            token.lemma_.lower()
+            for token in doc2
+            if not token.is_stop and not token.is_punct and token.is_alpha
+        }
+
         # Calculate token overlap (Jaccard similarity)
         if not tokens1 and not tokens2:
             return 1.0  # Both empty
         if not tokens1 or not tokens2:
             return 0.0  # One empty
-            
+
         intersection = len(tokens1.intersection(tokens2))
         union = len(tokens1.union(tokens2))
         token_similarity = intersection / union if union > 0 else 0.0
-        
+
         # Extract named entities
         entities1 = {ent.text.lower() for ent in doc1.ents}
         entities2 = {ent.text.lower() for ent in doc2.ents}
-        
+
         # Calculate entity overlap
         entity_similarity = 0.0
         if entities1 or entities2:
             entity_intersection = len(entities1.intersection(entities2))
             entity_union = len(entities1.union(entities2))
-            entity_similarity = entity_intersection / entity_union if entity_union > 0 else 0.0
-        
+            entity_similarity = (
+                entity_intersection / entity_union if entity_union > 0 else 0.0
+            )
+
         # Combine token and entity similarities (weighted average)
         # Token similarity gets more weight as it's more comprehensive
         combined_similarity = 0.7 * token_similarity + 0.3 * entity_similarity
-        
+
         return combined_similarity
 
     def _calculate_topic_coherence(self, terms: list[dict[str, Any]]) -> float:
@@ -405,56 +438,60 @@ class SemanticAnalyzer:
         """Clear the document cache and release all resources."""
         # Clear document cache
         self._doc_cache.clear()
-        
+
         # Release LDA model resources
-        if hasattr(self, 'lda_model') and self.lda_model is not None:
+        if hasattr(self, "lda_model") and self.lda_model is not None:
             try:
                 # Clear LDA model
                 self.lda_model = None
             except Exception as e:
                 logger.warning(f"Error releasing LDA model: {e}")
-        
+
         # Release dictionary
-        if hasattr(self, 'dictionary') and self.dictionary is not None:
+        if hasattr(self, "dictionary") and self.dictionary is not None:
             try:
                 self.dictionary = None
             except Exception as e:
                 logger.warning(f"Error releasing dictionary: {e}")
-        
+
         # Release spaCy model resources
-        if hasattr(self, 'nlp') and self.nlp is not None:
+        if hasattr(self, "nlp") and self.nlp is not None:
             try:
                 # Clear spaCy caches and release memory
-                if hasattr(self.nlp, 'vocab') and hasattr(self.nlp.vocab, 'strings'):
+                if hasattr(self.nlp, "vocab") and hasattr(self.nlp.vocab, "strings"):
                     # Try different methods to clear spaCy caches
-                    if hasattr(self.nlp.vocab.strings, '_map') and hasattr(self.nlp.vocab.strings._map, 'clear'):
+                    if hasattr(self.nlp.vocab.strings, "_map") and hasattr(
+                        self.nlp.vocab.strings._map, "clear"
+                    ):
                         self.nlp.vocab.strings._map.clear()
-                    elif hasattr(self.nlp.vocab.strings, 'clear'):
+                    elif hasattr(self.nlp.vocab.strings, "clear"):
                         self.nlp.vocab.strings.clear()
                     # Additional cleanup for different spaCy versions
-                    if hasattr(self.nlp.vocab, '_vectors') and hasattr(self.nlp.vocab._vectors, 'clear'):
+                    if hasattr(self.nlp.vocab, "_vectors") and hasattr(
+                        self.nlp.vocab._vectors, "clear"
+                    ):
                         self.nlp.vocab._vectors.clear()
                 # Note: We don't set nlp to None as it might be needed for other operations
                 # but we clear its internal caches
             except Exception as e:
                 logger.debug(f"spaCy cache clearing skipped (version-specific): {e}")
-        
+
         logger.debug("Semantic analyzer resources cleared")
 
     def shutdown(self):
         """Shutdown the semantic analyzer and release all resources.
-        
+
         This method should be called when the analyzer is no longer needed
         to ensure proper cleanup of all resources.
         """
         self.clear_cache()
-        
+
         # More aggressive cleanup for shutdown
-        if hasattr(self, 'nlp'):
+        if hasattr(self, "nlp"):
             try:
                 # Release the spaCy model completely
                 del self.nlp
             except Exception as e:
                 logger.warning(f"Error releasing spaCy model: {e}")
-        
+
         logger.debug("Semantic analyzer shutdown completed")

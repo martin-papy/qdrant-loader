@@ -269,7 +269,9 @@ class TestSourceFilter:
         source_types = ["git", "confluence", "jira", "localfile", "publicdocs"]
         expected_counts = [2, 1, 1, 1, 0]  # Expected count for each type
 
-        for source_type, expected_count in zip(source_types, expected_counts, strict=False):
+        for source_type, expected_count in zip(
+            source_types, expected_counts, strict=False
+        ):
             result = filter_obj.filter_sources(
                 sample_sources_config, source_type=source_type
             )

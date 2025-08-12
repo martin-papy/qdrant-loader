@@ -45,10 +45,6 @@ class MultiProjectConfigParser:
         """
         logger.debug("Starting configuration parsing")
 
-        # Check for legacy format and provide clear error message
-        if self._is_legacy_config(config_data):
-            self._raise_legacy_format_error()
-
         # Validate configuration structure
         self.validator.validate_structure(config_data)
 
@@ -87,78 +83,6 @@ class MultiProjectConfigParser:
         except ValidationError as e:
             logger.error("Failed to parse global configuration", error=str(e))
             raise
-
-    def _is_legacy_config(self, config_data: dict[str, Any]) -> bool:
-        """Determine if configuration uses legacy single-project format.
-
-        Args:
-            config_data: Raw configuration data
-
-        Returns:
-            bool: True if legacy format, False if multi-project format
-        """
-        has_sources_at_root = "sources" in config_data
-        has_projects_section = "projects" in config_data
-
-        return has_sources_at_root and not has_projects_section
-
-    def _raise_legacy_format_error(self) -> None:
-        """Raise a helpful error message for legacy configuration format."""
-        error_message = """
-Legacy configuration format detected. Please update your config.yaml file to use the new multi-project format.
-
-MIGRATION GUIDE:
-================
-
-OLD FORMAT (legacy):
-```yaml
-global:
-  # ... global settings ...
-
-sources:
-  git:
-    my-repo:
-      # ... git config ...
-  confluence:
-    my-space:
-      # ... confluence config ...
-```
-
-NEW FORMAT (multi-project):
-```yaml
-global:
-  # ... global settings ...
-
-projects:
-  default:  # or any project name you prefer
-    display_name: "My Project"
-    description: "Project description"
-    collection_name: "my_collection"  # optional, defaults to global collection + project name
-    sources:
-      git:
-        my-repo:
-          # ... git config ...
-      confluence:
-        my-space:
-          # ... confluence config ...
-    overrides: {}  # optional project-specific config overrides
-```
-
-BENEFITS OF NEW FORMAT:
-- Support for multiple projects in a single configuration
-- Better organization and isolation of different data sources
-- Project-specific collection names and configuration overrides
-- Clearer structure and easier maintenance
-
-To migrate your configuration:
-1. Move your 'sources' section under 'projects.default.sources'
-2. Add required project fields: display_name, description
-3. Optionally specify a custom collection_name
-4. Add any project-specific overrides if needed
-
-For more information, see the documentation on multi-project configuration.
-"""
-        raise ValueError(error_message.strip())
 
     def _parse_projects(
         self, config_data: dict[str, Any], global_config: GlobalConfig
@@ -208,7 +132,7 @@ For more information, see the documentation on multi-project configuration.
         # Extract basic project information
         display_name = project_data.get("display_name", project_id)
         description = project_data.get("description")
-        collection_name = project_data.get("collection_name")
+        project_data.get("collection_name")
 
         # Parse project-specific sources with automatic field injection
         sources_data = project_data.get("sources", {})

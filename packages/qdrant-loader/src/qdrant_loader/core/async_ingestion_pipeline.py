@@ -22,10 +22,10 @@ logger = LoggingConfig.get_logger(__name__)
 
 
 class AsyncIngestionPipeline:
-    """Refactored async ingestion pipeline using modular architecture.
+    """Async ingestion pipeline using modular architecture.
 
-    This class maintains backward compatibility with the original interface
-    while using the new modular pipeline architecture internally.
+    This class provides a streamlined interface for the modular pipeline
+    architecture, handling document ingestion and processing workflows.
     """
 
     def __init__(
@@ -33,7 +33,6 @@ class AsyncIngestionPipeline:
         settings: Settings,
         qdrant_manager: QdrantManager,
         state_manager: StateManager | None = None,
-        embedding_cache=None,  # Placeholder for future cache (maintained for compatibility)
         max_chunk_workers: int = 10,
         max_embed_workers: int = 4,
         max_upsert_workers: int = 4,
@@ -48,7 +47,7 @@ class AsyncIngestionPipeline:
             settings: Application settings
             qdrant_manager: QdrantManager instance
             state_manager: Optional state manager
-            embedding_cache: Placeholder for future cache (unused)
+
             max_chunk_workers: Maximum number of chunking workers
             max_embed_workers: Maximum number of embedding workers
             max_upsert_workers: Maximum number of upsert workers
@@ -59,15 +58,14 @@ class AsyncIngestionPipeline:
         """
         self.settings = settings
         self.qdrant_manager = qdrant_manager
-        self.embedding_cache = embedding_cache  # Maintained for compatibility
 
-        # Validate global configuration
+        # Validate that global configuration is available for pipeline operation.
         if not settings.global_config:
             raise ValueError(
                 "Global configuration not available. Please check your configuration file."
             )
 
-        # Create pipeline configuration
+        # Create pipeline configuration with worker and batch size settings.
         self.pipeline_config = PipelineConfig(
             max_chunk_workers=max_chunk_workers,
             max_embed_workers=max_embed_workers,
@@ -77,16 +75,16 @@ class AsyncIngestionPipeline:
             enable_metrics=enable_metrics,
         )
 
-        # Create resource manager
+        # Create resource manager to handle cleanup and signal handling.
         self.resource_manager = ResourceManager()
         self.resource_manager.register_signal_handlers()
 
-        # Create state manager if not provided
+        # Create state manager instance if not provided by caller.
         self.state_manager = state_manager or StateManager(
             settings.global_config.state_management
         )
 
-        # Initialize project manager for multi-project support
+        # Initialize project manager to support multi-project configurations.
         if not settings.global_config.qdrant:
             raise ValueError(
                 "Qdrant configuration is required for project manager initialization"
@@ -134,34 +132,50 @@ class AsyncIngestionPipeline:
         self._cleanup_performed = False
 
     async def initialize(self):
-        """Initialize the pipeline (maintained for compatibility)."""
-        logger.debug("Pipeline initialization called")
+        """Initialize the pipeline."""
+        logger.debug("Starting pipeline initialization")
 
         try:
             # Initialize state manager first
-            if not self.state_manager._initialized:
+            if not self.state_manager.is_initialized:
                 logger.debug("Initializing state manager")
                 await self.state_manager.initialize()
-                logger.debug("State manager initialization completed")
 
             # Initialize project manager
             if not self.project_manager._initialized:
                 logger.debug("Initializing project manager")
-                if self.state_manager._session_factory:
-                    try:
-                        async with self.state_manager._session_factory() as session:
-                            await self.project_manager.initialize(session)
-                        logger.debug("Project manager initialization completed")
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to initialize project manager: {e}", exc_info=True
-                        )
-                        raise
-                else:
-                    logger.error("State manager session factory is not available")
+                # Prefer direct use of session factory to match existing tests/mocks
+                session_factory = getattr(self.state_manager, "_session_factory", None)
+                if session_factory is None:
+                    logger.error(
+                        "State manager session factory is not available during initialization",
+                        suggestion="Check database configuration and ensure proper state manager setup",
+                    )
                     raise RuntimeError("State manager session factory is not available")
+
+                try:
+                    async with session_factory() as session:  # type: ignore
+                        await self.project_manager.initialize(session)
+                    logger.debug("Project manager initialization completed")
+                except Exception as e:
+                    # Standardized error logging: user-friendly message + technical details + stack trace
+                    logger.error(
+                        "Failed to initialize project manager during pipeline startup",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        suggestion="Check database connectivity and project configuration",
+                        exc_info=True,
+                    )
+                    raise
         except Exception as e:
-            logger.error(f"Pipeline initialization failed: {e}", exc_info=True)
+            # Standardized error logging: user-friendly message + technical details + stack trace
+            logger.error(
+                "Pipeline initialization failed during startup sequence",
+                error=str(e),
+                error_type=type(e).__name__,
+                suggestion="Check configuration, database connectivity, and system resources",
+                exc_info=True,
+            )
             raise
 
     async def process_documents(
@@ -200,6 +214,7 @@ class AsyncIngestionPipeline:
             },
         )
 
+        documents = []  # Initialize to avoid UnboundLocalError in exception handler
         try:
             logger.debug("Starting document processing with new pipeline architecture")
 
@@ -212,7 +227,7 @@ class AsyncIngestionPipeline:
                 force=force,
             )
 
-            # Update metrics (maintained for compatibility)
+            # Update metrics
             if documents:
                 self.monitor.start_batch(
                     "document_batch",
@@ -235,7 +250,15 @@ class AsyncIngestionPipeline:
             return documents
 
         except Exception as e:
-            logger.error(f"Document processing failed: {e}", exc_info=True)
+            # Standardized error logging: user-friendly message + technical details + stack trace
+            logger.error(
+                "Document processing pipeline failed during ingestion",
+                error=str(e),
+                error_type=type(e).__name__,
+                documents_attempted=len(documents),
+                suggestion="Check data source connectivity, document formats, and system resources",
+                exc_info=True,
+            )
             self.monitor.end_operation("ingestion_process", error=str(e))
             raise
 
@@ -303,44 +326,3 @@ class AsyncIngestionPipeline:
             logger.error(f"Error in resource manager cleanup: {e}")
 
         logger.info("Pipeline cleanup completed (sync)")
-
-    # Backward compatibility properties
-    @property
-    def _shutdown_event(self):
-        """Backward compatibility property for shutdown event."""
-        return self.resource_manager.shutdown_event
-
-    @property
-    def _active_tasks(self):
-        """Backward compatibility property for active tasks."""
-        return self.resource_manager.active_tasks
-
-    @property
-    def _cleanup_done(self):
-        """Backward compatibility property for cleanup status."""
-        return self.resource_manager.cleanup_done
-
-    # Legacy methods maintained for compatibility
-    def _cleanup(self):
-        """Legacy cleanup method (redirects to sync cleanup)."""
-        self._sync_cleanup()
-
-    async def _async_cleanup(self):
-        """Legacy async cleanup method (redirects to resource manager)."""
-        await self.resource_manager.cleanup()
-
-    def _handle_sigint(self, signum, frame):
-        """Legacy signal handler (redirects to resource manager)."""
-        self.resource_manager._handle_sigint(signum, frame)
-
-    def _handle_sigterm(self, signum, frame):
-        """Legacy signal handler (redirects to resource manager)."""
-        self.resource_manager._handle_sigterm(signum, frame)
-
-    def _cancel_all_tasks(self):
-        """Legacy task cancellation (redirects to resource manager)."""
-        self.resource_manager._cancel_all_tasks()
-
-    def _force_immediate_exit(self):
-        """Legacy force exit (redirects to resource manager)."""
-        self.resource_manager._force_immediate_exit()

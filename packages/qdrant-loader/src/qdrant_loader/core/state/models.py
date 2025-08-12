@@ -30,13 +30,13 @@ class UTCDateTime(TypeDecorator):
     impl = SQLDateTime
     cache_ok = True
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value, _dialect):
         if value is not None:
             if not value.tzinfo:
                 value = value.replace(tzinfo=UTC)
         return value
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value, _dialect):
         if value is not None:
             if not value.tzinfo:
                 value = value.replace(tzinfo=UTC)
@@ -141,8 +141,6 @@ class IngestionHistory(Base):
         UniqueConstraint(
             "project_id", "source_type", "source", name="uix_project_source_ingestion"
         ),
-        # Keep legacy constraint for backward compatibility
-        UniqueConstraint("source_type", "source", name="uix_source"),
         Index("ix_ingestion_project_id", "project_id"),
     )
 
@@ -207,8 +205,6 @@ class DocumentStateRecord(Base):
             "document_id",
             name="uix_project_document",
         ),
-        # Keep legacy constraint for backward compatibility
-        UniqueConstraint("source_type", "source", "document_id", name="uix_document"),
         Index("ix_document_url", "url"),
         Index("ix_document_converted", "is_converted"),
         Index("ix_document_attachment", "is_attachment"),

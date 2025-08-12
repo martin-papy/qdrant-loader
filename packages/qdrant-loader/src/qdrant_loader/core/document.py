@@ -31,7 +31,9 @@ class Document(BaseModel):
     def __init__(self, **data):
         # Generate ID only if not provided
         if "id" not in data or not data["id"]:
-            data["id"] = self.generate_id(data["source_type"], data["source"], data["url"])
+            data["id"] = self.generate_id(
+                data["source_type"], data["source"], data["url"]
+            )
 
         # Calculate content hash
         data["content_hash"] = self.calculate_content_hash(
@@ -41,14 +43,13 @@ class Document(BaseModel):
         # Initialize with provided data
         super().__init__(**data)
 
-        logger.debug(f"Creating document with id: {self.id}")
+        # Single consolidated debug log for document creation (reduces verbosity)
         logger.debug(
-            f"     Document content length: {len(self.content) if self.content else 0}"
+            "Created document",
+            id=self.id,
+            content_length=len(self.content) if self.content else 0,
+            source_type=self.source_type,
         )
-        logger.debug(f"     Document source: {self.source}")
-        logger.debug(f"     Document source_type: {self.source_type}")
-        logger.debug(f"     Document created_at: {self.created_at}")
-        logger.debug(f"     Document metadata: {self.metadata}")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert document to dictionary format for Qdrant."""

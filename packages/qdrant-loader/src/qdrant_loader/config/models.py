@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from .sources import SourcesConfig
 
@@ -136,8 +136,11 @@ class ProjectStats(BaseModel):
     last_updated: datetime | None = Field(None, description="Last update timestamp")
     storage_size: int | None = Field(None, description="Storage size in bytes")
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict()
+
+    @field_serializer("last_updated")
+    def serialize_last_updated(self, value: datetime | None) -> str | None:
+        return value.isoformat() if value else None
 
 
 class ProjectInfo(BaseModel):
@@ -151,8 +154,11 @@ class ProjectInfo(BaseModel):
     document_count: int = Field(default=0, description="Number of documents")
     last_updated: datetime | None = Field(None, description="Last update timestamp")
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict()
+
+    @field_serializer("last_updated")
+    def serialize_last_updated(self, value: datetime | None) -> str | None:
+        return value.isoformat() if value else None
 
 
 class ProjectDetail(ProjectInfo):

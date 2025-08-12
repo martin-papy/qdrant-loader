@@ -46,7 +46,6 @@
 ```bash
 # [Brief comment about what this does]
 qdrant-loader --workspace . [command] [basic-options]
-
 # [Expected output or result]
 ```
 
@@ -58,7 +57,6 @@ global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "[collection-name]"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
     model: "text-embedding-3-small"
@@ -68,7 +66,6 @@ projects:
     project_id: "[project-id]"
     display_name: "[Project Display Name]"
     description: "[Project description]"
-    
     sources:
       [source-type]:
         [source-name]:
@@ -93,7 +90,6 @@ global:
     # [Description of this section]
     [option-1]: [value]  # [Description of option]
     [option-2]: [value]  # [Description of option]
-    
     # [Description of advanced options]
     advanced:
       [advanced-option]: [value]  # [When to use this]
@@ -103,7 +99,6 @@ projects:
     project_id: "[project-id]"
     display_name: "[Project Name]"
     description: "[Project description]"
-    
     sources:
       [source-type]:
         [source-name]:
@@ -115,9 +110,9 @@ projects:
 ```bash
 # [Feature-specific command options]
 qdrant-loader --workspace . [command] \
-  --[option-1] [value] \      # [Description]
-  --[option-2] [value] \      # [Description]
-  --[flag]                    # [Description]
+  --[option-1] [value] \    # [Description]
+  --[option-2] [value] \    # [Description]
+  --[flag]                  # [Description]
 ```
 
 ## 📚 Examples
@@ -154,7 +149,6 @@ projects:
     project_id: "[project-id]"
     display_name: "[Advanced Project]"
     description: "[Advanced use case description]"
-    
     sources:
       [source-type]:
         [source-name]:
@@ -303,12 +297,12 @@ QDrant Loader provides these commands:
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| `init` | Initialize QDrant collection | `qdrant-loader --workspace . init [--force]` |
-| `ingest` | Process and load data | `qdrant-loader --workspace . ingest [--project PROJECT]` |
-| `config` | Display configuration | `qdrant-loader --workspace . config` |
-| `project list` | List projects | `qdrant-loader project --workspace . list [--format json]` |
-| `project status` | Show project status | `qdrant-loader project --workspace . status [--project-id PROJECT]` |
-| `project validate` | Validate projects | `qdrant-loader project --workspace . validate [--project-id PROJECT]` |
+| `init` | Initialize QDrant collection | `qdrant-loader init --workspace . [--force]` |
+| `ingest` | Process and load data | `qdrant-loader ingest --workspace . [--project PROJECT]` |
+| `config` | Display configuration | `qdrant-loader config --workspace .` |
+| `project list` | List projects | `qdrant-loader project list --workspace . [--format json]` |
+| `project status` | Show project status | `qdrant-loader project status --workspace . [--project-id PROJECT]` |
+| `project validate` | Validate projects | `qdrant-loader project validate --workspace . [--project-id PROJECT]` |
 
 ### Global Options
 

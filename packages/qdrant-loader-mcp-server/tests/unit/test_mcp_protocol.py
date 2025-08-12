@@ -9,7 +9,6 @@ from qdrant_loader_mcp_server.mcp import MCPHandler
 @pytest.fixture
 def mcp_handler():
     """Create MCP handler fixture."""
-    # TODO: Implement search engine and query processor
     search_engine = Mock()
     query_processor = Mock()
     return MCPHandler(search_engine, query_processor)
@@ -121,7 +120,7 @@ async def test_handle_list_tools(mcp_handler):
     assert response["id"] == 1
     assert "result" in response
     assert "tools" in response["result"]
-    assert len(response["result"]["tools"]) == 8
+    assert len(response["result"]["tools"]) == 10
     tool = response["result"]["tools"][0]
     assert tool["name"] == "search"
     assert "description" in tool

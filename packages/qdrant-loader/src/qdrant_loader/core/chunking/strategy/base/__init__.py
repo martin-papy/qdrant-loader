@@ -11,7 +11,7 @@ from .section_splitter import BaseSectionSplitter
 
 __all__ = [
     "BaseDocumentParser",
-    "BaseSectionSplitter", 
+    "BaseSectionSplitter",
     "BaseMetadataExtractor",
     "BaseChunkProcessor",
-] 
+]

@@ -28,4 +28,4 @@ def get_version() -> str:
                     return pyproject["project"]["version"]
     except Exception:
         pass
-    return "Unknown" 
+    return "Unknown"

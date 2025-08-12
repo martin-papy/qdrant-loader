@@ -70,8 +70,7 @@ QDrant Loader uses Microsoft's MarkItDown library to handle a wide variety of fi
 File conversion is configured globally and applies to all projects and sources that enable it:
 
 ```yaml
-global_config:
-  # File conversion configuration
+global:
   file_conversion:
     # Maximum file size for conversion (in bytes)
     max_file_size: 52428800  # 50MB
@@ -83,18 +82,20 @@ global_config:
     markitdown:
       # Enable LLM integration for image descriptions
       enable_llm_descriptions: false
+      
       # LLM model for image descriptions (when enabled)
       llm_model: "gpt-4o"
+      
       # LLM endpoint (when enabled)
       llm_endpoint: "https://api.openai.com/v1"
-      # API key for LLM service (required when enable_llm_descriptions is True)
+      
+      # API key for LLM service (required when enable_llm_descriptions is true)
       llm_api_key: "${OPENAI_API_KEY}"
 
 projects:
   my-project:
     display_name: "My Project"
     description: "Project with file conversion enabled"
-
     sources:
       localfile:
         documents:
@@ -105,6 +106,7 @@ projects:
             - "*.pptx"
             - "*.xlsx"
           max_file_size: 52428800
+          
           # Enable file conversion for this source
           enable_file_conversion: true
 ```
@@ -141,14 +143,14 @@ Each data source can enable or disable file conversion:
 
 ```text
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    File     │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
-│  Detection  │    │ Detection   │    │ Conversion  │    │  Content    │
+│     File    │───▶│   Format    │───▶│ MarkItDown  │───▶│  Markdown   │
+│  Detection  │    │  Detection  │    │ Conversion  │    │   Content   │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
        │                   │                   │                   │
        ▼                   ▼                   ▼                   ▼
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ MIME Type   │    │ Extension   │    │ Text + OCR  │    │ Structured  │
-│ Detection   │    │ Mapping     │    │ + Audio     │    │ Text Output │
+│  MIME Type  │    │  Extension  │    │ Text + OCR  │    │ Structured  │
+│  Detection  │    │   Mapping   │    │  + Audio    │    │Text Output  │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
@@ -182,7 +184,7 @@ Each data source can enable or disable file conversion:
 ### Basic Document Processing
 
 ```yaml
-global_config:
+global:
   file_conversion:
     max_file_size: 52428800  # 50MB
     conversion_timeout: 300  # 5 minutes
@@ -193,7 +195,6 @@ projects:
   documents:
     display_name: "Document Processing"
     description: "Process various document formats"
-    
     sources:
       localfile:
         office-docs:
@@ -209,7 +210,7 @@ projects:
 ### Research Papers with LLM Enhancement
 
 ```yaml
-global_config:
+global:
   file_conversion:
     max_file_size: 104857600  # 100MB for large papers
     conversion_timeout: 600   # 10 minutes
@@ -223,7 +224,6 @@ projects:
   research:
     display_name: "Research Papers"
     description: "Academic papers and research documents"
-    
     sources:
       localfile:
         papers:
@@ -237,7 +237,7 @@ projects:
 ### Multimedia Content Processing
 
 ```yaml
-global_config:
+global:
   file_conversion:
     max_file_size: 52428800
     conversion_timeout: 900  # 15 minutes for audio/video
@@ -250,7 +250,6 @@ projects:
   multimedia:
     display_name: "Multimedia Content"
     description: "Audio, images, and presentations"
-    
     sources:
       localfile:
         media:
@@ -267,7 +266,7 @@ projects:
 ### Confluence with Attachment Processing
 
 ```yaml
-global_config:
+global:
   file_conversion:
     max_file_size: 52428800
     conversion_timeout: 300
@@ -278,7 +277,6 @@ projects:
   confluence-docs:
     display_name: "Confluence Documentation"
     description: "Confluence pages and attachments"
-    
     sources:
       confluence:
         company-wiki:
@@ -297,29 +295,29 @@ projects:
 
 ```bash
 # Initialize the project
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Test ingestion with file conversion enabled
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # Enable debug logging to see conversion details
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 ```
 
 ### Validate Configuration
 
 ```bash
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 
 # Check all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 
 # View current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 ## 🔧 Troubleshooting
@@ -333,7 +331,7 @@ qdrant-loader --workspace . config
 **Solutions**:
 
 ```yaml
-global_config:
+global:
   file_conversion:
     # Increase size limit
     max_file_size: 104857600  # 100MB
@@ -354,7 +352,7 @@ projects:
 **Solutions**:
 
 ```yaml
-global_config:
+global:
   file_conversion:
     # Increase timeout
     conversion_timeout: 900  # 15 minutes
@@ -368,26 +366,26 @@ global_config:
 
 1. **Check API key**:
 
-   ```bash
-   echo $OPENAI_API_KEY
-   ```
+```bash
+echo $OPENAI_API_KEY
+```
 
-2. **Verify configuration**:
+1. **Verify configuration**:
 
-   ```yaml
-   global_config:
-     file_conversion:
-       markitdown:
-         enable_llm_descriptions: true
-         llm_api_key: "${OPENAI_API_KEY}"
-   ```
+```yaml
+global:
+  file_conversion:
+    markitdown:
+      enable_llm_descriptions: true
+      llm_api_key: "${OPENAI_API_KEY}"
+```
 
-3. **Test API access**:
+1. **Test API access**:
 
-   ```bash
-   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-     https://api.openai.com/v1/models
-   ```
+```bash
+curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+  https://api.openai.com/v1/models
+```
 
 #### Memory Issues
 
@@ -396,7 +394,7 @@ global_config:
 **Solutions**:
 
 ```yaml
-global_config:
+global:
   file_conversion:
     # Reduce file size limits
     max_file_size: 20971520  # 20MB
@@ -413,26 +411,26 @@ global_config:
 
 1. **Check file types in source configuration**:
 
-   ```yaml
-   sources:
-     localfile:
-       documents:
-         file_types:
-           - "*.pdf"
-           - "*.docx"
-           - "*.txt"
-   ```
+```yaml
+sources:
+  localfile:
+    documents:
+      file_types:
+        - "*.pdf"
+        - "*.docx"
+        - "*.txt"
+```
 
-2. **Verify MarkItDown support** - Check if the file format is supported by MarkItDown
+1. **Verify MarkItDown support** - Check if the file format is supported by MarkItDown
 
-3. **Enable file conversion**:
+2. **Enable file conversion**:
 
-   ```yaml
-   sources:
-     localfile:
-       documents:
-         enable_file_conversion: true
-   ```
+```yaml
+sources:
+  localfile:
+    documents:
+      enable_file_conversion: true
+```
 
 ### Debugging Commands
 
@@ -458,13 +456,13 @@ pip list | grep -E "(markitdown|tesseract|whisper)"
 
 ```bash
 # View project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # Monitor with debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 ```
 
 ### Performance Considerations

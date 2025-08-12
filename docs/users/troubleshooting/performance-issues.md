@@ -6,12 +6,12 @@ This guide helps you diagnose and resolve performance issues with QDrant Loader,
 
 ### Quick Diagnosis
 
-```
-🐌 Slow data loading         → See [Loading Performance](#loading-performance-issues)
-💾 High memory usage         → See [Memory Issues](#memory-issues)
-🔥 High CPU usage           → See [CPU Issues](#cpu-issues)
-📊 Poor throughput          → See [Throughput Optimization](#throughput-optimization)
-🌐 Network bottlenecks      → See [Network Performance](#network-performance)
+```text
+🐌 Slow data loading → See [Loading Performance](#loading-performance-issues)
+💾 High memory usage → See [Memory Issues](#memory-issues)
+🔥 High CPU usage → See [CPU Issues](#cpu-issues)
+📊 Poor throughput → See [Throughput Optimization](#throughput-optimization)
+🌐 Network bottlenecks → See [Network Performance](#network-performance)
 ```
 
 ## 📊 Performance Monitoring
@@ -25,8 +25,8 @@ iostat -x 1
 free -h
 
 # Check project status and validation
-qdrant-loader --workspace . project status
-qdrant-loader --workspace . project validate
+qdrant-loader project status --workspace .
+qdrant-loader project validate --workspace .
 
 # Monitor QDrant instance health
 curl -s "$QDRANT_URL/health"
@@ -41,10 +41,10 @@ nethogs
 
 ```bash
 # Benchmark data loading with timing
-time qdrant-loader --workspace . ingest --project my-project
+time qdrant-loader ingest --workspace . --project my-project
 
 # Test configuration validation
-time qdrant-loader --workspace . project validate --project-id my-project
+time qdrant-loader project validate --workspace . --project-id my-project
 
 # Monitor file processing
 find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
@@ -70,10 +70,10 @@ find ./docs -type f -name "*.md" -exec wc -c {} + | sort -n
 find ./docs -type f | wc -l
 
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 ```
 
 **Optimization Solutions:**
@@ -82,7 +82,7 @@ qdrant-loader --workspace . project status --project-id my-project
 
 ```yaml
 # In your workspace config file
-global_config:
+global:
   file_conversion:
     max_file_size: 10485760  # 10MB limit
     conversion_timeout: 30   # 30 seconds timeout
@@ -90,14 +90,14 @@ global_config:
       enable_llm_descriptions: false  # Disable for faster processing
 ```
 
-2. **Filter unnecessary files:**
+1. **Filter unnecessary files:**
 
 ```yaml
 # In your project configuration
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         my-docs:
           base_url: "file:///path/to/docs"
           include_paths:
@@ -113,15 +113,15 @@ projects:
           max_file_size: 5242880  # 5MB limit
 ```
 
-3. **Process in smaller batches:**
+1. **Process in smaller batches:**
 
 ```bash
 # Process specific projects only
-qdrant-loader --workspace . ingest --project specific-project
+qdrant-loader ingest --workspace . --project specific-project
 
 # Use force flag to reprocess if needed
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace . --project my-project
 ```
 
 ### Issue: Memory usage grows during loading
@@ -140,33 +140,32 @@ qdrant-loader --workspace . ingest --project my-project
 watch -n 1 'free -h && ps aux | grep qdrant-loader'
 
 # Process smaller datasets first
-qdrant-loader --workspace . ingest --project small-project
+qdrant-loader ingest --workspace . --project small-project
 
 # Check configuration for memory-intensive settings
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 **Memory Optimization:**
 
 ```yaml
 # Memory-efficient configuration
-global_config:
+global:
   file_conversion:
-    max_file_size: 2097152    # 2MB limit
-    conversion_timeout: 15    # Shorter timeout
+    max_file_size: 2097152  # 2MB limit
+    conversion_timeout: 15  # Shorter timeout
     markitdown:
       enable_llm_descriptions: false  # Disable LLM processing
 
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         docs:
           max_file_size: 1048576  # 1MB limit per file
           file_types:
             - "md"
-            - "txt"
-          # Exclude large file types
+            - "txt"  # Exclude large file types
           exclude_paths:
             - "*.pdf"
             - "*.zip"
@@ -189,22 +188,22 @@ projects:
 find ./docs -type f -size +10M -exec ls -lh {} \;
 
 # Configure smaller file size limits
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 **Large File Configuration:**
 
 ```yaml
 # Handle large files appropriately
-global_config:
+global:
   file_conversion:
-    max_file_size: 5242880    # 5MB limit
-    conversion_timeout: 60    # Longer timeout for large files
+    max_file_size: 5242880   # 5MB limit
+    conversion_timeout: 60   # Longer timeout for large files
 
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         large-docs:
           base_url: "file:///path/to/large-docs"
           max_file_size: 10485760  # 10MB for this specific source
@@ -234,7 +233,7 @@ ps aux | grep qdrant-loader
 free -h
 
 # Check project configuration for memory-intensive settings
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 ```
 
 **Solutions:**
@@ -244,20 +243,20 @@ qdrant-loader --workspace . project validate --project-id my-project
 ulimit -m 2097152  # 2GB limit
 
 # Process projects individually
-qdrant-loader --workspace . ingest --project project1
-qdrant-loader --workspace . ingest --project project2
+qdrant-loader ingest --workspace . --project project1
+qdrant-loader ingest --workspace . --project project2
 
 # Use smaller file size limits
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 **Memory-Efficient Configuration:**
 
 ```yaml
 # Optimize for lower memory usage
-global_config:
+global:
   file_conversion:
-    max_file_size: 1048576    # 1MB limit
+    max_file_size: 1048576  # 1MB limit
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false
@@ -265,7 +264,7 @@ global_config:
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         docs:
           max_file_size: 524288  # 512KB limit
           file_types:
@@ -288,34 +287,33 @@ projects:
 
 ```bash
 # Limit CPU usage with nice
-nice -n 10 qdrant-loader --workspace . ingest
+nice -n 10 qdrant-loader ingest --workspace .
 
 # Process smaller batches
-qdrant-loader --workspace . ingest --project small-project
+qdrant-loader ingest --workspace . --project small-project
 
 # Use CPU throttling
-cpulimit -l 50 qdrant-loader --workspace . ingest
+cpulimit -l 50 -- qdrant-loader ingest --workspace .
 ```
 
 **CPU Optimization:**
 
 ```yaml
 # CPU-efficient configuration
-global_config:
+global:
   file_conversion:
-    conversion_timeout: 15    # Shorter processing time
+    conversion_timeout: 15  # Shorter processing time
     markitdown:
       enable_llm_descriptions: false  # Disable CPU-intensive LLM processing
 
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         docs:
           file_types:
             - "md"
-            - "txt"
-          # Exclude CPU-intensive file types
+            - "txt"  # Exclude CPU-intensive file types
           exclude_paths:
             - "*.pdf"
             - "*.docx"
@@ -328,29 +326,27 @@ projects:
 
 ```bash
 # Process multiple projects efficiently
-qdrant-loader --workspace . project list
-qdrant-loader --workspace . ingest --project project1
-qdrant-loader --workspace . ingest --project project2
+qdrant-loader project list --workspace .
+qdrant-loader ingest --workspace . --project project1
+qdrant-loader ingest --workspace . --project project2
 
 # Validate configuration before processing
-qdrant-loader --workspace . project validate
+qdrant-loader project validate --workspace .
 ```
 
 ### Configuration Optimization
 
 ```yaml
 # Optimized configuration for better throughput
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
-  
   file_conversion:
-    max_file_size: 5242880    # 5MB - balance between size and processing time
+    max_file_size: 5242880  # 5MB - balance between size and processing time
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false  # Faster processing
@@ -358,7 +354,7 @@ global_config:
 projects:
   my-project:
     sources:
-      local_files:
+      localfile:
         docs:
           base_url: "file:///path/to/docs"
           file_types:
@@ -367,7 +363,7 @@ projects:
             - "rst"
           max_file_size: 2097152  # 2MB per file
           include_paths:
-            - "docs/**"
+            - "docs/**/*"
             - "*.md"
           exclude_paths:
             - "node_modules/**"
@@ -403,7 +399,7 @@ iftop -i eth0
 
 ```yaml
 # Network-optimized configuration
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -419,7 +415,7 @@ projects:
           token: "${REPO_TOKEN}"
           # Optimize for network performance
           include_paths:
-            - "docs/**"
+            - "docs/**/*"
           exclude_paths:
             - "*.pdf"
             - "*.zip"
@@ -428,7 +424,6 @@ projects:
             - "md"
             - "txt"
           max_file_size: 1048576  # 1MB to reduce network load
-      
       confluence:
         my-confluence:
           base_url: "${CONFLUENCE_URL}"
@@ -448,15 +443,13 @@ projects:
 
 ```yaml
 # Organize projects for optimal processing
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
-  
   file_conversion:
     max_file_size: 5242880
     conversion_timeout: 30
@@ -467,12 +460,11 @@ global_config:
 projects:
   local-docs:
     sources:
-      local_files:
+      localfile:
         documentation:
           base_url: "file:///path/to/docs"
           file_types: ["md", "txt"]
           max_file_size: 2097152
-  
   git-repos:
     sources:
       git:
@@ -481,7 +473,6 @@ projects:
           branch: "main"
           token: "${REPO_TOKEN}"
           file_types: ["md", "py", "js"]
-  
   confluence-content:
     sources:
       confluence:
@@ -516,9 +507,9 @@ iostat -x 1
 ### Small Dataset (< 1GB)
 
 ```yaml
-global_config:
+global:
   file_conversion:
-    max_file_size: 10485760   # 10MB
+    max_file_size: 10485760  # 10MB
     conversion_timeout: 60
     markitdown:
       enable_llm_descriptions: true  # Can afford LLM processing
@@ -526,7 +517,7 @@ global_config:
 projects:
   small-project:
     sources:
-      local_files:
+      localfile:
         docs:
           max_file_size: 5242880  # 5MB per file
 ```
@@ -534,9 +525,9 @@ projects:
 ### Medium Dataset (1-10GB)
 
 ```yaml
-global_config:
+global:
   file_conversion:
-    max_file_size: 5242880    # 5MB
+    max_file_size: 5242880  # 5MB
     conversion_timeout: 30
     markitdown:
       enable_llm_descriptions: false  # Skip for performance
@@ -544,7 +535,7 @@ global_config:
 projects:
   medium-project:
     sources:
-      local_files:
+      localfile:
         docs:
           max_file_size: 2097152  # 2MB per file
           exclude_paths:
@@ -555,9 +546,9 @@ projects:
 ### Large Dataset (> 10GB)
 
 ```yaml
-global_config:
+global:
   file_conversion:
-    max_file_size: 2097152    # 2MB
+    max_file_size: 2097152  # 2MB
     conversion_timeout: 15
     markitdown:
       enable_llm_descriptions: false
@@ -565,7 +556,7 @@ global_config:
 projects:
   large-project:
     sources:
-      local_files:
+      localfile:
         docs:
           max_file_size: 1048576  # 1MB per file
           file_types:
@@ -596,8 +587,8 @@ pkill -f qdrant-loader
 sync && echo 3 > /proc/sys/vm/drop_caches
 
 # 4. Restart with minimal configuration
-qdrant-loader --workspace . project validate
-qdrant-loader --workspace . project status
+qdrant-loader project validate --workspace .
+qdrant-loader project status --workspace .
 ```
 
 ### Performance Recovery
@@ -609,14 +600,14 @@ df -h
 free -h
 
 # 2. Validate configuration
-qdrant-loader --workspace . project validate
+qdrant-loader project validate --workspace .
 
 # 3. Restart processing with smaller scope
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest --project small-project
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace . --project small-project
 
 # 4. Monitor progress
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 ```
 
 ## 📈 Performance Monitoring
@@ -631,18 +622,18 @@ df -h
 iostat -x 1
 
 # Check project status
-qdrant-loader --workspace . project list
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
+qdrant-loader project list --workspace .
 
 # Validate configuration
-qdrant-loader --workspace . project validate
+qdrant-loader project validate --workspace .
 ```
 
 ### Performance Testing
 
 ```bash
 # Time the ingestion process
-time qdrant-loader --workspace . ingest --project test-project
+time qdrant-loader ingest --workspace . --project test-project
 
 # Monitor memory usage during processing
 watch -n 1 'free -h && ps aux | grep qdrant-loader'

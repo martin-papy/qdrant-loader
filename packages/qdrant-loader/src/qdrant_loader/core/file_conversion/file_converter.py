@@ -97,7 +97,7 @@ class TimeoutHandler:
         self.old_handler = None
         self.timer = None
 
-    def _timeout_handler(self, signum=None, frame=None):
+    def _timeout_handler(self, _signum=None, _frame=None):
         """Signal handler for timeout."""
         raise ConversionTimeoutError(self.timeout_seconds, self.file_path)
 
@@ -123,7 +123,7 @@ class TimeoutHandler:
                 signal.alarm(self.timeout_seconds)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, _exc_tb):
         """Clean up timeout handler."""
         if sys.platform == "win32":
             # On Windows, we can't easily cancel the thread, but since it's daemon,

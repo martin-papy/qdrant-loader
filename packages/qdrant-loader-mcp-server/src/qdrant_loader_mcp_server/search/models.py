@@ -13,7 +13,7 @@ class SearchResult(BaseModel):
     source_url: str | None = None
     file_path: str | None = None
     repo_name: str | None = None
-    
+
     # Document identification
     document_id: str | None = None
     created_at: str | None = None
@@ -64,7 +64,7 @@ class SearchResult(BaseModel):
 
     # 🔥 NEW: Semantic analysis (NLP results)
     entities: list[dict | str] = []  # Handle both dict and string formats
-    topics: list[dict | str] = []    # Handle both dict and string formats  
+    topics: list[dict | str] = []  # Handle both dict and string formats
     key_phrases: list[dict | str] = []
     pos_tags: list[dict] = []
 
@@ -99,12 +99,13 @@ class SearchResult(BaseModel):
             # Try to create title from available data
             if self.file_path:
                 import os
+
                 base_title = os.path.basename(self.file_path)
             elif self.repo_name:
                 base_title = self.repo_name
             else:
                 base_title = "Untitled"
-        
+
         # 🔥 ENHANCED: Use section breadcrumb for better context
         if self.section_breadcrumb:
             return f"{self.section_title or base_title} ({self.section_breadcrumb})"
@@ -131,27 +132,29 @@ class SearchResult(BaseModel):
         # Only return hierarchy info for Confluence sources
         if self.source_type != "confluence":
             return None
-            
+
         # 🔥 ENHANCED: Include section hierarchy
         parts = []
-        
+
         if self.hierarchy_context:
             parts.append(self.hierarchy_context)
-            
+
         if self.section_breadcrumb:
             parts.append(f"Section: {self.section_breadcrumb}")
-            
+
         if self.chunk_index is not None and self.total_chunks is not None:
             parts.append(f"Chunk: {self.chunk_index + 1}/{self.total_chunks}")
-            
+
         return " | ".join(parts) if parts else None
 
     def get_content_info(self) -> str | None:
         """Get formatted content analysis information."""
         # 🔥 NEW: Content type summary
-        if not any([self.has_code_blocks, self.has_tables, self.has_images, self.has_links]):
+        if not any(
+            [self.has_code_blocks, self.has_tables, self.has_images, self.has_links]
+        ):
             return None
-            
+
         content_parts = []
         if self.has_code_blocks:
             content_parts.append("Code")
@@ -161,25 +164,25 @@ class SearchResult(BaseModel):
             content_parts.append("Images")
         if self.has_links:
             content_parts.append("Links")
-            
+
         content_info = f"Contains: {', '.join(content_parts)}"
-        
+
         if self.word_count:
             content_info += f" | {self.word_count} words"
         if self.estimated_read_time:
             content_info += f" | ~{self.estimated_read_time}min read"
-            
+
         return content_info
 
     def get_semantic_info(self) -> str | None:
         """Get formatted semantic analysis information."""
         # 🔥 NEW: Semantic analysis summary
         parts = []
-        
+
         if self.entities:
             entity_count = len(self.entities)
             parts.append(f"{entity_count} entities")
-            
+
         if self.topics:
             # Handle both string and dict formats for topics
             topic_texts = []
@@ -190,23 +193,23 @@ class SearchResult(BaseModel):
                     topic_texts.append(topic.get("text", str(topic)))
                 else:
                     topic_texts.append(str(topic))
-            
+
             topic_list = ", ".join(topic_texts)
             if len(self.topics) > 3:
                 topic_list += f" (+{len(self.topics) - 3} more)"
             parts.append(f"Topics: {topic_list}")
-            
+
         if self.key_phrases:
             phrase_count = len(self.key_phrases)
             parts.append(f"{phrase_count} key phrases")
-            
+
         return " | ".join(parts) if parts else None
 
     def get_navigation_info(self) -> str | None:
         """Get formatted navigation context."""
         # 🔥 NEW: Navigation context
         parts = []
-        
+
         if self.previous_section:
             parts.append(f"Previous: {self.previous_section}")
         if self.next_section:
@@ -217,7 +220,7 @@ class SearchResult(BaseModel):
         if self.subsections:
             subsection_count = len(self.subsections)
             parts.append(f"{subsection_count} subsections")
-            
+
         return " | ".join(parts) if parts else None
 
     def is_root_document(self) -> bool:
@@ -226,7 +229,9 @@ class SearchResult(BaseModel):
 
     def has_children(self) -> bool:
         """Check if this document has children."""
-        return (self.children_count is not None and self.children_count > 0) or bool(self.subsections)
+        return (self.children_count is not None and self.children_count > 0) or bool(
+            self.subsections
+        )
 
     def get_attachment_info(self) -> str | None:
         """Get formatted attachment information for display."""
@@ -251,6 +256,7 @@ class SearchResult(BaseModel):
         elif self.original_filename:
             # Extract extension from filename
             import os
+
             _, ext = os.path.splitext(self.original_filename)
             return ext.lower().lstrip(".") if ext else None
         return None
@@ -269,7 +275,9 @@ class SearchResult(BaseModel):
 
     def is_documentation(self) -> bool:
         """Check if this result is documentation content."""
-        return self.source_type in ["confluence", "localfile"] and not self.has_code_blocks
+        return (
+            self.source_type in ["confluence", "localfile"] and not self.has_code_blocks
+        )
 
     def is_structured_data(self) -> bool:
         """Check if this result contains structured data."""
@@ -280,13 +288,13 @@ class SearchResult(BaseModel):
         # 🔥 NEW: Rich section context
         if not self.section_title:
             return None
-            
+
         context = self.section_title
         if self.section_type and self.section_level:
             context = f"[{self.section_type.upper()}] {context}"
         if self.section_anchor:
             context += f" (#{self.section_anchor})"
-            
+
         return context
 
     def get_comprehensive_context(self) -> dict[str, str | None]:

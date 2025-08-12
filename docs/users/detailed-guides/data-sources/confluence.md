@@ -22,16 +22,16 @@ When you connect to Confluence, QDrant Loader can process:
 1. **Create an API Token**:
    - Go to [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens)
    - Click "Create API token"
-   - Give it a descriptive name like "QDrant Loader"
-   - Copy the token
+   - Name it (e.g., "QDrant Loader")
+   - Copy the generated token
 
 2. **Set environment variables**:
 
-   ```bash
-   export CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
-   export CONFLUENCE_EMAIL=your-email@company.com
-   export CONFLUENCE_TOKEN=your_api_token_here
-   ```
+```bash
+export CONFLUENCE_URL="https://your-domain.atlassian.net/wiki"
+export CONFLUENCE_EMAIL="your-email@company.com"
+export CONFLUENCE_TOKEN="your_api_token_here"
+```
 
 ### Confluence Data Center
 
@@ -40,15 +40,15 @@ When you connect to Confluence, QDrant Loader can process:
 1. **Create a Personal Access Token**:
    - Go to Confluence → Settings → Personal Access Tokens
    - Click "Create token"
-   - Set appropriate permissions: `READ` for spaces and pages
+   - Set permissions (at least `READ` for spaces and pages)
    - Copy the token
 
 2. **Set environment variables**:
 
-   ```bash
-   export CONFLUENCE_URL=https://confluence.your-company.com
-   export CONFLUENCE_TOKEN=your_personal_access_token
-   ```
+```bash
+export CONFLUENCE_URL="https://confluence.your-company.com"
+export CONFLUENCE_TOKEN="your_personal_access_token"
+```
 
 ## ⚙️ Configuration
 
@@ -62,14 +62,13 @@ projects:
     display_name: "My Documentation Project"
     description: "Company documentation and knowledge base"
     collection_name: "my-docs"
-    
     sources:
       confluence:
         company-wiki:
           base_url: "${CONFLUENCE_URL}"
           deployment_type: "cloud"  # or "datacenter"
           space_key: "DOCS"
-          email: "${CONFLUENCE_EMAIL}"  # Required for Cloud
+          email: "${CONFLUENCE_EMAIL}"   # Required for Cloud
           token: "${CONFLUENCE_TOKEN}"
           content_types:
             - "page"
@@ -88,7 +87,6 @@ projects:
     display_name: "Documentation Hub"
     description: "All company documentation sources"
     collection_name: "docs-hub"
-    
     sources:
       confluence:
         # Main documentation space
@@ -134,7 +132,6 @@ projects:
     display_name: "Multi-Instance Documentation"
     description: "Documentation from multiple Confluence instances"
     collection_name: "multi-docs"
-    
     sources:
       confluence:
         # Cloud instance
@@ -144,7 +141,9 @@ projects:
           space_key: "DOCS"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_TOKEN}"
-          content_types: ["page", "blogpost"]
+          content_types:
+            - "page"
+            - "blogpost"
           include_labels: []
           exclude_labels: []
           enable_file_conversion: true
@@ -156,7 +155,8 @@ projects:
           deployment_type: "datacenter"
           space_key: "INTERNAL"
           token: "${CONFLUENCE_PAT}"
-          content_types: ["page"]
+          content_types:
+            - "page"
           include_labels: []
           exclude_labels: []
           enable_file_conversion: true
@@ -165,12 +165,20 @@ projects:
 
 ## 🎯 Configuration Options
 
+### Validator Requirements
+
+- `email` + `token` required for `deployment_type: cloud`
+- `token` required for `deployment_type: datacenter`
+- `content_types` allowed: `page`, `blogpost`, `comment` (validator enforced)
+- `deployment_type` default: `cloud`
+- `include_labels`/`exclude_labels` default: empty lists
+
 ### Required Settings
 
 | Option | Type | Description | Example |
 |--------|------|-------------|---------|
 | `base_url` | string | Confluence base URL | `https://company.atlassian.net/wiki` |
-| `deployment_type` | string | Deployment type: `cloud`, `datacenter`, or `server` | `cloud` |
+| `deployment_type` | string | Deployment type: `cloud`, `datacenter` | `cloud` |
 | `space_key` | string | Confluence space key to process | `DOCS` |
 | `token` | string | API token or Personal Access Token | `${CONFLUENCE_TOKEN}` |
 
@@ -205,7 +213,6 @@ projects:
     display_name: "Documentation Team"
     description: "All documentation spaces"
     collection_name: "documentation"
-    
     sources:
       confluence:
         user-guides:
@@ -214,9 +221,13 @@ projects:
           space_key: "GUIDES"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_TOKEN}"
-          content_types: ["page"]
-          include_labels: ["published"]
-          exclude_labels: ["draft", "archive"]
+          content_types:
+            - "page"
+          include_labels:
+            - "published"
+          exclude_labels:
+            - "draft"
+            - "archive"
           enable_file_conversion: true
           download_attachments: true
         
@@ -226,9 +237,14 @@ projects:
           space_key: "API"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["api", "reference"]
-          exclude_labels: ["deprecated"]
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels:
+            - "api"
+            - "reference"
+          exclude_labels:
+            - "deprecated"
           enable_file_conversion: true
           download_attachments: true
 ```
@@ -241,7 +257,6 @@ projects:
     display_name: "Development Team"
     description: "Technical documentation and architecture"
     collection_name: "dev-docs"
-    
     sources:
       confluence:
         architecture:
@@ -250,9 +265,13 @@ projects:
           space_key: "ARCH"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_TOKEN}"
-          content_types: ["page"]
-          include_labels: ["architecture", "design"]
-          exclude_labels: ["obsolete"]
+          content_types:
+            - "page"
+          include_labels:
+            - "architecture"
+            - "design"
+          exclude_labels:
+            - "obsolete"
           enable_file_conversion: true
           download_attachments: true
         
@@ -262,9 +281,14 @@ projects:
           space_key: "DEV"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["development", "guidelines"]
-          exclude_labels: ["draft"]
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels:
+            - "development"
+            - "guidelines"
+          exclude_labels:
+            - "draft"
           enable_file_conversion: true
           download_attachments: true
 ```
@@ -275,32 +299,32 @@ projects:
 
 ```bash
 # Initialize the project (creates collection if needed)
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Test ingestion with your Confluence configuration
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all configured projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project validate --project-id my-project
 ```
 
 ### Debug Confluence Processing
 
 ```bash
 # Enable debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 
 # Process specific project only
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source within a project
-qdrant-loader --workspace . ingest --project my-project --source-type confluence --source company-wiki
+qdrant-loader ingest --workspace . --project my-project --source-type confluence --source company-wiki
 ```
 
 ## 🔧 Troubleshooting
@@ -314,13 +338,26 @@ qdrant-loader --workspace . ingest --project my-project --source-type confluence
 **Solutions**:
 
 ```bash
-# Test API token manually for Cloud
-curl -u "your-email@company.com:your-api-token" \
+# Export credentials securely (recommended)
+export CONFLUENCE_EMAIL="your-email@company.com"
+export CONFLUENCE_TOKEN="your-api-token"  # API token for Cloud or PAT for Data Center
+
+# Test API token manually for Cloud (uses env vars)
+curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \
   "https://your-domain.atlassian.net/wiki/rest/api/space"
 
-# Test Personal Access Token for Data Center
-curl -H "Authorization: Bearer your-personal-access-token" \
+# Test Personal Access Token for Data Center (uses env var)
+curl -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
   "https://confluence.company.com/rest/api/space"
+
+# Alternatively, use a netrc file to avoid inline credentials
+# ~/.netrc
+# machine your-domain.atlassian.net
+#   login your-email@company.com
+#   password your-api-token
+# Then:
+curl --netrc-file ~/.netrc \
+  "https://your-domain.atlassian.net/wiki/rest/api/space"
 ```
 
 **Check your configuration**:
@@ -337,12 +374,16 @@ curl -H "Authorization: Bearer your-personal-access-token" \
 **Solutions**:
 
 ```bash
-# List accessible spaces for Cloud
-curl -u "your-email:your-token" \
+# List accessible spaces for Cloud (env vars)
+curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \
   "https://your-domain.atlassian.net/wiki/rest/api/space" | jq '.results[].key'
 
-# List accessible spaces for Data Center
-curl -H "Authorization: Bearer your-token" \
+# Or using netrc file
+curl --netrc-file ~/.netrc \
+  "https://your-domain.atlassian.net/wiki/rest/api/space" | jq '.results[].key'
+
+# List accessible spaces for Data Center (env var)
+curl -H "Authorization: Bearer $CONFLUENCE_TOKEN" \
   "https://confluence.company.com/rest/api/space" | jq '.results[].key'
 ```
 
@@ -360,29 +401,29 @@ curl -H "Authorization: Bearer your-token" \
 
 1. **Verify project structure**:
 
-   ```yaml
-   projects:
-     your-project:  # Project ID
-       sources:
-         confluence:
-           source-name:  # Source name
-             base_url: "..."
-             # ... other settings
-   ```
+```yaml
+projects:
+  your-project:  # Project ID
+    sources:
+      confluence:
+        source-name:  # Source name
+          base_url: "..."
+          # ... other settings
+```
 
-2. **Check required fields**:
+1. **Check required fields**:
    - `base_url`: Must include `/wiki` for Cloud instances
-   - `deployment_type`: Must be `cloud`, `datacenter`, or `server`
+   - `deployment_type`: Must be `cloud` or `datacenter`
    - `space_key`: Must be a valid space key
    - `token`: Must be set via environment variable or directly
 
-3. **Validate environment variables**:
+2. **Validate environment variables**:
 
-   ```bash
-   echo $CONFLUENCE_URL
-   echo $CONFLUENCE_EMAIL
-   echo $CONFLUENCE_TOKEN
-   ```
+```bash
+echo "$CONFLUENCE_URL"
+echo "$CONFLUENCE_EMAIL"
+echo "$CONFLUENCE_TOKEN"
+```
 
 #### Rate Limiting
 
@@ -404,42 +445,47 @@ The Confluence connector automatically handles rate limiting, but you can:
 
 1. **Filter content with labels**:
 
-   ```yaml
-   confluence:
-     large-space:
-       space_key: "LARGE"
-       include_labels: ["important", "current"]
-       exclude_labels: ["archive", "deprecated"]
-   ```
+```yaml
+confluence:
+  large-space:
+    space_key: "LARGE"
+    include_labels:
+      - "important"
+      - "current"
+    exclude_labels:
+      - "archive"
+      - "deprecated"
+```
 
-2. **Process specific content types**:
+1. **Process specific content types**:
 
-   ```yaml
-   confluence:
-     pages-only:
-       space_key: "DOCS"
-       content_types: ["page"]  # Skip blogposts
-   ```
+```yaml
+confluence:
+  pages-only:
+    space_key: "DOCS"
+    content_types:
+      - "page"  # Skip blogposts
+```
 
-3. **Disable attachment processing temporarily**:
+1. **Disable attachment processing temporarily**:
 
-   ```yaml
-   confluence:
-     no-attachments:
-       space_key: "DOCS"
-       download_attachments: false
-   ```
+```yaml
+confluence:
+  no-attachments:
+    space_key: "DOCS"
+    download_attachments: false
+```
 
 ### Debugging Commands
 
 ```bash
 # Check Confluence API connectivity
-curl -u "email:token" "https://domain.atlassian.net/wiki/rest/api/space" | jq '.size'
+curl -u "email:token" \
+  "https://domain.atlassian.net/wiki/rest/api/space" | jq '.size'
 
 # List pages in a space
 curl -u "email:token" \
-  "https://domain.atlassian.net/wiki/rest/api/space/DOCS/content/page" | \
-  jq '.results[].title'
+  "https://domain.atlassian.net/wiki/rest/api/space/DOCS/content/page" | jq '.results[].title'
 
 # Check specific page content
 curl -u "email:token" \
@@ -452,23 +498,23 @@ curl -u "email:token" \
 
 ```bash
 # View project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
-### Configuration Management
+### Configuration Validation
 
 ```bash
 # View current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader --workspace . project validate
+qdrant-loader project validate
 ```
 
 ## 🔄 Best Practices
@@ -480,7 +526,7 @@ qdrant-loader --workspace . project validate
 3. **Organize with page hierarchy** - Use parent/child relationships
 4. **Archive old content** - Move outdated content to archive spaces
 
-### Configuration Management
+### Configuration Best Practices
 
 1. **Use environment variables** - Keep sensitive data out of config files
 2. **Organize by teams/purposes** - Create separate projects for different use cases

@@ -1,0 +1,5 @@
+{
+  // Markdownlint configuration for qdrant-loader project
+  "default": true,
+  "MD013": false // Ignore line length rule as requested
+}

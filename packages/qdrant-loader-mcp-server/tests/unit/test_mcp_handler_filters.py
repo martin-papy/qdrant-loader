@@ -3,10 +3,12 @@
 from unittest.mock import Mock
 
 import pytest
-from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
-from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
 from qdrant_loader_mcp_server.mcp.formatters import MCPFormatters
 from qdrant_loader_mcp_server.mcp.protocol import MCPProtocol
+from qdrant_loader_mcp_server.mcp.search_handler import SearchHandler
+from qdrant_loader_mcp_server.search.components.search_result_models import (
+    HybridSearchResult,
+)
 
 
 @pytest.fixture
@@ -130,7 +132,7 @@ def search_handler():
     return SearchHandler(mock_search_engine, mock_query_processor, mock_protocol)
 
 
-@pytest.fixture 
+@pytest.fixture
 def formatters():
     """Create a MCPFormatters instance for testing."""
     return MCPFormatters()
@@ -145,7 +147,7 @@ class TestHierarchyFilters:
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should only return the root document (depth=0)
         assert len(filtered) == 1
         assert filtered[0].depth == 0
@@ -159,19 +161,21 @@ class TestHierarchyFilters:
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should only return documents with "Developer Guide" as parent
         assert len(filtered) == 1
         assert filtered[0].parent_title == "Developer Guide"
         assert filtered[0].source_title == "API Reference"
 
-    def test_apply_hierarchy_filters_root_only(self, search_handler, mock_search_results):
+    def test_apply_hierarchy_filters_root_only(
+        self, search_handler, mock_search_results
+    ):
         """Test filtering for root documents only."""
         hierarchy_filter = {"root_only": True}
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should only return root documents
         assert len(filtered) == 1
         assert filtered[0].is_root_document() is True
@@ -185,7 +189,7 @@ class TestHierarchyFilters:
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should only return documents with children
         assert len(filtered) == 1
         assert filtered[0].has_children() is True
@@ -199,7 +203,7 @@ class TestHierarchyFilters:
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should return documents without children (includes attachments)
         assert len(filtered) == 2
         titles = [r.source_title for r in filtered]
@@ -214,7 +218,7 @@ class TestHierarchyFilters:
         filtered = search_handler._apply_hierarchy_filters(
             mock_search_results, hierarchy_filter
         )
-        
+
         # Should exclude the git result but include all Confluence results
         confluence_titles = [r.source_title for r in filtered]
         assert "README.md" not in confluence_titles
@@ -228,11 +232,11 @@ class TestHierarchyFilters:
             r for r in mock_search_results if r.source_type == "confluence"
         ]
         organized = search_handler._organize_by_hierarchy(confluence_results)
-        
+
         # Should have one group: "Developer Guide" (attachment uses breadcrumb root)
         assert len(organized) == 1
         assert "Developer Guide" in organized
-        
+
         # Developer Guide group should have all 3 documents
         dev_guide_group = organized["Developer Guide"]
         assert len(dev_guide_group) == 3
@@ -241,7 +245,9 @@ class TestHierarchyFilters:
         assert "API Reference" in titles
         assert "project-requirements.pdf" in titles
 
-    def test_format_hierarchical_results(self, formatters, search_handler, mock_search_results):
+    def test_format_hierarchical_results(
+        self, formatters, search_handler, mock_search_results
+    ):
         """Test formatting hierarchical results."""
         confluence_results = [
             r
@@ -250,11 +256,71 @@ class TestHierarchyFilters:
         ]
         organized = search_handler._organize_by_hierarchy(confluence_results)
         formatted = formatters.format_hierarchical_results(organized)
-        
+
         # Should contain the organized structure
         assert "Developer Guide" in formatted
         assert "API Reference" in formatted
         assert "results organized by hierarchy" in formatted
+
+    def test_create_lightweight_hierarchy_results(
+        self, formatters, search_handler, mock_search_results
+    ):
+        """Test creating lightweight hierarchy results structure."""
+        confluence_results = [
+            r
+            for r in mock_search_results
+            if r.source_type == "confluence" and not r.is_attachment
+        ]
+        organized = search_handler._organize_by_hierarchy(confluence_results)
+
+        lightweight_results = formatters.create_lightweight_hierarchy_results(
+            confluence_results, organized, "test query"
+        )
+
+        # Validate the new lightweight structure
+        assert "hierarchy_index" in lightweight_results
+        assert "hierarchy_groups" in lightweight_results
+        assert "total_found" in lightweight_results
+        assert "query_metadata" in lightweight_results
+
+        # Check hierarchy index structure
+        hierarchy_index = lightweight_results["hierarchy_index"]
+        assert len(hierarchy_index) > 0
+
+        first_item = hierarchy_index[0]
+        assert "document_id" in first_item
+        assert "title" in first_item
+        assert "score" in first_item
+        assert "hierarchy_info" in first_item
+        assert "navigation_hints" in first_item
+
+        # Check hierarchy_info structure
+        hierarchy_info = first_item["hierarchy_info"]
+        assert "depth" in hierarchy_info
+        assert "source_type" in hierarchy_info
+        assert "has_children" in hierarchy_info
+
+        # Check navigation_hints structure
+        navigation_hints = first_item["navigation_hints"]
+        assert "group" in navigation_hints
+        assert "siblings_count" in navigation_hints
+        assert "children_count" in navigation_hints
+
+        # Check hierarchy groups structure
+        hierarchy_groups = lightweight_results["hierarchy_groups"]
+        if hierarchy_groups:  # Only check if groups exist
+            first_group = hierarchy_groups[0]
+            assert "group_key" in first_group
+            assert "group_name" in first_group
+            assert "document_ids" in first_group
+            assert "depth_range" in first_group
+            assert "total_documents" in first_group
+
+        # Check query metadata
+        query_metadata = lightweight_results["query_metadata"]
+        assert "search_query" in query_metadata
+        assert "source_types_found" in query_metadata
+        assert query_metadata["search_query"] == "test query"
 
 
 class TestAttachmentFilters:
@@ -268,7 +334,7 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should only return attachments
         assert len(filtered) == 1
         assert filtered[0].is_attachment is True
@@ -282,19 +348,21 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should only return attachments with matching parent document
         assert len(filtered) == 1
         assert filtered[0].parent_document_title == "Project Planning"
         assert filtered[0].source_title == "project-requirements.pdf"
 
-    def test_apply_attachment_filters_file_type(self, search_handler, mock_search_results):
+    def test_apply_attachment_filters_file_type(
+        self, search_handler, mock_search_results
+    ):
         """Test filtering by file type."""
         attachment_filter = {"file_type": "pdf"}
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should only return PDF files
         assert len(filtered) == 1
         assert filtered[0].get_file_type() == "pdf"
@@ -308,7 +376,7 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should return files >= 1MB AND files with no size (non-attachments)
         # Non-attachments have file_size=None which passes the filter
         assert len(filtered) == 3
@@ -325,7 +393,7 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should return files <= 1MB AND files with no size (non-attachments)
         # The 2MB attachment should be excluded, but non-attachments (None) pass through
         assert len(filtered) == 2
@@ -339,7 +407,7 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should only return attachments by the specified author
         assert len(filtered) == 1
         assert filtered[0].attachment_author == "project.manager@company.com"
@@ -353,7 +421,7 @@ class TestAttachmentFilters:
         filtered = search_handler._apply_attachment_filters(
             mock_search_results, attachment_filter
         )
-        
+
         # Should exclude the git result
         confluence_titles = [r.source_title for r in filtered]
         assert "README.md" not in confluence_titles
@@ -363,7 +431,7 @@ class TestAttachmentFilters:
         """Test formatting attachment search results."""
         attachment_result = next(r for r in mock_search_results if r.is_attachment)
         formatted = formatters.format_attachment_search_result(attachment_result)
-        
+
         # Should contain attachment-specific information
         assert "📎 Attachment" in formatted
         assert "project-requirements.pdf" in formatted
@@ -380,7 +448,7 @@ class TestAttachmentFilters:
             if not r.is_attachment and r.source_type == "confluence"
         )
         formatted = formatters.format_attachment_search_result(non_attachment_result)
-        
+
         # Should still format properly but without attachment info
         assert "📎 Attachment" in formatted  # This is added by the formatter
         assert "Developer Guide" in formatted or "API Reference" in formatted

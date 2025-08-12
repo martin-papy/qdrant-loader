@@ -389,7 +389,7 @@ def check_release_notes_updated(new_version: str, dry_run: bool = False) -> bool
         return False
 
     try:
-        with open(release_notes_path, "r", encoding="utf-8") as f:
+        with open(release_notes_path, encoding="utf-8") as f:
             content = f.read()
 
         # Look for the version section at the beginning of the file
@@ -773,9 +773,7 @@ def release(dry_run: bool = False, verbose: bool = False, sync_versions: bool = 
 
             print("Updating Development Status classifiers...")
             # Create versions dict for classifier update
-            sync_versions_dict = {
-                package_name: source_version for package_name in PACKAGES.keys()
-            }
+            sync_versions_dict = dict.fromkeys(PACKAGES.keys(), source_version)
             update_all_development_status_classifiers(sync_versions_dict, dry_run)
 
             run_command("git add pyproject.toml packages/*/pyproject.toml", dry_run)

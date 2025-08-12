@@ -11,7 +11,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 - **[Data Sources](./detailed-guides/data-sources/)** - Complete guides for all supported data sources
 - **[File Conversion](./detailed-guides/file-conversion/)** - Everything about processing different file types
 - **[MCP Server](./detailed-guides/mcp-server/)** - AI development integration and search capabilities
-- **[Workflow Examples](./detailed-guides/workflow-examples/)** - Real-world usage scenarios and best practices
+- **[Workflows](./workflows/)** - Common, CI/CD, content management, development, and team collaboration
 
 ### ⚙️ Configuration
 
@@ -22,13 +22,13 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 - **[CLI Reference](./cli-reference/)** - Complete command-line interface documentation
 - **[Commands](./cli-reference/commands.md)** - All commands with examples and options
-- **[Automation](./cli-reference/scripting-automation.md)** - Scripting and automation examples
+- Automation scripts - See workflow guides
 
 ### 🔧 Troubleshooting
 
 - **[Troubleshooting Guide](./troubleshooting/)** - Solutions to common problems
 - **[Common Issues](./troubleshooting/common-issues.md)** - FAQ and quick fixes
-- **[Performance](./troubleshooting/performance-optimization.md)** - Speed and memory optimization
+- Performance optimization - Coming later
 
 ## 🚀 Quick Navigation
 
@@ -44,14 +44,11 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 #### 📄 **Process different file types**
 
-- [PDF documents](./detailed-guides/file-conversion/pdf-processing.md) - Extract text and metadata
-- [Office documents](./detailed-guides/file-conversion/office-documents.md) - Word, Excel, PowerPoint
-- [Images](./detailed-guides/file-conversion/images-and-ai.md) - OCR and AI-powered analysis
-- [All supported formats](./detailed-guides/file-conversion/supported-formats.md) - Complete format list
+- [File conversion](./detailed-guides/file-conversion/)
 
 #### 🤖 **Integrate with AI tools**
 
-- [Cursor IDE setup](./detailed-guides/mcp-server/cursor-integration.md) - AI-powered coding assistance
+- Cursor IDE setup - Coming later
 - [Search capabilities](./detailed-guides/mcp-server/search-capabilities.md) - Semantic and intelligent search
 - [Hierarchy navigation](./detailed-guides/mcp-server/hierarchy-search.md) - Document structure understanding
 
@@ -63,8 +60,8 @@ This documentation is organized to help you accomplish specific tasks and unders
 #### 🔧 **Solve problems**
 
 - [Common issues](./troubleshooting/common-issues.md) - Quick solutions to frequent problems
-- [Data source problems](./troubleshooting/data-source-issues.md) - Source-specific troubleshooting
-- [Performance issues](./troubleshooting/performance-optimization.md) - Speed and memory problems
+- Data source problems - Coming later
+- Performance optimization - Coming later
 
 ## 🎯 User Personas and Workflows
 
@@ -76,7 +73,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Confluence integration](./detailed-guides/data-sources/confluence.md) - Connect your wiki
 2. [File conversion](./detailed-guides/file-conversion/) - Process existing documents
-3. [Content workflow](./detailed-guides/workflow-examples/content-team-workflow.md) - Best practices
+3. Content workflow - Coming later
 
 ### 🔬 Researchers and Analysts
 
@@ -86,7 +83,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Local files setup](./detailed-guides/data-sources/local-files.md) - Index your research materials
 2. [Advanced search](./detailed-guides/mcp-server/search-capabilities.md) - Powerful search tools
-3. [Research workflow](./detailed-guides/workflow-examples/research-workflow.md) - Research best practices
+3. Research workflow - Coming later
 
 ### 👨‍💻 Software Developers
 
@@ -95,8 +92,8 @@ This documentation is organized to help you accomplish specific tasks and unders
 **Recommended path**:
 
 1. [Git integration](./detailed-guides/data-sources/git-repositories.md) - Connect your repositories
-2. [Cursor setup](./detailed-guides/mcp-server/cursor-integration.md) - AI coding assistance
-3. [Multi-project setup](./detailed-guides/workflow-examples/multi-project-setup.md) - Managing multiple codebases
+2. Cursor setup - Coming later
+3. Multi-project setup - Coming later
 
 ### 🏢 System Administrators
 
@@ -106,7 +103,7 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 1. [Configuration reference](./configuration/) - Complete setup guide
 2. [Security considerations](./configuration/security-considerations.md) - Secure deployment
-3. [Performance optimization](./troubleshooting/performance-optimization.md) - Scale for your team
+3. Performance optimization - Coming later
 
 ## 📊 Feature Coverage
 
@@ -126,17 +123,17 @@ This documentation is organized to help you accomplish specific tasks and unders
 
 | Category | Formats | Documentation |
 |----------|---------|---------------|
-| **Documents** | PDF, Word, PowerPoint, Excel | [Guide](./detailed-guides/file-conversion/office-documents.md) |
-| **Images** | PNG, JPEG, GIF, BMP, TIFF | [Guide](./detailed-guides/file-conversion/images-and-ai.md) |
-| **Archives** | ZIP, TAR, 7Z | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
-| **Data** | JSON, CSV, XML, YAML | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
-| **Audio** | MP3, WAV | [Guide](./detailed-guides/file-conversion/supported-formats.md) |
+| **Documents** | PDF, Word, PowerPoint, Excel | Coming later |
+| **Images** | PNG, JPEG, GIF, BMP, TIFF | Coming later |
+| **Archives** | ZIP, TAR, 7Z | Coming later |
+| **Data** | JSON, CSV, XML, YAML | Coming later |
+| **Audio** | MP3, WAV | Coming later |
 
 ### AI Integration
 
 | Tool | Status | Documentation |
 |------|--------|---------------|
-| **Cursor IDE** | ✅ Full Support | [Guide](./detailed-guides/mcp-server/cursor-integration.md) |
+| **Cursor IDE** | ✅ Full Support | Guide coming later |
 | **Windsurf** | ✅ Compatible | [Guide](./detailed-guides/mcp-server/setup-and-integration.md) |
 | **Claude Desktop** | ✅ Compatible | [Guide](./detailed-guides/mcp-server/setup-and-integration.md) |
 
@@ -145,13 +142,13 @@ This documentation is organized to help you accomplish specific tasks and unders
 ### Quick Help
 
 - **[Common Issues](./troubleshooting/common-issues.md)** - Solutions to frequent problems
-- **[FAQ](./troubleshooting/common-issues.md#frequently-asked-questions)** - Quick answers to common questions
+- **[FAQ](./troubleshooting/common-issues.html#frequently-asked-questions)** - Quick answers to common questions
 
 ### Community Support
 
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Bug reports and feature requests
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Community Q&A and discussions
-- **[Getting Help Guide](./troubleshooting/getting-help.md)** - How to get effective support
+- Getting Help Guide - Coming later
 
 ### Documentation Feedback
 

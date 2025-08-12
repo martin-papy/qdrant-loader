@@ -46,7 +46,7 @@ EOF
 
 ```bash
 # Initialize workspace with default configuration
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Expected output:
 # ✅ Collection initialized successfully: quickstart
@@ -56,8 +56,7 @@ qdrant-loader --workspace . init
 
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
-
+qdrant-loader project status --workspace .
 # Expected output shows project configuration and connection status
 ```
 
@@ -73,35 +72,41 @@ cat > sample-doc.md << EOF
 QDrant Loader is a powerful tool for ingesting documents into vector databases.
 
 ## Key Features
+
 - Multi-source data ingestion
 - 20+ file format support
 - AI tool integration via MCP
 - Intelligent text chunking
 
 ## Use Cases
+
 - Knowledge base creation
 - Document search and retrieval
 - AI-powered development workflows
 EOF
 
 # Create a basic configuration file
-cat > config.yaml << EOF
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
 projects:
   quickstart:
+    project_id: "quickstart"
     display_name: "Quick Start Project"
     description: "Getting started with QDrant Loader"
-    collection_name: "quickstart"
     sources:
       localfile:
         sample_docs:
-          path: "."
-          include_patterns: ["*.md"]
-          recursive: false
+          base_url: "file://."
+          include_paths: ["*.md"]
+          enable_file_conversion: false
 EOF
 
 # Ingest the document
-qdrant-loader --workspace . ingest
-
+qdrant-loader ingest --workspace .
 # Expected output:
 # 📄 Processing documents from configured sources
 # ✅ Ingested: 1 document, 4 chunks
@@ -112,23 +117,29 @@ qdrant-loader --workspace . ingest
 
 ```bash
 # Update config.yaml to include git source
-cat > config.yaml << EOF
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
 projects:
   quickstart:
+    project_id: "quickstart"
     display_name: "Quick Start Project"
     description: "Getting started with QDrant Loader"
-    collection_name: "quickstart"
     sources:
       git:
         qdrant_docs:
-          url: "https://github.com/qdrant/qdrant-client"
-          include_patterns: ["*.md", "*.rst"]
-          exclude_patterns: ["node_modules/", ".git/"]
+          base_url: "https://github.com/qdrant/qdrant-client.git"
+          branch: "main"
+          include_paths: ["**/*.md", "**/*.rst"]
+          exclude_paths: ["node_modules/**", ".git/**"]
+          file_types: ["*.md", "*.rst"]
 EOF
 
 # Ingest the repository
-qdrant-loader --workspace . ingest
-
+qdrant-loader ingest --workspace .
 # Expected output:
 # 📁 Cloning repository...
 # 📄 Processing: multiple files found
@@ -152,23 +163,27 @@ Our API provides powerful search capabilities.
 EOF
 
 # Update config.yaml to include the directory
-cat > config.yaml << EOF
+cat > config.yaml << 'EOF'
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+
 projects:
   quickstart:
+    project_id: "quickstart"
     display_name: "Quick Start Project"
     description: "Getting started with QDrant Loader"
-    collection_name: "quickstart"
     sources:
       localfile:
         project_docs:
-          path: "my-project/"
-          include_patterns: ["*.md"]
-          recursive: true
+          base_url: "file://./my-project"
+          include_paths: ["**/*.md"]
+          enable_file_conversion: false
 EOF
 
 # Ingest the entire directory
-qdrant-loader --workspace . ingest
-
+qdrant-loader ingest --workspace .
 # Expected output:
 # 📁 Scanning directory: my-project/
 # 📄 Processing: 2 files found
@@ -180,10 +195,10 @@ qdrant-loader --workspace . ingest
 
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # List configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 
 ## 🤖 Step 3: Set Up MCP Server
@@ -193,7 +208,6 @@ qdrant-loader project --workspace . list
 ```bash
 # Start MCP server (keep this terminal open)
 mcp-qdrant-loader
-
 # Expected output:
 # 🚀 QDrant Loader MCP Server starting...
 # 📡 Server running on stdio
@@ -227,18 +241,18 @@ The MCP server communicates via JSON-RPC over stdio. It doesn't have traditional
 }
 ```
 
-5. **Save and restart** Cursor
+1. **Save and restart** Cursor
 
 ### Test AI Integration
 
 1. **Open a new chat** in Cursor
 2. **Ask about your content**:
 
-```
+```text
 Can you search for information about QDrant Loader features?
 ```
 
-3. **Expected behavior**:
+1. **Expected behavior**:
    - Cursor will use the MCP server to search your ingested documents
    - You'll see search results from your content
    - AI responses will be grounded in your actual documents
@@ -249,7 +263,7 @@ Can you search for information about QDrant Loader features?
 
 The search functionality is provided through the MCP server to AI tools. In your AI tool (Cursor), try these queries:
 
-```
+```text
 1. "What are the key features mentioned in the documentation?"
 2. "Find information about API endpoints"
 3. "Search for installation instructions"
@@ -284,7 +298,7 @@ Congratulations! You now have QDrant Loader running with:
    ```bash
    # Add your actual project documentation to config.yaml
    # Then run ingestion
-   qdrant-loader --workspace . ingest
+   qdrant-loader ingest --workspace .
    ```
 
 2. **Explore AI tool features**:
@@ -300,7 +314,7 @@ Congratulations! You now have QDrant Loader running with:
 
 ### Learn More
 
-- **[Core Concepts](./core-concepts.md)** - Understand how QDrant Loader works
+- **Core Concepts** - Summarized inline in Getting Started
 - **[Basic Configuration](./basic-configuration.md)** - Customize your setup
 - **[User Guides](../users/)** - Explore all features in detail
 - **[MCP Server Guide](../users/detailed-guides/mcp-server/)** - Advanced AI integration
@@ -323,7 +337,7 @@ curl http://localhost:6333/health
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 # Verify connection
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 #### OpenAI API Errors
@@ -357,7 +371,7 @@ ls -la sample-doc.md
 cat config.yaml
 
 # Use verbose mode for debugging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 ```
 
 #### MCP Server Not Connecting
@@ -386,21 +400,21 @@ mcp-qdrant-loader
 
 ```bash
 # Verify documents are ingested
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Check collection status
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Re-ingest if needed
-qdrant-loader --workspace . ingest --log-level DEBUG
+qdrant-loader ingest --workspace . --log-level DEBUG
 ```
 
 ### Getting Help
 
 If you encounter issues:
 
-1. **Check logs**: `qdrant-loader --workspace . --log-level DEBUG ingest`
-2. **Verify setup**: `qdrant-loader project --workspace . status`
+1. **Check logs**: `qdrant-loader ingest --workspace . --log-level DEBUG`
+2. **Verify setup**: `qdrant-loader project status --workspace .`
 3. **Search issues**: [GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)
 4. **Ask for help**: [GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)
 
@@ -418,4 +432,4 @@ If you encounter issues:
 
 **🎉 Quick Start Complete!**
 
-You're now ready to explore the full power of QDrant Loader. The next step is understanding the [Core Concepts](./core-concepts.md) to make the most of your setup, or dive into the [User Guides](../users/) for specific features and workflows.
+You're now ready to explore the full power of QDrant Loader. The next step is reviewing the Core Concepts summarized in Getting Started, or dive into the [User Guides](../users/) for specific features and workflows.

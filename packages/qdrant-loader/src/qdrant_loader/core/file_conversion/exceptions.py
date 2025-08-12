@@ -1,7 +1,6 @@
 """Custom exceptions for file conversion operations."""
 
 
-
 class FileConversionError(Exception):
     """Base exception for file conversion errors."""
 

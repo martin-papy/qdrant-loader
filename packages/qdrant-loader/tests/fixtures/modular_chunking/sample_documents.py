@@ -5,6 +5,7 @@ modular chunking system without mocks.
 """
 
 from datetime import UTC, datetime
+
 from qdrant_loader.core.document import Document
 
 
@@ -21,7 +22,7 @@ There are several fundamental concepts in machine learning:
 1. Supervised Learning
 Supervised learning uses labeled training data to learn a mapping function from input variables to output variables. Common examples include classification and regression problems.
 
-2. Unsupervised Learning  
+2. Unsupervised Learning
 Unsupervised learning finds hidden patterns in data without labeled examples. Clustering and dimensionality reduction are typical applications.
 
 3. Reinforcement Learning
@@ -33,7 +34,7 @@ Machine learning has numerous practical applications:
 
 - Image recognition and computer vision
 - Natural language processing
-- Recommendation systems  
+- Recommendation systems
 - Fraud detection
 - Autonomous vehicles
 - Medical diagnosis
@@ -64,10 +65,10 @@ Machine learning continues to evolve rapidly, with new techniques and applicatio
             "file_name": "ml-intro.txt",
             "topic": "machine_learning",
             "word_count": len(content.split()),
-            "source": "test_integration"
+            "source": "test_integration",
         },
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -81,7 +82,7 @@ This document contains **various formatting** elements to test the parser's capa
 
 Here's a bulleted list:
 - First item with *italic text*
-- Second item with **bold text**  
+- Second item with **bold text**
 - Third item with `code snippets`
 
 And a numbered list:
@@ -135,10 +136,10 @@ IMPORTANT: This text is in ALL CAPS for emphasis."""
             "topic": "documentation",
             "has_code": True,
             "has_formatting": True,
-            "source": "test_integration"
+            "source": "test_integration",
         },
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -167,10 +168,10 @@ Final paragraph to complete the document."""
             "file_name": "simple.txt",
             "topic": "testing",
             "complexity": "low",
-            "source": "test_integration"
+            "source": "test_integration",
         },
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -178,13 +179,13 @@ def create_long_text_document() -> Document:
     """Create a long document to test chunking with multiple chunks."""
     # Create content that will definitely be split into multiple chunks
     paragraphs = []
-    
+
     for i in range(20):
         paragraph = f"""Paragraph {i + 1}: This is a substantial paragraph that contains enough content to contribute meaningfully to the overall document length. Each paragraph discusses different aspects of the testing methodology and provides sufficient detail to ensure that the chunking algorithm will have realistic content to work with. The paragraph includes multiple sentences with varying complexity and length to simulate real-world document content patterns."""
         paragraphs.append(paragraph)
-    
+
     content = "\n\n".join(paragraphs)
-    
+
     return Document(
         content=content,
         url="https://example.com/long-document.txt",
@@ -198,10 +199,10 @@ def create_long_text_document() -> Document:
             "complexity": "high",
             "paragraph_count": 20,
             "estimated_chunks": "multiple",
-            "source": "test_integration"
+            "source": "test_integration",
         },
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -250,18 +251,18 @@ Final edge case: line ending without punctuation"""
             "complexity": "edge_cases",
             "has_unicode": True,
             "has_special_chars": True,
-            "source": "test_integration"
+            "source": "test_integration",
         },
         created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC)
+        updated_at=datetime.now(UTC),
     )
 
 
 # Export all fixture functions
 __all__ = [
     "create_sample_text_document",
-    "create_formatted_text_document", 
+    "create_formatted_text_document",
     "create_simple_text_document",
     "create_long_text_document",
-    "create_edge_case_document"
-] 
+    "create_edge_case_document",
+]

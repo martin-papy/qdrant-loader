@@ -7,7 +7,7 @@ This comprehensive guide shows how to implement automated documentation pipeline
 The QDrant Loader project uses a sophisticated CI/CD pipeline with three main workflows:
 
 1. **Test and Coverage** - Automated testing for all components
-2. **Documentation Website** - Automated documentation deployment  
+2. **Documentation Website** - Automated documentation deployment
 3. **Package Publishing** - Automated PyPI releases
 
 This workflow ensures code quality, documentation accuracy, and seamless deployments while maintaining up-to-date knowledge bases.
@@ -15,14 +15,14 @@ This workflow ensures code quality, documentation accuracy, and seamless deploym
 ### Workflow Benefits
 
 ```text
-🔄 Automated Testing     - Comprehensive test coverage for all components
-🚀 Documentation Deploy  - Automatic GitHub Pages deployment with manual override
-📦 Package Publishing    - Automated PyPI releases with proper versioning
-🔍 Quality Assurance     - Multi-package testing with coverage reports
-📊 Artifact Management   - Test results and coverage artifacts with intelligent discovery
+🔄 Automated Testing - Comprehensive test coverage for all components
+🚀 Documentation Deploy - Automatic GitHub Pages deployment with manual override
+📦 Package Publishing - Automated PyPI releases with proper versioning
+🔍 Quality Assurance - Multi-package testing with coverage reports
+📊 Artifact Management - Test results and coverage artifacts with intelligent discovery
 🛡️ Security & Permissions - Minimal required permissions for each job
-⚡ Manual Deployment     - On-demand documentation deployment for hotfixes
-🔧 Force Deploy Option   - Emergency deployment without waiting for test artifacts
+⚡ Manual Deployment - On-demand documentation deployment for hotfixes
+🔧 Force Deploy Option - Emergency deployment without waiting for test artifacts
 ```
 
 ## 🏗️ Architecture Overview
@@ -33,18 +33,14 @@ graph TD
     B --> C[Test QDrant Loader]
     B --> D[Test MCP Server]
     B --> E[Test Website Build]
-    
     F[Main Branch Push] --> G[Documentation Website Workflow]
     G --> H[Build Documentation]
     H --> I[Deploy to GitHub Pages]
-    
     J[Release Created] --> K[Publish Packages Workflow]
     K --> L[Determine Package]
     L --> M[Publish to PyPI]
-    
     B --> N[Upload Coverage Artifacts]
     N --> G
-    
     O[Workflow Run Completion] --> G
 ```
 
@@ -106,39 +102,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Install system dependencies
         run: |
           # Install ffmpeg for MarkItDown audio processing
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e packages/qdrant-loader[dev]
-
       - name: Create test configuration
         run: |
           cd packages/qdrant-loader
           cp tests/.env.test.template tests/.env.test
           cp tests/config.test.template.yaml tests/config.test.yaml
-          
           # Configure with GitHub secrets
           sed -i "s|QDRANT_URL=.*|QDRANT_URL=${{ secrets.QDRANT_URL }}|g" tests/.env.test
           sed -i "s|QDRANT_API_KEY=.*|QDRANT_API_KEY=${{ secrets.QDRANT_API_KEY }}|g" tests/.env.test
           sed -i "s|OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|g" tests/.env.test
-
       - name: Run tests with coverage
         run: |
           cd packages/qdrant-loader
           python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-loader.xml --cov-report=html:../../htmlcov-loader -v
-
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -146,114 +135,6 @@ jobs:
           path: |
             htmlcov-loader
             coverage-loader.xml
-          retention-days: 30
-
-  test-mcp-server:
-    name: Test MCP Server
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e packages/qdrant-loader[dev]
-          pip install -e packages/qdrant-loader-mcp-server[dev]
-
-      - name: Run MCP server tests
-        run: |
-          cd packages/qdrant-loader-mcp-server
-          python -m pytest tests/ --cov=src --cov-report=xml:../../coverage-mcp.xml --cov-report=html:../../htmlcov-mcp -v
-        env:
-          QDRANT_URL: ${{ secrets.QDRANT_URL }}
-          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-      - name: Upload MCP coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-mcp-${{ github.run_id }}
-          path: |
-            htmlcov-mcp
-            coverage-mcp.xml
-          retention-days: 30
-
-  test-website:
-    name: Test Website Build System
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install website dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov pytest-mock
-          pip install markdown pygments tomli
-          pip install cairosvg pillow || echo "Optional favicon dependencies not available"
-
-      - name: Run website tests
-        run: |
-          export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
-          python -m pytest tests/ --cov=website --cov-report=xml:coverage-website.xml --cov-report=html:htmlcov-website -v
-
-      - name: Upload website coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-website-${{ github.run_id }}
-          path: |
-            htmlcov-website
-            coverage-website.xml
-          retention-days: 30
-
-  test-summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    needs: [test-loader, test-mcp-server, test-website]
-    if: always()
-    steps:
-      - name: Check test results
-        run: |
-          echo "=== Test Results Summary ==="
-          echo "QDrant Loader Tests: ${{ needs.test-loader.result }}"
-          echo "MCP Server Tests: ${{ needs.test-mcp-server.result }}"
-          echo "Website Build Tests: ${{ needs.test-website.result }}"
-          
-          if [ "${{ needs.test-loader.result }}" != "success" ] || [ "${{ needs.test-mcp-server.result }}" != "success" ] || [ "${{ needs.test-website.result }}" != "success" ]; then
-            echo "❌ Some tests failed"
-            exit 1
-          else
-            echo "✅ All tests passed"
-          fi
-
-      - name: Create test status artifact
-        run: |
-          mkdir -p test-results
-          echo "{
-            \"loader_status\": \"${{ needs.test-loader.result }}\",
-            \"mcp_status\": \"${{ needs.test-mcp-server.result }}\",
-            \"website_status\": \"${{ needs.test-website.result }}\",
-            \"overall_status\": \"${{ (needs.test-loader.result == 'success' && needs.test-mcp-server.result == 'success' && needs.test-website.result == 'success') && 'success' || 'failure' }}\",
-            \"run_id\": \"${{ github.run_id }}\",
-            \"commit_sha\": \"${{ github.sha }}\",
-            \"branch\": \"${{ github.ref_name }}\",
-            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-          }" > test-results/status.json
-
-      - name: Upload test status artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-status-${{ github.run_id }}
-          path: test-results/
           retention-days: 30
 ```
 
@@ -304,99 +185,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[docs]"
-
       - name: Generate favicons
         run: |
           python website/assets/generate_favicons.py
-
-      - name: Get latest test workflow run ID
-        if: github.event_name == 'workflow_dispatch'
-        id: get-workflow-run
-        run: |
-          echo "🔍 Finding latest successful test workflow run on main branch..."
-          
-          # Get the latest successful workflow run for "Test and Coverage" on main branch
-          WORKFLOW_RUN=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
-            | jq -r '.workflows[] | select(.name == "Test and Coverage") | .id')
-          
-          if [ "$WORKFLOW_RUN" = "null" ] || [ -z "$WORKFLOW_RUN" ]; then
-            echo "❌ Could not find 'Test and Coverage' workflow"
-            exit 1
-          fi
-          
-          LATEST_RUN=$(curl -s \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_RUN/runs?branch=main&status=completed&conclusion=success&per_page=1" \
-            | jq -r '.workflow_runs[0].id')
-          
-          if [ "$LATEST_RUN" = "null" ] || [ -z "$LATEST_RUN" ]; then
-            echo "❌ No successful test runs found on main branch"
-            if [ "${{ inputs.force_deploy }}" = "true" ]; then
-              echo "⚠️  Force deploy enabled, continuing without test artifacts"
-              echo "workflow_run_id=" >> $GITHUB_OUTPUT
-            else
-              echo "💡 Use 'force_deploy' input to deploy without test artifacts"
-              exit 1
-            fi
-          else
-            echo "✅ Found latest successful test run: $LATEST_RUN"
-            echo "workflow_run_id=$LATEST_RUN" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get latest test results (from workflow_run trigger)
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: test-status-${{ github.event.workflow_run.id }}
-          path: test-results/
-        continue-on-error: true
-
-      - name: Get latest test results (from manual trigger)
-        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: test-status-${{ steps.get-workflow-run.outputs.workflow_run_id }}
-          path: test-results/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
-        continue-on-error: true
-
-      - name: Get latest coverage reports (from workflow_run trigger)
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*-${{ github.event.workflow_run.id }}
-          path: coverage-artifacts/
-          merge-multiple: false
-        continue-on-error: true
-
-      - name: Get latest coverage reports (from manual trigger)
-        if: github.event_name == 'workflow_dispatch' && steps.get-workflow-run.outputs.workflow_run_id != ''
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*-${{ steps.get-workflow-run.outputs.workflow_run_id }}
-          path: coverage-artifacts/
-          merge-multiple: false
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.get-workflow-run.outputs.workflow_run_id }}
-        continue-on-error: true
-
       - name: Build website using templates
         run: |
           echo "🚀 Building website using template system"
@@ -406,34 +205,8 @@ jobs:
             --coverage-artifacts coverage-artifacts/ \
             --test-results test-results/ \
             --base-url ""
-
-      - name: Verify website build
-        run: |
-          echo "=== Website Build Verification ==="
-          echo "📁 Site directory contents:"
-          find site -type f -name "*.html" | head -10
-          echo ""
-          echo "📊 Total files built: $(find site -type f | wc -l)"
-          echo "📄 HTML pages: $(find site -name "*.html" | wc -l)"
-          
-          # Verify critical pages exist
-          if [ -f "site/index.html" ]; then
-            echo "✅ Homepage built successfully"
-          else
-            echo "❌ Homepage missing"
-            exit 1
-          fi
-          
-          if [ -f "site/docs/index.html" ]; then
-            echo "✅ Documentation index built successfully"
-          else
-            echo "❌ Documentation index missing"
-            exit 1
-          fi
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
-
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -502,59 +275,22 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
-      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build twine
-          
       - name: Build loader package
         run: |
           cd packages/qdrant-loader
           python -m build
-          
       - name: Publish loader package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/qdrant-loader/dist/
-
-  publish-mcp-server:
-    name: Publish MCP Server to PyPI
-    runs-on: ubuntu-latest
-    needs: determine-package
-    if: needs.determine-package.outputs.publish-mcp-server == 'true'
-    environment:
-      name: ${{ vars.PYPI_ENVIRONMENT || 'pypi-publish' }}
-      url: https://pypi.org/p/qdrant-loader-mcp-server
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-          
-      - name: Build MCP server package
-        run: |
-          cd packages/qdrant-loader-mcp-server
-          python -m build
-          
-      - name: Publish MCP server package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/qdrant-loader-mcp-server/dist/
 ```
 
 ## 🔧 Implementing Similar Workflows
@@ -572,7 +308,7 @@ The documentation workflow includes a **manual deployment capability** for cases
 
 #### Manual Deployment Options
 
-**Option 1: Deploy with Latest Test Artifacts**
+##### Option 1: Deploy with Latest Test Artifacts
 
 ```bash
 # Trigger manual deployment using GitHub CLI
@@ -585,7 +321,7 @@ gh workflow run "Documentation Website"
 # 4. Leave "Force deployment" unchecked (default)
 ```
 
-**Option 2: Force Deploy Without Test Artifacts**
+##### Option 2: Force Deploy Without Test Artifacts
 
 ```bash
 # Force deployment even without recent test results
@@ -594,7 +330,7 @@ gh workflow run "Documentation Website" \
 
 # Or via GitHub web interface:
 # 1. Go to Actions tab
-# 2. Select "Documentation Website" workflow  
+# 2. Select "Documentation Website" workflow
 # 3. Click "Run workflow"
 # 4. Check "Force deployment even without recent test artifacts"
 ```
@@ -632,7 +368,7 @@ The manual deployment includes intelligent artifact handling:
 
 #### 1.1 Directory Structure
 
-```
+```text
 your-qdrant-project/
 ├── .github/
 │   └── workflows/
@@ -745,12 +481,11 @@ REPO_TOKEN=your_github_token
 
 ```yaml
 # tests/config.test.template.yaml
-global_config:
+global:
   qdrant:
     collection_name: ${QDRANT_COLLECTION_NAME}
     vector_size: 1536
     distance: Cosine
-    
   openai:
     model: text-embedding-3-small
 
@@ -759,7 +494,6 @@ projects:
     display_name: "Test Project"
     description: "Test configuration"
     collection_name: ${QDRANT_COLLECTION_NAME}
-    
     sources:
       git:
         test-repo:
@@ -827,73 +561,73 @@ Test results are automatically processed and displayed:
 
 1. **Test Failures**
 
-   ```bash
-   # Check test logs
-   gh run view <run-id> --log
-   
-   # Run tests locally
-   cd packages/qdrant-loader
-   python -m pytest tests/ -v
-   ```
+```bash
+# Check test logs
+gh run view <run-id> --log
 
-2. **Documentation Build Failures**
+# Run tests locally
+cd packages/qdrant-loader
+python -m pytest tests/ -v
+```
 
-   ```bash
-   # Check build logs
-   gh run view <run-id> --log
-   
-   # Test build locally
-   python website/build.py --output test-site
-   ```
+1. **Documentation Build Failures**
 
-3. **Publishing Failures**
+```bash
+# Check build logs
+gh run view <run-id> --log
 
-   ```bash
-   # Check release tag format
-   git tag -l
-   
-   # Verify package build
-   cd packages/qdrant-loader
-   python -m build
-   ```
+# Test build locally
+python website/build.py --output test-site
+```
 
-4. **Secret Configuration Issues**
+1. **Publishing Failures**
 
-   ```bash
-   # Verify secrets are set
-   gh secret list
-   
-   # Test with local environment
-   cp tests/.env.test.template tests/.env.test
-   # Edit with real values and test locally
-   ```
+```bash
+# Check release tag format
+git tag -l
 
-5. **Manual Deployment Issues**
+# Verify package build
+cd packages/qdrant-loader
+python -m build
+```
 
-   ```bash
-   # Check if workflow_dispatch is enabled
-   gh workflow list
-   
-   # View manual deployment run
-   gh run list --workflow="Documentation Website"
-   
-   # Check deployment logs
-   gh run view <run-id> --log
-   
-   # Force deploy without artifacts (emergency)
-   gh workflow run "Documentation Website" --field force_deploy=true
-   
-   # Verify GitHub Pages is enabled
-   gh api repos/:owner/:repo/pages
-   ```
+1. **Secret Configuration Issues**
+
+```bash
+# Verify secrets are set
+gh secret list
+
+# Test with local environment
+cp tests/.env.test.template tests/.env.test
+# Edit with real values and test locally
+```
+
+1. **Manual Deployment Issues**
+
+```bash
+# Check if workflow_dispatch is enabled
+gh workflow list
+
+# View manual deployment run
+gh run list --workflow="Documentation Website"
+
+# Check deployment logs
+gh run view <run-id> --log
+
+# Force deploy without artifacts (emergency)
+gh workflow run "Documentation Website" --field force_deploy=true
+
+# Verify GitHub Pages is enabled
+gh api repos/:owner/:repo/pages
+```
 
 ### Debugging Commands
 
 ```bash
 # Local testing with actual CLI commands
-qdrant-loader project --workspace . validate
-qdrant-loader --workspace . config
-qdrant-loader project --workspace . status
+qdrant-loader project validate --workspace .
+qdrant-loader config --workspace .
+qdrant-loader project status --workspace .
 
 # Check workflow artifacts
 gh run download <run-id> --name coverage-loader-<run-id>

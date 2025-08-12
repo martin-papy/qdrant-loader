@@ -50,16 +50,38 @@ class SectionIdentifier:
         Returns:
             SectionType enum indicating the type of section
         """
+        if not content.strip():
+            return SectionType.PARAGRAPH
+
+        # Headers: # followed by space
         if re.match(r"^#{1,6}\s+", content):
             return SectionType.HEADER
-        elif re.match(r"^```", content):
+
+        # Code blocks: ``` or ~~~ (fenced) or 4+ spaces/tab indentation
+        if (
+            re.search(r"^```", content, re.MULTILINE)
+            or re.search(r"^~~~", content, re.MULTILINE)
+            or re.match(r"^    ", content)
+            or re.match(r"^\t", content)
+        ):
             return SectionType.CODE_BLOCK
-        elif re.match(r"^[*-]\s+", content):
+
+        # Lists: -, *, + followed by space, or numbered lists
+        if re.match(r"^[*+-]\s+", content) or re.match(r"^\d+[.)]\s+", content):
             return SectionType.LIST
-        elif re.match(r"^\|", content):
+
+        # Tables: lines with pipes or markdown table format
+        if (
+            re.search(r"^\|", content, re.MULTILINE)
+            or re.search(r"\|.*\|", content)
+            or re.search(r"^\s*[-:]+\s*\|\s*[-:]+", content, re.MULTILINE)
+        ):
             return SectionType.TABLE
-        elif re.match(r"^>", content):
+
+        # Quotes: > followed by space (or end of line)
+        if re.match(r"^>\s", content):
             return SectionType.QUOTE
+
         return SectionType.PARAGRAPH
 
 
@@ -247,4 +269,4 @@ class DocumentParser:
                 title = title[:50] + "..."
             return title
 
-        return "Untitled Section" 
+        return "Untitled Section"

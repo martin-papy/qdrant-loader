@@ -317,8 +317,6 @@ qdrant-loader --workspace . init
 - With actionable items
 - That users can follow
 
-```
-
 ### Building Documentation Website
 
 ```bash

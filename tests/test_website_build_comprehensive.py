@@ -4,18 +4,15 @@ Comprehensive tests for the website build system to achieve >90% coverage.
 Tests all aspects of the GitHub Actions docs workflow.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
-import json
-import os
-import sys
-import subprocess
 import importlib.util
-from unittest.mock import patch, MagicMock, mock_open, Mock
-import re
-from datetime import datetime
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 def import_website_builder():
@@ -937,26 +934,26 @@ def main():
     print("Generating favicons...")
     svg_path = Path("website/assets/logos/qdrant-loader-icon.svg")
     output_dir = Path("website/assets/favicons")
-    
+
     if not svg_path.exists():
         print(f"SVG file not found: {svg_path}")
         return False
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Generate different sizes
     sizes = [16, 32, 48, 64, 128, 256]
     png_files = []
-    
+
     for size in sizes:
         png_path = output_dir / f"favicon-{size}x{size}.png"
         if svg_to_png(svg_path, png_path, size):
             png_files.append(png_path)
-    
+
     # Generate ICO
     ico_path = output_dir / "favicon.ico"
     generate_ico(png_files, ico_path)
-    
+
     print(f"Generated {len(png_files)} PNG files and 1 ICO file")
     return True
 

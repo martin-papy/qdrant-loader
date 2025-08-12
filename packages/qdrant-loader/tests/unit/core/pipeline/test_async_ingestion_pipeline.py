@@ -196,45 +196,6 @@ class TestAsyncIngestionPipeline:
             # Verify metrics server was not started
             mock_prometheus.start_metrics_server.assert_not_called()
 
-    def test_backward_compatibility_interface(self, mock_settings, mock_qdrant_manager):
-        """Test that the pipeline maintains backward compatibility."""
-        with (
-            patch(
-                "qdrant_loader.core.async_ingestion_pipeline.PipelineComponentsFactory"
-            ),
-            patch("qdrant_loader.core.async_ingestion_pipeline.PipelineOrchestrator"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path") as mock_path,
-        ):
-            # Setup Path mocks
-            self._setup_path_mocks(mock_path)
-
-            # Create pipeline with legacy parameters
-            pipeline = AsyncIngestionPipeline(
-                settings=mock_settings,
-                qdrant_manager=mock_qdrant_manager,
-                embedding_cache="legacy_cache",  # Legacy parameter
-                max_chunk_workers=10,
-                max_embed_workers=4,
-                max_upsert_workers=4,
-                queue_size=1000,
-                upsert_batch_size=100,
-                enable_metrics=False,
-            )
-
-            # Verify legacy properties work
-            assert pipeline.embedding_cache == "legacy_cache"
-            assert hasattr(pipeline, "_shutdown_event")
-            assert hasattr(pipeline, "_active_tasks")
-            assert hasattr(pipeline, "_cleanup_done")
-
-            # Verify legacy methods exist
-            assert hasattr(pipeline, "_cleanup")
-            assert hasattr(pipeline, "_handle_sigint")
-            assert hasattr(pipeline, "_handle_sigterm")
-
     @pytest.mark.asyncio
     async def test_initialize_method(self, mock_settings, mock_qdrant_manager):
         """Test the initialize method (no-op in new architecture)."""
@@ -378,7 +339,12 @@ class TestAsyncIngestionPipeline:
             mock_monitor.start_batch.assert_called_once_with(
                 "document_batch",
                 batch_size=2,
-                metadata={"source_type": "git", "source": None, "project_id": None, "force": False},
+                metadata={
+                    "source_type": "git",
+                    "source": None,
+                    "project_id": None,
+                    "force": False,
+                },
             )
             mock_monitor.end_batch.assert_called_once_with("document_batch", 2, 0, [])
 
@@ -479,7 +445,8 @@ class TestAsyncIngestionPipeline:
 
             # Verify cleanup was handled
             mock_monitor.save_metrics.assert_called_once()
-            mock_prometheus.stop_metrics_server.assert_called_once()
+            # Note: stop_metrics_server may be called during initialization and cleanup
+            assert mock_prometheus.stop_metrics_server.call_count >= 1
             mock_resource_manager.cleanup.assert_called_once()
 
     @pytest.mark.asyncio
@@ -647,67 +614,6 @@ class TestAsyncIngestionPipeline:
             mock_monitor.save_metrics.assert_called_once()
             # Note: stop_metrics_server may not be called if save_metrics fails first
             mock_resource_manager._cleanup.assert_called_once()
-
-    def test_legacy_compatibility_properties(self, mock_settings, mock_qdrant_manager):
-        """Test legacy compatibility properties."""
-        with (
-            patch(
-                "qdrant_loader.core.async_ingestion_pipeline.PipelineComponentsFactory"
-            ),
-            patch("qdrant_loader.core.async_ingestion_pipeline.PipelineOrchestrator"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
-        ):
-            pipeline = AsyncIngestionPipeline(
-                settings=mock_settings, qdrant_manager=mock_qdrant_manager
-            )
-
-            # Test legacy properties
-            assert hasattr(pipeline, "_shutdown_event")
-            assert hasattr(pipeline, "_active_tasks")
-            assert hasattr(pipeline, "_cleanup_done")
-
-            # Test that properties return appropriate mock objects
-            shutdown_event = pipeline._shutdown_event
-            active_tasks = pipeline._active_tasks
-            cleanup_done = pipeline._cleanup_done
-
-            assert shutdown_event is not None
-            assert active_tasks is not None
-            assert cleanup_done is not None
-
-    def test_legacy_compatibility_methods(self, mock_settings, mock_qdrant_manager):
-        """Test legacy compatibility methods."""
-        with (
-            patch(
-                "qdrant_loader.core.async_ingestion_pipeline.PipelineComponentsFactory"
-            ),
-            patch("qdrant_loader.core.async_ingestion_pipeline.PipelineOrchestrator"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.ResourceManager"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.IngestionMonitor"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.prometheus_metrics"),
-            patch("qdrant_loader.core.async_ingestion_pipeline.Path"),
-        ):
-            pipeline = AsyncIngestionPipeline(
-                settings=mock_settings, qdrant_manager=mock_qdrant_manager
-            )
-
-            # Test legacy methods exist and are callable
-            assert hasattr(pipeline, "_cleanup")
-            assert hasattr(pipeline, "_handle_sigint")
-            assert hasattr(pipeline, "_handle_sigterm")
-            assert hasattr(pipeline, "_cancel_all_tasks")
-            assert hasattr(pipeline, "_force_immediate_exit")
-
-            # Test signal handlers
-            pipeline._handle_sigint(2, None)  # Should not raise
-            pipeline._handle_sigterm(15, None)  # Should not raise
-
-            # Test other legacy methods
-            pipeline._cancel_all_tasks()  # Should not raise
-            pipeline._force_immediate_exit()  # Should not raise
 
     def test_configuration_validation(self, mock_qdrant_manager):
         """Test that configuration validation works correctly."""

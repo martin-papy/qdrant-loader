@@ -8,23 +8,25 @@ The QDrant Loader MCP Server integrates with popular AI development tools throug
 
 ### Supported AI Tools
 
-- **[Cursor IDE](#cursor-ide)** - AI-powered code editor with MCP support (detailed setup)
-- **[Windsurf](#windsurf)** - AI development environment 
-- **[Claude Desktop](#claude-desktop)** - Anthropic's desktop AI assistant
-- **[Other MCP-Compatible Tools](#other-tools)** - Generic MCP setup
+- **Cursor IDE** - AI-powered code editor with MCP support (detailed setup)
+- **Windsurf** - AI development environment
+- **Claude Desktop** - Anthropic's desktop AI assistant
+- **Other MCP-Compatible Tools** - Generic MCP setup
 
 ### 🚀 Advanced Search Capabilities
 
 The MCP server provides **8 powerful search tools**:
 
 #### Core Search Tools
+
 - **🔍 Universal Search** - Semantic search across all content types
-- **🏗️ Hierarchy Search** - Structure-aware navigation with document relationships  
+- **🏗️ Hierarchy Search** - Structure-aware navigation with document relationships
 - **📎 Attachment Search** - Specialized file and document analysis
 
 #### Cross-Document Intelligence
+
 - **🤝 Document Relationships** - Comprehensive relationship analysis
-- **👥 Similar Documents** - Multi-metric similarity detection  
+- **👥 Similar Documents** - Multi-metric similarity detection
 - **⚠️ Conflict Detection** - Identify contradictions and inconsistencies
 - **🧩 Complementary Content** - Discover related and supporting materials
 - **📊 Document Clustering** - Group documents by content and relationships
@@ -75,13 +77,14 @@ pip install qdrant-loader-mcp-server
 # Option 1: Install standalone MCP server
 pip install qdrant-loader-mcp-server
 
-# Option 2: Install with QDrant Loader (includes MCP server)
-pip install qdrant-loader[mcp]
+# Option 2: Install with QDrant Loader and MCP server as separate packages
+pip install qdrant-loader qdrant-loader-mcp-server
 
 # Option 3: Install from source
-git clone https://github.com/your-org/qdrant-loader.git
+git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
-pip install -e ".[mcp]"
+pip install -e packages/qdrant-loader
+pip install -e packages/qdrant-loader-mcp-server
 ```
 
 ### Verify Installation
@@ -133,18 +136,21 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
 #### Method 1: Settings UI (Recommended)
 
 1. **Open Settings**
-   ```
+
+   ```text
    Cursor → Preferences → Settings
    Or press: Cmd/Ctrl + ,
    ```
 
 2. **Navigate to MCP Configuration**
-   ```
+
+   ```text
    Search: "MCP"
    Or: Extensions → MCP Servers
    ```
 
 3. **Add QDrant Loader Server**
+
    ```json
    {
      "name": "qdrant-loader",
@@ -162,6 +168,7 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
 #### Method 2: Configuration File
 
 1. **Locate Configuration Directory**
+
    ```bash
    # macOS
    ~/.cursor/User/globalStorage/cursor.mcp/
@@ -174,7 +181,9 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
    ```
 
 2. **Create MCP Configuration**
+
    Create or edit `mcp-servers.json`:
+
    ```json
    {
      "mcpServers": {
@@ -197,36 +206,42 @@ Cursor is an AI-powered code editor with excellent MCP support. It's the most po
 1. **Restart Cursor** after configuration changes
 
 2. **Open Chat Interface**
-   ```
+
+   ```text
    Press: Cmd/Ctrl + L
    Or: Click the chat icon in the sidebar
    ```
 
 3. **Test Advanced Search Capabilities**
-   
+
    **Basic Semantic Search:**
-   ```
+
+   ```text
    You: "Can you search my knowledge base for information about API authentication?"
    ```
-   
+
    **Hierarchy Navigation:**
-   ```
+
+   ```text
    You: "Show me the structure of our API documentation and navigate to authentication sections"
    ```
-   
+
    **Cross-Document Intelligence:**
-   ```
+
+   ```text
    You: "Are there any conflicts or inconsistencies in our authentication documentation across different services?"
    ```
-   
+
    **Document Clustering:**
-   ```
+
+   ```text
    You: "Group our microservices documentation by related topics and show me the clusters"
    ```
 
 ### Advanced Cursor Workflow Examples
 
 #### Code Understanding Workflow
+
 ```text
 You: "How does our authentication middleware connect to the user management system?"
 
@@ -235,7 +250,7 @@ I'll trace the connections between authentication and user management.
 
 Found Related Components:
 1. [middleware/auth.js] → JWT validation and user ID extraction
-2. [services/user-service.js] → User lookup and management operations  
+2. [services/user-service.js] → User lookup and management operations
 3. [models/user.js] → User data model and database operations
 4. [controllers/user-controller.js] → User management API endpoints
 
@@ -248,6 +263,7 @@ This shows the complete flow from authentication to user management.
 ```
 
 #### Conflict Detection Workflow
+
 ```text
 You: "Are there any conflicts in our API documentation?"
 
@@ -258,7 +274,7 @@ I've analyzed your documentation for conflicts and inconsistencies.
 
 **Conflict 1: API Rate Limiting**
 - [api/rate-limits.md] → 1000 requests/hour limit
-- [config/production.yml] → 500 requests/hour limit  
+- [config/production.yml] → 500 requests/hour limit
 - Impact: Production config doesn't match documentation
 
 **Conflict 2: Authentication Token Expiration**
@@ -276,26 +292,29 @@ I've analyzed your documentation for conflicts and inconsistencies.
 
 Windsurf is an AI development environment with MCP support.
 
-### Installation
+### Windsurf Installation
 
 1. **Download Windsurf**
    - Visit the Windsurf website
    - Download for your platform
    - Install and launch Windsurf
 
-### Configuration
+### Windsurf Configuration
 
 1. **Open Settings**
-   ```
+
+   ```text
    Windsurf → Preferences → Settings
    ```
 
 2. **Navigate to MCP Configuration**
-   ```
+
+   ```text
    Search: "MCP" or "Model Context Protocol"
    ```
 
 3. **Add QDrant Loader Server**
+
    ```json
    {
      "mcp": {
@@ -319,7 +338,8 @@ Windsurf is an AI development environment with MCP support.
 1. **Restart Windsurf** after configuration
 2. **Open AI Chat**
 3. **Test Knowledge Access**
-   ```
+
+   ```text
    Ask: "Can you search for information about deployment procedures?"
    ```
 
@@ -327,16 +347,17 @@ Windsurf is an AI development environment with MCP support.
 
 Claude Desktop is Anthropic's desktop AI assistant with MCP support.
 
-### Installation
+### Claude Desktop Installation
 
 1. **Download Claude Desktop**
    - Visit [claude.ai](https://claude.ai/)
    - Download the desktop application
    - Install and launch Claude Desktop
 
-### Configuration
+### Claude Desktop Configuration
 
 1. **Locate Configuration File**
+
    ```bash
    # macOS
    ~/Library/Application Support/Claude/claude_desktop_config.json
@@ -349,6 +370,7 @@ Claude Desktop is Anthropic's desktop AI assistant with MCP support.
    ```
 
 2. **Edit Configuration File**
+
    ```json
    {
      "mcpServers": {
@@ -371,7 +393,8 @@ Claude Desktop is Anthropic's desktop AI assistant with MCP support.
 1. **Restart Claude Desktop** after configuration
 2. **Start a New Conversation**
 3. **Test Knowledge Access**
-   ```
+
+   ```text
    Ask: "Can you search my knowledge base for information about API authentication?"
    ```
 
@@ -414,22 +437,28 @@ mcp-qdrant-loader --log-level DEBUG
 
 ## 🔍 Advanced Search Capabilities Reference
 
-### Core Search Tools
+### Search Tools Reference
 
 #### 1. Universal Search (`search`)
+
 **Purpose**: General-purpose semantic search across all documents
+
 ```text
 Example: "Find information about authentication implementation"
 ```
 
 #### 2. Hierarchy Search (`hierarchy_search`)
+
 **Purpose**: Navigate document structures and understand organizational relationships
+
 ```text
 Example: "Show me the structure of our API documentation"
 ```
 
 #### 3. Attachment Search (`attachment_search`)
+
 **Purpose**: Find and analyze files, diagrams, and documents
+
 ```text
 Example: "Find architecture diagrams related to our microservices"
 ```
@@ -437,34 +466,46 @@ Example: "Find architecture diagrams related to our microservices"
 ### Cross-Document Intelligence Tools
 
 #### 4. Document Relationships (`analyze_document_relationships`)
+
 **Purpose**: Comprehensive analysis of document connections and dependencies
+
 ```text
 Example: "Analyze relationships between our authentication and user management docs"
 ```
 
 #### 5. Similar Documents (`find_similar_documents`)
+
 **Purpose**: Find documents similar using multiple similarity metrics
+
 - Entity overlap, topic overlap, semantic similarity
 - Metadata similarity, hierarchical distance, content features
+
 ```text
 Example: "Find documents similar to our payment processing guide"
 ```
 
 #### 6. Conflict Detection (`detect_document_conflicts`)
+
 **Purpose**: Identify contradictions and inconsistencies between documents
+
 ```text
 Example: "Are there any conflicts in our API rate limiting documentation?"
 ```
 
 #### 7. Complementary Content (`find_complementary_content`)
+
 **Purpose**: Discover content that complements or supports a target document
+
 ```text
 Example: "What content complements our deployment guide?"
 ```
 
 #### 8. Document Clustering (`cluster_documents`)
+
 **Purpose**: Group documents by content similarity and relationships
+
 - **Strategies**: mixed_features, entity_based, topic_based, project_based
+
 ```text
 Example: "Cluster our microservices documentation by related topics"
 ```
@@ -475,13 +516,13 @@ Example: "Cluster our microservices documentation by related topics"
 
 ```bash
 # Required Configuration
-QDRANT_URL=http://localhost:6333           # QDrant instance URL
-OPENAI_API_KEY=sk-your-openai-api-key     # OpenAI API key for embeddings
+QDRANT_URL=http://localhost:6333  # QDrant instance URL
+OPENAI_API_KEY=sk-your-openai-api-key  # OpenAI API key for embeddings
 
-# Optional Configuration  
-QDRANT_COLLECTION_NAME=documents          # Collection name (default: "documents")
-QDRANT_API_KEY=your-qdrant-cloud-key     # For QDrant Cloud instances
-MCP_DISABLE_CONSOLE_LOGGING=true         # Disable console logs (recommended)
+# Optional Configuration
+QDRANT_COLLECTION_NAME=documents  # Collection name (default: "documents")
+QDRANT_API_KEY=your-qdrant-cloud-key  # For QDrant Cloud instances
+MCP_DISABLE_CONSOLE_LOGGING=true  # Disable console logs (recommended)
 ```
 
 ### Multiple Knowledge Bases
@@ -505,7 +546,7 @@ For different projects with different knowledge bases:
       "args": [],
       "env": {
         "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your-openai-api-key", 
+        "OPENAI_API_KEY": "your-openai-api-key",
         "QDRANT_COLLECTION_NAME": "team_knowledge"
       }
     }
@@ -565,7 +606,7 @@ echo $OPENAI_API_KEY
 
 # Test API key
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
-     https://api.openai.com/v1/models
+  https://api.openai.com/v1/models
 
 # Set in configuration
 {
@@ -634,6 +675,7 @@ mcp-qdrant-loader
    - Use specific search tools for targeted queries
 
 2. **Environment Configuration**
+
    ```bash
    # Essential for performance
    export MCP_DISABLE_CONSOLE_LOGGING=true
@@ -660,6 +702,7 @@ mcp-qdrant-loader
 #### 1. Be Specific and Contextual
 
 **Good Examples**:
+
 ```text
 ✅ "How do I implement JWT refresh tokens in our Express.js API following our existing patterns?"
 ✅ "Show me code examples for handling file uploads in our Node.js application"
@@ -667,6 +710,7 @@ mcp-qdrant-loader
 ```
 
 **Avoid Vague Queries**:
+
 ```text
 ❌ "authentication"
 ❌ "deployment"
@@ -714,34 +758,39 @@ mcp-qdrant-loader
 
 The MCP server provides these search capabilities:
 
-### Core Search Tools
+### Search Tools Overview
+
 1. **search** - Universal semantic search across all documents
 2. **hierarchy_search** - Structure-aware search with hierarchy navigation
 3. **attachment_search** - File and attachment search with content analysis
 
-### Cross-Document Intelligence Tools
-4. **analyze_document_relationships** - Comprehensive relationship analysis
-5. **find_similar_documents** - Document similarity detection using multiple metrics
-6. **detect_document_conflicts** - Conflict and inconsistency identification
-7. **find_complementary_content** - Complementary content discovery
-8. **cluster_documents** - Document clustering based on content and relationships
+### Intelligence Tools Overview
+
+1. **analyze_document_relationships** - Comprehensive relationship analysis
+2. **find_similar_documents** - Document similarity detection using multiple metrics
+3. **detect_document_conflicts** - Conflict and inconsistency identification
+4. **find_complementary_content** - Complementary content discovery
+5. **cluster_documents** - Document clustering based on content and relationships
 
 ## 📋 Integration Checklist
 
 ### Pre-Setup
+
 - [ ] **AI Tool** installed and updated to latest version
 - [ ] **QDrant Loader** installed and configured
 - [ ] **Documents ingested** with semantic metadata
 - [ ] **OpenAI API key** available and tested
 - [ ] **MCP server package** installed
 
-### Configuration
+### Setup Configuration
+
 - [ ] **MCP configuration** added to AI tool settings
 - [ ] **Environment variables** properly set (including `MCP_DISABLE_CONSOLE_LOGGING=true`)
 - [ ] **AI tool restarted** after configuration changes
 - [ ] **MCP tools** visible in chat interface
 
 ### Testing
+
 - [ ] **Basic search** working in AI tool chat
 - [ ] **Hierarchy search** navigating document structures
 - [ ] **Attachment search** finding files and documents
@@ -749,6 +798,7 @@ The MCP server provides these search capabilities:
 - [ ] **Performance** acceptable for daily development use
 
 ### Team Optimization
+
 - [ ] **Team configurations** documented and shared
 - [ ] **Best practices** established for effective prompting
 - [ ] **Security considerations** addressed for API keys

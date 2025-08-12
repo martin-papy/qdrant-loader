@@ -1,5 +1,7 @@
 # Local Files
 
+> **🔄 Breaking Change**: The configuration root has been renamed from `global_config` to `global`. If you're upgrading from an earlier version, update your configuration files to use `global:` instead of `global_config:`.
+
 Connect QDrant Loader to your local file system to index documents, research materials, archives, and any file-based content. This guide covers setup for processing local directories and files.
 
 ## 🎯 What Gets Processed
@@ -17,13 +19,12 @@ When you configure local file processing, QDrant Loader can handle:
 ### Basic Configuration
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   my-project:
     sources:
@@ -33,9 +34,9 @@ projects:
           include_paths:
             - "**"
           exclude_paths:
-            - ".*"
-            - "~*"
-            - "*.tmp"
+            - "**/.*"
+            - "**/~*"
+            - "**/*.tmp"
           file_types:
             - "*.pdf"
             - "*.docx"
@@ -47,32 +48,29 @@ projects:
 ### Advanced Configuration
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   my-project:
     sources:
       localfile:
         my-docs:
           base_url: "file:///path/to/documents"
-          
           # File filtering
           include_paths:
             - "**"  # Include all files recursively
           exclude_paths:
-            - ".*"              # Hidden files
-            - "~*"              # Temporary files
-            - "*.tmp"           # Temporary files
-            - "node_modules/**" # Dependencies
-            - "__pycache__/**"  # Python cache
-            - "build/**"        # Build artifacts
-            - "dist/**"         # Distribution files
-          
+            - "**/.*"  # Hidden files
+            - "**/~*"  # Temporary files
+            - "**/*.tmp"  # Temporary files
+            - "**/node_modules/**"  # Dependencies
+            - "**/__pycache__/**"  # Python cache
+            - "**/build/**"  # Build artifacts
+            - "**/dist/**"  # Distribution files
           # File types to process
           file_types:
             - "*.pdf"
@@ -89,10 +87,8 @@ projects:
             - "*.json"
             - "*.yaml"
             - "*.yml"
-          
           # Size limits
           max_file_size: 52428800  # 50MB
-          
           # File conversion (requires global file_conversion config)
           enable_file_conversion: true
 ```
@@ -100,13 +96,12 @@ projects:
 ### Multiple Directory Sources
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   my-project:
     sources:
@@ -118,7 +113,6 @@ projects:
             - "*.pdf"
             - "*.tex"
           max_file_size: 104857600  # 100MB
-          
         # Project documentation
         project-docs:
           base_url: "file:///home/user/projects/docs"
@@ -126,9 +120,8 @@ projects:
             - "*.md"
             - "*.rst"
           exclude_paths:
-            - "build/**"
-            - "_build/**"
-          
+            - "**/build/**"
+            - "**/_build/**"
         # Source code
         source-code:
           base_url: "file:///home/user/code"
@@ -139,14 +132,18 @@ projects:
             - "*.cpp"
             - "*.h"
           exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - ".git/**"
-            - "build/**"
-            - "dist/**"
+            - "**/node_modules/**"
+            - "**/__pycache__/**"
+            - "**/.git/**"
+            - "**/build/**"
+            - "**/dist/**"
 ```
 
 ## 🎯 Configuration Options
+
+### Base URL Requirements
+
+- `base_url` must start with `file://` (validator enforced)
 
 ### Connection Settings
 
@@ -174,13 +171,12 @@ projects:
 ### Research Team
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "research-docs"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   research:
     sources:
@@ -195,7 +191,6 @@ projects:
             - "*.md"
           max_file_size: 104857600  # 100MB for large papers
           enable_file_conversion: true
-          
         # Datasets and data files
         research-data:
           base_url: "file:///research/datasets"
@@ -205,20 +200,19 @@ projects:
             - "*.xml"
             - "*.xlsx"
           exclude_paths:
-            - "raw/**"      # Skip raw data
-            - "temp/**"     # Skip temporary files
+            - "**/raw/**"  # Skip raw data
+            - "**/temp/**"  # Skip temporary files
 ```
 
 ### Documentation Team
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documentation"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   documentation:
     sources:
@@ -231,7 +225,6 @@ projects:
             - "*.rst"
             - "*.txt"
             - "*.adoc"
-          
         # Legacy documents
         legacy-docs:
           base_url: "file:///docs/legacy"
@@ -248,13 +241,12 @@ projects:
 ### Software Development
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "dev-docs"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   development:
     sources:
@@ -272,12 +264,11 @@ projects:
             - "*.md"
             - "*.rst"
           exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - "build/**"
-            - "dist/**"
-            - ".git/**"
-          
+            - "**/node_modules/**"
+            - "**/__pycache__/**"
+            - "**/build/**"
+            - "**/dist/**"
+            - "**/.git/**"
         # Configuration files
         config-files:
           base_url: "file:///projects/config"
@@ -293,13 +284,12 @@ projects:
 ### Personal Knowledge Base
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "personal-knowledge"
   openai:
     api_key: "${OPENAI_API_KEY}"
-
 projects:
   personal:
     sources:
@@ -311,14 +301,13 @@ projects:
             - "*.md"
             - "*.txt"
             - "*.org"
-          
         # Books and references
         personal-library:
           base_url: "file:///personal/library"
           file_types:
             - "*.pdf"
             - "*.epub"
-          max_file_size: 209715200  # 200MB for large books
+          max_file_size: 104857600  # 100MB (maximum allowed)
           enable_file_conversion: true
 ```
 
@@ -328,36 +317,36 @@ projects:
 
 ```bash
 # Initialize workspace
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Configure the project
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 ### Validate Configuration
 
 ```bash
 # Validate project configuration
-qdrant-loader --workspace . project validate
+qdrant-loader project validate --workspace .
 
 # Check project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
 ### Process Local Files
 
 ```bash
 # Process all configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Process specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process with verbose logging
-qdrant-loader --workspace . --log-level debug ingest
+qdrant-loader ingest --workspace . --log-level debug
 ```
 
 ## 🔧 Troubleshooting
@@ -367,16 +356,13 @@ qdrant-loader --workspace . --log-level debug ingest
 #### Permission Errors
 
 **Problem**: `Permission denied` or `Access denied`
-
 **Solutions**:
 
 ```bash
 # Check file permissions
 ls -la /path/to/files
-
 # Fix permissions if needed
 chmod -R 755 /path/to/files
-
 # Check if running user has access
 sudo -u qdrant-user ls /path/to/files
 ```
@@ -384,7 +370,6 @@ sudo -u qdrant-user ls /path/to/files
 #### Large File Processing
 
 **Problem**: Files are too large or processing is slow
-
 **Solutions**:
 
 ```yaml
@@ -395,19 +380,17 @@ projects:
         my-docs:
           base_url: "file:///large_files"
           # Increase size limits
-          max_file_size: 209715200  # 200MB
-          
+          max_file_size: 104857600  # 100MB (maximum allowed)
           # Skip very large files
           exclude_paths:
-            - "*.iso"
-            - "*.dmg"
-            - "*.vm*"
+            - "**/*.iso"
+            - "**/*.dmg"
+            - "**/*.vm*"
 ```
 
 #### File Type Issues
 
 **Problem**: Files not being processed
-
 **Solutions**:
 
 ```yaml
@@ -423,7 +406,6 @@ projects:
             - "*.docx"
             - "*.txt"
             - "*.md"
-          
           # Enable file conversion for additional formats
           enable_file_conversion: true
 ```
@@ -431,7 +413,6 @@ projects:
 #### Path Issues
 
 **Problem**: Files not found or incorrect paths
-
 **Solutions**:
 
 ```yaml
@@ -442,15 +423,13 @@ projects:
         my-docs:
           # Use absolute path with file:// prefix
           base_url: "file:///absolute/path/to/documents"
-          
           # Include all files recursively
           include_paths:
             - "**"
-          
           # Check exclude patterns
           exclude_paths:
-            - ".*"  # Hidden files
-            - "~*"  # Temporary files
+            - "**/.*"  # Hidden files
+            - "**/~*"  # Temporary files
 ```
 
 ### Debugging Commands
@@ -467,7 +446,7 @@ head -100 /path/to/test.txt
 df -h /path/to/files
 
 # Monitor processing with verbose logging
-qdrant-loader --workspace . --log-level debug ingest
+qdrant-loader ingest --workspace . --log-level debug
 ```
 
 ## 📊 Monitoring and Performance
@@ -476,13 +455,13 @@ qdrant-loader --workspace . --log-level debug ingest
 
 ```bash
 # Check project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
 ### Performance Optimization
@@ -504,12 +483,36 @@ Monitor these aspects for local file processing:
 3. **Separate by content type** - Group similar files together
 4. **Archive old content** - Move outdated files to archive directories
 
-### Performance Optimization
+### Optimization Best Practices
 
 1. **Filter aggressively** - Only process files you need with specific file_types
 2. **Set appropriate size limits** - Avoid processing very large files
 3. **Use exclude patterns** - Skip unnecessary directories and files
 4. **Enable file conversion selectively** - Only when needed for additional formats
+
+#### Example: Include/Exclude Patterns
+
+```yaml
+projects:
+  my-project:
+    sources:
+      localfile:
+        my-docs:
+          base_url: "file:///documents"
+          # Include patterns - be specific
+          include_paths:
+            - "**/*.pdf"      # All PDFs recursively
+            - "docs/**/*.md"  # Markdown in docs folder
+            - "reports/2024/**"  # 2024 reports only
+          # Exclude patterns - avoid unnecessary files
+          exclude_paths:
+            - "**/.*"            # Hidden files
+            - "**/*.tmp"      # Temporary files
+            - "**/*.log"      # Log files
+            - "**/node_modules/**"  # Dependencies
+            - "**/build/**"   # Build artifacts
+            - "**/cache/**"   # Cache directories
+```
 
 ### Security Considerations
 

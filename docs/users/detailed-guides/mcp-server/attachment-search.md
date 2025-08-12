@@ -7,7 +7,7 @@ This guide covers the attachment search capabilities of the QDrant Loader MCP Se
 The attachment search tool specializes in finding file attachments and their associated documents. **Currently, this feature is specifically designed for Confluence sources** and includes:
 
 - **PDF documents** with extracted text content
-- **Office documents** (Word, Excel, PowerPoint)  
+- **Office documents** (Word, Excel, PowerPoint)
 - **Images** with text extraction via MarkItDown
 - **Code files** and configuration files
 - **Data files** (CSV, JSON, YAML)
@@ -31,17 +31,17 @@ The attachment search tool specializes in finding file attachments and their ass
 
 ```text
 Confluence Attachment
-    ↓
+          ↓
 1. File Detection (MIME type and extension analysis)
-    ↓
+          ↓
 2. MarkItDown Conversion (text extraction from various formats)
-    ↓
+          ↓
 3. Content Processing (markdown structure analysis)
-    ↓
+          ↓
 4. Vector Embedding (semantic search via OpenAI)
-    ↓
+          ↓
 5. Confluence Context Integration (parent page relationship)
-    ↓
+          ↓
 6. Searchable Attachment Index
 ```
 
@@ -49,17 +49,17 @@ Confluence Attachment
 
 ```text
 Query: "architecture diagrams"
-    ↓
+          ↓
 1. Semantic Search (find relevant Confluence attachments)
-    ↓
+          ↓
 2. Confluence Filter (only Confluence sources processed)
-    ↓
+          ↓
 3. File Type Filtering (based on MIME type and filename)
-    ↓
+          ↓
 4. Content Analysis (MarkItDown extracted text)
-    ↓
+          ↓
 5. Parent Context (associated Confluence pages)
-    ↓
+          ↓
 6. Ranked Results (by relevance and attachment metadata)
 ```
 
@@ -67,21 +67,39 @@ Query: "architecture diagrams"
 
 ### Available Parameters
 
-```json
+```jsonc
 {
   "name": "attachment_search",
   "description": "Search for file attachments and their parent documents across Confluence sources",
   "parameters": {
-    "query": "string",              // Required: Search query in natural language
-    "limit": 10,                    // Optional: Number of results (default: 10)
-    "include_parent_context": true, // Optional: Include parent document info (default: true)
-    "attachment_filter": {          // Optional: Attachment-specific filters
-      "attachments_only": true,     // Show only file attachments
-      "parent_document_title": "API Documentation", // Filter by parent document title
-      "file_type": "pdf",           // Filter by file type (e.g., 'pdf', 'xlsx', 'png')
-      "file_size_min": 1024,        // Minimum file size in bytes
-      "file_size_max": 10485760,    // Maximum file size in bytes
-      "author": "data-team"         // Filter by attachment author
+    // Required: Search query in natural language
+    "query": "string",
+    
+    // Optional: Number of results (default: 10)
+    "limit": 10,
+    
+    // Optional: Include parent document info (default: true)
+    "include_parent_context": true,
+    
+    // Optional: Attachment-specific filters
+    "attachment_filter": {
+      // Show only file attachments
+      "attachments_only": true,
+      
+      // Filter by parent document title
+      "parent_document_title": "API Documentation",
+      
+      // Filter by file type (e.g., 'pdf', 'xlsx', 'png')
+      "file_type": "pdf",
+      
+      // Minimum file size in bytes
+      "file_size_min": 1024,
+      
+      // Maximum file size in bytes
+      "file_size_max": 10485760,
+      
+      // Filter by attachment author
+      "author": "data-team"
     }
   }
 }
@@ -114,14 +132,16 @@ The attachment search supports file types that can be processed by MarkItDown fo
 ### Document Files
 
 #### PDF Documents (.pdf)
+
 - **Content**: Text extraction via MarkItDown
 - **Metadata**: Basic Confluence attachment metadata (author, size, date)
 - **Features**: Text content search within PDF documents
 - **Use Cases**: Reports, manuals, specifications
 
 #### Microsoft Office Documents
+
 - **Word Documents** (.docx, .doc): Text content extraction
-- **Excel Spreadsheets** (.xlsx, .xls): Cell content and sheet data extraction  
+- **Excel Spreadsheets** (.xlsx, .xls): Cell content and sheet data extraction
 - **PowerPoint Presentations** (.pptx, .ppt): Slide text and notes extraction
 - **Metadata**: Author, file size, last modified date from Confluence
 - **Use Cases**: Documentation, presentations, data analysis
@@ -129,6 +149,7 @@ The attachment search supports file types that can be processed by MarkItDown fo
 ### Image Files
 
 #### Common Image Formats (.png, .jpg, .jpeg, .gif, .bmp, .tiff, .webp)
+
 - **Content**: Text extraction via MarkItDown (limited capability)
 - **Metadata**: File size, dimensions (basic), upload date from Confluence
 - **Features**: Basic text recognition where supported by MarkItDown
@@ -137,20 +158,25 @@ The attachment search supports file types that can be processed by MarkItDown fo
 ### Data and Text Files
 
 #### CSV Files (.csv)
+
 - **Content**: Column headers and data structure extraction
 - **Features**: Data content made searchable
 - **Use Cases**: Data exports, configuration data
 
 #### Archive Files (.zip, .epub)
+
 - **Content**: Archive content extraction where supported by MarkItDown
 - **Features**: Basic content indexing
 
 #### Plain Text Files (.txt)
+
 - **Content**: Full text extraction
 - **Features**: Complete content searchability
 
 ### Audio Files (Limited Support)
+
 #### Audio Formats (.mp3, .wav)
+
 - **Content**: Limited to metadata extraction only
 - **Note**: Audio transcription is not supported
 
@@ -174,13 +200,12 @@ Parameters: {
     "file_type": "pdf"
   }
 }
-
 Results:
 1. 📄 system-architecture-v2.pdf (2.3 MB)
    Parent: Architecture Documentation (Confluence)
    Content: "Microservices architecture with API gateway..."
    Author: architecture-team
-   
+
 2. 📄 database-schema.pdf (1.1 MB)
    Parent: Database Design (Confluence)
    Content: "User Table, Product Table, Order Table..."
@@ -196,13 +221,12 @@ Parameters: {
     "file_type": "xlsx"
   }
 }
-
 Results:
 1. 📊 q4-performance-report.xlsx (1.2 MB)
    Parent: Quarterly Reports (Confluence)
    Content: Extracted spreadsheet data and metrics
    Author: performance-team
-   
+
 2. 📊 daily-metrics.xlsx (456 KB)
    Parent: Monitoring Dashboard (Confluence)
    Content: Response times, throughput, error rates data
@@ -218,12 +242,11 @@ Query: "API rate limits and throttling policies"
 Parameters: {
   "limit": 10
 }
-
 Results:
 1. 📄 api-rate-limiting-policy.pdf (1.8 MB)
    Parent: API Documentation (Confluence)
    Content: "Rate limiting implementation using token bucket..."
-   
+
 2. 📄 throttling-implementation.docx (890 KB)
    Parent: Development Guidelines (Confluence)
    Content: "Implementation guide for rate limiting middleware..."
@@ -240,13 +263,12 @@ Parameters: {
     "author": "devops-team"
   }
 }
-
 Results:
 1. 📄 deployment-runbook-v3.pdf (2.1 MB)
    Author: devops-team
    Parent: Operations Documentation (Confluence)
    Content: "Updated deployment procedures for Kubernetes..."
-   
+
 2. 📄 rollback-procedures.docx (678 KB)
    Author: devops-team
    Parent: Emergency Procedures (Confluence)
@@ -262,12 +284,11 @@ Parameters: {
     "file_size_min": 1048576  // Files larger than 1MB
   }
 }
-
 Results:
 1. 📄 complete-api-specification.pdf (5.2 MB)
    Parent: API Documentation (Confluence)
    Content: "Complete REST API specification with examples..."
-   
+
 2. 📄 system-architecture-guide.pdf (3.8 MB)
    Parent: Architecture Documentation (Confluence)
    Content: "Comprehensive system architecture documentation..."
@@ -310,8 +331,8 @@ Confluence Space: Development Documentation
 Author: database-team
 Upload Date: 2024-01-15
 
-Parent Context: 
-This migration script updates the user table schema to support 
+Parent Context:
+This migration script updates the user table schema to support
 new authentication features. Please run during maintenance window.
 
 Related Attachments on Same Page:
@@ -375,8 +396,8 @@ Attachment search integrates with the broader search system:
 ```json
 {
   "attachment_filter": {
-    "file_size_min": 1024,        // Exclude tiny files
-    "file_size_max": 52428800     // Exclude files larger than 50MB
+    "file_size_min": 1024,      // Exclude tiny files
+    "file_size_max": 52428800   // Exclude files larger than 50MB
   }
 }
 ```
@@ -386,7 +407,7 @@ Attachment search integrates with the broader search system:
 ```json
 {
   "attachment_filter": {
-    "author": "architecture-team"   // Specific team
+    "author": "architecture-team"  // Specific team
   }
 }
 ```
@@ -408,7 +429,7 @@ Attachment search integrates with the broader search system:
 
 ```json
 {
-  "limit": 5                      // Fewer results for faster response
+  "limit": 5  // Fewer results for faster response
 }
 ```
 
@@ -440,10 +461,10 @@ Attachment search integrates with the broader search system:
 Attachment search uses specialized similarity scoring:
 
 ```text
-Content Similarity: 0.89    (text content match)
-Metadata Similarity: 0.76   (file properties match)
-Context Similarity: 0.82    (parent document relevance)
-Overall Score: 0.85         (weighted combination)
+Content Similarity: 0.89 (text content match)
+Metadata Similarity: 0.76 (file properties match)
+Context Similarity: 0.82 (parent document relevance)
+Overall Score: 0.85 (weighted combination)
 ```
 
 ### Quality Indicators
@@ -511,6 +532,7 @@ Query: "deployment documentation structure"
 ### When to Use Attachment Search
 
 **✅ Use Attachment Search When:**
+
 - Looking for files stored in Confluence
 - Need to find specific file types (PDFs, Excel, Word docs)
 - Want to search within file content, not just titles
@@ -518,6 +540,7 @@ Query: "deployment documentation structure"
 - Working primarily with Confluence-based knowledge
 
 **❌ Don't Use Attachment Search When:**
+
 - Looking for Git repository files (use semantic search)
 - Searching JIRA tickets (use semantic search)
 - Need to search across all source types

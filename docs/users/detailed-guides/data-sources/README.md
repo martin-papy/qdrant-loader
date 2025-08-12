@@ -176,12 +176,11 @@ QDrant Loader uses a multi-project configuration structure. Here's the basic for
 
 ```yaml
 # Global configuration
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "${OPENAI_API_KEY}"
 
@@ -191,7 +190,6 @@ projects:
     project_id: "my-project"
     display_name: "My Project"
     description: "Project description"
-    
     sources:
       # Git repositories
       git:
@@ -201,7 +199,7 @@ projects:
           base_url: "https://github.com/company/docs"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-          
+      
       # Confluence spaces
       confluence:
         tech-docs:
@@ -211,7 +209,7 @@ projects:
           space_key: "TECH"
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
-          
+      
       # JIRA projects
       jira:
         support:
@@ -221,15 +219,17 @@ projects:
           project_key: "SUP"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-          
+      
       # Local documentation
       localfile:
         local-docs:
           source_type: "localfile"
           source: "local-docs"
           base_url: "file:///docs/internal"
-          include_paths: ["**/*.md", "**/*.pdf"]
-          
+          include_paths:
+            - "**/*.md"
+            - "**/*.pdf"
+      
       # Public API docs
       publicdocs:
         api-docs:
@@ -237,7 +237,8 @@ projects:
           source: "api-docs"
           base_url: "https://api.example.com/docs"
           content_selector: ".api-content"
-          include_paths: ["/docs/**"]
+          include_paths:
+            - "/docs/**"
 ```
 
 ### Environment Variables
@@ -276,7 +277,6 @@ projects:
     project_id: "dev-team"
     display_name: "Development Team"
     description: "Source code and development documentation"
-    
     sources:
       # Source code repositories
       git:
@@ -284,17 +284,22 @@ projects:
           source_type: "git"
           source: "backend"
           base_url: "https://github.com/company/backend"
-          include_paths: ["**/*.py", "**/*.md"]
+          include_paths:
+            - "**/*.py"
+            - "**/*.md"
           branch: "main"
           token: "${GITHUB_TOKEN}"
         frontend:
           source_type: "git"
           source: "frontend"
           base_url: "https://github.com/company/frontend"
-          include_paths: ["**/*.js", "**/*.ts", "**/*.md"]
+          include_paths:
+            - "**/*.js"
+            - "**/*.ts"
+            - "**/*.md"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-          
+      
       # Technical documentation
       confluence:
         dev-docs:
@@ -304,7 +309,7 @@ projects:
           space_key: "DEV"
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
-          
+      
       # Development tickets
       jira:
         dev-issues:
@@ -324,7 +329,6 @@ projects:
     project_id: "docs-team"
     display_name: "Documentation Team"
     description: "All documentation sources"
-    
     sources:
       # Documentation repositories
       git:
@@ -332,10 +336,12 @@ projects:
           source_type: "git"
           source: "docs-repo"
           base_url: "https://github.com/company/docs"
-          include_paths: ["**/*.md", "**/*.rst"]
+          include_paths:
+            - "**/*.md"
+            - "**/*.rst"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-          
+      
       # Knowledge base
       confluence:
         knowledge-base:
@@ -346,15 +352,17 @@ projects:
           token: "${CONFLUENCE_TOKEN}"
           email: "${CONFLUENCE_EMAIL}"
           download_attachments: true
-          
+      
       # Legacy documents
       localfile:
         legacy-docs:
           source_type: "localfile"
           source: "legacy-docs"
           base_url: "file:///docs/legacy"
-          include_paths: ["**/*.pdf", "**/*.docx"]
-          
+          include_paths:
+            - "**/*.pdf"
+            - "**/*.docx"
+      
       # External API documentation
       publicdocs:
         external-api:
@@ -372,7 +380,6 @@ projects:
     project_id: "research-team"
     display_name: "Research Team"
     description: "Research papers and datasets"
-    
     sources:
       # Research repositories
       git:
@@ -380,23 +387,30 @@ projects:
           source_type: "git"
           source: "research-papers"
           base_url: "https://github.com/research/papers"
-          include_paths: ["**/*.tex", "**/*.bib", "**/*.md"]
+          include_paths:
+            - "**/*.tex"
+            - "**/*.bib"
+            - "**/*.md"
           branch: "main"
           token: "${GITHUB_TOKEN}"
-          
+      
       # Research papers and datasets
       localfile:
         papers:
           source_type: "localfile"
           source: "papers"
           base_url: "file:///research/papers"
-          include_paths: ["**/*.pdf", "**/*.tex"]
+          include_paths:
+            - "**/*.pdf"
+            - "**/*.tex"
         datasets:
           source_type: "localfile"
           source: "datasets"
           base_url: "file:///research/datasets"
-          include_paths: ["**/*.csv", "**/*.json"]
-          
+          include_paths:
+            - "**/*.csv"
+            - "**/*.json"
+      
       # Project tracking
       jira:
         research-projects:
@@ -415,17 +429,17 @@ projects:
 
 ```bash
 # Show current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Initialize collection (one-time setup)
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Ingest data from all configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Force full re-ingestion
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 ```
 
 ### Project Management
@@ -451,16 +465,16 @@ qdrant-loader project validate --workspace . --project-id my-project
 
 ```bash
 # Process specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source type from all projects
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Process specific source type from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type git
+qdrant-loader ingest --workspace . --project my-project --source-type git
 
 # Process specific source from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type git --source my-repo
+qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 ```
 
 ## 📊 Monitoring and Management
@@ -483,18 +497,18 @@ qdrant-loader project status --workspace . --format json
 
 ```yaml
 # Global performance settings in config.yaml
-global_config:
+global:
   # File conversion settings
   file_conversion:
     markitdown:
-      enable_llm_descriptions: false  # Disable for better performance
-      
+      enable_llm_descriptions: false # Disable for better performance
+  
   # Processing settings
   processing:
     max_concurrent_sources: 3
     max_concurrent_files: 5
     batch_size: 100
-    
+
 # Source-specific optimization
 projects:
   my-project:
@@ -505,17 +519,20 @@ projects:
           source: "large-repo"
           base_url: "https://github.com/large-repo"
           # Optimize for large repositories
-          max_file_size: 10485760  # 10MB
-          exclude_paths: ["**/node_modules/**", "**/target/**"]
-          
+          max_file_size: 10485760 # 10MB
+          exclude_paths:
+            - "**/node_modules/**"
+            - "**/target/**"
       localfile:
         large-dataset:
           source_type: "localfile"
           source: "large-dataset"
           base_url: "file:///large-dataset"
           # Optimize for many files
-          max_file_size: 52428800  # 50MB
-          include_paths: ["**/*.md", "**/*.txt"]
+          max_file_size: 52428800 # 50MB
+          include_paths:
+            - "**/*.md"
+            - "**/*.txt"
 ```
 
 ## 🔧 Troubleshooting
@@ -570,7 +587,7 @@ projects:
 
 ```bash
 # Enable verbose logging for debugging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check configuration syntax
 qdrant-loader project validate --workspace .

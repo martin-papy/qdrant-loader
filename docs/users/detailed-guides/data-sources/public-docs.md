@@ -25,7 +25,6 @@ projects:
     display_name: "My Documentation Project"
     description: "External documentation and knowledge sources"
     collection_name: "my-docs"
-    
     sources:
       publicdocs:
         example-docs:
@@ -34,7 +33,11 @@ projects:
           content_type: "html"
           selectors:
             content: "article, main, .content"
-            remove: ["nav", "header", "footer", ".sidebar"]
+            remove:
+              - "nav"
+              - "header"
+              - "footer"
+              - ".sidebar"
             code_blocks: "pre code"
           download_attachments: false
           enable_file_conversion: false
@@ -48,7 +51,6 @@ projects:
     display_name: "My Documentation Project"
     description: "External documentation and knowledge sources"
     collection_name: "my-docs"
-    
     sources:
       publicdocs:
         example-docs:
@@ -66,7 +68,12 @@ projects:
           # Content extraction selectors
           selectors:
             content: "article, main, .content"
-            remove: ["nav", "header", "footer", ".sidebar", ".advertisement"]
+            remove:
+              - "nav"
+              - "header"
+              - "footer"
+              - ".sidebar"
+              - ".advertisement"
             code_blocks: "pre code, .highlight code"
           
           # Attachment handling
@@ -90,7 +97,6 @@ projects:
     display_name: "Multi-Documentation Project"
     description: "Documentation from multiple external sources"
     collection_name: "multi-docs"
-    
     sources:
       publicdocs:
         # Main API documentation
@@ -101,10 +107,12 @@ projects:
           path_pattern: "/docs/**"
           selectors:
             content: ".api-content"
-            remove: [".sidebar", ".navigation"]
+            remove:
+              - ".sidebar"
+              - ".navigation"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # Framework documentation
         framework-docs:
           base_url: "https://framework.example.com"
@@ -113,10 +121,12 @@ projects:
           path_pattern: "/guide/**"
           selectors:
             content: ".documentation"
-            remove: [".menu", ".footer"]
+            remove:
+              - ".menu"
+              - ".footer"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # Community wiki
         community-wiki:
           base_url: "https://wiki.example.com"
@@ -127,12 +137,20 @@ projects:
             - "/wiki/talk:**"
           selectors:
             content: ".wiki-content"
-            remove: [".sidebar", ".edit-section"]
+            remove:
+              - ".sidebar"
+              - ".edit-section"
           download_attachments: false
           enable_file_conversion: false
 ```
 
 ## 🎯 Configuration Options
+
+### Validator Requirements
+
+- `content_type` allowed: `html`, `markdown`, or `rst`
+- `download_attachments` default: `false`
+- `attachment_selectors` have sensible defaults for common file types
 
 ### Required Settings
 
@@ -180,7 +198,6 @@ projects:
     display_name: "API Documentation"
     description: "External API documentation sources"
     collection_name: "api-docs"
-    
     sources:
       publicdocs:
         # REST API Documentation
@@ -191,11 +208,14 @@ projects:
           path_pattern: "/docs/api/**"
           selectors:
             content: ".api-content"
-            remove: [".sidebar", ".navigation", ".footer"]
+            remove:
+              - ".sidebar"
+              - ".navigation"
+              - ".footer"
             code_blocks: "pre code, .highlight code"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # OpenAPI/Swagger Documentation
         petstore-api:
           base_url: "https://petstore.swagger.io"
@@ -204,7 +224,9 @@ projects:
           path_pattern: "/v3/**"
           selectors:
             content: ".swagger-ui"
-            remove: [".topbar", ".information-container"]
+            remove:
+              - ".topbar"
+              - ".information-container"
           download_attachments: false
           enable_file_conversion: false
 ```
@@ -217,7 +239,6 @@ projects:
     display_name: "Framework Documentation"
     description: "Documentation for development frameworks"
     collection_name: "framework-docs"
-    
     sources:
       publicdocs:
         # React Documentation
@@ -231,10 +252,12 @@ projects:
             - "/community/**"
           selectors:
             content: ".content"
-            remove: [".sidebar", ".navigation"]
+            remove:
+              - ".sidebar"
+              - ".navigation"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # Django Documentation
         django-docs:
           base_url: "https://docs.djangoproject.com"
@@ -243,7 +266,9 @@ projects:
           path_pattern: "/en/stable/**"
           selectors:
             content: ".document"
-            remove: [".sphinxsidebar", ".related"]
+            remove:
+              - ".sphinxsidebar"
+              - ".related"
           download_attachments: false
           enable_file_conversion: false
 ```
@@ -256,7 +281,6 @@ projects:
     display_name: "Knowledge Base"
     description: "External knowledge bases and wikis"
     collection_name: "knowledge-base"
-    
     sources:
       publicdocs:
         # GitHub Wiki
@@ -266,10 +290,12 @@ projects:
           content_type: "html"
           selectors:
             content: ".markdown-body"
-            remove: [".gh-header", ".pagehead"]
+            remove:
+              - ".gh-header"
+              - ".pagehead"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # GitBook Documentation
         gitbook-docs:
           base_url: "https://docs.gitbook.com"
@@ -278,7 +304,9 @@ projects:
           path_pattern: "/product-tour/**"
           selectors:
             content: ".page-content"
-            remove: [".sidebar", ".header"]
+            remove:
+              - ".sidebar"
+              - ".header"
           download_attachments: false
           enable_file_conversion: false
 ```
@@ -291,7 +319,6 @@ projects:
     display_name: "Technical Content"
     description: "Technical blogs and release notes"
     collection_name: "tech-content"
-    
     sources:
       publicdocs:
         # Engineering Blog
@@ -305,10 +332,13 @@ projects:
             - "/tag/**"
           selectors:
             content: ".post-content"
-            remove: [".sidebar", ".author-bio", ".related-posts"]
+            remove:
+              - ".sidebar"
+              - ".author-bio"
+              - ".related-posts"
           download_attachments: false
           enable_file_conversion: false
-          
+        
         # Release Notes
         release-notes:
           base_url: "https://releases.example.com"
@@ -317,7 +347,9 @@ projects:
           path_pattern: "/notes/**"
           selectors:
             content: ".release-content"
-            remove: [".navigation", ".footer"]
+            remove:
+              - ".navigation"
+              - ".footer"
           download_attachments: false
           enable_file_conversion: false
 ```
@@ -328,32 +360,32 @@ projects:
 
 ```bash
 # Initialize the project (creates collection if needed)
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Test ingestion with your public docs configuration
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Check project status
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project --workspace . --project-id my-project
 
 # List all configured projects
-qdrant-loader --workspace . project list
+qdrant-loader project --workspace .
 
 # Validate project configuration
-qdrant-loader --workspace . project validate --project-id my-project
+qdrant-loader project --workspace . --project-id my-project
 ```
 
 ### Debug Public Documentation Processing
 
 ```bash
 # Enable debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 
 # Process specific project only
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source within a project
-qdrant-loader --workspace . ingest --project my-project --source-type publicdocs --source example-docs
+qdrant-loader ingest --workspace . --project my-project --source-type publicdocs --source example-docs
 ```
 
 ## 🔧 Troubleshooting
@@ -399,10 +431,16 @@ projects:
         example-docs:
           base_url: "https://example.com"
           version: "1.0"
+          
           # Try multiple selectors
           selectors:
             content: "article, main, .content, .documentation, .md-content"
-            remove: ["nav", "header", "footer", ".sidebar", ".menu"]
+            remove:
+              - "nav"
+              - "header"
+              - "footer"
+              - ".sidebar"
+              - ".menu"
 ```
 
 #### Path Pattern Issues
@@ -419,8 +457,10 @@ projects:
         example-docs:
           base_url: "https://docs.example.com"
           version: "1.0"
+          
           # Use broader path pattern or remove it entirely
           path_pattern: "/**"  # Allow all paths
+          
           # Or be more specific
           # path_pattern: "/docs/**"
           
@@ -438,29 +478,32 @@ projects:
 
 1. **Verify project structure**:
 
-   ```yaml
-   projects:
-     your-project:  # Project ID
-       sources:
-         publicdocs:
-           source-name:  # Source name
-             base_url: "..."
-             # ... other settings
-   ```
+```yaml
+projects:
+  your-project:  # Project ID
+    sources:
+      publicdocs:
+        source-name:  # Source name
+          base_url: "..."
+          # ... other settings
+```
 
-2. **Check required fields**:
+1. **Check required fields**:
    - `base_url`: Must be a valid URL
    - `version`: Must be a non-empty string
    - `content_type`: Must be `html`, `markdown`, or `rst`
 
-3. **Validate selectors**:
+2. **Validate selectors**:
 
-   ```yaml
-   selectors:
-     content: "article, main, .content"  # Valid CSS selector
-     remove: ["nav", "header", "footer"]  # List of CSS selectors
-     code_blocks: "pre code"  # Valid CSS selector
-   ```
+```yaml
+selectors:
+  content: "article, main, .content"  # Valid CSS selector
+  remove:
+    - "nav"
+    - "header"
+    - "footer"  # List of CSS selectors
+  code_blocks: "pre code"  # Valid CSS selector
+```
 
 #### Attachment Processing Issues
 
@@ -508,23 +551,23 @@ curl -s "https://example.com" | grep -i javascript
 
 ```bash
 # View project status
-qdrant-loader --workspace . project status
+qdrant-loader project --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project --workspace .
 ```
 
 ### Configuration Management
 
 ```bash
 # View current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate all projects
-qdrant-loader --workspace . project validate
+qdrant-loader project --workspace .
 ```
 
 ## 🔄 Best Practices

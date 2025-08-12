@@ -2,12 +2,11 @@
 
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bs4 import BeautifulSoup, Tag
 
 from qdrant_loader.core.chunking.strategy.base.document_parser import BaseDocumentParser
-from qdrant_loader.core.document import Document
 
 
 class SectionType(Enum):
@@ -61,26 +60,28 @@ class HTMLDocumentParser(BaseDocumentParser):
             "form",
         }
 
-    def parse_document_structure(self, content: str) -> Dict[str, Any]:
+    def parse_document_structure(self, content: str) -> dict[str, Any]:
         """Parse HTML DOM structure and extract semantic information."""
         try:
-            soup = BeautifulSoup(content, 'html.parser')
-            
+            soup = BeautifulSoup(content, "html.parser")
+
             # Remove script and style elements for cleaner analysis
             for script in soup(["script", "style"]):
                 script.decompose()
-            
+
             # Extract document outline
             headings = self._extract_heading_hierarchy(soup)
             semantic_elements = self._identify_semantic_elements(soup)
             links = self._extract_links(soup)
             accessibility = self._analyze_accessibility(soup)
-            
+
             return {
                 "heading_hierarchy": headings,
                 "semantic_elements": semantic_elements,
                 "internal_links": len([l for l in links if l.get("internal", False)]),
-                "external_links": len([l for l in links if not l.get("internal", False)]),
+                "external_links": len(
+                    [l for l in links if not l.get("internal", False)]
+                ),
                 "has_navigation": bool(soup.find("nav")),
                 "has_main_content": bool(soup.find("main")),
                 "has_header": bool(soup.find("header")),
@@ -116,15 +117,15 @@ class HTMLDocumentParser(BaseDocumentParser):
                 "parse_error": str(e),
             }
 
-    def extract_section_metadata(self, section: Any) -> Dict[str, Any]:
+    def extract_section_metadata(self, section: Any) -> dict[str, Any]:
         """Extract metadata from an HTML section."""
         if isinstance(section, dict):
             # Already processed section metadata
             return section
-        
+
         if isinstance(section, Tag):
             return self._extract_tag_metadata(section)
-        
+
         # Fallback for string content
         return {
             "tag_name": "div",
@@ -135,68 +136,74 @@ class HTMLDocumentParser(BaseDocumentParser):
             "has_images": bool(re.search(r"<img\s+[^>]*src", str(section))),
         }
 
-    def _extract_heading_hierarchy(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    def _extract_heading_hierarchy(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
         """Extract document heading hierarchy."""
         headings = []
-        
+
         for heading in soup.find_all(list(self.heading_elements)):
             level = int(heading.name[1])  # Extract number from h1, h2, etc.
             text = heading.get_text(strip=True)
-            
-            headings.append({
-                "level": level,
-                "text": text,
-                "tag": heading.name,
-                "id": heading.get("id"),
-                "classes": heading.get("class", []),
-            })
-        
+
+            headings.append(
+                {
+                    "level": level,
+                    "text": text,
+                    "tag": heading.name,
+                    "id": heading.get("id"),
+                    "classes": heading.get("class", []),
+                }
+            )
+
         return headings
 
-    def _identify_semantic_elements(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    def _identify_semantic_elements(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
         """Identify semantic HTML elements and their roles."""
         semantic_elements = []
-        
+
         for element in soup.find_all(list(self.section_elements)):
-            semantic_elements.append({
-                "tag": element.name,
-                "role": element.get("role"),
-                "id": element.get("id"),
-                "classes": element.get("class", []),
-                "text_length": len(element.get_text(strip=True)),
-                "has_children": bool(element.find_all()),
-            })
-        
+            semantic_elements.append(
+                {
+                    "tag": element.name,
+                    "role": element.get("role"),
+                    "id": element.get("id"),
+                    "classes": element.get("class", []),
+                    "text_length": len(element.get_text(strip=True)),
+                    "has_children": bool(element.find_all()),
+                }
+            )
+
         return semantic_elements
 
-    def _extract_links(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+    def _extract_links(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
         """Extract and categorize links."""
         links = []
-        
+
         for link in soup.find_all("a", href=True):
             href = link["href"]
             text = link.get_text(strip=True)
-            
+
             # Determine if link is internal or external
             is_internal = (
-                href.startswith("#") or 
-                href.startswith("/") or 
-                href.startswith("./") or
-                href.startswith("../") or
-                not href.startswith(("http://", "https://", "mailto:", "tel:"))
+                href.startswith("#")
+                or href.startswith("/")
+                or href.startswith("./")
+                or href.startswith("../")
+                or not href.startswith(("http://", "https://", "mailto:", "tel:"))
             )
-            
-            links.append({
-                "href": href,
-                "text": text,
-                "internal": is_internal,
-                "title": link.get("title"),
-                "target": link.get("target"),
-            })
-        
+
+            links.append(
+                {
+                    "href": href,
+                    "text": text,
+                    "internal": is_internal,
+                    "title": link.get("title"),
+                    "target": link.get("target"),
+                }
+            )
+
         return links
 
-    def _analyze_accessibility(self, soup: BeautifulSoup) -> Dict[str, Any]:
+    def _analyze_accessibility(self, soup: BeautifulSoup) -> dict[str, Any]:
         """Analyze accessibility features of the HTML document."""
         accessibility = {
             "has_lang_attribute": bool(soup.find("html", lang=True)),
@@ -208,14 +215,14 @@ class HTMLDocumentParser(BaseDocumentParser):
             "form_labels": 0,
             "form_inputs": 0,
         }
-        
+
         # Analyze images
         for img in soup.find_all("img"):
             if img.get("alt") is not None:
                 accessibility["images_with_alt"] += 1
             else:
                 accessibility["images_without_alt"] += 1
-        
+
         # Check for skip links
         skip_link_indicators = ["skip", "jump", "goto"]
         for link in soup.find_all("a", href=True):
@@ -223,11 +230,13 @@ class HTMLDocumentParser(BaseDocumentParser):
             if any(indicator in link_text for indicator in skip_link_indicators):
                 accessibility["has_skip_links"] = True
                 break
-        
+
         # Analyze forms
-        accessibility["form_inputs"] = len(soup.find_all(["input", "textarea", "select"]))
+        accessibility["form_inputs"] = len(
+            soup.find_all(["input", "textarea", "select"])
+        )
         accessibility["form_labels"] = len(soup.find_all("label"))
-        
+
         # Check heading nesting (simplified)
         headings = soup.find_all(list(self.heading_elements))
         if len(headings) > 1:
@@ -238,14 +247,14 @@ class HTMLDocumentParser(BaseDocumentParser):
                     accessibility["headings_properly_nested"] = False
                     break
                 prev_level = level
-        
+
         return accessibility
 
-    def _extract_tag_metadata(self, tag: Tag) -> Dict[str, Any]:
+    def _extract_tag_metadata(self, tag: Tag) -> dict[str, Any]:
         """Extract metadata from a BeautifulSoup tag."""
         tag_name = tag.name.lower()
         section_type = self._identify_section_type(tag)
-        
+
         # Get attributes (limited for performance)
         attributes = {}
         if tag.attrs:
@@ -255,12 +264,14 @@ class HTMLDocumentParser(BaseDocumentParser):
                     attributes[attr] = tag.attrs[attr]
                 elif attr == "data-*":
                     # Collect data attributes
-                    data_attrs = {k: v for k, v in tag.attrs.items() if k.startswith("data-")}
+                    data_attrs = {
+                        k: v for k, v in tag.attrs.items() if k.startswith("data-")
+                    }
                     if data_attrs:
                         attributes["data_attributes"] = data_attrs
-        
+
         text_content = tag.get_text(strip=True)
-        
+
         return {
             "tag_name": tag_name,
             "section_type": section_type.value,
@@ -317,7 +328,7 @@ class HTMLDocumentParser(BaseDocumentParser):
     def extract_section_title(self, content: str) -> str:
         """Extract a title from HTML content."""
         try:
-            soup = BeautifulSoup(content, 'html.parser')
+            soup = BeautifulSoup(content, "html.parser")
 
             # Try to find title in various elements
             for tag in ["h1", "h2", "h3", "h4", "h5", "h6", "title"]:
@@ -358,4 +369,4 @@ class HTMLDocumentParser(BaseDocumentParser):
             # Limit title length for performance
             return first_line[:100] if len(first_line) > 100 else first_line
 
-        return "Untitled Section" 
+        return "Untitled Section"
