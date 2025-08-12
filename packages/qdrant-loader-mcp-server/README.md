@@ -220,19 +220,19 @@ Ask your AI assistant:
 
 #### Semantic Search
 
-```
+```text
 Find information about rate limiting implementation
 ```
 
 #### Hierarchy Search
 
-```
+```text
 Show me all child pages under the API Documentation section
 ```
 
 #### Attachment Search
 
-```
+```text
 Find all Excel files uploaded by john.doe in the last month
 ```
 
