@@ -179,6 +179,40 @@ class TestFileConversionConfig:
         assert config.is_file_size_allowed(1024) is True  # Exactly 1KB
         assert config.is_file_size_allowed(2048) is False  # 2KB
 
+    def test_max_file_size_validation_bounds(self):
+        """Test max_file_size validation with bounds checking."""
+        # Test valid values
+        valid_config = FileConversionConfig(max_file_size=104857600)  # 100MB (max)
+        assert valid_config.max_file_size == 104857600
+
+        # Test minimum bound (must be > 0)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            FileConversionConfig(max_file_size=0)
+
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            FileConversionConfig(max_file_size=-1)
+
+        # Test maximum bound (must be <= 100MB)
+        with pytest.raises(ValueError, match="Input should be less than or equal to 104857600"):
+            FileConversionConfig(max_file_size=104857601)  # 100MB + 1 byte
+
+    def test_conversion_timeout_validation_bounds(self):
+        """Test conversion_timeout validation with bounds checking."""
+        # Test valid values
+        valid_config = FileConversionConfig(conversion_timeout=3600)  # 1 hour (max)
+        assert valid_config.conversion_timeout == 3600
+
+        # Test minimum bound (must be > 0)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            FileConversionConfig(conversion_timeout=0)
+
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            FileConversionConfig(conversion_timeout=-1)
+
+        # Test maximum bound (must be <= 3600 seconds)
+        with pytest.raises(ValueError, match="Input should be less than or equal to 3600"):
+            FileConversionConfig(conversion_timeout=3601)  # 1 hour + 1 second
+
 
 class TestMarkItDownConfig:
     """Test cases for MarkItDownConfig class."""

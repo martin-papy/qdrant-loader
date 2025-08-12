@@ -60,9 +60,31 @@ EOF
 # Create basic multi-project configuration
 cat > config.yaml << EOF
 # Global configuration shared across all projects
-global: qdrant: url: "\${QDRANT_URL}" api_key: "\${QDRANT_API_KEY}" collection_name: "\${QDRANT_COLLECTION_NAME}" openai: api_key: "\${OPENAI_API_KEY}" model: "text-embedding-3-small"
+global:
+  qdrant:
+    url: "\${QDRANT_URL}"
+    api_key: "\${QDRANT_API_KEY}"
+    collection_name: "\${QDRANT_COLLECTION_NAME}"
+  openai:
+    api_key: "\${OPENAI_API_KEY}"
+    model: "text-embedding-3-small"
+
 # Project definitions
-projects: default: project_id: "default" display_name: "My Project" description: "Default project for getting started" sources: localfile: docs: base_url: "file://." include_paths: ["*.md", "*.txt"] file_types: ["*.md", "*.txt"]
+projects:
+  default:
+    project_id: "default"
+    display_name: "My Project"
+    description: "Default project for getting started"
+    sources:
+      localfile:
+        docs:
+          base_url: "file://."
+          include_paths:
+            - "*.md"
+            - "*.txt"
+          file_types:
+            - "*.md"
+            - "*.txt"
 EOF
 ```
 
@@ -380,8 +402,21 @@ JIRA_PAT=your-personal-access-token
 
 ```yaml
 # config.yaml - safe to commit (no secrets)
-global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" # Reference environment variable openai: api_key: "${OPENAI_API_KEY}" # Reference environment variable
-projects: example: sources: confluence: space: base_url: "${CONFLUENCE_URL}" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"  # Reference environment variable
+  openai:
+    api_key: "${OPENAI_API_KEY}"  # Reference environment variable
+
+projects:
+  example:
+    sources:
+      confluence:
+        space:
+          base_url: "${CONFLUENCE_URL}"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
 ```
 
 ### File Permissions
@@ -401,16 +436,55 @@ chmod 700 metrics/
 
 ```yaml
 # config-dev.yaml
-global: qdrant: url: "http://localhost:6333" collection_name: "dev_docs" processing: chunk_size: 500 # Smaller for faster testing
-projects: dev-project: project_id: "dev-project" display_name: "Development Project" description: "Development environment testing" sources: localfile: test-docs: base_url: "file://./test-data" include_paths: ["**/*.md"] file_types: ["*.md"]
+global:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "dev_docs"
+  processing:
+    chunk_size: 500  # Smaller for faster testing
+
+projects:
+  dev-project:
+    project_id: "dev-project"
+    display_name: "Development Project"
+    description: "Development environment testing"
+    sources:
+      localfile:
+        test-docs:
+          base_url: "file://./test-data"
+          include_paths:
+            - "**/*.md"
+          file_types:
+            - "*.md"
 ```
 
 ### Production Environment
 
 ```yaml
 # config-prod.yaml
-global: qdrant: url: "${QDRANT_PROD_URL}" api_key: "${QDRANT_PROD_API_KEY}" collection_name: "production_docs" processing: chunk_size: 1200 max_file_size: 104857600 # 100MB
-projects: prod-project: project_id: "prod-project" display_name: "Production Project" description: "Production documentation" sources: git: prod-repo: base_url: "${PROD_REPO_URL}" token: "${PROD_REPO_TOKEN}" confluence: prod-space: base_url: "${CONFLUENCE_PROD_URL}" token: "${CONFLUENCE_PROD_TOKEN}"
+global:
+  qdrant:
+    url: "${QDRANT_PROD_URL}"
+    api_key: "${QDRANT_PROD_API_KEY}"
+    collection_name: "production_docs"
+  processing:
+    chunk_size: 1200
+    max_file_size: 104857600  # 100MB
+
+projects:
+  prod-project:
+    project_id: "prod-project"
+    display_name: "Production Project"
+    description: "Production documentation"
+    sources:
+      git:
+        prod-repo:
+          base_url: "${PROD_REPO_URL}"
+          token: "${PROD_REPO_TOKEN}"
+      confluence:
+        prod-space:
+          base_url: "${CONFLUENCE_PROD_URL}"
+          token: "${CONFLUENCE_PROD_TOKEN}"
 ```
 
 ### Using Different Configurations
@@ -429,19 +503,37 @@ qdrant-loader ingest --workspace ./prod-workspace
 ### For Large Datasets
 
 ```yaml
-global: processing: chunk_size: 1500 # Larger chunks for better context chunk_overlap: 400 # More overlap for continuity max_file_size: 209715200 # 200MB openai: batch_size: 200 # Larger batches for efficiency
+global:
+  processing:
+    chunk_size: 1500  # Larger chunks for better context
+    chunk_overlap: 400  # More overlap for continuity
+    max_file_size: 104857600  # 100MB (maximum allowed)
+  openai:
+    batch_size: 200  # Larger batches for efficiency
 ```
 
 ### For Fast Ingestion
 
 ```yaml
-global: processing: chunk_size: 800 # Smaller chunks process faster chunk_overlap: 100 # Less overlap for speed openai: batch_size: 500 # Maximum batch size max_retries: 1 # Fewer retries for speed timeout: 10 # Shorter timeout
+global:
+  processing:
+    chunk_size: 800  # Smaller chunks process faster
+    chunk_overlap: 100  # Less overlap for speed
+  openai:
+    batch_size: 500  # Maximum batch size
+    max_retries: 1  # Fewer retries for speed
+    timeout: 10  # Shorter timeout
 ```
 
 ### For Memory Efficiency
 
 ```yaml
-global: processing: chunk_size: 500 # Smaller chunks use less memory max_file_size: 10485760 # 10MB openai: batch_size: 50 # Smaller batches
+global:
+  processing:
+    chunk_size: 500  # Smaller chunks use less memory
+    max_file_size: 10485760  # 10MB
+  openai:
+    batch_size: 50  # Smaller batches
 ```
 
 ## ✅ Configuration Validation
@@ -507,7 +599,13 @@ curl http://localhost:6333/health
 # OLD (legacy) - not supported
 sources: git: my-repo: {...}
 # NEW (multi-project) - required
-projects: default: project_id: "default" display_name: "My Project" sources: git: my-repo: {...}
+projects:
+  default:
+    project_id: "default"
+    display_name: "My Project"
+    sources:
+      git:
+        my-repo: {...}
 ```
 
 ## 📋 Configuration Checklist

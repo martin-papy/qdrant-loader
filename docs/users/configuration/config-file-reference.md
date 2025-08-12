@@ -436,8 +436,10 @@ global:
 global:
   file_conversion:
     # Optional: Maximum file size for conversion in bytes (default: 50MB)
+    # Range: 0 < max_file_size ≤ 100MB (104857600)
     max_file_size: 52428800
     # Optional: Timeout for conversion operations in seconds (default: 300)
+    # Range: 0 < conversion_timeout ≤ 3600 seconds
     conversion_timeout: 300
     # Optional: MarkItDown specific settings
     markitdown:

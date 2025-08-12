@@ -136,7 +136,7 @@
 - **Backward compatibility**: Regular markdown files continue to use H1-only sectioning, maintaining existing behavior
 - **Comprehensive testing**: Added 3 new test cases covering Excel chunking scenarios and ensuring regular markdown files are unaffected
 
-#### Technical Improvements
+#### Excel Chunking — Technical Improvements
 
 - **Context-aware splitting**: Different header level thresholds based on file type (H1 for markdown, H1+H2 for Excel)
 - **Enhanced metadata tracking**: Added `is_excel_sheet` metadata to identify Excel-derived chunks
@@ -156,7 +156,7 @@
 
 ## Version 0.4.11 - July 10, 2025
 
-### 🐛 Bug Fixes
+### 🐛 File Processing & Configuration Bug Fixes
 
 #### File Processing & Chunking
 
@@ -179,7 +179,7 @@
 
 ## Version 0.4.10 - June 18, 2025
 
-### 🐛 Bug Fixes
+### 🐛 Windows & File Processing Bug Fixes
 
 #### Windows Compatibility & Logging
 
@@ -217,7 +217,7 @@
 
 ### 🧹 Test Suite Improvements
 
-### 🐛 Bug Fixes
+### 🐛 CLI & User Experience Bug Fixes
 
 #### CLI and User Experience
 
@@ -284,7 +284,7 @@
 - Implemented automatic strategy selection based on conversion status ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Fixed metadata propagation for converted files ([7de3526](https://github.com/martin-papy/qdrant-loader/commit/7de3526))
 
-#### Chunking Strategy Improvements
+#### Chunking Strategy — Infinite Loop & Safety Fixes
 
 ##### Resolved Infinite Loop Issues
 
@@ -345,7 +345,7 @@
 - Better error handling for conversion failures ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 - Improved fallback mechanisms for unsupported file types ([9d16b8d](https://github.com/martin-papy/qdrant-loader/commit/9d16b8d))
 
-### 🐛 Bug Fixes
+### 🐛 Critical Pipeline & Processing Bug Fixes
 
 #### Critical Fixes
 
