@@ -1,6 +1,6 @@
 """Configuration validation for multi-project support.
 
-This module provides validation functionality for both legacy and multi-project
+This module provides validation functionality for multi-project
 configurations, ensuring data integrity and catching common configuration errors.
 """
 
@@ -34,22 +34,12 @@ class ConfigValidator:
         if not isinstance(config_data, dict):
             raise ValueError("Configuration must be a dictionary")
 
-        # Validate that we have either sources or projects, but configuration is valid either way
-        has_sources = "sources" in config_data
-        has_projects = "projects" in config_data
+        # Validate that we have projects section
+        if "projects" not in config_data:
+            raise ValueError("Configuration must contain 'projects' section")
 
-        if not has_sources and not has_projects:
-            raise ValueError(
-                "Configuration must contain either 'sources' (legacy) or 'projects' section"
-            )
-
-        # If we have projects section, validate it
-        if has_projects:
-            self._validate_projects_section(config_data["projects"])
-
-        # If we have legacy sources, validate them
-        if has_sources and not has_projects:
-            self._validate_sources_section(config_data["sources"])
+        # Validate projects section
+        self._validate_projects_section(config_data["projects"])
 
         # Validate global section if present
         if "global" in config_data:

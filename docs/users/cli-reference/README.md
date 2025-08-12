@@ -17,16 +17,16 @@ The `qdrant-loader` command is your primary interface for:
 
 ```bash
 # Initialize QDrant collection
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Load data from all configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # View configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Get help
 qdrant-loader --help
@@ -54,7 +54,7 @@ Complete reference for all available commands:
 - **`project status`** - Show project status and statistics
 - **`project validate`** - Validate project configurations
 
-### 🤖 [Scripting and Automation](./scripting-automation.md)
+### 🤖 Scripting and Automation (coming later)
 
 Using QDrant Loader in scripts and automated workflows:
 
@@ -79,45 +79,43 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 # Edit config.yaml and .env with your settings
 
 # 4. Initialize collection
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # 5. Load data
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # 6. Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ### Development Workflow
 
 ```bash
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Process with verbose logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check project list
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 
 ### Production Workflow
 
 ```bash
 # Use specific configuration files
-qdrant-loader --config /etc/qdrant-loader/config.yaml \
-              --env /etc/qdrant-loader/.env \
-              ingest
+qdrant-loader ingest --config /etc/qdrant-loader/config.yaml --env /etc/qdrant-loader/.env
 
 # Process specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process specific source type
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Force full re-processing
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 ```
 
 ## 🔧 Global Options
@@ -151,65 +149,65 @@ qdrant-loader --workspace . ingest
 
 ```bash
 # Basic initialization
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Force reinitialization (recreate collection)
-qdrant-loader --workspace . init --force
+qdrant-loader init --workspace . --force
 ```
 
 ### Data Ingestion
 
 ```bash
 # Basic ingestion (all projects)
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Ingest specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Ingest specific source type from all projects
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Ingest specific source type from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type confluence
+qdrant-loader ingest --workspace . --project my-project --source-type confluence
 
 # Ingest specific source from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type git --source my-repo
+qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 
 # Force full re-ingestion
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 ```
 
 ### Project Management
 
 ```bash
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # List projects in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 
 # Show status for all projects
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # Validate all project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 ### Configuration Management
 
 ```bash
 # View current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # View configuration with specific files
-qdrant-loader --config custom-config.yaml --env custom.env config
+qdrant-loader config --config custom-config.yaml --env custom.env
 ```
 
 ## 🔍 Advanced Usage
@@ -220,11 +218,11 @@ qdrant-loader --config custom-config.yaml --env custom.env config
 # Override configuration with environment variables
 QDRANT_URL=http://prod-qdrant:6333 \
 QDRANT_COLLECTION_NAME=prod_docs \
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Use different OpenAI API key
 OPENAI_API_KEY=sk-proj-production-key \
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 ```
 
 ### Multiple Workspaces
@@ -233,12 +231,11 @@ qdrant-loader --workspace . ingest
 # Process multiple workspaces
 for workspace in /data/workspaces/*/; do
   echo "Processing $workspace"
-  qdrant-loader --workspace "$workspace" ingest
+  qdrant-loader ingest --workspace "$workspace"
 done
 
 # Parallel processing of workspaces
-find /data/workspaces -maxdepth 1 -type d | \
-  xargs -I {} -P 4 qdrant-loader --workspace {} ingest
+find /data/workspaces -maxdepth 1 -type d | xargs -I {} -P 4 qdrant-loader ingest --workspace {}
 ```
 
 ### Conditional Processing
@@ -246,12 +243,12 @@ find /data/workspaces -maxdepth 1 -type d | \
 ```bash
 # Only process if configuration changed
 if [ config.yaml -nt state.db ]; then
-  qdrant-loader --workspace . ingest
+  qdrant-loader ingest --workspace .
 fi
 
 # Process based on time
 if [ $(find . -name "*.md" -mtime -1 | wc -l) -gt 0 ]; then
-  qdrant-loader --workspace . ingest --source-type localfile
+  qdrant-loader ingest --workspace . --source-type localfile
 fi
 ```
 
@@ -259,12 +256,12 @@ fi
 
 ```bash
 # Robust processing with error handling
-if ! qdrant-loader project --workspace . validate; then
+if ! qdrant-loader project validate --workspace .; then
   echo "Configuration validation failed"
   exit 1
 fi
 
-if ! qdrant-loader --workspace . ingest; then
+if ! qdrant-loader ingest --workspace .; then
   echo "Ingestion failed"
   exit 1
 fi
@@ -278,40 +275,40 @@ echo "Processing completed successfully"
 
 ```bash
 # Enable debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Debug specific project
-qdrant-loader --workspace . --log-level DEBUG ingest --project my-project
+qdrant-loader ingest --workspace . --log-level DEBUG --project my-project
 ```
 
 ### Performance Testing
 
 ```bash
 # Time processing
-time qdrant-loader --workspace . ingest
+time qdrant-loader ingest --workspace .
 
 # Monitor resource usage
 top -p $(pgrep -f qdrant-loader) &
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Memory usage tracking
-/usr/bin/time -v qdrant-loader --workspace . ingest
+/usr/bin/time -v qdrant-loader ingest --workspace .
 
 # Enable profiling
-qdrant-loader --workspace . ingest --profile
+qdrant-loader ingest --workspace . --profile
 ```
 
 ### Configuration Validation
 
 ```bash
 # Validate all project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 
 # Check project status
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 ```
 
 ## 🔄 Exit Codes
@@ -332,14 +329,14 @@ QDrant Loader uses standard exit codes:
 #!/bin/bash
 
 # Check exit codes and handle errors
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 case $? in
   0) echo "Configuration valid" ;;
   2) echo "Configuration error"; exit 1 ;;
   *) echo "Unknown error"; exit 1 ;;
 esac
 
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 if [ $? -eq 0 ]; then
   echo "Ingestion successful"
 else
@@ -354,27 +351,27 @@ fi
 
 ```bash
 # Human-readable output (default)
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # JSON output for scripting
-qdrant-loader project --workspace . list --format json
-qdrant-loader project --workspace . status --format json
+qdrant-loader project list --workspace . --format json
+qdrant-loader project status --workspace . --format json
 
 # Configuration output
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 ### Logging Output
 
 ```bash
 # Debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Info logging (default)
-qdrant-loader --workspace . --log-level INFO ingest
+qdrant-loader ingest --workspace . --log-level INFO
 
 # Warning and error only
-qdrant-loader --workspace . --log-level WARNING ingest
+qdrant-loader ingest --workspace . --log-level WARNING
 ```
 
 ## 🔧 Shell Integration
@@ -384,18 +381,18 @@ qdrant-loader --workspace . --log-level WARNING ingest
 ```bash
 # Useful aliases
 alias ql='qdrant-loader --workspace .'
-alias qli='qdrant-loader --workspace . ingest'
+alias qli='qdrant-loader ingest --workspace .'
 alias qlp='qdrant-loader project --workspace .'
-alias qlc='qdrant-loader --workspace . config'
+alias qlc='qdrant-loader config --workspace .'
 
 # Useful functions
 function ql-quick() {
-  qdrant-loader project --workspace . validate && \
-  qdrant-loader --workspace . ingest
+  qdrant-loader project validate --workspace . && \
+  qdrant-loader ingest --workspace .
 }
 
 function ql-status() {
-  qdrant-loader project --workspace . status
+  qdrant-loader project status --workspace .
 }
 ```
 

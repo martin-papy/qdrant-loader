@@ -1,6 +1,9 @@
 """Cross-document intelligence operations handler for MCP server."""
 
+import hashlib
+import json
 from typing import Any
+import math
 
 from ..search.engine import SearchEngine
 from ..utils import LoggingConfig
@@ -20,11 +23,66 @@ class IntelligenceHandler:
         self.protocol = protocol
         self.formatters = MCPFormatters()
 
+    def _get_or_create_document_id(self, doc: Any) -> str:
+        """Return a stable, collision-resistant document id.
+
+        Supports both dict-like and object-like inputs (e.g., HybridSearchResult).
+
+        Preference order:
+        1) Existing `document_id`
+        2) Fallback composed of sanitized `source_type` + sanitized `source_title` + short content hash
+
+        The hash is computed deterministically from a subset of stable attributes.
+        """
+        # Helper to access fields on dict or object safely
+        def get_field(obj: Any, key: str, default: Any = None) -> Any:
+            if isinstance(obj, dict):
+                return obj.get(key, default)
+            return getattr(obj, key, default)
+
+        # Prefer explicit id if present and non-empty
+        explicit_id = get_field(doc, "document_id", None)
+        if explicit_id:
+            return explicit_id
+
+        # Extract core fields with sensible defaults
+        raw_source_type = get_field(doc, "source_type", "unknown")
+        raw_source_title = get_field(doc, "source_title", "unknown")
+
+        # Sanitize to avoid ambiguity with colon-separated ID format
+        source_type = str(raw_source_type or "unknown").replace(":", "-")
+        source_title = str(raw_source_title or "unknown").replace(":", "-")
+
+        # Collect commonly available distinguishing attributes
+        candidate_fields = {
+            "title": get_field(doc, "title", None),
+            "source_type": source_type,
+            "source_title": source_title,
+            "source_url": get_field(doc, "source_url", None),
+            "file_path": get_field(doc, "file_path", None),
+            "repo_name": get_field(doc, "repo_name", None),
+            "parent_id": get_field(doc, "parent_id", None),
+            "original_filename": get_field(doc, "original_filename", None),
+            "id": get_field(doc, "id", None),
+        }
+
+        # Deterministic JSON for hashing
+        payload = json.dumps(
+            {k: v for k, v in candidate_fields.items() if v is not None},
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+        short_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:10]
+
+        return f"{source_type}:{source_title}:{short_hash}"
+
     async def handle_analyze_document_relationships(
         self, request_id: str | int | None, params: dict[str, Any]
     ) -> dict[str, Any]:
         """Handle document relationship analysis request."""
-        logger.debug("Handling document relationship analysis with params", params=params)
+        logger.debug(
+            "Handling document relationship analysis with params", params=params
+        )
 
         if "query" not in params:
             logger.error("Missing required parameter: query")
@@ -38,102 +96,220 @@ class IntelligenceHandler:
             )
 
         try:
-            logger.info("Performing document relationship analysis using SearchEngine...")
-            
+            logger.info(
+                "Performing document relationship analysis using SearchEngine..."
+            )
+
             # Use the sophisticated SearchEngine method
             analysis_results = await self.search_engine.analyze_document_relationships(
                 query=params["query"],
                 limit=params.get("limit", 20),
                 source_types=params.get("source_types"),
-                project_ids=params.get("project_ids")
+                project_ids=params.get("project_ids"),
             )
-            
-            logger.info(f"Analysis completed successfully")
+
+            logger.info("Analysis completed successfully")
 
             # Transform complex analysis to MCP schema format
             relationships = []
             summary_parts = []
-            total_analyzed = analysis_results.get("query_metadata", {}).get("document_count", 0)
-            
+            total_analyzed = analysis_results.get("query_metadata", {}).get(
+                "document_count", 0
+            )
+
             # Extract relationships from document clusters
             if "document_clusters" in analysis_results:
                 clusters = analysis_results["document_clusters"]
                 summary_parts.append(f"{len(clusters)} document clusters found")
-                
+
                 for cluster in clusters:
                     cluster_docs = cluster.get("documents", [])
-                    # Create similarity relationships between documents in the same cluster
-                    for i, doc1 in enumerate(cluster_docs):
-                        for doc2 in cluster_docs[i+1:]:
-                            doc1_title = doc1.get("title", doc1.get("source_title", "Unknown"))
-                            doc2_title = doc2.get("title", doc2.get("source_title", "Unknown"))
-                            relationships.append({
-                                "document_1": doc1_title,
-                                "document_2": doc2_title,
-                                "relationship_type": "similarity",
-                                "score": cluster.get("cohesion_score", 0.8),
-                                "description": f"Both documents belong to cluster: {cluster.get('theme', 'unnamed cluster')}"
-                            })
-                
+
+                    # Limit emitted similarity pairs per cluster to reduce O(N^2) growth
+                    # Determine max pairs (default 50) and compute number of docs to consider (M)
+                    max_pairs: int = params.get("max_similarity_pairs_per_cluster", 50)
+
+                    def _doc_score(d: Any) -> float:
+                        try:
+                            if isinstance(d, dict):
+                                return float(
+                                    d.get("score")
+                                    or d.get("similarity")
+                                    or d.get("relevance")
+                                    or 0.0
+                                )
+                            # Object-like (e.g., HybridSearchResult)
+                            return float(
+                                getattr(d, "score", None)
+                                or getattr(d, "similarity", None)
+                                or getattr(d, "relevance", None)
+                                or 0.0
+                            )
+                        except Exception:
+                            return 0.0
+
+                    # Sort docs by an available score descending to approximate top-K relevance
+                    try:
+                        sorted_docs = sorted(cluster_docs, key=_doc_score, reverse=True)
+                    except Exception:
+                        sorted_docs = list(cluster_docs)
+
+                    # Compute M so that M*(M-1)/2 <= max_pairs
+                    if max_pairs is None or max_pairs <= 0:
+                        max_pairs = 0
+                    if max_pairs == 0:
+                        # Skip emitting similarity pairs for this cluster
+                        continue
+
+                    max_docs = int((1 + math.isqrt(1 + 8 * max_pairs)) // 2)
+                    max_docs = max(2, max_docs)  # need at least one pair if any
+                    docs_for_pairs = sorted_docs[:max_docs]
+
+                    emitted_pairs = 0
+                    for i, doc1 in enumerate(docs_for_pairs):
+                        for doc2 in docs_for_pairs[i + 1 :]:
+                            if emitted_pairs >= max_pairs:
+                                break
+
+                            # Extract stable document IDs using unified helper for any input type
+                            doc1_id = self._get_or_create_document_id(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2)
+
+                            # Extract titles for preview (truncated)
+                            if isinstance(doc1, dict):
+                                doc1_title = (
+                                    doc1.get("title")
+                                    or doc1.get("source_title")
+                                    or "Unknown"
+                                )[:100]
+                            else:
+                                doc1_title = str(getattr(doc1, "source_title", doc1))[:100]
+
+                            if isinstance(doc2, dict):
+                                doc2_title = (
+                                    doc2.get("title")
+                                    or doc2.get("source_title")
+                                    or "Unknown"
+                                )[:100]
+                            else:
+                                doc2_title = str(getattr(doc2, "source_title", doc2))[:100]
+
+                            relationships.append(
+                                {
+                                    "document_1_id": doc1_id,
+                                    "document_2_id": doc2_id,
+                                    "document_1_title": doc1_title,
+                                    "document_2_title": doc2_title,
+                                    "relationship_type": "similarity",
+                                    "confidence_score": cluster.get(
+                                        "cohesion_score", 0.8
+                                    ),
+                                    "relationship_summary": f"Both documents belong to cluster: {cluster.get('theme', 'unnamed cluster')}",
+                                }
+                            )
+                            emitted_pairs += 1
+
             # Extract conflict relationships
             if "conflict_analysis" in analysis_results:
-                conflicts = analysis_results["conflict_analysis"].get("conflicting_pairs", [])
+                conflicts = analysis_results["conflict_analysis"].get(
+                    "conflicting_pairs", []
+                )
                 if conflicts:
                     summary_parts.append(f"{len(conflicts)} conflicts detected")
                     for conflict in conflicts:
                         if isinstance(conflict, (list, tuple)) and len(conflict) >= 2:
                             doc1, doc2 = conflict[0], conflict[1]
                             conflict_info = conflict[2] if len(conflict) > 2 else {}
-                            relationships.append({
-                                "document_1": str(doc1),
-                                "document_2": str(doc2),
-                                "relationship_type": "conflict",
-                                "score": conflict_info.get("severity", 0.5),
-                                "description": f"Conflict detected: {conflict_info.get('type', 'unknown conflict')}"
-                            })
-                            
+
+                            # Extract stable document IDs using unified helper for any input type
+                            doc1_id = self._get_or_create_document_id(doc1)
+                            doc2_id = self._get_or_create_document_id(doc2)
+                            # Extract titles for preview (prefer title/source_title attributes)
+                            def _display_title(d: Any) -> str:
+                                if isinstance(d, dict):
+                                    return (d.get("title") or d.get("source_title") or str(d))[:100]
+                                return (getattr(d, "source_title", None) or getattr(d, "title", None) or str(d))[:100]
+
+                            doc1_title = _display_title(doc1)
+                            doc2_title = _display_title(doc2)
+
+                            relationships.append(
+                                {
+                                    "document_1_id": doc1_id,
+                                    "document_2_id": doc2_id,
+                                    "document_1_title": doc1_title,
+                                    "document_2_title": doc2_title,
+                                    "relationship_type": "conflict",
+                                    "confidence_score": conflict_info.get(
+                                        "severity", 0.5
+                                    ),
+                                    "relationship_summary": f"Conflict detected: {conflict_info.get('type', 'unknown conflict')}",
+                                }
+                            )
+
             # Extract complementary relationships
             if "complementary_content" in analysis_results:
                 complementary = analysis_results["complementary_content"]
                 comp_count = 0
                 for doc_id, complementary_content in complementary.items():
-                    # Handle ComplementaryContent object properly
-                    if hasattr(complementary_content, 'get_top_recommendations'):
-                        recommendations = complementary_content.get_top_recommendations(2)
+                    # Handle ComplementaryContent object properly - no limit on recommendations
+                    if hasattr(complementary_content, "get_top_recommendations"):
+                        recommendations = (
+                            complementary_content.get_top_recommendations()
+                        )  # Return all recommendations
                     else:
-                        recommendations = complementary_content[:2] if isinstance(complementary_content, list) else []
-                    
+                        recommendations = (
+                            complementary_content
+                            if isinstance(complementary_content, list)
+                            else []
+                        )
+
                     for rec in recommendations:
                         if isinstance(rec, dict):
                             # Use proper field names from ComplementaryContent.get_top_recommendations()
                             target_doc_id = rec.get("document_id", "Unknown")
                             score = rec.get("relevance_score", 0.5)
-                            reason = rec.get("recommendation_reason", "complementary content")
-                            relationships.append({
-                                "document_1": doc_id,
-                                "document_2": target_doc_id,
-                                "relationship_type": "complementary",
-                                "score": score,
-                                "description": f"Complementary content: {reason}"
-                            })
+                            reason = rec.get(
+                                "recommendation_reason", "complementary content"
+                            )
+
+                            # Extract titles for preview
+                            doc1_title = str(doc_id)[:100]
+                            doc2_title = rec.get("title", str(target_doc_id))[:100]
+
+                            relationships.append(
+                                {
+                                    "document_1_id": doc_id,
+                                    "document_2_id": target_doc_id,
+                                    "document_1_title": doc1_title,
+                                    "document_2_title": doc2_title,
+                                    "relationship_type": "complementary",
+                                    "confidence_score": score,
+                                    "relationship_summary": f"Complementary content: {reason}",
+                                }
+                            )
                             comp_count += 1
                 if comp_count > 0:
                     summary_parts.append(f"{comp_count} complementary relationships")
-                    
+
             # Extract citation relationships
             if "citation_network" in analysis_results:
                 citation_net = analysis_results["citation_network"]
                 if citation_net.get("edges", 0) > 0:
-                    summary_parts.append(f"{citation_net['edges']} citation relationships")
-                    
+                    summary_parts.append(
+                        f"{citation_net['edges']} citation relationships"
+                    )
+
             if "similarity_insights" in analysis_results:
                 insights = analysis_results["similarity_insights"]
                 if insights:
                     summary_parts.append("similarity patterns identified")
-            
+
             # Create a simple summary string
             if summary_parts:
-                summary_text = f"Analyzed {total_analyzed} documents: {', '.join(summary_parts)}"
+                summary_text = (
+                    f"Analyzed {total_analyzed} documents: {', '.join(summary_parts)}"
+                )
             else:
                 summary_text = f"Analyzed {total_analyzed} documents with no significant relationships found"
 
@@ -141,7 +317,7 @@ class IntelligenceHandler:
             mcp_result = {
                 "relationships": relationships,
                 "total_analyzed": total_analyzed,
-                "summary": summary_text
+                "summary": summary_text,
             }
 
             return self.protocol.create_response(
@@ -150,7 +326,9 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_relationship_analysis(analysis_results),
+                            "text": self.formatters.format_relationship_analysis(
+                                analysis_results
+                            ),
                         }
                     ],
                     "structuredContent": mcp_result,
@@ -158,7 +336,7 @@ class IntelligenceHandler:
                 },
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("Error during document relationship analysis", exc_info=True)
             return self.protocol.create_response(
                 request_id,
@@ -173,7 +351,9 @@ class IntelligenceHandler:
 
         # Validate required parameters
         if "target_query" not in params or "comparison_query" not in params:
-            logger.error("Missing required parameters: target_query and comparison_query")
+            logger.error(
+                "Missing required parameters: target_query and comparison_query"
+            )
             return self.protocol.create_response(
                 request_id,
                 error={
@@ -184,10 +364,12 @@ class IntelligenceHandler:
             )
 
         try:
-            logger.info("Performing find similar documents using SearchEngine...", 
-                       target_query=params["target_query"], 
-                       comparison_query=params["comparison_query"])
-            
+            logger.info(
+                "Performing find similar documents using SearchEngine...",
+                target_query=params["target_query"],
+                comparison_query=params["comparison_query"],
+            )
+
             # Use the sophisticated SearchEngine method
             similar_docs = await self.search_engine.find_similar_documents(
                 target_query=params["target_query"],
@@ -195,10 +377,38 @@ class IntelligenceHandler:
                 similarity_metrics=params.get("similarity_metrics"),
                 max_similar=params.get("max_similar", 5),
                 source_types=params.get("source_types"),
-                project_ids=params.get("project_ids")
+                project_ids=params.get("project_ids"),
             )
-            
+
             logger.info(f"Got {len(similar_docs)} similar documents from SearchEngine")
+
+            # ✅ Add response validation
+            expected_count = params.get("max_similar", 5)
+            if len(similar_docs) < expected_count:
+                logger.warning(
+                    f"Expected up to {expected_count} similar documents, but only got {len(similar_docs)}. "
+                    f"This may indicate similarity threshold issues or insufficient comparison documents."
+                )
+
+            # ✅ Log document IDs for debugging
+            doc_ids = [doc.get("document_id") for doc in similar_docs]
+            logger.debug(f"Similar document IDs: {doc_ids}")
+
+            # ✅ Validate that document_id is present in responses
+            missing_ids = [
+                i for i, doc in enumerate(similar_docs) if not doc.get("document_id")
+            ]
+            if missing_ids:
+                logger.error(
+                    f"Missing document_id in similar documents at indices: {missing_ids}"
+                )
+
+            # ✅ Create structured content for MCP compliance using lightweight formatter
+            structured_content = (
+                self.formatters.create_lightweight_similar_documents_results(
+                    similar_docs, params["target_query"], params["comparison_query"]
+                )
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -206,21 +416,17 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_similar_documents(similar_docs),
+                            "text": self.formatters.format_similar_documents(
+                                similar_docs
+                            ),
                         }
                     ],
-                    "structuredContent": {
-                        "similar_documents": similar_docs,
-                        "similarity_summary": {
-                            "total_found": len(similar_docs),
-                            "metrics_used": params.get("similarity_metrics", [])
-                        }
-                    },
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("Error finding similar documents", exc_info=True)
             return self.protocol.create_response(
                 request_id,
@@ -249,16 +455,22 @@ class IntelligenceHandler:
 
         try:
             logger.info("Performing conflict detection using SearchEngine...")
-            
+
             # Use the sophisticated SearchEngine method
             conflict_results = await self.search_engine.detect_document_conflicts(
                 query=params["query"],
                 limit=params.get("limit", 15),
                 source_types=params.get("source_types"),
-                project_ids=params.get("project_ids")
+                project_ids=params.get("project_ids"),
             )
-            
-            logger.info(f"Conflict detection completed successfully")
+
+            logger.info("Conflict detection completed successfully")
+
+            # Create lightweight structured content for MCP compliance
+            original_documents = conflict_results.get("original_documents", [])
+            structured_content = self.formatters.create_lightweight_conflict_results(
+                conflict_results, params["query"], original_documents
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -266,15 +478,17 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_conflict_analysis(conflict_results),
+                            "text": self.formatters.format_conflict_analysis(
+                                conflict_results
+                            ),
                         }
                     ],
-                    "structuredContent": conflict_results,
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("Error detecting conflicts", exc_info=True)
             return self.protocol.create_response(
                 request_id,
@@ -301,19 +515,48 @@ class IntelligenceHandler:
                 )
 
         try:
-            logger.info(f"🔍 About to call search_engine.find_complementary_content")
+            logger.info("🔍 About to call search_engine.find_complementary_content")
             logger.info(f"🔍 search_engine type: {type(self.search_engine)}")
             logger.info(f"🔍 search_engine is None: {self.search_engine is None}")
-            
-            complementary = await self.search_engine.find_complementary_content(
+
+            result = await self.search_engine.find_complementary_content(
                 target_query=params["target_query"],
                 context_query=params["context_query"],
                 max_recommendations=params.get("max_recommendations", 5),
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
             )
-            
-            logger.info(f"✅ search_engine.find_complementary_content completed, got {len(complementary)} results")
+
+            # Defensive check to ensure we received the expected result type
+            if not isinstance(result, dict):
+                logger.error(
+                    "Unexpected complementary content result type",
+                    got_type=str(type(result)),
+                )
+                return self.protocol.create_response(
+                    request_id,
+                    error={"code": -32603, "message": "Internal server error"},
+                )
+
+            complementary_recommendations = result.get(
+                "complementary_recommendations", []
+            )
+            target_document = result.get("target_document")
+            context_documents_analyzed = result.get("context_documents_analyzed", 0)
+
+            logger.info(
+                f"✅ search_engine.find_complementary_content completed, got {len(complementary_recommendations)} results"
+            )
+
+            # Create lightweight structured content using the new formatter
+            structured_content = (
+                self.formatters.create_lightweight_complementary_results(
+                    complementary_recommendations=complementary_recommendations,
+                    target_document=target_document,
+                    context_documents_analyzed=context_documents_analyzed,
+                    target_query=params["target_query"],
+                )
+            )
 
             return self.protocol.create_response(
                 request_id,
@@ -321,53 +564,17 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_complementary_content(complementary),
+                            "text": self.formatters.format_complementary_content(
+                                complementary_recommendations
+                            ),
                         }
                     ],
-                    "structuredContent": {
-                        "complementary_content": [
-                            {
-                                # 🔥 Use actual document_id from HybridSearchResult
-                                "document_id": comp_doc.get("document", {}).document_id or f"comp_{i}",
-                                "title": comp_doc.get("document", {}).get_display_title() if hasattr(comp_doc.get("document", {}), "get_display_title") else getattr(comp_doc.get("document", {}), "source_title", ""),
-                                "content_preview": getattr(comp_doc.get("document", {}), "text", "")[:200] or "",
-                                "complementary_score": comp_doc.get("relevance_score", 0.0),
-                                "complementary_reason": comp_doc.get("recommendation_reason", "Complementary content found"),
-                                "relationship_type": comp_doc.get("strategy", "related"),
-                                "source_type": getattr(comp_doc.get("document", {}), "source_type", "") or "",
-                                # 🔥 Root level fields (matching our search structure)
-                                "url": getattr(comp_doc.get("document", {}), "source_url", "") or "",
-                                "created_at": getattr(comp_doc.get("document", {}), "created_at", "") or "",
-                                "updated_at": getattr(comp_doc.get("document", {}), "last_modified", "") or "",
-                                "metadata": {
-                                    "project_id": getattr(comp_doc.get("document", {}), "project_id", "") or "",
-                                    "project_name": getattr(comp_doc.get("document", {}), "project_name", "") or "",
-                                    "file_path": getattr(comp_doc.get("document", {}), "file_path", "") or "",
-                                    "file_type": getattr(comp_doc.get("document", {}), "file_type", "") or "",
-                                    "file_size": getattr(comp_doc.get("document", {}), "file_size", None),
-                                    "word_count": getattr(comp_doc.get("document", {}), "word_count", None),
-                                    "chunk_info": getattr(comp_doc.get("document", {}), "chunk_info", "") or ""
-                                }
-                            }
-                            for i, comp_doc in enumerate(complementary if complementary else [])
-                        ],
-                        "target_document": {
-                            "title": params["target_query"],
-                            "content_preview": "",
-                            "source_type": ""
-                        },
-                        "complementary_summary": {
-                            "total_analyzed": len(complementary) if complementary else 0,
-                            "complementary_found": len(complementary) if complementary else 0,
-                            "highest_score": max((c.get("complementary_score", 0.0) for c in complementary), default=0.0) if complementary else 0.0,
-                            "relationship_types": list(set(c.get("relationship_type", "related") for c in complementary)) if complementary else []
-                        }
-                    },
+                    "structuredContent": structured_content,
                     "isError": False,
                 },
             )
 
-        except Exception as e:
+        except Exception:
             logger.error("Error finding complementary content", exc_info=True)
             return self.protocol.create_response(
                 request_id,
@@ -393,7 +600,7 @@ class IntelligenceHandler:
 
         try:
             logger.info("Performing document clustering using SearchEngine...")
-            
+
             # Use the sophisticated SearchEngine method
             clustering_results = await self.search_engine.cluster_documents(
                 query=params["query"],
@@ -402,104 +609,90 @@ class IntelligenceHandler:
                 min_cluster_size=params.get("min_cluster_size", 2),
                 strategy=params.get("strategy", "mixed_features"),
                 source_types=params.get("source_types"),
-                project_ids=params.get("project_ids")
+                project_ids=params.get("project_ids"),
             )
-            
-            logger.info(f"Document clustering completed successfully")
 
-            # Transform clustering results to match MCP schema
-            mcp_clusters = []
-            clusters = clustering_results.get("clusters", [])
-            
-            for i, cluster in enumerate(clusters):
-                # Transform documents to match schema
-                mcp_documents = []
-                cluster_docs = cluster.get("documents", [])
-                
-                for j, doc in enumerate(cluster_docs):
-                    if hasattr(doc, 'source_title'):
-                        # Handle SearchResult objects - use proper fields
-                        # Create a proper document ID from available data
-                        doc_id = (
-                            doc.parent_document_id or  # For attachments
-                            f"{doc.source_type}:{doc.source_title}" or  # Fallback composite ID
-                            f"doc_{j}"  # Last resort
-                        )
-                        
-                        # Smart title extraction with multiple fallbacks
-                        title = (
-                            doc.source_title or 
-                            doc.parent_document_title or 
-                            doc.section_title or 
-                            doc.parent_title or 
-                            doc.original_filename or
-                            (doc.text.split('\n')[0][:50] + "..." if doc.text and len(doc.text.split('\n')[0]) > 50 else doc.text.split('\n')[0] if doc.text else None) or
-                            "Untitled"
-                        )
-                        
-                        mcp_doc = {
-                            "document_id": doc_id,
-                            "title": title,
-                            "content_preview": (doc.text[:200] + "...") if len(doc.text) > 200 else doc.text,
-                            "source_type": doc.source_type,
-                            "cluster_relevance": 1.0
+            logger.info("Document clustering completed successfully")
+
+            # Create lightweight clustering response following hierarchy_search pattern
+            mcp_clustering_results = self.formatters.create_lightweight_cluster_results(
+                clustering_results, params.get("query", "")
+            )
+
+            return self.protocol.create_response(
+                request_id,
+                result={
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self.formatters.format_document_clusters(
+                                clustering_results
+                            ),
                         }
-                    elif isinstance(doc, dict):
-                        # Handle dict objects with smart title extraction
-                        title = (
-                            doc.get("title") or 
-                            doc.get("source_title") or 
-                            doc.get("parent_document_title") or 
-                            doc.get("section_title") or 
-                            doc.get("parent_title") or 
-                            doc.get("original_filename") or
-                            (doc.get("text", "").split('\n')[0][:50] + "..." if doc.get("text") and len(doc.get("text", "").split('\n')[0]) > 50 else doc.get("text", "").split('\n')[0] if doc.get("text") else None) or
-                            "Untitled"
-                        )
-                        
-                        mcp_doc = {
-                            "document_id": doc.get("document_id", f"doc_{j}"),
-                            "title": title,
-                            "content_preview": doc.get("content_preview", doc.get("text", "")[:200]),
-                            "source_type": doc.get("source_type", "unknown"),
-                            "cluster_relevance": doc.get("cluster_relevance", 1.0)
-                        }
-                    else:
-                        # Fallback for unknown formats
-                        mcp_doc = {
-                            "document_id": f"doc_{j}",
-                            "title": str(doc),
-                            "content_preview": "",
-                            "source_type": "unknown",
-                            "cluster_relevance": 1.0
-                        }
-                    mcp_documents.append(mcp_doc)
-                
-                mcp_cluster = {
-                    "cluster_id": f"cluster_{i}",
-                    "cluster_name": cluster.get("name", f"Cluster {i+1}"),
-                    "cluster_theme": cluster.get("theme", f"Theme {i+1}"),
-                    "document_count": len(mcp_documents),
-                    "cohesion_score": cluster.get("cohesion_score", 0.8),
-                    "documents": mcp_documents,
-                    "cluster_keywords": cluster.get("keywords", []),
-                    "cluster_summary": cluster.get("summary", f"Cluster of {len(mcp_documents)} documents")
-                }
-                mcp_clusters.append(mcp_cluster)
-            
-            # Create metadata
-            metadata = clustering_results.get("clustering_metadata", {})
-            mcp_clustering_results = {
-                "clusters": mcp_clusters,
-                "clustering_metadata": {
-                    "total_documents": metadata.get("total_documents", sum(len(c["documents"]) for c in mcp_clusters)),
-                    "clusters_created": len(mcp_clusters),
-                    "strategy_used": params.get("strategy", "mixed_features"),
-                    "unclustered_documents": metadata.get("unclustered_documents", 0),
-                    "clustering_quality": metadata.get("clustering_quality", 0.0),
-                    "processing_time_ms": metadata.get("processing_time_ms", 0.0)
+                    ],
+                    "structuredContent": mcp_clustering_results,
+                    "isError": False,
                 },
-                "cluster_relationships": clustering_results.get("cluster_relationships", [])[:3]
+            )
+
+        except Exception:
+            logger.error("Error clustering documents", exc_info=True)
+            return self.protocol.create_response(
+                request_id,
+                error={"code": -32603, "message": "Internal server error"},
+            )
+
+    async def handle_expand_cluster(
+        self, request_id: str | int | None, params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Handle cluster expansion request for lazy loading."""
+        logger.debug("Handling expand cluster with params", params=params)
+
+        if "cluster_id" not in params:
+            logger.error("Missing required parameter: cluster_id")
+            return self.protocol.create_response(
+                request_id,
+                error={
+                    "code": -32602,
+                    "message": "Invalid params",
+                    "data": "Missing required parameter: cluster_id",
+                },
+            )
+
+        try:
+            cluster_id = params["cluster_id"]
+            limit = params.get("limit", 20)
+            offset = params.get("offset", 0)
+            include_metadata = params.get("include_metadata", True)
+
+            logger.info(
+                f"Expanding cluster {cluster_id} with limit={limit}, offset={offset}"
+            )
+
+            # For now, we need to re-run clustering to get cluster data
+            # In a production system, this would be cached or stored
+            # This is a placeholder implementation
+
+            # Since we don't have cluster data persistence yet, return a helpful message
+            # In the future, this would retrieve stored cluster data and expand it
+
+            expansion_result = {
+                "cluster_id": cluster_id,
+                "message": "Cluster expansion functionality requires re-running clustering",
+                "suggestion": "Please run cluster_documents again and use the lightweight response for navigation",
+                "cluster_info": {
+                    "expansion_requested": True,
+                    "limit": limit,
+                    "offset": offset,
+                    "include_metadata": include_metadata,
+                },
+                "documents": [],
+                "pagination": {
+                    "offset": offset,
+                    "limit": limit,
+                    "total": 0,
+                    "has_more": False,
+                },
             }
 
             return self.protocol.create_response(
@@ -508,17 +701,25 @@ class IntelligenceHandler:
                     "content": [
                         {
                             "type": "text",
-                            "text": self.formatters.format_document_clusters(clustering_results),
+                            "text": f"🔄 **Cluster Expansion Request**\n\nCluster ID: {cluster_id}\n\n"
+                            + "Currently, cluster expansion requires re-running the clustering operation. "
+                            + "The lightweight cluster response provides the first 5 documents per cluster. "
+                            + "For complete cluster content, please run `cluster_documents` again.\n\n"
+                            + "💡 **Future Enhancement**: Cluster data will be cached to enable true lazy loading.",
                         }
                     ],
-                    "structuredContent": mcp_clustering_results,
+                    "structuredContent": expansion_result,
                     "isError": False,
                 },
             )
 
         except Exception as e:
-            logger.error("Error clustering documents", exc_info=True)
+            logger.error("Error expanding cluster", exc_info=True)
             return self.protocol.create_response(
                 request_id,
-                error={"code": -32603, "message": "Internal server error"},
-            ) 
+                error={
+                    "code": -32603,
+                    "message": "Internal server error",
+                    "data": str(e),
+                },
+            )

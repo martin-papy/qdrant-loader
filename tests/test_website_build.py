@@ -3,15 +3,15 @@
 Tests for the website build system.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
+import importlib.util
 import json
 import os
-import sys
+import shutil
 import subprocess
-import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
 
 
 class TestWebsiteBuildSystem:
@@ -28,7 +28,7 @@ class TestWebsiteBuildSystem:
         build_script = Path("website/build.py")
 
         # Try to compile the script to check syntax
-        with open(build_script, "r") as f:
+        with open(build_script) as f:
             source = f.read()
 
         try:
@@ -88,7 +88,7 @@ class TestWebsiteBuildSystem:
         """Test that the favicon generation script has valid syntax."""
         favicon_script = Path("website/assets/generate_favicons.py")
 
-        with open(favicon_script, "r") as f:
+        with open(favicon_script) as f:
             source = f.read()
 
         try:
@@ -163,11 +163,17 @@ class TestWebsiteBuildSystem:
     @pytest.mark.requires_deps
     def test_favicon_generation_dependencies(self):
         """Test that favicon generation dependencies are available."""
-        try:
-            import cairosvg
-            import PIL
-        except ImportError as e:
-            pytest.skip(f"Favicon generation dependencies not available: {e}")
+        cairo_spec = importlib.util.find_spec("cairosvg")
+        pil_spec = importlib.util.find_spec("PIL")
+        if cairo_spec is None or pil_spec is None:
+            missing = []
+            if cairo_spec is None:
+                missing.append("cairosvg")
+            if pil_spec is None:
+                missing.append("PIL")
+            pytest.skip(
+                f"Favicon generation dependencies not available: {', '.join(missing)}"
+            )
 
     def test_coverage_template_has_required_elements(self):
         """Test that the coverage template has required elements."""

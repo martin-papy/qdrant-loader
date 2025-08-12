@@ -8,12 +8,12 @@ QDrant Loader supports diverse workflows across different roles and use cases. E
 
 ### Workflow Categories
 
-```
-👨‍💻 Development Workflows    - Code documentation, API docs, development guides
-📝 Content Management      - Documentation updates, content curation, publishing
-👥 Team Collaboration      - Shared knowledge bases, cross-team documentation
-🔄 CI/CD Integration       - Automated documentation, deployment pipelines
-🔍 Search & Discovery      - Knowledge exploration, content finding, research
+```text
+👨‍💻 Development Workflows - Code documentation, API docs, development guides
+📝 Content Management - Documentation updates, content curation, publishing
+👥 Team Collaboration - Shared knowledge bases, cross-team documentation
+🔄 CI/CD Integration - Automated documentation, deployment pipelines
+🔍 Search & Discovery - Knowledge exploration, content finding, research
 ```
 
 ## 👨‍💻 Development Workflows
@@ -386,9 +386,9 @@ graph TD
 ### 3. Start Simple
 
 ```bash
-# Begin with basic workflow:
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
+# Begin with basic workflow
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 mcp-qdrant-loader
 ```
 

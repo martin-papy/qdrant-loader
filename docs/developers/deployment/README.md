@@ -19,23 +19,23 @@ QDrant Loader supports the following deployment patterns:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader Deployment                 │
+│ QDrant Loader Deployment │
 ├─────────────────────────────────────────────────────────────┤
-│  CLI Tool           │  MCP Server (Optional)                │
-│  ┌───────────────┐  │  ┌─────────────────────────────────┐  │
-│  │ qdrant-loader │  │  │ mcp-qdrant-loader               │  │
-│  │               │  │  │ (AI Assistant Integration)     │  │
-│  │ - init        │  │  │                                 │  │
-│  │ - ingest      │  │  │ - semantic_search               │  │
-│  │ - config      │  │  │ - hierarchy_search              │  │
-│  │ - project     │  │  │ - attachment_search             │  │
-│  └───────────────┘  │  └─────────────────────────────────┘  │
+│ CLI Tool │ MCP Server (Optional) │
+│ ┌───────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ qdrant-loader │ │ │ mcp-qdrant-loader │ │
+│ │ │ │ │ (AI Assistant Integration) │ │
+│ │ - init │ │ │ │ │
+│ │ - ingest │ │ │ - semantic_search │ │
+│ │ - config │ │ │ - hierarchy_search │ │
+│ │ - project │ │ │ - attachment_search │ │
+│ └───────────────┘ │ └─────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│                    External Dependencies                    │
-│  ┌───────────────┐  │  ┌─────────────────────────────────┐  │
-│  │ QDrant        │  │  │ OpenAI API                      │  │
-│  │ Vector DB     │  │  │ (Embeddings)                    │  │
-│  └───────────────┘  │  └─────────────────────────────────┘  │
+│ External Dependencies │
+│ ┌───────────────┐ │ ┌─────────────────────────────────┐ │
+│ │ QDrant │ │ │ OpenAI API │ │
+│ │ Vector DB │ │ │ (Embeddings) │ │
+│ └───────────────┘ │ └─────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,20 +47,17 @@ QDrant Loader supports the following deployment patterns:
 # Create deployment directory
 mkdir qdrant-loader-deployment
 cd qdrant-loader-deployment
-
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install QDrant Loader
-pip install qdrant-loader qdrant-loader-mcp-server
-
+source venv/bin/activate # On Windows: venv\Scripts\activate
+# Install QDrant Loader (and optional MCP server)
+pip install qdrant-loader
+pip install qdrant-loader-mcp-server  # optional
 # Create workspace structure
 mkdir -p {data,logs}
-
 # Create configuration files
 cat > config.yaml << EOF
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
@@ -79,7 +76,6 @@ projects:
           branch: "main"
           token: "${REPO_TOKEN}"
 EOF
-
 # Create environment file
 cat > .env << EOF
 QDRANT_URL=http://localhost:6333
@@ -87,10 +83,9 @@ QDRANT_COLLECTION_NAME=documents
 OPENAI_API_KEY=your-openai-key
 REPO_TOKEN=your-github-token
 EOF
-
 # Initialize and start
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 ```
 
 ### Production Environment Setup
@@ -99,21 +94,17 @@ qdrant-loader --workspace . ingest
 # Create production user
 sudo useradd -m -s /bin/bash qdrant-loader
 sudo su - qdrant-loader
-
 # Setup application directory
 mkdir -p /opt/qdrant-loader/{data,logs}
 cd /opt/qdrant-loader
-
 # Install Python and dependencies
 python -m venv venv
 source venv/bin/activate
 pip install qdrant-loader qdrant-loader-mcp-server
-
 # Setup configuration (see Configuration section below)
 # Edit config.yaml and .env with your settings
-
 # Initialize workspace
-qdrant-loader --workspace /opt/qdrant-loader init
+qdrant-loader init --workspace /opt/qdrant-loader
 ```
 
 ## 🖥️ Environment Setup
@@ -153,10 +144,8 @@ qdrant-loader --workspace /opt/qdrant-loader init
 # Ubuntu/Debian
 sudo apt update
 sudo apt install -y python3.12 python3.12-venv python3.12-dev git curl
-
 # CentOS/RHEL
 sudo yum install -y python3.12 python3.12-venv python3.12-devel git curl
-
 # macOS (with Homebrew)
 brew install python@3.12 git curl
 ```
@@ -166,7 +155,6 @@ brew install python@3.12 git curl
 ```bash
 # Core dependencies are automatically installed
 pip install qdrant-loader qdrant-loader-mcp-server
-
 # Optional development dependencies
 pip install qdrant-loader[dev] qdrant-loader-mcp-server[dev]
 ```
@@ -177,10 +165,7 @@ pip install qdrant-loader[dev] qdrant-loader-mcp-server[dev]
 
 ```bash
 # Using Docker (recommended)
-docker run -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-    qdrant/qdrant
-
+docker run -p 6333:6333 -p 6334:6334 \ -v $(pwd)/qdrant_storage:/qdrant/storage:z \ qdrant/qdrant
 # Using binary installation
 wget https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-unknown-linux-gnu.tar.gz
 tar xzf qdrant-x86_64-unknown-linux-gnu.tar.gz
@@ -207,17 +192,14 @@ cat > /opt/qdrant-loader/.env << EOF
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=documents
 QDRANT_API_KEY=your-api-key
-
 # OpenAI Configuration
 OPENAI_API_KEY=your-openai-api-key
-
 # Data Source Credentials
 REPO_TOKEN=your-github-token
 CONFLUENCE_TOKEN=your-confluence-token
 CONFLUENCE_EMAIL=your-email@domain.com
 JIRA_TOKEN=your-jira-token
 JIRA_EMAIL=your-email@domain.com
-
 # Application Settings
 STATE_DB_PATH=./data/state.db
 EOF
@@ -227,7 +209,7 @@ EOF
 
 ```yaml
 # /opt/qdrant-loader/config.yaml
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -248,7 +230,6 @@ projects:
     project_id: "production"
     display_name: "Production Documentation"
     description: "Production documentation and knowledge base"
-    
     sources:
       git:
         docs-repo:
@@ -257,8 +238,9 @@ projects:
           base_url: "https://github.com/company/docs"
           branch: "main"
           token: "${REPO_TOKEN}"
-          include_paths: ["**/*.md", "**/*.rst"]
-      
+          include_paths:
+            - "**/*.md"
+            - "**/*.rst"
       confluence:
         company-wiki:
           source_type: "confluence"
@@ -280,19 +262,17 @@ projects:
 Description=QDrant Loader Service
 After=network.target
 Wants=network.target
-
 [Service]
 Type=simple
 User=qdrant-loader
 Group=qdrant-loader
 WorkingDirectory=/opt/qdrant-loader
 Environment=PATH=/opt/qdrant-loader/venv/bin
-ExecStart=/opt/qdrant-loader/venv/bin/qdrant-loader --workspace /opt/qdrant-loader/config ingest
+ExecStart=/opt/qdrant-loader/venv/bin/qdrant-loader ingest --workspace /opt/qdrant-loader
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-
 [Install]
 WantedBy=multi-user.target
 ```
@@ -305,7 +285,6 @@ WantedBy=multi-user.target
 Description=QDrant Loader MCP Server
 After=network.target
 Wants=network.target
-
 [Service]
 Type=simple
 User=qdrant-loader
@@ -317,7 +296,6 @@ Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-
 [Install]
 WantedBy=multi-user.target
 ```
@@ -330,15 +308,12 @@ sudo systemctl enable qdrant-loader
 sudo systemctl enable mcp-qdrant-loader
 sudo systemctl start qdrant-loader
 sudo systemctl start mcp-qdrant-loader
-
 # Check status
 sudo systemctl status qdrant-loader
 sudo systemctl status mcp-qdrant-loader
-
 # View logs
 sudo journalctl -u qdrant-loader -f
 sudo journalctl -u mcp-qdrant-loader -f
-
 # Restart services
 sudo systemctl restart qdrant-loader
 sudo systemctl restart mcp-qdrant-loader
@@ -353,54 +328,17 @@ sudo systemctl restart mcp-qdrant-loader
 ```python
 # logging.yaml
 version: 1
-formatters:
-  default:
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  json:
-    format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
-
-handlers:
-  console:
-    class: logging.StreamHandler
-    level: INFO
-    formatter: json
-    stream: ext://sys.stdout
-  
-  file:
-    class: logging.handlers.RotatingFileHandler
-    level: DEBUG
-    formatter: default
-    filename: /opt/qdrant-loader/logs/app.log
-    maxBytes: 10485760  # 10MB
-    backupCount: 5
-
-loggers:
-  qdrant_loader:
-    level: DEBUG
-    handlers: [console, file]
-    propagate: false
-
-root:
-  level: INFO
-  handlers: [console]
+formatters: default: format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' json: format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'
+handlers: console: class: logging.StreamHandler level: INFO formatter: json stream: ext://sys.stdout file: class: logging.handlers.RotatingFileHandler level: DEBUG formatter: default filename: /opt/qdrant-loader/logs/app.log maxBytes: 10485760 # 10MB backupCount: 5
+loggers: qdrant_loader: level: DEBUG handlers: [console, file] propagate: false
+root: level: INFO handlers: [console]
 ```
 
 #### Log Rotation
 
 ```bash
 # /etc/logrotate.d/qdrant-loader
-/opt/qdrant-loader/logs/*.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 qdrant-loader qdrant-loader
-    postrotate
-        systemctl reload qdrant-loader
-    endscript
-}
+/opt/qdrant-loader/logs/*.log { daily missingok rotate 30 compress delaycompress notifempty create 644 qdrant-loader qdrant-loader postrotate systemctl reload qdrant-loader endscript }
 ```
 
 ### Health Monitoring
@@ -410,24 +348,19 @@ root:
 ```bash
 #!/bin/bash
 # /opt/qdrant-loader/bin/health-check.sh
-
 set -e
-
 WORKSPACE="/opt/qdrant-loader/config"
 LOG_FILE="/opt/qdrant-loader/logs/health-check.log"
-
 # Function to log with timestamp
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
-
 # Check QDrant Loader configuration
-if qdrant-loader --workspace "$WORKSPACE" config >/dev/null 2>&1; then
-    log "QDrant Loader: HEALTHY - Configuration valid"
-    exit 0
+if qdrant-loader config --workspace "$WORKSPACE" >/dev/null 2>&1; then
+  log "QDrant Loader: HEALTHY - Configuration valid"
+  exit 0
 else
-    log "QDrant Loader: UNHEALTHY - Configuration invalid"
-    exit 1
+  log "QDrant Loader: UNHEALTHY - Configuration invalid"
+  exit 1
 fi
 ```
 
@@ -455,10 +388,8 @@ df -h
 ```bash
 # Check project status
 qdrant-loader project --workspace /opt/qdrant-loader/config list
-
 # Check project status with JSON output
 qdrant-loader project --workspace /opt/qdrant-loader/config status --format json
-
 # Monitor system services
 systemctl status qdrant-loader
 systemctl status mcp-qdrant-loader
@@ -498,10 +429,9 @@ sudo chmod 755 /opt/qdrant-loader/bin/health-check.sh
 ```bash
 # Ubuntu/Debian (ufw)
 sudo ufw allow ssh
-sudo ufw allow 6333/tcp  # QDrant HTTP
-sudo ufw allow 6334/tcp  # QDrant gRPC
+sudo ufw allow 6333/tcp # QDrant HTTP
+sudo ufw allow 6334/tcp # QDrant gRPC
 sudo ufw enable
-
 # CentOS/RHEL (firewalld)
 sudo firewall-cmd --permanent --add-service=ssh
 sudo firewall-cmd --permanent --add-port=6333/tcp
@@ -514,7 +444,6 @@ sudo firewall-cmd --reload
 ```bash
 # Generate SSL certificates for QDrant
 openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -days 365 -nodes
-
 # Configure QDrant with SSL
 # Add to QDrant configuration
 ```
@@ -527,9 +456,9 @@ openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -
 
 ```bash
 # Run multiple ingestion processes for different projects
-qdrant-loader --workspace /opt/qdrant-loader/config ingest --project project1 &
-qdrant-loader --workspace /opt/qdrant-loader/config ingest --project project2 &
-qdrant-loader --workspace /opt/qdrant-loader/config ingest --project project3 &
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project1 &
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project2 &
+qdrant-loader ingest --workspace /opt/qdrant-loader --project project3 &
 wait
 ```
 
@@ -538,21 +467,9 @@ wait
 ```bash
 # Use nginx for load balancing MCP servers
 # /etc/nginx/sites-available/qdrant-loader
-upstream mcp_servers {
-    server 127.0.0.1:8001;
-    server 127.0.0.1:8002;
-    server 127.0.0.1:8003;
+upstream mcp_servers { server 127.0.0.1:8001; server 127.0.0.1:8002; server 127.0.0.1:8003;
 }
-
-server {
-    listen 80;
-    server_name qdrant-loader.example.com;
-    
-    location / {
-        proxy_pass http://mcp_servers;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
+server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pass http://mcp_servers; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
 }
 ```
 
@@ -563,22 +480,20 @@ server {
 ```bash
 # Optimize for high-memory systems
 # Configure larger chunk sizes in config.yaml:
-# global_config:
-#   chunking:
-#     chunk_size: 2000
-#     chunk_overlap: 400
-
-# Run ingestion with specific project
-qdrant-loader --workspace /opt/qdrant-loader/config ingest --project high-priority
+# global:
+# chunking:
+# chunk_size: 2000
+# chunk_overlap: 400
+# Run ingestion with specific projectqdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
 
 ## 📚 Deployment Documentation
 
 ### Detailed Deployment Guides
 
-- **[Environment Setup](./environment-setup.md)** - Complete environment setup guide
-- **[Monitoring and Observability](./monitoring.md)** - Comprehensive monitoring setup
-- **[Performance Tuning](./performance-tuning.md)** - Production optimization guide
+- **[Environment Setup](#️-environment-setup)** - Complete environment setup guide
+- **[Monitoring and Observability](#-monitoring-and-observability)** - Comprehensive monitoring setup
+- **[Performance Optimization](#performance-optimization)** - Production optimization guide
 
 ### Best Practices
 
@@ -617,8 +532,7 @@ qdrant-loader --workspace /opt/qdrant-loader/config ingest --project high-priori
 - **[Deployment Guides](https://github.com/martin-papy/qdrant-loader/wiki/Deployment)** - Community deployment guides
 
 ---
-
-**Ready to deploy?** Start with [Environment Setup](./environment-setup.md) for detailed setup instructions or jump to [Monitoring and Observability](./monitoring.md) for production monitoring. Don't forget to check [Performance Tuning](./performance-tuning.md) for optimization tips.
+**Ready to deploy?** Start with [Environment Setup](#️-environment-setup) for detailed setup instructions or jump to [Monitoring and Observability](#-monitoring-and-observability) for production monitoring. Don't forget to check [Performance Optimization](#performance-optimization) for optimization tips.
 
 ### Performance Optimization
 
@@ -626,7 +540,7 @@ Configure chunking and processing parameters in your workspace configuration:
 
 ```yaml
 # config.yaml - Performance tuning
-global_config:
+global:
   chunking:
     chunk_size: 1200
     chunk_overlap: 300

@@ -47,7 +47,9 @@ class TestSemanticAnalyzer:
         """Mock spaCy NLP model."""
         nlp = Mock()
         nlp.vocab.strings = {"ORG": "Organization", "PERSON": "Person"}
-        nlp.vocab.vectors_length = 0  # Simulate model without word vectors (like en_core_web_sm)
+        nlp.vocab.vectors_length = (
+            0  # Simulate model without word vectors (like en_core_web_sm)
+        )
         return nlp
 
     @pytest.fixture
@@ -287,7 +289,13 @@ class TestSemanticAnalyzer:
             patch("spacy.load", return_value=mock_nlp),
             patch(
                 "qdrant_loader.core.text_processing.semantic_analyzer.preprocess_string",
-                return_value=["apple", "company", "technology", "innovation", "business"],
+                return_value=[
+                    "apple",
+                    "company",
+                    "technology",
+                    "innovation",
+                    "business",
+                ],
             ),
         ):
 

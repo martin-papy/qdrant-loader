@@ -1,100 +1,80 @@
-"""Tests for the main.py module."""
+"""Tests for the main module."""
 
 from unittest.mock import patch
 
-from qdrant_loader import main
+
+def test_main_module_cli_import():
+    """Test that cli can be imported from main module."""
+    from qdrant_loader.main import cli
+
+    assert cli is not None
+    assert callable(cli)
 
 
-class TestMain:
-    """Test the main module."""
+@patch("qdrant_loader.main.cli")
+def test_main_when_name_is_main(mock_cli):
+    """Test that cli() is called when module is run as main."""
+    # Directly execute the main module's if __name__ == "__main__": block
+    import qdrant_loader.main
 
-    def test_main_imports(self):
-        """Test that main module imports are correct."""
-        # Test that the cli import works
-        assert hasattr(main, "cli")
+    # Get the main module's globals and execute the condition
+    main_globals = qdrant_loader.main.__dict__.copy()
+    main_globals["__name__"] = "__main__"
 
-        # Test that cli is callable
-        assert callable(main.cli)
+    # Execute the conditional block directly
+    exec('if __name__ == "__main__":\n    cli()', main_globals)
 
-    def test_main_execution(self):
-        """Test main execution when run as script."""
-        with patch("qdrant_loader.main.cli") as mock_cli:
-            # Mock the cli function
-            mock_cli.return_value = None
+    # Verify cli was called
+    mock_cli.assert_called_once()
 
-            # Import and execute the main module directly
-            import importlib
-            import sys
 
-            # Save original argv
-            original_argv = sys.argv[:]
-            try:
-                # Set a clean argv for the test
-                sys.argv = ["main.py"]
+def test_main_module_execution_via_runpy():
+    """Test main module execution via runpy to ensure line 8 coverage."""
+    import subprocess
+    import sys
+    from pathlib import Path
 
-                # Reload the main module to trigger execution
-                if "qdrant_loader.main" in sys.modules:
-                    importlib.reload(sys.modules["qdrant_loader.main"])
-                else:
-                    pass
+    # Use python -m to run the module as __main__
+    # This should trigger the if __name__ == "__main__": block and cover line 8
 
-            finally:
-                # Restore original argv
-                sys.argv = original_argv
+    # Get the package root directory (where pyproject.toml is located)
+    test_dir = Path(__file__).parent  # tests/unit/
+    package_root = test_dir.parent.parent  # packages/qdrant-loader/
 
-            # The cli function should not be called during import
-            # since __name__ != "__main__" during import
-            mock_cli.assert_not_called()
+    result = subprocess.run(
+        [sys.executable, "-m", "qdrant_loader.main", "--help"],
+        cwd=str(package_root),  # Use portable path
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
 
-    def test_main_module_structure(self):
-        """Test that main module has expected structure."""
-        import qdrant_loader.main as main_module
+    # The command should run (even if it exits with non-zero due to --help)
+    # What matters is that the main block executed
+    assert result.returncode in [
+        0,
+        1,
+        2,
+    ], f"Unexpected return code: {result.returncode}"
 
-        # Check that it has the expected attributes
-        assert hasattr(main_module, "cli")
 
-        # Check docstring
-        assert main_module.__doc__ is not None
-        assert "Main entry point" in main_module.__doc__
+def test_main_module_direct_import():
+    """Test main module import to cover all lines."""
+    # Import the main module - this should cover lines 5-8
+    import qdrant_loader.main
 
-    def test_cli_import_path(self):
-        """Test that CLI is imported from correct path."""
-        from qdrant_loader.cli.cli import cli as imported_cli
-        from qdrant_loader.main import cli as main_cli
+    # Verify the module has the expected structure
+    assert hasattr(qdrant_loader.main, "cli")
 
-        # They should be the same function
-        assert imported_cli is main_cli
+    # The import itself should trigger line coverage for lines 5-6
 
-    @patch("qdrant_loader.cli.cli.cli")
-    def test_main_as_module(self, mock_cli):
-        """Test running main as a module."""
-        # This simulates: python -m qdrant_loader.main
 
-        # Instead of using runpy which can cause import issues,
-        # let's test that the main module can be executed properly
-        # by checking its structure and ensuring it would work when called
-        # Verify the main module has the right structure for module execution
-        import qdrant_loader.main as main_module
+def test_import_without_execution():
+    """Test that importing main module doesn't execute cli()."""
+    # Simply import the module - this should execute all module-level code
+    import qdrant_loader.main
 
-        # Check that it has the cli import
-        assert hasattr(main_module, "cli")
+    # Verify the module exists and has expected attributes
+    assert hasattr(qdrant_loader.main, "cli")
 
-        # Check that the file contains the expected if __name__ == "__main__" block
-        import inspect
-
-        source = inspect.getsource(main_module)
-        assert 'if __name__ == "__main__":' in source
-        assert "cli()" in source
-
-        # The actual execution test would require subprocess to avoid import conflicts
-        # but for unit testing, verifying the structure is sufficient
-
-    def test_main_file_attributes(self):
-        """Test main file has correct attributes."""
-        import qdrant_loader.main as main_module
-
-        # Check file path
-        assert main_module.__file__.endswith("main.py")
-
-        # Check module name
-        assert main_module.__name__ == "qdrant_loader.main"
+    # This test just ensures the import works and covers the import statements

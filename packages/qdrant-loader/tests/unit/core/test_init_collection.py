@@ -83,7 +83,7 @@ class TestInitCollection:
             patch(
                 "qdrant_loader.core.init_collection.QdrantManager"
             ) as mock_manager_class,
-            patch("qdrant_loader.core.init_collection.logger") as mock_logger,
+            patch("qdrant_loader.core.init_collection.logger"),
         ):
             mock_manager = Mock()
             mock_manager.delete_collection.side_effect = Exception(
@@ -112,7 +112,7 @@ class TestInitCollection:
             patch(
                 "qdrant_loader.core.init_collection.QdrantManager"
             ) as mock_manager_class,
-            patch("qdrant_loader.core.init_collection.logger") as mock_logger,
+            patch("qdrant_loader.core.init_collection.logger"),
         ):
             mock_settings = Mock()
             mock_settings.qdrant_collection_name = "test_collection"

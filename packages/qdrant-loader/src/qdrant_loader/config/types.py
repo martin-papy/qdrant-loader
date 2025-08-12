@@ -49,7 +49,6 @@ class JiraConfig(TypedDict):
     project_key: str
     requests_per_minute: int
     page_size: int
-    process_attachments: bool
     track_last_sync: bool
     api_token: str
     email: str

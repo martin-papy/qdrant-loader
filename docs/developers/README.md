@@ -6,13 +6,13 @@ Welcome to the QDrant Loader developer documentation! This guide provides everyt
 
 ### Core Development
 
-- **[Architecture Guide](./architecture.md)** - System design, components, and data flow
-- **[Extending QDrant Loader](./extending.md)** - Custom connectors and processors
+- **[Architecture Guide](./architecture/)** - System design, components, and data flow
+- **[Extending QDrant Loader](./extending/)** - Custom connectors and processors
 
 ### Quality & Deployment
 
-- **[Testing Guide](./testing.md)** - Testing strategies, frameworks, and best practices
-- **[Deployment Guide](./deployment.md)** - Production deployment, containerization, and CI/CD
+- **[Testing Guide](./testing/)** - Testing strategies, frameworks, and best practices
+- **[Deployment Guide](./deployment/)** - Production deployment, containerization, and CI/CD
 
 ### Documentation
 
@@ -22,28 +22,28 @@ Welcome to the QDrant Loader developer documentation! This guide provides everyt
 
 QDrant Loader follows a modular architecture designed for multi-project document ingestion and vector storage:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    QDrant Loader Core                       │
+│ QDrant Loader Core │
 ├─────────────────────────────────────────────────────────────┤
-│  Data Sources    │  Processing      │  Vector Storage       │
-│  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
-│  │ Connectors  │ │  │ Processors  │ │  │ QDrant Client   │  │
-│  │ - Local     │ │  │ - MarkItDown│ │  │ - Collections   │  │
-│  │ - Git       │ │  │ - Text      │ │  │ - Vectors       │  │
-│  │ - Confluence│ │  │ - Chunking  │ │  │ - Search        │  │
-│  │ - Jira      │ │  │ - Embedding │ │  │ - Metadata      │  │
-│  │ - PublicDocs│ │  │             │ │  │                 │  │
-│  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
+│ Data Sources │ Processing │ Vector Storage │
+│ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────────┐ │
+│ │ Connectors │ │ │ Processors │ │ │ QDrant Client │ │
+│ │ - Local │ │ │ - MarkItDown│ │ │ - Collections │ │
+│ │ - Git │ │ │ - Text │ │ │ - Vectors │ │
+│ │ - Confluence│ │ │ - Chunking │ │ │ - Search │ │
+│ │ - Jira │ │ │ - Embedding │ │ │ - Metadata │ │
+│ │ - PublicDocs│ │ │ │ │ │ │ │
+│ └─────────────┘ │ └─────────────┘ │ └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  MCP Server      │  CLI Interface   │  Configuration       │
-│  ┌─────────────┐ │  ┌─────────────┐ │  ┌─────────────────┐  │
-│  │ Search APIs │ │  │ Commands    │ │  │ YAML Config     │  │
-│  │ - Semantic  │ │  │ - init      │ │  │ - Multi-project │  │
-│  │ - Hierarchy │ │  │ - ingest    │ │  │ - Workspace     │  │
-│  │ - Attachment│ │  │ - config    │ │  │ - Environment   │  │
-│  │             │ │  │ - project   │ │  │ - Validation    │  │
-│  └─────────────┘ │  └─────────────┘ │  └─────────────────┘  │
+│ MCP Server │ CLI Interface │ Configuration │
+│ ┌─────────────┐ │ ┌─────────────┐ │ ┌─────────────────┐ │
+│ │ Search APIs │ │ │ Commands │ │ │ YAML Config │ │
+│ │ - Semantic │ │ │ - init │ │ │ - Multi-project │ │
+│ │ - Hierarchy │ │ │ - ingest │ │ │ - Workspace │ │
+│ │ - Attachment│ │ │ - config │ │ │ - Environment │ │
+│ │ │ │ │ - project │ │ │ - Validation │ │
+│ └─────────────┘ │ └─────────────┘ │ └─────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,7 +58,7 @@ cd qdrant-loader
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 
 # Install development dependencies
 cd packages/qdrant-loader
@@ -217,7 +217,7 @@ Available connectors:
 
 1. **Create Connector Structure**
 
-   ```
+   ```text
    my-connector/
    ├── src/
    │   └── my_connector/
@@ -233,12 +233,12 @@ Available connectors:
    ```python
    from qdrant_loader.connectors.base import BaseConnector
    from qdrant_loader.config.source_config import SourceConfig
-   
+
    class MyConnector(BaseConnector):
        def __init__(self, config: SourceConfig):
            super().__init__(config)
            # Initialize your connector
-   
+
        async def get_documents(self) -> list[Document]:
            # Implement document fetching logic
            pass
@@ -248,7 +248,7 @@ Available connectors:
 
    ```python
    from pydantic import BaseModel
-   
+
    class MyConnectorConfig(SourceConfig):
        source_type: str = "my_connector"
        api_key: str
@@ -312,18 +312,18 @@ Production deployment strategies, containerization, and operational best practic
 
 ```bash
 # Initialize QDrant collection
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Ingest documents
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # View configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Project management
-qdrant-loader --workspace . project list
-qdrant-loader --workspace . project status
-qdrant-loader --workspace . project validate
+qdrant-loader project list --workspace .
+qdrant-loader project status --workspace .
+qdrant-loader project validate --workspace .
 
 # Start MCP server
 mcp-qdrant-loader
@@ -336,7 +336,7 @@ mcp-qdrant-loader
 qdrant-loader --log-level DEBUG --workspace . ingest
 
 # Profile performance
-qdrant-loader --workspace . ingest --profile
+qdrant-loader ingest --workspace . --profile
 
 # Memory profiling (requires memory_profiler)
 python -m memory_profiler your_script.py
@@ -346,11 +346,11 @@ python -m memory_profiler your_script.py
 
 ```bash
 # Makefile targets
-make test          # Run all tests
-make lint          # Run linting
-make format        # Format code
-make docs          # Build documentation
-make clean         # Clean build artifacts
+make test    # Run all tests
+make lint    # Run linting
+make format  # Format code
+make docs    # Build documentation
+make clean   # Clean build artifacts
 ```
 
 ## 🔗 Integration Examples
@@ -359,7 +359,7 @@ make clean         # Clean build artifacts
 
 ```yaml
 # config.yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "my_collection"
@@ -373,7 +373,8 @@ projects:
         name: "documentation"
         config:
           base_url: "file://./docs"
-          include_paths: ["**/*.md"]
+          include_paths:
+            - "**/*.md"
 ```
 
 ### Programmatic Usage
@@ -395,7 +396,6 @@ await pipeline.run()
 ```python
 # The MCP server runs as a separate process
 # Start with: mcp-qdrant-loader
-
 # It provides search tools to AI development environments
 # Tools available:
 # - search_documents

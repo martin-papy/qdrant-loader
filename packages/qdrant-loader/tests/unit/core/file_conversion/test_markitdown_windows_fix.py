@@ -1,6 +1,5 @@
 """Test MarkItDown Windows signal compatibility fix."""
 
-import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -29,6 +28,7 @@ class TestMarkItDownWindowsFix:
 
             # Re-import the file_converter module to trigger monkey patch
             import importlib
+
             from qdrant_loader.core.file_conversion import file_converter
 
             importlib.reload(file_converter)
@@ -84,10 +84,10 @@ class TestMarkItDownWindowsFix:
         """Test that Unix/Linux/macOS platforms are unaffected by Windows fixes."""
         with patch("sys.platform", "linux"):
             # Import signal (should have native SIGALRM on Unix)
-            import signal
-
             # Re-import to ensure no monkey patching on Unix
             import importlib
+            import signal
+
             from qdrant_loader.core.file_conversion import file_converter
 
             importlib.reload(file_converter)
@@ -125,6 +125,7 @@ class TestMarkItDownWindowsFix:
 
             # Re-import to trigger monkey patch
             import importlib
+
             from qdrant_loader.core.file_conversion import file_converter
 
             importlib.reload(file_converter)

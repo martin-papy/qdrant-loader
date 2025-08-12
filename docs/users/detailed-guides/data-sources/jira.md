@@ -25,10 +25,10 @@ When you connect to JIRA, QDrant Loader can process:
 
 2. **Set environment variables**:
 
-   ```bash
-   export JIRA_TOKEN=your_api_token_here
-   export JIRA_EMAIL=your-email@company.com
-   ```
+```bash
+export JIRA_TOKEN=your_api_token_here
+export JIRA_EMAIL=your-email@company.com
+```
 
 ### JIRA Data Center
 
@@ -42,16 +42,16 @@ When you connect to JIRA, QDrant Loader can process:
 
 2. **Set environment variables**:
 
-   ```bash
-   export JIRA_TOKEN=your_personal_access_token
-   ```
+```bash
+export JIRA_TOKEN=your_personal_access_token
+```
 
 ## ⚙️ Configuration
 
 ### Basic Configuration
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
@@ -74,7 +74,7 @@ projects:
 ### Advanced Configuration
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
@@ -117,7 +117,7 @@ projects:
 ### Multiple JIRA Instances
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "documents"
@@ -135,7 +135,7 @@ projects:
           project_key: "PROD"
           token: "${JIRA_TOKEN}"
           email: "${JIRA_EMAIL}"
-          
+        
         # Development JIRA Data Center
         dev-jira:
           base_url: "https://dev-jira.company.com"
@@ -145,6 +145,14 @@ projects:
 ```
 
 ## 🎯 Configuration Options
+
+### Validator Requirements
+
+- `email` + `token` required for `deployment_type: cloud`
+- `token` required for `deployment_type: datacenter`
+- `requests_per_minute` default: `60`
+- `page_size` default: `100`
+- Empty `issue_types` / `include_statuses` means all
 
 ### Connection Settings
 
@@ -177,7 +185,7 @@ projects:
 ### Software Development Team
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "dev-docs"
@@ -215,7 +223,7 @@ projects:
 ### Product Management
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "product-docs"
@@ -247,7 +255,7 @@ projects:
 ### Support Team
 
 ```yaml
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "support-docs"
@@ -282,36 +290,36 @@ projects:
 
 ```bash
 # Initialize workspace
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Configure the project
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 ### Validate Configuration
 
 ```bash
 # Validate project configuration
-qdrant-loader --workspace . project validate
+qdrant-loader project validate --workspace .
 
 # Check project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
 ### Process JIRA Data
 
 ```bash
 # Process all configured sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Process specific project
-qdrant-loader --workspace . ingest --project my-project
+qdrant-loader ingest --workspace . --project my-project
 
 # Process with verbose logging
-qdrant-loader --workspace . --log-level debug ingest
+qdrant-loader ingest --workspace . --log-level debug
 ```
 
 ## 🔧 Troubleshooting
@@ -401,8 +409,12 @@ projects:
           requests_per_minute: 30
           
           # Filter to reduce scope
-          issue_types: ["Story", "Bug"]
-          include_statuses: ["Open", "In Progress"]
+          issue_types:
+            - "Story"
+            - "Bug"
+          include_statuses:
+            - "Open"
+            - "In Progress"
 ```
 
 ### Debugging Commands
@@ -427,13 +439,13 @@ curl -u "email:token" \
 
 ```bash
 # Check project status
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader --workspace . project status --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader --workspace . project list
+qdrant-loader project list --workspace .
 ```
 
 ### Performance Optimization
@@ -455,7 +467,7 @@ Monitor these aspects for JIRA processing:
 3. **Apply consistent labeling** - Use labels for cross-project categorization
 4. **Archive completed projects** - Move old projects to archive status
 
-### Performance Optimization
+### Performance Best Practices
 
 1. **Filter issue types** - Process only relevant issue types
 2. **Limit attachment processing** - Set `download_attachments: false` for large projects

@@ -1,6 +1,5 @@
 """Configuration models for file conversion settings."""
 
-
 from pydantic import BaseModel, Field
 
 
@@ -32,12 +31,14 @@ class FileConversionConfig(BaseModel):
         default=52428800,  # 50MB
         description="Maximum file size for conversion (in bytes)",
         gt=0,
+        le=104857600,  # 100MB
     )
 
     conversion_timeout: int = Field(
         default=300,  # 5 minutes
         description="Timeout for conversion operations (in seconds)",
         gt=0,
+        le=3600,  # 1 hour
     )
 
     markitdown: MarkItDownConfig = Field(

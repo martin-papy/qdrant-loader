@@ -63,6 +63,7 @@ class TestSetupProjectManager:
             ) as mock_load_config,
             patch("qdrant_loader.cli.cli._check_settings") as mock_check_settings,
             patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
+            patch("qdrant_loader.cli.project_commands.StateManager") as mock_sm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -76,12 +77,18 @@ class TestSetupProjectManager:
             mock_settings.global_config = Mock()
             mock_settings.global_config.qdrant = Mock()
             mock_settings.global_config.qdrant.collection_name = "test_collection"
+            mock_settings.global_config.state_management = Mock()
             mock_settings.projects_config = Mock()
             mock_check_settings.return_value = mock_settings
 
             # Mock project manager
             mock_project_manager = Mock()
             mock_pm.return_value = mock_project_manager
+
+            # Mock state manager
+            mock_state_manager = Mock()
+            mock_state_manager.initialize = Mock(return_value=None)
+            mock_sm.return_value = mock_state_manager
 
             workspace_path = Path("/test/workspace")
             result = await _setup_project_manager(workspace_path, None, None)
@@ -90,8 +97,11 @@ class TestSetupProjectManager:
             mock_load_config.assert_called_once_with(mock_workspace_config, None, None)
             mock_check_settings.assert_called_once()
             mock_pm.assert_called_once()
+            mock_sm.assert_called_once_with(
+                mock_settings.global_config.state_management
+            )
             mock_init.assert_called_once_with(mock_project_manager)
-            assert result == (mock_settings, mock_project_manager)
+            assert result == (mock_settings, mock_project_manager, mock_state_manager)
 
     @pytest.mark.asyncio
     async def test_setup_project_manager_with_config_and_env(self):
@@ -103,6 +113,7 @@ class TestSetupProjectManager:
             ) as mock_load_config,
             patch("qdrant_loader.cli.cli._check_settings") as mock_check_settings,
             patch("qdrant_loader.cli.project_commands.ProjectManager") as mock_pm,
+            patch("qdrant_loader.cli.project_commands.StateManager") as mock_sm,
             patch(
                 "qdrant_loader.cli.project_commands._initialize_project_contexts_from_config"
             ) as mock_init,
@@ -112,12 +123,18 @@ class TestSetupProjectManager:
             mock_settings.global_config = Mock()
             mock_settings.global_config.qdrant = Mock()
             mock_settings.global_config.qdrant.collection_name = "test_collection"
+            mock_settings.global_config.state_management = Mock()
             mock_settings.projects_config = Mock()
             mock_check_settings.return_value = mock_settings
 
             # Mock project manager
             mock_project_manager = Mock()
             mock_pm.return_value = mock_project_manager
+
+            # Mock state manager
+            mock_state_manager = Mock()
+            mock_state_manager.initialize = Mock(return_value=None)
+            mock_sm.return_value = mock_state_manager
 
             config_path = Path("/test/config.yaml")
             env_path = Path("/test/.env")
@@ -127,8 +144,11 @@ class TestSetupProjectManager:
             mock_load_config.assert_called_once_with(None, config_path, env_path)
             mock_check_settings.assert_called_once()
             mock_pm.assert_called_once()
+            mock_sm.assert_called_once_with(
+                mock_settings.global_config.state_management
+            )
             mock_init.assert_called_once_with(mock_project_manager)
-            assert result == (mock_settings, mock_project_manager)
+            assert result == (mock_settings, mock_project_manager, mock_state_manager)
 
     @pytest.mark.asyncio
     async def test_setup_project_manager_no_qdrant_config(self):
@@ -198,9 +218,7 @@ class TestProjectListCommand:
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
             patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts
             mock_context = Mock()
@@ -215,7 +233,7 @@ class TestProjectListCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["list", "--format", "table"])
 
@@ -230,9 +248,7 @@ class TestProjectListCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts
             mock_context = Mock()
@@ -247,7 +263,7 @@ class TestProjectListCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["list", "--format", "json"])
 
@@ -268,13 +284,11 @@ class TestProjectListCommand:
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
             patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             mock_project_manager = Mock()
             mock_project_manager.get_all_project_contexts.return_value = {}
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["list"])
 
@@ -291,9 +305,7 @@ class TestProjectListCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             mock_setup.side_effect = Exception("Setup failed")
 
@@ -314,10 +326,8 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.console"),
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts
             mock_context = Mock()
@@ -331,7 +341,7 @@ class TestProjectStatusCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["status"])
 
@@ -345,10 +355,8 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.console"),
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts
             mock_context = Mock()
@@ -360,7 +368,7 @@ class TestProjectStatusCommand:
 
             mock_project_manager = Mock()
             mock_project_manager.get_project_context.return_value = mock_context
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(
                 project_cli, ["status", "--project-id", "test-project"]
@@ -377,13 +385,11 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             mock_project_manager = Mock()
             mock_project_manager.get_project_context.return_value = None
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(
                 project_cli, ["status", "--project-id", "nonexistent"]
@@ -400,9 +406,7 @@ class TestProjectStatusCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts
             mock_context = Mock()
@@ -416,7 +420,7 @@ class TestProjectStatusCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["status", "--format", "json"])
 
@@ -438,10 +442,8 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.console"),
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts with valid config
             mock_context = Mock()
@@ -455,7 +457,7 @@ class TestProjectValidateCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["validate"])
 
@@ -469,10 +471,8 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.console"),
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts with valid config
             mock_context = Mock()
@@ -482,7 +482,7 @@ class TestProjectValidateCommand:
 
             mock_project_manager = Mock()
             mock_project_manager.get_project_context.return_value = mock_context
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(
                 project_cli, ["validate", "--project-id", "test-project"]
@@ -498,10 +498,8 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch("qdrant_loader.cli.project_commands.console") as mock_console,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.console"),
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             # Mock project contexts with invalid config (no config)
             mock_context = Mock()
@@ -512,7 +510,7 @@ class TestProjectValidateCommand:
             mock_project_manager.get_all_project_contexts.return_value = {
                 "test-project": mock_context
             }
-            mock_setup.return_value = (Mock(), mock_project_manager)
+            mock_setup.return_value = (Mock(), mock_project_manager, Mock())
 
             result = runner.invoke(project_cli, ["validate"])
 
@@ -527,9 +525,7 @@ class TestProjectValidateCommand:
             patch(
                 "qdrant_loader.cli.project_commands._setup_project_manager"
             ) as mock_setup,
-            patch(
-                "qdrant_loader.cli.project_commands.validate_workspace_flags"
-            ) as mock_validate,
+            patch("qdrant_loader.cli.project_commands.validate_workspace_flags"),
         ):
             mock_setup.side_effect = Exception("Setup failed")
 

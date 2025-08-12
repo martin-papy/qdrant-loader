@@ -10,7 +10,7 @@ Workspace mode in QDrant Loader provides a structured approach to organizing you
 
 ```text
 📁 Workspace Directory
-├── config.yaml          # Main configuration file
+├── config.yaml         # Main configuration file
 ├── .env                 # Environment variables (optional)
 ├── logs/                # Application logs
 │   └── qdrant-loader.log
@@ -46,12 +46,11 @@ QDrant Loader uses a **multi-project configuration** structure where all project
 
 ```yaml
 # config.yaml - Multi-project configuration
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
-    api_key: null  # Optional for Qdrant Cloud
-    collection_name: "my_documents"  # Shared by all projects
-  
+    api_key: null # Optional for Qdrant Cloud
+    collection_name: "my_documents" # Shared by all projects
   embedding:
     model: "text-embedding-3-small"
     api_key: "${OPENAI_API_KEY}"
@@ -62,20 +61,20 @@ projects:
     project_id: "docs-project"
     display_name: "Documentation Project"
     description: "Company documentation"
-    
     sources:
       git:
         docs-repo:
           base_url: "https://github.com/company/docs"
           branch: "main"
-          include_paths: ["docs/**", "*.md"]
+          include_paths:
+            - "docs/**"
+            - "*.md"
           token: "${GITHUB_TOKEN}"
-  
+
   wiki-project:
     project_id: "wiki-project"
     display_name: "Wiki Project"
     description: "Internal wiki content"
-    
     sources:
       confluence:
         company-wiki:
@@ -91,7 +90,7 @@ projects:
 # .env file
 # Required - QDrant Database
 QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your-qdrant-cloud-key  # Optional
+QDRANT_API_KEY=your-qdrant-cloud-key # Optional
 
 # Required - OpenAI API
 OPENAI_API_KEY=your-openai-api-key
@@ -108,54 +107,54 @@ CONFLUENCE_EMAIL=your-email@company.com
 
 ```bash
 # Initialize collection and prepare workspace
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Force recreation of existing collection
-qdrant-loader --workspace . init --force
+qdrant-loader init --workspace . --force
 ```
 
 ### Ingest Data
 
 ```bash
 # Process all projects and sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Process specific project
-qdrant-loader --workspace . ingest --project docs-project
+qdrant-loader ingest --workspace . --project docs-project
 
 # Process specific source type across all projects
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Process specific source within a project
-qdrant-loader --workspace . ingest --project docs-project --source docs-repo
+qdrant-loader ingest --workspace . --project docs-project --source docs-repo
 
 # Force processing of all documents (bypass change detection)
-qdrant-loader --workspace . ingest --force
+qdrant-loader ingest --workspace . --force
 ```
 
 ### Configuration Management
 
 ```bash
 # Show current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Show project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id docs-project
+qdrant-loader project status --workspace . --project-id docs-project
 
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id docs-project
+qdrant-loader project validate --workspace . --project-id docs-project
 
 # Output in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 ```
 
 ## 📁 Project Management
@@ -173,22 +172,22 @@ Each project in the configuration has:
 
 ```bash
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Show detailed project information
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Show status for specific project
-qdrant-loader project --workspace . status --project-id docs-project
+qdrant-loader project status --workspace . --project-id docs-project
 
 # Validate project configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id docs-project
+qdrant-loader project validate --workspace . --project-id docs-project
 
 # Output in JSON format
-qdrant-loader project --workspace . list --format json
+qdrant-loader project list --workspace . --format json
 ```
 
 ### Project Isolation
@@ -212,9 +211,15 @@ sources:
     repo-name:
       base_url: "https://github.com/user/repo"
       branch: "main"
-      include_paths: ["docs/**", "*.md"]
-      exclude_paths: ["node_modules/**"]
-      file_types: ["*.md", "*.rst", "*.txt"]
+      include_paths:
+        - "docs/**"
+        - "*.md"
+      exclude_paths:
+        - "node_modules/**"
+      file_types:
+        - "*.md"
+        - "*.rst"
+        - "*.txt"
       token: "${GITHUB_TOKEN}"
       enable_file_conversion: true
 ```
@@ -228,7 +233,9 @@ sources:
       base_url: "https://company.atlassian.net/wiki"
       deployment_type: "cloud"
       space_key: "DOCS"
-      content_types: ["page", "blogpost"]
+      content_types:
+        - "page"
+        - "blogpost"
       token: "${CONFLUENCE_TOKEN}"
       email: "${CONFLUENCE_EMAIL}"
       enable_file_conversion: true
@@ -257,10 +264,14 @@ sources:
   localfile:
     local-docs:
       base_url: "file:///path/to/files"
-      include_paths: ["docs/**"]
-      exclude_paths: ["tmp/**"]
-      file_types: ["*.md", "*.txt"]
-      max_file_size: 1048576  # 1MB
+      include_paths:
+        - "docs/**"
+      exclude_paths:
+        - "tmp/**"
+      file_types:
+        - "*.md"
+        - "*.txt"
+      max_file_size: 1048576 # 1MB
       enable_file_conversion: true
 ```
 
@@ -276,7 +287,10 @@ sources:
       path_pattern: "/docs/{version}/**"
       selectors:
         content: "article.main-content"
-        remove: ["nav", "header", "footer"]
+        remove:
+          - "nav"
+          - "header"
+          - "footer"
       enable_file_conversion: true
       download_attachments: true
 ```
@@ -286,7 +300,7 @@ sources:
 ### Global Settings
 
 ```yaml
-global_config:
+global:
   # Chunking configuration
   chunking:
     chunk_size: 1500
@@ -304,8 +318,8 @@ global_config:
   
   # File conversion settings
   file_conversion:
-    max_file_size: 52428800  # 50MB
-    conversion_timeout: 300  # 5 minutes
+    max_file_size: 52428800 # 50MB
+    conversion_timeout: 300 # 5 minutes
     markitdown:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
@@ -317,9 +331,9 @@ global_config:
 Workspace mode automatically manages the state database:
 
 ```yaml
-global_config:
+global:
   state_management:
-    database_path: "${STATE_DB_PATH}"  # Ignored in workspace mode
+    database_path: "${STATE_DB_PATH}" # Ignored in workspace mode
     table_prefix: "qdrant_loader_"
     connection_pool:
       size: 5
@@ -334,14 +348,14 @@ In workspace mode, the state database is automatically created as `qdrant-loader
 
 ```text
 my-qdrant-workspace/
-├── config.yaml              # Main configuration
-├── .env                     # Environment variables
-├── logs/                    # Application logs
+├── config.yaml                              # Main configuration
+├── .env                                     # Environment variables
+├── logs/                                    # Application logs
 │   └── qdrant-loader.log
-├── metrics/                 # Performance metrics
+├── metrics/                                 # Performance metrics
 │   └── ingestion_metrics_YYYYMMDD_HHMMSS.json
 └── data/
-    └── qdrant-loader.db     # Processing state database
+    └── qdrant-loader.db                     # Processing state database
 ```
 
 ### Log Files
@@ -414,9 +428,9 @@ Workspace mode support for the MCP server is planned for future releases, which 
 - [ ] **Copy configuration template** to `config.yaml`
 - [ ] **Create environment file** with required credentials
 - [ ] **Configure projects** with your data sources
-- [ ] **Initialize collection** with `qdrant-loader --workspace . init`
-- [ ] **Ingest data** with `qdrant-loader --workspace . ingest`
-- [ ] **Verify setup** with `qdrant-loader project --workspace . list`
+- [ ] **Initialize collection** with `qdrant-loader init --workspace .`
+- [ ] **Ingest data** with `qdrant-loader ingest --workspace .`
+- [ ] **Verify setup** with `qdrant-loader project list --workspace .`
 - [ ] **Test search** through MCP server integration
 
 ## 🔗 Related Documentation

@@ -4,16 +4,16 @@ from typing import Any
 
 from ...utils.logging import LoggingConfig
 from .search_result_models import (
-    ProjectInfo,
-    HierarchyInfo,
     AttachmentInfo,
-    SectionInfo,
-    ContentAnalysis,
-    SemanticAnalysis,
-    NavigationContext,
     ChunkingContext,
+    ContentAnalysis,
     ConversionInfo,
     CrossReferenceInfo,
+    HierarchyInfo,
+    NavigationContext,
+    ProjectInfo,
+    SectionInfo,
+    SemanticAnalysis,
 )
 
 
@@ -26,18 +26,23 @@ class MetadataExtractor:
 
     def extract_project_info(self, metadata: dict) -> ProjectInfo | None:
         """Extract project information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             ProjectInfo object or None if no project info available
         """
-        project_fields = ["project_id", "project_name", "project_description", "collection_name"]
-        
+        project_fields = [
+            "project_id",
+            "project_name",
+            "project_description",
+            "collection_name",
+        ]
+
         if not any(metadata.get(field) for field in project_fields):
             return None
-            
+
         return ProjectInfo(
             project_id=metadata.get("project_id"),
             project_name=metadata.get("project_name"),
@@ -47,15 +52,15 @@ class MetadataExtractor:
 
     def extract_hierarchy_info(self, metadata: dict) -> HierarchyInfo | None:
         """Extract hierarchy information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             HierarchyInfo object or None if no hierarchy info available
         """
         hierarchy_fields = ["parent_id", "parent_title", "breadcrumb_text", "depth"]
-        
+
         if not any(metadata.get(field) for field in hierarchy_fields):
             return None
 
@@ -77,22 +82,33 @@ class MetadataExtractor:
 
     def extract_attachment_info(self, metadata: dict) -> AttachmentInfo | None:
         """Extract attachment information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             AttachmentInfo object or None if not an attachment
         """
         is_attachment = metadata.get("is_attachment", False)
-        attachment_fields = ["parent_document_id", "parent_document_title", "attachment_id", 
-                           "original_filename", "file_size", "mime_type", "attachment_author"]
-        
-        if not is_attachment and not any(metadata.get(field) for field in attachment_fields):
+        attachment_fields = [
+            "parent_document_id",
+            "parent_document_title",
+            "attachment_id",
+            "original_filename",
+            "file_size",
+            "mime_type",
+            "attachment_author",
+        ]
+
+        if not is_attachment and not any(
+            metadata.get(field) for field in attachment_fields
+        ):
             return None
 
         attachment_author = metadata.get("attachment_author") or metadata.get("author")
-        attachment_context = self._generate_attachment_context(metadata) if is_attachment else None
+        attachment_context = (
+            self._generate_attachment_context(metadata) if is_attachment else None
+        )
 
         return AttachmentInfo(
             is_attachment=is_attachment,
@@ -108,16 +124,22 @@ class MetadataExtractor:
 
     def extract_section_info(self, metadata: dict) -> SectionInfo | None:
         """Extract section information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             SectionInfo object or None if no section info available
         """
-        section_fields = ["section_title", "section_type", "section_level", 
-                         "section_anchor", "section_breadcrumb", "section_depth"]
-        
+        section_fields = [
+            "section_title",
+            "section_type",
+            "section_level",
+            "section_anchor",
+            "section_breadcrumb",
+            "section_depth",
+        ]
+
         if not any(metadata.get(field) for field in section_fields):
             return None
 
@@ -132,19 +154,29 @@ class MetadataExtractor:
 
     def extract_content_analysis(self, metadata: dict) -> ContentAnalysis | None:
         """Extract content analysis from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             ContentAnalysis object or None if no content analysis available
         """
         content_analysis = metadata.get("content_type_analysis", {})
-        
-        content_fields = ["has_code_blocks", "has_tables", "has_images", "has_links", 
-                         "word_count", "char_count", "estimated_read_time", "paragraph_count"]
-        
-        if not content_analysis and not any(metadata.get(field) for field in content_fields):
+
+        content_fields = [
+            "has_code_blocks",
+            "has_tables",
+            "has_images",
+            "has_links",
+            "word_count",
+            "char_count",
+            "estimated_read_time",
+            "paragraph_count",
+        ]
+
+        if not content_analysis and not any(
+            metadata.get(field) for field in content_fields
+        ):
             return None
 
         return ContentAnalysis(
@@ -160,15 +192,15 @@ class MetadataExtractor:
 
     def extract_semantic_analysis(self, metadata: dict) -> SemanticAnalysis | None:
         """Extract semantic analysis from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             SemanticAnalysis object or None if no semantic analysis available
         """
         semantic_fields = ["entities", "topics", "key_phrases", "pos_tags"]
-        
+
         if not any(metadata.get(field) for field in semantic_fields):
             return None
 
@@ -187,16 +219,21 @@ class MetadataExtractor:
 
     def extract_navigation_context(self, metadata: dict) -> NavigationContext | None:
         """Extract navigation context from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             NavigationContext object or None if no navigation context available
         """
-        navigation_fields = ["previous_section", "next_section", "sibling_sections", 
-                           "subsections", "document_hierarchy"]
-        
+        navigation_fields = [
+            "previous_section",
+            "next_section",
+            "sibling_sections",
+            "subsections",
+            "document_hierarchy",
+        ]
+
         if not any(metadata.get(field) for field in navigation_fields):
             return None
 
@@ -210,15 +247,15 @@ class MetadataExtractor:
 
     def extract_chunking_context(self, metadata: dict) -> ChunkingContext | None:
         """Extract chunking context from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             ChunkingContext object or None if no chunking context available
         """
         chunking_fields = ["chunk_index", "total_chunks", "chunking_strategy"]
-        
+
         if not any(metadata.get(field) for field in chunking_fields):
             return None
 
@@ -230,15 +267,20 @@ class MetadataExtractor:
 
     def extract_conversion_info(self, metadata: dict) -> ConversionInfo | None:
         """Extract conversion information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             ConversionInfo object or None if no conversion info available
         """
-        conversion_fields = ["original_file_type", "conversion_method", "is_excel_sheet", "is_converted"]
-        
+        conversion_fields = [
+            "original_file_type",
+            "conversion_method",
+            "is_excel_sheet",
+            "is_converted",
+        ]
+
         if not any(metadata.get(field) for field in conversion_fields):
             return None
 
@@ -251,15 +293,15 @@ class MetadataExtractor:
 
     def extract_cross_reference_info(self, metadata: dict) -> CrossReferenceInfo | None:
         """Extract cross-reference information from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             CrossReferenceInfo object or None if no cross-reference info available
         """
         cross_ref_fields = ["cross_references", "topic_analysis"]
-        
+
         if not any(metadata.get(field) for field in cross_ref_fields):
             return None
 
@@ -274,10 +316,10 @@ class MetadataExtractor:
 
     def extract_all_metadata(self, metadata: dict) -> dict[str, Any]:
         """Extract all metadata components from document metadata.
-        
+
         Args:
             metadata: Document metadata
-            
+
         Returns:
             Dictionary containing all extracted metadata components
         """
@@ -294,7 +336,9 @@ class MetadataExtractor:
             "cross_reference": self.extract_cross_reference_info(metadata),
         }
 
-    def _generate_hierarchy_context(self, metadata: dict, children_count: int | None) -> str | None:
+    def _generate_hierarchy_context(
+        self, metadata: dict, children_count: int | None
+    ) -> str | None:
         """Generate hierarchy context for display."""
         if not metadata.get("breadcrumb_text") and metadata.get("depth") is None:
             return None
@@ -350,11 +394,13 @@ class MetadataExtractor:
             return None
 
         content_type_context = f"Contains: {', '.join(content_types)}"
-        
+
         if content_analysis.get("word_count"):
             content_type_context += f" | {content_analysis.get('word_count')} words"
         if content_analysis.get("estimated_read_time"):
-            content_type_context += f" | ~{content_analysis.get('estimated_read_time')}min read"
+            content_type_context += (
+                f" | ~{content_analysis.get('estimated_read_time')}min read"
+            )
 
         return content_type_context
 
@@ -373,7 +419,7 @@ class MetadataExtractor:
         """Process entities from spaCy tuples to expected formats."""
         entities = []
         for entity in raw_entities:
-            if isinstance(entity, (list, tuple)) and len(entity) >= 2:
+            if isinstance(entity, list | tuple) and len(entity) >= 2:
                 entities.append({"text": str(entity[0]), "label": str(entity[1])})
             elif isinstance(entity, str):
                 entities.append(entity)
@@ -385,8 +431,12 @@ class MetadataExtractor:
         """Process topics from spaCy tuples to expected formats."""
         topics = []
         for topic in raw_topics:
-            if isinstance(topic, (list, tuple)) and len(topic) >= 2:
-                score = float(topic[1]) if isinstance(topic[1], (int, float)) else str(topic[1])
+            if isinstance(topic, list | tuple) and len(topic) >= 2:
+                score = (
+                    float(topic[1])
+                    if isinstance(topic[1], int | float)
+                    else str(topic[1])
+                )
                 topics.append({"text": str(topic[0]), "score": score})
             elif isinstance(topic, str):
                 topics.append(topic)
@@ -398,8 +448,12 @@ class MetadataExtractor:
         """Process key phrases from spaCy tuples to expected formats."""
         key_phrases = []
         for phrase in raw_key_phrases:
-            if isinstance(phrase, (list, tuple)) and len(phrase) >= 2:
-                score = float(phrase[1]) if isinstance(phrase[1], (int, float)) else str(phrase[1])
+            if isinstance(phrase, list | tuple) and len(phrase) >= 2:
+                score = (
+                    float(phrase[1])
+                    if isinstance(phrase[1], int | float)
+                    else str(phrase[1])
+                )
                 key_phrases.append({"text": str(phrase[0]), "score": score})
             elif isinstance(phrase, str):
                 key_phrases.append(phrase)
@@ -411,7 +465,7 @@ class MetadataExtractor:
         """Process POS tags from spaCy tuples to expected formats."""
         pos_tags = []
         for pos_tag in raw_pos_tags:
-            if isinstance(pos_tag, (list, tuple)) and len(pos_tag) >= 2:
+            if isinstance(pos_tag, list | tuple) and len(pos_tag) >= 2:
                 pos_tags.append({"token": str(pos_tag[0]), "tag": str(pos_tag[1])})
             elif isinstance(pos_tag, dict):
                 pos_tags.append(pos_tag)

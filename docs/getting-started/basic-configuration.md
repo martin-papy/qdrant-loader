@@ -18,10 +18,10 @@ QDrant Loader uses a flexible configuration system that supports:
 QDrant Loader uses this priority order (highest to lowest):
 
 ```text
-1. Command-line arguments    (--workspace, --config, --env)
-2. Environment variables     (QDRANT_URL, OPENAI_API_KEY, etc.)
-3. Configuration file        (config.yaml)
-4. Default values           (built-in defaults)
+1. Command-line arguments (--workspace, --config, --env)
+2. Environment variables (QDRANT_URL, OPENAI_API_KEY, etc.)
+3. Configuration file (config.yaml)
+4. Default values (built-in defaults)
 ```
 
 ### Workspace Mode vs. Traditional Mode
@@ -42,16 +42,13 @@ QDrant Loader uses this priority order (highest to lowest):
 # Create workspace directory
 mkdir my-qdrant-workspace
 cd my-qdrant-workspace
-
 # Create environment variables file
 cat > .env << EOF
 # Required - QDrant Database
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION_NAME=my_documents
-
 # Required - OpenAI API
 OPENAI_API_KEY=your-openai-api-key
-
 # Optional - QDrant Cloud (if using cloud)
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 EOF
@@ -68,7 +65,6 @@ global:
     url: "\${QDRANT_URL}"
     api_key: "\${QDRANT_API_KEY}"
     collection_name: "\${QDRANT_COLLECTION_NAME}"
-  
   openai:
     api_key: "\${OPENAI_API_KEY}"
     model: "text-embedding-3-small"
@@ -83,8 +79,12 @@ projects:
       localfile:
         docs:
           base_url: "file://."
-          include_paths: ["*.md", "*.txt"]
-          file_types: ["*.md", "*.txt"]
+          include_paths:
+            - "*.md"
+            - "*.txt"
+          file_types:
+            - "*.md"
+            - "*.txt"
 EOF
 ```
 
@@ -92,13 +92,11 @@ EOF
 
 ```bash
 # Initialize QDrant collection
-qdrant-loader --workspace . init
-
+qdrant-loader init --workspace .
 # Display current configuration
-qdrant-loader --workspace . config
-
+qdrant-loader config --workspace .
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ## ⚙️ Advanced Setup (Multi-Project Configuration)
@@ -155,16 +153,22 @@ projects:
     project_id: "docs-project"
     display_name: "Documentation Project"
     description: "Company documentation and guides"
-    
     sources:
       # Git repositories
       git:
         docs-repo:
           base_url: "https://github.com/example/docs.git"
           branch: "main"
-          include_paths: ["docs/**", "README.md"]
-          exclude_paths: ["node_modules/**", ".git/**"]
-          file_types: ["*.md", "*.rst", "*.txt"]
+          include_paths:
+            - "docs/**"
+            - "README.md"
+          exclude_paths:
+            - "node_modules/**"
+            - ".git/**"
+          file_types:
+            - "*.md"
+            - "*.rst"
+            - "*.txt"
           token: "${DOCS_REPO_TOKEN}"
           enable_file_conversion: true
       
@@ -172,9 +176,16 @@ projects:
       localfile:
         local-docs:
           base_url: "file:///path/to/local/files"
-          include_paths: ["docs/**", "README.md"]
-          exclude_paths: ["tmp/**", "archive/**"]
-          file_types: ["*.md", "*.txt", "*.pdf"]
+          include_paths:
+            - "docs/**"
+            - "README.md"
+          exclude_paths:
+            - "tmp/**"
+            - "archive/**"
+          file_types:
+            - "*.md"
+            - "*.txt"
+            - "*.pdf"
           enable_file_conversion: true
   
   # Knowledge base project
@@ -182,7 +193,6 @@ projects:
     project_id: "kb-project"
     display_name: "Knowledge Base"
     description: "Internal knowledge base and wiki"
-    
     sources:
       # Confluence
       confluence:
@@ -211,13 +221,11 @@ projects:
 
 ```bash
 # Display current configuration
-qdrant-loader --workspace . config
-
+qdrant-loader config --workspace .
 # Check project status and validate connections
-qdrant-loader project --workspace . status
-
+qdrant-loader project status --workspace .
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 
 ## 🎯 Common Configuration Scenarios
@@ -245,15 +253,23 @@ projects:
       localfile:
         documents:
           base_url: "file://~/Documents"
-          include_paths: ["**/*.md", "**/*.txt", "**/*.pdf"]
-          file_types: ["*.md", "*.txt", "*.pdf"]
+          include_paths:
+            - "**/*.md"
+            - "**/*.txt"
+            - "**/*.pdf"
+          file_types:
+            - "*.md"
+            - "*.txt"
+            - "*.pdf"
           enable_file_conversion: true
       git:
         notes:
           base_url: "https://github.com/username/notes.git"
           branch: "main"
-          include_paths: ["**/*.md"]
-          file_types: ["*.md"]
+          include_paths:
+            - "**/*.md"
+          file_types:
+            - "*.md"
           token: "${GITHUB_TOKEN}"
 ```
 
@@ -278,8 +294,13 @@ projects:
         main-repo:
           base_url: "${TEAM_REPO_URL}"
           branch: "main"
-          include_paths: ["docs/**", "wiki/**", "README.md"]
-          file_types: ["*.md", "*.rst"]
+          include_paths:
+            - "docs/**"
+            - "wiki/**"
+            - "README.md"
+          file_types:
+            - "*.md"
+            - "*.rst"
           token: "${TEAM_REPO_TOKEN}"
       confluence:
         team-space:
@@ -319,10 +340,17 @@ projects:
         frontend-repo:
           base_url: "${FRONTEND_REPO_URL}"
           branch: "main"
-          include_paths: ["src/**", "docs/**", "README.md"]
-          file_types: ["*.md", "*.js", "*.ts", "*.jsx", "*.tsx"]
+          include_paths:
+            - "src/**"
+            - "docs/**"
+            - "README.md"
+          file_types:
+            - "*.md"
+            - "*.js"
+            - "*.ts"
+            - "*.jsx"
+            - "*.tsx"
           token: "${REPO_TOKEN}"
-  
   backend:
     project_id: "backend"
     display_name: "Backend Documentation"
@@ -332,8 +360,15 @@ projects:
         backend-repo:
           base_url: "${BACKEND_REPO_URL}"
           branch: "main"
-          include_paths: ["src/**", "docs/**", "API.md"]
-          file_types: ["*.md", "*.py", "*.yaml", "*.json"]
+          include_paths:
+            - "src/**"
+            - "docs/**"
+            - "API.md"
+          file_types:
+            - "*.md"
+            - "*.py"
+            - "*.yaml"
+            - "*.json"
           token: "${REPO_TOKEN}"
 ```
 
@@ -347,21 +382,17 @@ QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 QDRANT_COLLECTION_NAME=my_documents
 OPENAI_API_KEY=sk-your-openai-api-key
-
 # Git authentication
 GITHUB_TOKEN=ghp_your-github-token
 REPO_TOKEN=your-personal-access-token
-
 # Confluence authentication (Cloud)
 CONFLUENCE_URL=https://company.atlassian.net
 CONFLUENCE_TOKEN=your-confluence-api-token
 CONFLUENCE_EMAIL=your-email@company.com
-
 # JIRA authentication (Cloud)
 JIRA_URL=https://company.atlassian.net
 JIRA_TOKEN=your-jira-api-token
 JIRA_EMAIL=your-email@company.com
-
 # For Data Center/Server deployments
 CONFLUENCE_PAT=your-personal-access-token
 JIRA_PAT=your-personal-access-token
@@ -394,7 +425,6 @@ projects:
 # Secure configuration files
 chmod 600 .env
 chmod 644 config.yaml
-
 # Secure workspace directory
 chmod 700 logs/
 chmod 700 metrics/
@@ -422,8 +452,10 @@ projects:
       localfile:
         test-docs:
           base_url: "file://./test-data"
-          include_paths: ["**/*.md"]
-          file_types: ["*.md"]
+          include_paths:
+            - "**/*.md"
+          file_types:
+            - "*.md"
 ```
 
 ### Production Environment
@@ -461,10 +493,9 @@ projects:
 # Use specific configuration file
 qdrant-loader --config config-dev.yaml --env .env.dev init
 qdrant-loader --config config-prod.yaml --env .env.prod ingest
-
 # Use workspace mode with different environments
-qdrant-loader --workspace ./dev-workspace init
-qdrant-loader --workspace ./prod-workspace ingest
+qdrant-loader init --workspace ./dev-workspace
+qdrant-loader ingest --workspace ./prod-workspace
 ```
 
 ## 🔧 Performance Tuning
@@ -474,11 +505,11 @@ qdrant-loader --workspace ./prod-workspace ingest
 ```yaml
 global:
   processing:
-    chunk_size: 1500     # Larger chunks for better context
-    chunk_overlap: 400   # More overlap for continuity
-    max_file_size: 209715200  # 200MB
+    chunk_size: 1500  # Larger chunks for better context
+    chunk_overlap: 400  # More overlap for continuity
+    max_file_size: 104857600  # 100MB (maximum allowed)
   openai:
-    batch_size: 200      # Larger batches for efficiency
+    batch_size: 200  # Larger batches for efficiency
 ```
 
 ### For Fast Ingestion
@@ -486,12 +517,12 @@ global:
 ```yaml
 global:
   processing:
-    chunk_size: 800      # Smaller chunks process faster
-    chunk_overlap: 100   # Less overlap for speed
+    chunk_size: 800  # Smaller chunks process faster
+    chunk_overlap: 100  # Less overlap for speed
   openai:
-    batch_size: 500      # Maximum batch size
-    max_retries: 1       # Fewer retries for speed
-    timeout: 10          # Shorter timeout
+    batch_size: 500  # Maximum batch size
+    max_retries: 1  # Fewer retries for speed
+    timeout: 10  # Shorter timeout
 ```
 
 ### For Memory Efficiency
@@ -499,10 +530,10 @@ global:
 ```yaml
 global:
   processing:
-    chunk_size: 500      # Smaller chunks use less memory
+    chunk_size: 500  # Smaller chunks use less memory
     max_file_size: 10485760  # 10MB
   openai:
-    batch_size: 50       # Smaller batches
+    batch_size: 50  # Smaller batches
 ```
 
 ## ✅ Configuration Validation
@@ -511,16 +542,13 @@ global:
 
 ```bash
 # Display current configuration
-qdrant-loader --workspace . config
-
+qdrant-loader config --workspace .
 # Check project status and connections
-qdrant-loader project --workspace . status
-
+qdrant-loader project status --workspace .
 # List all projects
-qdrant-loader project --workspace . list
-
+qdrant-loader project list --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 ### Common Configuration Issues
@@ -534,7 +562,6 @@ qdrant-loader project --workspace . validate --project-id my-project
 ```bash
 # Check YAML syntax
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
-
 # Use proper indentation (2 spaces)
 # Use quotes for strings with special characters
 ```
@@ -542,14 +569,12 @@ python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 #### 2. Missing Environment Variables
 
 **Error**: `KeyError: 'OPENAI_API_KEY'`
-
 **Solution**:
 
 ```bash
 # Check environment variables
 env | grep QDRANT
 env | grep OPENAI
-
 # Set missing variables
 export OPENAI_API_KEY="your-key-here"
 ```
@@ -557,29 +582,22 @@ export OPENAI_API_KEY="your-key-here"
 #### 3. Connection Failures
 
 **Error**: `ConnectionError: Unable to connect to QDrant`
-
 **Solution**:
 
 ```bash
 # Test QDrant connection
 curl http://localhost:6333/health
-
-# Check configuration
-qdrant-loader --workspace . config
+# Check configurationqdrant-loader config --workspace .
 ```
 
 #### 4. Invalid Project Structure
 
 **Error**: `Legacy configuration format detected`
-
 **Solution**: Update to multi-project format:
 
 ```yaml
 # OLD (legacy) - not supported
-sources:
-  git:
-    my-repo: {...}
-
+sources: git: my-repo: {...}
 # NEW (multi-project) - required
 projects:
   default:
@@ -607,14 +625,12 @@ projects:
 
 With your configuration complete:
 
-1. **[Core Concepts](./core-concepts.md)** - Understand how QDrant Loader works
+1. **Core Concepts** - Summarized inline in Getting Started
 2. **[User Guides](../users/)** - Explore specific features and workflows
 3. **[Data Source Guides](../users/detailed-guides/data-sources/)** - Configure specific connectors
 4. **[MCP Server Setup](../users/detailed-guides/mcp-server/)** - Set up AI tool integration
 5. **[CLI Reference](../users/cli-reference/)** - Learn all available commands
 
 ---
-
 **Configuration Complete!** 🎉
-
 Your QDrant Loader is now configured with the proper multi-project structure. You can start ingesting documents and using the search capabilities with your AI tools.

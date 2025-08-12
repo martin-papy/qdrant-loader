@@ -40,6 +40,7 @@ mcp-qdrant-loader --version
 ### 3. Configure Your AI Tool
 
 #### For Cursor IDE
+
 Add to your MCP servers configuration:
 
 ```json
@@ -56,6 +57,7 @@ Add to your MCP servers configuration:
 ```
 
 #### For Claude Desktop
+
 Add to your `claude_desktop_config.json`:
 
 ```json
@@ -76,7 +78,8 @@ Add to your `claude_desktop_config.json`:
 ### 4. Test Integration
 
 Open your AI tool and try:
-```
+
+```text
 "Search my knowledge base for authentication implementation examples"
 ```
 
@@ -87,25 +90,28 @@ The AI should use the MCP server to search your documents and provide contextual
 ### Core Search Capabilities
 
 #### 1. **Semantic Search**
+
 AI-powered search that understands meaning beyond keywords.
 
-```
+```text
 Example: "How do I implement secure user authentication?"
 → Finds: Implementation guides, security best practices, code examples
 ```
 
-#### 2. **Hierarchy Search**  
+#### 2. **Hierarchy Search**
+
 Navigate document structures and understand relationships.
 
-```
+```text
 Example: "Show me the structure of our API documentation"
 → Returns: Document hierarchy with navigation context and completeness analysis
 ```
 
 #### 3. **Attachment Search**
+
 Search files and attachments with intelligent content analysis.
 
-```
+```text
 Example: "Find architecture diagrams related to microservices"
 → Locates: PDFs, images, and documents with content intelligence
 ```
@@ -113,41 +119,46 @@ Example: "Find architecture diagrams related to microservices"
 ### 🔥 Cross-Document Intelligence
 
 #### 4. **Document Relationship Analysis**
+
 Comprehensive analysis of how documents relate to each other.
 
-```
+```text
 Example: Analyze relationships in "API authentication documentation"
 → Discovers: Implementation dependencies, reference patterns, usage flows
 ```
 
 #### 5. **Document Similarity Detection**
+
 Find documents with similar content for comparison or deduplication.
 
-```
-Example: Find documents similar to "API Rate Limiting Guide"  
+```text
+Example: Find documents similar to "API Rate Limiting Guide"
 → Identifies: Related guides, alternative implementations, comparative content
 ```
 
 #### 6. **Conflict Detection**
+
 Identify contradictions and inconsistencies across documents.
 
-```
+```text
 Example: Detect conflicts in "authentication policies"
 → Finds: Contradictory requirements, inconsistent configurations, policy conflicts
 ```
 
 #### 7. **Complementary Content Discovery**
+
 Find content that enhances and supports a target document.
 
-```
+```text
 Example: Find content that complements "User Authentication API Specification"
 → Suggests: Implementation guides, testing procedures, troubleshooting docs
 ```
 
 #### 8. **Document Clustering**
+
 Group related documents by topic, purpose, and relationships.
 
-```
+```text
 Example: Cluster "API documentation" by topic
 → Creates: Authentication cluster, Implementation cluster, Troubleshooting cluster
 ```
@@ -157,7 +168,8 @@ Example: Cluster "API documentation" by topic
 ### Development Workflow with Cursor
 
 **Understanding Code Architecture:**
-```
+
+```text
 You: "How does our authentication system work and what are the dependencies?"
 
 AI Response: (Using semantic + relationship analysis)
@@ -165,7 +177,7 @@ I'll search your knowledge base for authentication information and analyze the r
 
 Found Core Authentication Components:
 1. [Authentication Service] JWT token management and validation
-2. [User Database] User credential storage and retrieval  
+2. [User Database] User credential storage and retrieval
 3. [API Gateway] Authentication middleware and routing
 4. [Security Policy] Authentication requirements and standards
 
@@ -179,7 +191,8 @@ This gives you a complete view of your authentication architecture and dependenc
 ```
 
 **Documentation Quality Assessment:**
-```
+
+```text
 You: "Are there any inconsistencies in our deployment documentation?"
 
 AI Response: (Using conflict detection)
@@ -203,20 +216,20 @@ Recommendations:
 ```
 
 **Feature Implementation Planning:**
-```
+
+```text
 You: "I need to implement real-time notifications - what should I review?"
 
 AI Response: (Using complementary content discovery)
 I'll find content that complements real-time notification implementation.
 
 Complementary Content Found:
-
 Implementation Foundation (High Relevance):
 1. WebSocket Connection Management - Existing patterns you can extend
 2. User Preference System - For notification settings and delivery
 3. Authentication Context - For secure real-time connections
 
-Architecture Considerations (Medium Relevance):  
+Architecture Considerations (Medium Relevance):
 4. Database Event Triggers - For notification generation
 5. Message Queue System - For reliable notification delivery
 6. Monitoring Setup - For real-time system health
@@ -238,9 +251,9 @@ QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
 
 # Optional Configuration
-QDRANT_COLLECTION_NAME=documents        # Default: "documents"
-QDRANT_API_KEY=your-qdrant-cloud-key   # For QDrant Cloud
-MCP_DISABLE_CONSOLE_LOGGING=true       # Recommended for development tools
+QDRANT_COLLECTION_NAME=documents  # Default: "documents"
+QDRANT_API_KEY=your-qdrant-cloud-key  # For QDrant Cloud
+MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for development tools
 ```
 
 ### Multi-Project Setup
@@ -259,7 +272,7 @@ For teams with multiple knowledge bases:
       }
     },
     "team-knowledge": {
-      "command": "mcp-qdrant-loader", 
+      "command": "mcp-qdrant-loader",
       "env": {
         "QDRANT_URL": "http://localhost:6333",
         "QDRANT_COLLECTION_NAME": "team_knowledge",
@@ -275,6 +288,7 @@ For teams with multiple knowledge bases:
 ### Common Issues
 
 #### MCP Server Not Starting
+
 ```bash
 # Check if package is installed
 which mcp-qdrant-loader
@@ -288,15 +302,17 @@ curl http://localhost:6333/health
 ```
 
 #### No Search Results
+
 ```bash
 # Verify documents are ingested
-qdrant-loader --workspace . project status
+qdrant-loader project status --workspace .
 
 # Check collection exists
 curl http://localhost:6333/collections/documents
 ```
 
 #### Performance Issues
+
 - Use appropriate `limit` parameters (5-15 for most searches)
 - Filter by `source_types` when possible
 - Enable console logging to debug query processing
@@ -304,8 +320,8 @@ curl http://localhost:6333/collections/documents
 ### Getting Help
 
 - **[Setup Guide](./setup-and-integration.md)** - Complete setup instructions
-- **[Search Capabilities](./search-capabilities.md)** - Detailed feature documentation  
-- **[Cursor Integration](./cursor-integration.md)** - Cursor-specific setup
+- **[Search Capabilities](./search-capabilities.md)** - Detailed feature documentation
+- **Cursor Integration** - Coming later
 - **[Troubleshooting](../../troubleshooting/)** - Common issues and solutions
 
 ## 🚀 Advanced Usage
@@ -313,18 +329,21 @@ curl http://localhost:6333/collections/documents
 ### Multi-Tool Search Strategies
 
 **Complete Feature Investigation:**
+
 1. Start with **Semantic Search** to understand the topic
-2. Use **Hierarchy Search** to explore documentation structure  
+2. Use **Hierarchy Search** to explore documentation structure
 3. Apply **Relationship Analysis** to understand dependencies
 4. Use **Conflict Detection** to identify inconsistencies
 
 **Documentation Quality Audit:**
+
 1. **Hierarchy Search** for structure analysis and gap identification
 2. **Conflict Detection** for inconsistency identification
 3. **Similarity Detection** for duplication review
 4. **Complementary Content** for completeness assessment
 
 **Implementation Planning:**
+
 1. **Semantic Search** for existing patterns and examples
 2. **Complementary Content** for supporting documentation
 3. **Relationship Analysis** for dependency understanding
@@ -333,11 +352,13 @@ curl http://localhost:6333/collections/documents
 ### Performance Optimization
 
 #### Search Efficiency
+
 - Use specific queries rather than broad terms
 - Apply source type filters when appropriate
 - Set reasonable limits for cross-document analysis
 
 #### Result Quality
+
 - Provide context in your search queries
 - Use natural language for better semantic understanding
 - Combine multiple search tools for comprehensive results
@@ -345,6 +366,7 @@ curl http://localhost:6333/collections/documents
 ## 📋 Integration Checklist
 
 ### Setup Requirements
+
 - [ ] **QDrant Loader** installed and configured
 - [ ] **Documents ingested** into QDrant database
 - [ ] **MCP server package** installed
@@ -352,12 +374,14 @@ curl http://localhost:6333/collections/documents
 - [ ] **OpenAI API key** configured
 
 ### Configuration
+
 - [ ] **MCP server** added to tool configuration
 - [ ] **Environment variables** properly set
 - [ ] **Collection name** matches ingested documents
 - [ ] **Connection** tested and working
 
 ### Functionality Testing
+
 - [ ] **Basic semantic search** working
 - [ ] **Hierarchy search** navigating document structures
 - [ ] **Attachment search** finding files and documents
@@ -365,6 +389,7 @@ curl http://localhost:6333/collections/documents
 - [ ] **Performance** acceptable for daily use
 
 ### Team Deployment
+
 - [ ] **Configuration standardized** across team
 - [ ] **Best practices** documented and shared
 - [ ] **Security considerations** addressed

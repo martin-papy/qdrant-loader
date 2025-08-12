@@ -50,9 +50,9 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
         self.section_splitter = SectionSplitter(settings)
         self.metadata_extractor = MetadataExtractor(settings)
         self.chunk_processor = ChunkProcessor(settings)
-        
+
         # Apply any chunk overlap that was set before components were initialized
-        if hasattr(self, '_chunk_overlap'):
+        if hasattr(self, "_chunk_overlap"):
             self.chunk_overlap = self._chunk_overlap
 
     def chunk_document(self, document: Document) -> list[Document]:
@@ -88,13 +88,15 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 "estimated_chunks": estimated_chunks,
                 "chunk_size": self.settings.global_config.chunking.chunk_size,
                 "max_chunks_allowed": self.settings.global_config.chunking.max_chunks_per_document,
-            }
+            },
         )
 
         try:
             # Split text into semantic chunks using the section splitter
             logger.debug("Splitting document into sections")
-            chunks_metadata = self.section_splitter.split_sections(document.content, document)
+            chunks_metadata = self.section_splitter.split_sections(
+                document.content, document
+            )
 
             if not chunks_metadata:
                 self.progress_tracker.finish_chunking(document.id, 0, "markdown")
@@ -126,21 +128,29 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
                 # Extract section title
                 section_title = chunk_meta.get("title")
                 if not section_title:
-                    section_title = self.document_parser.extract_section_title(chunk_content)
+                    section_title = self.document_parser.extract_section_title(
+                        chunk_content
+                    )
                 chunk_meta["section_title"] = section_title
 
                 # 🔥 ENHANCED: Use hierarchical metadata extraction
-                enriched_metadata = self.metadata_extractor.extract_hierarchical_metadata(
-                    chunk_content, chunk_meta, document
+                enriched_metadata = (
+                    self.metadata_extractor.extract_hierarchical_metadata(
+                        chunk_content, chunk_meta, document
+                    )
                 )
 
                 # Create chunk document using the chunk processor
                 # 🔥 FIX: Skip NLP for small documents or documents that might cause LDA issues
-                markdown_config = self.settings.global_config.chunking.strategies.markdown
+                markdown_config = (
+                    self.settings.global_config.chunking.strategies.markdown
+                )
                 skip_nlp = (
-                    len(chunk_content) < markdown_config.min_content_length_for_nlp or
-                    len(chunk_content.split()) < markdown_config.min_word_count_for_nlp or
-                    chunk_content.count('\n') < markdown_config.min_line_count_for_nlp
+                    len(chunk_content) < markdown_config.min_content_length_for_nlp
+                    or len(chunk_content.split())
+                    < markdown_config.min_word_count_for_nlp
+                    or chunk_content.count("\n")
+                    < markdown_config.min_line_count_for_nlp
                 )
                 chunk_doc = self.chunk_processor.create_chunk_document(
                     original_doc=document,
@@ -204,8 +214,7 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         # Use the fallback splitter from section splitter
         chunks = self.section_splitter.fallback_splitter.split_content(
-            document.content, 
-            self.settings.global_config.chunking.chunk_size
+            document.content, self.settings.global_config.chunking.chunk_size
         )
 
         # Create chunked documents
@@ -223,85 +232,20 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
         return chunked_docs
 
-    def _split_text(self, text: str) -> list[dict]:
-        """Split text into chunks based on markdown structure.
-
-        Args:
-            text: The text to split into chunks
-
-        Returns:
-            List of text chunks
-        """
-        # Split text into sections using the section splitter
-        sections_metadata = self.section_splitter.split_sections(text)
-        
-        # Return the sections metadata (for backward compatibility with tests)
-        return sections_metadata
-
-    # Proxy methods for backward compatibility with tests
-    @property
-    def semantic_analyzer(self):
-        """Access semantic analyzer for compatibility."""
-        return self.chunk_processor.semantic_analyzer
-
-    def _identify_section_type(self, content: str):
-        """Identify section type - delegates to section identifier."""
-        return self.document_parser.section_identifier.identify_section_type(content)
-
-    def _extract_section_metadata(self, section):
-        """Extract section metadata - delegates to document parser."""
-        return self.document_parser.extract_section_metadata(section)
-
-    def _build_section_breadcrumb(self, section):
-        """Build section breadcrumb - delegates to hierarchy builder."""
-        return self.document_parser.hierarchy_builder.build_section_breadcrumb(section)
-
-    def _parse_document_structure(self, text: str):
-        """Parse document structure - delegates to document parser."""
-        return self.document_parser.parse_document_structure(text)
-
-    def _split_large_section(self, content: str, max_size: int):
-        """Split large section - delegates to section splitter."""
-        return self.section_splitter.standard_splitter.split_content(content, max_size)
-
-    def _process_chunk(self, chunk: str, chunk_index: int, total_chunks: int):
-        """Process chunk - delegates to chunk processor."""
-        return self.chunk_processor.process_chunk(chunk, chunk_index, total_chunks)
-
-    def _extract_section_title(self, chunk: str):
-        """Extract section title - delegates to document parser."""
-        return self.document_parser.extract_section_title(chunk)
-
-    def _extract_cross_references(self, text: str):
-        """Extract cross references - delegates to metadata extractor."""
-        return self.metadata_extractor.cross_reference_extractor.extract_cross_references(text)
-
-    def _extract_entities(self, text: str):
-        """Extract entities - delegates to metadata extractor."""
-        return self.metadata_extractor.entity_extractor.extract_entities(text)
-
-    def _map_hierarchical_relationships(self, text: str):
-        """Map hierarchical relationships - delegates to metadata extractor."""
-        return self.metadata_extractor.hierarchy_extractor.map_hierarchical_relationships(text)
-
-    def _analyze_topic(self, text: str):
-        """Analyze topic - delegates to metadata extractor."""
-        return self.metadata_extractor.topic_analyzer.analyze_topic(text)
-
     @property
     def chunk_overlap(self):
         """Get chunk overlap setting."""
-        if hasattr(self, 'section_splitter'):
+        if hasattr(self, "section_splitter"):
             return self.section_splitter.standard_splitter.chunk_overlap
-        return getattr(self, '_chunk_overlap', 200)
+        return getattr(self, "_chunk_overlap", 200)
 
     @chunk_overlap.setter
     def chunk_overlap(self, value):
         """Set chunk overlap setting."""
         # Store the value for when components are initialized
         self._chunk_overlap = value
-        
-        if hasattr(self, 'section_splitter'):
+
+        if hasattr(self, "section_splitter"):
             self.section_splitter.standard_splitter.chunk_overlap = value
             self.section_splitter.excel_splitter.chunk_overlap = value
             self.section_splitter.fallback_splitter.chunk_overlap = value
@@ -313,4 +257,4 @@ class MarkdownChunkingStrategy(BaseChunkingStrategy):
 
     def __del__(self):
         """Cleanup on deletion."""
-        self.shutdown() 
+        self.shutdown()

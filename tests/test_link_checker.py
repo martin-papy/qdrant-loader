@@ -3,13 +3,13 @@
 Tests for the link checker script.
 """
 
+import sys
+from pathlib import Path
+from unittest.mock import Mock, patch
+
 import pytest
 import requests
 import responses
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
-import sys
-import os
 
 # Add website directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -483,7 +483,7 @@ class TestLinkCheckerCLI:
             with patch("sys.exit") as mock_exit:
                 check_links.main()
 
-        mock_checker_class.assert_called_once_with("http://localhost:8000", 3)
+        mock_checker_class.assert_called_once_with("http://127.0.0.1:3000/website/site", 3)
         mock_exit.assert_called_once_with(0)
 
     @patch("sys.argv", ["check_links.py"])

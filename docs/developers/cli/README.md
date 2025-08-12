@@ -21,15 +21,15 @@ The QDrant Loader provides a focused set of commands for data ingestion and proj
 qdrant-loader [GLOBAL_OPTIONS] [COMMAND] [COMMAND_OPTIONS]
 
 Commands:
-  init              Initialize QDrant collection
-  ingest            Ingest data from configured sources
-  config            Display current configuration
-  project           Project management commands (list, status, validate)
+  init         Initialize QDrant collection
+  ingest       Ingest data from configured sources
+  config       Display current configuration
+  project      Project management commands (list, status, validate)
 
 Global Options:
   --log-level LEVEL    Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-  --help              Show help message
-  --version           Show version information
+  --help               Show help message
+  --version            Show version information
 ```
 
 ### Global Configuration Options
@@ -38,11 +38,11 @@ All commands support these configuration options:
 
 ```bash
 # Workspace mode (recommended)
---workspace PATH        # Workspace directory containing config.yaml and .env
+--workspace PATH    # Workspace directory containing config.yaml and .env
 
 # Traditional mode (alternative)
---config PATH          # Path to configuration file
---env PATH             # Path to environment file
+--config PATH       # Path to configuration file
+--env PATH          # Path to environment file
 ```
 
 **Note**: `--workspace` cannot be used with `--config` or `--env` options.
@@ -53,24 +53,18 @@ Initialize QDrant collection with configured settings.
 
 ```bash
 qdrant-loader [GLOBAL_OPTIONS] init [OPTIONS]
-
-Options:
-  --force             Force reinitialization of existing collection
-  --help              Show help for this command
+Options: --force Force reinitialization of existing collection --help Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # Workspace mode (recommended)
-qdrant-loader --workspace . init
-
+qdrant-loader init --workspace .
 # Force re-initialization
-qdrant-loader --workspace . init --force
-
+qdrant-loader init --workspace . --force
 # Traditional mode
 qdrant-loader --config config.yaml --env .env init
-
 # With debug logging
 qdrant-loader --log-level DEBUG --workspace . init
 ```
@@ -81,36 +75,24 @@ Process and load data from configured sources into QDrant.
 
 ```bash
 qdrant-loader [GLOBAL_OPTIONS] ingest [OPTIONS]
-
-Options:
-  --project ID         Process specific project only
-  --source-type TYPE   Process specific source type (git, confluence, jira, localfile, publicdocs)
-  --source NAME        Process specific source name
-  --profile            Enable performance profiling (saves to profile.out)
-  --help              Show help for this command
+Options: --project ID Process specific project only --source-type TYPE Process specific source type (git, confluence, jira, localfile, publicdocs) --source NAME Process specific source name --profile Enable performance profiling (saves to profile.out) --help Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # Ingest all configured sources
-qdrant-loader --workspace . ingest
-
+qdrant-loader ingest --workspace .
 # Ingest specific project
-qdrant-loader --workspace . ingest --project my-project
-
+qdrant-loader ingest --workspace . --project my-project
 # Ingest specific source type from all projects
-qdrant-loader --workspace . ingest --source-type git
-
+qdrant-loader ingest --workspace . --source-type git
 # Ingest specific source type from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type confluence
-
+qdrant-loader ingest --workspace . --project my-project --source-type confluence
 # Ingest specific source from specific project
-qdrant-loader --workspace . ingest --project my-project --source-type git --source my-repo
-
+qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 # Enable performance profiling
-qdrant-loader --workspace . ingest --profile
-
+qdrant-loader ingest --workspace . --profile
 # With debug logging
 qdrant-loader --log-level DEBUG --workspace . ingest
 ```
@@ -121,20 +103,16 @@ Display current configuration in JSON format.
 
 ```bash
 qdrant-loader [GLOBAL_OPTIONS] config
-
-Options:
-  --help              Show help for this command
+Options: --help Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # Show current configuration
-qdrant-loader --workspace . config
-
+qdrant-loader config --workspace .
 # Traditional mode
 qdrant-loader --config config.yaml --env .env config
-
 # With debug logging to see configuration loading process
 qdrant-loader --log-level DEBUG --workspace . config
 ```
@@ -147,69 +125,49 @@ Manage QDrant Loader projects and their status.
 
 ```bash
 qdrant-loader project [GLOBAL_OPTIONS] list [OPTIONS]
-
-Options:
-  --format FORMAT     Output format (table, json)
-  --help              Show help for this command
+Options: --format FORMAT Output format (table, json) --help Show help for this command
 ```
 
 #### `project status` - Project Status
 
 ```bash
 qdrant-loader project [GLOBAL_OPTIONS] status [OPTIONS]
-
-Options:
-  --project-id ID     Specific project ID to check
-  --format FORMAT     Output format (table, json)
-  --help              Show help for this command
+Options: --project-id ID Specific project ID to check --format FORMAT Output format (table, json) --help Show help for this command
 ```
 
 #### `project validate` - Validate Project
 
 ```bash
 qdrant-loader project [GLOBAL_OPTIONS] validate [OPTIONS]
-
-Options:
-  --project-id ID     Project ID to validate
-  --help              Show help for this command
+Options: --project-id ID Project ID to validate --help Show help for this command
 ```
 
 **Examples:**
 
 ```bash
 # List all projects
-qdrant-loader project --workspace . list
-
+qdrant-loader project list --workspace .
 # List projects in JSON format
-qdrant-loader project --workspace . list --format json
-
+qdrant-loader project list --workspace . --format json
 # Check status of all projects
-qdrant-loader project --workspace . status
-
+qdrant-loader project status --workspace .
 # Check status of specific project
-qdrant-loader project --workspace . status --project-id my-project
-
+qdrant-loader project status --workspace . --project-id my-project
 # Validate all project configurations
-qdrant-loader project --workspace . validate
-
+qdrant-loader project validate --workspace .
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 ## 🤖 MCP Server CLI
 
 The MCP server provides a single command for starting the Model Context Protocol server.
 
-### Command Overview
+### MCP Command Overview
 
 ```bash
 mcp-qdrant-loader [OPTIONS]
-
-Options:
-  --log-level LEVEL   Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-  --config PATH       Configuration file path (currently not implemented)
-  --help              Show help message
-  --version           Show version information
+Options: --log-level LEVEL Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) --config PATH Configuration file path (currently not implemented) --help Show help message --version Show version information
 ```
 
 ### Basic Usage
@@ -217,13 +175,10 @@ Options:
 ```bash
 # Start MCP server with default settings
 mcp-qdrant-loader
-
 # Start with debug logging
 mcp-qdrant-loader --log-level DEBUG
-
 # Show version
 mcp-qdrant-loader --version
-
 # Show help
 mcp-qdrant-loader --help
 ```
@@ -236,13 +191,12 @@ The MCP server uses environment variables for configuration (not config files):
 # Required
 QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
-
 # Optional
 QDRANT_API_KEY=your-qdrant-cloud-api-key
 QDRANT_COLLECTION_NAME=documents
 MCP_LOG_LEVEL=INFO
 MCP_LOG_FILE=/path/to/mcp.log
-MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
+MCP_DISABLE_CONSOLE_LOGGING=true # Recommended for Cursor
 ```
 
 ### Integration with AI Tools
@@ -250,36 +204,14 @@ MCP_DISABLE_CONSOLE_LOGGING=true  # Recommended for Cursor
 #### Cursor IDE Integration
 
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": ["--log-level", "INFO"],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your_openai_key",
-        "MCP_DISABLE_CONSOLE_LOGGING": "true"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": ["--log-level", "INFO"], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "MCP_DISABLE_CONSOLE_LOGGING": "true" } } }
 }
 ```
 
 #### Claude Desktop Integration
 
 ```json
-{
-  "mcpServers": {
-    "qdrant-loader": {
-      "command": "mcp-qdrant-loader",
-      "args": [],
-      "env": {
-        "QDRANT_URL": "http://localhost:6333",
-        "OPENAI_API_KEY": "your_openai_key",
-        "QDRANT_COLLECTION_NAME": "documents"
-      }
-    }
-  }
+{ "mcpServers": { "qdrant-loader": { "command": "mcp-qdrant-loader", "args": [], "env": { "QDRANT_URL": "http://localhost:6333", "OPENAI_API_KEY": "your_openai_key", "QDRANT_COLLECTION_NAME": "documents" } } }
 }
 ```
 
@@ -292,13 +224,13 @@ The CLI uses workspace mode for better organization:
 ```bash
 # Workspace structure
 my-workspace/
-├── config.yaml          # Main configuration
-├── .env                 # Environment variables
-├── logs/                # Log files
+├── config.yaml        # Main configuration
+├── .env               # Environment variables
+├── logs/              # Log files
 │   └── qdrant-loader.log
-├── data/                # State database
-│   └── state.db
-└── metrics/             # Performance metrics
+├── data/              # State database
+│   └── qdrant-loader.db
+└── metrics/           # Performance metrics
 ```
 
 ### Configuration Files
@@ -316,13 +248,10 @@ The CLI looks for configuration in this order:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-api-key
 QDRANT_COLLECTION_NAME=documents
-
 # OpenAI API
 OPENAI_API_KEY=your-openai-api-key
-
 # State Management
 STATE_DB_PATH=./state/state.db
-
 # Source-specific credentials
 GITHUB_TOKEN=your-github-token
 CONFLUENCE_TOKEN=your-confluence-token
@@ -351,43 +280,30 @@ JIRA_EMAIL=your-email@company.com
 ```bash
 #!/bin/bash
 # automation-example.sh - Basic automation pattern
-
 set -euo pipefail
-
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
 LOG_LEVEL="${LOG_LEVEL:-INFO}"
-
 # Function to log messages
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
-
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
 # Validate configuration
 log "Validating configuration..."
-if ! qdrant-loader --workspace "$WORKSPACE_DIR" config >/dev/null 2>&1; then
-    log "ERROR: Configuration validation failed"
-    exit 2
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
+  log "ERROR: Configuration validation failed"; exit 2
 fi
-
 # Validate projects
 log "Validating projects..."
 if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
-    log "ERROR: Project validation failed"
-    exit 2
+  log "ERROR: Project validation failed"; exit 2
 fi
-
 # Initialize collection
 log "Initializing QDrant collection..."
 qdrant-loader --log-level "$LOG_LEVEL" --workspace "$WORKSPACE_DIR" init
-
 # Run ingestion
 log "Starting data ingestion..."
 qdrant-loader --log-level "$LOG_LEVEL" --workspace "$WORKSPACE_DIR" ingest
-
 # Check final status
 log "Checking project status..."
 qdrant-loader project --workspace "$WORKSPACE_DIR" status
-
 log "Automation completed successfully"
 ```
 
@@ -396,31 +312,24 @@ log "Automation completed successfully"
 ```bash
 #!/bin/bash
 # project-processing.sh - Process specific projects
-
 WORKSPACE_DIR="${1:-$(pwd)}"
 PROJECT_ID="${2:-}"
-
 if [ -n "$PROJECT_ID" ]; then
-    echo "Processing project: $PROJECT_ID"
-    
-    # Validate specific project
-    qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID"
-    
-    # Process specific project
-    qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$PROJECT_ID"
-    
-    # Check project status
-    qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
+  echo "Processing project: $PROJECT_ID"
+  # Validate specific project
+  qdrant-loader project --workspace "$WORKSPACE_DIR" validate --project-id "$PROJECT_ID"
+  # Process specific project
+  qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$PROJECT_ID"
+  # Check project status
+  qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$PROJECT_ID"
 else
-    echo "Processing all projects"
-    
-    # Get list of projects
-    PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id')
-    
-    for project in $PROJECTS; do
-        echo "Processing project: $project"
-        qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$project"
-    done
+  echo "Processing all projects"
+  # Get list of projects
+  PROJECTS=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq -r '.[].project_id')
+  for project in $PROJECTS; do
+    echo "Processing project: $project"
+    qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$project"
+  done
 fi
 ```
 
@@ -430,11 +339,9 @@ fi
 
 ```bash
 # Check configuration syntax
-qdrant-loader --workspace . config
-
+qdrant-loader config --workspace .
 # Validate all projects
-qdrant-loader project --workspace . validate
-
+qdrant-loader project validate --workspace .
 # Validate specific project with debug output
 qdrant-loader --log-level DEBUG project --workspace . validate --project-id my-project
 ```
@@ -444,13 +351,10 @@ qdrant-loader --log-level DEBUG project --workspace . validate --project-id my-p
 ```bash
 # Show current configuration with debug logging
 qdrant-loader --log-level DEBUG --workspace . config
-
 # List all projects with detailed output
-qdrant-loader project --workspace . list --format json
-
+qdrant-loader project list --workspace . --format json
 # Check specific project status with JSON output
-qdrant-loader project --workspace . status --project-id my-project --format json
-
+qdrant-loader project status --workspace . --project-id my-project --format json
 # Run ingestion with debug logging and profiling
 qdrant-loader --log-level DEBUG --workspace . ingest --profile
 ```
@@ -464,29 +368,22 @@ qdrant-loader --log-level DEBUG --workspace . ingest --profile
 ```bash
 #!/bin/bash
 # test-config.sh - Test configuration validity
-
 test_config() {
-    local workspace_dir="$1"
-    
-    echo "Testing configuration in: $workspace_dir"
-    
-    # Test configuration loading
-    if qdrant-loader --workspace "$workspace_dir" config >/dev/null 2>&1; then
-        echo "✅ Configuration is valid"
-    else
-        echo "❌ Configuration is invalid"
-        return 1
-    fi
-    
-    # Test project validation
-    if qdrant-loader project --workspace "$workspace_dir" validate; then
-        echo "✅ All projects are valid"
-    else
-        echo "❌ Project validation failed"
-        return 1
-    fi
+  local workspace_dir="$1"
+  echo "Testing configuration in: $workspace_dir"
+  # Test configuration loading
+  if qdrant-loader config --workspace "$workspace_dir" >/dev/null 2>&1; then
+    echo "✅ Configuration is valid"
+  else
+    echo "❌ Configuration is invalid"; return 1
+  fi
+  # Test project validation
+  if qdrant-loader project --workspace "$workspace_dir" validate; then
+    echo "✅ All projects are valid"
+  else
+    echo "❌ Project validation failed"; return 1
+  fi
 }
-
 # Test multiple workspace configurations
 test_config "./test-workspace-1"
 test_config "./test-workspace-2"
@@ -497,33 +394,25 @@ test_config "./test-workspace-2"
 ```bash
 #!/bin/bash
 # integration-test.sh - Full integration test
-
 set -euo pipefail
-
 WORKSPACE_DIR="./test-workspace"
 TEST_PROJECT="test-project"
-
 # Setup test workspace
 mkdir -p "$WORKSPACE_DIR"
 cp config.test.yaml "$WORKSPACE_DIR/config.yaml"
 cp .env.test "$WORKSPACE_DIR/.env"
-
 # Test initialization
 echo "Testing initialization..."
-qdrant-loader --workspace "$WORKSPACE_DIR" init --force
-
+qdrant-loader init --workspace "$WORKSPACE_DIR" --force
 # Test ingestion
 echo "Testing ingestion..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$TEST_PROJECT"
-
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$TEST_PROJECT"
 # Test project commands
 echo "Testing project commands..."
 qdrant-loader project --workspace "$WORKSPACE_DIR" list
 qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "$TEST_PROJECT"
-
 # Cleanup
 rm -rf "$WORKSPACE_DIR"
-
 echo "✅ Integration test completed"
 ```
 
@@ -532,20 +421,16 @@ echo "✅ Integration test completed"
 ```bash
 #!/bin/bash
 # test-mcp-server.sh - Test MCP server functionality
-
 # Set required environment variables
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="test-key"
 export QDRANT_COLLECTION_NAME="test-collection"
-
 # Test server startup
 echo "Testing MCP server startup..."
 timeout 5s mcp-qdrant-loader --log-level DEBUG || echo "Server started successfully"
-
 # Test with JSON-RPC message
 echo "Testing search functionality..."
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | \
-    timeout 5s mcp-qdrant-loader 2>/dev/null || echo "Search test completed"
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"test","limit":1}}}' | \ timeout 5s mcp-qdrant-loader 2>/dev/null || echo "Search test completed"
 ```
 
 ## 📚 Related Documentation
@@ -571,9 +456,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","a
 
 ### Contributing to CLI
 
-- **[Contributing Guide](../../../CONTRIBUTING.md)** - How to contribute
+- **[Contributing Guide](/docs/CONTRIBUTING.md)** - How to contribute
 - **[Testing Guide](../testing/)** - Testing CLI functionality
 
 ---
-
 **Ready to develop with the CLI?** Start with the basic commands above or check out the [Architecture Overview](../architecture/) for detailed system design information.

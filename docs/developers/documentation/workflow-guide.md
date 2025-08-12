@@ -20,11 +20,13 @@ Documentation updates should be integrated into your development workflow, not t
 ```bash
 # Standard development workflow with documentation
 git checkout -b feature/new-feature
+
 # 1. Write code
 # 2. Write/update documentation
 # 3. Test both code and documentation
 git add . && git commit -m "feat: add new feature with documentation"
 git push origin feature/new-feature
+
 # 4. Create PR with both code and documentation changes
 ```
 
@@ -41,14 +43,16 @@ git push origin feature/new-feature
 **Developer**: @your-username
 **Documentation Impact**: High
 
-### Required Documentation Updates:
+### Required Documentation Updates
+
 - [x] User guide for workspace configuration
 - [x] CLI reference for new commands
 - [x] Configuration reference for workspace settings
 - [x] Examples for multi-project scenarios
 - [x] Troubleshooting for workspace issues
 
-### New Documentation Needed:
+### New Documentation Needed
+
 - [x] New user guide: "Managing Multiple Projects"
 - [x] New developer guide: "Workspace Architecture"
 - [x] Updated examples: CLI usage with workspaces
@@ -98,12 +102,10 @@ Closes #123"
   - [ ] Configuration options
   - [ ] Usage examples
   - [ ] Troubleshooting section
-
 - [ ] **Developer Documentation**
   - [ ] Architecture explanation
   - [ ] Extension points
   - [ ] Testing guidelines
-
 - [ ] **Cross-References**
   - [ ] Update related guides
   - [ ] Add navigation links
@@ -183,23 +185,23 @@ Fixes #456"
 #### Issue: Workspace Configuration Not Loading
 
 **Symptoms**:
+
 - Error: "Workspace configuration file not found"
 - Default configuration used instead of workspace config
 
 **Cause**: Bug in configuration file discovery (fixed in v1.2.1)
 
 **Solution**:
+
 ```bash
 # Ensure workspace config is in the correct location
 ls -la config.yaml
 
 # If missing, create with:
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 ```
 
 **Fixed In**: Version 1.2.1
-
-```
 
 ### 4. CLI Changes
 
@@ -240,6 +242,7 @@ Before submitting your PR, verify:
 ## Documentation Self-Review Checklist
 
 ### Content Quality
+
 - [ ] **Purpose is clear** - Reader knows what they'll learn
 - [ ] **Prerequisites listed** - Required setup is documented
 - [ ] **Examples work** - All code examples tested
@@ -247,18 +250,21 @@ Before submitting your PR, verify:
 - [ ] **Outcomes described** - What success looks like
 
 ### Technical Accuracy
+
 - [ ] **Commands tested** - All CLI commands work as shown
 - [ ] **Config examples valid** - All YAML examples are valid
 - [ ] **Implementation verified** - Matches actual codebase
 - [ ] **Version info correct** - Requirements and compatibility accurate
 
 ### Structure and Navigation
+
 - [ ] **File location correct** - Follows documentation structure
 - [ ] **Cross-references added** - Links to related documentation
 - [ ] **Navigation updated** - README files updated if needed
 - [ ] **Formatting consistent** - Follows style guide
 
 ### User Experience
+
 - [ ] **Audience appropriate** - Content matches intended users
 - [ ] **Flow logical** - Information builds appropriately
 - [ ] **Troubleshooting included** - Common issues addressed
@@ -306,9 +312,9 @@ Example:
 
 ```bash
 # Test CLI commands manually
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
-qdrant-loader --workspace . config
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
+qdrant-loader config --workspace .
 
 # Validate YAML configuration files
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
@@ -360,10 +366,10 @@ qdrant-loader ingest --help
 
 # Check configuration examples
 cd examples/workspace
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate project structure
-make test  # Run actual test suite
+make test # Run actual test suite
 ```
 
 ## 🚀 Common Scenarios
@@ -453,10 +459,10 @@ cp docs/users/detailed-guides/data-sources/git-repositories.md \
 
 ```bash
 # Test CLI commands
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
-qdrant-loader --workspace . config
-qdrant-loader project --workspace . list
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
+qdrant-loader config --workspace .
+qdrant-loader project list --workspace .
 
 # Find references to a feature
 grep -r "feature_name" docs/ --include="*.md"
@@ -467,7 +473,7 @@ python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
 ### Documentation Structure
 
-```
+```text
 When adding documentation, place it in:
 - User guides: docs/users/detailed-guides/
 - Configuration: docs/users/configuration/
@@ -492,10 +498,10 @@ qdrant-loader project status [--project-id PROJECT] [--format json]
 qdrant-loader project validate [--project-id PROJECT]
 
 # Global options
---workspace PATH    # Workspace directory
---config PATH       # Configuration file (alternative to workspace)
---env PATH          # Environment file (alternative to workspace)
---log-level LEVEL   # Logging level
+--workspace PATH     # Workspace directory
+--config PATH        # Configuration file (alternative to workspace)
+--env PATH           # Environment file (alternative to workspace)
+--log-level LEVEL    # Logging level
 ```
 
 Remember: **Documentation is part of the feature**. Plan it, write it, test it, and maintain it with the same care you give to your code.

@@ -9,11 +9,11 @@ The team collaboration workflow focuses on breaking down knowledge silos, facili
 ### Workflow Benefits
 
 ```text
-🤝 Cross-Team Knowledge   - Shared understanding across departments
-🚀 Faster Onboarding     - Streamlined new team member integration
-🔍 Knowledge Discovery   - Easy access to expertise and information
+🤝 Cross-Team Knowledge - Shared understanding across departments
+🚀 Faster Onboarding - Streamlined new team member integration
+🔍 Knowledge Discovery - Easy access to expertise and information
 📊 Collaboration Metrics - Track knowledge sharing effectiveness
-🎯 Reduced Silos         - Break down departmental barriers
+🎯 Reduced Silos - Break down departmental barriers
 ```
 
 ## 🏗️ Architecture Overview
@@ -23,15 +23,12 @@ graph TD
     A[Team A Knowledge] --> D[Shared Knowledge Hub]
     B[Team B Knowledge] --> D
     C[Team C Knowledge] --> D
-
     D --> E[QDrant Loader]
     E --> F[Vector Database]
     F --> G[MCP Server]
-
     G --> H[Team Members]
     G --> I[New Hires]
     G --> J[Cross-Team Projects]
-
     K[Confluence] --> E
     L[Git Repositories] --> E
     M[Local Documentation] --> E
@@ -68,12 +65,11 @@ graph TD
 
 ```yaml
 # config.yaml - Multi-project configuration for team collaboration
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "team_collaboration"
-
   embedding:
     endpoint: "https://api.openai.com/v1"
     model: "text-embedding-3-small"
@@ -83,20 +79,17 @@ global_config:
     tokenizer: "cl100k_base"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000
-
   chunking:
     chunk_size: 1200
     chunk_overlap: 300
-
   file_conversion:
-    max_file_size: 52428800 # 50MB
+    max_file_size: 52428800  # 50MB
     conversion_timeout: 300
     markitdown:
       enable_llm_descriptions: false
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
-
   state_management:
     database_path: "${STATE_DB_PATH}"
     table_prefix: "qdrant_loader_"
@@ -108,7 +101,6 @@ projects:
     project_id: "shared-knowledge"
     display_name: "Shared Knowledge Base"
     description: "Cross-team shared knowledge and documentation"
-
     sources:
       confluence:
         shared-space:
@@ -117,11 +109,15 @@ projects:
           space_key: "SHARED"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["shared", "cross-team", "onboarding"]
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels:
+            - "shared"
+            - "cross-team"
+            - "onboarding"
           enable_file_conversion: true
           download_attachments: true
-
       git:
         shared-docs:
           base_url: "https://github.com/company/shared-docs.git"
@@ -149,7 +145,6 @@ projects:
     project_id: "product-team"
     display_name: "Product Team Knowledge"
     description: "Product team documentation and processes"
-
     sources:
       confluence:
         product-space:
@@ -158,11 +153,15 @@ projects:
           space_key: "PRODUCT"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["product", "requirements", "roadmap"]
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels:
+            - "product"
+            - "requirements"
+            - "roadmap"
           enable_file_conversion: true
           download_attachments: true
-
       git:
         product-docs:
           base_url: "https://github.com/company/product-docs.git"
@@ -184,7 +183,6 @@ projects:
     project_id: "engineering-team"
     display_name: "Engineering Team Knowledge"
     description: "Engineering documentation, code, and technical guides"
-
     sources:
       confluence:
         engineering-space:
@@ -193,11 +191,14 @@ projects:
           space_key: "ENG"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page"]
-          include_labels: ["engineering", "technical", "architecture"]
+          content_types:
+            - "page"
+          include_labels:
+            - "engineering"
+            - "technical"
+            - "architecture"
           enable_file_conversion: true
           download_attachments: true
-
       git:
         engineering-docs:
           base_url: "https://github.com/company/engineering.git"
@@ -231,7 +232,6 @@ projects:
     project_id: "design-team"
     display_name: "Design Team Knowledge"
     description: "Design documentation, guidelines, and assets"
-
     sources:
       confluence:
         design-space:
@@ -240,11 +240,15 @@ projects:
           space_key: "DESIGN"
           email: "${CONFLUENCE_EMAIL}"
           token: "${CONFLUENCE_API_TOKEN}"
-          content_types: ["page", "blogpost"]
-          include_labels: ["design", "guidelines", "assets"]
+          content_types:
+            - "page"
+            - "blogpost"
+          include_labels:
+            - "design"
+            - "guidelines"
+            - "assets"
           enable_file_conversion: true
           download_attachments: true
-
       localfile:
         design-assets:
           base_url: "file:///design/documentation"
@@ -270,7 +274,6 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your_qdrant_api_key
 QDRANT_COLLECTION_NAME=team_collaboration
-
 OPENAI_API_KEY=your_openai_api_key
 
 CONFLUENCE_URL=https://company.atlassian.net
@@ -278,7 +281,6 @@ CONFLUENCE_EMAIL=your_email@company.com
 CONFLUENCE_API_TOKEN=your_confluence_token
 
 GITHUB_TOKEN=your_github_token
-
 STATE_DB_PATH=./workspace_state.db
 ```
 
@@ -286,10 +288,9 @@ STATE_DB_PATH=./workspace_state.db
 
 #### 2.1 New Hire Onboarding Script
 
-````bash
+```bash
 #!/bin/bash
 # scripts/onboard-team-member.sh - Team member onboarding automation
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -300,25 +301,25 @@ create_onboarding_package() {
     local new_hire_email="$1"
     local team="$2"
     local mentor="${3:-}"
-
+    
     echo "Creating onboarding package for $new_hire_email (Team: $team)"
-
+    
     # Create personalized onboarding directory
     local onboarding_path="$ONBOARDING_DIR/$new_hire_email"
     mkdir -p "$onboarding_path"
-
+    
     # Generate team-specific knowledge summary
     generate_team_knowledge_summary "$team" "$onboarding_path"
-
+    
     # Create learning path
     create_learning_path "$team" "$onboarding_path"
-
+    
     # Set up AI assistant access
     setup_ai_assistant_access "$new_hire_email" "$team"
-
+    
     # Generate onboarding checklist
     generate_onboarding_checklist "$team" "$onboarding_path"
-
+    
     echo "Onboarding package created: $onboarding_path"
 }
 
@@ -326,12 +327,12 @@ create_onboarding_package() {
 generate_team_knowledge_summary() {
     local team="$1"
     local output_dir="$2"
-
+    
     echo "Generating knowledge summary for $team team..."
-
+    
     # Get project status to understand available knowledge
     local project_status=$(qdrant-loader project --workspace "$WORKSPACE_DIR" status --project-id "${team}-team" --format json 2>/dev/null || echo "[]")
-
+    
     cat > "$output_dir/knowledge-summary.md" << EOF
 # $team Team Knowledge Summary
 
@@ -391,7 +392,6 @@ This summary provides an overview of the knowledge and resources available to he
 - "What are the team's current priorities and projects?"
 
 ## Next Steps
-
 1. Review this knowledge summary
 2. Complete the learning path (see learning-path.md)
 3. Follow the onboarding checklist (see onboarding-checklist.md)
@@ -399,17 +399,15 @@ This summary provides an overview of the knowledge and resources available to he
 5. Schedule meetings with team members and mentor
 
 ## Resources
-
 - **Learning Path**: ./learning-path.md
 - **Onboarding Checklist**: ./onboarding-checklist.md
 - **AI Assistant Setup**: ./mcp-config.json
 - **Team Contacts**: [See onboarding checklist]
 
 ---
-
 **Welcome to the team!** 🎉
 EOF
-
+    
     echo "Knowledge summary generated: $output_dir/knowledge-summary.md"
 }
 
@@ -417,7 +415,7 @@ EOF
 create_learning_path() {
     local team="$1"
     local output_dir="$2"
-
+    
     cat > "$output_dir/learning-path.md" << EOF
 # $team Team Learning Path
 
@@ -476,7 +474,6 @@ Search for information about:
 - **IT Support**: [Email] - [Phone]
 
 ## Learning Tips
-
 1. **Use AI Assistant**: Ask questions about anything you find in the documentation
 2. **Take Notes**: Document what you learn for future reference
 3. **Ask Questions**: Don't hesitate to ask team members for clarification
@@ -484,10 +481,9 @@ Search for information about:
 5. **Share Feedback**: Help improve the onboarding process for future hires
 
 ---
-
 **Happy Learning!** 📚
 EOF
-
+    
     echo "Learning path created: $output_dir/learning-path.md"
 }
 
@@ -495,9 +491,9 @@ EOF
 setup_ai_assistant_access() {
     local user_email="$1"
     local team="$2"
-
+    
     echo "Setting up AI assistant access for $user_email"
-
+    
     # Create user-specific MCP configuration for Cursor
     cat > "$ONBOARDING_DIR/$user_email/cursor-mcp-config.json" << EOF
 {
@@ -513,7 +509,7 @@ setup_ai_assistant_access() {
   }
 }
 EOF
-
+    
     # Create user-specific MCP configuration for Claude Desktop
     cat > "$ONBOARDING_DIR/$user_email/claude-desktop-config.json" << EOF
 {
@@ -529,28 +525,24 @@ EOF
   }
 }
 EOF
-
+    
     # Create setup instructions
     cat > "$ONBOARDING_DIR/$user_email/ai-assistant-setup.md" << EOF
 # AI Assistant Setup Instructions
 
 ## Overview
-
 Your AI assistant can help you search and discover information from the team's knowledge base using QDrant Loader's MCP server.
 
 ## Setup for Cursor IDE
-
 1. Copy the configuration to Cursor's MCP settings:
    \`\`\`bash
    cp cursor-mcp-config.json ~/.cursor/mcp_settings.json
    \`\`\`
-
 2. Update the API keys in the configuration file
 3. Restart Cursor IDE
 4. The QDrant Loader tools will be available in Cursor
 
 ## Setup for Claude Desktop
-
 1. Copy the configuration to Claude Desktop's config directory:
 
    **macOS:**
@@ -570,7 +562,6 @@ Your AI assistant can help you search and discover information from the team's k
 ## Using Your AI Assistant
 
 ### Example Queries for $team Team
-
 - "Search for getting started documentation for the $team team"
 - "Find information about our development environment setup"
 - "What are the team's coding standards and best practices?"
@@ -578,19 +569,16 @@ Your AI assistant can help you search and discover information from the team's k
 - "Find troubleshooting guides for common issues"
 
 ### Search Tips
-
 1. **Be Specific**: Include team name or project context in your queries
 2. **Use Keywords**: Include relevant technical terms and concepts
 3. **Ask Follow-ups**: Ask for clarification or more details on topics
 4. **Explore Related**: Ask for related documentation or resources
 
 ## Available Projects
-
 - **shared-knowledge**: Cross-team documentation and processes
 - **${team}-team**: Team-specific documentation and resources
 
 ## Getting Help
-
 If you have issues with the AI assistant setup:
 1. Check that all API keys are correctly configured
 2. Verify that the MCP server is running: \`mcp-qdrant-loader\`
@@ -598,10 +586,9 @@ If you have issues with the AI assistant setup:
 4. Check the troubleshooting documentation
 
 ---
-
 **Happy Searching!** 🔍
 EOF
-
+    
     echo "AI assistant configured for $user_email"
 }
 
@@ -609,7 +596,7 @@ EOF
 generate_onboarding_checklist() {
     local team="$1"
     local output_dir="$2"
-
+    
     cat > "$output_dir/onboarding-checklist.md" << EOF
 # $team Team Onboarding Checklist
 
@@ -685,7 +672,6 @@ generate_onboarding_checklist() {
 - **CI/CD Pipeline**: [Pipeline URL]
 
 ## AI Assistant Quick Start
-
 1. Set up MCP server configuration (see ai-assistant-setup.md)
 2. Start asking questions about team processes and documentation
 3. Use search to find specific information quickly
@@ -698,7 +684,6 @@ generate_onboarding_checklist() {
 - "Who should I contact for different types of questions?"
 
 ## Success Metrics
-
 By the end of your first month, you should:
 - [ ] Feel comfortable with team processes and tools
 - [ ] Be able to contribute independently to projects
@@ -707,19 +692,18 @@ By the end of your first month, you should:
 - [ ] Be able to use the AI assistant effectively for knowledge discovery
 
 ---
-
 **Welcome to the $team team!** 🎉
 
 We're excited to have you join us and look forward to your contributions!
 EOF
-
+    
     echo "Onboarding checklist created: $output_dir/onboarding-checklist.md"
 }
 
 # Main function
 main() {
     local command="${1:-help}"
-
+    
     case "$command" in
         onboard)
             if [ $# -lt 3 ]; then
@@ -742,31 +726,31 @@ main() {
 }
 
 main "$@"
+```
 
 ### Step 3: Knowledge Management and Collaboration
 
 #### 3.1 Daily Collaboration Tasks
 
 ```bash
-# Update team knowledge bases
-qdrant-loader --workspace . ingest
+# Update team knowledge base
+qdrant-loader ingest --workspace .
 
 # Update specific team project
-qdrant-loader --workspace . ingest --project product-team
+qdrant-loader ingest --workspace . --project product-team
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Validate all projects
-qdrant-loader project --workspace . validate
-````
+qdrant-loader project validate --workspace .
+```
 
 #### 3.2 Weekly Team Operations
 
 ```bash
 #!/bin/bash
 # scripts/weekly-team-sync.sh - Weekly team knowledge synchronization
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -775,16 +759,16 @@ echo "Starting weekly team knowledge synchronization..."
 
 # Update all team projects
 echo "Updating shared knowledge..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project shared-knowledge
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project shared-knowledge
 
 echo "Updating product team knowledge..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project product-team
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project product-team
 
 echo "Updating engineering team knowledge..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project engineering-team
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project engineering-team
 
 echo "Updating design team knowledge..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project design-team
+qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project design-team
 
 # Check status of all projects
 echo ""
@@ -800,7 +784,6 @@ echo "✅ Weekly team knowledge synchronization completed!"
 ```bash
 #!/bin/bash
 # scripts/monthly-knowledge-review.sh - Monthly knowledge base review
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -832,27 +815,23 @@ $(qdrant-loader project --workspace "$WORKSPACE_DIR" list | grep -E "^│" | hea
 $(qdrant-loader project --workspace "$WORKSPACE_DIR" status)
 
 ## Key Metrics
-
 - **Total Projects**: $(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format json | jq 'length' 2>/dev/null || echo "0")
 - **Review Date**: $(date +%Y-%m-%d)
 - **Review Period**: $(date +%B\ %Y)
 
 ## Action Items
-
 - [ ] Review project configurations
 - [ ] Update outdated documentation
 - [ ] Plan knowledge sharing sessions
 - [ ] Address any configuration issues
 
 ## Next Steps
-
 1. Share review with team leads
 2. Plan improvements for next month
 3. Schedule knowledge sharing sessions
 4. Update team onboarding materials
 
 ---
-
 *Generated by QDrant Loader Monthly Review*
 EOF
 
@@ -871,7 +850,7 @@ echo "Monthly review completed: $REVIEW_DIR/$(date +%Y-%m)/monthly-review.md"
 ./scripts/weekly-team-sync.sh
 
 # Check system status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ### Weekly Team Operations
@@ -881,10 +860,10 @@ qdrant-loader project --workspace . status
 ./scripts/weekly-team-sync.sh
 
 # Update specific team only
-qdrant-loader --workspace . ingest --project engineering-team
+qdrant-loader ingest --workspace . --project engineering-team
 
 # Validate all configurations
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 ```
 
 ### Monthly Reviews
@@ -894,50 +873,50 @@ qdrant-loader project --workspace . validate
 ./scripts/monthly-knowledge-review.sh
 
 # Check project health
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 
 # List all available projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 ```
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-**Issue: Team member can't access knowledge base**
+#### Issue: Team member can't access knowledge base
 
 ```bash
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Validate configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Verify MCP server is running
 mcp-qdrant-loader
 ```
 
-**Issue: Knowledge not updating**
+#### Issue: Knowledge not updating
 
 ```bash
 # Force re-initialization
-qdrant-loader --workspace . init --force
+qdrant-loader init --workspace . --force
 
 # Re-ingest all content
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Check specific project
-qdrant-loader project --workspace . status --project-id team-name
+qdrant-loader project status --workspace . --project-id team-name
 ```
 
-**Issue: Onboarding package creation fails**
+#### Issue: Onboarding package creation fails
 
 ```bash
 # Check workspace configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Verify project exists
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Check environment variables
 echo "QDRANT_URL: $QDRANT_URL"

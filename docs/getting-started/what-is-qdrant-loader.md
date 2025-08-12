@@ -24,10 +24,10 @@ The **QDrant Loader** package collects and processes content from multiple sourc
 
 ```text
 Your Content Sources → QDrant Loader → Vector Database
-├── Git repositories        ├── File conversion    ├── Searchable vectors
-├── Confluence pages        ├── Smart chunking     ├── Metadata extraction  
-├── JIRA tickets           ├── Change detection   ├── Incremental updates
-├── Documentation sites    └── Embedding creation └── Optimized storage
+├── Git repositories ├── File conversion ├── Searchable vectors
+├── Confluence pages ├── Smart chunking ├── Metadata extraction
+├── JIRA tickets ├── Change detection ├── Incremental updates
+├── Documentation sites └── Embedding creation └── Optimized storage
 └── Local files
 ```
 
@@ -37,10 +37,10 @@ The **MCP Server** provides intelligent search capabilities to AI development to
 
 ```text
 AI Development Tools ← MCP Server ← Vector Database
-├── Cursor IDE              ├── Semantic search      ├── Your processed content
-├── Windsurf               ├── Hierarchy-aware      ├── Rich metadata
-├── GitHub Copilot         ├── Attachment-focused   ├── Relationship mapping
-└── Claude Desktop         └── Real-time responses  └── Context preservation
+├── Cursor IDE ├── Semantic search ├── Your processed content
+├── Windsurf ├── Hierarchy-aware ├── Rich metadata
+├── GitHub Copilot ├── Attachment-focused ├── Relationship mapping
+└── Claude Desktop └── Real-time responses └── Context preservation
 ```
 
 ## 🎯 Perfect Use Cases
@@ -99,7 +99,7 @@ AI Development Tools ← MCP Server ← Vector Database
 - **Git repositories**: Code, documentation, commit messages, and issues
 - **Confluence**: Pages, comments, attachments, and hierarchy relationships
 - **JIRA**: Tickets, comments, attachments, and project relationships
-- **Documentation sites**: Public docs, wikis, and knowledge bases
+- **Documentation sites**: Public docs, wikis, and knowledge bases  
 - **Local files**: PDFs, Office documents, images, and more
 
 ### 🧠 Intelligent Processing
@@ -159,10 +159,9 @@ AI Development Tools ← MCP Server ← Vector Database
 
 Now that you understand what QDrant Loader can do for you, let's get you set up:
 
-- **Next**: [Core Concepts](./core-concepts.md) - Understand the key concepts
+- **Next**: Core Concepts - Summarized inline in Getting Started
 - **Quick path**: [Quick Start Guide](./quick-start.md) - Get running in 5 minutes
 - **Detailed path**: [Installation Guide](./installation.md) - Complete setup instructions
 
 ---
-
 **Questions?** Check our [FAQ](../users/troubleshooting/common-issues.md) or join the [discussion](https://github.com/martin-papy/qdrant-loader/discussions).

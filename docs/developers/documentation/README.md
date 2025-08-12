@@ -10,18 +10,14 @@ QDrant Loader uses a comprehensive documentation system designed to serve both e
 
 ### Structure Overview
 
-```
+```text
 docs/
-├── README.md                           # Main project README (GitHub homepage)
-├── website/README.md                   # Website documentation
-├── packages/                           # Package-specific documentation
-│   ├── qdrant-loader/README.md        # Core loader package
-│   └── qdrant-loader-mcp-server/README.md # MCP server package
-├── docs/
-│   ├── getting-started/               # Universal onboarding
-│   ├── users/                         # User-focused documentation
-│   └── developers/                    # Developer-focused documentation
-└── CONTRIBUTING.md                    # Contribution guidelines
+├── README.md # Main project README (GitHub homepage)
+├── users/ # User-focused documentation
+├── developers/ # Developer-focused documentation
+├── getting-started/ # Universal onboarding
+├── cli-reference/ # Command-line interface
+└── CONTRIBUTING.md # Contribution guidelines
 ```
 
 ### Documentation Types
@@ -62,7 +58,8 @@ docs/
 #### Code Examples
 
 ```markdown
-# ✅ Good Example
+## ✅ Good Example
+
 ```bash
 # Install QDrant Loader
 pip install qdrant-loader
@@ -71,12 +68,14 @@ pip install qdrant-loader
 export QDRANT_URL="http://localhost:6333"
 export OPENAI_API_KEY="your-api-key"
 
-# Initialize and run ingestion
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
+# Initialize workspace
+qdrant-loader init --workspace .
+
+# Run ingestion
+qdrant-loader ingest --workspace .
 ```
 
-# ❌ Bad Example
+## ❌ Bad Example
 
 ```bash
 pip install qdrant-loader
@@ -97,7 +96,7 @@ pip install qdrant-loader
 
 ### Documentation Review Process
 
-#### 1. Pre-Development Planning
+### 1. Pre-Development Planning
 
 ```markdown
 ## Documentation Impact Assessment
@@ -106,26 +105,28 @@ pip install qdrant-loader
 **Developer**: [Your name]
 **Documentation Impact**: [High/Medium/Low]
 
-### Required Documentation Updates:
+### Required Documentation Updates
+
 - [ ] User guides
 - [ ] CLI reference
 - [ ] Configuration docs
 - [ ] Examples
 - [ ] Troubleshooting
 
-### New Documentation Needed:
+### New Documentation Needed
+
 - [ ] New user guide: [Title]
 - [ ] New developer guide: [Title]
 - [ ] Updated examples: [Location]
 ```
 
-#### 2. Development Phase
+### 2. Development Phase
 
 - **Document as you code** - Update docs alongside implementation
 - **Test all examples** - Ensure code examples work with your changes
 - **Update configuration** - Document new config options immediately
 
-#### 3. Pre-Merge Review
+### 3. Pre-Merge Review
 
 - **Self-review checklist** - Use the documentation checklist
 - **Peer review** - Have another developer review documentation changes
@@ -166,14 +167,17 @@ pip install qdrant-loader
 # Feature: [Feature Name]
 
 ## Overview
+
 Brief description of what the feature does and why it's useful.
 
 ## Prerequisites
+
 - Required setup
 - Dependencies
 - Permissions
 
 ## Quick Start
+
 ```bash
 # Minimal example to get started
 qdrant-loader [command] [options]
@@ -202,10 +206,7 @@ feature:
 
 ### Common Issues
 
-- **Issue**: Description
-  **Solution**: How to fix it
-
-```
+- **Issue**: Description **Solution**: How to fix it
 
 #### 2. Developer Documentation
 
@@ -213,9 +214,11 @@ feature:
 # [Feature Name] Implementation
 
 ## Architecture
+
 How the feature fits into the overall system.
 
 ## Code Reference
+
 ```python
 def new_feature_function(param1: str, param2: int) -> Result:
     """
@@ -224,10 +227,10 @@ def new_feature_function(param1: str, param2: int) -> Result:
     Args:
         param1: Description
         param2: Description
-        
+    
     Returns:
         Description of return value
-        
+    
     Raises:
         ExceptionType: When this happens
     """
@@ -241,11 +244,9 @@ How other developers can extend or customize the feature.
 
 How to test the feature and what tests exist.
 
-```
-
 ### Updating Existing Documentation
 
-#### 1. Identify Impact
+### 1. Identify Impact
 
 ```bash
 # Find all documentation that mentions the changed feature
@@ -253,14 +254,14 @@ grep -r "feature_name" docs/
 grep -r "old_api_name" docs/
 ```
 
-#### 2. Update Systematically
+### 2. Update Systematically
 
 - **Start with CLI reference** - Update command specifications first
 - **Update user guides** - Modify step-by-step instructions
 - **Update examples** - Ensure all code examples still work
 - **Update troubleshooting** - Add new common issues
 
-#### 3. Validate Changes
+### 3. Validate Changes
 
 ```bash
 # Test all code examples in the documentation
@@ -317,15 +318,18 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 ## Documentation Debt Log
 
 ### High Priority
+
 - [ ] **Missing**: MCP server advanced configuration guide
 - [ ] **Outdated**: CLI reference missing new flags
 - [ ] **Incomplete**: Troubleshooting section needs expansion
 
 ### Medium Priority
+
 - [ ] **Enhancement**: Add more workflow examples
 - [ ] **Clarification**: Improve architecture diagrams
 
 ### Low Priority
+
 - [ ] **Polish**: Improve formatting consistency
 - [ ] **Enhancement**: Add video tutorials
 ```
@@ -400,21 +404,21 @@ find docs -name "*.md" -exec grep -l "\[.*\](\./" {} \; | \
 
 ### Documentation Structure Quick Reference
 
-```
+```text
 User Documentation:
-├── getting-started/     # Universal onboarding
-├── detailed-guides/     # Feature-specific guides
-├── configuration/       # Setup and config
-├── cli-reference/       # Command-line interface
-└── troubleshooting/     # Problem solving
+├── getting-started/ # Universal onboarding
+├── detailed-guides/ # Feature-specific guides
+├── configuration/ # Setup and config
+├── cli-reference/ # Command-line interface
+└── troubleshooting/ # Problem solving
 
 Developer Documentation:
-├── architecture/        # System design
-├── cli/                # CLI development
-├── deployment/         # Production setup
-├── extending/          # Customization
-├── testing/            # Quality assurance
-└── documentation/      # This guide
+├── architecture/ # System design
+├── cli/ # CLI development
+├── deployment/ # Production setup
+├── extending/ # Customization
+├── testing/ # Quality assurance
+└── documentation/ # This guide
 ```
 
 Remember: **Good documentation is code**. Treat it with the same care and attention you give to your implementation code.

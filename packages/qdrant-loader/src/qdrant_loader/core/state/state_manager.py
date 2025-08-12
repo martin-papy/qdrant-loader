@@ -31,6 +31,28 @@ class StateManager:
         self._session_factory = None
         self.logger = LoggingConfig.get_logger(__name__)
 
+    @property
+    def is_initialized(self) -> bool:
+        """Public accessor for initialization state used by callers/tests."""
+        return self._initialized
+
+    async def get_session(self):
+        """Return an async session context manager, initializing if needed.
+
+        This method allows callers to use:
+            async with await state_manager.get_session() as session:
+                ...
+        """
+        if not self._initialized:
+            await self.initialize()
+        if self._session_factory is None:
+            raise RuntimeError("State manager session factory is not available")
+        return self._session_factory()
+
+    async def create_session(self):
+        """Alias for get_session for backward compatibility."""
+        return await self.get_session()
+
     async def __aenter__(self):
         """Async context manager entry."""
         self.logger.debug("=== StateManager.__aenter__() called ===")
@@ -45,7 +67,7 @@ class StateManager:
 
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, _exc_tb):
         """Async context manager exit."""
         await self.dispose()
 
@@ -754,8 +776,8 @@ class StateManager:
                 result = await session.execute(
                     select(DocumentStateRecord).filter(
                         DocumentStateRecord.parent_document_id == parent_document_id,
-                        DocumentStateRecord.is_attachment == True,
-                        DocumentStateRecord.is_deleted == False,
+                        DocumentStateRecord.is_attachment.is_(True),
+                        DocumentStateRecord.is_deleted.is_(False),
                     )
                 )
                 attachments = list(result.scalars().all())
@@ -780,8 +802,8 @@ class StateManager:
                 query = select(DocumentStateRecord).filter(
                     DocumentStateRecord.source_type == source_type,
                     DocumentStateRecord.source == source,
-                    DocumentStateRecord.is_converted == True,
-                    DocumentStateRecord.is_deleted == False,
+                    DocumentStateRecord.is_converted.is_(True),
+                    DocumentStateRecord.is_deleted.is_(False),
                 )
                 if conversion_method:
                     query = query.filter(

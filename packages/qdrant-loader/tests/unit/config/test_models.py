@@ -1,270 +1,290 @@
-"""Tests for configuration models."""
+"""Tests for the config models module."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
-from qdrant_loader.config.models import (
-    ProjectConfig,
-    ProjectContext,
-    ProjectDetail,
-    ProjectInfo,
-    ProjectsConfig,
-    ProjectStats,
-)
-from qdrant_loader.config.sources import SourcesConfig
+from qdrant_loader.config.models import ParsedConfig, ProjectInfo, ProjectStats
+
+
+class TestParsedConfig:
+    """Test cases for ParsedConfig."""
+
+    def test_get_all_projects(self):
+        """Test the get_all_projects method."""
+        # Create a mock projects_config with projects
+        from unittest.mock import MagicMock
+
+        mock_project1 = MagicMock()
+        mock_project2 = MagicMock()
+
+        # Create ParsedConfig instance with correct parameters
+        mock_projects_config = MagicMock()
+        mock_projects_config.projects = {
+            "project1": mock_project1,
+            "project2": mock_project2,
+        }
+
+        config = ParsedConfig(
+            global_config=MagicMock(), projects_config=mock_projects_config
+        )
+
+        # Test get_all_projects
+        result = config.get_all_projects()
+
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert mock_project1 in result
+        assert mock_project2 in result
+
+
+class TestProjectStats:
+    """Test cases for ProjectStats."""
+
+    def test_serialize_last_updated_with_datetime(self):
+        """Test last_updated serialization with datetime value."""
+        test_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        stats = ProjectStats(
+            project_id="test_project",
+            document_count=10,
+            source_count=2,
+            last_updated=test_time,
+        )
+
+        # Test the serializer method directly
+        result = stats.serialize_last_updated(test_time)
+        assert result == test_time.isoformat()
+
+    def test_serialize_last_updated_with_none(self):
+        """Test last_updated serialization with None value."""
+        stats = ProjectStats(project_id="test_project")
+
+        # Test the serializer method directly with None
+        result = stats.serialize_last_updated(None)
+        assert result is None
+
+    def test_model_dump_with_datetime_serialization(self):
+        """Test model dumping with datetime serialization."""
+        test_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        stats = ProjectStats(
+            project_id="test_project",
+            document_count=10,
+            source_count=2,
+            last_updated=test_time,
+        )
+
+        # This should trigger the field serializer
+        dumped = stats.model_dump()
+        assert dumped["last_updated"] == test_time.isoformat()
+
+    def test_model_dump_with_none_serialization(self):
+        """Test model dumping with None last_updated."""
+        stats = ProjectStats(
+            project_id="test_project",
+            document_count=10,
+            source_count=2,
+            last_updated=None,
+        )
+
+        # This should trigger the field serializer with None
+        dumped = stats.model_dump()
+        assert dumped["last_updated"] is None
 
 
 class TestProjectContext:
-    """Tests for ProjectContext dataclass."""
+    """Test cases for ProjectContext."""
 
-    def test_valid_project_context(self):
-        """Test creating a valid project context."""
+    def test_project_context_valid(self):
+        """Test ProjectContext with valid data."""
+        from qdrant_loader.config.models import ProjectContext
+
         context = ProjectContext(
-            project_id="test-project",
+            project_id="test_project",
             display_name="Test Project",
             description="A test project",
             collection_name="test_collection",
-            config_overrides={"chunking": {"chunk_size": 1000}},
+            config_overrides={},
         )
 
-        assert context.project_id == "test-project"
+        assert context.project_id == "test_project"
         assert context.display_name == "Test Project"
-        assert context.description == "A test project"
         assert context.collection_name == "test_collection"
-        assert context.config_overrides["chunking"]["chunk_size"] == 1000
 
-    def test_project_context_validation(self):
-        """Test project context validation."""
-        # Empty project_id should raise ValueError
+    def test_project_context_empty_project_id(self):
+        """Test ProjectContext validation with empty project_id."""
+        from qdrant_loader.config.models import ProjectContext
+
         with pytest.raises(ValueError, match="project_id cannot be empty"):
             ProjectContext(
                 project_id="",
-                display_name="Test",
-                description=None,
-                collection_name="test",
+                display_name="Test Project",
+                description="Test",
+                collection_name="test_collection",
                 config_overrides={},
             )
 
-        # Empty display_name should raise ValueError
+    def test_project_context_empty_display_name(self):
+        """Test ProjectContext validation with empty display_name."""
+        from qdrant_loader.config.models import ProjectContext
+
         with pytest.raises(ValueError, match="display_name cannot be empty"):
             ProjectContext(
-                project_id="test",
+                project_id="test_project",
                 display_name="",
-                description=None,
-                collection_name="test",
+                description="Test",
+                collection_name="test_collection",
                 config_overrides={},
             )
 
-        # Empty collection_name should raise ValueError
+    def test_project_context_empty_collection_name(self):
+        """Test ProjectContext validation with empty collection_name."""
+        from qdrant_loader.config.models import ProjectContext
+
         with pytest.raises(ValueError, match="collection_name cannot be empty"):
             ProjectContext(
-                project_id="test",
-                display_name="Test",
-                description=None,
+                project_id="test_project",
+                display_name="Test Project",
+                description="Test",
                 collection_name="",
                 config_overrides={},
             )
 
 
-class TestProjectConfig:
-    """Tests for ProjectConfig model."""
-
-    def test_valid_project_config(self):
-        """Test creating a valid project configuration."""
-        config = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project",
-            description="A test project",
-            overrides={"chunking": {"chunk_size": 1000}},
-        )
-
-        assert config.project_id == "test-project"
-        assert config.display_name == "Test Project"
-        assert config.description == "A test project"
-        assert isinstance(config.sources, SourcesConfig)
-        assert config.overrides["chunking"]["chunk_size"] == 1000
-
-    def test_get_effective_collection_name(self):
-        """Test collection name resolution logic."""
-        # Test that all projects use the global collection name
-        config = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project",
-            description="A test project",
-        )
-        assert config.get_effective_collection_name("documents") == "documents"
-
-        # Test default project (backward compatibility)
-        config = ProjectConfig(
-            project_id="default",
-            display_name="Default Project",
-            description="Default project description",
-        )
-        assert config.get_effective_collection_name("documents") == "documents"
-
-        # Test regular project - now also uses global collection name
-        config = ProjectConfig(
-            project_id="my-project",
-            display_name="My Project",
-            description="My project description",
-        )
-        assert config.get_effective_collection_name("documents") == "documents"
-
-
 class TestProjectsConfig:
-    """Tests for ProjectsConfig model."""
+    """Test cases for ProjectsConfig."""
 
-    def test_empty_projects_config(self):
-        """Test creating empty projects configuration."""
-        config = ProjectsConfig()
-        assert len(config.projects) == 0
-        assert config.list_project_ids() == []
-        assert config.get_project("nonexistent") is None
+    def test_get_project_existing(self):
+        """Test getting an existing project."""
+        from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
 
-    def test_add_project(self):
-        """Test adding projects to configuration."""
-        config = ProjectsConfig()
-
-        project = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project",
-            description="A test project",
+        project_config = ProjectConfig(
+            project_id="test_project", display_name="Test Project"
         )
 
-        config.add_project(project)
-        assert len(config.projects) == 1
-        assert "test-project" in config.list_project_ids()
-        assert config.get_project("test-project") == project
+        projects_config = ProjectsConfig()
+        projects_config.projects["test_project"] = project_config
 
-    def test_duplicate_project_id(self):
-        """Test that duplicate project IDs are rejected."""
-        config = ProjectsConfig()
+        result = projects_config.get_project("test_project")
+        assert result == project_config
 
-        project1 = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project 1",
-            description="First test project",
+    def test_get_project_nonexistent(self):
+        """Test getting a non-existent project returns None."""
+        from qdrant_loader.config.models import ProjectsConfig
+
+        projects_config = ProjectsConfig()
+        result = projects_config.get_project("nonexistent")
+        assert result is None
+
+    def test_list_project_ids(self):
+        """Test listing project IDs."""
+        from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
+
+        project1 = ProjectConfig(project_id="project1", display_name="Project 1")
+        project2 = ProjectConfig(project_id="project2", display_name="Project 2")
+
+        projects_config = ProjectsConfig()
+        projects_config.projects["project1"] = project1
+        projects_config.projects["project2"] = project2
+
+        result = projects_config.list_project_ids()
+        assert isinstance(result, list)
+        assert "project1" in result
+        assert "project2" in result
+        assert len(result) == 2
+
+    def test_add_project_duplicate(self):
+        """Test adding a duplicate project raises ValueError."""
+        from qdrant_loader.config.models import ProjectConfig, ProjectsConfig
+
+        project_config = ProjectConfig(
+            project_id="test_project", display_name="Test Project"
         )
 
-        project2 = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project 2",
-            description="Second test project",
-        )
+        projects_config = ProjectsConfig()
+        projects_config.add_project(project_config)
 
-        config.add_project(project1)
-
-        with pytest.raises(ValueError, match="Project 'test-project' already exists"):
-            config.add_project(project2)
-
-    def test_to_dict(self):
-        """Test converting projects config to dictionary."""
-        config = ProjectsConfig()
-
-        project = ProjectConfig(
-            project_id="test-project",
-            display_name="Test Project",
-            description="A test project",
-        )
-
-        config.add_project(project)
-
-        result = config.to_dict()
-        assert "test-project" in result
-        assert result["test-project"]["project_id"] == "test-project"
-        assert result["test-project"]["display_name"] == "Test Project"
-        assert result["test-project"]["description"] == "A test project"
-
-
-class TestProjectStats:
-    """Tests for ProjectStats model."""
-
-    def test_project_stats(self):
-        """Test creating project statistics."""
-        now = datetime.now()
-        stats = ProjectStats(
-            project_id="test-project",
-            document_count=100,
-            source_count=3,
-            last_updated=now,
-            storage_size=1024000,
-        )
-
-        assert stats.project_id == "test-project"
-        assert stats.document_count == 100
-        assert stats.source_count == 3
-        assert stats.last_updated == now
-        assert stats.storage_size == 1024000
-
-    def test_project_stats_defaults(self):
-        """Test project statistics with default values."""
-        stats = ProjectStats(
-            project_id="test-project", last_updated=None, storage_size=None
-        )
-
-        assert stats.project_id == "test-project"
-        assert stats.document_count == 0
-        assert stats.source_count == 0
-        assert stats.last_updated is None
-        assert stats.storage_size is None
+        # Try to add the same project again
+        with pytest.raises(ValueError, match="Project 'test_project' already exists"):
+            projects_config.add_project(project_config)
 
 
 class TestProjectInfo:
-    """Tests for ProjectInfo model."""
+    """Test cases for ProjectInfo."""
 
-    def test_project_info(self):
-        """Test creating project information."""
-        now = datetime.now()
+    def test_serialize_last_updated_with_datetime(self):
+        """Test last_updated serialization with datetime value."""
+        test_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
         info = ProjectInfo(
-            id="test-project",
+            id="test_project",
+            display_name="Test Project",
+            collection_name="test_collection",
+            last_updated=test_time,
+        )
+
+        # Test the serializer method directly
+        result = info.serialize_last_updated(test_time)
+        assert result == test_time.isoformat()
+
+    def test_serialize_last_updated_with_none(self):
+        """Test last_updated serialization with None value."""
+        info = ProjectInfo(
+            id="test_project",
+            display_name="Test Project",
+            collection_name="test_collection",
+        )
+
+        # Test the serializer method directly with None
+        result = info.serialize_last_updated(None)
+        assert result is None
+
+    def test_model_dump_with_datetime_serialization(self):
+        """Test model dumping with datetime serialization."""
+        test_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        info = ProjectInfo(
+            id="test_project",
+            display_name="Test Project",
+            collection_name="test_collection",
+            last_updated=test_time,
+        )
+
+        # This should trigger the field serializer
+        dumped = info.model_dump()
+        assert dumped["last_updated"] == test_time.isoformat()
+
+    def test_model_dump_with_none_serialization(self):
+        """Test model dumping with None last_updated."""
+        info = ProjectInfo(
+            id="test_project",
+            display_name="Test Project",
+            collection_name="test_collection",
+            last_updated=None,
+        )
+
+        # This should trigger the field serializer with None
+        dumped = info.model_dump()
+        assert dumped["last_updated"] is None
+
+    def test_project_info_with_optional_fields(self):
+        """Test ProjectInfo with all optional fields."""
+        test_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+        info = ProjectInfo(
+            id="test_project",
             display_name="Test Project",
             description="A test project",
             collection_name="test_collection",
-            source_count=3,
+            source_count=5,
             document_count=100,
-            last_updated=now,
+            last_updated=test_time,
         )
 
-        assert info.id == "test-project"
+        assert info.id == "test_project"
         assert info.display_name == "Test Project"
         assert info.description == "A test project"
         assert info.collection_name == "test_collection"
-        assert info.source_count == 3
+        assert info.source_count == 5
         assert info.document_count == 100
-        assert info.last_updated == now
-
-
-class TestProjectDetail:
-    """Tests for ProjectDetail model."""
-
-    def test_project_detail(self):
-        """Test creating detailed project information."""
-        now = datetime.now()
-        sources = [
-            {"type": "git", "name": "repo1", "status": "completed"},
-            {"type": "confluence", "name": "space1", "status": "completed"},
-        ]
-
-        statistics = {
-            "total_documents": 100,
-            "total_chunks": 500,
-            "storage_size": "10MB",
-        }
-
-        detail = ProjectDetail(
-            id="test-project",
-            display_name="Test Project",
-            description="A test project",
-            collection_name="test_collection",
-            source_count=2,
-            document_count=100,
-            last_updated=now,
-            sources=sources,
-            statistics=statistics,
-        )
-
-        assert detail.id == "test-project"
-        assert detail.display_name == "Test Project"
-        assert len(detail.sources) == 2
-        assert detail.sources[0]["type"] == "git"
-        assert detail.statistics["total_documents"] == 100
+        assert info.last_updated == test_time

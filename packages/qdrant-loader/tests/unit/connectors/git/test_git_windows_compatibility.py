@@ -346,7 +346,7 @@ class TestGitConnectorWindowsCompatibility:
                             )
 
                             # The URL should contain the filename (with special chars preserved)
-                            filename = os.path.basename(file_path)
+                            os.path.basename(file_path)
                             # Convert to forward slash path
                             rel_path = expected_rel_path.replace("\\", "/")
                             expected_url = (

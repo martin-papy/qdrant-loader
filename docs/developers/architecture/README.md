@@ -36,43 +36,42 @@ QDrant Loader is built on several key architectural principles:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                        QDrant Loader                           │
+│ QDrant Loader │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │    CLI      │  │ MCP Server  │  │   Config    │             │
-│  │ Interface   │  │ (Separate)  │  │  Manager    │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-│         │                 │                 │                  │
-│         └─────────────────┼─────────────────┘                  │
-│                           │                                    │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              Async Ingestion Pipeline               │   │
-│  │                                                         │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
-│  │  │   Data      │  │    File     │  │   Content   │     │   │
-│  │  │ Connectors  │  │ Converters  │  │ Processors  │     │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
-│  │         │                 │                 │          │   │
-│  │         └─────────────────┼─────────────────┘          │   │
-│  │                           │                            │   │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
-│  │  │ Embedding   │  │   State     │  │   QDrant    │     │   │
-│  │  │  Service    │  │ Manager     │  │  Manager    │     │   │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                           │                                    │
-└───────────────────────────┼────────────────────────────────────┘
-                            │
+│ │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ CLI │ │ MCP Server │ │ Config │ │
+│ │ Interface │ │ (Separate) │ │ Manager │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
+│ │ │ │ │
+│ └─────────────────┼─────────────────┘ │
+│ │ │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Async Ingestion Pipeline │ │
+│ │ │ │
+│ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ │
+│ │ │ Data │ │ File │ │ Content │ │ │
+│ │ │ Connectors │ │ Converters │ │ Processors │ │ │
+│ │ └─────────────┘ └─────────────┘ └─────────────┘ │ │
+│ │ │ │ │ │ │
+│ │ └─────────────────┼─────────────────┘ │ │
+│ │ │ │ │
+│ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │ │
+│ │ │ Embedding │ │ State │ │ QDrant │ │ │
+│ │ │ Service │ │ Manager │ │ Manager │ │ │
+│ │ └─────────────┘ └─────────────┘ └─────────────┘ │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│ │ │
+└───────────────────────────┼────────────────────────────────────┘ │
 ┌───────────────────────────┼────────────────────────────────────┐
-│                External Services                               │
+│ External Services │
 ├───────────────────────────┼────────────────────────────────────┤
-│                           │                                    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │   QDrant    │  │   OpenAI    │  │    Data     │             │
-│  │  Database   │  │     API     │  │   Sources   │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-│                                                                 │
+│ │ │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ QDrant │ │ OpenAI │ │ Data │ │
+│ │ Database │ │ API │ │ Sources │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
+│ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,52 +102,33 @@ QDrant Loader is built on several key architectural principles:
 
 ### Data Source Connectors
 
-**Purpose**: Fetch content from various external sources
+**Purpose**: Fetch content from external systems via a common abstraction
 
 **Key Features**:
 
-- Unified BaseConnector interface for all data sources
-- Authentication handling per source type
-- Rate limiting and retry logic
-- Incremental update support via state management
-- Metadata extraction and document creation
+- Unified `BaseConnector` interface for all sources
+- Per-source authentication and validation
+- Retry-aware HTTP and rate limiting (where relevant)
+- Incremental updates via state tracking
+- Rich metadata on every `Document`
 
-**Supported Sources**:
+**Supported Sources**: Git, Confluence, Jira, Local Files, Public Docs
 
-- Git repositories (GitHub, GitLab, Bitbucket)
-- Confluence (Cloud and Data Center)
-- JIRA (Cloud and Data Center)
-- Local file systems
-- Public documentation websites
-
-**Implementation**:
+**Interface (simplified)**:
 
 ```python
-# Actual BaseConnector interface
 from abc import ABC, abstractmethod
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.core.document import Document
+from qdrant_loader.core.file_conversion import FileConversionConfig
 
 class BaseConnector(ABC):
-    """Base class for all connectors."""
-    
-    def __init__(self, config: SourceConfig):
-        self.config = config
-        self._initialized = False
-    
-    async def __aenter__(self):
-        """Async context manager entry."""
-        self._initialized = True
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit."""
-        self._initialized = False
-    
+    def __init__(self, config: SourceConfig): ...
+    async def __aenter__(self): ...
+    async def __aexit__(self, exc_type, exc_val, exc_tb): ...
+    def set_file_conversion_config(self, cfg: FileConversionConfig) -> None: ...
     @abstractmethod
-    async def get_documents(self) -> list[Document]:
-        """Get documents from the source."""
-        pass
+    async def get_documents(self) -> list[Document]: ...
 ```
 
 ### File Converters
@@ -201,64 +181,12 @@ class BaseConnector(ABC):
 
 **Key Features**:
 
-- SQLite-based state storage with async support
-- Content change detection via hashing
-- Processing history tracking
-- Project-based organization
-- Concurrent access handling
+- SQLite + SQLAlchemy async engine
+- Content hashing for change detection
+- Ingestion history and per-document state
+- Project-aware queries and updates
 
-**Database Schema**:
-
-```sql
--- Projects table
-CREATE TABLE projects (
-    id TEXT PRIMARY KEY,
-    display_name TEXT NOT NULL,
-    description TEXT,
-    collection_name TEXT NOT NULL,
-    config_hash TEXT,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
-);
-
--- Document states table
-CREATE TABLE document_states (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id TEXT,
-    document_id TEXT NOT NULL,
-    source_type TEXT NOT NULL,
-    source TEXT NOT NULL,
-    url TEXT NOT NULL,
-    title TEXT NOT NULL,
-    content_hash TEXT NOT NULL,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    -- File conversion metadata
-    is_converted BOOLEAN DEFAULT FALSE,
-    conversion_method TEXT,
-    original_file_type TEXT,
-    -- Attachment metadata
-    is_attachment BOOLEAN DEFAULT FALSE,
-    parent_document_id TEXT,
-    FOREIGN KEY (project_id) REFERENCES projects(id)
-);
-
--- Ingestion history table
-CREATE TABLE ingestion_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id TEXT,
-    source_type TEXT NOT NULL,
-    source TEXT NOT NULL,
-    last_successful_ingestion DATETIME NOT NULL,
-    status TEXT NOT NULL,
-    document_count INTEGER DEFAULT 0,
-    error_message TEXT,
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
-    FOREIGN KEY (project_id) REFERENCES projects(id)
-);
-```
+Implementation: `qdrant_loader/core/state/state_manager.py`
 
 ### QDrant Manager
 
@@ -277,43 +205,27 @@ CREATE TABLE ingestion_history (
 ### Ingestion Pipeline
 
 ```text
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Data      │───▶│    File     │───▶│   Content   │───▶│ Embedding   │
-│ Connector   │    │ Converter   │    │ Processor   │    │  Service    │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Raw Data   │    │    Text     │    │   Chunks    │    │  Vectors    │
-│ + Metadata  │    │ + Metadata  │    │ + Metadata  │    │ + Metadata  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                                                                 │
-                                                                 ▼
-                                                        ┌─────────────┐
-                                                        │   QDrant    │
-                                                        │  Manager    │
-                                                        └─────────────┘
-                                                                 │
-                                                                 ▼
-                                                        ┌─────────────┐
-                                                        │   QDrant    │
-                                                        │  Database   │
-                                                        └─────────────┘
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Data │───▶│ File │───▶│ Content │───▶│ Embedding │
+│ Connector │ │ Converter │ │ Processor │ │ Service │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ │ │ │ ▼ ▼ ▼ ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Raw Data │ │ Text │ │ Chunks │ │ Vectors │
+│ + Metadata │ │ + Metadata │ │ + Metadata │ │ + Metadata │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ ▼ ┌─────────────┐ │ QDrant │ │ Manager │ └─────────────┘ │ ▼ ┌─────────────┐ │ QDrant │ │ Database │ └─────────────┘
 ```
 
 ### Search Pipeline (MCP Server)
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    Query    │───▶│ Embedding   │───▶│   QDrant    │───▶│   Results   │
-│   (Text)    │    │  Service    │    │   Search    │    │ + Metadata  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ User Query  │    │ Query Vector│    │ Similarity  │    │ Ranked      │
-│             │    │             │    │ Scores      │    │ Results     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```text
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Query │───▶│ Embedding │───▶│ QDrant │───▶│ Results │
+│ (Text) │ │ Service │ │ Search │ │ + Metadata │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │ │ │ │ ▼ ▼ ▼ ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ User Query │ │ Query Vector│ │ Similarity │ │ Ranked │
+│ │ │ │ │ Scores │ │ Results │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
 ```
 
 ## 🔌 Connector System
@@ -329,38 +241,38 @@ async def _collect_documents_from_sources(
 ) -> list[Document]:
     """Collect documents from all configured sources."""
     documents = []
-
+    
     # Process each source type with direct connector instantiation
     if filtered_config.confluence:
         confluence_docs = await self.components.source_processor.process_source_type(
             filtered_config.confluence, ConfluenceConnector, "Confluence"
         )
         documents.extend(confluence_docs)
-
+    
     if filtered_config.git:
         git_docs = await self.components.source_processor.process_source_type(
             filtered_config.git, GitConnector, "Git"
         )
         documents.extend(git_docs)
-
+    
     if filtered_config.jira:
         jira_docs = await self.components.source_processor.process_source_type(
             filtered_config.jira, JiraConnector, "Jira"
         )
         documents.extend(jira_docs)
-
+    
     if filtered_config.publicdocs:
         publicdocs_docs = await self.components.source_processor.process_source_type(
             filtered_config.publicdocs, PublicDocsConnector, "PublicDocs"
         )
         documents.extend(publicdocs_docs)
-
+    
     if filtered_config.localfile:
         localfile_docs = await self.components.source_processor.process_source_type(
             filtered_config.localfile, LocalFileConnector, "LocalFile"
         )
         documents.extend(localfile_docs)
-
+    
     return documents
 ```
 
@@ -491,10 +403,10 @@ class ConfluenceConnector(BaseConnector):
 
 ## 📚 Related Documentation
 
-- **[CLI Reference](../../users/cli-reference/README.md)** - Command-line interface
-- **[Configuration Guide](../../users/configuration/README.md)** - Configuration options
-- **[Extending Guide](../extending.md)** - How to extend functionality
-- **[Testing Guide](../testing.md)** - Testing framework and patterns
+- **[CLI Reference](../../users/cli-reference/)** - Command-line interface
+- **[Configuration Guide](../../users/configuration/)** - Configuration options
+- **[Extending Guide](../extending/)** - How to extend functionality
+- **[Testing Guide](../testing/)** - Testing framework and patterns
 
 ## 🔄 Architecture Evolution
 
@@ -515,5 +427,4 @@ class ConfluenceConnector(BaseConnector):
 - **Monitoring and observability** - Enhanced metrics and logging
 
 ---
-
 **Ready to dive deeper?** Explore the [CLI Reference](../../users/cli-reference/README.md) for command-line usage or check out the [Extending Guide](../extending.md) to learn about extending QDrant Loader.

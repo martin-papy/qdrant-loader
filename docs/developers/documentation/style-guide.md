@@ -9,15 +9,12 @@ This style guide ensures consistency, clarity, and professionalism across all QD
 - **Active Voice**: Use active voice whenever possible
   - ✅ "QDrant Loader processes your files"
   - ❌ "Your files are processed by QDrant Loader"
-
 - **Present Tense**: Write in present tense for current functionality
   - ✅ "The system creates embeddings"
   - ❌ "The system will create embeddings"
-
 - **Direct and Clear**: Be concise and specific
   - ✅ "Configure your API key in the environment file"
   - ❌ "You might want to consider setting up your API key"
-
 - **Professional but Approachable**: Maintain professionalism while being helpful
   - ✅ "This guide helps you set up QDrant Loader quickly"
   - ❌ "This awesome guide will totally help you set up QDrant Loader"
@@ -98,18 +95,17 @@ Use emojis consistently for section types:
 
 Always specify the language for syntax highlighting:
 
-```markdown
+````markdown
 ```bash
 # Good: Language specified
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 ```
 
-```
+```text
 # Bad: No language specified
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 ```
-
-```
+````
 
 ### Command Examples
 
@@ -120,7 +116,6 @@ qdrant-loader --workspace . ingest
 ```bash
 # Install QDrant Loader
 pip install qdrant-loader
-
 # Expected output:
 # Successfully installed qdrant-loader-1.0.0
 ```
@@ -133,13 +128,13 @@ pip install qdrant-loader
 
 ```yaml
 # Minimal configuration
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "my_documents"
-  
+
 # Comprehensive configuration
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
     collection_name: "my_documents"
@@ -201,7 +196,7 @@ global_config:
 
 ```markdown
 # Good: Descriptive and relative
-See the [Configuration Guide](../configuration/README.md) for details.
+See the [Configuration Guide](../../users/configuration/) for details.
 
 # Bad: Generic text and absolute
 Click [here](https://github.com/user/repo/docs/config.md) for more info.
@@ -262,10 +257,11 @@ Use consistent formatting for different types of callouts:
 **Scenario**: You want to index documentation from a public GitHub repository.
 
 **Steps**:
+
 1. Configure your workspace with `config.yaml` and `.env`
-2. Run the initialization: `qdrant-loader --workspace . init`
-3. Run the ingestion: `qdrant-loader --workspace . ingest`
-4. Verify with project status: `qdrant-loader project --workspace . status`
+2. Run the initialization: `qdrant-loader init --workspace .`
+3. Run the ingestion: `qdrant-loader ingest --workspace .`
+4. Verify with project status: `qdrant-loader project status --workspace .`
 
 **Expected Outcome**: 150 documents indexed with embeddings generated.
 ```
@@ -304,13 +300,15 @@ except Exception as e:
 **Meaning**: QDrant Loader cannot establish a connection to the Qdrant database.
 
 **Common Causes**:
+
 - Qdrant server is not running
 - Incorrect URL configuration
 - Network connectivity issues
 
 **Solution**:
+
 1. Verify Qdrant is running: `docker ps | grep qdrant`
-2. Check your configuration: `qdrant-loader --workspace . config`
+2. Check your configuration: `qdrant-loader config --workspace .`
 3. Test connectivity: `curl http://localhost:6333/health`
 ```
 

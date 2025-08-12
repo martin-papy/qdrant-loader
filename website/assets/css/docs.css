@@ -1,0 +1,92 @@
+/* Documentation layout styles: left sidebar nav and right TOC */
+
+.docs-sidebar {
+  font-size: 0.95rem;
+}
+
+.docs-sidebar .nav-link {
+  color: #4a5568; /* gray-700 */
+  padding: 0.25rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.docs-sidebar .nav-link:hover,
+.docs-sidebar .nav-link:focus {
+  color: #2d3748; /* gray-800 */
+  background-color: #edf2f7; /* gray-100 */
+  outline: none;
+}
+
+.docs-sidebar .nav-link.active {
+  color: #2b6cb0; /* blue-700 */
+  background-color: #ebf8ff; /* blue-50 */
+  font-weight: 600;
+}
+
+.docs-nav-section > .section-link {
+  font-weight: 600;
+}
+
+.docs-toc {
+  font-size: 0.9rem;
+}
+
+.docs-toc .nav-link {
+  color: #4a5568;
+  padding: 0.125rem 0;
+}
+
+.docs-toc .nav-link.active {
+  color: #2b6cb0;
+  font-weight: 600;
+}
+
+/* Code UX buttons */
+pre.ql-has-copy {
+  padding-top: 2.25rem !important; /* space for buttons */
+}
+
+/* Admonitions (map to Bootstrap-style look) */
+.admonition {
+  border-left: 4px solid #e2e8f0;
+  border-radius: .25rem;
+  padding: .75rem 1rem;
+  margin: 1rem 0;
+  background: #f8fafc;
+}
+.admonition .admonition-title {
+  font-weight: 600;
+  margin-bottom: .25rem;
+}
+.admonition.note { border-color: #0d6efd33; background: #0d6efd0d; }
+.admonition.note .admonition-title { color: #0d6efd; }
+.admonition.tip { border-color: #19875433; background: #1987540d; }
+.admonition.tip .admonition-title { color: #198754; }
+.admonition.warning { border-color: #ffc10766; background: #ffc1070f; }
+.admonition.warning .admonition-title { color: #b58100; }
+.admonition.danger { border-color: #dc354566; background: #dc35450f; }
+.admonition.danger .admonition-title { color: #dc3545; }
+
+/* Tabbed content (pymdownx.tabbed) */
+.pymdownx-tabbed .tabbed-labels {
+  display: flex; gap: .25rem; flex-wrap: wrap; margin-bottom: .5rem;
+}
+.pymdownx-tabbed .tabbed-labels > label {
+  border: 1px solid #e2e8f0; border-radius: .25rem; padding: .25rem .5rem; cursor: pointer;
+}
+.pymdownx-tabbed .tabbed-labels > label:hover { background: #f8fafc; }
+.pymdownx-tabbed .tabbed-content { border: 1px solid #e2e8f0; border-radius: .25rem; padding: .75rem; }
+
+@media (max-width: 767.98px) {
+  /* On small screens, stack content and hide sidebars (Bootstrap classes already hide) */
+}
+
+/* High-contrast mode support */
+@media (prefers-contrast: more) {
+  .docs-sidebar .nav-link.active,
+  .docs-toc .nav-link.active {
+    text-decoration: underline;
+  }
+}
+
+

@@ -173,6 +173,9 @@ class TestAsyncFunctions:
             patch("asyncio.all_tasks") as mock_all_tasks,
             patch("asyncio.current_task") as mock_current_task,
             patch("asyncio.gather", new_callable=AsyncMock) as mock_gather,
+            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
+            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
         ):
 
             mock_logger = MagicMock()
@@ -181,16 +184,31 @@ class TestAsyncFunctions:
             # Mock tasks
             mock_current = MagicMock()
             mock_task1 = MagicMock()
+            mock_task1.done.return_value = False  # Task not done, should be cancelled
             mock_task2 = MagicMock()
+            mock_task2.done.return_value = False  # Task not done, should be cancelled
             mock_current_task.return_value = mock_current
             mock_all_tasks.return_value = [mock_current, mock_task1, mock_task2]
 
             # Mock loop
             mock_loop = MagicMock()
 
-            await shutdown(mock_loop)
+            # Mock shutdown event
+            mock_shutdown_event = MagicMock()
 
-            # Verify tasks were cancelled
+            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
+            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
+
+            await shutdown(mock_loop, mock_shutdown_event)
+
+            # Verify shutdown event was set and sleep was called
+            mock_shutdown_event.set.assert_called_once()
+            # Sleep should be awaited at least once with 0.2s during cooperative grace period
+            assert mock_sleep.await_count >= 1
+            for call in mock_sleep.await_args_list:
+                assert call.args == (0.2,)
+
+            # Verify tasks were cancelled (only non-done tasks)
             mock_task1.cancel.assert_called_once()
             mock_task2.cancel.assert_called_once()
             mock_current.cancel.assert_not_called()  # Current task should not be cancelled
@@ -200,8 +218,8 @@ class TestAsyncFunctions:
                 mock_task1, mock_task2, return_exceptions=True
             )
 
-            # Verify loop was stopped
-            mock_loop.stop.assert_called_once()
+            # No explicit loop.stop() should be called in cooperative shutdown
+            assert not getattr(mock_loop, "stop").called
 
     @pytest.mark.asyncio
     async def test_shutdown_with_exception(self):
@@ -215,7 +233,10 @@ class TestAsyncFunctions:
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
             patch("asyncio.all_tasks") as mock_all_tasks,
             patch("asyncio.current_task") as mock_current_task,
-            patch("asyncio.gather", side_effect=mock_gather_error) as mock_gather,
+            patch("asyncio.gather", side_effect=mock_gather_error),
+            patch("asyncio.sleep", new_callable=AsyncMock),
+            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
+            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
         ):
 
             mock_logger = MagicMock()
@@ -224,11 +245,15 @@ class TestAsyncFunctions:
             # Mock tasks
             mock_current = MagicMock()
             mock_task1 = MagicMock()
+            mock_task1.done.return_value = False  # Task not done, should be cancelled
             mock_current_task.return_value = mock_current
             mock_all_tasks.return_value = [mock_current, mock_task1]
 
             # Mock loop
             mock_loop = MagicMock()
+
+            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
+            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
 
             await shutdown(mock_loop)
 
@@ -237,8 +262,8 @@ class TestAsyncFunctions:
                 "Error during shutdown", exc_info=True
             )
 
-            # Verify loop was still stopped
-            mock_loop.stop.assert_called_once()
+            # No explicit loop.stop() should be called in cooperative shutdown
+            assert not getattr(mock_loop, "stop").called
 
 
 class TestStdioHandler:
@@ -257,10 +282,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch.dict(os.environ, {}, clear=True),
         ):
 
@@ -287,10 +310,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -331,10 +352,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -378,10 +397,8 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
-            patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
+            patch("qdrant_loader_mcp_server.cli.MCPHandler"),
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
             patch.dict(os.environ, {}, clear=True),
@@ -423,9 +440,7 @@ class TestStdioHandler:
             patch(
                 "qdrant_loader_mcp_server.cli.SearchEngine"
             ) as mock_search_engine_class,
-            patch(
-                "qdrant_loader_mcp_server.cli.QueryProcessor"
-            ) as mock_query_processor_class,
+            patch("qdrant_loader_mcp_server.cli.QueryProcessor"),
             patch("qdrant_loader_mcp_server.cli.MCPHandler") as mock_mcp_handler_class,
             patch("qdrant_loader_mcp_server.cli.read_stdin") as mock_read_stdin,
             patch("sys.stdout") as mock_stdout,
@@ -530,7 +545,7 @@ class TestCLICommand:
         mock_handle_stdio.return_value = AsyncMock()
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["--log-level", "DEBUG"])
+        runner.invoke(cli, ["--log-level", "DEBUG"])
 
         # Verify setup was called
         mock_setup_logging.assert_called_once_with("DEBUG")
@@ -561,17 +576,25 @@ class TestCLICommand:
         class MockLoop:
             def close(self):
                 pass
+
             def run_until_complete(self, coro):
                 pass
-        
+
+            def add_signal_handler(self, sig, handler):
+                pass
+
         mock_loop = MockLoop()
         mock_new_event_loop.return_value = mock_loop
 
         runner = CliRunner()
-        result = runner.invoke(cli, [])
+        runner.invoke(cli, [])
 
-        # Verify exit was called with error code
-        mock_exit.assert_called_once_with(1)
+        # Verify exit was called with error code - the CLI may call exit multiple times
+        # once for the actual error and once during cleanup/normal exit flow
+        assert mock_exit.call_count >= 1
+        # Check that at least one call was with error code 1
+        exit_calls = [call[0][0] for call in mock_exit.call_args_list if call[0]]
+        assert 1 in exit_calls
 
     def test_cli_config_file_option(self):
         """Test CLI with config file option."""

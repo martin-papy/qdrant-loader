@@ -8,12 +8,12 @@ The development workflow focuses on keeping documentation synchronized with code
 
 ### Workflow Benefits
 
-```
-🔄 Automated Updates     - Documentation stays current with code
+```text
+🔄 Automated Updates - Documentation stays current with code
 🚀 Developer Productivity - Faster access to relevant information
 🔍 Better Discoverability - AI-powered search for code and docs
-📈 Reduced Maintenance   - Minimal manual documentation overhead
-🤝 Team Collaboration   - Shared knowledge base across teams
+📈 Reduced Maintenance - Minimal manual documentation overhead
+🤝 Team Collaboration - Shared knowledge base across teams
 ```
 
 ## 🏗️ Architecture Overview
@@ -25,12 +25,10 @@ graph TD
     C --> D[Vector Database]
     D --> E[MCP Server]
     E --> F[Development Tools]
-    
     G[API Specs] --> C
     H[README Files] --> C
     I[Code Comments] --> C
     J[Documentation] --> C
-    
     F --> K[Cursor IDE]
     F --> L[Windsurf]
     F --> M[Claude Desktop]
@@ -48,19 +46,19 @@ graph TD
 
 ### Repository Structure
 
-```
+```text
 project/
 ├── docs/                    # Documentation files
-│   ├── api/                # API documentation
-│   ├── guides/             # Development guides
-│   └── README.md           # Main documentation
-├── src/                    # Source code
-│   ├── components/         # Code with comments
-│   └── api/               # API definitions
-├── .github/workflows/      # CI/CD workflows
-├── config.yaml            # QDrant Loader config
-├── .env                   # Environment variables
-└── README.md              # Project overview
+│   ├── api/                 # API documentation
+│   ├── guides/              # Development guides
+│   └── README.md            # Main documentation
+├── src/                     # Source code
+│   ├── components/          # Code with comments
+│   └── api/                 # API definitions
+├── .github/workflows/       # CI/CD workflows
+├── config.yaml              # QDrant Loader config
+├── .env                     # Environment variables
+└── README.md                # Project overview
 ```
 
 ## 🚀 Step-by-Step Implementation
@@ -84,12 +82,11 @@ curl -o .env https://raw.githubusercontent.com/martin-papy/qdrant-loader/main/pa
 
 ```yaml
 # config.yaml - Multi-project configuration for development
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
     collection_name: "dev_docs"
-
   embedding:
     endpoint: "https://api.openai.com/v1"
     model: "text-embedding-3-small"
@@ -99,11 +96,9 @@ global_config:
     tokenizer: "cl100k_base"
     max_tokens_per_request: 8000
     max_tokens_per_chunk: 8000
-
   chunking:
     chunk_size: 1500
     chunk_overlap: 200
-
   file_conversion:
     max_file_size: 52428800  # 50MB
     conversion_timeout: 300
@@ -112,7 +107,6 @@ global_config:
       llm_model: "gpt-4o"
       llm_endpoint: "https://api.openai.com/v1"
       llm_api_key: "${OPENAI_API_KEY}"
-
   state_management:
     database_path: "${STATE_DB_PATH}"
     table_prefix: "qdrant_loader_"
@@ -124,7 +118,6 @@ projects:
     project_id: "documentation"
     display_name: "Project Documentation"
     description: "Main project documentation and guides"
-    
     sources:
       git:
         main-docs:
@@ -154,7 +147,6 @@ projects:
     project_id: "code-docs"
     display_name: "Code Documentation"
     description: "Source code and API documentation"
-    
     sources:
       git:
         source-code:
@@ -197,7 +189,6 @@ projects:
     project_id: "local-docs"
     display_name: "Local Documentation"
     description: "Local documentation files and notes"
-    
     sources:
       localfile:
         dev-notes:
@@ -222,11 +213,8 @@ projects:
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-qdrant-api-key
 QDRANT_COLLECTION_NAME=dev_docs
-
 OPENAI_API_KEY=your-openai-api-key
-
 GITHUB_TOKEN=your-github-token  # Optional for private repos
-
 STATE_DB_PATH=./workspace_state.db
 
 # For production, use your CI/CD platform's secret management
@@ -241,23 +229,23 @@ STATE_DB_PATH=./workspace_state.db
 pip install qdrant-loader
 
 # Validate configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 ```
 
 #### 2.2 Initial Data Load
 
 ```bash
 # Initialize QDrant collection
-qdrant-loader --workspace . init
+qdrant-loader init --workspace .
 
 # Load documentation for the first time
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Check status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Start MCP server for development
 mcp-qdrant-loader
@@ -312,7 +300,7 @@ name: Documentation Update
 on:
   push:
     branches: [main, develop]
-    paths: 
+    paths:
       - 'docs/**'
       - 'src/**'
       - 'api/**'
@@ -332,27 +320,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install QDrant Loader
         run: |
           pip install qdrant-loader
-
       - name: Validate configuration
         run: |
-          qdrant-loader --workspace . config
+          qdrant-loader config --workspace .
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
       - name: Validate projects
         run: |
-          qdrant-loader project --workspace . validate
+          qdrant-loader project validate --workspace .
 
   update-docs:
     needs: validate-config
@@ -361,36 +345,31 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install QDrant Loader
         run: |
           pip install qdrant-loader
-
       - name: Initialize QDrant collection
         run: |
-          qdrant-loader --workspace . init --force
+          qdrant-loader init --workspace . --force
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
       - name: Update documentation
         run: |
-          qdrant-loader --workspace . ingest
+          qdrant-loader ingest --workspace .
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Verify update
         run: |
-          qdrant-loader project --workspace . status
+          qdrant-loader project status --workspace .
 
   test-search:
     needs: update-docs
@@ -399,16 +378,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install QDrant Loader MCP Server
         run: |
           pip install qdrant-loader-mcp-server
-
       - name: Test MCP server
         run: |
           # Test that MCP server can start
@@ -440,8 +416,8 @@ validate-config:
   image: python:3.11
   script:
     - pip install qdrant-loader
-    - qdrant-loader --workspace . config
-    - qdrant-loader project --workspace . validate
+    - qdrant-loader config --workspace .
+    - qdrant-loader project validate --workspace .
   only:
     changes:
       - docs/**/*
@@ -455,9 +431,9 @@ update-documentation:
   image: python:3.11
   script:
     - pip install qdrant-loader
-    - qdrant-loader --workspace . init --force
-    - qdrant-loader --workspace . ingest
-    - qdrant-loader project --workspace . status
+    - qdrant-loader init --workspace . --force
+    - qdrant-loader ingest --workspace .
+    - qdrant-loader project status --workspace .
   only:
     - main
   environment:
@@ -480,7 +456,6 @@ test-mcp-server:
 ```bash
 #!/bin/bash
 # scripts/setup-dev-docs.sh - Development documentation setup
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -501,12 +476,11 @@ fi
 
 # Validate configuration
 echo "Validating configuration..."
-if ! qdrant-loader --workspace "$WORKSPACE_DIR" config >/dev/null 2>&1; then
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
     echo "❌ Configuration validation failed"
     echo "Please check your config.yaml and .env files"
     exit 1
 fi
-
 echo "✅ Configuration is valid"
 
 # Validate projects
@@ -515,16 +489,15 @@ if ! qdrant-loader project --workspace "$WORKSPACE_DIR" validate; then
     echo "❌ Project validation failed"
     exit 1
 fi
-
 echo "✅ All projects are valid"
 
 # Initialize QDrant collection
 echo "Initializing QDrant collection..."
-qdrant-loader --workspace "$WORKSPACE_DIR" init
+qdrant-loader init --workspace "$WORKSPACE_DIR"
 
 # Load initial documentation
 echo "Loading documentation..."
-qdrant-loader --workspace "$WORKSPACE_DIR" ingest
+qdrant-loader ingest --workspace "$WORKSPACE_DIR"
 
 # Check status
 echo "Checking project status..."
@@ -536,7 +509,7 @@ echo ""
 echo "Next steps:"
 echo "1. Start MCP server: mcp-qdrant-loader"
 echo "2. Configure your IDE with MCP server settings"
-echo "3. Update docs: qdrant-loader --workspace . ingest"
+echo "3. Update docs: qdrant-loader ingest --workspace ."
 ```
 
 #### 4.2 Update Script
@@ -544,7 +517,6 @@ echo "3. Update docs: qdrant-loader --workspace . ingest"
 ```bash
 #!/bin/bash
 # scripts/update-docs.sh - Update documentation
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -553,7 +525,7 @@ PROJECT_ID="${1:-}"
 echo "Updating documentation..."
 
 # Validate configuration
-if ! qdrant-loader --workspace "$WORKSPACE_DIR" config >/dev/null 2>&1; then
+if ! qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
     echo "❌ Configuration validation failed"
     exit 1
 fi
@@ -561,10 +533,10 @@ fi
 # Update specific project or all projects
 if [ -n "$PROJECT_ID" ]; then
     echo "Updating project: $PROJECT_ID"
-    qdrant-loader --workspace "$WORKSPACE_DIR" ingest --project "$PROJECT_ID"
+    qdrant-loader ingest --workspace "$WORKSPACE_DIR" --project "$PROJECT_ID"
 else
     echo "Updating all projects"
-    qdrant-loader --workspace "$WORKSPACE_DIR" ingest
+    qdrant-loader ingest --workspace "$WORKSPACE_DIR"
 fi
 
 # Show updated status
@@ -581,7 +553,6 @@ echo "✅ Documentation update completed!"
 ```bash
 #!/bin/bash
 # scripts/health-check.sh - Check documentation system health
-
 set -euo pipefail
 
 WORKSPACE_DIR="${WORKSPACE_DIR:-$(pwd)}"
@@ -590,7 +561,7 @@ echo "Checking documentation system health..."
 
 # Check configuration
 echo "1. Checking configuration..."
-if qdrant-loader --workspace "$WORKSPACE_DIR" config >/dev/null 2>&1; then
+if qdrant-loader config --workspace "$WORKSPACE_DIR" >/dev/null 2>&1; then
     echo "   ✅ Configuration is valid"
 else
     echo "   ❌ Configuration validation failed"
@@ -612,7 +583,7 @@ project_count=$(qdrant-loader project --workspace "$WORKSPACE_DIR" list --format
 if [ "$project_count" -gt 0 ]; then
     echo "   ✅ Found $project_count projects"
 else
-    echo "   ⚠️  No projects found"
+    echo "   ⚠️ No projects found"
 fi
 
 # Check MCP server
@@ -620,7 +591,7 @@ echo "4. Checking MCP server..."
 if command -v mcp-qdrant-loader >/dev/null 2>&1; then
     echo "   ✅ MCP server is installed"
 else
-    echo "   ⚠️  MCP server not installed"
+    echo "   ⚠️ MCP server not installed"
 fi
 
 echo ""
@@ -639,7 +610,6 @@ qdrant-loader project --workspace "$WORKSPACE_DIR" status
 ```bash
 #!/bin/bash
 # scripts/setup-cursor.sh - Setup Cursor IDE integration
-
 set -euo pipefail
 
 CURSOR_CONFIG_DIR="$HOME/.cursor"
@@ -680,7 +650,6 @@ echo "4. The QDrant Loader tools will be available in Cursor"
 ```bash
 #!/bin/bash
 # scripts/setup-claude-desktop.sh - Setup Claude Desktop integration
-
 set -euo pipefail
 
 # Detect OS and set config path
@@ -740,60 +709,60 @@ echo "4. The QDrant Loader tools will be available in Claude Desktop"
 ./scripts/health-check.sh
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ### Project-Specific Operations
 
 ```bash
 # List all projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Get detailed status for specific project
-qdrant-loader project --workspace . status --project-id documentation
+qdrant-loader project status --workspace . --project-id documentation
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id code-docs
+qdrant-loader project validate --workspace . --project-id code-docs
 
 # Update only documentation project
-qdrant-loader --workspace . ingest --project documentation
+qdrant-loader ingest --workspace . --project documentation
 
 # Update only code documentation
-qdrant-loader --workspace . ingest --project code-docs
+qdrant-loader ingest --workspace . --project code-docs
 ```
 
 ### Source-Specific Operations
 
 ```bash
 # Update only Git sources
-qdrant-loader --workspace . ingest --source-type git
+qdrant-loader ingest --workspace . --source-type git
 
 # Update specific Git source in documentation project
-qdrant-loader --workspace . ingest --project documentation --source-type git --source main-docs
+qdrant-loader ingest --workspace . --project documentation --source-type git --source main-docs
 
 # Update local files only
-qdrant-loader --workspace . ingest --source-type localfile
+qdrant-loader ingest --workspace . --source-type localfile
 ```
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
-**Issue: Configuration validation fails**
+#### Issue: Configuration validation fails
 
 ```bash
 # Check configuration syntax
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate projects
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Check environment variables
 echo "QDRANT_URL: $QDRANT_URL"
 echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."
 ```
 
-**Issue: MCP server not working**
+#### Issue: MCP server not working
 
 ```bash
 # Check if MCP server is installed
@@ -806,30 +775,30 @@ mcp-qdrant-loader
 env | grep -E "(QDRANT|OPENAI)"
 ```
 
-**Issue: Documentation not updating**
+#### Issue: Documentation not updating
 
 ```bash
 # Force reinitialize collection
-qdrant-loader --workspace . init --force
+qdrant-loader init --workspace . --force
 
 # Re-ingest all content
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ### Performance Optimization
 
 ```bash
 # Check current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Monitor ingestion with debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 
 # Check project statistics
-qdrant-loader project --workspace . status --format json
+qdrant-loader project status --workspace . --format json
 ```
 
 ## 📋 Best Practices

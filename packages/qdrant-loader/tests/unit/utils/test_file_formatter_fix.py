@@ -3,8 +3,6 @@
 import logging
 from unittest.mock import Mock
 
-import pytest
-
 from qdrant_loader.utils.logging import FileFormatter
 
 

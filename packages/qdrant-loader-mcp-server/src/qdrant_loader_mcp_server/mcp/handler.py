@@ -2,10 +2,9 @@
 
 from typing import Any
 
-from ..utils import get_version
 from ..search.engine import SearchEngine
 from ..search.processor import QueryProcessor
-from ..utils import LoggingConfig
+from ..utils import LoggingConfig, get_version
 from .intelligence_handler import IntelligenceHandler
 from .protocol import MCPProtocol
 from .schemas import MCPSchemas
@@ -23,14 +22,18 @@ class MCPHandler:
         self.protocol = MCPProtocol()
         self.search_engine = search_engine
         self.query_processor = query_processor
-        
+
         # Initialize specialized handlers
-        self.search_handler = SearchHandler(search_engine, query_processor, self.protocol)
+        self.search_handler = SearchHandler(
+            search_engine, query_processor, self.protocol
+        )
         self.intelligence_handler = IntelligenceHandler(search_engine, self.protocol)
-        
+
         logger.info("MCP Handler initialized")
 
-    async def handle_request(self, request: dict[str, Any], headers: dict[str, str] | None = None) -> dict[str, Any]:
+    async def handle_request(
+        self, request: dict[str, Any], headers: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         """Handle MCP request.
 
         Args:
@@ -41,12 +44,18 @@ class MCPHandler:
             Dict[str, Any]: The response
         """
         logger.debug("Handling request", request=request)
-        
+
         # Optional protocol version validation from headers
         if headers:
             protocol_version = headers.get("mcp-protocol-version")
-            if protocol_version and protocol_version not in ["2025-06-18", "2025-03-26", "2024-11-05"]:
-                logger.warning(f"Unsupported protocol version in headers: {protocol_version}")
+            if protocol_version and protocol_version not in [
+                "2025-06-18",
+                "2025-03-26",
+                "2024-11-05",
+            ]:
+                logger.warning(
+                    f"Unsupported protocol version in headers: {protocol_version}"
+                )
 
         # Validate request format
         if not self.protocol.validate_request(request):
@@ -55,7 +64,7 @@ class MCPHandler:
             request_id = None
             if isinstance(request, dict):
                 request_id = request.get("id")
-                if request_id is not None and not isinstance(request_id, (str, int)):
+                if request_id is not None and not isinstance(request_id, str | int):
                     request_id = None
             return {
                 "jsonrpc": "2.0",
@@ -113,19 +122,31 @@ class MCPHandler:
             # Cross-Document Intelligence Methods
             elif method == "analyze_document_relationships":
                 logger.info("Handling document relationship analysis request")
-                return await self.intelligence_handler.handle_analyze_document_relationships(request_id, params)
+                return await self.intelligence_handler.handle_analyze_document_relationships(
+                    request_id, params
+                )
             elif method == "find_similar_documents":
                 logger.info("Handling find similar documents request")
-                return await self.intelligence_handler.handle_find_similar_documents(request_id, params)
+                return await self.intelligence_handler.handle_find_similar_documents(
+                    request_id, params
+                )
             elif method == "detect_document_conflicts":
                 logger.info("Handling conflict detection request")
-                return await self.intelligence_handler.handle_detect_document_conflicts(request_id, params)
+                return await self.intelligence_handler.handle_detect_document_conflicts(
+                    request_id, params
+                )
             elif method == "find_complementary_content":
                 logger.info("Handling complementary content request")
-                return await self.intelligence_handler.handle_find_complementary_content(request_id, params)
+                return (
+                    await self.intelligence_handler.handle_find_complementary_content(
+                        request_id, params
+                    )
+                )
             elif method == "cluster_documents":
                 logger.info("Handling document clustering request")
-                return await self.intelligence_handler.handle_cluster_documents(request_id, params)
+                return await self.intelligence_handler.handle_cluster_documents(
+                    request_id, params
+                )
             elif method == "tools/call":
                 logger.info("Handling tools/call request")
                 tool_name = params.get("name")
@@ -144,13 +165,17 @@ class MCPHandler:
                 # Cross-Document Intelligence Tools
                 elif tool_name == "analyze_relationships":
                     logger.info("🔍 DEBUG: analyze_relationships tool called!")
-                    logger.info(f"🔍 DEBUG: intelligence_handler exists: {self.intelligence_handler is not None}")
+                    logger.info(
+                        f"🔍 DEBUG: intelligence_handler exists: {self.intelligence_handler is not None}"
+                    )
                     return await self.intelligence_handler.handle_analyze_document_relationships(
                         request_id, params.get("arguments", {})
                     )
                 elif tool_name == "find_similar_documents":
-                    return await self.intelligence_handler.handle_find_similar_documents(
-                        request_id, params.get("arguments", {})
+                    return (
+                        await self.intelligence_handler.handle_find_similar_documents(
+                            request_id, params.get("arguments", {})
+                        )
                     )
                 elif tool_name == "detect_document_conflicts":
                     return await self.intelligence_handler.handle_detect_document_conflicts(
@@ -162,6 +187,14 @@ class MCPHandler:
                     )
                 elif tool_name == "cluster_documents":
                     return await self.intelligence_handler.handle_cluster_documents(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "expand_document":
+                    return await self.search_handler.handle_expand_document(
+                        request_id, params.get("arguments", {})
+                    )
+                elif tool_name == "expand_cluster":
+                    return await self.intelligence_handler.handle_expand_cluster(
                         request_id, params.get("arguments", {})
                     )
                 else:
@@ -208,7 +241,10 @@ class MCPHandler:
             request_id,
             result={
                 "protocolVersion": "2025-06-18",
-                "serverInfo": {"name": "Qdrant Loader MCP Server", "version": get_version()},
+                "serverInfo": {
+                    "name": "Qdrant Loader MCP Server",
+                    "version": get_version(),
+                },
                 "capabilities": {"tools": {"listChanged": False}},
             },
         )

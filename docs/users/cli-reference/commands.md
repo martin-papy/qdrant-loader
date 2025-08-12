@@ -8,9 +8,9 @@ QDrant Loader provides a focused command-line interface for data ingestion and m
 
 ### Available Commands
 
-```
-📊 Data Management    - init, ingest
-🔧 Configuration     - config
+```text
+📊 Data Management - init, ingest
+🔧 Configuration - config
 📁 Project Management - project list, project status, project validate
 ```
 
@@ -43,7 +43,7 @@ qdrant-loader init --workspace . --log-level DEBUG
 qdrant-loader init --config /path/to/config.yaml --env /path/to/.env
 ```
 
-#### Available Options
+#### Options for Init Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -70,7 +70,7 @@ qdrant-loader init --workspace .
 
 Process and load data from configured sources into QDrant.
 
-#### Basic Usage
+#### Basic Ingestion Usage
 
 ```bash
 # Ingest all configured sources with workspace
@@ -96,7 +96,7 @@ qdrant-loader ingest --workspace . --project my-project --source-type confluence
 qdrant-loader ingest --workspace . --project my-project --source-type git --source my-repo
 ```
 
-#### Advanced Options
+#### Advanced Ingestion Options
 
 ```bash
 # Ingest with debug logging
@@ -112,7 +112,7 @@ qdrant-loader ingest --workspace . --force
 qdrant-loader ingest --workspace . --project my-project --source-type git --force --profile
 ```
 
-#### Available Options
+#### Options for Ingest Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -130,7 +130,7 @@ The following source types are supported:
 
 - **`git`** - Git repositories
 - **`confluence`** - Confluence Cloud/Data Center
-- **`jira`** - JIRA Cloud/Data Center  
+- **`jira`** - JIRA Cloud/Data Center
 - **`localfile`** - Local files and directories
 - **`publicdocs`** - Public documentation websites
 
@@ -140,7 +140,7 @@ The following source types are supported:
 
 Display current configuration and validate settings.
 
-#### Basic Usage
+#### Basic Configuration Usage
 
 ```bash
 # Show configuration with workspace
@@ -163,7 +163,7 @@ qdrant-loader config --workspace . --log-level DEBUG
 qdrant-loader config --config /etc/qdrant-loader/config.yaml --env /etc/qdrant-loader/.env
 ```
 
-#### Available Options
+#### Options for Config Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -188,7 +188,7 @@ qdrant-loader config --config test-config.yaml --env test.env
 
 List all configured projects in the workspace.
 
-#### Basic Usage
+#### Basic List Usage
 
 ```bash
 # List all projects
@@ -198,7 +198,7 @@ qdrant-loader project list --workspace .
 qdrant-loader project list --config config.yaml --env .env
 ```
 
-#### Output Formats
+#### List Output Formats
 
 ```bash
 # List projects in table format (default)
@@ -211,7 +211,7 @@ qdrant-loader project list --workspace . --format json
 qdrant-loader project list --workspace . --format json | jq '.[] | .project_id'
 ```
 
-#### Available Options
+#### Options for List Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -232,7 +232,7 @@ The list command shows:
 
 Show project status including configuration and statistics.
 
-#### Basic Usage
+#### Basic Status Usage
 
 ```bash
 # Show status for all projects
@@ -242,7 +242,7 @@ qdrant-loader project status --workspace .
 qdrant-loader project status --workspace . --project-id my-project
 ```
 
-#### Output Formats
+#### Status Output Formats
 
 ```bash
 # Show status in table format (default)
@@ -255,7 +255,7 @@ qdrant-loader project status --workspace . --format json
 qdrant-loader project status --workspace . --project-id my-project --format json
 ```
 
-#### Available Options
+#### Options for Status Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -279,7 +279,7 @@ The status command shows:
 
 Validate project configurations for correctness.
 
-#### Basic Usage
+#### Basic Validation Usage
 
 ```bash
 # Validate all projects
@@ -299,7 +299,7 @@ qdrant-loader project validate --workspace .
 qdrant-loader project validate --workspace . --project-id my-project
 ```
 
-#### Available Options
+#### Options for Validate Command
 
 - `--workspace PATH` - Workspace directory containing config.yaml and .env files
 - `--config PATH` - Path to configuration file
@@ -323,27 +323,27 @@ Most commands support these common options:
 
 ```bash
 # Workspace mode (recommended)
---workspace PATH          # Workspace directory containing config.yaml and .env
+--workspace PATH # Workspace directory containing config.yaml and .env
 
 # Individual file mode
---config PATH             # Path to configuration file
---env PATH                # Path to environment file
+--config PATH # Path to configuration file
+--env PATH # Path to environment file
 
 # Logging
---log-level LEVEL         # Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+--log-level LEVEL # Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 ```
 
 ### Help and Version
 
 ```bash
 # Get help
-qdrant-loader --help                    # General help
-qdrant-loader init --help               # Command-specific help
-qdrant-loader project --help            # Project command help
-qdrant-loader project list --help       # Subcommand help
+qdrant-loader --help # General help
+qdrant-loader init --help # Command-specific help
+qdrant-loader project --help # Project command help
+qdrant-loader project list --help # Subcommand help
 
 # Get version
-qdrant-loader --version                 # Show version information
+qdrant-loader --version # Show version information
 ```
 
 ## 🎯 Common Workflows
@@ -392,7 +392,7 @@ qdrant-loader project status --workspace .
 ```bash
 # Use specific configuration files
 qdrant-loader ingest --config /etc/qdrant-loader/config.yaml \
-                     --env /etc/qdrant-loader/.env
+  --env /etc/qdrant-loader/.env
 
 # Process specific project
 qdrant-loader ingest --workspace . --project production-docs

@@ -111,12 +111,10 @@ class TestWarningCapture:
         mock_logger = Mock()
         file_path = "/test/file.xlsx"
 
-        original_handler = warnings.showwarning
-
         # Capture the test warning to prevent it from appearing in test output
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
-            
+
             with capture_openpyxl_warnings(mock_logger, file_path):
                 # Simulate a non-openpyxl warning
                 warnings.showwarning(

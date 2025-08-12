@@ -31,7 +31,7 @@ class TestPublicDocsIntegration:
         projects = config_data.get("projects", {})
 
         publicdocs_sources = None
-        for project_id, project_config in projects.items():
+        for _project_id, project_config in projects.items():
             project_sources = project_config.get("sources", {})
             if "publicdocs" in project_sources:
                 publicdocs_sources = project_sources["publicdocs"]

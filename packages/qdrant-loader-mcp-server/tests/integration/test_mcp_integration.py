@@ -28,7 +28,7 @@ async def integration_handler():
 
     mock_qdrant_client.search.return_value = [search_result1]
     mock_qdrant_client.scroll.return_value = ([search_result1], None)
-    
+
     # Mock collections response for get_collections
     collections_response = MagicMock()
     collections_response.collections = []
@@ -175,7 +175,7 @@ async def test_initialize_and_tools_list_workflow(integration_handler):
     # Check that we have the expected tools available
     assert "result" in tools_response
     assert "tools" in tools_response["result"]
-    assert len(tools_response["result"]["tools"]) == 8
+    assert len(tools_response["result"]["tools"]) == 10
 
 
 @pytest.mark.asyncio
@@ -224,34 +224,47 @@ async def test_search_empty_results(integration_handler):
 @pytest.mark.integration
 async def test_cross_document_intelligence_mcp_integration(integration_handler):
     """Test cross-document intelligence through MCP interface."""
-    
+
     # Create mock search results with enough documents for analysis
-    from qdrant_loader_mcp_server.search.components.search_result_models import HybridSearchResult, create_hybrid_search_result
-    
+    from qdrant_loader_mcp_server.search.components.search_result_models import (
+        create_hybrid_search_result,
+    )
+
     mock_documents = [
         create_hybrid_search_result(
-            score=0.9, text="Authentication system using JWT tokens for secure access control",
-            source_type="git", source_title="Auth Module", source_url="http://test1.com"
+            score=0.9,
+            text="Authentication system using JWT tokens for secure access control",
+            source_type="git",
+            source_title="Auth Module",
+            source_url="http://test1.com",
         ),
         create_hybrid_search_result(
-            score=0.8, text="User authentication flow with OAuth integration for external providers",
-            source_type="confluence", source_title="Auth Guide", source_url="http://test2.com"  
+            score=0.8,
+            text="User authentication flow with OAuth integration for external providers",
+            source_type="confluence",
+            source_title="Auth Guide",
+            source_url="http://test2.com",
         ),
         create_hybrid_search_result(
-            score=0.7, text="Security protocols for API authentication and authorization mechanisms",
-            source_type="jira", source_title="Security Ticket", source_url="http://test3.com"
-        )
+            score=0.7,
+            text="Security protocols for API authentication and authorization mechanisms",
+            source_type="jira",
+            source_title="Security Ticket",
+            source_url="http://test3.com",
+        ),
     ]
-    
+
     # Test document relationship analysis
-    with patch.object(integration_handler.search_engine, "search", return_value=mock_documents):
+    with patch.object(
+        integration_handler.search_engine, "search", return_value=mock_documents
+    ):
         request = {
             "jsonrpc": "2.0",
             "method": "analyze_document_relationships",
             "params": {
                 "query": "authentication system",
                 "limit": 10,
-                "project_ids": ["MyaHealth"]
+                "project_ids": ["MyaHealth"],
             },
             "id": 10,
         }
@@ -262,28 +275,32 @@ async def test_cross_document_intelligence_mcp_integration(integration_handler):
         assert response["id"] == 10
         assert "result" in response
         assert response["result"]["isError"] is False
-        
+
         # Verify the response contains the expected structure
         result = response["result"]
-        assert "content" in result or "summary" in result, "Response should contain analysis results"
+        assert (
+            "content" in result or "summary" in result
+        ), "Response should contain analysis results"
 
 
 @pytest.mark.asyncio
-@pytest.mark.integration  
+@pytest.mark.integration
 async def test_find_similar_documents_mcp_integration(integration_handler):
     """Test finding similar documents through MCP interface."""
-    
-    with patch.object(integration_handler.search_engine, "find_similar_documents") as mock_similar:
+
+    with patch.object(
+        integration_handler.search_engine, "find_similar_documents"
+    ) as mock_similar:
         # Mock similar documents response
         mock_similar.return_value = [
             {
                 "document": {"id": "doc1", "title": "OAuth Implementation"},
                 "similarity_score": 0.85,
                 "metric_scores": {"entity_overlap": 0.8, "topic_overlap": 0.9},
-                "similarity_reasons": ["shared authentication entities"]
+                "similarity_reasons": ["shared authentication entities"],
             }
         ]
-        
+
         request = {
             "jsonrpc": "2.0",
             "method": "find_similar_documents",
@@ -291,7 +308,7 @@ async def test_find_similar_documents_mcp_integration(integration_handler):
                 "target_query": "OAuth authentication",
                 "comparison_query": "authentication security",
                 "similarity_metrics": ["entity_overlap", "topic_overlap"],
-                "max_similar": 3
+                "max_similar": 3,
             },
             "id": 11,
         }
@@ -302,7 +319,7 @@ async def test_find_similar_documents_mcp_integration(integration_handler):
         assert response["id"] == 11
         assert "result" in response
         assert response["result"]["isError"] is False
-        
+
         # Verify the method was called
         mock_similar.assert_called_once()
 
@@ -311,28 +328,32 @@ async def test_find_similar_documents_mcp_integration(integration_handler):
 @pytest.mark.integration
 async def test_detect_document_conflicts_mcp_integration(integration_handler):
     """Test conflict detection through MCP interface."""
-    
-    with patch.object(integration_handler.search_engine, "detect_document_conflicts") as mock_conflicts:
+
+    with patch.object(
+        integration_handler.search_engine, "detect_document_conflicts"
+    ) as mock_conflicts:
         # Mock conflict detection response
         mock_conflicts.return_value = {
             "conflicting_pairs": [
                 ("doc1", "doc2", {"type": "contradictory_information"})
             ],
             "conflict_categories": {"contradictory_information": [("doc1", "doc2")]},
-            "resolution_suggestions": {"contradictory_information": "Review both documents for consistency"},
+            "resolution_suggestions": {
+                "contradictory_information": "Review both documents for consistency"
+            },
             "query_metadata": {
                 "original_query": "user management policies",
-                "document_count": 5
-            }
+                "document_count": 5,
+            },
         }
-        
+
         request = {
             "jsonrpc": "2.0",
             "method": "detect_document_conflicts",
             "params": {
                 "query": "user management policies",
                 "limit": 8,
-                "project_ids": ["MyaHealth", "ProposAI"]
+                "project_ids": ["MyaHealth", "ProposAI"],
             },
             "id": 12,
         }
@@ -343,13 +364,13 @@ async def test_detect_document_conflicts_mcp_integration(integration_handler):
         assert response["id"] == 12
         assert "result" in response
         assert response["result"]["isError"] is False
-        
+
         # Verify the method was called with correct parameters
         mock_conflicts.assert_called_once_with(
             query="user management policies",
             limit=8,
             source_types=None,
-            project_ids=["MyaHealth", "ProposAI"]
+            project_ids=["MyaHealth", "ProposAI"],
         )
 
 
@@ -357,8 +378,10 @@ async def test_detect_document_conflicts_mcp_integration(integration_handler):
 @pytest.mark.integration
 async def test_cluster_documents_mcp_integration(integration_handler):
     """Test document clustering through MCP interface."""
-    
-    with patch.object(integration_handler.search_engine, "cluster_documents") as mock_cluster:
+
+    with patch.object(
+        integration_handler.search_engine, "cluster_documents"
+    ) as mock_cluster:
         # Mock clustering response
         mock_cluster.return_value = {
             "clusters": [
@@ -368,17 +391,17 @@ async def test_cluster_documents_mcp_integration(integration_handler):
                     "centroid_topics": ["authentication", "security"],
                     "shared_entities": ["OAuth", "JWT"],
                     "coherence_score": 0.75,
-                    "cluster_summary": "Authentication and security documents"
+                    "cluster_summary": "Authentication and security documents",
                 }
             ],
             "clustering_metadata": {
                 "strategy": "mixed_features",
                 "total_clusters": 1,
                 "total_documents": 5,
-                "original_query": "system design documentation"
-            }
+                "original_query": "system design documentation",
+            },
         }
-        
+
         request = {
             "jsonrpc": "2.0",
             "method": "cluster_documents",
@@ -387,7 +410,7 @@ async def test_cluster_documents_mcp_integration(integration_handler):
                 "strategy": "mixed_features",
                 "max_clusters": 5,
                 "min_cluster_size": 2,
-                "limit": 15
+                "limit": 15,
             },
             "id": 13,
         }
@@ -398,7 +421,7 @@ async def test_cluster_documents_mcp_integration(integration_handler):
         assert response["id"] == 13
         assert "result" in response
         assert response["result"]["isError"] is False
-        
+
         # Verify the method was called with correct parameters
         mock_cluster.assert_called_once_with(
             query="system design documentation",
@@ -407,7 +430,7 @@ async def test_cluster_documents_mcp_integration(integration_handler):
             min_cluster_size=2,
             limit=15,
             source_types=None,
-            project_ids=None
+            project_ids=None,
         )
 
 
@@ -415,30 +438,38 @@ async def test_cluster_documents_mcp_integration(integration_handler):
 @pytest.mark.integration
 async def test_find_complementary_content_mcp_integration(integration_handler):
     """Test complementary content finding through MCP interface."""
-    
-    with patch.object(integration_handler.search_engine, "find_complementary_content") as mock_complementary:
+
+    with patch.object(
+        integration_handler.search_engine, "find_complementary_content"
+    ) as mock_complementary:
         # Create a mock HybridSearchResult object for the document
-        from qdrant_loader_mcp_server.search.components.search_result_models import create_hybrid_search_result
-        
+        from qdrant_loader_mcp_server.search.components.search_result_models import (
+            create_hybrid_search_result,
+        )
+
         mock_document = create_hybrid_search_result(
             score=0.9,
             text="Database security best practices including encryption, access control, and audit logging",
             source_type="confluence",
             source_title="Database Security Best Practices",
             source_url="http://comp1.com",
-            document_id="comp1"  # Set document_id through kwargs
+            document_id="comp1",  # Set document_id through kwargs
         )
-        
+
         # Mock complementary content response with correct structure
-        mock_complementary.return_value = [
-            {
-                "document": mock_document,
-                "relevance_score": 0.9,
-                "recommendation_reason": "complements authentication with data security",
-                "strategy": "mixed"
-            }
-        ]
-        
+        mock_complementary.return_value = {
+            "complementary_recommendations": [
+                {
+                    "document": mock_document,
+                    "relevance_score": 0.9,
+                    "recommendation_reason": "complements authentication with data security",
+                    "strategy": "mixed",
+                }
+            ],
+            "target_document": mock_document,
+            "context_documents_analyzed": 10,
+        }
+
         request = {
             "jsonrpc": "2.0",
             "method": "find_complementary_content",
@@ -446,7 +477,7 @@ async def test_find_complementary_content_mcp_integration(integration_handler):
                 "target_query": "user authentication system",
                 "context_query": "system security",
                 "max_recommendations": 5,
-                "project_ids": ["MyaHealth"]
+                "project_ids": ["MyaHealth"],
             },
             "id": 14,
         }
@@ -457,6 +488,6 @@ async def test_find_complementary_content_mcp_integration(integration_handler):
         assert response["id"] == 14
         assert "result" in response
         assert response["result"]["isError"] is False
-        
+
         # Verify the method was called
         mock_complementary.assert_called_once()

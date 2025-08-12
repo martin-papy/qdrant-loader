@@ -24,7 +24,7 @@ global:
   chunking:
     chunk_size: 1000
     chunk_overlap: 200
-  
+
   embedding:
     model: "text-embedding-3-small"
     api_key: "${OPENAI_API_KEY}"
@@ -71,7 +71,7 @@ global:
   chunking:
     chunk_size: 1000
     chunk_overlap: 200
-  
+
   embedding:
     model: "text-embedding-3-small"
     api_key: "${OPENAI_API_KEY}"

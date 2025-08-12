@@ -2,4 +2,4 @@
 
 from .http_handler import HTTPTransportHandler
 
-__all__ = ["HTTPTransportHandler"] 
+__all__ = ["HTTPTransportHandler"]

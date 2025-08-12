@@ -43,7 +43,7 @@ class TestEmbeddingService:
         # Verify result
         assert result == mock_embedding
         assert isinstance(result, list)
-        assert all(isinstance(x, (int, float)) for x in result)
+        assert all(isinstance(x, int | float) for x in result)
 
     @pytest.mark.asyncio
     async def test_get_embedding_error(self):

@@ -2,13 +2,14 @@
 Pytest configuration and shared fixtures for website build tests.
 """
 
-import pytest
-import tempfile
-import shutil
-from pathlib import Path
-import os
-import sys
 import glob
+import os
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 # Add project paths to sys.path for imports
 project_root = Path(__file__).parent.parent
@@ -180,29 +181,29 @@ docs = [
                 <p class="lead text-muted mb-5">
                     Your privacy is important to us. This privacy policy explains how we collect, use, and protect your information.
                 </p>
-                
+
                 <div class="card border-0 shadow">
                     <div class="card-body p-5">
                         <h2 class="h4 fw-bold mb-3">Information We Collect</h2>
                         <p class="mb-4">
                             We may collect information you provide directly to us, such as when you contact us or use our services.
                         </p>
-                        
+
                         <h2 class="h4 fw-bold mb-3">How We Use Your Information</h2>
                         <p class="mb-4">
                             We use the information we collect to provide, maintain, and improve our services.
                         </p>
-                        
+
                         <h2 class="h4 fw-bold mb-3">Information Sharing</h2>
                         <p class="mb-4">
                             We do not sell, trade, or otherwise transfer your personal information to third parties.
                         </p>
-                        
+
                         <h2 class="h4 fw-bold mb-3">Contact Us</h2>
                         <p class="mb-0">
                             If you have any questions about this privacy policy, please contact us.
                         </p>
-                        
+
                         <div class="mt-4 text-muted small">
                             <p>Last updated: {{ last_updated }}</p>
                         </div>

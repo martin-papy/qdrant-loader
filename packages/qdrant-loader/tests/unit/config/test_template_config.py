@@ -24,7 +24,7 @@ global:
   chunking:
     chunk_size: 1500
     chunk_overlap: 200
-  
+
   embedding:
     endpoint: "http://localhost:8080/v1"
     model: "BAAI/bge-small-en-v1.5"

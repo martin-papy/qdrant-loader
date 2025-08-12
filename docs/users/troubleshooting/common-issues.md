@@ -6,13 +6,13 @@ This guide covers the most frequently encountered issues when using QDrant Loade
 
 ### Symptom Checker
 
-```
-❌ Installation fails          → See [Installation Issues](#installation-issues)
-❌ Can't connect to QDrant     → See [Connection Problems](./connection-problems.md)
-❌ Data not loading            → See [Data Loading Issues](#data-loading-issues)
-❌ Configuration errors        → See [Configuration Issues](#configuration-issues)
-❌ MCP server not working      → See [MCP Server Issues](#mcp-server-issues)
-❌ Slow performance            → See [Performance Issues](./performance-issues.md)
+```text
+❌ Installation fails → See [Installation Issues](#installation-issues)
+❌ Can't connect to QDrant → See [Connection Problems](./connection-problems.md)
+❌ Data not loading → See [Data Loading Issues](#data-loading-issues)
+❌ Configuration errors → See [Configuration Issues](#configuration-issues)
+❌ MCP server not working → See [MCP Server Issues](#mcp-server-issues)
+❌ Slow performance → See [Performance Issues](./performance-issues.md)
 ```
 
 ## 🔧 Installation Issues
@@ -112,16 +112,16 @@ pip install qdrant-loader
 
 ```bash
 # Check current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate project configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Test with debug logging
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 ```
 
 **Common Causes & Solutions:**
@@ -137,7 +137,9 @@ projects:
         my-docs:
           include_paths:
             - "*.md"  # Only markdown files
+```
 
+```yaml
 # Solution: Broader patterns
 projects:
   my-project:
@@ -151,7 +153,7 @@ projects:
             - "docs/**/*"
 ```
 
-2. **Authentication issues:**
+1. **Authentication issues:**
 
 ```bash
 # Check credentials
@@ -167,13 +169,15 @@ curl -H "api-key: $QDRANT_API_KEY" "$QDRANT_URL/health"
 curl -H "Authorization: Bearer $OPENAI_API_KEY" "https://api.openai.com/v1/models"
 ```
 
-3. **Path issues:**
+1. **Path issues:**
 
 ```bash
 # Check if path exists and is accessible
 ls -la /path/to/documents
 find /path/to/documents -name "*.md" | head -5
+```
 
+```yaml
 # Use absolute paths in configuration
 projects:
   my-project:
@@ -201,11 +205,11 @@ find ./docs -name "*.md" ! -readable
 file -i ./docs/*.md
 
 # Force reinitialization and reload
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 
 # Check exclude patterns in configuration
-qdrant-loader --workspace . config | grep -A 5 exclude_paths
+qdrant-loader config --workspace . | grep -A 5 exclude_paths
 ```
 
 ### Issue: Duplicate content
@@ -220,14 +224,14 @@ qdrant-loader --workspace . config | grep -A 5 exclude_paths
 
 ```bash
 # Check for overlapping sources in configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Review project configuration for duplicate sources
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Reinitialize collection to clean duplicates
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 ```
 
 ## ⚙️ Configuration Issues
@@ -247,13 +251,13 @@ qdrant-loader --workspace . ingest
 python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 
 # Validate project configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # Check current configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 ```
 
 **Common Configuration Problems:**
@@ -262,17 +266,16 @@ qdrant-loader project --workspace . validate --project-id my-project
 
 ```yaml
 # Wrong indentation
-global_config:
-qdrant:
-  url: "http://localhost:6333"
+global:
+qdrant: url: "http://localhost:6333"
 
 # Correct indentation
-global_config:
+global:
   qdrant:
     url: "http://localhost:6333"
 ```
 
-2. **Missing environment variables:**
+1. **Missing environment variables:**
 
 ```bash
 # Check required variables
@@ -283,11 +286,11 @@ export QDRANT_API_KEY="your-key-here"
 export OPENAI_API_KEY="your-key-here"
 ```
 
-3. **Invalid URLs:**
+1. **Invalid URLs:**
 
 ```yaml
 # Ensure URLs are complete and accessible
-global_config:
+global:
   qdrant:
     url: "https://your-qdrant-instance.com"  # Include protocol
 ```
@@ -314,7 +317,7 @@ export $(cat .env | xargs)
 ls -la .env
 
 # Verify configuration loads environment variables
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 ```
 
 ### Issue: Project configuration errors
@@ -329,16 +332,16 @@ qdrant-loader --workspace . config
 
 ```bash
 # List all configured projects
-qdrant-loader project --workspace . list
+qdrant-loader project list --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Validate specific project
-qdrant-loader project --workspace . validate --project-id my-project
+qdrant-loader project validate --workspace . --project-id my-project
 
 # Check project configuration structure
-qdrant-loader --workspace . config | grep -A 20 projects
+qdrant-loader config --workspace . | grep -A 20 projects
 ```
 
 ## 🔌 MCP Server Issues
@@ -403,13 +406,13 @@ tail -f ~/.qdrant-loader/logs/mcp-server.log
 
 ```bash
 # Verify workspace configuration
-qdrant-loader --workspace . config
+qdrant-loader config --workspace .
 
 # Check project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Ensure data is loaded
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Restart MCP server with proper workspace
 cd /path/to/workspace
@@ -432,15 +435,15 @@ pip uninstall qdrant-loader qdrant-loader-mcp-server
 pip install qdrant-loader qdrant-loader-mcp-server
 
 # 3. Validate configuration
-qdrant-loader project --workspace . validate
+qdrant-loader project validate --workspace .
 
 # 4. Test basic functionality
-qdrant-loader --workspace . config
-qdrant-loader project --workspace . list
+qdrant-loader config --workspace .
+qdrant-loader project list --workspace .
 
 # 5. Reinitialize and reload data
-qdrant-loader --workspace . init --force
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace . --force
+qdrant-loader ingest --workspace .
 ```
 
 ### Data Recovery
@@ -449,16 +452,16 @@ If you've lost data or corrupted your collection:
 
 ```bash
 # Check current project status
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 
 # Reinitialize collection
-qdrant-loader --workspace . init --force
+qdrant-loader init --workspace . --force
 
 # Reload all data from sources
-qdrant-loader --workspace . ingest
+qdrant-loader ingest --workspace .
 
 # Verify data is loaded
-qdrant-loader project --workspace . status
+qdrant-loader project status --workspace .
 ```
 
 ## 📞 Getting Help
@@ -468,10 +471,10 @@ qdrant-loader project --workspace . status
 1. **Check logs with debug mode:**
 
 ```bash
-qdrant-loader --workspace . --log-level DEBUG ingest
+qdrant-loader ingest --workspace . --log-level DEBUG
 ```
 
-2. **Gather system information:**
+1. **Gather system information:**
 
 ```bash
 qdrant-loader --version
@@ -480,7 +483,7 @@ pip list | grep qdrant
 uname -a
 ```
 
-3. **Test minimal example:**
+1. **Test minimal example:**
 
 ```bash
 # Create test workspace
@@ -488,7 +491,7 @@ mkdir test-workspace && cd test-workspace
 
 # Create minimal configuration
 cat > config.yaml << EOF
-global_config:
+global:
   qdrant:
     url: "${QDRANT_URL}"
     api_key: "${QDRANT_API_KEY}"
@@ -511,8 +514,8 @@ mkdir test-docs
 echo "# Test Document" > test-docs/test.md
 
 # Test loading
-qdrant-loader --workspace . init
-qdrant-loader --workspace . ingest
+qdrant-loader init --workspace .
+qdrant-loader ingest --workspace .
 ```
 
 ### Support Channels
@@ -525,33 +528,39 @@ qdrant-loader --workspace . ingest
 
 ```markdown
 ## Issue Description
+
 Brief description of the problem
 
 ## Environment
+
 - OS: [e.g., Ubuntu 22.04]
 - Python: [e.g., 3.11.5]
 - QDrant Loader: [e.g., 1.2.3]
 - QDrant: [e.g., 1.7.0]
 
 ## Steps to Reproduce
+
 1. Step one
 2. Step two
 3. Step three
 
 ## Expected Behavior
+
 What you expected to happen
 
 ## Actual Behavior
+
 What actually happened
 
 ## Configuration
+
 ```yaml
 [Paste relevant configuration (sanitized)]
 ```
 
 ## Logs
 
-```
+```text
 [Paste relevant logs here]
 ```
 
@@ -559,11 +568,11 @@ What actually happened
 
 ```bash
 # List the exact commands you ran
-qdrant-loader --workspace . config
-qdrant-loader project --workspace . validate
+qdrant-loader config --workspace .
+qdrant-loader project validate --workspace .
 ```
 
-```
+```text
 
 ## 🔗 Related Documentation
 
