@@ -47,7 +47,7 @@ dev = [
     "pre-commit>=3.0.0",
     "requests>=2.28.0",
     "responses>=0.23.0",
-    "markdownlint-cli2>=0.8.0",
+
 ]
 docs = [
     "tomli>=2.0.0",
