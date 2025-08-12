@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qdrant-loader-workspace"
-version = "0.5.1"
+version = "0.6.0"
 description = "A comprehensive toolkit for loading data into Qdrant vector database with MCP server support"
 readme = "README.md"
 authors = [
@@ -47,7 +47,6 @@ dev = [
     "pre-commit>=3.0.0",
     "requests>=2.28.0",
     "responses>=0.23.0",
-
 ]
 docs = [
     "tomli>=2.0.0",
