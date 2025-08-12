@@ -7,6 +7,6 @@ Track follow-ups and improvements to keep docs accurate and helpful.
 - None.
 
 ---
-Last Updated: 2025-08-11
-Owner: Martin Papy
 
+Last Updated: 2025-08-11  
+Owner: Martin Papy

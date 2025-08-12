@@ -6,7 +6,7 @@
 [![Test Coverage](https://img.shields.io/badge/coverage-view%20reports-blue)](https://qdrant-loader.net/coverage/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-📋 **[Release Notes v0.6.0](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (August 11, 2025)
+📋 **[Release Notes v0.6.0](./RELEASE_NOTES.md)** - Latest improvements and bug fixes (August 12, 2025)
 
 A comprehensive toolkit for loading data into Qdrant vector database with advanced MCP server support for AI-powered development workflows.
 
@@ -27,7 +27,7 @@ This monorepo contains two complementary packages:
 
 ### 🔄 [QDrant Loader](./packages/qdrant-loader/)
 
-_Data ingestion and processing engine_
+Data ingestion and processing engine
 
 Collects and vectorizes content from multiple sources into QDrant vector database.
 
@@ -42,7 +42,7 @@ Collects and vectorizes content from multiple sources into QDrant vector databas
 
 ### 🔌 [QDrant Loader MCP Server](./docs/packages/mcp-server/)
 
-_AI development integration layer_
+AI development integration layer
 
 Model Context Protocol server providing search capabilities to AI development tools.
 
@@ -84,8 +84,11 @@ pip install qdrant-loader-mcp-server  # MCP server only
 3. **Configure your environment** (edit `.env`)
 
    ```bash
+   # Qdrant connection
    QDRANT_URL=http://localhost:6333
    QDRANT_COLLECTION_NAME=my_docs
+
+   # Embeddings provider
    OPENAI_API_KEY=your_openai_key
    ```
 
@@ -152,17 +155,20 @@ Add to your Cursor settings (`.cursor/mcp.json`):
 ## 📚 Documentation
 
 ### 🚀 Getting Started
+
 - **[Installation Guide](./docs/getting-started/installation.md)** - Complete setup instructions
 - **[Quick Start](./docs/getting-started/quick-start.md)** - Step-by-step tutorial
 - **Core Concepts** - Covered inline in Getting Started
 
 ### 👥 User Guides
+
 - **[Configuration](./docs/users/configuration/)** - Complete configuration reference
 - **[Data Sources](./docs/users/detailed-guides/data-sources/)** - Git, Confluence, JIRA setup
 - **[File Conversion](./docs/users/detailed-guides/file-conversion/)** - File processing capabilities
 - **[MCP Server](./docs/users/detailed-guides/mcp-server/)** - AI tool integration
 
 ### 🛠️ Developer Resources
+
 - **[Architecture](./docs/developers/architecture/)** - System design overview
 - **[Testing](./docs/developers/testing/)** - Testing guide and best practices
 - **[Contributing](./CONTRIBUTING.md)** - Development setup and guidelines
@@ -184,10 +190,10 @@ cd qdrant-loader
 python -m venv venv
 source venv/bin/activate
 
+```bash
 # Install packages in development mode
 pip install -e "packages/qdrant-loader[dev]"
 pip install -e "packages/qdrant-loader-mcp-server[dev]"
-
 ```
 
 ## 📄 License

@@ -1,14 +1,22 @@
 # Deployment Documentation
+
 This section provides comprehensive deployment documentation for QDrant Loader, covering production deployment strategies, environment setup, monitoring, and performance optimization. All examples are verified against the actual implementation.
+
 ## 🎯 Deployment Overview
+
 QDrant Loader can be deployed in various environments and configurations to meet different scale and reliability requirements:
+
 ### 🚀 Deployment Options
+
 QDrant Loader supports the following deployment patterns:
+
 - **Local Installation** - Direct Python package installation for development and small-scale use
 - **PyPI Package Deployment** - Official package distribution via PyPI
 - **Workspace-Based Deployment** - Organized multi-project configurations
 - **MCP Server Deployment** - Optional server component for AI assistant integration
+
 ### 🏗️ Architecture Patterns
+
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │ QDrant Loader Deployment │
@@ -30,8 +38,11 @@ QDrant Loader supports the following deployment patterns:
 │ └───────────────┘ │ └─────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
+
 ## 🚀 Quick Start Deployment
+
 ### Single Server Setup
+
 ```bash
 # Create deployment directory
 mkdir qdrant-loader-deployment
@@ -46,8 +57,24 @@ pip install qdrant-loader-mcp-server  # optional
 mkdir -p {data,logs}
 # Create configuration files
 cat > config.yaml << EOF
-global: qdrant: url: "http://localhost:6333" collection_name: "documents" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "./data/state.db"
-projects: docs: display_name: "Documentation" sources: git: main-docs: base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}"
+global:
+  qdrant:
+    url: "http://localhost:6333"
+    collection_name: "documents"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+  state_management:
+    state_db_path: "./data/state.db"
+
+projects:
+  docs:
+    display_name: "Documentation"
+    sources:
+      git:
+        main-docs:
+          base_url: "https://github.com/company/docs"
+          branch: "main"
+          token: "${REPO_TOKEN}"
 EOF
 # Create environment file
 cat > .env << EOF
@@ -60,7 +87,9 @@ EOF
 qdrant-loader init --workspace .
 qdrant-loader ingest --workspace .
 ```
+
 ### Production Environment Setup
+
 ```bash
 # Create production user
 sudo useradd -m -s /bin/bash qdrant-loader
@@ -77,29 +106,40 @@ pip install qdrant-loader qdrant-loader-mcp-server
 # Initialize workspace
 qdrant-loader init --workspace /opt/qdrant-loader
 ```
+
 ## 🖥️ Environment Setup
+
 ### System Requirements
+
 #### Minimum Requirements
+
 - **CPU**: 2 cores
 - **RAM**: 4 GB
 - **Storage**: 10 GB available space
 - **Python**: 3.12 or higher
 - **Network**: Internet access for API calls
+
 #### Recommended Requirements
+
 - **CPU**: 4+ cores
 - **RAM**: 8+ GB
 - **Storage**: 50+ GB SSD
 - **Python**: 3.12+
 - **Network**: High-speed internet connection
+
 ### Operating System Support
+
 | OS | Support Level | Notes |
 |---|---|---|
 | **Ubuntu 20.04+** | ✅ Fully Supported | Recommended for production |
 | **CentOS 8+** | ✅ Fully Supported | Enterprise environments |
 | **macOS 12+** | ✅ Fully Supported | Development and testing |
 | **Windows 10+** | ✅ Fully Supported | Development environments |
+
 ### Dependencies
+
 #### System Dependencies
+
 ```bash
 # Ubuntu/Debian
 sudo apt update
@@ -109,15 +149,20 @@ sudo yum install -y python3.12 python3.12-venv python3.12-devel git curl
 # macOS (with Homebrew)
 brew install python@3.12 git curl
 ```
+
 #### Python Dependencies
+
 ```bash
 # Core dependencies are automatically installed
 pip install qdrant-loader qdrant-loader-mcp-server
 # Optional development dependencies
 pip install qdrant-loader[dev] qdrant-loader-mcp-server[dev]
 ```
+
 ### QDrant Database Setup
+
 #### Local QDrant Installation
+
 ```bash
 # Using Docker (recommended)
 docker run -p 6333:6333 -p 6334:6334 \ -v $(pwd)/qdrant_storage:/qdrant/storage:z \ qdrant/qdrant
@@ -126,15 +171,20 @@ wget https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-unk
 tar xzf qdrant-x86_64-unknown-linux-gnu.tar.gz
 ./qdrant
 ```
+
 #### Cloud QDrant Setup
+
 ```bash
 # QDrant Cloud configuration
 export QDRANT_URL="https://your-cluster.qdrant.io"
 export QDRANT_API_KEY="your-api-key"
 export QDRANT_COLLECTION_NAME="documents"
 ```
+
 ## 🔧 Configuration Management
+
 ### Environment Variables
+
 ```bash
 # Production environment variables
 cat > /opt/qdrant-loader/.env << EOF
@@ -154,14 +204,58 @@ JIRA_EMAIL=your-email@domain.com
 STATE_DB_PATH=./data/state.db
 EOF
 ```
+
 ### Configuration File
+
 ```yaml
 # /opt/qdrant-loader/config.yaml
-global: qdrant: url: "${QDRANT_URL}" api_key: "${QDRANT_API_KEY}" collection_name: "${QDRANT_COLLECTION_NAME}" openai: api_key: "${OPENAI_API_KEY}" state_management: state_db_path: "${STATE_DB_PATH}" chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
-projects: production: project_id: "production" display_name: "Production Documentation" description: "Production documentation and knowledge base" sources: git: docs-repo: source_type: "git" source: "docs-repo" base_url: "https://github.com/company/docs" branch: "main" token: "${REPO_TOKEN}" include_paths: ["**/*.md", "**/*.rst"] confluence: company-wiki: source_type: "confluence" source: "company-wiki" base_url: "https://company.atlassian.net/wiki" deployment_type: "cloud" space_key: "DOCS" token: "${CONFLUENCE_TOKEN}" email: "${CONFLUENCE_EMAIL}"
+global:
+  qdrant:
+    url: "${QDRANT_URL}"
+    api_key: "${QDRANT_API_KEY}"
+    collection_name: "${QDRANT_COLLECTION_NAME}"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+  state_management:
+    state_db_path: "${STATE_DB_PATH}"
+  chunking:
+    chunk_size: 1200
+    chunk_overlap: 300
+  file_conversion:
+    max_file_size: "100MB"
+    conversion_timeout: 300
+
+projects:
+  production:
+    project_id: "production"
+    display_name: "Production Documentation"
+    description: "Production documentation and knowledge base"
+    sources:
+      git:
+        docs-repo:
+          source_type: "git"
+          source: "docs-repo"
+          base_url: "https://github.com/company/docs"
+          branch: "main"
+          token: "${REPO_TOKEN}"
+          include_paths:
+            - "**/*.md"
+            - "**/*.rst"
+      confluence:
+        company-wiki:
+          source_type: "confluence"
+          source: "company-wiki"
+          base_url: "https://company.atlassian.net/wiki"
+          deployment_type: "cloud"
+          space_key: "DOCS"
+          token: "${CONFLUENCE_TOKEN}"
+          email: "${CONFLUENCE_EMAIL}"
 ```
+
 ## 🔄 Service Management
+
 ### Systemd Service
+
 ```ini
 # /etc/systemd/system/qdrant-loader.service
 [Unit]
@@ -182,7 +276,9 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 ```
+
 ### MCP Server Service
+
 ```ini
 # /etc/systemd/system/mcp-qdrant-loader.service
 [Unit]
@@ -203,7 +299,9 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 ```
+
 ### Service Management Commands
+
 ```bash
 # Enable and start services
 sudo systemctl enable qdrant-loader
@@ -220,9 +318,13 @@ sudo journalctl -u mcp-qdrant-loader -f
 sudo systemctl restart qdrant-loader
 sudo systemctl restart mcp-qdrant-loader
 ```
+
 ## 📊 Monitoring and Observability
+
 ### Log Management
+
 #### Log Configuration
+
 ```python
 # logging.yaml
 version: 1
@@ -231,14 +333,18 @@ handlers: console: class: logging.StreamHandler level: INFO formatter: json stre
 loggers: qdrant_loader: level: DEBUG handlers: [console, file] propagate: false
 root: level: INFO handlers: [console]
 ```
+
 #### Log Rotation
+
 ```bash
 # /etc/logrotate.d/qdrant-loader
-/opt/qdrant-loader/logs/*.log { daily missingok rotate 30 compress delaycompress notifempty create 644 qdrant-loader qdrant-loader postrotate systemctl reload qdrant-loader endscript
-}
+/opt/qdrant-loader/logs/*.log { daily missingok rotate 30 compress delaycompress notifempty create 644 qdrant-loader qdrant-loader postrotate systemctl reload qdrant-loader endscript }
 ```
+
 ### Health Monitoring
+
 #### Health Check Script
+
 ```bash
 #!/bin/bash
 # /opt/qdrant-loader/bin/health-check.sh
@@ -257,13 +363,18 @@ else
   exit 1
 fi
 ```
+
 #### Cron Job for Health Checks
+
 ```bash
 # Add to crontab
 */5 * * * * /opt/qdrant-loader/bin/health-check.sh
 ```
+
 ### Performance Monitoring
+
 #### System Metrics
+
 ```bash
 # Monitor system resources
 htop
@@ -271,7 +382,9 @@ iostat -x 1
 free -h
 df -h
 ```
+
 #### Application Metrics
+
 ```bash
 # Check project status
 qdrant-loader project --workspace /opt/qdrant-loader/config list
@@ -281,8 +394,11 @@ qdrant-loader project --workspace /opt/qdrant-loader/config status --format json
 systemctl status qdrant-loader
 systemctl status mcp-qdrant-loader
 ```
+
 ### Prometheus Metrics
+
 QDrant Loader includes built-in Prometheus metrics support:
+
 ```python
 # Available metrics (from prometheus_metrics.py)
 INGESTED_DOCUMENTS = Counter("qdrant_ingested_documents_total", "Total number of documents ingested")
@@ -294,8 +410,11 @@ EMBED_QUEUE_SIZE = Gauge("qdrant_embed_queue_size", "Current size of the embeddi
 CPU_USAGE = Gauge("qdrant_cpu_usage_percent", "CPU usage percent")
 MEMORY_USAGE = Gauge("qdrant_memory_usage_percent", "Memory usage percent")
 ```
+
 ## 🔒 Security Configuration
+
 ### File Permissions
+
 ```bash
 # Set proper file permissions
 sudo chown -R qdrant-loader:qdrant-loader /opt/qdrant-loader
@@ -304,7 +423,9 @@ sudo chmod 640 /opt/qdrant-loader/config/.env
 sudo chmod 644 /opt/qdrant-loader/config/config.yaml
 sudo chmod 755 /opt/qdrant-loader/bin/health-check.sh
 ```
+
 ### Firewall Configuration
+
 ```bash
 # Ubuntu/Debian (ufw)
 sudo ufw allow ssh
@@ -317,16 +438,22 @@ sudo firewall-cmd --permanent --add-port=6333/tcp
 sudo firewall-cmd --permanent --add-port=6334/tcp
 sudo firewall-cmd --reload
 ```
+
 ### SSL/TLS Configuration
+
 ```bash
 # Generate SSL certificates for QDrant
 openssl req -x509 -newkey rsa:4096 -keyout qdrant-key.pem -out qdrant-cert.pem -days 365 -nodes
 # Configure QDrant with SSL
 # Add to QDrant configuration
 ```
+
 ## 🚀 Scaling Strategies
+
 ### Horizontal Scaling
+
 #### Multiple Worker Processes
+
 ```bash
 # Run multiple ingestion processes for different projects
 qdrant-loader ingest --workspace /opt/qdrant-loader --project project1 &
@@ -334,7 +461,9 @@ qdrant-loader ingest --workspace /opt/qdrant-loader --project project2 &
 qdrant-loader ingest --workspace /opt/qdrant-loader --project project3 &
 wait
 ```
+
 #### Load Balancing
+
 ```bash
 # Use nginx for load balancing MCP servers
 # /etc/nginx/sites-available/qdrant-loader
@@ -343,8 +472,11 @@ upstream mcp_servers { server 127.0.0.1:8001; server 127.0.0.1:8002; server 127.
 server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pass http://mcp_servers; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; }
 }
 ```
+
 ### Vertical Scaling
+
 #### Resource Optimization
+
 ```bash
 # Optimize for high-memory systems
 # Configure larger chunk sizes in config.yaml:
@@ -354,19 +486,26 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 # chunk_overlap: 400
 # Run ingestion with specific projectqdrant-loader ingest --workspace /opt/qdrant-loader/config --project high-priority
 ```
+
 ## 📚 Deployment Documentation
+
 ### Detailed Deployment Guides
-- **[Environment Setup](#environment-setup)** - Complete environment setup guide
-- **[Monitoring and Observability](#monitoring-and-observability)** - Comprehensive monitoring setup
+
+- **[Environment Setup](#️-environment-setup)** - Complete environment setup guide
+- **[Monitoring and Observability](#-monitoring-and-observability)** - Comprehensive monitoring setup
 - **[Performance Optimization](#performance-optimization)** - Production optimization guide
+
 ### Best Practices
+
 1. **Use virtual environments** - Isolate Python dependencies
 2. **Implement health checks** - Monitor application health
 3. **Monitor everything** - Comprehensive observability
 4. **Plan for scale** - Design for growth
 5. **Secure by default** - File permissions, firewall, SSL
 6. **Automate deployments** - Use scripts and configuration management
+
 ### Deployment Checklist
+
 - [ ] System requirements met
 - [ ] Dependencies installed
 - [ ] Configuration files created and validated
@@ -378,19 +517,34 @@ server { listen 80; server_name qdrant-loader.example.com; location / { proxy_pa
 - [ ] Security measures applied
 - [ ] Backup and recovery tested
 - [ ] Documentation updated
+
 ## 🆘 Getting Help
+
 ### Deployment Support
+
 - **[GitHub Issues](https://github.com/martin-papy/qdrant-loader/issues)** - Report deployment issues
 - **[GitHub Discussions](https://github.com/martin-papy/qdrant-loader/discussions)** - Ask deployment questions
 - **[Deployment Examples](https://github.com/martin-papy/qdrant-loader/tree/main/examples/deployment)** - Reference configurations
+
 ### Community Resources
+
 - **[Configuration Examples](https://github.com/martin-papy/qdrant-loader/wiki/Configuration)** - Community configurations
 - **[Deployment Guides](https://github.com/martin-papy/qdrant-loader/wiki/Deployment)** - Community deployment guides
+
 ---
-**Ready to deploy?** Start with [Environment Setup](#environment-setup) for detailed setup instructions or jump to [Monitoring and Observability](#monitoring-and-observability) for production monitoring. Don't forget to check [Performance Optimization](#performance-optimization) for optimization tips.
+**Ready to deploy?** Start with [Environment Setup](#️-environment-setup) for detailed setup instructions or jump to [Monitoring and Observability](#-monitoring-and-observability) for production monitoring. Don't forget to check [Performance Optimization](#performance-optimization) for optimization tips.
+
 ### Performance Optimization
+
 Configure chunking and processing parameters in your workspace configuration:
+
 ```yaml
 # config.yaml - Performance tuning
-global: chunking: chunk_size: 1200 chunk_overlap: 300 file_conversion: max_file_size: "100MB" conversion_timeout: 300
+global:
+  chunking:
+    chunk_size: 1200
+    chunk_overlap: 300
+  file_conversion:
+    max_file_size: "100MB"
+    conversion_timeout: 300
 ```
