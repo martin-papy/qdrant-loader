@@ -44,8 +44,19 @@ pip install pytest pytest-asyncio pytest-cov pytest-mock requests-mock responses
 # Run all tests (verbose)
 pytest -v
 
-# Run with coverage (HTML report under htmlcov/)
-pytest -v --cov=packages --cov=website --cov-report=html
+# Run with coverage per package (HTML reports under respective directories)
+# Test qdrant-loader package
+cd packages/qdrant-loader
+pytest -v --cov=src --cov-report=html
+
+# Test qdrant-loader-mcp-server package
+cd ../qdrant-loader-mcp-server
+pytest -v --cov=src --cov-report=html
+
+# Test website (from project root)
+cd ../..
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/website"
+pytest tests/ --cov=website --cov-report=html
 ```
 
 ### Running Specific Test Categories
@@ -82,21 +93,14 @@ Key settings live in `pyproject.toml` under `[tool.pytest.ini_options]` and cove
 
 ```text
 tests/
+├── __init__.py
 ├── conftest.py # Shared fixtures and configuration
-├── config.test.yaml # Test configuration file
-├── config.test.template.yaml # Template for test configuration
-├── .env.test.template # Environment variables template
-├── utils.py # Test utilities
-├── unit/ # Unit tests
-│ ├── cli/ # CLI command tests
-│ ├── config/ # Configuration tests
-│ ├── connectors/ # Connector tests
-│ ├── core/ # Core component tests
-│ │ └── pipeline/ # Pipeline tests
-│ └── utils/ # Utility tests
-├── integration/ # Integration tests
-├── fixtures/ # Test data and fixtures
-└── scripts/ # Test utility scripts
+├── test_cleanup.py
+├── test_favicon_generation.py
+├── test_link_checker.py
+├── test_website_build_comprehensive.py
+├── test_website_build_edge_cases.py
+└── test_website_build.py
 ```
 
 ## 🔧 Test Fixtures and Utilities
@@ -490,7 +494,9 @@ make format-check
 ruff check . # Linting
 ruff format --check . # Code formatting
 mypy . # Type checking
-pytest --cov=qdrant_loader # Test coverage
+# Per-package test coverage
+cd packages/qdrant-loader && pytest --cov=src
+cd packages/qdrant-loader-mcp-server && pytest --cov=src
 ```
 
 ### Continuous Integration
@@ -529,7 +535,7 @@ jobs:
         run: poetry install --with dev
       
       - name: Run tests
-        run: poetry run pytest --cov=qdrant_loader --cov-report=xml
+        run: poetry run pytest --cov=src --cov-report=xml
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3

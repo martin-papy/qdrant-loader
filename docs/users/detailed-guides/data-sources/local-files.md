@@ -34,9 +34,9 @@ projects:
           include_paths:
             - "**"
           exclude_paths:
-            - ".*"
-            - "~*"
-            - "*.tmp"
+            - "**/.*"
+            - "**/~*"
+            - "**/*.tmp"
           file_types:
             - "*.pdf"
             - "*.docx"
@@ -64,13 +64,13 @@ projects:
           include_paths:
             - "**"  # Include all files recursively
           exclude_paths:
-            - ".*"  # Hidden files
-            - "~*"  # Temporary files
-            - "*.tmp"  # Temporary files
-            - "node_modules/**"  # Dependencies
-            - "__pycache__/**"  # Python cache
-            - "build/**"  # Build artifacts
-            - "dist/**"  # Distribution files
+            - "**/.*"  # Hidden files
+            - "**/~*"  # Temporary files
+            - "**/*.tmp"  # Temporary files
+            - "**/node_modules/**"  # Dependencies
+            - "**/__pycache__/**"  # Python cache
+            - "**/build/**"  # Build artifacts
+            - "**/dist/**"  # Distribution files
           # File types to process
           file_types:
             - "*.pdf"
@@ -120,8 +120,8 @@ projects:
             - "*.md"
             - "*.rst"
           exclude_paths:
-            - "build/**"
-            - "_build/**"
+            - "**/build/**"
+            - "**/_build/**"
         # Source code
         source-code:
           base_url: "file:///home/user/code"
@@ -132,11 +132,11 @@ projects:
             - "*.cpp"
             - "*.h"
           exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - ".git/**"
-            - "build/**"
-            - "dist/**"
+            - "**/node_modules/**"
+            - "**/__pycache__/**"
+            - "**/.git/**"
+            - "**/build/**"
+            - "**/dist/**"
 ```
 
 ## 🎯 Configuration Options
@@ -200,8 +200,8 @@ projects:
             - "*.xml"
             - "*.xlsx"
           exclude_paths:
-            - "raw/**"  # Skip raw data
-            - "temp/**"  # Skip temporary files
+            - "**/raw/**"  # Skip raw data
+            - "**/temp/**"  # Skip temporary files
 ```
 
 ### Documentation Team
@@ -264,11 +264,11 @@ projects:
             - "*.md"
             - "*.rst"
           exclude_paths:
-            - "node_modules/**"
-            - "__pycache__/**"
-            - "build/**"
-            - "dist/**"
-            - ".git/**"
+            - "**/node_modules/**"
+            - "**/__pycache__/**"
+            - "**/build/**"
+            - "**/dist/**"
+            - "**/.git/**"
         # Configuration files
         config-files:
           base_url: "file:///projects/config"
@@ -383,9 +383,9 @@ projects:
           max_file_size: 104857600  # 100MB (maximum allowed)
           # Skip very large files
           exclude_paths:
-            - "*.iso"
-            - "*.dmg"
-            - "*.vm*"
+            - "**/*.iso"
+            - "**/*.dmg"
+            - "**/*.vm*"
 ```
 
 #### File Type Issues
@@ -428,8 +428,8 @@ projects:
             - "**"
           # Check exclude patterns
           exclude_paths:
-            - ".*"  # Hidden files
-            - "~*"  # Temporary files
+            - "**/.*"  # Hidden files
+            - "**/~*"  # Temporary files
 ```
 
 ### Debugging Commands
@@ -506,8 +506,7 @@ projects:
             - "reports/2024/**"  # 2024 reports only
           # Exclude patterns - avoid unnecessary files
           exclude_paths:
-            - ".*"            # Hidden files
-            - "*/.*"          # Hidden files in subdirs
+            - "**/.*"            # Hidden files
             - "**/*.tmp"      # Temporary files
             - "**/*.log"      # Log files
             - "**/node_modules/**"  # Dependencies
