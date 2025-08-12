@@ -13,14 +13,10 @@ QDrant Loader uses a comprehensive documentation system designed to serve both e
 ```text
 docs/
 ├── README.md # Main project README (GitHub homepage)
-├── website/README.md # Website documentation
-├── packages/ # Package-specific documentation
-│ ├── qdrant-loader/README.md # Core loader package
-│ └── qdrant-loader-mcp-server/README.md # MCP server package
-├── docs/
-│ ├── getting-started/ # Universal onboarding
-│ ├── users/ # User-focused documentation
-│ └── developers/ # Developer-focused documentation
+├── users/ # User-focused documentation
+├── developers/ # Developer-focused documentation
+├── getting-started/ # Universal onboarding
+├── cli-reference/ # Command-line interface
 └── CONTRIBUTING.md # Contribution guidelines
 ```
 

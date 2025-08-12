@@ -300,13 +300,13 @@ qdrant-loader config --workspace .
 
 ```bash
 # Validate project configuration
-qdrant-loader project --workspace .
+qdrant-loader project validate --workspace .
 
 # Check project status
-qdrant-loader project --workspace .
+qdrant-loader project status --workspace .
 
 # List all projects
-qdrant-loader project --workspace .
+qdrant-loader project list --workspace .
 ```
 
 ### Process JIRA Data
@@ -439,13 +439,13 @@ curl -u "email:token" \
 
 ```bash
 # Check project status
-qdrant-loader project --workspace .
+qdrant-loader project status --workspace .
 
 # Check specific project
-qdrant-loader project --workspace . --project-id my-project
+qdrant-loader project status --workspace . --project-id my-project
 
 # List all projects
-qdrant-loader project --workspace .
+qdrant-loader project list --workspace .
 ```
 
 ### Performance Optimization

@@ -339,12 +339,11 @@ qdrant-loader ingest --workspace . --project my-project --source-type confluence
 
 ```bash
 # Export credentials securely (recommended)
-export CONFLUENCE_USER="your-email@company.com"
-export CONFLUENCE_API_TOKEN="your-api-token"
-export CONFLUENCE_TOKEN="your-personal-access-token"  # For Data Center or PAT flows
+export CONFLUENCE_EMAIL="your-email@company.com"
+export CONFLUENCE_TOKEN="your-api-token"  # API token for Cloud or PAT for Data Center
 
 # Test API token manually for Cloud (uses env vars)
-curl -u "$CONFLUENCE_USER:$CONFLUENCE_API_TOKEN" \
+curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \
   "https://your-domain.atlassian.net/wiki/rest/api/space"
 
 # Test Personal Access Token for Data Center (uses env var)
@@ -376,7 +375,7 @@ curl --netrc-file ~/.netrc \
 
 ```bash
 # List accessible spaces for Cloud (env vars)
-curl -u "$CONFLUENCE_USER:$CONFLUENCE_API_TOKEN" \
+curl -u "$CONFLUENCE_EMAIL:$CONFLUENCE_TOKEN" \
   "https://your-domain.atlassian.net/wiki/rest/api/space" | jq '.results[].key'
 
 # Or using netrc file

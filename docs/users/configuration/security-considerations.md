@@ -88,7 +88,7 @@ validate_config() {
   echo "Validating QDrant Loader configuration..."
   
   # Validate workspace configuration
-  qdrant-loader project --workspace .
+  qdrant-loader project validate --workspace .
   if [ $? -eq 0 ]; then
     echo "✅ Configuration valid"
   else
@@ -265,7 +265,7 @@ touch .env config.yaml
 chmod 600 .env config.yaml
 
 # Run in workspace mode
-qdrant-loader project --workspace .
+qdrant-loader project status --workspace .
 qdrant-loader ingest --workspace .
 ```
 

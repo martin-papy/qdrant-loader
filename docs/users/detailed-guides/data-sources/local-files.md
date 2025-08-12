@@ -1,5 +1,7 @@
 # Local Files
 
+> **🔄 Breaking Change**: The configuration root has been renamed from `global_config` to `global`. If you're upgrading from an earlier version, update your configuration files to use `global:` instead of `global_config:`.
+
 Connect QDrant Loader to your local file system to index documents, research materials, archives, and any file-based content. This guide covers setup for processing local directories and files.
 
 ## 🎯 What Gets Processed
@@ -305,7 +307,7 @@ projects:
           file_types:
             - "*.pdf"
             - "*.epub"
-          max_file_size: 209715200  # 200MB for large books
+          max_file_size: 104857600  # 100MB (maximum allowed)
           enable_file_conversion: true
 ```
 
@@ -325,7 +327,7 @@ qdrant-loader config --workspace .
 
 ```bash
 # Validate project configuration
-qdrant-loader project --workspace .
+qdrant-loader project validate --workspace .
 
 # Check project status
 qdrant-loader project status --workspace .
@@ -378,7 +380,7 @@ projects:
         my-docs:
           base_url: "file:///large_files"
           # Increase size limits
-          max_file_size: 209715200  # 200MB
+          max_file_size: 104857600  # 100MB (maximum allowed)
           # Skip very large files
           exclude_paths:
             - "*.iso"
