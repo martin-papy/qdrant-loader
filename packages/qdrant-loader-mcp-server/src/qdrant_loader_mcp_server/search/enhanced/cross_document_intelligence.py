@@ -2628,6 +2628,7 @@ class ConflictDetector:
 
         deadline = time.time() + float(overall_timeout_s)
         candidate_pairs = candidate_pairs[:max_pairs_total]
+        pairs_candidates_count = len(candidate_pairs)
 
         analyzed_count = 0
         conflicts_found = 0
@@ -2713,11 +2714,26 @@ class ConflictDetector:
         )
 
         # Mark partial if deadline exceeded
-        if time.time() > deadline:
+        partial = time.time() > deadline
+        if partial:
             conflicts.resolution_suggestions.setdefault(
                 "partial_results",
                 "Analysis stopped due to overall timeout; increase budget to analyze more pairs.",
             )
+
+        # Expose last-run stats for higher layers to include in responses
+        try:
+            self._last_stats = {
+                "pairs_considered": int(pairs_candidates_count),
+                "pairs_analyzed": int(analyzed_count),
+                "llm_pairs": int(llm_used),
+                "elapsed_ms": float(processing_time),
+                "partial_results": bool(partial),
+                "max_llm_pairs": int(max_llm_pairs),
+                "max_pairs_total": int(max_pairs_total),
+            }
+        except Exception:
+            self._last_stats = {}
 
         return conflicts
 
