@@ -1,5 +1,31 @@
 # Release Notes
 
+## Version 0.6.1 - August 13, 2025
+
+### 🚀 Performance Improvements
+
+#### MCP Server - Document Conflict Detection Optimization
+
+- **Resolved performance bottlenecks**: Fixed timeout and error issues in `detect_document_conflicts` tool, achieving P95 latency target of 8-10 seconds
+- **Tiered analysis implementation**: Added intelligent document pair prioritization (primary, secondary, tertiary tiers) to analyze most promising conflicts first
+- **LLM optimization**: Implemented strict budgeting for expensive LLM calls with configurable limits (default 2 pairs) and per-process caching
+- **Parallel processing**: Added concurrent Qdrant vector retrieval with semaphore-based concurrency control (default 5 concurrent operations)
+- **Configurable performance parameters**: Added 8 new configuration options for fine-tuning conflict detection performance:
+  - `conflict_overall_timeout_s`: Overall operation timeout (default 9.0s)
+  - `conflict_max_pairs_total`: Maximum document pairs to analyze (default 24)
+  - `conflict_max_llm_pairs`: Maximum LLM-analyzed pairs (default 2)
+  - `conflict_text_window_chars`: Text truncation for LLM input (default 2000 chars)
+  - `conflict_embeddings_timeout_s`: Vector retrieval timeout (default 2.0s)
+  - `conflict_embeddings_max_concurrency`: Parallel retrieval limit (default 5)
+- **Runtime transparency**: Added detailed performance statistics in tool responses showing pairs analyzed, LLM usage, and execution time
+- **Graceful degradation**: Implemented partial results with time budget exhaustion handling instead of hard failures
+- **Enhanced tool schema**: Added optional per-call parameter overrides for `use_llm`, `max_llm_pairs`, `overall_timeout_s`, `max_pairs_total`, and `text_window_chars`
+
+#### Bug Fixes
+
+- **Fixed AttributeError in conflict formatter**: Resolved `'dict' object has no attribute 'document_id'` error by adding proper handling for both SearchResult objects and dictionary formats
+- **Enhanced error handling**: Improved graceful handling of malformed document data in conflict detection pipeline
+
 ## Version 0.6.0 - August 12, 2025
 
 ### **MAJOR MILESTONE RELEASE**
