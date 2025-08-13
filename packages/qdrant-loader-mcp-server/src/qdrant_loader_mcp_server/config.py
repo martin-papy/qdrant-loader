@@ -1,6 +1,8 @@
 """Configuration settings for the RAG MCP Server."""
 
 import os
+import json
+import logging
 from typing import Annotated
 
 from dotenv import load_dotenv
@@ -8,6 +10,9 @@ from pydantic import BaseModel, Field
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Module logger
+logger = logging.getLogger(__name__)
 
 
 # --- Helpers -----------------------------------------------------------------
@@ -65,6 +70,38 @@ def parse_int_env(
         value = int(raw_value)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"Invalid integer for {var_name}: {raw_value!r}") from exc
+    if min_value is not None and value < min_value:
+        raise ValueError(f"{var_name} must be >= {min_value}; got {value}")
+    if max_value is not None and value > max_value:
+        raise ValueError(f"{var_name} must be <= {max_value}; got {value}")
+    return value
+
+
+def parse_float_env(
+    var_name: str,
+    default: float,
+    *,
+    min_value: float | None = None,
+    max_value: float | None = None,
+) -> float:
+    """Parse a float from an environment variable with bounds checking.
+
+    Args:
+        var_name: Environment variable name to read.
+        default: Value to use when the variable is not set.
+        min_value: Optional lower bound (inclusive).
+        max_value: Optional upper bound (inclusive).
+
+    Raises:
+        ValueError: If the variable is set but not a float, or out of bounds.
+    """
+    raw_value = os.getenv(var_name)
+    if raw_value is None or raw_value.strip() == "":
+        return default
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid float for {var_name}: {raw_value!r}") from exc
     if min_value is not None and value < min_value:
         raise ValueError(f"{var_name} must be >= {min_value}; got {value}")
     if max_value is not None and value > max_value:
@@ -157,13 +194,20 @@ class SearchConfig(BaseModel):
             if not raw:
                 return default
             try:
-                import json
-
                 parsed = json.loads(raw)
                 if isinstance(parsed, dict):
                     return parsed
                 return default
-            except Exception:
+            except (json.JSONDecodeError, ValueError) as exc:
+                # Shorten raw value to avoid logging excessively large strings
+                raw_preview = raw if len(raw) <= 200 else f"{raw[:200]}..."
+                logger.warning(
+                    "Failed to parse JSON for env var %s; raw=%r; falling back to default. Error: %s",
+                    name,
+                    raw_preview,
+                    exc,
+                    exc_info=True,
+                )
                 return default
 
         if "conflict_limit_default" not in data:
@@ -190,20 +234,20 @@ class SearchConfig(BaseModel):
                 "SEARCH_CONFLICT_LLM_MODEL", "gpt-4o-mini"
             )
         if "conflict_llm_timeout_s" not in data:
-            data["conflict_llm_timeout_s"] = parse_int_env(
-                "SEARCH_CONFLICT_LLM_TIMEOUT_S", 12, min_value=1, max_value=60
+            data["conflict_llm_timeout_s"] = parse_float_env(
+                "SEARCH_CONFLICT_LLM_TIMEOUT_S", 12.0, min_value=1.0, max_value=60.0
             )
         if "conflict_overall_timeout_s" not in data:
-            data["conflict_overall_timeout_s"] = parse_int_env(
-                "SEARCH_CONFLICT_OVERALL_TIMEOUT_S", 9, min_value=1, max_value=60
+            data["conflict_overall_timeout_s"] = parse_float_env(
+                "SEARCH_CONFLICT_OVERALL_TIMEOUT_S", 9.0, min_value=1.0, max_value=60.0
             )
         if "conflict_text_window_chars" not in data:
             data["conflict_text_window_chars"] = parse_int_env(
                 "SEARCH_CONFLICT_TEXT_WINDOW_CHARS", 2000, min_value=200, max_value=8000
             )
         if "conflict_embeddings_timeout_s" not in data:
-            data["conflict_embeddings_timeout_s"] = parse_int_env(
-                "SEARCH_CONFLICT_EMBEDDINGS_TIMEOUT_S", 2, min_value=1, max_value=30
+            data["conflict_embeddings_timeout_s"] = parse_float_env(
+                "SEARCH_CONFLICT_EMBEDDINGS_TIMEOUT_S", 2.0, min_value=1.0, max_value=30.0
             )
         if "conflict_embeddings_max_concurrency" not in data:
             data["conflict_embeddings_max_concurrency"] = parse_int_env(
