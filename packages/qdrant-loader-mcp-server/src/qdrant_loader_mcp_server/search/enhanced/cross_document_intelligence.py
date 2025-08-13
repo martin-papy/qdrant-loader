@@ -2297,43 +2297,58 @@ class ConflictDetector:
 
         try:
             embeddings = {}
-            # Add timeout for vector retrieval
-            for doc_id in document_ids:
+            # Use bounded concurrency and configurable timeouts
+            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            timeout_s = settings.get("conflict_embeddings_timeout_s", 5.0)
+            max_cc = settings.get("conflict_embeddings_max_concurrency", 5)
+
+            sem = asyncio.Semaphore(max_cc)
+
+            async def fetch_one(doc_id: str):
                 try:
-                    # Retrieve the document point from Qdrant with timeout
-                    result = await asyncio.wait_for(
-                        self.qdrant_client.retrieve(
-                            collection_name=self.collection_name,
-                            ids=[doc_id],
-                            with_vectors=True,
-                            with_payload=False,
-                        ),
-                        timeout=5.0,  # 5 second timeout per document
-                    )
-                    if result and len(result) > 0:
-                        # Extract vector embedding supporting named vectors
-                        point = result[0]
-                        vectors = getattr(point, "vectors", None)
-                        if isinstance(vectors, dict) and vectors:
-                            if (
-                                self.preferred_vector_name
-                                and self.preferred_vector_name in vectors
-                            ):
-                                embeddings[doc_id] = vectors[self.preferred_vector_name]
-                            else:
-                                first_vec = next(iter(vectors.values()), None)
-                                if isinstance(first_vec, list):
-                                    embeddings[doc_id] = first_vec
-                        else:
-                            # Fallback to single unnamed vector attribute if present
-                            single_vector = getattr(point, "vector", None)
-                            if isinstance(single_vector, list):
-                                embeddings[doc_id] = single_vector
+                    async with sem:
+                        result = await asyncio.wait_for(
+                            self.qdrant_client.retrieve(
+                                collection_name=self.collection_name,
+                                ids=[doc_id],
+                                with_vectors=True,
+                                with_payload=False,
+                            ),
+                            timeout=timeout_s,
+                        )
+                        return doc_id, result
                 except TimeoutError:
                     self.logger.warning(
                         f"Timeout retrieving embedding for document {doc_id}"
                     )
+                    return doc_id, None
+                except Exception as e:
+                    self.logger.warning(
+                        f"Error retrieving embedding for {doc_id}: {e}"
+                    )
+                    return doc_id, None
+
+            results = await asyncio.gather(*[fetch_one(d) for d in document_ids])
+            for doc_id, result in results:
+                if not result:
                     continue
+                if result and len(result) > 0:
+                    point = result[0]
+                    vectors = getattr(point, "vectors", None)
+                    if isinstance(vectors, dict) and vectors:
+                        if (
+                            self.preferred_vector_name
+                            and self.preferred_vector_name in vectors
+                        ):
+                            embeddings[doc_id] = vectors[self.preferred_vector_name]
+                        else:
+                            first_vec = next(iter(vectors.values()), None)
+                            if isinstance(first_vec, list):
+                                embeddings[doc_id] = first_vec
+                    else:
+                        single_vector = getattr(point, "vector", None)
+                        if isinstance(single_vector, list):
+                            embeddings[doc_id] = single_vector
 
             return embeddings
         except Exception as e:
@@ -2473,10 +2488,15 @@ class ConflictDetector:
         secondary_pairs.sort(key=lambda x: x[3], reverse=True)
 
         # Combine tiers with limits to ensure reasonable performance
-        max_primary = 50  # Analyze all high-priority pairs
-        max_secondary = 30  # Top semantic similarity pairs
-        max_tertiary = 20  # Some content overlap pairs
-        max_fallback = 10  # Few fallback pairs for coverage
+        settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+        caps = settings.get(
+            "conflict_tier_caps",
+            {"primary": 50, "secondary": 30, "tertiary": 20, "fallback": 10},
+        )
+        max_primary = int(caps.get("primary", 50))
+        max_secondary = int(caps.get("secondary", 30))
+        max_tertiary = int(caps.get("tertiary", 20))
+        max_fallback = int(caps.get("fallback", 10))
 
         all_pairs.extend(primary_pairs[:max_primary])
         all_pairs.extend(secondary_pairs[:max_secondary])
@@ -2571,23 +2591,44 @@ class ConflictDetector:
         # Implement tiered conflict analysis strategy for broader coverage
         candidate_pairs = await self._get_tiered_analysis_pairs(documents)
 
+        # Apply overall budget and caps
+        settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+        overall_timeout_s = settings.get("conflict_overall_timeout_s", 9.0)
+        max_pairs_total = settings.get("conflict_max_pairs_total", 24)
+        use_llm = settings.get("conflict_use_llm", True) and self.llm_enabled
+        max_llm_pairs = settings.get("conflict_max_llm_pairs", 2)
+        llm_timeout_s = settings.get("conflict_llm_timeout_s", 12.0)
+        text_window_chars = settings.get("conflict_text_window_chars", 2000)
+
+        deadline = time.time() + float(overall_timeout_s)
+        candidate_pairs = candidate_pairs[:max_pairs_total]
+
         analyzed_count = 0
         conflicts_found = 0
         max_conflicts = 20  # Limit to prevent performance issues
 
+        llm_used = 0
         for doc1, doc2, analysis_tier, tier_score in candidate_pairs:
+            # Check deadline
+            if time.time() >= deadline:
+                break
             # Stop if we've found enough conflicts
             if conflicts_found >= max_conflicts:
                 break
 
             # Try LLM-based conflict detection first, with fallback
             conflict_info = None
-            if self.llm_enabled and analysis_tier in ["primary", "secondary"]:
+            if (
+                use_llm
+                and llm_used < max_llm_pairs
+                and analysis_tier in ["primary", "secondary"]
+            ):
                 try:
                     conflict_info = await asyncio.wait_for(
                         self._llm_analyze_conflicts(doc1, doc2, tier_score),
-                        timeout=35.0,  # Total timeout including API call
+                        timeout=float(llm_timeout_s),
                     )
+                    llm_used += 1
                 except (TimeoutError, Exception) as e:
                     self.logger.warning(
                         f"LLM analysis failed or timed out: {e}, falling back to word-based analysis"
@@ -2596,7 +2637,23 @@ class ConflictDetector:
 
             # Fallback to traditional analysis if LLM failed or not enabled for this tier
             if conflict_info is None:
-                conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
+                # Truncate text windows for faster analysis without mutating objects
+                t1 = doc1.text[:text_window_chars] if isinstance(doc1.text, str) else ""
+                t2 = doc2.text[:text_window_chars] if isinstance(doc2.text, str) else ""
+
+                # Build lightweight shims with same attributes used by analyzers
+                class _DocShim:
+                    def __init__(self, base, text):
+                        self.text = text
+                        self.source_type = getattr(base, "source_type", None)
+                        self.source_title = getattr(base, "source_title", None)
+                        self.entities = getattr(base, "entities", [])
+                        self.topics = getattr(base, "topics", [])
+                        self.project_id = getattr(base, "project_id", None)
+
+                shim1 = _DocShim(doc1, t1)
+                shim2 = _DocShim(doc2, t2)
+                conflict_info = self._analyze_document_pair_for_conflicts(shim1, shim2)
 
             if conflict_info:
                 # Use document_id if available, fallback to title-based ID for backward compatibility
@@ -2629,6 +2686,13 @@ class ConflictDetector:
             f"(from {len(candidate_pairs)} total candidates) in {processing_time:.2f}ms"
         )
 
+        # Mark partial if deadline exceeded
+        if time.time() > deadline:
+            conflicts.resolution_suggestions.setdefault(
+                "partial_results",
+                "Analysis stopped due to overall timeout; increase budget to analyze more pairs.",
+            )
+
         return conflicts
 
     async def _llm_analyze_conflicts(
@@ -2640,16 +2704,20 @@ class ConflictDetector:
 
         try:
             # Prepare the prompt for conflict analysis
+            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            window = int(settings.get("conflict_text_window_chars", 2000))
+            model_name = settings.get("conflict_llm_model", "gpt-4o-mini")
+            max_tokens = 600
             prompt = f"""
 Analyze these two documents for potential conflicts, contradictions, or inconsistencies:
 
 DOCUMENT 1:
 Title: {doc1.source_title}
-Content: {doc1.text[:2000]}...
+Content: {doc1.text[:window]}...
 
 DOCUMENT 2:
 Title: {doc2.source_title}
-Content: {doc2.text[:2000]}...
+Content: {doc2.text[:window]}...
 
 Vector Similarity Score: {vector_similarity:.3f}
 
@@ -2685,7 +2753,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
             # Add timeout to prevent hanging
             response = await asyncio.wait_for(
                 self.openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model=model_name,
                     messages=[
                         {
                             "role": "system",
@@ -2694,9 +2762,9 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.1,
-                    max_tokens=1500,
+                    max_tokens=max_tokens,
                 ),
-                timeout=30.0,  # 30 second timeout
+                timeout=float(settings.get("conflict_llm_timeout_s", 12.0)),
             )
 
             result_text = response.choices[0].message.content.strip()
@@ -3536,6 +3604,7 @@ class CrossDocumentIntelligenceEngine:
         qdrant_client: AsyncQdrantClient | None = None,
         openai_client: AsyncOpenAI | None = None,
         collection_name: str = "documents",
+        conflict_settings: dict | None = None,
     ):
         """Initialize the cross-document intelligence engine."""
         self.spacy_analyzer = spacy_analyzer
@@ -3552,9 +3621,20 @@ class CrossDocumentIntelligenceEngine:
         self.complementary_finder = ComplementaryContentFinder(
             self.similarity_calculator, knowledge_graph
         )
+        # Initialize ConflictDetector with optional settings
         self.conflict_detector = ConflictDetector(
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
+        if conflict_settings:
+            try:
+                # Apply configuration knobs where supported
+                self.conflict_detector.llm_enabled = bool(
+                    conflict_settings.get("conflict_use_llm", True)
+                ) and (openai_client is not None)
+                # Store runtime settings for detector use
+                self.conflict_detector._settings = conflict_settings
+            except Exception:
+                self.logger.warning("Failed to apply conflict settings; using defaults")
 
     def analyze_document_relationships(
         self, documents: list[HybridSearchResult]
