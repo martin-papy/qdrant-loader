@@ -700,6 +700,26 @@ class SearchEngine:
                 "project_ids": project_ids,
             }
 
+            # Inject detector runtime stats if available for richer structured output
+            try:
+                detector = self.hybrid_search.cross_document_engine.conflict_detector
+                try:
+                    raw_stats = detector._last_stats or {}
+                except AttributeError:
+                    raw_stats = {}
+                
+                if raw_stats:
+                    # Filter to JSON-safe scalar values only
+                    safe_stats = {}
+                    for key, value in raw_stats.items():
+                        if isinstance(value, (str, int, float, bool)) and not key.startswith('partial_'):
+                            safe_stats[key] = value
+                    
+                    if safe_stats:
+                        conflicts["query_metadata"]["detector_stats"] = safe_stats
+            except (AttributeError, TypeError) as e:
+                self.logger.debug("Failed to access detector stats", error=str(e))
+
             # Store lightweight, JSON-serializable representations of documents
             # to keep payload minimal and avoid non-serializable objects
             safe_documents: list[dict[str, Any]] = []
