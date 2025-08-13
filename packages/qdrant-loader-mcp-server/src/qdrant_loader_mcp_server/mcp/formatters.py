@@ -328,6 +328,31 @@ class MCPFormatters:
             for suggestion in suggestion_list:
                 formatted += f"• {suggestion}\n"
 
+        # Append detector/runtime stats if available for transparency
+        qmeta = conflicts.get("query_metadata", {}) or {}
+        stats = qmeta.get("detector_stats", {}) or {}
+        if stats:
+            pairs_considered = stats.get("pairs_considered")
+            pairs_analyzed = stats.get("pairs_analyzed")
+            llm_pairs = stats.get("llm_pairs")
+            elapsed_ms = stats.get("elapsed_ms")
+            partial = qmeta.get("partial_results") or stats.get("partial_results")
+
+            formatted += "\n\n🧪 **Analysis Stats:**\n"
+            if pairs_considered is not None:
+                formatted += f"• Pairs considered: {pairs_considered}\n"
+            if pairs_analyzed is not None:
+                formatted += f"• Pairs analyzed: {pairs_analyzed}\n"
+            if llm_pairs is not None:
+                formatted += f"• LLM pairs: {llm_pairs}\n"
+            if elapsed_ms is not None:
+                try:
+                    formatted += f"• Elapsed: {float(elapsed_ms):.0f} ms\n"
+                except Exception:
+                    formatted += f"• Elapsed: {elapsed_ms} ms\n"
+            if partial:
+                formatted += "• Partial results due to time budget\n"
+
         return formatted
 
     @staticmethod

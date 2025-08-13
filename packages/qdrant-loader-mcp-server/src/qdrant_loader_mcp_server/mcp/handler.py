@@ -29,7 +29,8 @@ class MCPHandler:
         )
         self.intelligence_handler = IntelligenceHandler(search_engine, self.protocol)
 
-        logger.info("MCP Handler initialized")
+        # Reduce noise on startup: use DEBUG level instead of INFO
+        logger.debug("MCP Handler initialized")
 
     async def handle_request(
         self, request: dict[str, Any], headers: dict[str, str] | None = None
