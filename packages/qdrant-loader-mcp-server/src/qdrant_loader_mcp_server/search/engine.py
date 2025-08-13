@@ -532,9 +532,17 @@ class SearchEngine:
 
         try:
             # Get documents for analysis
+            # Honor default conflict limit from config if caller didn't override
+            effective_limit = limit
+            config = getattr(self, "config", None)
+            if limit is None and config is not None:
+                default_limit = getattr(config, "conflict_limit_default", None)
+                if isinstance(default_limit, int):
+                    effective_limit = default_limit
+
             documents = await self.hybrid_search.search(
                 query=query,
-                limit=limit,
+                limit=effective_limit,
                 source_types=source_types,
                 project_ids=project_ids,
             )
@@ -645,9 +653,15 @@ class SearchEngine:
     async def detect_document_conflicts(
         self,
         query: str,
-        limit: int = 15,
+        limit: int | None = None,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
+        *,
+        use_llm: bool | None = None,
+        max_llm_pairs: int | None = None,
+        overall_timeout_s: float | None = None,
+        max_pairs_total: int | None = None,
+        text_window_chars: int | None = None,
     ) -> dict[str, Any]:
         """
         Detect conflicts between documents.
@@ -666,9 +680,16 @@ class SearchEngine:
 
         try:
             # Get documents for conflict analysis
+            effective_limit = limit
+            config = getattr(self, "config", None)
+            if limit is None and config is not None:
+                default_limit = getattr(config, "conflict_limit_default", None)
+                if isinstance(default_limit, int):
+                    effective_limit = default_limit
+
             documents = await self.hybrid_search.search(
                 query=query,
-                limit=limit,
+                limit=effective_limit,
                 source_types=source_types,
                 project_ids=project_ids,
             )
@@ -681,8 +702,34 @@ class SearchEngine:
                     "document_count": len(documents),
                 }
 
-            # Detect conflicts
-            conflicts = await self.hybrid_search.detect_document_conflicts(documents)
+            # Detect conflicts with optional per-call overrides applied
+            detector = self.hybrid_search.cross_document_engine.conflict_detector
+            previous_settings = getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
+            call_overrides: dict[str, Any] = {}
+            if use_llm is not None:
+                call_overrides["conflict_use_llm"] = bool(use_llm)
+            if isinstance(max_llm_pairs, int):
+                call_overrides["conflict_max_llm_pairs"] = max_llm_pairs
+            if isinstance(overall_timeout_s, (int, float)):
+                call_overrides["conflict_overall_timeout_s"] = float(overall_timeout_s)
+            if isinstance(max_pairs_total, int):
+                call_overrides["conflict_max_pairs_total"] = max_pairs_total
+            if isinstance(text_window_chars, int):
+                call_overrides["conflict_text_window_chars"] = text_window_chars
+
+            try:
+                if call_overrides:
+                    merged = dict(previous_settings)
+                    merged.update(call_overrides)
+                    detector._settings = merged  # type: ignore[attr-defined]
+
+                conflicts = await self.hybrid_search.detect_document_conflicts(documents)
+            finally:
+                # Restore original settings to avoid leaking overrides
+                try:
+                    detector._settings = previous_settings  # type: ignore[attr-defined]
+                except Exception:
+                    pass
 
             # Add query metadata and original documents for formatting
             conflicts["query_metadata"] = {
@@ -691,6 +738,26 @@ class SearchEngine:
                 "source_types": source_types,
                 "project_ids": project_ids,
             }
+
+            # Inject detector runtime stats if available for richer structured output
+            try:
+                detector = self.hybrid_search.cross_document_engine.conflict_detector
+                try:
+                    raw_stats = detector._last_stats or {}
+                except AttributeError:
+                    raw_stats = {}
+                
+                if raw_stats:
+                    # Filter to JSON-safe scalar values only
+                    safe_stats = {}
+                    for key, value in raw_stats.items():
+                        if isinstance(value, (str, int, float, bool)) and not key.startswith('partial_'):
+                            safe_stats[key] = value
+                    
+                    if safe_stats:
+                        conflicts["query_metadata"]["detector_stats"] = safe_stats
+            except (AttributeError, TypeError) as e:
+                self.logger.debug("Failed to access detector stats", error=str(e))
 
             # Store lightweight, JSON-serializable representations of documents
             # to keep payload minimal and avoid non-serializable objects

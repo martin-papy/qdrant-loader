@@ -313,6 +313,26 @@ class MCPSchemas:
                         "items": {"type": "string"},
                         "description": "Optional list of project IDs to filter by",
                     },
+                    "use_llm": {
+                        "type": "boolean",
+                        "description": "Enable LLM validation for top pairs (budgeted)"
+                    },
+                    "max_llm_pairs": {
+                        "type": "integer",
+                        "description": "Maximum number of pairs to analyze with LLM"
+                    },
+                    "overall_timeout_s": {
+                        "type": "number",
+                        "description": "Overall analysis budget in seconds"
+                    },
+                    "max_pairs_total": {
+                        "type": "integer",
+                        "description": "Maximum candidate pairs to analyze after tiering"
+                    },
+                    "text_window_chars": {
+                        "type": "integer",
+                        "description": "Per-document text window size for lexical analysis"
+                    },
                 },
                 "required": ["query"],
             },
@@ -455,7 +475,7 @@ class MCPSchemas:
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of documents to analyze",
-                        "default": 15,
+                        "default": 10,
                     },
                     "source_types": {
                         "type": "array",

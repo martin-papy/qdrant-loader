@@ -2297,43 +2297,58 @@ class ConflictDetector:
 
         try:
             embeddings = {}
-            # Add timeout for vector retrieval
-            for doc_id in document_ids:
+            # Use bounded concurrency and configurable timeouts
+            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            timeout_s = settings.get("conflict_embeddings_timeout_s", 5.0)
+            max_cc = settings.get("conflict_embeddings_max_concurrency", 5)
+
+            sem = asyncio.Semaphore(max_cc)
+
+            async def fetch_one(doc_id: str):
                 try:
-                    # Retrieve the document point from Qdrant with timeout
-                    result = await asyncio.wait_for(
-                        self.qdrant_client.retrieve(
-                            collection_name=self.collection_name,
-                            ids=[doc_id],
-                            with_vectors=True,
-                            with_payload=False,
-                        ),
-                        timeout=5.0,  # 5 second timeout per document
-                    )
-                    if result and len(result) > 0:
-                        # Extract vector embedding supporting named vectors
-                        point = result[0]
-                        vectors = getattr(point, "vectors", None)
-                        if isinstance(vectors, dict) and vectors:
-                            if (
-                                self.preferred_vector_name
-                                and self.preferred_vector_name in vectors
-                            ):
-                                embeddings[doc_id] = vectors[self.preferred_vector_name]
-                            else:
-                                first_vec = next(iter(vectors.values()), None)
-                                if isinstance(first_vec, list):
-                                    embeddings[doc_id] = first_vec
-                        else:
-                            # Fallback to single unnamed vector attribute if present
-                            single_vector = getattr(point, "vector", None)
-                            if isinstance(single_vector, list):
-                                embeddings[doc_id] = single_vector
+                    async with sem:
+                        result = await asyncio.wait_for(
+                            self.qdrant_client.retrieve(
+                                collection_name=self.collection_name,
+                                ids=[doc_id],
+                                with_vectors=True,
+                                with_payload=False,
+                            ),
+                            timeout=timeout_s,
+                        )
+                        return doc_id, result
                 except TimeoutError:
                     self.logger.warning(
                         f"Timeout retrieving embedding for document {doc_id}"
                     )
+                    return doc_id, None
+                except Exception as e:
+                    self.logger.warning(
+                        f"Error retrieving embedding for {doc_id}: {e}"
+                    )
+                    return doc_id, None
+
+            results = await asyncio.gather(*[fetch_one(d) for d in document_ids])
+            for doc_id, result in results:
+                if not result:
                     continue
+                if result and len(result) > 0:
+                    point = result[0]
+                    vectors = getattr(point, "vectors", None)
+                    if isinstance(vectors, dict) and vectors:
+                        if (
+                            self.preferred_vector_name
+                            and self.preferred_vector_name in vectors
+                        ):
+                            embeddings[doc_id] = vectors[self.preferred_vector_name]
+                        else:
+                            first_vec = next(iter(vectors.values()), None)
+                            if isinstance(first_vec, list):
+                                embeddings[doc_id] = first_vec
+                    else:
+                        single_vector = getattr(point, "vector", None)
+                        if isinstance(single_vector, list):
+                            embeddings[doc_id] = single_vector
 
             return embeddings
         except Exception as e:
@@ -2473,10 +2488,15 @@ class ConflictDetector:
         secondary_pairs.sort(key=lambda x: x[3], reverse=True)
 
         # Combine tiers with limits to ensure reasonable performance
-        max_primary = 50  # Analyze all high-priority pairs
-        max_secondary = 30  # Top semantic similarity pairs
-        max_tertiary = 20  # Some content overlap pairs
-        max_fallback = 10  # Few fallback pairs for coverage
+        settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+        caps = settings.get(
+            "conflict_tier_caps",
+            {"primary": 50, "secondary": 30, "tertiary": 20, "fallback": 10},
+        )
+        max_primary = int(caps.get("primary", 50))
+        max_secondary = int(caps.get("secondary", 30))
+        max_tertiary = int(caps.get("tertiary", 20))
+        max_fallback = int(caps.get("fallback", 10))
 
         all_pairs.extend(primary_pairs[:max_primary])
         all_pairs.extend(secondary_pairs[:max_secondary])
@@ -2571,23 +2591,71 @@ class ConflictDetector:
         # Implement tiered conflict analysis strategy for broader coverage
         candidate_pairs = await self._get_tiered_analysis_pairs(documents)
 
+        # Optional vector-based prefilter to sharpen pairs before heavy analysis
+        try:
+            vector_pairs = await self._filter_by_vector_similarity(documents)
+            # Keep only docs that appear in top vector pairs to reduce breadth
+            doc_ids_from_vector = set()
+            for d1, d2, _sim in vector_pairs:
+                if getattr(d1, "document_id", None):
+                    doc_ids_from_vector.add(d1.document_id)
+                if getattr(d2, "document_id", None):
+                    doc_ids_from_vector.add(d2.document_id)
+
+            if doc_ids_from_vector:
+                filtered = []
+                for d1, d2, tier, score in candidate_pairs:
+                    id1 = getattr(d1, "document_id", None)
+                    id2 = getattr(d2, "document_id", None)
+                    if (id1 in doc_ids_from_vector) or (id2 in doc_ids_from_vector):
+                        filtered.append((d1, d2, tier, score))
+                # Use filtered list if it retains enough coverage; else keep original
+                if len(filtered) >= min(6, len(candidate_pairs)):
+                    candidate_pairs = filtered
+        except Exception as e:
+            self.logger.warning(
+                f"Vector prefilter failed or unavailable, proceeding without it: {e}"
+            )
+
+        # Apply overall budget and caps
+        settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+        overall_timeout_s = settings.get("conflict_overall_timeout_s", 9.0)
+        max_pairs_total = settings.get("conflict_max_pairs_total", 24)
+        use_llm = settings.get("conflict_use_llm", True) and self.llm_enabled
+        max_llm_pairs = settings.get("conflict_max_llm_pairs", 2)
+        llm_timeout_s = settings.get("conflict_llm_timeout_s", 12.0)
+        text_window_chars = settings.get("conflict_text_window_chars", 2000)
+
+        deadline = time.time() + float(overall_timeout_s)
+        candidate_pairs = candidate_pairs[:max_pairs_total]
+        pairs_candidates_count = len(candidate_pairs)
+
         analyzed_count = 0
         conflicts_found = 0
         max_conflicts = 20  # Limit to prevent performance issues
 
+        llm_used = 0
         for doc1, doc2, analysis_tier, tier_score in candidate_pairs:
+            # Check deadline
+            if time.time() >= deadline:
+                break
             # Stop if we've found enough conflicts
             if conflicts_found >= max_conflicts:
                 break
 
             # Try LLM-based conflict detection first, with fallback
             conflict_info = None
-            if self.llm_enabled and analysis_tier in ["primary", "secondary"]:
+            if (
+                use_llm
+                and llm_used < max_llm_pairs
+                and analysis_tier in ["primary", "secondary"]
+            ):
                 try:
                     conflict_info = await asyncio.wait_for(
                         self._llm_analyze_conflicts(doc1, doc2, tier_score),
-                        timeout=35.0,  # Total timeout including API call
+                        timeout=float(llm_timeout_s),
                     )
+                    llm_used += 1
                 except (TimeoutError, Exception) as e:
                     self.logger.warning(
                         f"LLM analysis failed or timed out: {e}, falling back to word-based analysis"
@@ -2596,7 +2664,23 @@ class ConflictDetector:
 
             # Fallback to traditional analysis if LLM failed or not enabled for this tier
             if conflict_info is None:
-                conflict_info = self._analyze_document_pair_for_conflicts(doc1, doc2)
+                # Truncate text windows for faster analysis without mutating objects
+                t1 = doc1.text[:text_window_chars] if isinstance(doc1.text, str) else ""
+                t2 = doc2.text[:text_window_chars] if isinstance(doc2.text, str) else ""
+
+                # Build lightweight shims with same attributes used by analyzers
+                class _DocShim:
+                    def __init__(self, base, text):
+                        self.text = text
+                        self.source_type = getattr(base, "source_type", None)
+                        self.source_title = getattr(base, "source_title", None)
+                        self.entities = getattr(base, "entities", [])
+                        self.topics = getattr(base, "topics", [])
+                        self.project_id = getattr(base, "project_id", None)
+
+                shim1 = _DocShim(doc1, t1)
+                shim2 = _DocShim(doc2, t2)
+                conflict_info = self._analyze_document_pair_for_conflicts(shim1, shim2)
 
             if conflict_info:
                 # Use document_id if available, fallback to title-based ID for backward compatibility
@@ -2629,6 +2713,28 @@ class ConflictDetector:
             f"(from {len(candidate_pairs)} total candidates) in {processing_time:.2f}ms"
         )
 
+        # Mark partial if deadline exceeded
+        partial = time.time() > deadline
+        if partial:
+            conflicts.resolution_suggestions.setdefault(
+                "partial_results",
+                "Analysis stopped due to overall timeout; increase budget to analyze more pairs.",
+            )
+
+        # Expose last-run stats for higher layers to include in responses
+        try:
+            self._last_stats = {
+                "pairs_considered": int(pairs_candidates_count),
+                "pairs_analyzed": int(analyzed_count),
+                "llm_pairs": int(llm_used),
+                "elapsed_ms": float(processing_time),
+                "partial_results": bool(partial),
+                "max_llm_pairs": int(max_llm_pairs),
+                "max_pairs_total": int(max_pairs_total),
+            }
+        except Exception:
+            self._last_stats = {}
+
         return conflicts
 
     async def _llm_analyze_conflicts(
@@ -2638,18 +2744,42 @@ class ConflictDetector:
         if not self.openai_client:
             return None
 
+        # Simple per-process memoization to avoid repeated pair analyses
+        if not hasattr(self, "_llm_cache"):
+            self._llm_cache: dict[str, dict[str, Any] | None] = {}
+
+        def _make_cache_key() -> str:
+            id1 = getattr(doc1, "document_id", None) or f"{doc1.source_type}:{doc1.source_title}"
+            id2 = getattr(doc2, "document_id", None) or f"{doc2.source_type}:{doc2.source_title}"
+            # Hash small windows of text to keep key bounded
+            import hashlib
+            t1 = (doc1.text or "")[:1024]
+            t2 = (doc2.text or "")[:1024]
+            h1 = hashlib.sha256(t1.encode("utf-8")).hexdigest()[:12]
+            h2 = hashlib.sha256(t2.encode("utf-8")).hexdigest()[:12]
+            parts = sorted([f"{id1}:{h1}", f"{id2}:{h2}"])
+            return "|".join(parts)
+
+        cache_key = _make_cache_key()
+        if cache_key in self._llm_cache:
+            return self._llm_cache[cache_key]
+
         try:
             # Prepare the prompt for conflict analysis
+            settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
+            window = int(settings.get("conflict_text_window_chars", 2000))
+            model_name = settings.get("conflict_llm_model", "gpt-4o-mini")
+            max_tokens = 600
             prompt = f"""
 Analyze these two documents for potential conflicts, contradictions, or inconsistencies:
 
 DOCUMENT 1:
 Title: {doc1.source_title}
-Content: {doc1.text[:2000]}...
+Content: {doc1.text[:window]}...
 
 DOCUMENT 2:
 Title: {doc2.source_title}
-Content: {doc2.text[:2000]}...
+Content: {doc2.text[:window]}...
 
 Vector Similarity Score: {vector_similarity:.3f}
 
@@ -2685,7 +2815,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
             # Add timeout to prevent hanging
             response = await asyncio.wait_for(
                 self.openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model=model_name,
                     messages=[
                         {
                             "role": "system",
@@ -2694,9 +2824,9 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.1,
-                    max_tokens=1500,
+                    max_tokens=max_tokens,
                 ),
-                timeout=30.0,  # 30 second timeout
+                timeout=float(settings.get("conflict_llm_timeout_s", 12.0)),
             )
 
             result_text = response.choices[0].message.content.strip()
@@ -2718,6 +2848,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                     return None
 
             if not result.get("has_conflicts", False):
+                self._llm_cache[cache_key] = None
                 return None
 
             # Convert LLM result to our conflict format
@@ -2741,7 +2872,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                     }
                 )
 
-            return {
+            final = {
                 "type": primary_conflict.get("type", "llm_detected_conflict"),
                 "indicators": [
                     conflict.get("explanation", "LLM detected conflict")
@@ -2754,12 +2885,16 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                 ),
                 "analysis_method": "llm_validation",
             }
+            self._llm_cache[cache_key] = final
+            return final
 
         except TimeoutError:
             self.logger.warning("LLM conflict analysis timed out")
+            self._llm_cache[cache_key] = None
             return None
         except Exception as e:
             self.logger.warning(f"LLM conflict analysis failed: {e}")
+            self._llm_cache[cache_key] = None
             return None
 
     def _analyze_document_pair_for_conflicts(
@@ -3536,6 +3671,7 @@ class CrossDocumentIntelligenceEngine:
         qdrant_client: AsyncQdrantClient | None = None,
         openai_client: AsyncOpenAI | None = None,
         collection_name: str = "documents",
+        conflict_settings: dict | None = None,
     ):
         """Initialize the cross-document intelligence engine."""
         self.spacy_analyzer = spacy_analyzer
@@ -3552,9 +3688,198 @@ class CrossDocumentIntelligenceEngine:
         self.complementary_finder = ComplementaryContentFinder(
             self.similarity_calculator, knowledge_graph
         )
+        # Initialize ConflictDetector with optional settings
         self.conflict_detector = ConflictDetector(
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
+        if conflict_settings is not None:
+            validated = self._validate_and_normalize_conflict_settings(conflict_settings)
+            if validated is not None:
+                # Apply configuration knobs where supported (respect OpenAI client availability)
+                self.conflict_detector.llm_enabled = bool(
+                    validated.get("conflict_use_llm", True)
+                ) and (openai_client is not None)
+                # Store normalized runtime settings for detector use
+                self.conflict_detector._settings = validated
+            else:
+                # Validation already logged a clear warning; keep detector defaults
+                pass
+
+    def _validate_and_normalize_conflict_settings(self, settings: object) -> dict[str, Any] | None:
+        """Validate and normalize conflict detection settings.
+
+        Returns a sanitized settings dict or None when invalid. On any validation
+        problem, logs a clear warning and falls back to detector defaults.
+        """
+        from collections.abc import Mapping
+
+        if not isinstance(settings, Mapping):
+            self.logger.warning(
+                f"Invalid conflict_settings: expected mapping, got {type(settings).__name__}; using defaults"
+            )
+            return None
+
+        errors: list[str] = []
+
+        def coerce_bool(value: object, default: bool, key: str) -> bool:
+            try:
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, (int, float)):
+                    return value != 0
+                if isinstance(value, str):
+                    v = value.strip().lower()
+                    if v in {"true", "1", "yes", "y", "on"}:
+                        return True
+                    if v in {"false", "0", "no", "n", "off"}:
+                        return False
+                raise ValueError("unrecognized boolean value")
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        def coerce_int_non_negative(value: object, default: int, key: str) -> int:
+            try:
+                if isinstance(value, bool):
+                    # Avoid treating booleans as ints
+                    raise ValueError("boolean not allowed for integer field")
+                if isinstance(value, (int, float)):
+                    v = int(value)
+                elif isinstance(value, str):
+                    v = int(value.strip())
+                else:
+                    raise ValueError("unsupported type")
+                return v if v >= 0 else default
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        def coerce_float_positive(value: object, default: float, key: str) -> float:
+            try:
+                if isinstance(value, bool):
+                    raise ValueError("boolean not allowed for float field")
+                if isinstance(value, (int, float)):
+                    v = float(value)
+                elif isinstance(value, str):
+                    v = float(value.strip())
+                else:
+                    raise ValueError("unsupported type")
+                return v if v > 0 else default
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        # Safe defaults align with ConflictDetector fallbacks
+        defaults: dict[str, Any] = {
+            "conflict_use_llm": True,
+            "conflict_max_llm_pairs": 2,
+            "conflict_llm_model": "gpt-4o-mini",
+            "conflict_llm_timeout_s": 12.0,
+            "conflict_overall_timeout_s": 9.0,
+            "conflict_text_window_chars": 2000,
+            "conflict_max_pairs_total": 24,
+            "conflict_embeddings_timeout_s": 5.0,
+            "conflict_embeddings_max_concurrency": 5,
+            # Optional/unused in detector but supported upstream
+            "conflict_limit_default": 10,
+            "conflict_tier_caps": {"primary": 50, "secondary": 30, "tertiary": 20, "fallback": 10},
+        }
+
+        # Start with defaults and override with sanitized values
+        normalized: dict[str, Any] = dict(defaults)
+
+        # Booleans
+        normalized["conflict_use_llm"] = coerce_bool(
+            settings.get("conflict_use_llm", defaults["conflict_use_llm"]),
+            defaults["conflict_use_llm"],
+            "conflict_use_llm",
+        )
+
+        # Integers (non-negative)
+        normalized["conflict_max_llm_pairs"] = coerce_int_non_negative(
+            settings.get("conflict_max_llm_pairs", defaults["conflict_max_llm_pairs"]),
+            defaults["conflict_max_llm_pairs"],
+            "conflict_max_llm_pairs",
+        )
+        normalized["conflict_max_pairs_total"] = coerce_int_non_negative(
+            settings.get("conflict_max_pairs_total", defaults["conflict_max_pairs_total"]),
+            defaults["conflict_max_pairs_total"],
+            "conflict_max_pairs_total",
+        )
+        normalized["conflict_text_window_chars"] = coerce_int_non_negative(
+            settings.get("conflict_text_window_chars", defaults["conflict_text_window_chars"]),
+            defaults["conflict_text_window_chars"],
+            "conflict_text_window_chars",
+        )
+        normalized["conflict_embeddings_max_concurrency"] = coerce_int_non_negative(
+            settings.get(
+                "conflict_embeddings_max_concurrency",
+                defaults["conflict_embeddings_max_concurrency"],
+            ),
+            defaults["conflict_embeddings_max_concurrency"],
+            "conflict_embeddings_max_concurrency",
+        )
+        normalized["conflict_limit_default"] = coerce_int_non_negative(
+            settings.get("conflict_limit_default", defaults["conflict_limit_default"]),
+            defaults["conflict_limit_default"],
+            "conflict_limit_default",
+        )
+
+        # Floats (positive)
+        normalized["conflict_llm_timeout_s"] = coerce_float_positive(
+            settings.get("conflict_llm_timeout_s", defaults["conflict_llm_timeout_s"]),
+            defaults["conflict_llm_timeout_s"],
+            "conflict_llm_timeout_s",
+        )
+        normalized["conflict_overall_timeout_s"] = coerce_float_positive(
+            settings.get(
+                "conflict_overall_timeout_s", defaults["conflict_overall_timeout_s"]
+            ),
+            defaults["conflict_overall_timeout_s"],
+            "conflict_overall_timeout_s",
+        )
+        normalized["conflict_embeddings_timeout_s"] = coerce_float_positive(
+            settings.get(
+                "conflict_embeddings_timeout_s",
+                defaults["conflict_embeddings_timeout_s"],
+            ),
+            defaults["conflict_embeddings_timeout_s"],
+            "conflict_embeddings_timeout_s",
+        )
+
+        # Strings
+        llm_model = settings.get("conflict_llm_model", defaults["conflict_llm_model"])
+        if isinstance(llm_model, str) and llm_model.strip():
+            normalized["conflict_llm_model"] = llm_model.strip()
+        else:
+            if "conflict_llm_model" in settings:
+                errors.append("conflict_llm_model: expected non-empty string")
+            normalized["conflict_llm_model"] = defaults["conflict_llm_model"]
+
+        # Nested mapping: conflict_tier_caps
+        tier_caps_default = defaults["conflict_tier_caps"]
+        tier_caps_value = settings.get("conflict_tier_caps", tier_caps_default)
+        if isinstance(tier_caps_value, Mapping):
+            tier_caps_normalized: dict[str, int] = dict(tier_caps_default)
+            for k in ("primary", "secondary", "tertiary", "fallback"):
+                tier_caps_normalized[k] = coerce_int_non_negative(
+                    tier_caps_value.get(k, tier_caps_default[k]),
+                    tier_caps_default[k],
+                    f"conflict_tier_caps.{k}",
+                )
+            normalized["conflict_tier_caps"] = tier_caps_normalized
+        else:
+            if "conflict_tier_caps" in settings:
+                errors.append("conflict_tier_caps: expected mapping with integer caps")
+            normalized["conflict_tier_caps"] = dict(tier_caps_default)
+
+        if errors:
+            self.logger.warning(
+                "Invalid values in conflict_settings; using defaults for invalid fields: "
+                + "; ".join(errors)
+            )
+
+        return normalized
 
     def analyze_document_relationships(
         self, documents: list[HybridSearchResult]
