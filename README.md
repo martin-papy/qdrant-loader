@@ -189,6 +189,7 @@ git clone https://github.com/martin-papy/qdrant-loader.git
 cd qdrant-loader
 python -m venv venv
 source venv/bin/activate
+```
 
 ```bash
 # Install packages in development mode
