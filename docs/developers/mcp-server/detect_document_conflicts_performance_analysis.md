@@ -243,16 +243,12 @@ Phase 6 – Tests and docs (Day 5)
   - `conflict_tier_caps: dict = {primary: 12, secondary: 8, tertiary: 4, fallback: 0}`
   - `conflict_use_llm: bool = True`
   - `conflict_max_llm_pairs: int = 2`
-  - `conflict_llm_model: str = "gpt-4o-mini"` (overrides `openai.chat_model` when set)
+  - `conflict_llm_model: str = "gpt-4o-mini"`
   - `conflict_llm_timeout_s: float = 12.0`
   - `conflict_overall_timeout_s: float = 8.0`
   - `conflict_text_window_chars: int = 2000`
   - `conflict_embeddings_timeout_s: float = 2.0`
   - `conflict_embeddings_max_concurrency: int = 5`
-
-- OpenAI config (user-overridable):
-  - `openai.chat_model` default `gpt-4o-mini`, override via env `OPENAI_CHAT_MODEL` or config file.
-  - `openai.api_key` via env `OPENAI_API_KEY`.
 
 Environment variables can override these for ops without code changes.
 
