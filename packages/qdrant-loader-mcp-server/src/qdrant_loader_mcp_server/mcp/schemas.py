@@ -455,7 +455,7 @@ class MCPSchemas:
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of documents to analyze",
-                        "default": 15,
+                        "default": 10,
                     },
                     "source_types": {
                         "type": "array",

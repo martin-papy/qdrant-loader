@@ -534,16 +534,11 @@ class SearchEngine:
             # Get documents for analysis
             # Honor default conflict limit from config if caller didn't override
             effective_limit = limit
-            try:
-                if (
-                    hasattr(self, "config")
-                    and getattr(self, "config", None) is not None
-                    and hasattr(self.config, "conflict_limit_default")
-                ):
-                    if limit is None:
-                        effective_limit = getattr(self.config, "conflict_limit_default")
-            except Exception:
-                effective_limit = limit
+            config = getattr(self, "config", None)
+            if limit is None and config is not None:
+                default_limit = getattr(config, "conflict_limit_default", None)
+                if isinstance(default_limit, int):
+                    effective_limit = default_limit
 
             documents = await self.hybrid_search.search(
                 query=query,

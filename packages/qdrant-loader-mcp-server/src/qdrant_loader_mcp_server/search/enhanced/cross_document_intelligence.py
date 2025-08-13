@@ -2591,6 +2591,32 @@ class ConflictDetector:
         # Implement tiered conflict analysis strategy for broader coverage
         candidate_pairs = await self._get_tiered_analysis_pairs(documents)
 
+        # Optional vector-based prefilter to sharpen pairs before heavy analysis
+        try:
+            vector_pairs = await self._filter_by_vector_similarity(documents)
+            # Keep only docs that appear in top vector pairs to reduce breadth
+            doc_ids_from_vector = set()
+            for d1, d2, _sim in vector_pairs:
+                if getattr(d1, "document_id", None):
+                    doc_ids_from_vector.add(d1.document_id)
+                if getattr(d2, "document_id", None):
+                    doc_ids_from_vector.add(d2.document_id)
+
+            if doc_ids_from_vector:
+                filtered = []
+                for d1, d2, tier, score in candidate_pairs:
+                    id1 = getattr(d1, "document_id", None)
+                    id2 = getattr(d2, "document_id", None)
+                    if (id1 in doc_ids_from_vector) or (id2 in doc_ids_from_vector):
+                        filtered.append((d1, d2, tier, score))
+                # Use filtered list if it retains enough coverage; else keep original
+                if len(filtered) >= min(6, len(candidate_pairs)):
+                    candidate_pairs = filtered
+        except Exception as e:
+            self.logger.warning(
+                f"Vector prefilter failed or unavailable, proceeding without it: {e}"
+            )
+
         # Apply overall budget and caps
         settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
         overall_timeout_s = settings.get("conflict_overall_timeout_s", 9.0)
@@ -3625,16 +3651,194 @@ class CrossDocumentIntelligenceEngine:
         self.conflict_detector = ConflictDetector(
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
-        if conflict_settings:
-            try:
-                # Apply configuration knobs where supported
+        if conflict_settings is not None:
+            validated = self._validate_and_normalize_conflict_settings(conflict_settings)
+            if validated is not None:
+                # Apply configuration knobs where supported (respect OpenAI client availability)
                 self.conflict_detector.llm_enabled = bool(
-                    conflict_settings.get("conflict_use_llm", True)
+                    validated.get("conflict_use_llm", True)
                 ) and (openai_client is not None)
-                # Store runtime settings for detector use
-                self.conflict_detector._settings = conflict_settings
-            except Exception:
-                self.logger.warning("Failed to apply conflict settings; using defaults")
+                # Store normalized runtime settings for detector use
+                self.conflict_detector._settings = validated
+            else:
+                # Validation already logged a clear warning; keep detector defaults
+                pass
+
+    def _validate_and_normalize_conflict_settings(self, settings: object) -> dict[str, Any] | None:
+        """Validate and normalize conflict detection settings.
+
+        Returns a sanitized settings dict or None when invalid. On any validation
+        problem, logs a clear warning and falls back to detector defaults.
+        """
+        from collections.abc import Mapping
+
+        if not isinstance(settings, Mapping):
+            self.logger.warning(
+                f"Invalid conflict_settings: expected mapping, got {type(settings).__name__}; using defaults"
+            )
+            return None
+
+        errors: list[str] = []
+
+        def coerce_bool(value: object, default: bool, key: str) -> bool:
+            try:
+                if isinstance(value, bool):
+                    return value
+                if isinstance(value, (int, float)):
+                    return value != 0
+                if isinstance(value, str):
+                    v = value.strip().lower()
+                    if v in {"true", "1", "yes", "y", "on"}:
+                        return True
+                    if v in {"false", "0", "no", "n", "off"}:
+                        return False
+                raise ValueError("unrecognized boolean value")
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        def coerce_int_non_negative(value: object, default: int, key: str) -> int:
+            try:
+                if isinstance(value, bool):
+                    # Avoid treating booleans as ints
+                    raise ValueError("boolean not allowed for integer field")
+                if isinstance(value, (int, float)):
+                    v = int(value)
+                elif isinstance(value, str):
+                    v = int(value.strip())
+                else:
+                    raise ValueError("unsupported type")
+                return v if v >= 0 else default
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        def coerce_float_positive(value: object, default: float, key: str) -> float:
+            try:
+                if isinstance(value, bool):
+                    raise ValueError("boolean not allowed for float field")
+                if isinstance(value, (int, float)):
+                    v = float(value)
+                elif isinstance(value, str):
+                    v = float(value.strip())
+                else:
+                    raise ValueError("unsupported type")
+                return v if v > 0 else default
+            except Exception as e:
+                errors.append(f"{key}: {e}")
+                return default
+
+        # Safe defaults align with ConflictDetector fallbacks
+        defaults: dict[str, Any] = {
+            "conflict_use_llm": True,
+            "conflict_max_llm_pairs": 2,
+            "conflict_llm_model": "gpt-4o-mini",
+            "conflict_llm_timeout_s": 12.0,
+            "conflict_overall_timeout_s": 9.0,
+            "conflict_text_window_chars": 2000,
+            "conflict_max_pairs_total": 24,
+            "conflict_embeddings_timeout_s": 5.0,
+            "conflict_embeddings_max_concurrency": 5,
+            # Optional/unused in detector but supported upstream
+            "conflict_limit_default": 10,
+            "conflict_tier_caps": {"primary": 50, "secondary": 30, "tertiary": 20, "fallback": 10},
+        }
+
+        # Start with defaults and override with sanitized values
+        normalized: dict[str, Any] = dict(defaults)
+
+        # Booleans
+        normalized["conflict_use_llm"] = coerce_bool(
+            settings.get("conflict_use_llm", defaults["conflict_use_llm"]),
+            defaults["conflict_use_llm"],
+            "conflict_use_llm",
+        )
+
+        # Integers (non-negative)
+        normalized["conflict_max_llm_pairs"] = coerce_int_non_negative(
+            settings.get("conflict_max_llm_pairs", defaults["conflict_max_llm_pairs"]),
+            defaults["conflict_max_llm_pairs"],
+            "conflict_max_llm_pairs",
+        )
+        normalized["conflict_max_pairs_total"] = coerce_int_non_negative(
+            settings.get("conflict_max_pairs_total", defaults["conflict_max_pairs_total"]),
+            defaults["conflict_max_pairs_total"],
+            "conflict_max_pairs_total",
+        )
+        normalized["conflict_text_window_chars"] = coerce_int_non_negative(
+            settings.get("conflict_text_window_chars", defaults["conflict_text_window_chars"]),
+            defaults["conflict_text_window_chars"],
+            "conflict_text_window_chars",
+        )
+        normalized["conflict_embeddings_max_concurrency"] = coerce_int_non_negative(
+            settings.get(
+                "conflict_embeddings_max_concurrency",
+                defaults["conflict_embeddings_max_concurrency"],
+            ),
+            defaults["conflict_embeddings_max_concurrency"],
+            "conflict_embeddings_max_concurrency",
+        )
+        normalized["conflict_limit_default"] = coerce_int_non_negative(
+            settings.get("conflict_limit_default", defaults["conflict_limit_default"]),
+            defaults["conflict_limit_default"],
+            "conflict_limit_default",
+        )
+
+        # Floats (positive)
+        normalized["conflict_llm_timeout_s"] = coerce_float_positive(
+            settings.get("conflict_llm_timeout_s", defaults["conflict_llm_timeout_s"]),
+            defaults["conflict_llm_timeout_s"],
+            "conflict_llm_timeout_s",
+        )
+        normalized["conflict_overall_timeout_s"] = coerce_float_positive(
+            settings.get(
+                "conflict_overall_timeout_s", defaults["conflict_overall_timeout_s"]
+            ),
+            defaults["conflict_overall_timeout_s"],
+            "conflict_overall_timeout_s",
+        )
+        normalized["conflict_embeddings_timeout_s"] = coerce_float_positive(
+            settings.get(
+                "conflict_embeddings_timeout_s",
+                defaults["conflict_embeddings_timeout_s"],
+            ),
+            defaults["conflict_embeddings_timeout_s"],
+            "conflict_embeddings_timeout_s",
+        )
+
+        # Strings
+        llm_model = settings.get("conflict_llm_model", defaults["conflict_llm_model"])
+        if isinstance(llm_model, str) and llm_model.strip():
+            normalized["conflict_llm_model"] = llm_model.strip()
+        else:
+            if "conflict_llm_model" in settings:
+                errors.append("conflict_llm_model: expected non-empty string")
+            normalized["conflict_llm_model"] = defaults["conflict_llm_model"]
+
+        # Nested mapping: conflict_tier_caps
+        tier_caps_default = defaults["conflict_tier_caps"]
+        tier_caps_value = settings.get("conflict_tier_caps", tier_caps_default)
+        if isinstance(tier_caps_value, Mapping):
+            tier_caps_normalized: dict[str, int] = dict(tier_caps_default)
+            for k in ("primary", "secondary", "tertiary", "fallback"):
+                tier_caps_normalized[k] = coerce_int_non_negative(
+                    tier_caps_value.get(k, tier_caps_default[k]),
+                    tier_caps_default[k],
+                    f"conflict_tier_caps.{k}",
+                )
+            normalized["conflict_tier_caps"] = tier_caps_normalized
+        else:
+            if "conflict_tier_caps" in settings:
+                errors.append("conflict_tier_caps: expected mapping with integer caps")
+            normalized["conflict_tier_caps"] = dict(tier_caps_default)
+
+        if errors:
+            self.logger.warning(
+                "Invalid values in conflict_settings; using defaults for invalid fields: "
+                + "; ".join(errors)
+            )
+
+        return normalized
 
     def analyze_document_relationships(
         self, documents: list[HybridSearchResult]

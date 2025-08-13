@@ -459,7 +459,7 @@ class IntelligenceHandler:
             # Use the sophisticated SearchEngine method
             conflict_results = await self.search_engine.detect_document_conflicts(
                 query=params["query"],
-                limit=params.get("limit", 15),
+                limit=params.get("limit"),
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
             )
