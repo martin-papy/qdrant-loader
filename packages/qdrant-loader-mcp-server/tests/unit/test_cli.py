@@ -170,25 +170,11 @@ class TestAsyncFunctions:
         """Test graceful shutdown functionality."""
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch("asyncio.all_tasks") as mock_all_tasks,
-            patch("asyncio.current_task") as mock_current_task,
-            patch("asyncio.gather", new_callable=AsyncMock) as mock_gather,
             patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
-            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
-            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
         ):
 
             mock_logger = MagicMock()
             mock_logging_config.get_logger.return_value = mock_logger
-
-            # Mock tasks
-            mock_current = MagicMock()
-            mock_task1 = MagicMock()
-            mock_task1.done.return_value = False  # Task not done, should be cancelled
-            mock_task2 = MagicMock()
-            mock_task2.done.return_value = False  # Task not done, should be cancelled
-            mock_current_task.return_value = mock_current
-            mock_all_tasks.return_value = [mock_current, mock_task1, mock_task2]
 
             # Mock loop
             mock_loop = MagicMock()
@@ -196,71 +182,51 @@ class TestAsyncFunctions:
             # Mock shutdown event
             mock_shutdown_event = MagicMock()
 
-            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
-            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
-
             await shutdown(mock_loop, mock_shutdown_event)
 
-            # Verify shutdown event was set and sleep was called
+            # Verify shutdown event was set
             mock_shutdown_event.set.assert_called_once()
-            # Sleep should be awaited at least once with 0.2s during cooperative grace period
-            assert mock_sleep.await_count >= 1
-            for call in mock_sleep.await_args_list:
-                assert call.args == (0.2,)
+            
+            # Sleep should be called once with 0 (yield control)
+            assert mock_sleep.await_count == 1
+            mock_sleep.assert_awaited_with(0)
 
-            # Verify tasks were cancelled (only non-done tasks)
-            mock_task1.cancel.assert_called_once()
-            mock_task2.cancel.assert_called_once()
-            mock_current.cancel.assert_not_called()  # Current task should not be cancelled
-
-            # Verify gather was called
-            mock_gather.assert_called_once_with(
-                mock_task1, mock_task2, return_exceptions=True
-            )
-
-            # No explicit loop.stop() should be called in cooperative shutdown
-            assert not getattr(mock_loop, "stop").called
+            # Verify logging calls
+            assert mock_logging_config.get_logger.call_count >= 1
+            mock_logger.info.assert_any_call("Shutting down...")
+            mock_logger.info.assert_any_call("Shutdown signal dispatched")
 
     @pytest.mark.asyncio
     async def test_shutdown_with_exception(self):
-        """Test shutdown with exception during task gathering."""
+        """Test shutdown with exception during sleep (e.g., cancellation)."""
+        from asyncio import CancelledError
 
-        # Create an async function that raises an exception
-        async def mock_gather_error(*args, **kwargs):
-            raise Exception("Gather error")
+        # Create an async function that raises CancelledError
+        async def mock_sleep_error(*args, **kwargs):
+            raise CancelledError("Sleep cancelled")
 
         with (
             patch("qdrant_loader_mcp_server.cli.LoggingConfig") as mock_logging_config,
-            patch("asyncio.all_tasks") as mock_all_tasks,
-            patch("asyncio.current_task") as mock_current_task,
-            patch("asyncio.gather", side_effect=mock_gather_error),
-            patch("asyncio.sleep", new_callable=AsyncMock),
-            patch("qdrant_loader_mcp_server.cli.time.monotonic") as mock_monotonic,
-            patch.dict(os.environ, {"MCP_GRACEFUL_SHUTDOWN_SECONDS": "0.2"}, clear=False),
+            patch("asyncio.sleep", side_effect=mock_sleep_error),
         ):
 
             mock_logger = MagicMock()
             mock_logging_config.get_logger.return_value = mock_logger
 
-            # Mock tasks
-            mock_current = MagicMock()
-            mock_task1 = MagicMock()
-            mock_task1.done.return_value = False  # Task not done, should be cancelled
-            mock_current_task.return_value = mock_current
-            mock_all_tasks.return_value = [mock_current, mock_task1]
-
             # Mock loop
             mock_loop = MagicMock()
 
-            # Configure monotonic to simulate ~1 sleep cycle before exceeding grace period
-            mock_monotonic.side_effect = [1000.0, 1000.1, 1000.35]
+            # Mock shutdown event
+            mock_shutdown_event = MagicMock()
 
-            await shutdown(mock_loop)
+            # The shutdown function should handle CancelledError gracefully
+            await shutdown(mock_loop, mock_shutdown_event)
 
-            # Verify error was logged
-            mock_logger.error.assert_called_once_with(
-                "Error during shutdown", exc_info=True
-            )
+            # Verify shutdown event was set
+            mock_shutdown_event.set.assert_called_once()
+            
+            # Verify logging calls were made
+            mock_logger.info.assert_any_call("Shutting down...")
 
             # No explicit loop.stop() should be called in cooperative shutdown
             assert not getattr(mock_loop, "stop").called
@@ -547,8 +513,8 @@ class TestCLICommand:
         runner = CliRunner()
         runner.invoke(cli, ["--log-level", "DEBUG"])
 
-        # Verify setup was called
-        mock_setup_logging.assert_called_once_with("DEBUG")
+        # Verify setup was called with transport parameter (default is stdio)
+        mock_setup_logging.assert_called_once_with("DEBUG", "stdio")
         mock_config_class.assert_called_once()
         mock_new_event_loop.assert_called_once()
         mock_set_event_loop.assert_called_once_with(mock_loop)

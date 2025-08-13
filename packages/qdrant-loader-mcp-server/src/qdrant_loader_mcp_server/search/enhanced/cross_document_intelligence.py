@@ -2744,6 +2744,26 @@ class ConflictDetector:
         if not self.openai_client:
             return None
 
+        # Simple per-process memoization to avoid repeated pair analyses
+        if not hasattr(self, "_llm_cache"):
+            self._llm_cache: dict[str, dict[str, Any] | None] = {}
+
+        def _make_cache_key() -> str:
+            id1 = getattr(doc1, "document_id", None) or f"{doc1.source_type}:{doc1.source_title}"
+            id2 = getattr(doc2, "document_id", None) or f"{doc2.source_type}:{doc2.source_title}"
+            # Hash small windows of text to keep key bounded
+            import hashlib
+            t1 = (doc1.text or "")[:1024]
+            t2 = (doc2.text or "")[:1024]
+            h1 = hashlib.sha256(t1.encode("utf-8")).hexdigest()[:12]
+            h2 = hashlib.sha256(t2.encode("utf-8")).hexdigest()[:12]
+            parts = sorted([f"{id1}:{h1}", f"{id2}:{h2}"])
+            return "|".join(parts)
+
+        cache_key = _make_cache_key()
+        if cache_key in self._llm_cache:
+            return self._llm_cache[cache_key]
+
         try:
             # Prepare the prompt for conflict analysis
             settings = getattr(self, "_settings", {}) if hasattr(self, "_settings") else {}
@@ -2828,6 +2848,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                     return None
 
             if not result.get("has_conflicts", False):
+                self._llm_cache[cache_key] = None
                 return None
 
             # Convert LLM result to our conflict format
@@ -2851,7 +2872,7 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                     }
                 )
 
-            return {
+            final = {
                 "type": primary_conflict.get("type", "llm_detected_conflict"),
                 "indicators": [
                     conflict.get("explanation", "LLM detected conflict")
@@ -2864,12 +2885,16 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
                 ),
                 "analysis_method": "llm_validation",
             }
+            self._llm_cache[cache_key] = final
+            return final
 
         except TimeoutError:
             self.logger.warning("LLM conflict analysis timed out")
+            self._llm_cache[cache_key] = None
             return None
         except Exception as e:
             self.logger.warning(f"LLM conflict analysis failed: {e}")
+            self._llm_cache[cache_key] = None
             return None
 
     def _analyze_document_pair_for_conflicts(

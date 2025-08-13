@@ -457,11 +457,25 @@ class IntelligenceHandler:
             logger.info("Performing conflict detection using SearchEngine...")
 
             # Use the sophisticated SearchEngine method
+            # Build kwargs, include overrides only if explicitly provided
+            conflict_kwargs: dict[str, Any] = {
+                "query": params["query"],
+                "limit": params.get("limit"),
+                "source_types": params.get("source_types"),
+                "project_ids": params.get("project_ids"),
+            }
+            for opt in (
+                "use_llm",
+                "max_llm_pairs",
+                "overall_timeout_s",
+                "max_pairs_total",
+                "text_window_chars",
+            ):
+                if opt in params and params[opt] is not None:
+                    conflict_kwargs[opt] = params[opt]
+
             conflict_results = await self.search_engine.detect_document_conflicts(
-                query=params["query"],
-                limit=params.get("limit"),
-                source_types=params.get("source_types"),
-                project_ids=params.get("project_ids"),
+                **conflict_kwargs
             )
 
             logger.info("Conflict detection completed successfully")
