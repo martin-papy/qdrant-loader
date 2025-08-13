@@ -147,12 +147,55 @@ class HybridSearchEngine:
         logger.info("Dynamic faceted search interface ENABLED")
 
         # Cross-document intelligence
+        # Build conflict settings from provided search_config (if any)
+        conflict_settings = None
+        if search_config is not None:
+            try:
+                conflict_settings = {
+                    "conflict_limit_default": getattr(
+                        search_config, "conflict_limit_default", 10
+                    ),
+                    "conflict_max_pairs_total": getattr(
+                        search_config, "conflict_max_pairs_total", 24
+                    ),
+                    "conflict_tier_caps": getattr(
+                        search_config,
+                        "conflict_tier_caps",
+                        {"primary": 12, "secondary": 8, "tertiary": 4, "fallback": 0},
+                    ),
+                    "conflict_use_llm": getattr(search_config, "conflict_use_llm", True),
+                    "conflict_max_llm_pairs": getattr(
+                        search_config, "conflict_max_llm_pairs", 2
+                    ),
+                    "conflict_llm_model": getattr(
+                        search_config, "conflict_llm_model", "gpt-4o-mini"
+                    ),
+                    "conflict_llm_timeout_s": getattr(
+                        search_config, "conflict_llm_timeout_s", 12.0
+                    ),
+                    "conflict_overall_timeout_s": getattr(
+                        search_config, "conflict_overall_timeout_s", 9.0
+                    ),
+                    "conflict_text_window_chars": getattr(
+                        search_config, "conflict_text_window_chars", 2000
+                    ),
+                    "conflict_embeddings_timeout_s": getattr(
+                        search_config, "conflict_embeddings_timeout_s", 2.0
+                    ),
+                    "conflict_embeddings_max_concurrency": getattr(
+                        search_config, "conflict_embeddings_max_concurrency", 5
+                    ),
+                }
+            except Exception:
+                conflict_settings = None
+
         self.cross_document_engine = CrossDocumentIntelligenceEngine(
             self.spacy_analyzer,
             self.knowledge_graph,
             self.qdrant_client,
             self.openai_client,
             self.collection_name,
+            conflict_settings=conflict_settings,
         )
         logger.info("Cross-document intelligence ENABLED")
 

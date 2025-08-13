@@ -110,6 +110,24 @@ class SearchConfig(BaseModel):
     hnsw_ef: Annotated[int, Field(ge=1, le=32_768)] = 128  # HNSW search parameter
     use_exact_search: bool = False  # Use exact search when needed
 
+    # Conflict detection performance controls (defaults calibrated for P95 ~8–10s)
+    conflict_limit_default: Annotated[int, Field(ge=2, le=50)] = 10
+    conflict_max_pairs_total: Annotated[int, Field(ge=1, le=200)] = 24
+    conflict_tier_caps: dict = {
+        "primary": 12,
+        "secondary": 8,
+        "tertiary": 4,
+        "fallback": 0,
+    }
+    conflict_use_llm: bool = True
+    conflict_max_llm_pairs: Annotated[int, Field(ge=0, le=10)] = 2
+    conflict_llm_model: str = "gpt-4o-mini"
+    conflict_llm_timeout_s: Annotated[float, Field(gt=0, le=60)] = 12.0
+    conflict_overall_timeout_s: Annotated[float, Field(gt=0, le=60)] = 9.0
+    conflict_text_window_chars: Annotated[int, Field(ge=200, le=8000)] = 2000
+    conflict_embeddings_timeout_s: Annotated[float, Field(gt=0, le=30)] = 2.0
+    conflict_embeddings_max_concurrency: Annotated[int, Field(ge=1, le=20)] = 5
+
     def __init__(self, **data):
         """Initialize with environment variables if not provided.
 
@@ -132,6 +150,65 @@ class SearchConfig(BaseModel):
             )
         if "use_exact_search" not in data:
             data["use_exact_search"] = parse_bool_env("SEARCH_USE_EXACT", False)
+
+        # Conflict detection env overrides (optional; safe defaults used if unset)
+        def _get_env_dict(name: str, default: dict) -> dict:
+            raw = os.getenv(name)
+            if not raw:
+                return default
+            try:
+                import json
+
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    return parsed
+                return default
+            except Exception:
+                return default
+
+        if "conflict_limit_default" not in data:
+            data["conflict_limit_default"] = parse_int_env(
+                "SEARCH_CONFLICT_LIMIT_DEFAULT", 10, min_value=2, max_value=50
+            )
+        if "conflict_max_pairs_total" not in data:
+            data["conflict_max_pairs_total"] = parse_int_env(
+                "SEARCH_CONFLICT_MAX_PAIRS_TOTAL", 24, min_value=1, max_value=200
+            )
+        if "conflict_tier_caps" not in data:
+            data["conflict_tier_caps"] = _get_env_dict(
+                "SEARCH_CONFLICT_TIER_CAPS",
+                {"primary": 12, "secondary": 8, "tertiary": 4, "fallback": 0},
+            )
+        if "conflict_use_llm" not in data:
+            data["conflict_use_llm"] = parse_bool_env("SEARCH_CONFLICT_USE_LLM", True)
+        if "conflict_max_llm_pairs" not in data:
+            data["conflict_max_llm_pairs"] = parse_int_env(
+                "SEARCH_CONFLICT_MAX_LLM_PAIRS", 2, min_value=0, max_value=10
+            )
+        if "conflict_llm_model" not in data:
+            data["conflict_llm_model"] = os.getenv(
+                "SEARCH_CONFLICT_LLM_MODEL", "gpt-4o-mini"
+            )
+        if "conflict_llm_timeout_s" not in data:
+            data["conflict_llm_timeout_s"] = parse_int_env(
+                "SEARCH_CONFLICT_LLM_TIMEOUT_S", 12, min_value=1, max_value=60
+            )
+        if "conflict_overall_timeout_s" not in data:
+            data["conflict_overall_timeout_s"] = parse_int_env(
+                "SEARCH_CONFLICT_OVERALL_TIMEOUT_S", 9, min_value=1, max_value=60
+            )
+        if "conflict_text_window_chars" not in data:
+            data["conflict_text_window_chars"] = parse_int_env(
+                "SEARCH_CONFLICT_TEXT_WINDOW_CHARS", 2000, min_value=200, max_value=8000
+            )
+        if "conflict_embeddings_timeout_s" not in data:
+            data["conflict_embeddings_timeout_s"] = parse_int_env(
+                "SEARCH_CONFLICT_EMBEDDINGS_TIMEOUT_S", 2, min_value=1, max_value=30
+            )
+        if "conflict_embeddings_max_concurrency" not in data:
+            data["conflict_embeddings_max_concurrency"] = parse_int_env(
+                "SEARCH_CONFLICT_EMBEDDINGS_MAX_CONCURRENCY", 5, min_value=1, max_value=20
+            )
         super().__init__(**data)
 
 

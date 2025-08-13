@@ -532,9 +532,22 @@ class SearchEngine:
 
         try:
             # Get documents for analysis
+            # Honor default conflict limit from config if caller didn't override
+            effective_limit = limit
+            try:
+                if (
+                    hasattr(self, "config")
+                    and getattr(self, "config", None) is not None
+                    and hasattr(self.config, "conflict_limit_default")
+                ):
+                    if limit is None:
+                        effective_limit = getattr(self.config, "conflict_limit_default")
+            except Exception:
+                effective_limit = limit
+
             documents = await self.hybrid_search.search(
                 query=query,
-                limit=limit,
+                limit=effective_limit,
                 source_types=source_types,
                 project_ids=project_ids,
             )
