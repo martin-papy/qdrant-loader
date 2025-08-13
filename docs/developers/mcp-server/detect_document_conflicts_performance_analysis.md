@@ -188,7 +188,7 @@ Phase 0 – Instrumentation and reproducibility (Day 1)
 Phase 1 – Introduce a top-level analysis budget with partial results (Day 2)
 
 - Add optional params (thread through handler → engine → conflict detector):
-  - `overall_timeout_s` (default 9), `use_llm` (default false), `max_llm_pairs` (default 2–3), `max_pairs_total` (default 24), `max_conflicts` (default 10), `text_window_chars` (default 2000)
+  - `overall_timeout_s` (default 9), `use_llm` (default true), `max_llm_pairs` (default 2–3), `max_pairs_total` (default 24), `max_conflicts` (default 10), `text_window_chars` (default 2000)
 - Track `deadline = now + overall_timeout_s`. After each major step and per pair, check time; if exceeded:
   - set `partial_results=True`; return best-effort results collected so far.
   - include `budget_exhausted` in metadata.
@@ -241,14 +241,18 @@ Phase 6 – Tests and docs (Day 5)
   - `conflict_limit_default: int = 10`
   - `conflict_max_pairs_total: int = 24`
   - `conflict_tier_caps: dict = {primary: 12, secondary: 8, tertiary: 4, fallback: 0}`
-  - `conflict_use_llm: bool = False`
+  - `conflict_use_llm: bool = True`
   - `conflict_max_llm_pairs: int = 2`
-  - `conflict_llm_model: str = "gpt-4o-mini"`
+  - `conflict_llm_model: str = "gpt-4o-mini"` (overrides `openai.chat_model` when set)
   - `conflict_llm_timeout_s: float = 12.0`
   - `conflict_overall_timeout_s: float = 8.0`
   - `conflict_text_window_chars: int = 2000`
   - `conflict_embeddings_timeout_s: float = 2.0`
   - `conflict_embeddings_max_concurrency: int = 5`
+
+- OpenAI config (user-overridable):
+  - `openai.chat_model` default `gpt-4o-mini`, override via env `OPENAI_CHAT_MODEL` or config file.
+  - `openai.api_key` via env `OPENAI_API_KEY`.
 
 Environment variables can override these for ops without code changes.
 
@@ -256,7 +260,7 @@ Environment variables can override these for ops without code changes.
 
 ### Rollout and safety
 
-- Ship with LLM disabled by default and strict budgets/caps.
+- Ship with LLM enabled by default, but strictly budgeted and gated (limited pairs, concurrency, and per-call timeout).
 - Add verbose logging behind a debug flag to avoid noisy logs in prod.
 - If problems persist, progressively tighten caps or disable tiers beyond primary.
 
