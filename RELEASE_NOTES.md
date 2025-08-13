@@ -2,7 +2,7 @@
 
 ## Version 0.6.1 - August 13, 2025
 
-### 🚀 Performance Improvements
+### Document Conflict Detection : Performance Improvements
 
 #### MCP Server - Document Conflict Detection Optimization
 
