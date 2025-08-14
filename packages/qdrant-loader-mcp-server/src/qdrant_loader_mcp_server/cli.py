@@ -16,6 +16,7 @@ from click.types import Path as ClickPath
 from dotenv import load_dotenv
 
 from .config import Config
+from .config_loader import load_config, redact_effective_config
 from .mcp import MCPHandler
 from .search.engine import SearchEngine
 from .search.processor import QueryProcessor
@@ -383,10 +384,17 @@ async def handle_stdio(config: Config, log_level: str):
     default="INFO",
     help="Set the logging level.",
 )
+# Hidden option to print effective config (redacts secrets)
+@option(
+    "--print-config",
+    is_flag=True,
+    default=False,
+    help="Print the effective configuration (secrets redacted) and exit.",
+)
 @option(
     "--config",
     type=ClickPath(exists=True, path_type=Path),
-    help="Path to configuration file (currently not implemented).",
+    help="Path to configuration file.",
 )
 @option(
     "--transport",
@@ -422,6 +430,7 @@ def cli(
     host: str = "127.0.0.1",
     port: int = 8080,
     env: Path | None = None,
+    print_config: bool = False,
 ) -> None:
     """QDrant Loader MCP Server.
 
@@ -470,8 +479,13 @@ def cli(
         # Setup logging (force-disable console logging in stdio transport)
         _setup_logging(log_level, transport)
 
-        # Initialize configuration
-        config_obj = Config()
+        # Initialize configuration (file/env precedence)
+        config_obj, effective_cfg, used_file = load_config(config)
+
+        if print_config:
+            redacted = redact_effective_config(effective_cfg)
+            click.echo(json.dumps(redacted, indent=2))
+            return
 
         # Create and set the event loop
         loop = asyncio.new_event_loop()

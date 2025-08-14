@@ -18,18 +18,24 @@ def mock_qdrant_client():
 
 
 @pytest.fixture
-def mock_openai_client():
-    """Mock OpenAI client for testing."""
-    client = MagicMock()
-    return client
+def mock_embeddings_provider():
+    class _EmbeddingsClient:
+        async def embed(self, inputs):  # type: ignore[no-untyped-def]
+            return [[0.1, 0.2, 0.3] for _ in inputs]
+
+    class _Provider:
+        def embeddings(self):
+            return _EmbeddingsClient()
+
+    return _Provider()
 
 
 @pytest.fixture
-def vector_search_service(mock_qdrant_client, mock_openai_client):
+def vector_search_service(mock_qdrant_client, mock_embeddings_provider):
     """Create vector search service with caching enabled."""
     return VectorSearchService(
         qdrant_client=mock_qdrant_client,
-        openai_client=mock_openai_client,
+        embeddings_provider=mock_embeddings_provider,
         collection_name="test_collection",
         cache_enabled=True,
         cache_ttl=300,  # 5 minutes
@@ -38,11 +44,11 @@ def vector_search_service(mock_qdrant_client, mock_openai_client):
 
 
 @pytest.fixture
-def vector_search_service_no_cache(mock_qdrant_client, mock_openai_client):
+def vector_search_service_no_cache(mock_qdrant_client, mock_embeddings_provider):
     """Create vector search service with caching disabled."""
     return VectorSearchService(
         qdrant_client=mock_qdrant_client,
-        openai_client=mock_openai_client,
+        embeddings_provider=mock_embeddings_provider,
         collection_name="test_collection",
         cache_enabled=False,
     )

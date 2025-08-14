@@ -4,7 +4,8 @@ import time
 from datetime import datetime
 from typing import Any
 
-from openai import AsyncOpenAI
+from importlib import import_module
+import os
 from qdrant_client import QdrantClient
 
 from ..config import SearchConfig
@@ -45,7 +46,7 @@ class HybridSearchEngine:
     def __init__(
         self,
         qdrant_client: QdrantClient,
-        openai_client: AsyncOpenAI,
+        openai_client: Any,
         collection_name: str,
         vector_weight: float = 0.6,
         keyword_weight: float = 0.3,
@@ -87,10 +88,33 @@ class HybridSearchEngine:
         self.query_processor = QueryProcessor(self.spacy_analyzer)
 
         # Configure vector search service with caching if config provided
+        # Build embeddings provider using core (defer to env/file-driven config later)
+        try:
+            core_settings_mod = import_module("qdrant_loader_core.llm.settings")
+            core_factory_mod = import_module("qdrant_loader_core.llm.factory")
+            LLMSettings = getattr(core_settings_mod, "LLMSettings")
+            create_provider = getattr(core_factory_mod, "create_provider")
+            # For now, derive LLMSettings from environment (optional); leave empty when not available
+            llm_cfg = {
+                "provider": (os.getenv("LLM_PROVIDER") or "openai"),
+                "base_url": os.getenv("LLM_BASE_URL"),
+                "api_key": os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY"),
+                "models": {
+                    "embeddings": os.getenv("LLM_EMBEDDING_MODEL") or "text-embedding-3-small",
+                },
+                "tokenizer": os.getenv("LLM_TOKENIZER") or "none",
+                "request": {},
+                "rate_limits": {},
+                "embeddings": {},
+            }
+            llm_settings = LLMSettings.from_global_config({"llm": llm_cfg})
+            embeddings_provider = create_provider(llm_settings)
+        except Exception:
+            embeddings_provider = None
+
         if search_config:
             self.vector_search_service = VectorSearchService(
                 qdrant_client=qdrant_client,
-                openai_client=openai_client,
                 collection_name=collection_name,
                 min_score=min_score,
                 cache_enabled=search_config.cache_enabled,
@@ -98,13 +122,16 @@ class HybridSearchEngine:
                 cache_max_size=search_config.cache_max_size,
                 hnsw_ef=search_config.hnsw_ef,
                 use_exact_search=search_config.use_exact_search,
+                embeddings_provider=embeddings_provider,
+                openai_client=openai_client,
             )
         else:
             self.vector_search_service = VectorSearchService(
                 qdrant_client=qdrant_client,
-                openai_client=openai_client,
                 collection_name=collection_name,
                 min_score=min_score,
+                embeddings_provider=embeddings_provider,
+                openai_client=openai_client,
             )
 
         self.keyword_search_service = KeywordSearchService(

@@ -5,8 +5,6 @@ import time
 from asyncio import Lock
 from dataclasses import dataclass
 from typing import Any
-
-from openai import AsyncOpenAI
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
 
@@ -26,7 +24,6 @@ class VectorSearchService:
     def __init__(
         self,
         qdrant_client: AsyncQdrantClient,
-        openai_client: AsyncOpenAI,
         collection_name: str,
         min_score: float = 0.3,
         cache_enabled: bool = True,
@@ -34,6 +31,9 @@ class VectorSearchService:
         cache_max_size: int = 500,
         hnsw_ef: int = 128,
         use_exact_search: bool = False,
+        *,
+        embeddings_provider: Any | None = None,
+        openai_client: Any | None = None,
     ):
         """Initialize the vector search service.
 
@@ -47,6 +47,7 @@ class VectorSearchService:
             cache_max_size: Maximum number of cached results
         """
         self.qdrant_client = qdrant_client
+        self.embeddings_provider = embeddings_provider
         self.openai_client = openai_client
         self.collection_name = collection_name
         self.min_score = min_score
@@ -117,7 +118,7 @@ class VectorSearchService:
                 del self._search_cache[key]
 
     async def get_embedding(self, text: str) -> list[float]:
-        """Get embedding for text using OpenAI.
+        """Get embedding for text using provider or OpenAI fallback.
 
         Args:
             text: Text to get embedding for
@@ -128,6 +129,24 @@ class VectorSearchService:
         Raises:
             Exception: If embedding generation fails
         """
+        # Prefer provider when available
+        if self.embeddings_provider is not None:
+            try:
+                # Accept either a provider (with .embeddings()) or a direct embeddings client
+                client = (
+                    self.embeddings_provider.embeddings()
+                    if hasattr(self.embeddings_provider, "embeddings")
+                    else self.embeddings_provider
+                )
+                vectors = await client.embed([text])
+                return vectors[0]
+            except Exception as e:
+                self.logger.error("Provider embeddings failed; no fallback", error=str(e))
+                raise
+
+        # Fallback: OpenAI client (legacy path)
+        if self.openai_client is None:
+            raise RuntimeError("No embeddings provider or OpenAI client configured")
         try:
             response = await self.openai_client.embeddings.create(
                 model="text-embedding-3-small",

@@ -2,8 +2,20 @@
 
 from typing import Any
 
-from openai import AsyncOpenAI
+from importlib import import_module
+import os
+from pathlib import Path
+import yaml
 from qdrant_client import AsyncQdrantClient, models
+
+# Expose OpenAI Async client symbol at module scope for tests to patch.
+try:  # pragma: no cover - defensive import; tests may monkeypatch this
+    from openai import AsyncOpenAI as _AsyncOpenAI  # type: ignore
+except Exception:  # pragma: no cover - openai may be optional
+    _AsyncOpenAI = None  # type: ignore[assignment]
+
+# Public alias so tests can patch qdrant_loader_mcp_server.search.engine.AsyncOpenAI
+AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
 
 from ..config import OpenAIConfig, QdrantConfig, SearchConfig
 from ..utils.logging import LoggingConfig
@@ -22,7 +34,7 @@ class SearchEngine:
         """Initialize the search engine."""
         self.client: AsyncQdrantClient | None = None
         self.config: QdrantConfig | None = None
-        self.openai_client: AsyncOpenAI | None = None
+        self.openai_client: Any | None = None
         self.hybrid_search: HybridSearchEngine | None = None
         self.logger = LoggingConfig.get_logger(__name__)
 
@@ -42,7 +54,15 @@ class SearchEngine:
                 api_key=config.api_key,
                 timeout=120,  # 120 seconds timeout for cloud instances
             )
-            self.openai_client = AsyncOpenAI(api_key=openai_config.api_key)
+            # Keep legacy OpenAI client for now; vector embeddings use provider with fallback
+            try:
+                if AsyncOpenAI is not None and getattr(openai_config, "api_key", None):
+                    # Use module-scope alias so tests can patch this symbol
+                    self.openai_client = AsyncOpenAI(api_key=openai_config.api_key)
+                else:
+                    self.openai_client = None
+            except Exception:
+                self.openai_client = None
 
             # Ensure collection exists
             if self.client is None:
@@ -52,16 +72,42 @@ class SearchEngine:
             if not any(
                 c.name == config.collection_name for c in collections.collections
             ):
+                # Determine vector size from llm settings or defaults
+                vector_size = 1536
+                # 1) From env variable if provided
+                try:
+                    env_size = os.getenv("LLM_VECTOR_SIZE")
+                    if env_size:
+                        vector_size = int(env_size)
+                except Exception:
+                    pass
+                # 2) From MCP_CONFIG file if present
+                try:
+                    cfg_path = os.getenv("MCP_CONFIG")
+                    if cfg_path and Path(cfg_path).exists():
+                        with open(cfg_path, "r", encoding="utf-8") as f:
+                            data = yaml.safe_load(f) or {}
+                        llm = (
+                            data.get("global", {}).get("llm")
+                            or data.get("global_config", {}).get("llm")
+                            or {}
+                        )
+                        emb = llm.get("embeddings") or {}
+                        if isinstance(emb.get("vector_size"), int):
+                            vector_size = int(emb["vector_size"]) 
+                except Exception:
+                    pass
+
                 await self.client.create_collection(
                     collection_name=config.collection_name,
                     vectors_config=models.VectorParams(
-                        size=1536,  # Default size for OpenAI embeddings
+                        size=vector_size,
                         distance=models.Distance.COSINE,
                     ),
                 )
 
             # Initialize hybrid search (single path; pass through search_config which may be None)
-            if self.client and self.openai_client:
+            if self.client:
                 self.hybrid_search = HybridSearchEngine(
                     qdrant_client=self.client,
                     openai_client=self.openai_client,
