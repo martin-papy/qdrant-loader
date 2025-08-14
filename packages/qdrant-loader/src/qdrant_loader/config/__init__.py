@@ -302,6 +302,19 @@ class Settings(BaseSettings):
         """Get the state database path from global configuration."""
         return self.global_config.state_management.database_path
 
+    @property
+    def llm_settings(self):
+        """Provider-agnostic LLM settings derived from global configuration.
+
+        Uses `global.llm` when present; otherwise maps legacy fields.
+        """
+        # Import lazily to avoid hard dependency issues in environments without core installed
+        from importlib import import_module
+
+        settings_mod = import_module("qdrant_loader_core.llm.settings")
+        LLMSettings = getattr(settings_mod, "LLMSettings")
+        return LLMSettings.from_global_config(self.global_config.to_dict())
+
     @staticmethod
     def _substitute_env_vars(data: Any) -> Any:
         """Recursively substitute environment variables in configuration data.

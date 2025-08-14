@@ -483,7 +483,7 @@ class TestCLICommand:
         assert "Invalid value for '--log-level'" in result.output
 
     @patch("qdrant_loader_mcp_server.cli._setup_logging")
-    @patch("qdrant_loader_mcp_server.cli.Config")
+    @patch("qdrant_loader_mcp_server.cli.load_config")
     @patch("qdrant_loader_mcp_server.cli.handle_stdio")
     @patch("asyncio.new_event_loop")
     @patch("asyncio.set_event_loop")
@@ -494,7 +494,7 @@ class TestCLICommand:
         mock_set_event_loop,
         mock_new_event_loop,
         mock_handle_stdio,
-        mock_config_class,
+        mock_load_config,
         mock_setup_logging,
     ):
         """Test successful CLI execution."""
@@ -503,9 +503,11 @@ class TestCLICommand:
         mock_new_event_loop.return_value = mock_loop
         mock_loop.run_until_complete.return_value = None
 
-        # Mock config
+        # Mock config loader
         mock_config = MagicMock()
-        mock_config_class.return_value = mock_config
+        mock_effective = {"dummy": True}
+        mock_used_file = None
+        mock_load_config.return_value = (mock_config, mock_effective, mock_used_file)
 
         # Mock handle_stdio as async function
         mock_handle_stdio.return_value = AsyncMock()
@@ -515,12 +517,12 @@ class TestCLICommand:
 
         # Verify setup was called with transport parameter (default is stdio)
         mock_setup_logging.assert_called_once_with("DEBUG", "stdio")
-        mock_config_class.assert_called_once()
+        mock_load_config.assert_called_once()
         mock_new_event_loop.assert_called_once()
         mock_set_event_loop.assert_called_once_with(mock_loop)
 
     @patch("qdrant_loader_mcp_server.cli._setup_logging")
-    @patch("qdrant_loader_mcp_server.cli.Config")
+    @patch("qdrant_loader_mcp_server.cli.load_config")
     @patch("qdrant_loader_mcp_server.cli.handle_stdio")
     @patch("asyncio.new_event_loop")
     @patch("asyncio.set_event_loop")
@@ -531,12 +533,12 @@ class TestCLICommand:
         mock_set_event_loop,
         mock_new_event_loop,
         mock_handle_stdio,
-        mock_config_class,
+        mock_load_config,
         mock_setup_logging,
     ):
         """Test CLI exception handling."""
-        # Mock config to raise exception
-        mock_config_class.side_effect = Exception("Config error")
+        # Mock config loader to raise exception
+        mock_load_config.side_effect = Exception("Config error")
 
         # Mock event loop - use a simple class to avoid async confusion
         class MockLoop:

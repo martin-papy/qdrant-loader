@@ -19,6 +19,11 @@ if str(src_path) not in sys.path:
 
 from qdrant_loader.config import get_settings, initialize_config
 
+# Ensure core package is importable for tests without installation
+core_src = Path(__file__).resolve().parents[2] / "qdrant-loader-core" / "src"
+if str(core_src) not in sys.path:
+    sys.path.insert(0, str(core_src))
+
 
 def pytest_configure(config):
     """Configure pytest before test collection."""

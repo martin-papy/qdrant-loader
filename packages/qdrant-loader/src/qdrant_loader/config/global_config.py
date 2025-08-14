@@ -37,6 +37,7 @@ class GlobalConfig(BaseConfig):
 
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+    llm: dict[str, Any] | None = Field(default=None, description="Unified LLM configuration (provider-agnostic)")
     semantic_analysis: SemanticAnalysisConfig = Field(
         default_factory=SemanticAnalysisConfig,
         description="Semantic analysis configuration",
@@ -74,6 +75,7 @@ class GlobalConfig(BaseConfig):
                 "chunk_overlap": self.chunking.chunk_overlap,
             },
             "embedding": self.embedding.model_dump(),
+            "llm": self.llm,
             "semantic_analysis": {
                 "num_topics": self.semantic_analysis.num_topics,
                 "lda_passes": self.semantic_analysis.lda_passes,

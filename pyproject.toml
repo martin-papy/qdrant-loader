@@ -93,7 +93,7 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
-mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src"
+mypy_path = "packages/qdrant-loader/src:packages/qdrant-loader-mcp-server/src:packages/qdrant-loader-core/src"
 
 [tool.pytest.ini_options]
 testpaths = [
