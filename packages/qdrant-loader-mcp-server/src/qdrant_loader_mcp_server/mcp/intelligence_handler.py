@@ -483,7 +483,7 @@ class IntelligenceHandler:
             # Create lightweight structured content for MCP compliance
             original_documents = conflict_results.get("original_documents", [])
             structured_content = self.formatters.create_lightweight_conflict_results(
-                conflict_results, params["query"], original_documents
+                conflict_results, params["query"]
             )
 
             return self.protocol.create_response(

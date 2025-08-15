@@ -213,7 +213,7 @@ class SearchHandler:
 
             # Create structured content for MCP compliance
             structured_content = self.formatters.create_lightweight_hierarchy_results(
-                filtered_results, organized_results, query
+                organized_results, query
             )
 
             # Format the response with both text and structured content
@@ -307,6 +307,7 @@ class SearchHandler:
 
             # Create attachment groups for organized display
             organized_results = {}
+            attachment_groups = []
             if filtered_results:
                 # Group attachments by type for better organization
                 attachment_groups = self.formatters._organize_attachments_by_type(
@@ -327,7 +328,7 @@ class SearchHandler:
 
             # Create lightweight structured content for MCP compliance
             structured_content = self.formatters.create_lightweight_attachment_results(
-                filtered_results, attachment_filter, query
+                attachment_groups, query
             )
 
             response = self.protocol.create_response(

@@ -664,7 +664,7 @@ class HybridSearchEngine:
             # Build robust document lookup with multiple key strategies
             doc_lookup = self._build_document_lookup(documents, robust=True)
 
-            # Enhance recommendations with full document objects
+            # Enhance recommendations with document information in expected format
             enhanced_recommendations = []
             for rec in recommendations:
                 doc_id = rec["document_id"]
@@ -672,9 +672,11 @@ class HybridSearchEngine:
 
                 if document:
                     enhanced_rec = {
-                        "document": document,
+                        "document_id": rec["document_id"],
+                        "title": document.get_display_title(),
+                        "source_type": document.source_type,
                         "relevance_score": rec["relevance_score"],
-                        "recommendation_reason": rec["recommendation_reason"],
+                        "reason": rec["recommendation_reason"],
                         "strategy": rec["strategy"],
                     }
                     enhanced_recommendations.append(enhanced_rec)
