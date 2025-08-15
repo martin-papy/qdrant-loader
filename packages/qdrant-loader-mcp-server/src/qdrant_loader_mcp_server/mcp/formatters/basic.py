@@ -1,0 +1,145 @@
+"""
+Basic Result Formatters - Core Search Result Formatting.
+
+This module handles basic formatting of search results, attachments,
+and hierarchical results for display in the MCP interface.
+"""
+
+from typing import Any
+from ...search.components.search_result_models import HybridSearchResult
+
+
+class BasicResultFormatters:
+    """Handles basic result formatting operations."""
+
+    @staticmethod
+    def format_search_result(result: HybridSearchResult) -> str:
+        """Format a search result for display."""
+        formatted_result = f"Score: {result.score}\n"
+        formatted_result += f"Text: {result.text}\n"
+        formatted_result += f"Source: {result.source_type}"
+
+        if result.source_title:
+            formatted_result += f" - {result.source_title}"
+
+        # Add project information if available
+        project_info = result.get_project_info()
+        if project_info:
+            formatted_result += f"\n🏗️ {project_info}"
+
+        # Add attachment information if this is a file attachment
+        if result.is_attachment:
+            formatted_result += "\n📎 Attachment"
+            if result.original_filename:
+                formatted_result += f": {result.original_filename}"
+            if result.attachment_context:
+                formatted_result += f"\n📋 {result.attachment_context}"
+            if result.parent_document_title:
+                formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
+
+        # Add hierarchy context for Confluence documents
+        if result.source_type == "confluence" and result.breadcrumb_text:
+            formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
+
+        if result.source_url:
+            formatted_result += f" ({result.source_url})"
+
+        if result.file_path:
+            formatted_result += f"\nFile: {result.file_path}"
+
+        if result.repo_name:
+            formatted_result += f"\nRepo: {result.repo_name}"
+
+        # Add hierarchy information for Confluence documents
+        if result.source_type == "confluence" and result.hierarchy_context:
+            formatted_result += f"\n🏗️ {result.hierarchy_context}"
+
+        # Add parent information if available (for hierarchy, not attachments)
+        if result.parent_title and not result.is_attachment:
+            formatted_result += f"\n⬆️ Parent: {result.parent_title}"
+
+        # Add children count if available
+        if result.has_children():
+            formatted_result += f"\n⬇️ Children: {result.children_count}"
+
+        return formatted_result
+
+    @staticmethod
+    def format_attachment_search_result(result: HybridSearchResult) -> str:
+        """Format an attachment search result for display."""
+        formatted_result = f"Score: {result.score}\n"
+        formatted_result += f"Text: {result.text}\n"
+        formatted_result += f"Source: {result.source_type}"
+
+        if result.source_title:
+            formatted_result += f" - {result.source_title}"
+
+        # Add attachment information
+        formatted_result += "\n📎 Attachment"
+        if result.original_filename:
+            formatted_result += f": {result.original_filename}"
+        if result.attachment_context:
+            formatted_result += f"\n📋 {result.attachment_context}"
+        if result.parent_document_title:
+            formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
+
+        # Add hierarchy context for Confluence documents
+        if result.source_type == "confluence" and result.breadcrumb_text:
+            formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
+
+        if result.source_url:
+            formatted_result += f" ({result.source_url})"
+
+        if result.file_path:
+            formatted_result += f"\nFile: {result.file_path}"
+
+        if result.repo_name:
+            formatted_result += f"\nRepo: {result.repo_name}"
+
+        # Add hierarchy information for Confluence documents
+        if result.source_type == "confluence" and result.hierarchy_context:
+            formatted_result += f"\n🏗️ {result.hierarchy_context}"
+
+        # Add parent information if available (for hierarchy, not attachments)
+        if result.parent_title and not result.is_attachment:
+            formatted_result += f"\n⬆️ Parent: {result.parent_title}"
+
+        # Add children count if available
+        if result.has_children():
+            formatted_result += f"\n⬇️ Children: {result.children_count}"
+
+        return formatted_result
+
+    @staticmethod
+    def format_hierarchical_results(
+        organized_results: dict[str, list[HybridSearchResult]],
+    ) -> str:
+        """Format hierarchically organized results for display."""
+        formatted_sections = []
+
+        for root_title, results in organized_results.items():
+            section = f"📁 **{root_title}** ({len(results)} results)\n"
+
+            for result in results:
+                indent = "  " * (getattr(result, 'depth', 0) or 0)
+                section += f"{indent}📄 {result.source_title}"
+                if hasattr(result, 'hierarchy_context') and result.hierarchy_context:
+                    section += f" | {result.hierarchy_context}"
+                section += f" (Score: {result.score:.3f})\n"
+
+                # Add a snippet of the content
+                content_snippet = (
+                    result.text[:150] + "..." if len(result.text) > 150 else result.text
+                )
+                section += f"{indent}   {content_snippet}\n"
+
+                if result.source_url:
+                    section += f"{indent}   🔗 {result.source_url}\n"
+                section += "\n"
+
+            formatted_sections.append(section)
+
+        return (
+            f"Found {sum(len(results) for results in organized_results.values())} results organized by hierarchy:\n\n"
+            + "\n".join(formatted_sections)
+        )
