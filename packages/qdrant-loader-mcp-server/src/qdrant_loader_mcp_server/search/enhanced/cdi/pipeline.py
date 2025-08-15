@@ -20,6 +20,7 @@ from .models import (
     DocumentSimilarity,
     ComplementaryContent,
     ConflictAnalysis,
+    ClusteringStrategy,
 )
 
 
@@ -46,15 +47,15 @@ class CrossDocumentPipeline:
 
     def cluster(self, results: list[SearchResult]) -> list[DocumentCluster]:
         assert self.clusterer is not None, "clusterer not configured"
-        return self.clusterer.cluster(results)
+        return self.clusterer.cluster(results, strategy=ClusteringStrategy.MIXED_FEATURES)
 
     def recommend(self, target: SearchResult, pool: list[SearchResult]) -> ComplementaryContent:
         assert self.recommender is not None, "recommender not configured"
         return self.recommender.recommend(target, pool)
 
-    def detect_conflicts(self, results: list[SearchResult]) -> ConflictAnalysis:
+    async def detect_conflicts(self, results: list[SearchResult]) -> ConflictAnalysis:
         assert self.conflict_detector is not None, "conflict_detector not configured"
-        return self.conflict_detector.detect(results)
+        return await self.conflict_detector.detect(results)
 
     def rank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]:
         assert self.ranker is not None, "ranker not configured"

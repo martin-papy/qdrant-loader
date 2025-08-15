@@ -9,6 +9,7 @@ from .models import (
     DocumentSimilarity,
     ComplementaryContent,
     ConflictAnalysis,
+    ClusteringStrategy,
 )
 
 
@@ -33,7 +34,13 @@ class Ranker(Protocol):
 
 
 class Clusterer(Protocol):
-    def cluster(self, results: list[SearchResult]) -> list[DocumentCluster]:
+    def cluster(
+        self,
+        results: list[SearchResult],
+        strategy: ClusteringStrategy | None = None,
+        max_clusters: int | None = None,
+        min_cluster_size: int | None = None,
+    ) -> list[DocumentCluster]:
         ...
 
 
@@ -48,7 +55,7 @@ class Recommender(Protocol):
 
 
 class ConflictDetector(Protocol):
-    def detect(self, results: list[SearchResult]) -> ConflictAnalysis:
+    async def detect(self, results: list[SearchResult]) -> ConflictAnalysis:
         ...
 
 

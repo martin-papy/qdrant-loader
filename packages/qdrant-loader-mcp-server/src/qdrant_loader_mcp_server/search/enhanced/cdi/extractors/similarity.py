@@ -16,6 +16,11 @@ class DefaultSimilarityComputer(SimilarityComputer):
     """Adapter around the legacy similarity logic."""
 
     def __init__(self, spacy_analyzer: SpaCyQueryAnalyzer):
+        from ...cross_document_intelligence import (
+            DocumentSimilarityCalculator as LegacySimilarityCalculator,  # type: ignore
+        )
+
+        self._legacy = LegacySimilarityCalculator(spacy_analyzer)
         self.spacy_analyzer = spacy_analyzer
         self.logger = LoggingConfig.get_logger(__name__)
 
@@ -24,11 +29,8 @@ class DefaultSimilarityComputer(SimilarityComputer):
         doc1: SearchResult,
         doc2: SearchResult,
     ) -> DocumentSimilarity:
-        # Lightweight re-use: delegate to legacy calculator to avoid behavior change
-        from ..legacy_adapters import LegacyDocumentSimilarityCalculator
-
-        calc = LegacyDocumentSimilarityCalculator(self.spacy_analyzer)
-        return calc.calculate_similarity(
+        # Delegate to the embedded legacy calculator to avoid behavior change
+        return self._legacy.calculate_similarity(
             doc1,
             doc2,
             metrics=[
