@@ -1,0 +1,71 @@
+"""
+Search Operations - Main Search Functionality.
+
+This module implements the core search operations including
+basic document search using the hybrid search engine.
+"""
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .core import SearchEngine
+
+from ...utils.logging import LoggingConfig
+from ..components.search_result_models import HybridSearchResult
+
+logger = LoggingConfig.get_logger(__name__)
+
+
+class SearchOperations:
+    """Handles core search operations."""
+
+    def __init__(self, engine: "SearchEngine"):
+        """Initialize with search engine reference."""
+        self.engine = engine
+        self.logger = LoggingConfig.get_logger(__name__)
+
+    async def search(
+        self,
+        query: str,
+        source_types: list[str] | None = None,
+        limit: int = 5,
+        project_ids: list[str] | None = None,
+    ) -> list[HybridSearchResult]:
+        """Search for documents using hybrid search.
+
+        Args:
+            query: Search query text
+            source_types: Optional list of source types to filter by
+            limit: Maximum number of results to return
+            project_ids: Optional list of project IDs to filter by
+        """
+        if not self.engine.hybrid_search:
+            raise RuntimeError("Search engine not initialized")
+
+        self.logger.debug(
+            "Performing search",
+            query=query,
+            source_types=source_types,
+            limit=limit,
+            project_ids=project_ids,
+        )
+
+        try:
+            results = await self.engine.hybrid_search.search(
+                query=query,
+                source_types=source_types,
+                limit=limit,
+                project_ids=project_ids,
+            )
+
+            self.logger.info(
+                "Search completed",
+                query=query,
+                result_count=len(results),
+                project_ids=project_ids,
+            )
+
+            return results
+        except Exception as e:
+            self.logger.error("Search failed", error=str(e), query=query)
+            raise
