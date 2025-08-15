@@ -1,4 +1,4 @@
-"""Knowledge Graph value types (enums and dataclasses)."""
+"""Knowledge Graph package with complete modular architecture."""
 
 from .models import (
     NodeType,
@@ -10,16 +10,20 @@ from .models import (
 )
 from .traverser import GraphTraverser
 from .builder import GraphBuilder
+from .graph import KnowledgeGraph
+from .document_graph import DocumentKnowledgeGraph
 
 __all__ = [
     "NodeType",
-    "RelationshipType",
+    "RelationshipType", 
     "GraphNode",
     "GraphEdge",
     "TraversalStrategy",
     "TraversalResult",
     "GraphTraverser",
     "GraphBuilder",
+    "KnowledgeGraph",
+    "DocumentKnowledgeGraph",
 ]
 
 
