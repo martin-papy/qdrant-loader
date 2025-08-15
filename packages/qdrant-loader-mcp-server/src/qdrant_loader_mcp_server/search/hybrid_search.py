@@ -36,6 +36,20 @@ from .enhanced.topic_search_chain import (
     TopicSearchChainGenerator,
 )
 from .nlp.spacy_analyzer import SpaCyQueryAnalyzer
+from .hybrid.models import (
+    HybridStage,
+    HybridWeights,
+    DEFAULT_VECTOR_WEIGHT,
+    DEFAULT_KEYWORD_WEIGHT,
+    DEFAULT_METADATA_WEIGHT,
+    DEFAULT_MIN_SCORE,
+)
+from .hybrid.adapters import (
+    VectorSearcherAdapter,
+    KeywordSearcherAdapter,
+    ResultCombinerAdapter,
+)
+from .hybrid.pipeline import HybridPipeline
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -48,10 +62,10 @@ class HybridSearchEngine:
         qdrant_client: QdrantClient,
         openai_client: Any,
         collection_name: str,
-        vector_weight: float = 0.6,
-        keyword_weight: float = 0.3,
-        metadata_weight: float = 0.1,
-        min_score: float = 0.3,
+        vector_weight: float = DEFAULT_VECTOR_WEIGHT,
+        keyword_weight: float = DEFAULT_KEYWORD_WEIGHT,
+        metadata_weight: float = DEFAULT_METADATA_WEIGHT,
+        min_score: float = DEFAULT_MIN_SCORE,
         # Enhanced search parameters
         knowledge_graph: DocumentKnowledgeGraph = None,
         enable_intent_adaptation: bool = True,
@@ -148,6 +162,17 @@ class HybridSearchEngine:
         )
 
         self.metadata_extractor = MetadataExtractor()
+
+        # Optional hybrid pipeline (behavior-preserving: not used for routing yet)
+        try:
+            self.hybrid_pipeline = HybridPipeline(
+                vector_searcher=VectorSearcherAdapter(self.vector_search_service),
+                keyword_searcher=KeywordSearcherAdapter(self.keyword_search_service),
+                result_combiner=ResultCombinerAdapter(self.result_combiner),
+            )
+        except Exception:
+            # Keep engine functional even if pipeline wiring fails in exotic environments
+            self.hybrid_pipeline = None
 
         # Enhanced search components
         self.enable_intent_adaptation = enable_intent_adaptation
@@ -263,21 +288,38 @@ class HybridSearchEngine:
                 if adaptive_config.expansion_aggressiveness > 0.5:
                     expanded_query = await self._expand_query_aggressive(query)
 
-            # Get vector search results
-            vector_results = await self._vector_search(
-                expanded_query, limit * 3, project_ids
-            )
-
-            # Get keyword search results
-            keyword_results = await self._keyword_search(query, limit * 3, project_ids)
-
-            # Analyze query for context
+            # Analyze query for context (must occur before pipeline combine)
             query_context = self._analyze_query(query)
 
             # Add intent information to query context
             if search_intent:
                 query_context["search_intent"] = search_intent
                 query_context["adaptive_config"] = adaptive_config
+
+            # Get results via pipeline (behavior-preserving semantics)
+            if self.hybrid_pipeline is not None:
+                combined_results = await self.hybrid_pipeline.run(
+                    query=query,
+                    limit=limit,
+                    query_context=query_context,
+                    source_types=source_types,
+                    project_ids=project_ids,
+                    vector_query=expanded_query,
+                    keyword_query=query,
+                )
+                # Restore original params if adapted
+                if adaptive_config:
+                    self.result_combiner.vector_weight = original_vector_weight
+                    self.result_combiner.keyword_weight = original_keyword_weight
+                    self.result_combiner.min_score = original_min_score
+                return combined_results
+
+            # Fallback: legacy direct calls
+            vector_results = await self._vector_search(expanded_query, limit * 3, project_ids)
+            keyword_results = await self._keyword_search(query, limit * 3, project_ids)
+
+            # Analyze query for context (already computed before pipeline); keep for clarity
+            # query_context computed above
 
             # Combine and rerank results
             combined_results = await self._combine_results(

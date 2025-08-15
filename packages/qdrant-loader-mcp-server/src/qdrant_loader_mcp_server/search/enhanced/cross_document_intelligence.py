@@ -51,6 +51,30 @@ from .cdi import (
     ComplementaryContent,
     ConflictAnalysis,
 )
+from .cdi.pipeline import CrossDocumentPipeline
+from .cdi.extractors.similarity_helpers import (
+    get_shared_entities as cdi_get_shared_entities,
+    get_shared_topics as cdi_get_shared_topics,
+    combine_metric_scores as cdi_combine_metric_scores,
+    calculate_semantic_similarity_spacy as cdi_calc_semantic_spacy,
+    calculate_text_similarity as cdi_calc_text_similarity,
+    calculate_metadata_similarity as cdi_calc_metadata_similarity,
+    calculate_content_features_similarity as cdi_calc_content_features_similarity,
+    extract_context_snippet as cdi_extract_context_snippet,
+    have_semantic_similarity as cdi_have_semantic_similarity,
+    has_transferable_domain_knowledge as cdi_has_transferable_domain_knowledge,
+    has_reusable_architecture_patterns as cdi_has_reusable_architecture_patterns,
+    has_shared_technologies as cdi_has_shared_technologies,
+    get_shared_technologies_count as cdi_get_shared_technologies_count,
+    has_shared_entities as cdi_has_shared_entities,
+    has_shared_topics as cdi_has_shared_topics,
+    get_shared_entities_count as cdi_get_shared_entities_count,
+    get_shared_topics_count as cdi_get_shared_topics_count,
+)
+from .cdi.extractors.similarity import DefaultSimilarityComputer
+from .cdi.extractors.clustering import DefaultClusterer
+from .cdi.extractors.graph import DefaultGraphBuilder
+from .cdi.rankers.default import DefaultRanker
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -165,73 +189,14 @@ class DocumentSimilarityCalculator:
     def _calculate_metadata_similarity(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> float:
-        """Calculate metadata similarity between documents."""
-        similarity_factors = []
-
-        # Project similarity
-        if doc1.project_id and doc2.project_id:
-            if doc1.project_id == doc2.project_id:
-                similarity_factors.append(1.0)
-            else:
-                similarity_factors.append(0.0)
-
-        # Source type similarity
-        if doc1.source_type == doc2.source_type:
-            similarity_factors.append(0.5)
-        else:
-            similarity_factors.append(0.0)
-
-        # Content features similarity
-        features1 = [
-            doc1.has_code_blocks,
-            doc1.has_tables,
-            doc1.has_images,
-            doc1.has_links,
-        ]
-        features2 = [
-            doc2.has_code_blocks,
-            doc2.has_tables,
-            doc2.has_images,
-            doc2.has_links,
-        ]
-        feature_similarity = sum(
-            f1 == f2 for f1, f2 in zip(features1, features2, strict=False)
-        ) / len(features1)
-        similarity_factors.append(feature_similarity)
-
-        # Word count similarity (normalized)
-        if doc1.word_count and doc2.word_count:
-            min_words = min(doc1.word_count, doc2.word_count)
-            max_words = max(doc1.word_count, doc2.word_count)
-            word_similarity = min_words / max_words if max_words > 0 else 0.0
-            similarity_factors.append(word_similarity)
-
-        return (
-            sum(similarity_factors) / len(similarity_factors)
-            if similarity_factors
-            else 0.0
-        )
+        """Calculate metadata similarity (delegates to CDI helper)."""
+        return cdi_calc_metadata_similarity(doc1, doc2)
 
     def _calculate_content_features_similarity(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> float:
-        """Calculate content features similarity."""
-        # Compare read time ranges
-        read_time_similarity = 0.0
-        if doc1.estimated_read_time and doc2.estimated_read_time:
-            min_time = min(doc1.estimated_read_time, doc2.estimated_read_time)
-            max_time = max(doc1.estimated_read_time, doc2.estimated_read_time)
-            read_time_similarity = min_time / max_time if max_time > 0 else 0.0
-
-        # Compare section depth (hierarchical level)
-        depth_similarity = 0.0
-        if doc1.depth is not None and doc2.depth is not None:
-            depth_diff = abs(doc1.depth - doc2.depth)
-            depth_similarity = max(0.0, 1.0 - depth_diff / 5.0)  # Normalize to 5 levels
-
-        # Compare content type features
-        feature_factors = [read_time_similarity, depth_similarity]
-        return sum(feature_factors) / len(feature_factors) if feature_factors else 0.0
+        """Calculate content features similarity (delegates to CDI helper)."""
+        return cdi_calc_content_features_similarity(doc1, doc2)
 
     def _calculate_hierarchical_similarity(
         self, doc1: SearchResult, doc2: SearchResult
@@ -253,28 +218,12 @@ class DocumentSimilarityCalculator:
         if doc1.parent_id and doc2.parent_id and doc1.parent_id == doc2.parent_id:
             return 0.8
 
-        # Check for sibling relationship based on breadcrumbs
+        # Breadcrumb-based similarity
         if doc1.breadcrumb_text and doc2.breadcrumb_text:
-            breadcrumb1_parts = doc1.breadcrumb_text.split(" > ")
-            breadcrumb2_parts = doc2.breadcrumb_text.split(" > ")
-
-            # Check if they are siblings (same parent path, different final element)
-            if (
-                len(breadcrumb1_parts) == len(breadcrumb2_parts)
-                and len(breadcrumb1_parts) > 1
-                and breadcrumb1_parts[:-1] == breadcrumb2_parts[:-1]
-                and breadcrumb1_parts[-1] != breadcrumb2_parts[-1]
-            ):
-                return 0.7  # Siblings should have high similarity
-
-            # General breadcrumb overlap for other hierarchical relationships
-            breadcrumb1 = set(breadcrumb1_parts)
-            breadcrumb2 = set(breadcrumb2_parts)
-
-            if breadcrumb1 and breadcrumb2:
-                intersection = len(breadcrumb1 & breadcrumb2)
-                union = len(breadcrumb1 | breadcrumb2)
-                return intersection / union if union > 0 else 0.0
+            from .cdi.utils import hierarchical_distance_from_breadcrumbs
+            return hierarchical_distance_from_breadcrumbs(
+                doc1.breadcrumb_text, doc2.breadcrumb_text
+            )
 
         return 0.0
 
@@ -283,13 +232,7 @@ class DocumentSimilarityCalculator:
     ) -> float:
         """Calculate semantic similarity using spaCy."""
         try:
-            # Use spaCy to analyze text similarity
-            doc1_analyzed = self.spacy_analyzer.nlp(
-                doc1.text[:500]
-            )  # First 500 chars for performance
-            doc2_analyzed = self.spacy_analyzer.nlp(doc2.text[:500])
-
-            return doc1_analyzed.similarity(doc2_analyzed)
+            return cdi_calc_semantic_spacy(self.spacy_analyzer, doc1.text, doc2.text)
         except Exception as e:
             self.logger.warning(f"Failed to calculate semantic similarity: {e}")
             return 0.0
@@ -297,65 +240,26 @@ class DocumentSimilarityCalculator:
     def _combine_metric_scores(
         self, metric_scores: dict[SimilarityMetric, float]
     ) -> float:
-        """Combine multiple metric scores into final similarity score."""
-        if not metric_scores:
-            return 0.0
-
-        # Weighted combination of metrics
-        weights = {
-            SimilarityMetric.ENTITY_OVERLAP: 0.25,
-            SimilarityMetric.TOPIC_OVERLAP: 0.25,
-            SimilarityMetric.METADATA_SIMILARITY: 0.20,
-            SimilarityMetric.CONTENT_FEATURES: 0.15,
-            SimilarityMetric.HIERARCHICAL_DISTANCE: 0.10,
-            SimilarityMetric.SEMANTIC_SIMILARITY: 0.05,
-        }
-
-        weighted_sum = 0.0
-        total_weight = 0.0
-
-        for metric, score in metric_scores.items():
-            weight = weights.get(metric, 0.1)
-            weighted_sum += score * weight
-            total_weight += weight
-
-        return weighted_sum / total_weight if total_weight > 0 else 0.0
+        """Combine multiple metric scores into final similarity score (delegates to CDI helper)."""
+        return cdi_combine_metric_scores(metric_scores)
 
     def _get_shared_entities(self, doc1: SearchResult, doc2: SearchResult) -> list[str]:
-        """Get shared entities between documents."""
-        entities1 = self._extract_entity_texts(doc1.entities)
-        entities2 = self._extract_entity_texts(doc2.entities)
-        return list(set(entities1) & set(entities2))
+        """Get shared entities between documents (delegates to CDI helper)."""
+        return cdi_get_shared_entities(doc1, doc2)
 
     def _get_shared_topics(self, doc1: SearchResult, doc2: SearchResult) -> list[str]:
-        """Get shared topics between documents."""
-        topics1 = self._extract_topic_texts(doc1.topics)
-        topics2 = self._extract_topic_texts(doc2.topics)
-        return list(set(topics1) & set(topics2))
+        """Get shared topics between documents (delegates to CDI helper)."""
+        return cdi_get_shared_topics(doc1, doc2)
 
     def _extract_entity_texts(self, entities: list[dict | str]) -> list[str]:
-        """Extract entity text from various formats."""
-        if entities is None:
-            return []
-        texts = []
-        for entity in entities:
-            if isinstance(entity, dict):
-                texts.append(entity.get("text", "").lower())
-            elif isinstance(entity, str):
-                texts.append(entity.lower())
-        return [t for t in texts if t]
+        """Deprecated: kept for backward compatibility; use CDI utils instead."""
+        from .cdi.utils import extract_texts_from_mixed
+        return extract_texts_from_mixed(entities)
 
     def _extract_topic_texts(self, topics: list[dict | str]) -> list[str]:
-        """Extract topic text from various formats."""
-        if topics is None:
-            return []
-        texts = []
-        for topic in topics:
-            if isinstance(topic, dict):
-                texts.append(topic.get("text", "").lower())
-            elif isinstance(topic, str):
-                texts.append(topic.lower())
-        return [t for t in texts if t]
+        """Deprecated: kept for backward compatibility; use CDI utils instead."""
+        from .cdi.utils import extract_texts_from_mixed
+        return extract_texts_from_mixed(topics)
 
     def _determine_relationship_type(
         self,
@@ -561,11 +465,11 @@ class DocumentClusterAnalyzer:
         for doc in documents:
             doc_id = f"{doc.source_type}:{doc.source_title}"
 
-            # Use breadcrumb as clustering key
+            # Use breadcrumb as clustering key (delegated)
+            from .cdi.utils import cluster_key_from_breadcrumb
+
             if doc.breadcrumb_text:
-                # Use first few levels of breadcrumb
-                breadcrumb_parts = doc.breadcrumb_text.split(" > ")
-                cluster_key = " > ".join(breadcrumb_parts[:2])  # First 2 levels
+                cluster_key = cluster_key_from_breadcrumb(doc.breadcrumb_text, levels=2)
                 hierarchy_groups[cluster_key].append(doc_id)
             else:
                 hierarchy_groups["root"].append(doc_id)
@@ -715,15 +619,9 @@ class DocumentClusterAnalyzer:
             return f"Topic Cluster {index}"
         # Hierarchy-based naming
         if cluster_type == "hierarchy" and context_key:
-            if context_key == "root":
-                return "Root Documentation"
-            # Clean up breadcrumb path
-            parts = context_key.split(" > ")
-            if len(parts) == 1:
-                return f"{parts[0]} Section"
-            elif len(parts) >= 2:
-                return f"{parts[0]} > {parts[1]}"
-            return f"{context_key} Hierarchy"
+            from .cdi.utils import format_hierarchy_cluster_name
+
+            return format_hierarchy_cluster_name(context_key)
 
         # Mixed features naming
         if cluster_type == "mixed":
@@ -762,18 +660,10 @@ class DocumentClusterAnalyzer:
         return f"{base_name} {index + 1}"
 
     def _clean_topic_name(self, topic: str) -> str:
-        """Clean and format topic names for display."""
-        if not topic:
-            return ""
+        """Clean and format topic names for display (delegates to CDI utils)."""
+        from .cdi.utils import clean_topic_name
 
-        # Remove common prefixes/suffixes
-        topic = topic.strip()
-
-        # Capitalize appropriately
-        if topic.islower():
-            return topic.title()
-
-        return topic
+        return clean_topic_name(topic)
 
     def _calculate_cluster_coherence(
         self, cluster: DocumentCluster, all_documents: list[SearchResult]
@@ -893,28 +783,10 @@ class DocumentClusterAnalyzer:
         source_types = [doc.source_type for doc in cluster_docs]
         source_type_counts = Counter(source_types)
 
-        # Analyze titles for common patterns
+        # Analyze titles for common patterns (delegate to CDI helper)
         titles = [doc.source_title or "" for doc in cluster_docs if doc.source_title]
-        title_words = []
-        for title in titles:
-            title_words.extend(title.lower().split())
-
-        common_title_words = [
-            word
-            for word, count in Counter(title_words).most_common(10)
-            if len(word) > 3
-            and word
-            not in {
-                "documentation",
-                "guide",
-                "overview",
-                "introduction",
-                "the",
-                "and",
-                "for",
-                "with",
-            }
-        ]
+        from .cdi.utils import compute_common_title_words
+        common_title_words = compute_common_title_words(titles, top_k=10)
 
         # Analyze content patterns
         has_code = any(getattr(doc, "has_code_blocks", False) for doc in cluster_docs)
@@ -1060,17 +932,10 @@ class DocumentClusterAnalyzer:
         return " | ".join(insights) if insights else ""
 
     def _categorize_cluster_size(self, size: int) -> str:
-        """Categorize cluster size."""
-        if size <= 1:
-            return "individual"
-        elif size <= 3:
-            return "small"
-        elif size <= 8:
-            return "medium"
-        elif size <= 15:
-            return "large"
-        else:
-            return "very large"
+        """Categorize cluster size (delegates to CDI utils)."""
+        from .cdi.utils import categorize_cluster_size
+
+        return categorize_cluster_size(size)
 
 
 class CitationNetworkAnalyzer:
@@ -1720,154 +1585,24 @@ class ComplementaryContentFinder:
     def _has_transferable_domain_knowledge(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> bool:
-        """Check for transferable domain expertise between projects."""
-        # This is a simplified implementation - could be enhanced with NLP
-        domain_keywords = [
-            ["healthcare", "medical", "patient", "clinical"],
-            ["finance", "payment", "banking", "financial"],
-            ["ecommerce", "retail", "shopping", "commerce"],
-            ["education", "learning", "student", "academic"],
-            ["iot", "device", "sensor", "embedded"],
-            ["mobile", "app", "ios", "android"],
-        ]
-
-        title1 = doc1.source_title.lower()
-        title2 = doc2.source_title.lower()
-
-        for domain in domain_keywords:
-            if any(keyword in title1 for keyword in domain) and any(
-                keyword in title2 for keyword in domain
-            ):
-                return True
-
-        return False
+        """Check for transferable domain expertise between projects (delegates to CDI helper)."""
+        return cdi_has_transferable_domain_knowledge(doc1, doc2)
 
     def _has_reusable_architecture_patterns(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> bool:
-        """Identify architectural patterns that are reusable across projects."""
-        architecture_patterns = [
-            ["microservices", "service", "microservice"],
-            ["api", "rest", "graphql", "endpoint"],
-            ["database", "data", "storage", "persistence"],
-            ["authentication", "auth", "identity", "oauth"],
-            ["messaging", "queue", "event", "pub-sub"],
-            ["cache", "caching", "redis", "memory"],
-            ["monitoring", "logging", "observability", "metrics"],
-        ]
-
-        title1 = doc1.source_title.lower()
-        title2 = doc2.source_title.lower()
-
-        for pattern in architecture_patterns:
-            if any(keyword in title1 for keyword in pattern) and any(
-                keyword in title2 for keyword in pattern
-            ):
-                return True
-
-        return False
+        """Identify reusable architecture patterns (delegates to CDI helper)."""
+        return cdi_has_reusable_architecture_patterns(doc1, doc2)
 
     def _has_shared_technologies(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Identify shared technologies, frameworks, standards."""
-
-        # Prefer direct entity overlap when entities provided on documents
-        def extract_entities(entities):
-            texts = []
-            for ent in entities or []:
-                if isinstance(ent, dict):
-                    texts.append(ent.get("text", "").lower())
-                elif isinstance(ent, str):
-                    texts.append(ent.lower())
-            return [t for t in texts if t]
-
-        ents1 = set(extract_entities(getattr(doc1, "entities", [])))
-        ents2 = set(extract_entities(getattr(doc2, "entities", [])))
-
-        def norm(e: str) -> str:
-            e = (e or "").lower()
-            return "node.js" if e in {"node", "nodejs", "node.js"} else e
-
-        if {norm(e) for e in ents1} & {norm(e) for e in ents2}:
-            return True
-
-        # Fallback to title keywords (only if both documents are in the same broad tech family)
-        title1 = doc1.source_title.lower()
-        title2 = doc2.source_title.lower()
-        keywords = [
-            "react",
-            "angular",
-            "vue",
-            "node",
-            "node.js",
-            "python",
-            "java",
-            "golang",
-            "docker",
-            "kubernetes",
-            "aws",
-            "azure",
-            "gcp",
-            "postgres",
-            "mysql",
-            "mongodb",
-            "jwt",
-            "oauth",
-            "rest",
-            "graphql",
-            "grpc",
-        ]
-        # Only consider a technology shared if it appears in both titles
-        for k in keywords:
-            if k in title1 and k in title2:
-                return True
-        return False
+        """Identify shared technologies, frameworks, standards (delegates to CDI helper)."""
+        return cdi_has_shared_technologies(doc1, doc2)
 
     def _get_shared_technologies_count(
         self, doc1: SearchResult, doc2: SearchResult
     ) -> int:
-        """Count shared technologies between documents."""
-        # Prefer entity overlap
-        entities1 = set(
-            self.similarity_calculator._extract_entity_texts(
-                getattr(doc1, "entities", []) or []
-            )
-        )
-        entities2 = set(
-            self.similarity_calculator._extract_entity_texts(
-                getattr(doc2, "entities", []) or []
-            )
-        )
-
-        def norm(e: str) -> str:
-            e = (e or "").lower()
-            return "node.js" if e in {"node", "nodejs", "node.js"} else e
-
-        shared_entities = {norm(e) for e in entities1} & {norm(e) for e in entities2}
-        if shared_entities:
-            return len(shared_entities)
-
-        # Fallback to keyword overlap in titles
-        tech_keywords = [
-            "react",
-            "angular",
-            "vue",
-            "node",
-            "node.js",
-            "python",
-            "java",
-            "docker",
-            "kubernetes",
-            "aws",
-            "azure",
-            "postgres",
-            "mysql",
-            "mongodb",
-            "jwt",
-            "oauth",
-        ]
-        title1 = doc1.source_title.lower()
-        title2 = doc2.source_title.lower()
-        return sum(1 for k in tech_keywords if k in title1 and k in title2)
+        """Count shared technologies between documents (delegates to CDI helper)."""
+        return cdi_get_shared_technologies_count(doc1, doc2)
 
     def _enhanced_fallback_scoring(
         self, target_doc: HybridSearchResult, candidate_doc: HybridSearchResult
@@ -1914,28 +1649,20 @@ class ComplementaryContentFinder:
         return min(score, 0.5)  # Cap fallback scores
 
     def _has_shared_entities(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents have shared entities."""
-        entities1 = self.similarity_calculator._extract_entity_texts(doc1.entities)
-        entities2 = self.similarity_calculator._extract_entity_texts(doc2.entities)
-        return len(set(entities1) & set(entities2)) > 0
+        """Check if documents have shared entities (delegates to CDI helper)."""
+        return cdi_has_shared_entities(doc1, doc2)
 
     def _has_shared_topics(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents have shared topics."""
-        topics1 = self.similarity_calculator._extract_topic_texts(doc1.topics)
-        topics2 = self.similarity_calculator._extract_topic_texts(doc2.topics)
-        return len(set(topics1) & set(topics2)) > 0
+        """Check if documents have shared topics (delegates to CDI helper)."""
+        return cdi_has_shared_topics(doc1, doc2)
 
     def _get_shared_topics_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
-        """Get the count of shared topics between documents."""
-        topics1 = self.similarity_calculator._extract_topic_texts(doc1.topics)
-        topics2 = self.similarity_calculator._extract_topic_texts(doc2.topics)
-        return len(set(topics1) & set(topics2))
+        """Get the count of shared topics (delegates to CDI helper)."""
+        return cdi_get_shared_topics_count(doc1, doc2)
 
     def _get_shared_entities_count(self, doc1: SearchResult, doc2: SearchResult) -> int:
-        """Get the count of shared entities between documents."""
-        entities1 = self.similarity_calculator._extract_entity_texts(doc1.entities)
-        entities2 = self.similarity_calculator._extract_entity_texts(doc2.entities)
-        return len(set(entities1) & set(entities2))
+        """Get the count of shared entities (delegates to CDI helper)."""
+        return cdi_get_shared_entities_count(doc1, doc2)
 
     def _has_different_content_complexity(
         self, doc1: SearchResult, doc2: SearchResult
@@ -2146,23 +1873,10 @@ class ConflictDetector:
     def _calculate_vector_similarity(
         self, embedding1: list[float], embedding2: list[float]
     ) -> float:
-        """Calculate cosine similarity between two embeddings."""
+        """Calculate cosine similarity between two embeddings (delegates to CDI util)."""
+        from .cdi.utils import cosine_similarity
         try:
-            # Convert to numpy arrays
-            vec1 = np.array(embedding1)
-            vec2 = np.array(embedding2)
-
-            # Calculate cosine similarity
-            dot_product = np.dot(vec1, vec2)
-            magnitude1 = np.linalg.norm(vec1)
-            magnitude2 = np.linalg.norm(vec2)
-
-            if magnitude1 == 0 or magnitude2 == 0:
-                return 0.0
-
-            similarity = dot_product / (magnitude1 * magnitude2)
-            return float(similarity)
-
+            return cosine_similarity(embedding1, embedding2)
         except Exception as e:
             self.logger.warning(f"Failed to calculate vector similarity: {e}")
             return 0.0
@@ -2327,48 +2041,7 @@ class ConflictDetector:
         self, doc1: SearchResult, doc2: SearchResult
     ) -> float:
         """Calculate text-based similarity as fallback when vectors aren't available."""
-        # Simple TF-IDF-like approach
-        words1 = set(doc1.text.lower().split())
-        words2 = set(doc2.text.lower().split())
-
-        # Remove common stop words
-        stop_words = {
-            "the",
-            "and",
-            "or",
-            "but",
-            "in",
-            "on",
-            "at",
-            "to",
-            "for",
-            "of",
-            "with",
-            "by",
-            "a",
-            "an",
-            "is",
-            "are",
-            "was",
-            "were",
-            "be",
-            "been",
-            "being",
-        }
-        words1 = words1 - stop_words
-        words2 = words2 - stop_words
-
-        if not words1 or not words2:
-            return 0.0
-
-        # Calculate Jaccard similarity
-        intersection = len(words1 & words2)
-        union = len(words1 | words2)
-
-        if union == 0:
-            return 0.0
-
-        return intersection / union
+        return cdi_calc_text_similarity(doc1, doc2)
 
     async def detect_conflicts(self, documents: list[SearchResult]) -> ConflictAnalysis:
         """Detect conflicts between documents using tiered analysis strategy."""
@@ -3057,66 +2730,8 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
     def _extract_context_snippet(
         self, text: str, keyword: str, max_length: int = 150
     ) -> str:
-        """Extract a context snippet around a keyword from document text."""
-        import re
-
-        # Find the keyword using word boundaries (case insensitive)
-        keyword_lower = keyword.lower()
-
-        # Handle multi-word keywords
-        if " " in keyword_lower:
-            # For multi-word phrases, search for exact phrase with word boundaries
-            pattern = r"\b" + re.escape(keyword_lower) + r"\b"
-        else:
-            # For single words, use word boundaries
-            pattern = r"\b" + re.escape(keyword_lower) + r"\b"
-
-        match = re.search(pattern, text, re.IGNORECASE)
-        if not match:
-            # If exact phrase not found, try individual words
-            words = keyword_lower.split()
-            for word in words:
-                word_pattern = r"\b" + re.escape(word) + r"\b"
-                match = re.search(word_pattern, text, re.IGNORECASE)
-                if match:
-                    keyword = word
-                    break
-
-        if not match:
-            # If keyword not found, return beginning of text up to max_length
-            snippet = text[:max_length].strip()
-            return snippet
-
-        keyword_start = match.start()
-
-        # Calculate start and end positions for snippet
-        snippet_start = max(0, keyword_start - max_length // 2)
-        snippet_end = min(len(text), keyword_start + len(keyword) + max_length // 2)
-
-        # Extract snippet
-        snippet = text[snippet_start:snippet_end].strip()
-
-        # Clean up snippet - try to break at sentence boundaries
-        sentences = snippet.split(".")
-        if len(sentences) > 1:
-            # Find the sentence containing the keyword
-            for i, sentence in enumerate(sentences):
-                if keyword.lower() in sentence.lower():
-                    # Include this sentence and maybe one before/after
-                    start_idx = max(0, i - 1) if i > 0 else 0
-                    end_idx = min(len(sentences), i + 2)
-                    snippet = ".".join(sentences[start_idx:end_idx]).strip()
-                    if snippet.endswith("."):
-                        snippet = snippet[:-1]
-                    break
-
-        # Add ellipsis if we truncated
-        if snippet_start > 0:
-            snippet = "..." + snippet
-        if snippet_end < len(text):
-            snippet = snippet + "..."
-
-        return snippet or f"[Content containing '{keyword}']"
+        """Extract a context snippet around a keyword from document text (delegates to CDI helper)."""
+        return cdi_extract_context_snippet(text, keyword, max_length)
 
     def _detect_version_conflicts(
         self, doc1: SearchResult, doc2: SearchResult
@@ -3382,11 +2997,12 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
         return [t for t in texts if t]
 
     def _have_content_overlap(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents have significant content overlap."""
-        words1 = set(doc1.text.lower().split())
-        words2 = set(doc2.text.lower().split())
+        """Check if documents have significant content overlap (delegates to CDI helper)."""
+        from .cdi.utils import jaccard_similarity
 
-        # Filter out common words
+        words1 = set((doc1.text or "").lower().split())
+        words2 = set((doc2.text or "").lower().split())
+
         common_words = {
             "the",
             "and",
@@ -3403,50 +3019,15 @@ If no significant conflicts are found, return {{"has_conflicts": false, "conflic
             "a",
             "an",
         }
-        words1 = words1 - common_words
-        words2 = words2 - common_words
-
+        words1 -= common_words
+        words2 -= common_words
         if not words1 or not words2:
             return False
-
-        overlap = len(words1 & words2)
-        total = min(len(words1), len(words2))
-        return overlap / total > 0.1  # 10% word overlap threshold
+        return jaccard_similarity(words1, words2) > 0.1
 
     def _have_semantic_similarity(self, doc1: SearchResult, doc2: SearchResult) -> bool:
-        """Check if documents have semantic similarity based on titles and key terms."""
-        # Compare titles
-        title1 = (doc1.source_title or "").lower()
-        title2 = (doc2.source_title or "").lower()
-
-        if title1 and title2:
-            title_words1 = set(title1.split())
-            title_words2 = set(title2.split())
-            if len(title_words1 & title_words2) > 0:
-                return True
-
-        # Look for key terms that suggest similar subject matter
-        key_terms = [
-            "authentication",
-            "security",
-            "login",
-            "password",
-            "access",
-            "user",
-            "interface",
-            "design",
-            "app",
-            "mobile",
-        ]
-        text1_lower = doc1.text.lower()
-        text2_lower = doc2.text.lower()
-
-        terms_in_doc1 = [term for term in key_terms if term in text1_lower]
-        terms_in_doc2 = [term for term in key_terms if term in text2_lower]
-
-        return (
-            len(set(terms_in_doc1) & set(terms_in_doc2)) >= 2
-        )  # At least 2 shared key terms
+        """Check semantic similarity based on titles and key terms (delegates to CDI helper)."""
+        return cdi_have_semantic_similarity(doc1, doc2)
 
 
 class CrossDocumentIntelligenceEngine:
@@ -3469,14 +3050,21 @@ class CrossDocumentIntelligenceEngine:
         self.collection_name = collection_name
         self.logger = LoggingConfig.get_logger(__name__)
 
-        # Initialize component analyzers
+        # Initialize pipeline-based composition (behavior preserved via adapters)
+        self._pipeline = CrossDocumentPipeline(
+            similarity_computer=DefaultSimilarityComputer(spacy_analyzer),
+            clusterer=DefaultClusterer(similarity_calculator=DocumentSimilarityCalculator(spacy_analyzer)),
+            graph_builder=DefaultGraphBuilder(),
+            ranker=DefaultRanker(),
+        )
+
+        # Keep legacy attributes for backward compatibility across the codebase
         self.similarity_calculator = DocumentSimilarityCalculator(spacy_analyzer)
         self.cluster_analyzer = DocumentClusterAnalyzer(self.similarity_calculator)
         self.citation_analyzer = CitationNetworkAnalyzer()
         self.complementary_finder = ComplementaryContentFinder(
             self.similarity_calculator, knowledge_graph
         )
-        # Initialize ConflictDetector with optional settings
         self.conflict_detector = ConflictDetector(
             spacy_analyzer, qdrant_client, openai_client, collection_name
         )
