@@ -415,8 +415,27 @@ class IntelligenceOperations:
 
             self.logger.info(f"✅ Found {len(complementary)} recommendations")
 
+            # Transform recommendations to expected format
+            transformed_recommendations = []
+            for rec in complementary:
+                if isinstance(rec, dict):
+                    # Get document info
+                    doc = rec.get("document")
+                    if doc:
+                        transformed_rec = {
+                            "document_id": doc.document_id if hasattr(doc, 'document_id') else rec.get("document_id", "unknown"),
+                            "title": doc.get_display_title() if hasattr(doc, 'get_display_title') else doc.source_title if hasattr(doc, 'source_title') else rec.get("title", "Untitled"),
+                            "relevance_score": rec.get("complementary_score", rec.get("relevance_score", 0.0)),
+                            "reason": rec.get("explanation", rec.get("reason", "")),
+                            "strategy": rec.get("relationship_type", rec.get("strategy", "related")),
+                        }
+                        transformed_recommendations.append(transformed_rec)
+                else:
+                    # Handle non-dict recommendations
+                    transformed_recommendations.append(rec)
+
             return {
-                "complementary_recommendations": complementary,
+                "complementary_recommendations": transformed_recommendations,
                 "target_document": {
                     "document_id": target_doc.document_id,
                     "title": target_doc.get_display_title(),
@@ -469,19 +488,35 @@ class IntelligenceOperations:
             if len(documents) < min_cluster_size:
                 return {
                     "clusters": [],
-                    "message": f"Need at least {min_cluster_size} documents for clustering",
-                    "document_count": len(documents),
+                    "clustering_metadata": {
+                        "message": f"Need at least {min_cluster_size} documents for clustering",
+                        "document_count": len(documents),
+                        "original_query": query,
+                        "source_types": source_types,
+                        "project_ids": project_ids,
+                        "strategy": strategy.value,
+                        "max_clusters": max_clusters,
+                        "min_cluster_size": min_cluster_size,
+                    }
                 }
 
             # Perform clustering
             clusters = await self.engine.hybrid_search.cluster_documents(
-                documents, strategy, max_clusters, min_cluster_size
+                documents=documents, 
+                strategy=strategy, 
+                max_clusters=max_clusters, 
+                min_cluster_size=min_cluster_size
             )
 
-            # Add query metadata
-            return {
-                **clusters,
-                "query_metadata": {
+            # Add query metadata - merge into clustering_metadata if it exists
+            result = {**clusters}
+            if "clustering_metadata" in result:
+                result["clustering_metadata"]["original_query"] = query
+                result["clustering_metadata"]["document_count"] = len(documents)
+                result["clustering_metadata"]["source_types"] = source_types
+                result["clustering_metadata"]["project_ids"] = project_ids
+            else:
+                result["query_metadata"] = {
                     "original_query": query,
                     "document_count": len(documents),
                     "source_types": source_types,
@@ -489,8 +524,9 @@ class IntelligenceOperations:
                     "strategy": strategy.value,
                     "max_clusters": max_clusters,
                     "min_cluster_size": min_cluster_size,
-                },
-            }
+                }
+            
+            return result
 
         except Exception as e:
             self.logger.error("Document clustering failed", error=str(e), query=query)

@@ -223,13 +223,12 @@ class FormatterUtils:
     @staticmethod
     def extract_safe_filename(result: HybridSearchResult) -> str:
         """Extract a safe filename from result, handling various edge cases."""
-        # First try original_filename for attachments
-        if hasattr(result, "is_attachment") and result.is_attachment:
-            original_filename = getattr(result, "original_filename", None)
-            if original_filename:
-                return original_filename
+        # First try original_filename (prioritize this for all results)
+        original_filename = getattr(result, "original_filename", None)
+        if original_filename:
+            return original_filename
 
-        # Try file_path
+        # Then try file_path
         file_path = getattr(result, "file_path", None)
         if file_path:
             # Extract filename from path
@@ -242,20 +241,35 @@ class FormatterUtils:
     @staticmethod
     def extract_file_type_minimal(result: HybridSearchResult) -> str:
         """Extract minimal file type information from result."""
-        filename = FormatterUtils.extract_safe_filename(result)
+        # First try mime_type for more detailed type information
+        mime_type = getattr(result, "mime_type", None)
+        if mime_type:
+            # Convert common mime types to readable format
+            if mime_type == "text/markdown":
+                return "markdown"
+            elif mime_type.startswith("text/"):
+                return mime_type.replace("text/", "")
+            elif mime_type.startswith("application/pdf"):
+                return "pdf"
+            elif mime_type.startswith("application/"):
+                return mime_type.replace("application/", "")
+            elif "/" in mime_type:
+                return mime_type.split("/")[-1]
         
+        # Fallback to filename extension
+        filename = FormatterUtils.extract_safe_filename(result)
         if "." in filename:
             extension = filename.split(".")[-1].lower()
             return extension
+        
+        # Final fallback based on source_type
+        source_type = getattr(result, "source_type", "")
+        if source_type == "confluence":
+            return "page"
+        elif source_type == "jira":
+            return "ticket"
         else:
-            # Guess based on source_type or other indicators
-            source_type = getattr(result, "source_type", "")
-            if source_type == "confluence":
-                return "page"
-            elif source_type == "jira":
-                return "ticket"
-            else:
-                return "unknown"
+            return "unknown"
 
     @staticmethod
     def organize_attachments_by_type(results: list[HybridSearchResult]) -> list[dict]:

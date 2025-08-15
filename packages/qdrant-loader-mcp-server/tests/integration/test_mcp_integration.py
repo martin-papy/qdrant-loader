@@ -63,7 +63,7 @@ async def integration_handler():
     # Patch external dependencies
     with (
         patch(
-            "qdrant_loader_mcp_server.search.engine.AsyncQdrantClient",
+            "qdrant_loader_mcp_server.search.engine.core.AsyncQdrantClient",
             return_value=mock_qdrant_client,
         ),
         patch(

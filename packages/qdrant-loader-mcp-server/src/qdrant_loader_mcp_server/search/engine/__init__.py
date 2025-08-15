@@ -10,9 +10,13 @@ This package provides a comprehensive search engine through modular components:
 - strategies: Search strategy selection and optimization
 """
 
-# Re-export the main SearchEngine class for backward compatibility
-from .core import SearchEngine
+# Re-export the main SearchEngine class and clients for backward compatibility
+from .core import SearchEngine, AsyncQdrantClient, AsyncOpenAI
+from ..hybrid_search import HybridSearchEngine
 
 __all__ = [
     "SearchEngine",
+    "AsyncQdrantClient", 
+    "AsyncOpenAI",
+    "HybridSearchEngine",
 ]

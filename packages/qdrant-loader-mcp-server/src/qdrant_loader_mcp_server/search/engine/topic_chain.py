@@ -181,35 +181,15 @@ class TopicChainOperations:
             # Calculate exploration statistics
             stats = self._calculate_exploration_stats(topic_chain, chain_results)
 
-            response = {
-                "original_query": query,
-                "chain_strategy": chain_strategy,
-                "topic_chain": {
-                    "chain_links": [
-                        {
-                            "query": link.search_query,
-                            "topics": link.topics,
-                            "exploration_depth": link.exploration_depth,
-                            "relevance_score": link.relevance_score,
-                        }
-                        for link in topic_chain.chain_links
-                    ],
-                    "estimated_discovery_potential": topic_chain.estimated_discovery_potential,
-                    "total_topics_covered": topic_chain.total_topics_covered,
-                },
-                "results_by_depth": organized_results,
-                "exploration_statistics": stats,
-                "total_results": sum(len(results) for results in chain_results.values()),
-            }
-
             self.logger.info(
                 "Topic chain search completed",
                 query=query,
-                total_results=response["total_results"],
+                total_results=sum(len(results) for results in chain_results.values()),
                 topics_explored=topic_chain.total_topics_covered,
             )
 
-            return response
+            # Return simple results format for backward compatibility
+            return chain_results
 
         except Exception as e:
             self.logger.error("Topic chain search failed", error=str(e), query=query)
@@ -222,8 +202,8 @@ class TopicChainOperations:
         organized = {}
 
         for link in topic_chain.chain_links:
-            depth = link.exploration_depth
-            query = link.search_query
+            depth = link.chain_position
+            query = link.query
             
             if depth not in organized:
                 organized[depth] = {
@@ -236,7 +216,7 @@ class TopicChainOperations:
                 results = chain_results[query]
                 organized[depth]["queries"].append({
                     "query": query,
-                    "topics": link.topics,
+                    "topics": [link.topic_focus] + link.related_topics,
                     "relevance_score": link.relevance_score,
                     "result_count": len(results),
                 })
@@ -253,11 +233,11 @@ class TopicChainOperations:
         unique_topics = set()
         
         for link in topic_chain.chain_links:
-            unique_topics.update(link.topics)
+            unique_topics.update([link.topic_focus] + link.related_topics)
 
         depth_distribution = {}
         for link in topic_chain.chain_links:
-            depth = link.exploration_depth
+            depth = link.chain_position
             depth_distribution[depth] = depth_distribution.get(depth, 0) + 1
 
         return {
