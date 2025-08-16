@@ -384,10 +384,11 @@ class IntelligenceOperations:
             self.logger.info(
                 f"🔍 Step 2: Searching for context documents with query: '{context_query}'"
             )
-            # Get context documents for comparison
+            # Get context documents for comparison - adaptive limit based on max_recommendations
+            adaptive_limit = max(max_recommendations * 4, 20)
             context_results = await self.engine.hybrid_search.search(
                 query=context_query,
-                limit=20,  # Get more candidates for better recommendations
+                limit=adaptive_limit,
                 source_types=source_types,
                 project_ids=project_ids,
             )
