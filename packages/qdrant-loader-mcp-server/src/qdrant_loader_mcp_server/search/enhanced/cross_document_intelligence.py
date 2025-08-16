@@ -32,6 +32,12 @@ from .cdi.models import (
     SimilarityMetric,
 )
 
+# Re-export NetworkX for test compatibility
+try:
+    import networkx as nx
+except ImportError:
+    nx = None  # Handle cases where NetworkX is not available
+
 __all__ = [
     # Main Engine
     "CrossDocumentIntelligenceEngine",
@@ -52,4 +58,7 @@ __all__ = [
     "CitationNetwork",
     "ComplementaryContent",
     "ConflictAnalysis",
+    
+    # External Dependencies (for test compatibility)
+    "nx",
 ]

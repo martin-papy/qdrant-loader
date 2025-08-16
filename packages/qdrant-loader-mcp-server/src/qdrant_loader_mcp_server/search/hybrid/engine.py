@@ -673,10 +673,11 @@ class HybridSearchEngine:
                 if document:
                     enhanced_rec = {
                         "document_id": rec["document_id"],
+                        "document": document,  # Add the full document object for test compatibility
                         "title": document.get_display_title(),
                         "source_type": document.source_type,
                         "relevance_score": rec["relevance_score"],
-                        "reason": rec["recommendation_reason"],
+                        "recommendation_reason": rec["recommendation_reason"],
                         "strategy": rec["strategy"],
                     }
                     enhanced_recommendations.append(enhanced_rec)

@@ -32,6 +32,8 @@ class StructuredResultFormatters:
                 "source_url": getattr(result, "source_url", None),
                 "file_path": getattr(result, "file_path", None),
                 "score": getattr(result, "score", 0.0),
+                "created_at": getattr(result, "created_at", None),
+                "updated_at": getattr(result, "updated_at", None),
                 "metadata": {
                     "breadcrumb": getattr(result, "breadcrumb_text", None),
                     "hierarchy_context": getattr(result, "hierarchy_context", None),
