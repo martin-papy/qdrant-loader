@@ -364,12 +364,27 @@ class TestAttachmentSearchIntegration:
         integration_search_handler.query_processor.process_query.return_value = {
             "query": "API specifications"
         }
-        integration_search_handler.search_engine.search.return_value = (
-            realistic_search_results
-        )
+        
+        # Create a specific attachment result that will pass all filters
+        attachment_result = Mock()
+        attachment_result.document_id = "attachment-json-101"
+        attachment_result.source_type = "confluence"
+        attachment_result.source_title = "api-spec.json"
+        attachment_result.text = "JSON API specification"
+        attachment_result.score = 0.9
+        attachment_result.is_attachment = True
+        attachment_result.original_filename = "api-spec.json"
+        attachment_result.file_path = "/attachments/api-spec.json"
+        attachment_result.get_file_type = Mock(return_value="json")
+        
+        # Use async return for the async search method
+        from unittest.mock import AsyncMock
+        integration_search_handler.search_engine.search = AsyncMock(return_value=[attachment_result])
 
-        # Mock the attachment grouping
+        # Mock the file type extraction to ensure it returns 'json'
         with patch.object(
+            integration_search_handler.formatters, "_extract_file_type_minimal", return_value="json"
+        ), patch.object(
             integration_search_handler.formatters, "_organize_attachments_by_type"
         ) as mock_organize:
             mock_organize.return_value = [
@@ -655,6 +670,11 @@ class TestPerformanceScenarios:
             result.is_attachment = False
             result.original_filename = None
             result.file_path = None
+            result.breadcrumb_text = f"Root > Category {i//10} > Document {i}" if i > 0 else ""
+            result.hierarchy_context = f"Root > Category {i//10} > Document {i}" if i > 0 else None
+            result.depth = i//20 + 1  # Varying depths
+            result.parent_title = f"Category {i//10}" if i > 0 else None
+            result.children_count = 3 if i < 10 else 0
             result.is_root_document = Mock(return_value=i < 10)
             result.has_children = Mock(return_value=i < 5)
             large_result_set.append(result)

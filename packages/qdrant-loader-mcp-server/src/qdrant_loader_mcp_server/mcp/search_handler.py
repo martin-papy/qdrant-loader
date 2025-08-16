@@ -213,7 +213,7 @@ class SearchHandler:
 
             # Create structured content for MCP compliance
             structured_content = self.formatters.create_lightweight_hierarchy_results(
-                organized_results, query
+                filtered_results, organized_results or {}, query
             )
 
             # Format the response with both text and structured content
@@ -314,11 +314,8 @@ class SearchHandler:
                     filtered_results
                 )
                 for group in attachment_groups:
-                    group_results = [
-                        r
-                        for r in filtered_results
-                        if r.document_id in group["document_ids"]
-                    ]
+                    # Use the results already in the group instead of filtering by document_ids
+                    group_results = group.get("results", [])
                     organized_results[group["group_name"]] = group_results
 
             # Create lightweight text response

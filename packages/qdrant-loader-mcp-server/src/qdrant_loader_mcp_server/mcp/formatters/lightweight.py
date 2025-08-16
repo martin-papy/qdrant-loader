@@ -188,28 +188,51 @@ class LightweightResultFormatters:
         hierarchy_index_data = []
         
         for group_name, results in organized_results.items():
+            clean_group_name = FormatterUtils.generate_clean_group_name(group_name, results)
+            documents_data = [
+                {
+                    **FormatterUtils.extract_minimal_doc_fields(result),
+                    "depth": FormatterUtils.extract_synthetic_depth(result),
+                    "has_children": FormatterUtils.extract_has_children(result),
+                    "parent_title": FormatterUtils.extract_synthetic_parent_title(result),
+                }
+                for result in results[:10]  # Limit per group
+            ]
+            # Calculate depth range for the group
+            depths = [FormatterUtils.extract_synthetic_depth(result) for result in results]
+            depth_range = [min(depths), max(depths)] if depths else [0, 0]
+            
             group_data = {
-                "group_name": FormatterUtils.generate_clean_group_name(group_name, results),
-                "documents": [
-                    {
-                        **FormatterUtils.extract_minimal_doc_fields(result),
-                        "depth": FormatterUtils.extract_synthetic_depth(result),
-                        "has_children": FormatterUtils.extract_has_children(result),
-                        "parent_title": FormatterUtils.extract_synthetic_parent_title(result),
-                    }
-                    for result in results[:10]  # Limit per group
-                ],
+                "group_key": group_name,  # Original key
+                "group_name": clean_group_name,  # Clean display name
+                "documents": documents_data,
+                "document_ids": [doc["document_id"] for doc in documents_data],
+                "depth_range": depth_range,
                 "total_documents": len(results),
             }
             hierarchy_groups_data.append(group_data)
             
-            # Also create index entries for quick access
-            hierarchy_index_data.append({
-                "group_name": group_data["group_name"],
-                "document_count": len(results),
-                "avg_depth": sum(FormatterUtils.extract_synthetic_depth(result) for result in results) / len(results) if results else 0,
-                "source_types": list(set(getattr(result, "source_type", "unknown") for result in results)),
-            })
+            # Create index entries as individual documents for compatibility
+            for result in results:
+                hierarchy_index_data.append({
+                    "document_id": getattr(result, "document_id", f"doc_{id(result)}"),
+                    "title": getattr(result, "title", "Untitled"),
+                    "score": getattr(result, "score", 0.0),
+                    "hierarchy_info": {
+                        "depth": FormatterUtils.extract_synthetic_depth(result),
+                        "has_children": FormatterUtils.extract_has_children(result),
+                        "parent_title": FormatterUtils.extract_synthetic_parent_title(result),
+                        "group_name": clean_group_name,
+                        "source_type": getattr(result, "source_type", "unknown"),
+                    },
+                    "navigation_hints": {
+                        "breadcrumb": FormatterUtils.extract_synthetic_parent_title(result),
+                        "level": FormatterUtils.extract_synthetic_depth(result),
+                        "group": clean_group_name,
+                        "siblings_count": len(results) - 1,  # Other docs in same group
+                        "children_count": 0,  # Default, could be enhanced with actual child detection
+                    }
+                })
         
         return {
             "hierarchy_index": hierarchy_index_data,
@@ -217,9 +240,11 @@ class LightweightResultFormatters:
             "total_found": len(filtered_results),
             "query_metadata": {
                 "query": query,
+                "search_query": query,  # Alias for compatibility
                 "total_documents": len(filtered_results),
                 "total_groups": len(organized_results),
                 "analysis_type": "hierarchy",
+                "source_types_found": list(set(getattr(result, "source_type", "unknown") for result in filtered_results)),
             },
             # Keep legacy fields for backward compatibility
             "query": query,

@@ -791,9 +791,49 @@ class ConflictDetector:
                 temperature=0.1
             )
             
-            # Parse LLM response
+            # Parse LLM response with JSON extraction for malformed responses
             import json
-            llm_result = json.loads(response.choices[0].message.content)
+            import re
+            
+            content = response.choices[0].message.content
+            
+            # Try direct JSON parsing first
+            try:
+                llm_result = json.loads(content)
+            except json.JSONDecodeError:
+                # Try to extract JSON from malformed response using bracket matching
+                def extract_json_object(text):
+                    """Extract the first complete JSON object from text."""
+                    start_idx = text.find('{')
+                    if start_idx == -1:
+                        return None
+                    
+                    brace_count = 0
+                    end_idx = start_idx
+                    
+                    for i, char in enumerate(text[start_idx:], start_idx):
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i
+                                break
+                    
+                    if brace_count == 0:
+                        return text[start_idx:end_idx + 1]
+                    return None
+                
+                extracted_json = extract_json_object(content)
+                if extracted_json:
+                    try:
+                        llm_result = json.loads(extracted_json)
+                    except json.JSONDecodeError:
+                        # If extraction fails, raise original error
+                        raise
+                else:
+                    # No JSON found, raise original error
+                    raise
             
             # If no conflicts detected, return None as expected by tests
             if not llm_result.get("has_conflicts", False):
