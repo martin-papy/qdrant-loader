@@ -375,10 +375,15 @@ class SearchEngine:
                 ]
             }
         
-        # Use the hybrid search engine's method to detect conflicts
-        conflicts_result = await self.hybrid_search.detect_document_conflicts(
-            documents=search_results,
-            query=query
+        # Delegate to the intelligence module which handles query-based conflict detection
+        if not self._intelligence_ops:
+            raise RuntimeError("Intelligence operations not initialized")
+            
+        conflicts_result = await self._intelligence_ops.detect_document_conflicts(
+            query=query,
+            limit=limit,
+            source_types=source_types,
+            project_ids=project_ids
         )
         
         # Add query metadata and original documents to the result

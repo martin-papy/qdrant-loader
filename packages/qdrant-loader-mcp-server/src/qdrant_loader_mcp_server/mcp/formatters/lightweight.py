@@ -247,6 +247,10 @@ class LightweightResultFormatters:
                     "complementary_score": rec.get("relevance_score", 0),
                     "complementary_reason": rec.get("recommendation_reason", rec.get("reason", "")),
                     "relationship_type": rec.get("strategy", ""),
+                    "basic_metadata": {
+                        "source_type": getattr(rec.get("document"), "source_type", rec.get("source_type", "unknown")),
+                        "project_id": getattr(rec.get("document"), "project_id", rec.get("project_id")),
+                    },
                 }
                 for rec in complementary_recommendations
             ],
@@ -268,10 +272,13 @@ class LightweightResultFormatters:
             "total_recommendations": len(complementary_recommendations),
             "complementary_summary": {
                 "total_found": len(complementary_recommendations),
+                "complementary_found": len(complementary_recommendations),
+                "total_analyzed": context_documents_analyzed,
                 "average_score": sum(rec.get("relevance_score", 0) for rec in complementary_recommendations) / len(complementary_recommendations) if complementary_recommendations else 0,
                 "strategies_used": list(set(rec.get("strategy", "unknown") for rec in complementary_recommendations)),
             },
             "lazy_loading_enabled": False,
+            "expand_document_hint": "Use tools/call with 'search' to get full document details",
         }
 
     @staticmethod
