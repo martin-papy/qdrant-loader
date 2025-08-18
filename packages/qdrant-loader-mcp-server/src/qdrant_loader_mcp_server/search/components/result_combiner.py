@@ -3,6 +3,7 @@
 from typing import Any
 
 from ...utils.logging import LoggingConfig
+from ..hybrid.components.scoring import HybridScorer, ScoreComponents
 from ..nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from .metadata_extractor import MetadataExtractor
 from .search_result_models import HybridSearchResult, create_hybrid_search_result
@@ -36,6 +37,12 @@ class ResultCombiner:
         self.logger = LoggingConfig.get_logger(__name__)
 
         self.metadata_extractor = MetadataExtractor()
+        # Internal scorer to centralize weighting logic (behavior-preserving)
+        self._scorer = HybridScorer(
+            vector_weight=self.vector_weight,
+            keyword_weight=self.keyword_weight,
+            metadata_weight=self.metadata_weight,
+        )
 
     async def combine_results(
         self,
@@ -122,9 +129,12 @@ class ResultCombiner:
                 if self._should_skip_result(metadata, result_filters, query_context):
                     continue
 
-            combined_score = (
-                self.vector_weight * info["vector_score"]
-                + self.keyword_weight * info["keyword_score"]
+            combined_score = self._scorer.compute(
+                ScoreComponents(
+                    vector_score=info["vector_score"],
+                    keyword_score=info["keyword_score"],
+                    metadata_score=0.0,  # Preserve legacy behavior (no metadata in base score)
+                )
             )
 
             if combined_score >= self.min_score:
@@ -260,16 +270,22 @@ class ResultCombiner:
 
         # Apply diversity filtering for exploratory intents
         if adaptive_config and adaptive_config.diversity_factor > 0.0:
-            diverse_results = self._apply_diversity_filtering(
-                combined_results, adaptive_config.diversity_factor, limit
-            )
-            self.logger.debug(
-                "Applied diversity filtering",
-                original_count=len(combined_results),
-                diverse_count=len(diverse_results),
-                diversity_factor=adaptive_config.diversity_factor,
-            )
-            return diverse_results
+            try:
+                from ..hybrid.components.diversity import apply_diversity_filtering
+
+                diverse_results = apply_diversity_filtering(
+                    combined_results, adaptive_config.diversity_factor, limit
+                )
+                self.logger.debug(
+                    "Applied diversity filtering",
+                    original_count=len(combined_results),
+                    diverse_count=len(diverse_results),
+                    diversity_factor=adaptive_config.diversity_factor,
+                )
+                return diverse_results
+            except Exception:
+                # Fallback to original top-N behavior if import or filtering fails
+                pass
 
         return combined_results[:limit]
 

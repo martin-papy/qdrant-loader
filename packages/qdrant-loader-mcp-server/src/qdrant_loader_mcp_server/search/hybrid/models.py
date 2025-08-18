@@ -25,3 +25,11 @@ DEFAULT_METADATA_WEIGHT: float = 0.1
 DEFAULT_MIN_SCORE: float = 0.3
 
 
+@dataclass
+class HybridProcessingConfig:
+    enable_booster: bool = False
+    enable_normalizer: bool = False
+    enable_deduplicator: bool = False
+    enable_reranker: bool = False
+
+

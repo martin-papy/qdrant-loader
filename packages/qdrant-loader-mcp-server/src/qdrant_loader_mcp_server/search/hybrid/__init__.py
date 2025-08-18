@@ -1,17 +1,9 @@
-"""
-Hybrid search package providing modular search pipeline components.
+"""Hybrid search package with modular subpackages.
 
-This package contains the complete hybrid search implementation with modular architecture:
-- engine: Main HybridSearchEngine class  
-- models: Data types and constants
-- adapters: Component adapters for pipeline integration
-- pipeline: Modular search pipeline orchestration
-- interfaces: Abstract interfaces for components
+Avoid importing implementation modules at package import time to prevent
+circular import issues with ``search.components``. Consumers SHOULD import
+from concrete submodules, e.g. ``from .engine import HybridSearchEngine``.
 """
 
-# Re-export the HybridSearchEngine for easy access
-from .engine import HybridSearchEngine
-
-__all__ = ["HybridSearchEngine"]
-
+__all__: list[str] = []
 

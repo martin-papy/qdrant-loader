@@ -28,3 +28,8 @@ class ResultCombinerLike(Protocol):
         ...
 
 
+class Reranker(Protocol):
+    def rerank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]:
+        ...
+
+
