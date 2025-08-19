@@ -129,3 +129,18 @@ def estimate_content_similarity(documents: List[Any]) -> float:
     return total_overlap / comparisons if comparisons > 0 else 0.0
 
 
+def calculate_cluster_quality(cluster: Any, cluster_documents: List[Any]) -> dict[str, Any]:
+    quality_metrics = {
+        "document_retrieval_rate": (
+            len(cluster_documents) / len(cluster.documents) if cluster.documents else 0
+        ),
+        "coherence_score": cluster.coherence_score,
+        "entity_diversity": len(cluster.shared_entities),
+        "topic_diversity": len(cluster.shared_topics),
+        "has_representative": bool(cluster.representative_doc_id),
+        "cluster_size_category": categorize_cluster_size(len(cluster_documents)),
+    }
+    if len(cluster_documents) > 1:
+        quality_metrics["content_similarity"] = estimate_content_similarity(cluster_documents)
+    return quality_metrics
+
