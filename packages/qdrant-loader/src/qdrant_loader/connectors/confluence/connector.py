@@ -12,6 +12,17 @@ from qdrant_loader.connectors.confluence.config import (
     ConfluenceDeploymentType,
     ConfluenceSpaceConfig,
 )
+from qdrant_loader.connectors.confluence.auth import (
+    setup_authentication as _setup_auth,
+    auto_detect_deployment_type as _auto_detect_type,
+)
+from qdrant_loader.connectors.confluence.pagination import (
+    build_cloud_search_params as _build_cloud_params,
+    build_dc_search_params as _build_dc_params,
+)
+from qdrant_loader.connectors.confluence.mappers import (
+    extract_hierarchy_info as _extract_hierarchy_info_helper,
+)
 from qdrant_loader.core.attachment_downloader import (
     AttachmentDownloader,
     AttachmentMetadata,
@@ -84,34 +95,7 @@ class ConfluenceConnector(BaseConnector):
 
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
-        if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
-            # Cloud uses Basic Auth with email:api_token
-            if not self.config.token:
-                raise ValueError("API token is required for Confluence Cloud")
-            if not self.config.email:
-                raise ValueError("Email is required for Confluence Cloud")
-
-            self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-            logger.debug(
-                "Configured Confluence Cloud authentication with email and API token"
-            )
-
-        else:
-            # Data Center/Server uses Personal Access Token with Bearer authentication
-            if not self.config.token:
-                raise ValueError(
-                    "Personal Access Token is required for Confluence Data Center/Server"
-                )
-
-            self.session.headers.update(
-                {
-                    "Authorization": f"Bearer {self.config.token}",
-                    "Content-Type": "application/json",
-                }
-            )
-            logger.debug(
-                "Configured Confluence Data Center authentication with Personal Access Token"
-            )
+        _setup_auth(self.session, self.config)
 
     def _auto_detect_deployment_type(self) -> ConfluenceDeploymentType:
         """Auto-detect the Confluence deployment type based on the base URL.
@@ -119,24 +103,7 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             ConfluenceDeploymentType: Detected deployment type
         """
-        try:
-            parsed_url = urlparse(str(self.base_url))
-            hostname = parsed_url.hostname
-
-            if hostname is None:
-                # If we can't parse the hostname, default to DATACENTER
-                return ConfluenceDeploymentType.DATACENTER
-
-            # Cloud instances use *.atlassian.net domains
-            # Use proper hostname checking with endswith to ensure it's a subdomain
-            if hostname.endswith(".atlassian.net") or hostname == "atlassian.net":
-                return ConfluenceDeploymentType.CLOUD
-
-            # Everything else is likely Data Center/Server
-            return ConfluenceDeploymentType.DATACENTER
-        except Exception:
-            # If URL parsing fails, default to DATACENTER
-            return ConfluenceDeploymentType.DATACENTER
+        return _auto_detect_type(str(self.base_url))
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -207,21 +174,8 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             dict: Response containing space content
         """
-        if not self.config.content_types:
-            params = {
-                "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
-                "limit": 25,  # Using a reasonable default limit
-            }
-        else:
-            params = {
-                "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
-                "limit": 25,  # Using a reasonable default limit
-            }
-
-        if cursor:
-            params["cursor"] = cursor
+        # Build params via helper
+        params = _build_cloud_params(self.config.space_key, self.config.content_types, cursor)
 
         logger.debug(
             "Making Confluence Cloud API request",
@@ -248,20 +202,7 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             dict: Response containing space content
         """
-        if not self.config.content_types:
-            params = {
-                "cql": f"space = {self.config.space_key}",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
-                "limit": 25,  # Using a reasonable default limit
-                "start": start,
-            }
-        else:
-            params = {
-                "cql": f"space = {self.config.space_key} and type in ({','.join(self.config.content_types)})",
-                "expand": "body.storage,version,metadata.labels,history,space,extensions.position,children.comment.body.storage,ancestors,children.page",
-                "limit": 25,  # Using a reasonable default limit
-                "start": start,
-            }
+        params = _build_dc_params(self.config.space_key, self.config.content_types, start)
 
         logger.debug(
             "Making Confluence Data Center API request",
@@ -540,77 +481,7 @@ class ConfluenceConnector(BaseConnector):
         Returns:
             dict: Hierarchy information including ancestors, parent, and children
         """
-        hierarchy_info = {
-            "ancestors": [],
-            "parent_id": None,
-            "parent_title": None,
-            "children": [],
-            "depth": 0,
-            "breadcrumb": [],
-        }
-
-        try:
-            # Extract ancestors information
-            ancestors = content.get("ancestors", [])
-            if ancestors:
-                # Build ancestor chain (from root to immediate parent)
-                ancestor_chain = []
-                breadcrumb = []
-
-                for ancestor in ancestors:
-                    ancestor_info = {
-                        "id": ancestor.get("id"),
-                        "title": ancestor.get("title"),
-                        "type": ancestor.get("type", "page"),
-                    }
-                    ancestor_chain.append(ancestor_info)
-                    breadcrumb.append(ancestor.get("title", "Unknown"))
-
-                hierarchy_info["ancestors"] = ancestor_chain
-                hierarchy_info["breadcrumb"] = breadcrumb
-                hierarchy_info["depth"] = len(ancestor_chain)
-
-                # The last ancestor is the immediate parent
-                if ancestor_chain:
-                    immediate_parent = ancestor_chain[-1]
-                    hierarchy_info["parent_id"] = immediate_parent["id"]
-                    hierarchy_info["parent_title"] = immediate_parent["title"]
-
-            # Extract children information (only pages, not comments)
-            children_data = content.get("children", {})
-            if "page" in children_data:
-                child_pages = children_data["page"].get("results", [])
-                children_info = []
-
-                for child in child_pages:
-                    child_info = {
-                        "id": child.get("id"),
-                        "title": child.get("title"),
-                        "type": child.get("type", "page"),
-                    }
-                    children_info.append(child_info)
-
-                hierarchy_info["children"] = children_info
-
-            logger.debug(
-                "Extracted hierarchy info",
-                content_id=content.get("id"),
-                content_title=content.get("title"),
-                depth=hierarchy_info["depth"],
-                parent_id=hierarchy_info["parent_id"],
-                children_count=len(hierarchy_info["children"]),
-                breadcrumb=hierarchy_info["breadcrumb"],
-            )
-
-        except Exception as e:
-            logger.warning(
-                "Failed to extract hierarchy information",
-                content_id=content.get("id"),
-                content_title=content.get("title"),
-                error=str(e),
-            )
-
-        return hierarchy_info
+        return _extract_hierarchy_info_helper(content)
 
     def _process_content(
         self, content: dict, clean_html: bool = True

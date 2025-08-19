@@ -29,6 +29,16 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.connectors.jira.auth import (
+    setup_authentication as _setup_auth,
+    auto_detect_deployment_type as _auto_detect_type,
+)
+from qdrant_loader.connectors.jira.mappers import (
+    parse_issue as _parse_issue_helper,
+    parse_user as _parse_user_helper,
+    parse_attachment as _parse_attachment_helper,
+    parse_comment as _parse_comment_helper,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -74,34 +84,7 @@ class JiraConnector(BaseConnector):
 
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
-        if self.config.deployment_type == JiraDeploymentType.CLOUD:
-            # Cloud uses Basic Auth with email:api_token
-            if not self.config.token:
-                raise ValueError("API token is required for Jira Cloud")
-            if not self.config.email:
-                raise ValueError("Email is required for Jira Cloud")
-
-            self.session.auth = HTTPBasicAuth(self.config.email, self.config.token)
-            logger.debug(
-                "Configured Jira Cloud authentication with email and API token"
-            )
-
-        else:
-            # Data Center/Server uses Personal Access Token with Bearer authentication
-            if not self.config.token:
-                raise ValueError(
-                    "Personal Access Token is required for Jira Data Center/Server"
-                )
-
-            self.session.headers.update(
-                {
-                    "Authorization": f"Bearer {self.config.token}",
-                    "Content-Type": "application/json",
-                }
-            )
-            logger.debug(
-                "Configured Jira Data Center authentication with Personal Access Token"
-            )
+        _setup_auth(self.session, self.config)
 
     def _auto_detect_deployment_type(self) -> JiraDeploymentType:
         """Auto-detect the Jira deployment type based on the base URL.
@@ -109,24 +92,7 @@ class JiraConnector(BaseConnector):
         Returns:
             JiraDeploymentType: Detected deployment type
         """
-        try:
-            parsed_url = urlparse(str(self.base_url))
-            hostname = parsed_url.hostname
-
-            if hostname is None:
-                # If we can't parse the hostname, default to DATACENTER
-                return JiraDeploymentType.DATACENTER
-
-            # Cloud instances use *.atlassian.net domains
-            # Use proper hostname checking with endswith to ensure it's a subdomain
-            if hostname.endswith(".atlassian.net") or hostname == "atlassian.net":
-                return JiraDeploymentType.CLOUD
-
-            # Everything else is likely Data Center/Server
-            return JiraDeploymentType.DATACENTER
-        except Exception:
-            # If URL parsing fails, default to DATACENTER
-            return JiraDeploymentType.DATACENTER
+        return _auto_detect_type(str(self.base_url))
 
     def set_file_conversion_config(self, config: FileConversionConfig) -> None:
         """Set the file conversion configuration.
@@ -389,149 +355,18 @@ class JiraConnector(BaseConnector):
                 break
 
     def _parse_issue(self, raw_issue: dict) -> JiraIssue:
-        """Parse raw Jira issue data into JiraIssue model.
-
-        Args:
-            raw_issue: Raw issue data from Jira API
-
-        Returns:
-            Parsed JiraIssue
-        """
-        fields = raw_issue["fields"]
-        parent = fields.get("parent")
-        parent_key = parent.get("key") if parent else None
-
-        # Parse reporter with type assertion since it's required
-        reporter = self._parse_user(fields["reporter"], required=True)
-        assert reporter is not None  # For type checker
-
-        jira_issue = JiraIssue(
-            id=raw_issue["id"],
-            key=raw_issue["key"],
-            summary=fields["summary"],
-            description=fields.get("description"),
-            issue_type=fields["issuetype"]["name"],
-            status=fields["status"]["name"],
-            priority=(
-                fields.get("priority", {}).get("name")
-                if fields.get("priority")
-                else None
-            ),
-            project_key=fields["project"]["key"],
-            created=datetime.fromisoformat(fields["created"].replace("Z", "+00:00")),
-            updated=datetime.fromisoformat(fields["updated"].replace("Z", "+00:00")),
-            reporter=reporter,
-            assignee=self._parse_user(fields.get("assignee")),
-            labels=fields.get("labels", []),
-            attachments=[
-                self._parse_attachment(att) for att in fields.get("attachment", [])
-            ],
-            comments=[
-                self._parse_comment(comment)
-                for comment in fields.get("comment", {}).get("comments", [])
-            ],
-            parent_key=parent_key,
-            subtasks=[st["key"] for st in fields.get("subtasks", [])],
-            linked_issues=[
-                link["outwardIssue"]["key"]
-                for link in fields.get("issuelinks", [])
-                if "outwardIssue" in link
-            ],
-        )
-
-        return jira_issue
+        return _parse_issue_helper(raw_issue)
 
     def _parse_user(
         self, raw_user: dict | None, required: bool = False
     ) -> JiraUser | None:
-        """Parse raw Jira user data into JiraUser model.
-
-        Args:
-            raw_user: Raw user data from Jira API
-            required: Whether this user field is required (e.g., reporter, author)
-
-        Returns:
-            Parsed JiraUser or None if raw_user is None and not required
-
-        Raises:
-            ValueError: If raw_user is None and required is True
-        """
-        if not raw_user:
-            if required:
-                raise ValueError("User data is required but not provided")
-            return None
-
-        # Handle different user formats between Cloud and Data Center
-        # Cloud uses 'accountId', Data Center uses 'name' or 'key'
-        account_id = raw_user.get("accountId")
-        if not account_id:
-            # Fallback to 'name' or 'key' for Data Center
-            account_id = raw_user.get("name") or raw_user.get("key")
-
-        if not account_id:
-            if required:
-                raise ValueError(
-                    "User data missing required identifier (accountId, name, or key)"
-                )
-            return None
-
-        return JiraUser(
-            account_id=account_id,
-            display_name=raw_user["displayName"],
-            email_address=raw_user.get("emailAddress"),
-        )
+        return _parse_user_helper(raw_user, required)
 
     def _parse_attachment(self, raw_attachment: dict) -> JiraAttachment:
-        """Parse raw Jira attachment data into JiraAttachment model.
-
-        Args:
-            raw_attachment: Raw attachment data from Jira API
-
-        Returns:
-            Parsed JiraAttachment
-        """
-        # Parse author with type assertion since it's required
-        author = self._parse_user(raw_attachment["author"], required=True)
-        assert author is not None  # For type checker
-
-        return JiraAttachment(
-            id=raw_attachment["id"],
-            filename=raw_attachment["filename"],
-            size=raw_attachment["size"],
-            mime_type=raw_attachment["mimeType"],
-            content_url=raw_attachment["content"],
-            created=datetime.fromisoformat(
-                raw_attachment["created"].replace("Z", "+00:00")
-            ),
-            author=author,
-        )
+        return _parse_attachment_helper(raw_attachment)
 
     def _parse_comment(self, raw_comment: dict) -> JiraComment:
-        """Parse raw Jira comment data into JiraComment model.
-
-        Args:
-            raw_comment: Raw comment data from Jira API
-
-        Returns:
-            Parsed JiraComment
-        """
-        # Parse author with type assertion since it's required
-        author = self._parse_user(raw_comment["author"], required=True)
-        assert author is not None  # For type checker
-
-        return JiraComment(
-            id=raw_comment["id"],
-            body=raw_comment["body"],
-            created=datetime.fromisoformat(
-                raw_comment["created"].replace("Z", "+00:00")
-            ),
-            updated=(
-                datetime.fromisoformat(raw_comment["updated"].replace("Z", "+00:00"))
-                if "updated" in raw_comment
-                else None
-            ),
-            author=author,
-        )
+        return _parse_comment_helper(raw_comment)
 
     def _get_issue_attachments(self, issue: JiraIssue) -> list[AttachmentMetadata]:
         """Convert JIRA issue attachments to AttachmentMetadata objects.

@@ -16,6 +16,11 @@ from qdrant_loader.core.document import Document
 from qdrant_loader.core.state.exceptions import DatabaseError
 from qdrant_loader.core.state.models import Base, DocumentStateRecord, IngestionHistory
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.core.state.utils import (
+    generate_sqlite_aiosqlite_url as _gen_url,
+    build_ingestion_history_select as _build_ingestion_select,
+    build_document_state_select as _build_doc_state_select,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -84,61 +89,9 @@ class StateManager:
             db_path_str = self.config.database_path
             self.logger.debug(f"Original database path: {db_path_str}")
 
-            # Handle special databases
-            if db_path_str in (":memory:", "sqlite:///:memory:"):
-                self.logger.debug("Using in-memory database")
-                database_url = "sqlite+aiosqlite:///:memory:"
-            elif db_path_str.startswith("sqlite://"):
-                self.logger.debug("Database path is already a SQLite URL")
-                database_url = db_path_str.replace("sqlite://", "sqlite+aiosqlite://")
-            else:
-                # Process file path
-                self.logger.debug(f"Processing file path: {db_path_str}")
-                db_path = Path(db_path_str)
-
-                # Resolve to absolute path for proper handling
-                if not db_path.is_absolute():
-                    db_path = db_path.resolve()
-                    self.logger.debug(f"Resolved relative path to: {db_path}")
-
-                # Validate parent directory exists
-                parent_dir = db_path.parent
-                self.logger.debug(f"Database parent directory: {parent_dir}")
-
-                if not parent_dir.exists():
-                    self.logger.debug(f"Creating parent directory: {parent_dir}")
-                    try:
-                        parent_dir.mkdir(parents=True, exist_ok=True)
-                        self.logger.debug("Parent directory created successfully")
-                    except Exception as e:
-                        self.logger.error(f"Failed to create parent directory: {e}")
-                        raise DatabaseError(
-                            f"Cannot create database directory {parent_dir}: {e}"
-                        )
-
-                # Check directory permissions
-                if not os.access(parent_dir, os.W_OK):
-                    error_msg = (
-                        f"No write permission for database directory: {parent_dir}"
-                    )
-                    self.logger.error(error_msg)
-                    raise DatabaseError(error_msg)
-
-                # Convert to proper SQLite URL format
-                db_url_path = db_path.as_posix()
-                if db_path.is_absolute():
-                    # For absolute paths, ensure proper URL format
-                    if db_path.parts[0].endswith(":"):
-                        # Windows absolute path with drive letter
-                        database_url = f"sqlite+aiosqlite:///{db_url_path}"
-                    else:
-                        # Unix absolute path (already starts with /) - needs 4 slashes total
-                        database_url = f"sqlite+aiosqlite:///{db_url_path}"
-                else:
-                    # Relative path
-                    database_url = f"sqlite+aiosqlite:///{db_url_path}"
-
-                self.logger.debug(f"Generated database URL: {database_url}")
+            # Handle special databases and generate URL
+            database_url = _gen_url(db_path_str)
+            self.logger.debug(f"Generated database URL: {database_url}")
 
             # Create database engine
             self.logger.debug("Creating database engine")
@@ -213,12 +166,7 @@ class StateManager:
                 )
 
                 # Build query with optional project filter
-                query = select(IngestionHistory).filter_by(
-                    source_type=source_type, source=source
-                )
-                if project_id is not None:
-                    query = query.filter_by(project_id=project_id)
-
+                query = _build_ingestion_select(source_type, source, project_id)
                 result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
                 self.logger.debug(
@@ -290,16 +238,8 @@ class StateManager:
                     f"Executing query to find last ingestion for {source_type}:{source}"
                 )
 
-                # Build query with optional project filter
-                query = select(IngestionHistory).filter(
-                    IngestionHistory.source_type == source_type,
-                    IngestionHistory.source == source,
-                )
-                if project_id is not None:
-                    query = query.filter(IngestionHistory.project_id == project_id)
-
-                query = query.order_by(
-                    IngestionHistory.last_successful_ingestion.desc()
+                query = _build_ingestion_select(
+                    source_type, source, project_id, order_by_last_successful_desc=True
                 )
                 result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
@@ -412,15 +352,9 @@ class StateManager:
                     f"Executing query to find document state for {source_type}:{source}:{document_id}"
                 )
 
-                # Build query with optional project filter
-                query = select(DocumentStateRecord).filter(
-                    DocumentStateRecord.source_type == source_type,
-                    DocumentStateRecord.source == source,
-                    DocumentStateRecord.document_id == document_id,
+                query = _build_doc_state_select(
+                    source_type, source, document_id, project_id
                 )
-                if project_id is not None:
-                    query = query.filter(DocumentStateRecord.project_id == project_id)
-
                 result = await session.execute(query)
                 state = result.scalar_one_or_none()
                 self.logger.debug(
@@ -490,15 +424,9 @@ class StateManager:
                     f"Executing query to find document state for {document.source_type}:{document.source}:{document.id}"
                 )
 
-                # Build query with optional project filter
-                query = select(DocumentStateRecord).filter(
-                    DocumentStateRecord.source_type == document.source_type,
-                    DocumentStateRecord.source == document.source,
-                    DocumentStateRecord.document_id == document.id,
+                query = _build_doc_state_select(
+                    document.source_type, document.source, document.id, project_id
                 )
-                if project_id is not None:
-                    query = query.filter(DocumentStateRecord.project_id == project_id)
-
                 result = await session.execute(query)
                 document_state_record = result.scalar_one_or_none()
                 self.logger.debug(

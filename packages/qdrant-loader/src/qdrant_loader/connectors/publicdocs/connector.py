@@ -30,6 +30,14 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.connectors.publicdocs.parsers import (
+    extract_links as _extract_links_helper,
+    extract_title as _extract_title_helper,
+    extract_content as _extract_content_helper,
+    extract_attachments as _extract_attachments_helper,
+    should_process_url as _should_process_url_helper,
+    get_mime_type_from_extension as _get_mime_type_helper,
+)
 
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
