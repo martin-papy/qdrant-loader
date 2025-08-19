@@ -17,6 +17,10 @@ from qdrant_loader.cli.logging_utils import (
     get_logger as _get_logger_impl,
     setup_logging as _setup_logging_impl,
 )
+from qdrant_loader.cli.version import get_version_str as _get_version_str
+from qdrant_loader.cli.update_check import check_for_updates as _check_updates_helper
+from qdrant_loader.cli.path_utils import create_database_directory as _create_db_dir_helper
+from qdrant_loader.cli.async_utils import cancel_all_tasks as _cancel_all_tasks_helper
 from qdrant_loader.cli.config_loader import (
     setup_workspace as _setup_workspace_impl,
     load_config_with_workspace as _load_config_with_workspace,
@@ -33,17 +37,7 @@ logger = None  # Logger will be initialized when first accessed.
 
 
 def _get_version() -> str:
-    """Get version using importlib.metadata."""
-    try:
-        from importlib.metadata import version
-
-        return version("qdrant-loader")
-    except ImportError:
-        # Provide fallback for older Python versions that lack importlib.metadata.
-        return "unknown"
-    except Exception:
-        # Handle cases where package is not found or other errors occur.
-        return "unknown"
+    return _get_version_str()
 
 
 # Back-compat helpers for tests: implement wrappers that operate on this module's global logger
@@ -76,13 +70,7 @@ def _setup_logging(log_level: str, workspace_config=None) -> None:
 
 
 def _check_for_updates() -> None:
-    try:
-        from qdrant_loader.utils.version_check import check_version_async
-
-        current_version = _get_version()
-        check_version_async(current_version, silent=False)
-    except Exception:
-        pass
+    _check_updates_helper(_get_version())
 
 
 def _setup_workspace(workspace_path: Path):
@@ -130,16 +118,12 @@ def _create_database_directory(path: Path) -> bool:
         bool: True if directory was created, False if user declined
     """
     try:
-        # Ensure we're working with an absolute path
         abs_path = path.resolve()
-
         _get_logger().info("The database directory does not exist", path=str(abs_path))
-        if click.confirm("Would you like to create this directory?", default=True):
-            # Create directory with parents=True to handle nested paths on Windows
-            abs_path.mkdir(parents=True, mode=0o755, exist_ok=True)
+        created = _create_db_dir_helper(abs_path)
+        if created:
             _get_logger().info(f"Created directory: {abs_path}")
-            return True
-        return False
+        return created
     except Exception as e:
         raise ClickException(f"Failed to create directory: {str(e)!s}") from e
 
@@ -337,10 +321,7 @@ async def init(
 
 
 async def _cancel_all_tasks():
-    tasks = [t for t in asyncio.all_tasks() if not t.done()]
-    for task in tasks:
-        task.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
+    await _cancel_all_tasks_helper()
 
 
 @cli.command()
