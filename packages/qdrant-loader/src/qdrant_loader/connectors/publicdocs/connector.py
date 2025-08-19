@@ -38,6 +38,7 @@ from qdrant_loader.connectors.publicdocs.parsers import (
     should_process_url as _should_process_url_helper,
     get_mime_type_from_extension as _get_mime_type_helper,
 )
+from qdrant_loader.connectors.attachments import attachment_metadata_from_dict as _att_from_dict
 
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)

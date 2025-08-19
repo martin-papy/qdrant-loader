@@ -21,6 +21,11 @@ from qdrant_loader.core.state.utils import (
     build_ingestion_history_select as _build_ingestion_select,
     build_document_state_select as _build_doc_state_select,
 )
+from qdrant_loader.core.state.queries import (
+    select_ingestion_history as _q_ingestion,
+    select_last_ingestion as _q_last_ingestion,
+    select_document_state as _q_doc_state,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -166,7 +171,7 @@ class StateManager:
                 )
 
                 # Build query with optional project filter
-                query = _build_ingestion_select(source_type, source, project_id)
+                query = _q_ingestion(source_type, source, project_id)
                 result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
                 self.logger.debug(
@@ -238,9 +243,7 @@ class StateManager:
                     f"Executing query to find last ingestion for {source_type}:{source}"
                 )
 
-                query = _build_ingestion_select(
-                    source_type, source, project_id, order_by_last_successful_desc=True
-                )
+                query = _q_last_ingestion(source_type, source, project_id)
                 result = await session.execute(query)
                 ingestion = result.scalar_one_or_none()
                 self.logger.debug(
@@ -352,7 +355,7 @@ class StateManager:
                     f"Executing query to find document state for {source_type}:{source}:{document_id}"
                 )
 
-                query = _build_doc_state_select(
+                query = _q_doc_state(
                     source_type, source, document_id, project_id
                 )
                 result = await session.execute(query)
@@ -424,7 +427,7 @@ class StateManager:
                     f"Executing query to find document state for {document.source_type}:{document.source}:{document.id}"
                 )
 
-                query = _build_doc_state_select(
+                query = _q_doc_state(
                     document.source_type, document.source, document.id, project_id
                 )
                 result = await session.execute(query)

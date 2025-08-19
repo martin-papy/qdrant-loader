@@ -22,6 +22,7 @@ from qdrant_loader.cli.config_loader import (
     load_config_with_workspace as _load_config_with_workspace,
     _get_logger as _alias_logger,  # not used, but keep compatibility if referenced
 )
+from qdrant_loader.cli.commands import run_init as _commands_run_init, run_pipeline_ingestion as _run_ingest_pipeline
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
@@ -223,16 +224,9 @@ def _check_settings():
 
 
 async def _run_init(settings, force: bool) -> None:
-    """Run initialization process."""
+    """Run initialization process via command helper, keeping existing logging."""
     try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.core.init_collection import init_collection
-
-        result = await init_collection(settings, force)
-        if not result:
-            raise ClickException("Failed to initialize collection")
-
-        # Provide user-friendly feedback
+        await _commands_run_init(settings, force)
         if force:
             _get_logger().info(
                 "Collection recreated successfully",
@@ -243,7 +237,6 @@ async def _run_init(settings, force: bool) -> None:
                 "Collection initialized successfully",
                 collection=settings.qdrant_collection_name,
             )
-
     except Exception as e:
         _get_logger().error("init_failed", error=str(e))
         raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
@@ -448,29 +441,17 @@ async def ingest(
         qdrant_manager = QdrantManager(settings)
 
         async def run_ingest():
-            # Lazy import to avoid slow startup
-            from qdrant_loader.core.async_ingestion_pipeline import (
-                AsyncIngestionPipeline,
+            await _run_ingest_pipeline(
+                settings,
+                qdrant_manager,
+                project=project,
+                source_type=source_type,
+                source=source,
+                force=force,
+                metrics_dir=(
+                    str(workspace_config.metrics_path) if workspace_config else None
+                ),
             )
-
-            # Create pipeline with workspace-aware metrics path
-            if workspace_config:
-                pipeline = AsyncIngestionPipeline(
-                    settings, qdrant_manager, metrics_dir=workspace_config.metrics_path
-                )
-            else:
-                pipeline = AsyncIngestionPipeline(settings, qdrant_manager)
-
-            try:
-                await pipeline.process_documents(
-                    project_id=project,
-                    source_type=source_type,
-                    source=source,
-                    force=force,
-                )
-            finally:
-                # Ensure proper cleanup of the async pipeline
-                await pipeline.cleanup()
 
         loop = asyncio.get_running_loop()
         stop_event = asyncio.Event()

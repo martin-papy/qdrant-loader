@@ -39,6 +39,7 @@ from qdrant_loader.connectors.jira.mappers import (
     parse_attachment as _parse_attachment_helper,
     parse_comment as _parse_comment_helper,
 )
+from qdrant_loader.connectors.http import make_request_with_retries_async as _http_request
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -147,7 +148,6 @@ class JiraConnector(BaseConnector):
             requests.exceptions.RequestException: If the request fails
         """
         async with self._rate_limit_lock:
-            # Calculate time to wait based on rate limit
             min_interval = 60.0 / self.config.requests_per_minute
             now = time.time()
             time_since_last_request = now - self._last_request_time
@@ -159,9 +159,8 @@ class JiraConnector(BaseConnector):
 
             url = self._get_api_url(endpoint)
 
-            # Add timeout to kwargs if not already specified
             if "timeout" not in kwargs:
-                kwargs["timeout"] = 60  # 60 second timeout for HTTP requests
+                kwargs["timeout"] = 60
 
             try:
                 logger.debug(
@@ -172,15 +171,12 @@ class JiraConnector(BaseConnector):
                     timeout=kwargs.get("timeout"),
                 )
 
-                # For Data Center with PAT, headers are already set
-                # For Cloud, use session auth
                 if not self.session.headers.get("Authorization"):
                     kwargs["auth"] = self.session.auth
 
-                # Use asyncio.wait_for to add an additional timeout layer
                 response = await asyncio.wait_for(
-                    asyncio.to_thread(self.session.request, method, url, **kwargs),
-                    timeout=90.0,  # 90 second timeout for the entire operation
+                    _http_request(self.session, method, url, **kwargs),
+                    timeout=90.0,
                 )
 
                 response.raise_for_status()
@@ -216,7 +212,6 @@ class JiraConnector(BaseConnector):
                     error=str(e),
                     error_type=type(e).__name__,
                 )
-                # Log additional context for debugging
                 logger.error(
                     "Request details",
                     deployment_type=self.config.deployment_type,
