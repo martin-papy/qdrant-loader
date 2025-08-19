@@ -13,19 +13,18 @@ from click.types import Path as ClickPath
 from click.utils import echo
 
 from qdrant_loader.cli.asyncio import async_command
+from qdrant_loader.cli.logging_utils import (
+    get_logger as _get_logger_impl,
+    setup_logging as _setup_logging_impl,
+)
+from qdrant_loader.cli.config_loader import (
+    setup_workspace as _setup_workspace_impl,
+    load_config_with_workspace as _load_config_with_workspace,
+    _get_logger as _alias_logger,  # not used, but keep compatibility if referenced
+)
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
-
-
-def _get_logger():
-    """Get logger with lazy import."""
-    global logger
-    if logger is None:
-        from qdrant_loader.utils.logging import LoggingConfig
-
-        logger = LoggingConfig.get_logger(__name__)
-    return logger
 
 
 def _get_version() -> str:
@@ -42,17 +41,56 @@ def _get_version() -> str:
         return "unknown"
 
 
-def _check_for_updates():
-    """Check for version updates in the background."""
+# Back-compat helpers for tests: implement wrappers that operate on this module's global logger
+
+def _get_logger():
+    global logger
+    if logger is None:
+        from qdrant_loader.utils.logging import LoggingConfig
+
+        logger = LoggingConfig.get_logger(__name__)
+    return logger
+
+
+def _setup_logging(log_level: str, workspace_config=None) -> None:
     try:
-        # Use lazy import to minimize startup performance impact.
+        from qdrant_loader.utils.logging import LoggingConfig
+
+        log_format = "console"
+        log_file = (
+            str(workspace_config.logs_path) if workspace_config else "qdrant-loader.log"
+        )
+        LoggingConfig.setup(level=log_level, format=log_format, file=log_file)
+        # update module-global logger
+        global logger
+        logger = LoggingConfig.get_logger(__name__)
+    except Exception as e:  # pragma: no cover - exercised via tests with mock
+        from click.exceptions import ClickException
+
+        raise ClickException(f"Failed to setup logging: {str(e)!s}") from e
+
+
+def _check_for_updates() -> None:
+    try:
         from qdrant_loader.utils.version_check import check_version_async
 
         current_version = _get_version()
         check_version_async(current_version, silent=False)
     except Exception:
-        # Silently ignore version check failures to avoid disrupting CLI operation.
         pass
+
+
+def _setup_workspace(workspace_path: Path):
+    workspace_config = _setup_workspace_impl(workspace_path)
+    # Re-log via this module's logger to satisfy tests patching _get_logger
+    lg = _get_logger()
+    lg.info("Using workspace", workspace=str(workspace_config.workspace_path))
+    if getattr(workspace_config, "env_path", None):
+        lg.info("Environment file found", env_path=str(workspace_config.env_path))
+    if getattr(workspace_config, "config_path", None):
+        lg.info("Config file found", config_path=str(workspace_config.config_path))
+    return workspace_config
+
 
 
 @group(name="qdrant-loader")
@@ -75,123 +113,6 @@ def cli(log_level: str = "INFO") -> None:
 
     # Check for available updates in background without blocking CLI startup.
     _check_for_updates()
-
-
-def _setup_logging(log_level: str, workspace_config=None) -> None:
-    """Setup logging configuration with workspace support.
-
-    Args:
-        log_level: Logging level
-        workspace_config: Optional workspace configuration for custom log path
-    """
-    try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.utils.logging import LoggingConfig
-
-        # Get logging configuration from settings if available
-        log_format = "console"
-
-        # Use workspace log path if available, otherwise default
-        if workspace_config:
-            log_file = str(workspace_config.logs_path)
-        else:
-            log_file = "qdrant-loader.log"
-
-        # Reconfigure logging with the provided configuration
-        LoggingConfig.setup(
-            level=log_level,
-            format=log_format,
-            file=log_file,
-        )
-
-        # Update the global logger with new configuration
-        global logger
-        logger = LoggingConfig.get_logger(__name__)
-
-    except Exception as e:
-        raise ClickException(f"Failed to setup logging: {str(e)!s}") from e
-
-
-def _setup_workspace(workspace_path: Path):
-    """Setup and validate workspace configuration.
-
-    Args:
-        workspace_path: Path to the workspace directory
-
-    Returns:
-        WorkspaceConfig: Validated workspace configuration
-
-    Raises:
-        ClickException: If workspace setup fails
-    """
-    try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.config.workspace import (
-            create_workspace_structure,
-            setup_workspace,
-        )
-
-        # Create workspace structure if needed
-        create_workspace_structure(workspace_path)
-
-        # Setup and validate workspace
-        workspace_config = setup_workspace(workspace_path)
-
-        # Use the global logger (now properly initialized)
-        logger = _get_logger()
-        logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
-        if workspace_config.env_path:
-            logger.info(
-                "Environment file found", env_path=str(workspace_config.env_path)
-            )
-
-        if workspace_config.config_path:
-            logger.info(
-                "Config file found", config_path=str(workspace_config.config_path)
-            )
-
-        return workspace_config
-
-    except ValueError as e:
-        raise ClickException(str(e)) from e
-    except Exception as e:
-        raise ClickException(f"Failed to setup workspace: {str(e)!s}") from e
-
-
-def _load_config_with_workspace(
-    workspace_config=None,
-    config_path: Path | None = None,
-    env_path: Path | None = None,
-    skip_validation: bool = False,
-) -> None:
-    """Load configuration with workspace or traditional mode.
-
-    Args:
-        workspace_config: Optional workspace configuration
-        config_path: Optional path to config file (traditional mode)
-        env_path: Optional path to .env file (traditional mode)
-        skip_validation: If True, skip directory validation and creation
-    """
-    try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.config import (
-            initialize_config_with_workspace,
-        )
-
-        if workspace_config:
-            # Workspace mode
-            _get_logger().debug("Loading configuration in workspace mode")
-            initialize_config_with_workspace(
-                workspace_config, skip_validation=skip_validation
-            )
-        else:
-            # Traditional mode
-            _get_logger().debug("Loading configuration in traditional mode")
-            _load_config(config_path, env_path, skip_validation)
-
-    except Exception as e:
-        _get_logger().error("config_load_failed", error=str(e))
-        raise ClickException(f"Failed to load configuration: {str(e)!s}") from e
 
 
 def _create_database_directory(path: Path) -> bool:
