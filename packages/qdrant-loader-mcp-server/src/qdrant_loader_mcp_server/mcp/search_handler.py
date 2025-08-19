@@ -9,6 +9,14 @@ from ..search.processor import QueryProcessor
 from ..utils import LoggingConfig
 from .formatters import MCPFormatters
 from .protocol import MCPProtocol
+from .handlers.search import (
+    apply_hierarchy_filters,
+    apply_attachment_filters,
+    apply_lightweight_attachment_filters,
+    organize_by_hierarchy,
+    format_lightweight_attachment_text,
+    format_lightweight_hierarchy_text,
+)
 
 # Get logger for this module
 logger = LoggingConfig.get_logger("src.mcp.search_handler")
@@ -146,7 +154,7 @@ class SearchHandler:
         # Extract parameters with defaults
         query = params["query"]
         hierarchy_filter = params.get("hierarchy_filter", {})
-        organize_by_hierarchy = params.get("organize_by_hierarchy", False)
+        organize_flag = params.get("organize_by_hierarchy", False)
         limit = params.get("limit", 10)
 
         logger.info(
@@ -193,13 +201,13 @@ class SearchHandler:
 
             # Organize results if requested
             organized_results = None
-            if organize_by_hierarchy:
+            if organize_flag:
                 organized_results = self._organize_by_hierarchy(filtered_results)
-                response_text = self._format_lightweight_hierarchy_text(
+                response_text = format_lightweight_hierarchy_text(
                     organized_results, len(filtered_results)
                 )
             else:
-                response_text = self._format_lightweight_hierarchy_text(
+                response_text = format_lightweight_hierarchy_text(
                     {}, len(filtered_results)
                 )
 
@@ -314,12 +322,11 @@ class SearchHandler:
                     filtered_results
                 )
                 for group in attachment_groups:
-                    # Use the results already in the group instead of filtering by document_ids
                     group_results = group.get("results", [])
                     organized_results[group["group_name"]] = group_results
 
             # Create lightweight text response
-            response_text = self._format_lightweight_attachment_text(
+            response_text = format_lightweight_attachment_text(
                 organized_results, len(filtered_results)
             )
 
@@ -351,299 +358,28 @@ class SearchHandler:
                 error={"code": -32603, "message": "Internal error", "data": str(e)},
             )
 
-    def _apply_hierarchy_filters(
-        self, results: list[HybridSearchResult], hierarchy_filter: dict[str, Any]
-    ) -> list[HybridSearchResult]:
-        """Apply hierarchy-based filters to search results."""
-        filtered_results = []
+    # Back-compat thin wrappers for tests that patch private methods
+    def _apply_hierarchy_filters(self, results, hierarchy_filter):
+        return apply_hierarchy_filters(results, hierarchy_filter)
 
-        for result in results:
-            # Only process sources that have hierarchical structure (confluence, localfile)
-            if result.source_type not in ["confluence", "localfile"]:
-                continue
+    def _organize_by_hierarchy(self, results):
+        return organize_by_hierarchy(results)
 
-            # Apply depth filter - use folder depth for localfiles
-            if "depth" in hierarchy_filter:
-                # For localfiles, calculate depth from file_path folder structure
-                file_path_val = getattr(result, "file_path", None)
-                if result.source_type == "localfile" and file_path_val:
-                    # Depth = number of folders before filename
-                    path_parts = [p for p in file_path_val.split("/") if p]
-                    # Depth definition: number of folders before filename minus 1
-                    folder_depth = max(0, len(path_parts) - 2)
-                    if folder_depth != hierarchy_filter["depth"]:
-                        continue
-                elif (
-                    hasattr(result, "depth")
-                    and result.depth != hierarchy_filter["depth"]
-                ):
-                    continue
+    def _apply_attachment_filters(self, results, attachment_filter):
+        return apply_attachment_filters(results, attachment_filter)
 
-            # Apply parent title filter - for localfiles use parent folder
-            if "parent_title" in hierarchy_filter:
-                expected_parent = hierarchy_filter["parent_title"]
-                if result.source_type == "localfile":
-                    # For localfiles use folder structure only if path available
-                    file_path_val = getattr(result, "file_path", None)
-                    if file_path_val:
-                        path_parts = [p for p in file_path_val.split("/") if p]
-                        parent_folder = path_parts[-2] if len(path_parts) > 1 else ""
-                        if parent_folder != expected_parent:
-                            continue
-                    else:
-                        # Without a path we cannot assert parent folder match; skip
-                        continue
-                else:
-                    # For non-localfile, use explicit parent_title attr only
-                    parent_title_val = getattr(result, "parent_title", None)
-                    if parent_title_val != expected_parent:
-                        continue
+    def _apply_lightweight_attachment_filters(self, results, attachment_filter):
+        return apply_lightweight_attachment_filters(
+            results,
+            attachment_filter,
+            file_type_extractor=self.formatters._extract_file_type_minimal,
+        )
 
-            # Apply root only filter
-            if hierarchy_filter.get("root_only", False):
-                # For localfiles, check if it's in the root folder
-                file_path_val = getattr(result, "file_path", None)
-                if result.source_type == "localfile" and file_path_val:
-                    path_parts = [p for p in file_path_val.split("/") if p]
-                    is_root = len(path_parts) <= 2  # Root folder + filename
-                    if not is_root:
-                        continue
-                elif not result.is_root_document():
-                    continue
+    def _format_lightweight_attachment_text(self, organized_results, total_found):
+        return format_lightweight_attachment_text(organized_results, total_found)
 
-            # Apply has children filter - skip for localfiles as we don't track child relationships
-            if "has_children" in hierarchy_filter and result.source_type != "localfile":
-                if result.has_children() != hierarchy_filter["has_children"]:
-                    continue
-
-            filtered_results.append(result)
-
-        return filtered_results
-
-    def _organize_by_hierarchy(
-        self, results: list[HybridSearchResult]
-    ) -> dict[str, list[HybridSearchResult]]:
-        """Organize search results by hierarchy structure."""
-        hierarchy_groups = {}
-
-        for result in results:
-            # Group by root ancestor or use the document title if it's a root
-            file_path_val = getattr(result, "file_path", None)
-            if result.source_type == "localfile" and file_path_val:
-                # For localfiles, use top-level folder as root
-                path_parts = [p for p in file_path_val.split("/") if p]
-                root_title = path_parts[0] if path_parts else "Root"
-            elif result.breadcrumb_text:
-                # Extract the root from breadcrumb
-                breadcrumb_parts = result.breadcrumb_text.split(" > ")
-                root_title = (
-                    breadcrumb_parts[0] if breadcrumb_parts else result.source_title
-                )
-            else:
-                root_title = result.source_title
-
-            if root_title not in hierarchy_groups:
-                hierarchy_groups[root_title] = []
-            hierarchy_groups[root_title].append(result)
-
-        # Sort within each group by depth and title
-        for group in hierarchy_groups.values():
-
-            def sort_key(x):
-                # Calculate depth for localfiles from folder structure
-                x_file_path = getattr(x, "file_path", None)
-                if x.source_type == "localfile" and x_file_path:
-                    folder_depth = len([p for p in x_file_path.split("/") if p]) - 1
-                    return (folder_depth, x.source_title)
-                else:
-                    return (x.depth or 0, x.source_title)
-
-            group.sort(key=sort_key)
-
-        return hierarchy_groups
-
-    def _apply_attachment_filters(
-        self, results: list[HybridSearchResult], attachment_filter: dict[str, Any]
-    ) -> list[HybridSearchResult]:
-        """Apply attachment-based filters to search results."""
-        filtered_results = []
-
-        for result in results:
-            # Skip non-Confluence results
-            if result.source_type != "confluence":
-                continue
-
-            # Apply attachments only filter
-            if "attachments_only" in attachment_filter and not result.is_attachment:
-                continue
-
-            # Apply parent document title filter
-            if "parent_document_title" in attachment_filter:
-                if (
-                    result.parent_document_title
-                    != attachment_filter["parent_document_title"]
-                ):
-                    continue
-
-            # Apply file type filter
-            if "file_type" in attachment_filter:
-                result_file_type = result.get_file_type()
-                if result_file_type != attachment_filter["file_type"]:
-                    continue
-
-            # Apply file size filter
-            _min_size = attachment_filter.get("file_size_min")
-            if (
-                _min_size is not None
-                and result.file_size is not None
-                and result.file_size < _min_size
-            ):
-                continue
-            _max_size = attachment_filter.get("file_size_max")
-            if (
-                _max_size is not None
-                and result.file_size is not None
-                and result.file_size > _max_size
-            ):
-                continue
-
-            # Apply author filter
-            if "author" in attachment_filter:
-                if result.attachment_author != attachment_filter["author"]:
-                    continue
-
-            filtered_results.append(result)
-
-        return filtered_results
-
-    def _apply_lightweight_attachment_filters(
-        self, results: list[HybridSearchResult], attachment_filter: dict[str, Any]
-    ) -> list[HybridSearchResult]:
-        """Fast filtering optimized for attachment discovery across all sources."""
-        filtered_results = []
-
-        for result in results:
-            # Quick attachment detection - avoid expensive checks
-            _is_attachment_flag = bool(getattr(result, "is_attachment", False))
-            _original_filename = getattr(result, "original_filename", None)
-            _file_path = getattr(result, "file_path", None)
-            _is_path_file = (
-                isinstance(_file_path, str)
-                and "." in _file_path
-                and not _file_path.endswith("/")
-            )
-            is_attachment = (
-                _is_attachment_flag or bool(_original_filename) or _is_path_file
-            )
-
-            if not is_attachment:
-                continue
-
-            # Apply filters with early exits for performance
-            if attachment_filter.get("attachments_only") and not bool(
-                getattr(result, "is_attachment", False)
-            ):
-                continue
-
-            if attachment_filter.get("file_type"):
-                file_type = self.formatters._extract_file_type_minimal(result)
-                if file_type != attachment_filter["file_type"]:
-                    continue
-
-            # Size filters with null checks (include zero-byte files)
-            _file_size = getattr(result, "file_size", None)
-            if (
-                attachment_filter.get("file_size_min") is not None
-                and _file_size is not None
-                and _file_size < attachment_filter["file_size_min"]
-            ):
-                continue
-
-            if (
-                attachment_filter.get("file_size_max") is not None
-                and _file_size is not None
-                and _file_size > attachment_filter["file_size_max"]
-            ):
-                continue
-
-            # Parent document filter (works across source types)
-            if attachment_filter.get("parent_document_title"):
-                parent_title = getattr(
-                    result, "parent_document_title", None
-                ) or getattr(result, "parent_title", None)
-                if parent_title != attachment_filter["parent_document_title"]:
-                    continue
-
-            # Author filter
-            if attachment_filter.get("author"):
-                author = getattr(result, "attachment_author", None) or getattr(
-                    result, "author", None
-                )
-                if author != attachment_filter["author"]:
-                    continue
-
-            filtered_results.append(result)
-
-        return filtered_results
-
-    def _format_lightweight_attachment_text(
-        self, organized_results: dict[str, list], total_found: int
-    ) -> str:
-        """Format attachment results as lightweight text summary."""
-        if not organized_results:
-            return f"📎 **Attachment Search Results**\n\nFound {total_found} attachments. Use the structured data below to navigate and retrieve specific files."
-
-        formatted = f"📎 **Attachment Search Results** ({total_found} attachments)\n\n"
-
-        for group_name, results in organized_results.items():
-            formatted += f"📁 **{group_name}** ({len(results)} files)\n"
-
-            # Show first few attachments as examples
-            for result in results[:3]:
-                filename = self.formatters._extract_safe_filename(result)
-                file_type = self.formatters._extract_file_type_minimal(result)
-                formatted += (
-                    f"  📄 {filename} ({file_type}) - Score: {result.score:.3f}\n"
-                )
-
-            if len(results) > 3:
-                formatted += f"  ... and {len(results) - 3} more files\n"
-            formatted += "\n"
-
-        formatted += "💡 **Usage:** Use the structured attachment data to:\n"
-        formatted += "• Browse attachments by file type or source\n"
-        formatted += "• Get document IDs for specific file content retrieval\n"
-        formatted += "• Filter attachments by metadata (size, type, etc.)\n"
-
-        return formatted
-
-    def _format_lightweight_hierarchy_text(
-        self, organized_results: dict[str, list], total_found: int
-    ) -> str:
-        """Format hierarchy results as lightweight text summary."""
-        if not organized_results:
-            return f"📋 **Hierarchy Search Results**\n\nFound {total_found} documents. Use the structured data below to navigate the hierarchy and retrieve specific documents."
-
-        formatted = f"📋 **Hierarchy Search Results** ({total_found} documents)\n\n"
-
-        for group_name, results in organized_results.items():
-            clean_name = self.formatters._generate_clean_group_name(group_name, results)
-            formatted += f"📁 **{clean_name}** ({len(results)} documents)\n"
-
-            # Show first few documents as examples
-            for result in results[:3]:
-                formatted += f"  📄 {result.source_title} (Score: {result.score:.3f})\n"
-
-            if len(results) > 3:
-                formatted += f"  ... and {len(results) - 3} more documents\n"
-            formatted += "\n"
-
-        formatted += "💡 **Usage:** Use the structured hierarchy data to:\n"
-        formatted += "• Browse document groups and navigate hierarchy levels\n"
-        formatted += "• Get document IDs for specific content retrieval\n"
-        formatted += "• Understand document relationships and organization\n"
-
-        return formatted
+    def _format_lightweight_hierarchy_text(self, organized_results, total_found):
+        return format_lightweight_hierarchy_text(organized_results, total_found)
 
     async def handle_expand_document(
         self, request_id: str | int | None, params: dict[str, Any]
