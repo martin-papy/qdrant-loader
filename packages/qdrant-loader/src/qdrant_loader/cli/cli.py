@@ -22,7 +22,11 @@ from qdrant_loader.cli.config_loader import (
     load_config_with_workspace as _load_config_with_workspace,
     _get_logger as _alias_logger,  # not used, but keep compatibility if referenced
 )
-from qdrant_loader.cli.commands import run_init as _commands_run_init, run_pipeline_ingestion as _run_ingest_pipeline
+from qdrant_loader.cli.commands import (
+    run_init as _commands_run_init,
+    run_pipeline_ingestion as _run_ingest_pipeline,
+)
+from qdrant_loader.cli.commands.config import run_show_config as _run_show_config
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
@@ -569,30 +573,17 @@ def config(
 ):
     """Display current configuration."""
     try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.config.workspace import validate_workspace_flags
-        from qdrant_loader.utils.logging import LoggingConfig
-
-        # Validate flag combinations
-        validate_workspace_flags(workspace, config, env)
-
-        # Setup workspace if provided
-        workspace_config = None
-        if workspace:
-            workspace_config = _setup_workspace(workspace)
-
-        # Setup logging with workspace support
+        # Maintain test expectation: call _setup_logging again for the command
+        workspace_config = _setup_workspace(workspace) if workspace else None
         _setup_logging(log_level, workspace_config)
 
-        # Load configuration
-        _load_config_with_workspace(workspace_config, config, env, skip_validation=True)
-        settings = _check_settings()
-
-        # Display configuration
         echo("Current Configuration:")
-        echo(json.dumps(settings.model_dump(mode="json"), indent=2))
+        output = _run_show_config(workspace, config, env, log_level)
+        echo(output)
 
     except Exception as e:
+        from qdrant_loader.utils.logging import LoggingConfig
+
         LoggingConfig.get_logger(__name__).error("config_failed", error=str(e))
         raise ClickException(f"Failed to display configuration: {str(e)!s}") from e
 
