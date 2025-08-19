@@ -1,96 +1,43 @@
-"""MCP Tool Schema Definitions."""
+"""MCP Tool Schema Definitions - refactored into modular files."""
 
 from typing import Any
 
+from .schemas import (
+    get_search_tool_schema,
+    get_hierarchy_search_tool_schema,
+    get_attachment_search_tool_schema,
+    get_analyze_relationships_tool_schema,
+    get_find_similar_tool_schema,
+    get_detect_conflicts_tool_schema,
+    get_find_complementary_tool_schema,
+    get_cluster_documents_tool_schema,
+    get_expand_document_tool_schema,
+    get_expand_cluster_tool_schema,
+    get_all_tool_schemas as _get_all_tool_schemas,
+)
+
 
 class MCPSchemas:
-    """Tool schema definitions for MCP server."""
+    """Backward-compatible wrapper exposing static methods."""
 
-    @staticmethod
-    def get_search_tool_schema() -> dict[str, Any]:
-        """Get the basic search tool schema."""
-        return {
-            "name": "search",
-            "description": "Perform semantic search across multiple data sources",
-            "annotations": {"read-only": True},
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "The search query in natural language",
-                    },
-                    "source_types": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "enum": [
-                                "git",
-                                "confluence",
-                                "jira",
-                                "documentation",
-                                "localfile",
-                            ],
-                        },
-                        "description": "Optional list of source types to filter results",
-                    },
-                    "project_ids": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                        },
-                        "description": "Optional list of project IDs to filter results",
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of results to return",
-                        "default": 5,
-                    },
-                },
-                "required": ["query"],
-            },
-            "outputSchema": {
-                "type": "object",
-                "properties": {
-                    "results": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "score": {"type": "number"},
-                                "title": {"type": "string"},
-                                "content": {"type": "string"},
-                                "source_type": {"type": "string"},
-                                "metadata": {
-                                    "type": "object",
-                                    "properties": {
-                                        "file_path": {"type": "string"},
-                                        "project_id": {"type": "string"},
-                                        "created_at": {"type": "string"},
-                                        "last_modified": {"type": "string"},
-                                    },
-                                },
-                            },
-                        },
-                    },
-                    "total_found": {"type": "integer"},
-                    "query_context": {
-                        "type": "object",
-                        "properties": {
-                            "original_query": {"type": "string"},
-                            "source_types_filtered": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                            "project_ids_filtered": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                        },
-                    },
-                },
-            },
-        }
+    get_search_tool_schema = staticmethod(get_search_tool_schema)
+    get_hierarchy_search_tool_schema = staticmethod(get_hierarchy_search_tool_schema)
+    get_attachment_search_tool_schema = staticmethod(get_attachment_search_tool_schema)
+    get_analyze_relationships_tool_schema = staticmethod(
+        get_analyze_relationships_tool_schema
+    )
+    get_find_similar_tool_schema = staticmethod(get_find_similar_tool_schema)
+    get_detect_conflicts_tool_schema = staticmethod(get_detect_conflicts_tool_schema)
+    get_find_complementary_tool_schema = staticmethod(
+        get_find_complementary_tool_schema
+    )
+    get_cluster_documents_tool_schema = staticmethod(get_cluster_documents_tool_schema)
+    get_expand_document_tool_schema = staticmethod(get_expand_document_tool_schema)
+    get_expand_cluster_tool_schema = staticmethod(get_expand_cluster_tool_schema)
+
+    @classmethod
+    def get_all_tool_schemas(cls) -> list[dict[str, Any]]:
+        return _get_all_tool_schemas()
 
     @staticmethod
     def get_hierarchy_search_tool_schema() -> dict[str, Any]:
