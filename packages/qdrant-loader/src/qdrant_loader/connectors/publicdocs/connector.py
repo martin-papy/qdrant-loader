@@ -1,5 +1,7 @@
 """Public documentation connector implementation."""
 
+import asyncio
+
 import fnmatch
 import logging
 import warnings
@@ -248,6 +250,9 @@ class PublicDocsConnector(BaseConnector):
                             try:
                                 response = await self.client.get(page)
                                 html = await response.text()
+                                # Some mocks may return a coroutine-of-coroutine
+                                if asyncio.iscoroutine(html):  # type: ignore[arg-type]
+                                    html = await html  # type: ignore[assignment]
                                 attachment_metadata = self._extract_attachments(
                                     html, page, doc_id
                                 )
@@ -637,6 +642,8 @@ class PublicDocsConnector(BaseConnector):
 
                 try:
                     html = await response.text()
+                    if asyncio.iscoroutine(html):  # type: ignore[arg-type]
+                        html = await html  # type: ignore[assignment]
                     self.logger.debug(
                         "Received HTML response",
                         status_code=response.status,
