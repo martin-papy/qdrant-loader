@@ -32,6 +32,8 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
+# Local HTTP helper for safe text reading
+from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
 from qdrant_loader.connectors.publicdocs.parsers import (
     extract_links as _extract_links_helper,
     extract_title as _extract_title_helper,
@@ -249,7 +251,7 @@ class PublicDocsConnector(BaseConnector):
                             # We need to get the HTML again to extract attachments
                             try:
                                 response = await self.client.get(page)
-                                html = await response.text()
+                                html = await _read_text(response)
                                 # Some mocks may return a coroutine-of-coroutine
                                 if asyncio.iscoroutine(html):  # type: ignore[arg-type]
                                     html = await html  # type: ignore[assignment]
@@ -641,7 +643,7 @@ class PublicDocsConnector(BaseConnector):
                 )
 
                 try:
-                    html = await response.text()
+                    html = await _read_text(response)
                     if asyncio.iscoroutine(html):  # type: ignore[arg-type]
                         html = await html  # type: ignore[assignment]
                     self.logger.debug(
