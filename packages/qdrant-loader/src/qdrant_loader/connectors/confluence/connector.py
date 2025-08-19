@@ -34,6 +34,7 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.connectors.http import make_request_with_retries_async as _http_request
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -142,19 +143,14 @@ class ConfluenceConnector(BaseConnector):
         """
         url = self._get_api_url(endpoint)
         try:
-            # For Data Center with PAT, headers are already set
-            # For Cloud or Data Center with basic auth, use session auth
             if not self.session.headers.get("Authorization"):
                 kwargs["auth"] = self.session.auth
 
-            response = await asyncio.to_thread(
-                self.session.request, method, url, **kwargs
-            )
+            response = await _http_request(self.session, method, url, **kwargs)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to make request to {url}: {e}")
-            # Log additional context for debugging
             logger.error(
                 "Request details",
                 method=method,
