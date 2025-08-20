@@ -32,17 +32,12 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.connectors.shared.http import (
+    aiohttp_request_with_retries as _aiohttp_request,
+)
 # Local HTTP helper for safe text reading
 from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
-from qdrant_loader.connectors.publicdocs.parsers import (
-    extract_links as _extract_links_helper,
-    extract_title as _extract_title_helper,
-    extract_content as _extract_content_helper,
-    extract_attachments as _extract_attachments_helper,
-    should_process_url as _should_process_url_helper,
-    get_mime_type_from_extension as _get_mime_type_helper,
-)
-from qdrant_loader.connectors.attachments import attachment_metadata_from_dict as _att_from_dict
+from qdrant_loader.connectors.publicdocs.crawler import discover_pages as _discover_pages
 
 # Suppress XML parsing warning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
@@ -250,7 +245,7 @@ class PublicDocsConnector(BaseConnector):
                         ):
                             # We need to get the HTML again to extract attachments
                             try:
-                                response = await self.client.get(page)
+                                response = await _aiohttp_request(self.client, "GET", page)
                                 html = await _read_text(response)
                                 # Some mocks may return a coroutine-of-coroutine
                                 if asyncio.iscoroutine(html):  # type: ignore[arg-type]
@@ -321,7 +316,7 @@ class PublicDocsConnector(BaseConnector):
 
             self.logger.debug("Making HTTP request", url=url)
             try:
-                response = await self.client.get(url)
+                response = await _aiohttp_request(self.client, "GET", url)
                 response.raise_for_status()  # This is a synchronous method, no need to await
             except aiohttp.ClientError as e:
                 raise HTTPRequestError(url=url, message=str(e)) from e
@@ -631,79 +626,17 @@ class PublicDocsConnector(BaseConnector):
 
             async with aiohttp.ClientSession() as client:
                 try:
-                    response = await client.get(str(self.config.base_url))
-                    response.raise_for_status()
+                    return await _discover_pages(
+                        client,
+                        str(self.config.base_url),
+                        path_pattern=self.config.path_pattern,
+                        exclude_paths=self.config.exclude_paths,
+                        logger=self.logger,
+                    )
                 except aiohttp.ClientError as e:
                     raise HTTPRequestError(
                         url=str(self.config.base_url), message=str(e)
                     ) from e
-
-                self.logger.debug(
-                    "HTTP request successful", status_code=response.status
-                )
-
-                try:
-                    html = await _read_text(response)
-                    if asyncio.iscoroutine(html):  # type: ignore[arg-type]
-                        html = await html  # type: ignore[assignment]
-                    self.logger.debug(
-                        "Received HTML response",
-                        status_code=response.status,
-                        content_length=len(html),
-                    )
-
-                    soup = BeautifulSoup(html, "html.parser")
-                    pages = [str(self.config.base_url)]  # Start with the base URL
-
-                    for link in soup.find_all("a"):
-                        try:
-                            href = str(cast(BeautifulSoup, link)["href"])  # type: ignore
-                            if not href or not isinstance(href, str):
-                                continue
-
-                            # Skip anchor links
-                            if href.startswith("#"):
-                                continue
-
-                            # Convert relative URLs to absolute
-                            absolute_url = urljoin(str(self.config.base_url), href)
-
-                            # Remove any fragment identifiers
-                            absolute_url = absolute_url.split("#")[0]
-
-                            # Check if URL matches our criteria
-                            if (
-                                absolute_url.startswith(str(self.config.base_url))
-                                and absolute_url not in pages
-                                and not any(
-                                    exclude in absolute_url
-                                    for exclude in self.config.exclude_paths
-                                )
-                                and (
-                                    not self.config.path_pattern
-                                    or fnmatch.fnmatch(
-                                        absolute_url, self.config.path_pattern
-                                    )
-                                )
-                            ):
-                                self.logger.debug(
-                                    "Found valid page URL", url=absolute_url
-                                )
-                                pages.append(absolute_url)
-                        except Exception as e:
-                            self.logger.warning(
-                                "Failed to process link",
-                                href=str(link.get("href", "")),  # type: ignore
-                                error=str(e),
-                            )
-                            continue
-
-                    self.logger.debug(
-                        "Page discovery completed",
-                        total_pages=len(pages),
-                        pages=pages,
-                    )
-                    return pages
                 except Exception as e:
                     raise ConnectorError(
                         f"Failed to process page content: {e!s}"

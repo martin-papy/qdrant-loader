@@ -1,6 +1,5 @@
 """Project management CLI commands for QDrant Loader."""
 
-import json
 from pathlib import Path
 
 from click.decorators import group, option
@@ -9,8 +8,8 @@ from click.types import Choice
 from click.types import Path as ClickPath
 from click.utils import echo
 from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+from rich.panel import Panel  # noqa: F401 - kept for potential rich layouts
+from rich.table import Table  # noqa: F401 - kept for potential rich layouts
 from sqlalchemy import func, select
 
 from qdrant_loader.cli.asyncio import async_command

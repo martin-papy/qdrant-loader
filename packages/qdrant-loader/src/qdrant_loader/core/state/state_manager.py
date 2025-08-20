@@ -2,33 +2,20 @@
 State management service for tracking document ingestion state.
 """
 
-import os
-from datetime import UTC, datetime
-from pathlib import Path
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from datetime import datetime
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
 from qdrant_loader.core.document import Document
-from qdrant_loader.core.state.exceptions import DatabaseError
-from qdrant_loader.core.state.models import Base, DocumentStateRecord, IngestionHistory
+from qdrant_loader.core.state.models import DocumentStateRecord, IngestionHistory
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.core.state.utils import (
     generate_sqlite_aiosqlite_url as _gen_url,
-    build_ingestion_history_select as _build_ingestion_select,
-    build_document_state_select as _build_doc_state_select,
 )
 from qdrant_loader.core.state.session import (
     initialize_engine_and_session as _init_engine_session,
     create_tables as _create_tables,
     dispose_engine as _dispose_engine,
-)
-from qdrant_loader.core.state.queries import (
-    select_ingestion_history as _q_ingestion,
-    select_last_ingestion as _q_last_ingestion,
-    select_document_state as _q_doc_state,
 )
 from qdrant_loader.core.state import transitions as _transitions
 

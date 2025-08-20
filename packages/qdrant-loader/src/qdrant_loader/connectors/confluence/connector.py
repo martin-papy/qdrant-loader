@@ -1,10 +1,7 @@
-import asyncio
 import re
 from datetime import datetime
-from urllib.parse import urlparse
 
 import requests
-from requests.auth import HTTPBasicAuth
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
@@ -23,9 +20,10 @@ from qdrant_loader.connectors.confluence.pagination import (
 from qdrant_loader.connectors.confluence.mappers import (
     extract_hierarchy_info as _extract_hierarchy_info_helper,
 )
-from qdrant_loader.core.attachment_downloader import (
-    AttachmentDownloader,
-    AttachmentMetadata,
+from qdrant_loader.core.attachment_downloader import AttachmentMetadata
+from qdrant_loader.connectors.shared.attachments import AttachmentReader
+from qdrant_loader.connectors.shared.attachments.metadata import (
+    confluence_attachment_to_metadata,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
@@ -34,7 +32,9 @@ from qdrant_loader.core.file_conversion import (
     FileDetector,
 )
 from qdrant_loader.utils.logging import LoggingConfig
-from qdrant_loader.connectors.http import make_request_with_retries_async as _http_request
+from qdrant_loader.connectors.shared.http import (
+    make_request_with_retries_async as _http_request,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -82,13 +82,18 @@ class ConfluenceConnector(BaseConnector):
 
             # Initialize attachment downloader if download_attachments is enabled
             if self.config.download_attachments:
-                self.attachment_downloader = AttachmentDownloader(
+                from qdrant_loader.core.attachment_downloader import AttachmentDownloader
+
+                downloader = AttachmentDownloader(
                     session=self.session,
                     file_conversion_config=file_conversion_config,
                     enable_file_conversion=True,
                     max_attachment_size=file_conversion_config.max_file_size,
                 )
-                logger.info("Attachment downloader initialized with file conversion")
+                self.attachment_downloader = AttachmentReader(
+                    session=self.session, downloader=downloader
+                )
+                logger.info("Attachment reader initialized with file conversion")
             else:
                 logger.debug("Attachment downloading disabled")
 
@@ -261,117 +266,19 @@ class ConfluenceConnector(BaseConnector):
 
             for attachment_data in response.get("results", []):
                 try:
-                    # Extract attachment metadata
-                    attachment_id = attachment_data.get("id")
-                    filename = attachment_data.get("title", "unknown")
-
-                    # Get file size and MIME type from metadata
-                    # The structure can differ between Cloud and Data Center
-                    metadata = attachment_data.get("metadata", {})
-
-                    # Try different paths for file size (Cloud vs Data Center differences)
-                    file_size = 0
-                    if "mediaType" in metadata:
-                        # Data Center format
-                        file_size = metadata.get("mediaType", {}).get("size", 0)
-                    elif "properties" in metadata:
-                        # Alternative format in some versions
-                        file_size = metadata.get("properties", {}).get("size", 0)
-
-                    # If still no size, try from extensions
-                    if file_size == 0:
-                        extensions = attachment_data.get("extensions", {})
-                        file_size = extensions.get("fileSize", 0)
-
-                    # Try different paths for MIME type
-                    mime_type = "application/octet-stream"  # Default fallback
-                    if "mediaType" in metadata:
-                        # Data Center format
-                        mime_type = metadata.get("mediaType", {}).get("name", mime_type)
-                    elif "properties" in metadata:
-                        # Alternative format
-                        mime_type = metadata.get("properties", {}).get(
-                            "mediaType", mime_type
-                        )
-
-                    # If still no MIME type, try from extensions
-                    if mime_type == "application/octet-stream":
-                        extensions = attachment_data.get("extensions", {})
-                        mime_type = extensions.get("mediaType", mime_type)
-
-                    # Get download URL - this differs significantly between Cloud and Data Center
-                    download_link = attachment_data.get("_links", {}).get("download")
-                    if not download_link:
+                    translated = confluence_attachment_to_metadata(
+                        attachment_data, base_url=str(self.base_url), parent_id=content_id
+                    )
+                    if translated is None:
                         logger.warning(
                             "No download link found for attachment",
-                            attachment_id=attachment_id,
-                            filename=filename,
+                            attachment_id=attachment_data.get("id"),
+                            filename=attachment_data.get("title"),
                             deployment_type=self.config.deployment_type,
                         )
                         continue
 
-                    # Construct full download URL based on deployment type
-                    if self.config.deployment_type == ConfluenceDeploymentType.CLOUD:
-                        # Cloud URLs are typically absolute or need different handling
-                        if download_link.startswith("http"):
-                            download_url = download_link
-                        elif download_link.startswith("/"):
-                            download_url = f"{self.base_url}{download_link}"
-                        else:
-                            # Relative path - construct full URL
-                            download_url = f"{self.base_url}/rest/api/{download_link}"
-                    else:
-                        # Data Center URLs
-                        if download_link.startswith("http"):
-                            download_url = download_link
-                        elif download_link.startswith("/"):
-                            download_url = f"{self.base_url}{download_link}"
-                        else:
-                            # Relative path - construct full URL
-                            download_url = f"{self.base_url}/rest/api/{download_link}"
-
-                    # Get author and timestamps - structure can vary between versions
-                    version = attachment_data.get("version", {})
-                    history = attachment_data.get("history", {})
-
-                    # Try different paths for author information
-                    author = None
-                    if "by" in version:
-                        # Standard version author
-                        author = version.get("by", {}).get("displayName")
-                    elif "createdBy" in history:
-                        # History-based author (more common in Cloud)
-                        author = history.get("createdBy", {}).get("displayName")
-
-                    # Try different paths for timestamps
-                    created_at = None
-                    updated_at = None
-
-                    # Creation timestamp
-                    if "createdDate" in history:
-                        created_at = history.get("createdDate")
-                    elif "created" in attachment_data:
-                        created_at = attachment_data.get("created")
-
-                    # Update timestamp
-                    if "when" in version:
-                        updated_at = version.get("when")
-                    elif "lastModified" in history:
-                        updated_at = history.get("lastModified")
-
-                    attachment = AttachmentMetadata(
-                        id=attachment_id,
-                        filename=filename,
-                        size=file_size,
-                        mime_type=mime_type,
-                        download_url=download_url,
-                        parent_document_id=content_id,
-                        created_at=created_at,
-                        updated_at=updated_at,
-                        author=author,
-                    )
-
-                    attachments.append(attachment)
+                    attachments.append(translated)
 
                     logger.debug(
                         "Found attachment",
@@ -843,7 +750,7 @@ class ConfluenceConnector(BaseConnector):
                                             )
 
                                             if attachments:
-                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                attachment_docs = await self.attachment_downloader.fetch_and_process(
                                                     attachments, document
                                                 )
                                                 documents.extend(attachment_docs)
@@ -942,7 +849,7 @@ class ConfluenceConnector(BaseConnector):
                                             )
 
                                             if attachments:
-                                                attachment_docs = await self.attachment_downloader.download_and_process_attachments(
+                                                attachment_docs = await self.attachment_downloader.fetch_and_process(
                                                     attachments, document
                                                 )
                                                 documents.extend(attachment_docs)
