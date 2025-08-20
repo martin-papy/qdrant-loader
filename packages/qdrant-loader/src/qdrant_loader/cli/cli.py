@@ -1,7 +1,6 @@
 """CLI module for QDrant Loader."""
 
 import asyncio
-import json
 import signal
 from pathlib import Path
 
@@ -14,23 +13,27 @@ from click.utils import echo
 
 from qdrant_loader.cli.asyncio import async_command
 from qdrant_loader.cli.logging_utils import (
-    get_logger as _get_logger_impl,
-    setup_logging as _setup_logging_impl,
+    get_logger as _get_logger_impl,  # noqa: F401
+    setup_logging as _setup_logging_impl,  # noqa: F401
 )
 from qdrant_loader.cli.version import get_version_str as _get_version_str
-from qdrant_loader.cli.update_check import check_for_updates as _check_updates_helper
-from qdrant_loader.cli.path_utils import create_database_directory as _create_db_dir_helper
-from qdrant_loader.cli.async_utils import cancel_all_tasks as _cancel_all_tasks_helper
+from qdrant_loader.cli.update_check import (
+    check_for_updates as _check_updates_helper,
+)
+from qdrant_loader.cli.path_utils import (
+    create_database_directory as _create_db_dir_helper,
+)
+from qdrant_loader.cli.async_utils import (
+    cancel_all_tasks as _cancel_all_tasks_helper,
+)
 from qdrant_loader.cli.config_loader import (
     setup_workspace as _setup_workspace_impl,
     load_config_with_workspace as _load_config_with_workspace,
-    _get_logger as _alias_logger,  # not used, but keep compatibility if referenced
 )
 from qdrant_loader.cli.commands import (
     run_init as _commands_run_init,
     run_pipeline_ingestion as _run_ingest_pipeline,
 )
-from qdrant_loader.cli.commands.config import run_show_config as _run_show_config
 
 # Use minimal imports at startup to improve CLI responsiveness.
 logger = None  # Logger will be initialized when first accessed.
@@ -258,66 +261,9 @@ async def init(
     log_level: str,
 ):
     """Initialize QDrant collection."""
-    try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.config.workspace import validate_workspace_flags
+    from qdrant_loader.cli.commands.init_cmd import run_init_command
 
-        # Validate flag combinations
-        validate_workspace_flags(workspace, config, env)
-
-        # Setup workspace if provided
-        workspace_config = None
-        if workspace:
-            workspace_config = _setup_workspace(workspace)
-
-        # Setup logging with workspace support
-        _setup_logging(log_level, workspace_config)
-
-        # Load configuration
-        _load_config_with_workspace(workspace_config, config, env)
-        settings = _check_settings()
-
-        # Delete and recreate the database file if it exists
-        db_path_str = settings.global_config.state_management.database_path
-        if db_path_str != ":memory:":
-            # Convert to Path object for proper cross-platform handling
-            db_path = Path(db_path_str)
-
-            # Ensure the directory exists
-            db_dir = db_path.parent
-            if not db_dir.exists():
-                if not _create_database_directory(db_dir):
-                    raise ClickException(
-                        "Database directory creation declined. Exiting."
-                    )
-
-            # Delete the database file if it exists and force is True
-            if db_path.exists() and force:
-                _get_logger().info(
-                    "Resetting state database", database_path=str(db_path)
-                )
-                db_path.unlink()  # Use Path.unlink() instead of os.remove()
-                _get_logger().info(
-                    "State database reset completed", database_path=str(db_path)
-                )
-            elif force:
-                _get_logger().info(
-                    "State database reset skipped (no existing database)",
-                    database_path=str(db_path),
-                )
-
-        await _run_init(settings, force)
-
-    except ClickException as e:
-        from qdrant_loader.utils.logging import LoggingConfig
-
-        LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
-        raise e from None
-    except Exception as e:
-        from qdrant_loader.utils.logging import LoggingConfig
-
-        LoggingConfig.get_logger(__name__).error("init_failed", error=str(e))
-        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+    await run_init_command(workspace, config, env, force, log_level)
 
 
 async def _cancel_all_tasks():
@@ -400,135 +346,19 @@ async def ingest(
       # Force processing of all documents (bypass change detection)
       qdrant-loader ingest --force
     """
-    try:
-        # Lazy import to avoid slow startup
-        from qdrant_loader.config.workspace import validate_workspace_flags
-        from qdrant_loader.utils.logging import LoggingConfig
+    from qdrant_loader.cli.commands.ingest_cmd import run_ingest_command
 
-        # Validate flag combinations
-        validate_workspace_flags(workspace, config, env)
-
-        # Setup workspace if provided
-        workspace_config = None
-        if workspace:
-            workspace_config = _setup_workspace(workspace)
-
-        # Setup logging with workspace support
-        _setup_logging(log_level, workspace_config)
-
-        # Load configuration
-        _load_config_with_workspace(workspace_config, config, env)
-        settings = _check_settings()
-
-        # Lazy import to avoid slow startup
-        from qdrant_loader.core.qdrant_manager import QdrantManager
-
-        qdrant_manager = QdrantManager(settings)
-
-        async def run_ingest():
-            await _run_ingest_pipeline(
-                settings,
-                qdrant_manager,
-                project=project,
-                source_type=source_type,
-                source=source,
-                force=force,
-                metrics_dir=(
-                    str(workspace_config.metrics_path) if workspace_config else None
-                ),
-            )
-
-        loop = asyncio.get_running_loop()
-        stop_event = asyncio.Event()
-
-        def _handle_sigint():
-            logger = LoggingConfig.get_logger(__name__)
-            logger.debug(" SIGINT received, cancelling all tasks...")
-            stop_event.set()
-
-        # Setup signal handling - Windows doesn't support signal handlers in asyncio
-        try:
-            loop.add_signal_handler(signal.SIGINT, _handle_sigint)
-        except NotImplementedError:
-            # Windows doesn't support signal handlers in ProactorEventLoop
-            # Use a different approach for graceful shutdown on Windows
-
-            def _signal_handler(_signum, _frame):
-                logger = LoggingConfig.get_logger(__name__)
-                logger.debug(" SIGINT received on Windows, cancelling all tasks...")
-                # Schedule the stop event to be set in the event loop
-                loop.call_soon_threadsafe(stop_event.set)
-
-            signal.signal(signal.SIGINT, _signal_handler)
-
-        try:
-            if profile:
-                import cProfile
-
-                profiler = cProfile.Profile()
-                profiler.enable()
-                try:
-                    await run_ingest()
-                finally:
-                    profiler.disable()
-                    profiler.dump_stats("profile.out")
-                    LoggingConfig.get_logger(__name__).info(
-                        "Profile saved to profile.out"
-                    )
-            else:
-                await run_ingest()
-            logger = LoggingConfig.get_logger(__name__)
-            logger.info("Pipeline finished, awaiting cleanup.")
-            # Wait for all pending tasks
-            pending = [
-                t
-                for t in asyncio.all_tasks()
-                if t is not asyncio.current_task() and not t.done()
-            ]
-            if pending:
-                logger.debug(f" Awaiting {len(pending)} pending tasks before exit...")
-                await asyncio.gather(*pending, return_exceptions=True)
-            await asyncio.sleep(0.1)
-        except Exception as e:
-            logger = LoggingConfig.get_logger(__name__)
-            error_msg = (
-                str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
-            )
-            # Standardized error logging: user-friendly message + technical details + stack trace
-            logger.error(
-                "Document ingestion process failed during execution",
-                error=error_msg,
-                error_type=type(e).__name__,
-                suggestion="Check data sources, configuration, and system resources. Run 'qdrant-loader project validate' to verify setup",
-                exc_info=True,
-            )
-            raise ClickException(f"Failed to run ingestion: {error_msg}") from e
-        finally:
-            if stop_event.is_set():
-                await _cancel_all_tasks()
-                logger = LoggingConfig.get_logger(__name__)
-                logger.debug(" All tasks cancelled, exiting after SIGINT.")
-
-    except ClickException as e:
-        # Standardized error logging: user-friendly message for CLI exceptions
-        LoggingConfig.get_logger(__name__).error(
-            "Command-line operation failed",
-            error=str(e),
-            suggestion="Check command syntax and parameters",
-        )
-        raise e from None
-    except Exception as e:
-        logger = LoggingConfig.get_logger(__name__)
-        error_msg = str(e) if str(e) else f"Empty exception of type: {type(e).__name__}"
-        # Standardized error logging: user-friendly message + technical details + stack trace
-        logger.error(
-            "Unexpected error during ingestion command execution",
-            error=error_msg,
-            error_type=type(e).__name__,
-            suggestion="Check logs above for specific error details and verify system configuration",
-            exc_info=True,
-        )
-        raise ClickException(f"Failed to run ingestion: {error_msg}") from e
+    await run_ingest_command(
+        workspace,
+        config,
+        env,
+        project,
+        source_type,
+        source,
+        log_level,
+        profile,
+        force,
+    )
 
 
 @cli.command()
@@ -559,9 +389,10 @@ def config(
         _setup_logging(log_level, workspace_config)
 
         echo("Current Configuration:")
+        from qdrant_loader.cli.commands.config import run_show_config as _run_show_config
+
         output = _run_show_config(workspace, config, env, log_level)
         echo(output)
-
     except Exception as e:
         from qdrant_loader.utils.logging import LoggingConfig
 

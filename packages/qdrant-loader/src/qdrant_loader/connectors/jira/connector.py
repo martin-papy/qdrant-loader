@@ -4,10 +4,10 @@ import asyncio
 import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse  # noqa: F401 - may be used in URL handling
 
 import requests
-from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPBasicAuth  # noqa: F401 - compatibility
 
 from qdrant_loader.config.types import SourceType
 from qdrant_loader.connectors.base import BaseConnector
@@ -18,9 +18,10 @@ from qdrant_loader.connectors.jira.models import (
     JiraIssue,
     JiraUser,
 )
-from qdrant_loader.core.attachment_downloader import (
-    AttachmentDownloader,
-    AttachmentMetadata,
+from qdrant_loader.core.attachment_downloader import AttachmentMetadata
+from qdrant_loader.connectors.shared.attachments import AttachmentReader
+from qdrant_loader.connectors.shared.attachments.metadata import (
+    jira_attachment_to_metadata,
 )
 from qdrant_loader.core.document import Document
 from qdrant_loader.core.file_conversion import (
@@ -39,7 +40,9 @@ from qdrant_loader.connectors.jira.mappers import (
     parse_attachment as _parse_attachment_helper,
     parse_comment as _parse_comment_helper,
 )
-from qdrant_loader.connectors.http import make_request_with_retries_async as _http_request
+from qdrant_loader.connectors.shared.http import (
+    make_request_with_retries_async as _http_request,
+)
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -81,7 +84,11 @@ class JiraConnector(BaseConnector):
             # FileConverter will be initialized when file_conversion_config is set
 
         if config.download_attachments:
-            self.attachment_downloader = AttachmentDownloader(session=self.session)
+            from qdrant_loader.core.attachment_downloader import AttachmentDownloader
+
+            self.attachment_downloader = AttachmentReader(
+                session=self.session, downloader=AttachmentDownloader(session=self.session)
+            )
 
     def _setup_authentication(self):
         """Set up authentication based on deployment type."""
@@ -104,12 +111,17 @@ class JiraConnector(BaseConnector):
         if self.config.enable_file_conversion and self.file_detector:
             self.file_converter = FileConverter(config)
             if self.config.download_attachments:
-                # Reinitialize attachment downloader with file conversion config
-                self.attachment_downloader = AttachmentDownloader(
+                # Reinitialize reader with new downloader config
+                from qdrant_loader.core.attachment_downloader import AttachmentDownloader
+
+                self.attachment_downloader = AttachmentReader(
                     session=self.session,
-                    file_conversion_config=config,
-                    enable_file_conversion=True,
-                    max_attachment_size=config.max_file_size,
+                    downloader=AttachmentDownloader(
+                        session=self.session,
+                        file_conversion_config=config,
+                        enable_file_conversion=True,
+                        max_attachment_size=config.max_file_size,
+                    ),
                 )
 
     async def __aenter__(self):
@@ -375,22 +387,10 @@ class JiraConnector(BaseConnector):
         if not self.config.download_attachments or not issue.attachments:
             return []
 
-        attachment_metadata = []
-        for attachment in issue.attachments:
-            metadata = AttachmentMetadata(
-                id=attachment.id,
-                filename=attachment.filename,
-                size=attachment.size,
-                mime_type=attachment.mime_type,
-                download_url=str(attachment.content_url),
-                parent_document_id=issue.id,
-                created_at=(
-                    attachment.created.isoformat() if attachment.created else None
-                ),
-                updated_at=None,  # JIRA attachments don't have update timestamps
-                author=attachment.author.display_name if attachment.author else None,
-            )
-            attachment_metadata.append(metadata)
+        attachment_metadata = [
+            jira_attachment_to_metadata(att, parent_id=issue.id)
+            for att in issue.attachments
+        ]
 
         return attachment_metadata
 
@@ -501,7 +501,7 @@ class JiraConnector(BaseConnector):
                         attachment_count=len(attachment_metadata),
                     )
 
-                    attachment_documents = await self.attachment_downloader.download_and_process_attachments(
+                    attachment_documents = await self.attachment_downloader.fetch_and_process(
                         attachment_metadata, document
                     )
                     documents.extend(attachment_documents)
