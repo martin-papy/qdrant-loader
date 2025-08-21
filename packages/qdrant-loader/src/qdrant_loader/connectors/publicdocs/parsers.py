@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import fnmatch
-from typing import List
+from typing import List, Any
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
@@ -45,11 +45,9 @@ def extract_content(html: str, content_selector: str, remove: list[str], code_bl
         return ""
     code_blocks = content.select(code_blocks_selector)
     for code_block in code_blocks:
-        code_text = code_block.text
+        code_text = code_block.get_text()
         if code_text:
-            new_code = BeautifulSoup(f"\n```\n{code_text}\n```\n", "html.parser")
-            if new_code.string:
-                code_block.replace_with(new_code.string)  # type: ignore[arg-type]
+            code_block.replace_with(f"\n```\n{code_text}\n```\n")
     return content.get_text(separator="\n", strip=True)
 
 
@@ -65,7 +63,9 @@ def should_process_url(url: str, base_url: str, exclude_paths: list[str], path_p
     return fnmatch.fnmatch(path, path_pattern)
 
 
-def extract_attachments(html: str, page_url: str, document_id: str, selectors: list[str]):
+def extract_attachments(
+    html: str, page_url: str, document_id: str, selectors: list[str]
+) -> List[dict[str, Any]]:
     soup = BeautifulSoup(html, "html.parser")
     attachments = []
     for selector in selectors:

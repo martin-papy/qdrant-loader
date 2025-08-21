@@ -646,7 +646,9 @@ class PublicDocsConnector(BaseConnector):
                 path_pattern=self.config.path_pattern,
             )
 
-            async with aiohttp.ClientSession() as client:
+            # Reuse existing client if available; otherwise, create a temporary session
+            if getattr(self, "_client", None):
+                client = self.client
                 try:
                     return await _discover_pages(
                         client,
@@ -663,6 +665,24 @@ class PublicDocsConnector(BaseConnector):
                     raise ConnectorError(
                         f"Failed to process page content: {e!s}"
                     ) from e
+            else:
+                async with aiohttp.ClientSession() as client:
+                    try:
+                        return await _discover_pages(
+                            client,
+                            str(self.config.base_url),
+                            path_pattern=self.config.path_pattern,
+                            exclude_paths=self.config.exclude_paths,
+                            logger=self.logger,
+                        )
+                    except aiohttp.ClientError as e:
+                        raise HTTPRequestError(
+                            url=str(self.config.base_url), message=str(e)
+                        ) from e
+                    except Exception as e:
+                        raise ConnectorError(
+                            f"Failed to process page content: {e!s}"
+                        ) from e
 
         except (ConnectorNotInitializedError, HTTPRequestError, ConnectorError):
             raise

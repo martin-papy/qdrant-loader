@@ -60,7 +60,11 @@ def parse_issue(raw_issue: Dict[str, Any]) -> JiraIssue:
     parent = fields.get("parent")
     parent_key = parent.get("key") if parent else None
     reporter = parse_user(fields["reporter"], required=True)
-    assert reporter is not None
+    if reporter is None:
+        issue_identifier = raw_issue.get("key") or raw_issue.get("id")
+        raise ValueError(
+            f"Missing reporter for Jira issue {issue_identifier}: {fields.get('reporter')!r}"
+        )
     return JiraIssue(
         id=raw_issue["id"],
         key=raw_issue["key"],
