@@ -4,6 +4,70 @@ from typing import Any
 
 
 class HybridEngineAPI:
+    def __init__(
+        self,
+        *,
+        logger: Any | None = None,
+        enable_intent_adaptation: bool = True,
+        knowledge_graph: Any | None = None,
+        min_score: float = 0.0,
+        # Optional components (may be wired by a builder in concrete engines)
+        vector_search_service: Any | None = None,
+        keyword_search_service: Any | None = None,
+        query_processor: Any | None = None,
+        result_combiner: Any | None = None,
+        metadata_extractor: Any | None = None,
+        faceted_search_engine: Any | None = None,
+        intent_classifier: Any | None = None,
+        adaptive_strategy: Any | None = None,
+    ) -> None:
+        # Defer logger setup to central LoggingConfig if not provided
+        if logger is None:
+            try:
+                from ...utils.logging import LoggingConfig  # Lazy import to avoid cycles
+
+                self.logger = LoggingConfig.get_logger(__name__)
+            except Exception:
+                # Last-resort fallback to stdlib logger-like shim
+                class _StdLogger:
+                    def debug(self, *args, **kwargs):
+                        pass
+
+                    def info(self, *args, **kwargs):
+                        pass
+
+                    def warning(self, *args, **kwargs):
+                        pass
+
+                    def error(self, *args, **kwargs):
+                        pass
+
+                self.logger = _StdLogger()
+        else:
+            self.logger = logger
+
+        # Core toggles and context
+        self.enable_intent_adaptation = enable_intent_adaptation
+        self.knowledge_graph = knowledge_graph
+        self.min_score = min_score
+
+        # Optional components used by helper wrappers
+        self.vector_search_service = vector_search_service
+        self.keyword_search_service = keyword_search_service
+        self.query_processor = query_processor
+        self.result_combiner = result_combiner
+        self.metadata_extractor = metadata_extractor
+        self.faceted_search_engine = faceted_search_engine
+        self.intent_classifier = intent_classifier
+        self.adaptive_strategy = adaptive_strategy
+        # Frequently wired later by concrete engines/builders
+        self.hybrid_pipeline = None
+        self.topic_chain_generator = None
+        self.processing_config = None
+        self._planner = None
+        self._orchestrator = None
+
+
     async def search(
         self,
         query: str,

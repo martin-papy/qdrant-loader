@@ -68,8 +68,6 @@ def build_enhanced_metadata(
     cluster_sizes = [len(cluster.documents) for cluster in clusters]
     coherence_scores = [cluster.coherence_score for cluster in clusters if cluster.coherence_score > 0]
 
-    from .cluster_quality import calculate_std, assess_overall_quality, generate_clustering_recommendations
-
     metadata = {
         "strategy": strategy.value,
         "total_documents": len(documents),
