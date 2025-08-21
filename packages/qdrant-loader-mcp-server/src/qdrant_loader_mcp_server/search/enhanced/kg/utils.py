@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Tuple
+import logging
 
 from .models import GraphEdge, GraphNode
 
@@ -57,11 +58,31 @@ def build_reasoning_path(path: list[str], edges: list[GraphEdge], nodes_by_id: d
     """Build a human-readable reasoning path from a traversal."""
     reasoning: list[str] = []
     for _i, edge in enumerate(edges):
-        source_node = nodes_by_id[edge.source_id]
-        target_node = nodes_by_id[edge.target_id]
+        source_node = nodes_by_id.get(edge.source_id)
+        target_node = nodes_by_id.get(edge.target_id)
+
+        if source_node is None or target_node is None:
+            logger = logging.getLogger(__name__)
+            edge_id = getattr(edge, "id", "N/A")
+            relationship = getattr(getattr(edge, "relationship_type", None), "value", str(getattr(edge, "relationship_type", "N/A")))
+            logger.warning(
+                "KG reasoning: missing node(s) for edge. edge_id=%s relationship=%s source_id=%s found=%s target_id=%s found=%s",
+                edge_id,
+                relationship,
+                getattr(edge, "source_id", "N/A"),
+                source_node is not None,
+                getattr(edge, "target_id", "N/A"),
+                target_node is not None,
+            )
+
+        source_title = source_node.title if source_node is not None else f"UNKNOWN NODE {getattr(edge, 'source_id', 'N/A')}"
+        target_title = target_node.title if target_node is not None else f"UNKNOWN NODE {getattr(edge, 'target_id', 'N/A')}"
+
+        relationship_value = getattr(getattr(edge, "relationship_type", None), "value", str(getattr(edge, "relationship_type", "unknown")))
+
         reasoning.append(
-            f"{source_node.title} --{edge.relationship_type.value}--> {target_node.title} "
-            f"(weight: {edge.weight:.2f})"
+            f"{source_title} --{relationship_value}--> {target_title} "
+            f"(weight: {getattr(edge, 'weight', 0.0):.2f})"
         )
     return reasoning
 
