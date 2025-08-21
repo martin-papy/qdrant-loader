@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING, Any
+from datetime import date, datetime, time as dtime
+from enum import Enum
+from pathlib import Path
 
 if TYPE_CHECKING:
     from ...nlp.spacy_analyzer import QueryAnalysis, SpaCyQueryAnalyzer
@@ -145,7 +148,7 @@ class DocumentKnowledgeGraph:
                     "nodes": [
                         {
                             "id": node.id,
-                            "type": node.node_type.value,
+                            "type": getattr(node.node_type, "value", str(node.node_type)),
                             "title": node.title,
                             "centrality": node.centrality_score,
                             "entities": node.entities,
@@ -157,14 +160,67 @@ class DocumentKnowledgeGraph:
                         {
                             "source": edge.source_id,
                             "target": edge.target_id,
-                            "relationship": edge.relationship_type.value,
+                            "relationship": getattr(edge.relationship_type, "value", str(edge.relationship_type)),
                             "weight": edge.weight,
                             "confidence": edge.confidence,
                         }
                         for edge in self.knowledge_graph.edges.values()
                     ],
                 }
-                return json.dumps(data, indent=2)
+                
+                class EnhancedJSONEncoder(json.JSONEncoder):
+                    def default(self, obj: Any) -> Any:  # type: ignore[override]
+                        if isinstance(obj, (datetime, date, dtime)):
+                            return obj.isoformat()
+                        if isinstance(obj, Enum):
+                            return getattr(obj, "value", str(obj))
+                        if isinstance(obj, set):
+                            return list(obj)
+                        if isinstance(obj, bytes):
+                            try:
+                                return obj.decode("utf-8")
+                            except Exception:
+                                return obj.hex()
+                        if isinstance(obj, Path):
+                            return str(obj)
+                        if hasattr(obj, "to_dict"):
+                            try:
+                                return obj.to_dict()
+                            except Exception:
+                                return str(obj)
+                        if hasattr(obj, "__dict__"):
+                            try:
+                                return vars(obj)
+                            except Exception:
+                                return str(obj)
+                        return str(obj)
+
+                try:
+                    return json.dumps(data, indent=2, cls=EnhancedJSONEncoder)
+                except TypeError:
+                    # Fallback: sanitize recursively
+                    def sanitize(value: Any) -> Any:
+                        try:
+                            json.dumps(value)
+                            return value
+                        except TypeError:
+                            if isinstance(value, dict):
+                                return {sanitize(k): sanitize(v) for k, v in value.items()}
+                            if isinstance(value, (list, tuple, set)):
+                                return [sanitize(v) for v in value]
+                            if isinstance(value, (datetime, date, dtime)):
+                                return value.isoformat()
+                            if isinstance(value, Enum):
+                                return getattr(value, "value", str(value))
+                            if isinstance(value, bytes):
+                                try:
+                                    return value.decode("utf-8")
+                                except Exception:
+                                    return value.hex()
+                            return str(value)
+
+                    safe_data = sanitize(data)
+                    return json.dumps(safe_data, indent=2)
 
         except Exception as e:
             logger.error(f"Failed to export graph: {e}")

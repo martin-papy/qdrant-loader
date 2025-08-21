@@ -398,19 +398,36 @@ def _build_stable_id(prefix: str, value: Any, digest_length: int = 16) -> str:
 
 
 def _doc_id_from_result(result: Any) -> str:
-    """Create a stable document node id from a search result."""
-    payload = {
-        "source_type": getattr(result, "source_type", ""),
-        "id": getattr(result, "source_url", None) or (getattr(result, "text", "")[:256]),
-    }
-    prefix = f"doc_{payload['source_type']}" if payload["source_type"] else "doc"
-    return _build_stable_id(prefix, payload)
+    """Create a stable document node id from a search result.
+
+    Prefer using a stable cryptographic hash based on a deterministic identifier:
+    - Use result.source_url if present
+    - Otherwise fallback to the first 100 characters of result.text
+    The final id format is: doc_{source_type}_{digest}
+    where digest is the first 16 characters of the SHA-256 hexdigest.
+    """
+    source_type = getattr(result, "source_type", "") or "unknown"
+    preferred_identifier = getattr(result, "source_url", None)
+    if not preferred_identifier:
+        preferred_identifier = (getattr(result, "text", "") or "")[:100]
+    if not isinstance(preferred_identifier, str):
+        preferred_identifier = str(preferred_identifier)
+
+    digest = hashlib.sha256(preferred_identifier.encode("utf-8")).hexdigest()[:16]
+    return f"doc_{source_type}_{digest}"
 
 
 def _section_id_from_result(result: Any) -> str:
-    """Create a stable section node id from a search result."""
-    payload = {
-        "parent": getattr(result, "source_url", None) or (getattr(result, "text", "")[:256]),
-        "text": getattr(result, "text", ""),
-    }
-    return _build_stable_id("section", payload)
+    """Create a stable section node id from a search result.
+
+    Compute a deterministic SHA-256 hash from the section text and
+    use a short prefix of the digest to keep IDs concise.
+    The final id format is: section_{digest_prefix}
+    where digest_prefix is the first 12 characters of the SHA-256 hexdigest.
+    """
+    text = getattr(result, "text", "") or ""
+    if not isinstance(text, str):
+        text = str(text)
+
+    digest_prefix = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+    return f"section_{digest_prefix}"
