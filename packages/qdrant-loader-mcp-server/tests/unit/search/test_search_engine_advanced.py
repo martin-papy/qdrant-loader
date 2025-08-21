@@ -706,8 +706,8 @@ async def test_find_similar_documents_no_target(
             comparison_query="machine learning guides",
         )
 
-        assert result == []
-
+        # Method now returns an empty dict for no target found to match declared return type
+        assert result == {}
 
 @pytest.mark.asyncio
 async def test_detect_document_conflicts_success(

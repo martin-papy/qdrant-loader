@@ -405,7 +405,7 @@ class SearchEngine:
         # First, search for target documents
         target_documents = await self._search_ops.search(target_query, source_types, 1, project_ids)
         if not target_documents:
-            return []  # No target document found
+            return {}  # No target document found; return empty dict for consistency with declared type
         
         # Then search for comparison documents  
         comparison_documents = await self._search_ops.search(comparison_query or target_query, source_types, limit, project_ids)
