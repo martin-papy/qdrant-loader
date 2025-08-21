@@ -165,13 +165,13 @@ class TestAdaptiveSearchConfig:
         assert config.diversity_factor == 0.5
 
     def test_adaptive_search_config_post_init(self):
-        """Test that __post_init__ sets TraversalStrategy when available."""
+        """Test that __post_init__ sets default TraversalStrategy when available."""
+        from qdrant_loader_mcp_server.search.enhanced import TraversalStrategy
+
         config = AdaptiveSearchConfig()
-        
-        # The __post_init__ method should be called automatically
-        # If TraversalStrategy is available, kg_traversal_strategy should be set
-        # If not available, it should remain None
-        assert config.kg_traversal_strategy is not None or config.kg_traversal_strategy is None
+
+        # Expect default to be SEMANTIC when TraversalStrategy is available
+        assert config.kg_traversal_strategy == TraversalStrategy.SEMANTIC
 
     def test_adaptive_search_config_with_filters(self):
         """Test AdaptiveSearchConfig with complex filters and boosts."""

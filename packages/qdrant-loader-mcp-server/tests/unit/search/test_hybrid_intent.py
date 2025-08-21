@@ -27,7 +27,7 @@ async def test_search_with_intent_adaptation(hybrid_search_with_intent):
     )
 
     # Mock intent classifier
-    from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
+    from qdrant_loader_mcp_server.search.enhanced.intent.models import (
         IntentType,
         SearchIntent,
     )
@@ -42,7 +42,7 @@ async def test_search_with_intent_adaptation(hybrid_search_with_intent):
     )
 
     # Mock adaptive strategy
-    from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
+    from qdrant_loader_mcp_server.search.enhanced.intent.models import (
         AdaptiveSearchConfig,
     )
 
