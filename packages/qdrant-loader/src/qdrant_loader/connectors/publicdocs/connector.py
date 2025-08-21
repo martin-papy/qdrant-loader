@@ -96,8 +96,10 @@ class PublicDocsConnector(BaseConnector):
                 session = requests.Session()
                 self.attachment_downloader = AttachmentDownloader(session=session)
 
-            # Initialize polite default rate limiter for crawling
-            self._rate_limiter = RateLimiter.per_minute(120)
+            # Initialize rate limiter for crawling (configurable)
+            self._rate_limiter = RateLimiter.per_minute(
+                getattr(self.config, "requests_per_minute", 120)
+            )
 
         return self
 
