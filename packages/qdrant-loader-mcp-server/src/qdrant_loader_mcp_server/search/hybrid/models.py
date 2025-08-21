@@ -11,18 +11,18 @@ class HybridStage(Enum):
     COMBINE = "combine"
 
 
-@dataclass
-class HybridWeights:
-    vector_weight: float = 0.6
-    keyword_weight: float = 0.3
-    metadata_weight: float = 0.1
-
-
-# Default constants (behavioral no-op extraction)
+# Default constants (single source of truth for defaults)
 DEFAULT_VECTOR_WEIGHT: float = 0.6
 DEFAULT_KEYWORD_WEIGHT: float = 0.3
 DEFAULT_METADATA_WEIGHT: float = 0.1
 DEFAULT_MIN_SCORE: float = 0.3
+
+
+@dataclass
+class HybridWeights:
+    vector_weight: float = DEFAULT_VECTOR_WEIGHT
+    keyword_weight: float = DEFAULT_KEYWORD_WEIGHT
+    metadata_weight: float = DEFAULT_METADATA_WEIGHT
 
 
 @dataclass
