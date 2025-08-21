@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import time
 from collections import Counter, defaultdict
+import hashlib
+import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -107,7 +109,7 @@ class GraphBuilder:
 
         for result in search_results:
             # Create document node
-            doc_id = f"doc_{result.source_type}_{hash(result.source_url or result.text[:100])}"
+            doc_id = _doc_id_from_result(result)
 
             if doc_id not in seen_documents:
                 seen_documents.add(doc_id)
@@ -132,7 +134,7 @@ class GraphBuilder:
                 nodes.append(doc_node)
 
             # Create section node
-            section_id = f"section_{hash(result.text)}"
+            section_id = _section_id_from_result(result)
             section_node = GraphNode(
                 id=section_id,
                 node_type=NodeType.SECTION,
@@ -182,7 +184,7 @@ class GraphBuilder:
         for entity, count in entity_counts.items():
             if count >= 2:
                 entity_node = GraphNode(
-                    id=f"entity_{hash(entity)}",
+                    id=_build_stable_id("entity", entity),
                     node_type=NodeType.ENTITY,
                     title=entity,
                     metadata={"mention_count": count, "entity_type": "extracted"},
@@ -193,7 +195,7 @@ class GraphBuilder:
         for topic, count in topic_counts.items():
             if count >= 2:
                 topic_node = GraphNode(
-                    id=f"topic_{hash(topic)}",
+                    id=_build_stable_id("topic", topic),
                     node_type=NodeType.TOPIC,
                     title=topic,
                     metadata={"mention_count": count, "topic_type": "extracted"},
@@ -211,8 +213,8 @@ class GraphBuilder:
 
         # Document -> Section relationships
         for result in search_results:
-            doc_id = f"doc_{result.source_type}_{hash(result.source_url or result.text[:100])}"
-            section_id = f"section_{hash(result.text)}"
+            doc_id = _doc_id_from_result(result)
+            section_id = _section_id_from_result(result)
 
             if doc_id in graph.nodes and section_id in graph.nodes:
                 edge = GraphEdge(
@@ -248,7 +250,7 @@ class GraphBuilder:
 
         # Document/Section mentions Entity
         for result in search_results:
-            section_id = f"section_{hash(result.text)}"
+            section_id = _section_id_from_result(result)
             entities = self._extract_entities(result)
 
             for entity in entities:
@@ -280,7 +282,7 @@ class GraphBuilder:
 
         # Document/Section discusses Topic
         for result in search_results:
-            section_id = f"section_{hash(result.text)}"
+            section_id = _section_id_from_result(result)
             topics = self._extract_topics(result)
 
             for topic in topics:
@@ -378,3 +380,37 @@ class GraphBuilder:
 
     def _extract_keywords(self, result: SearchResult) -> list[str]:
         return extract_keywords_from_result(result)
+
+
+def _stable_hash(value: Any) -> str:
+    """Compute a deterministic SHA-256 hex digest for a value using stable serialization."""
+    try:
+        canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    except Exception:
+        canonical = str(value)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _build_stable_id(prefix: str, value: Any, digest_length: int = 16) -> str:
+    """Build a stable node id using a prefix and the truncated SHA-256 digest of the value."""
+    digest = _stable_hash(value)[:digest_length]
+    return f"{prefix}_{digest}"
+
+
+def _doc_id_from_result(result: Any) -> str:
+    """Create a stable document node id from a search result."""
+    payload = {
+        "source_type": getattr(result, "source_type", ""),
+        "id": getattr(result, "source_url", None) or (getattr(result, "text", "")[:256]),
+    }
+    prefix = f"doc_{payload['source_type']}" if payload["source_type"] else "doc"
+    return _build_stable_id(prefix, payload)
+
+
+def _section_id_from_result(result: Any) -> str:
+    """Create a stable section node id from a search result."""
+    payload = {
+        "parent": getattr(result, "source_url", None) or (getattr(result, "text", "")[:256]),
+        "text": getattr(result, "text", ""),
+    }
+    return _build_stable_id("section", payload)

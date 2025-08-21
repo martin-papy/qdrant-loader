@@ -6,6 +6,11 @@ from enum import Enum
 from typing import Any
 
 import networkx as nx
+from networkx.exception import NetworkXError, PowerIterationFailedConvergence
+
+from ....utils.logging import LoggingConfig
+
+logger = LoggingConfig.get_logger(__name__)
 
 
 class SimilarityMetric(Enum):
@@ -146,7 +151,10 @@ class CitationNetwork:
 
             self.pagerank_scores = nx.pagerank(self.graph, max_iter=100)
 
-        except Exception:
+        except (NetworkXError, PowerIterationFailedConvergence, ValueError) as exc:
+            logger.exception(
+                "Centrality computation failed; falling back to degree centrality"
+            )
             if self.graph.nodes():
                 degree_centrality = nx.degree_centrality(self.graph)
                 self.authority_scores = degree_centrality
