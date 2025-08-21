@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, cast
-from urllib.parse import urljoin
+from typing import Any
+from urllib.parse import urljoin, urlparse
+import fnmatch
 
 from bs4 import BeautifulSoup
 
@@ -29,10 +30,14 @@ async def discover_pages(
 
     soup = BeautifulSoup(html, "html.parser")
     pages = [base_url]
+    seen: set[str] = {base_url}
+    base_parsed = urlparse(base_url)
+    base_netloc = base_parsed.netloc
+    base_path = base_parsed.path or ""
 
     for link in soup.find_all("a"):
         try:
-            href = str(cast(BeautifulSoup, link)["href"])  # type: ignore
+            href = link.get("href")
             if not href or not isinstance(href, str):
                 continue
 
@@ -41,18 +46,34 @@ async def discover_pages(
 
             absolute_url = urljoin(base_url, href)
             absolute_url = absolute_url.split("#")[0]
+            parsed = urlparse(absolute_url)
+
+            # Validate scheme
+            if parsed.scheme not in ("http", "https"):
+                continue
+
+            # Enforce same-origin
+            if parsed.netloc != base_netloc:
+                continue
+
+            # Enforce base path scope
+            abs_path = parsed.path or "/"
+            base_path_norm = base_path.rstrip("/")
+            if base_path_norm:
+                if not (abs_path == base_path_norm or abs_path.startswith(base_path_norm + "/")):
+                    continue
 
             if (
-                absolute_url.startswith(base_url)
-                and absolute_url not in pages
-                and not any(exclude in absolute_url for exclude in exclude_paths)
+                not any(exclude in absolute_url for exclude in exclude_paths)
                 and (
-                    not path_pattern
-                    or __import__("fnmatch").fnmatch(absolute_url, path_pattern)
+                    path_pattern is None
+                    or fnmatch.fnmatch(parsed.path, path_pattern)
                 )
             ):
-                logger.debug("Found valid page URL", url=absolute_url)
-                pages.append(absolute_url)
+                if absolute_url not in seen:
+                    seen.add(absolute_url)
+                    logger.debug("Found valid page URL", url=absolute_url)
+                    pages.append(absolute_url)
         except Exception as e:  # pragma: no cover - best-effort crawl
             logger.warning(
                 "Failed to process link",

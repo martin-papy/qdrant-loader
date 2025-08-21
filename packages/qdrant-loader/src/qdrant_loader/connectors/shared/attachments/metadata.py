@@ -10,19 +10,34 @@ def normalize_attachment_metadata(meta: dict, *, parent_id: str) -> AttachmentMe
 
     Minimal helper for shared usage; connectors can implement richer adapters.
     """
-    return AttachmentMetadata(
-        id=str(meta.get("id") or meta.get("attachment_id")),
+    # Extract fields without coercing None to string
+    raw_id = meta.get("id") or meta.get("attachment_id")
+    attachment_id = str(raw_id) if raw_id is not None else None
+
+    download_raw = meta.get("download_url") or meta.get("content")
+    download_url = str(download_raw) if download_raw is not None else None
+
+    metadata = AttachmentMetadata(
+        id=attachment_id if attachment_id is not None else "None",
         filename=meta.get("filename") or meta.get("name") or "unknown",
         size=int(meta.get("size") or 0),
         mime_type=meta.get("mime_type")
         or meta.get("contentType")
         or "application/octet-stream",
-        download_url=str(meta.get("download_url") or meta.get("content")),
+        download_url=download_url if download_url is not None else "None",
         parent_document_id=parent_id,
         created_at=meta.get("created") or meta.get("created_at"),
         updated_at=meta.get("updated") or meta.get("updated_at"),
         author=(meta.get("author") or meta.get("creator")),
     )
+
+    # Post-construction validation for required fields
+    if not metadata.id or metadata.id == "None":
+        raise ValueError("Attachment ID is required")
+    if not metadata.download_url or metadata.download_url == "None":
+        raise ValueError("Attachment download_url is required")
+
+    return metadata
 
 
 def jira_attachment_to_metadata(att: Any, *, parent_id: str) -> AttachmentMetadata:
