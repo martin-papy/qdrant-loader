@@ -43,6 +43,10 @@ class HybridPipeline:
         if self.normalizer is not None:
             # Normalize score values in-place using current scores
             normalized = self.normalizer.scale([r.score for r in results])
+            if len(normalized) != len(results):
+                raise ValueError(
+                    f"Normalizer returned {len(normalized)} values for {len(results)} results"
+                )
             for r, v in zip(results, normalized):
                 r.score = v
         if self.deduplicator is not None:

@@ -6,8 +6,8 @@ DEFAULT_LIMIT = 1200
 STRICT_LIMIT = 1000
 
 STRICT_SCOPES = [
-    "qdrant_loader_mcp_server/mcp/",
-    "qdrant_loader_mcp_server/search/",
+    "mcp/",
+    "search/",
 ]
 
 EXEMPTIONS = {
@@ -19,9 +19,8 @@ def _count_lines(path: Path) -> int:
     return sum(1 for _ in path.open("r", encoding="utf-8", errors="ignore"))
 
 
-def _is_in_scopes(path: Path, scopes: list[str]) -> bool:
-    s = str(path)
-    return any(scope in s for scope in scopes)
+def _is_in_scopes(rel_posix: str, scopes: list[str]) -> bool:
+    return any(rel_posix.startswith(scope) for scope in scopes)
 
 
 def test_module_sizes_within_thresholds_mcp():
@@ -32,12 +31,12 @@ def test_module_sizes_within_thresholds_mcp():
 
     for path in src_root.rglob("*.py"):
         rel = path.relative_to(src_root)
-        rel_str = str(rel)
+        rel_str = rel.as_posix()
         line_count = _count_lines(path)
 
         if rel_str in EXEMPTIONS:
             limit = EXEMPTIONS[rel_str]
-        elif _is_in_scopes(rel, STRICT_SCOPES):
+        elif _is_in_scopes(rel_str, STRICT_SCOPES):
             limit = STRICT_LIMIT
         else:
             limit = DEFAULT_LIMIT
