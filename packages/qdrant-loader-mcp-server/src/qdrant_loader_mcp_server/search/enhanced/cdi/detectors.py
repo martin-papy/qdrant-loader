@@ -425,21 +425,39 @@ class ConflictDetector:
                 llm_analysis=self.llm_enabled,
             )
 
-            # Build ConflictAnalysis object
-            conflicting_pairs = []
+            # Build merged ConflictAnalysis from collected results
+            merged_conflicting_pairs: list[tuple[str, str, dict[str, Any]]] = []
+            merged_conflict_categories: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
+            merged_resolution_suggestions: dict[str, str] = {}
+
             for conflict in conflicts:
-                if len(conflict) >= 3:
-                    doc1_id, doc2_id, conflict_info = conflict[0], conflict[1], conflict[2]
-                    conflicting_pairs.append((doc1_id, doc2_id, conflict_info))
-                    
-                    # Categorize conflict
-                    conflict_type = conflict_info.get("type", "unknown")
-                    conflict_categories[conflict_type].append((doc1_id, doc2_id))
-            
+                # Preferred: ConflictAnalysis objects
+                if isinstance(conflict, ConflictAnalysis):
+                    if getattr(conflict, "conflicting_pairs", None):
+                        merged_conflicting_pairs.extend(conflict.conflicting_pairs)
+                    if getattr(conflict, "conflict_categories", None):
+                        for category, pairs in conflict.conflict_categories.items():
+                            merged_conflict_categories[category].extend(pairs)
+                    if getattr(conflict, "resolution_suggestions", None):
+                        merged_resolution_suggestions.update(conflict.resolution_suggestions)
+                    continue
+
+                # Backward-compat: tuples like (doc1_id, doc2_id, conflict_info)
+                try:
+                    if isinstance(conflict, tuple) and len(conflict) >= 3:
+                        doc1_id, doc2_id, conflict_info = conflict[0], conflict[1], conflict[2]
+                        info_dict = conflict_info if isinstance(conflict_info, dict) else {"info": conflict_info}
+                        merged_conflicting_pairs.append((str(doc1_id), str(doc2_id), info_dict))
+                        conflict_type = info_dict.get("type", "unknown")
+                        merged_conflict_categories[conflict_type].append((str(doc1_id), str(doc2_id)))
+                except Exception:
+                    # Ignore malformed entries
+                    pass
+
             return ConflictAnalysis(
-                conflicting_pairs=conflicting_pairs,
-                conflict_categories=dict(conflict_categories),
-                resolution_suggestions={}  # Can be populated later
+                conflicting_pairs=merged_conflicting_pairs,
+                conflict_categories=dict(merged_conflict_categories),
+                resolution_suggestions=merged_resolution_suggestions,
             )
 
         except Exception as e:

@@ -22,6 +22,7 @@ from .extractors.similarity_helpers import (
     calculate_metadata_similarity as cdi_calc_metadata_similarity,
     calculate_content_features_similarity as cdi_calc_content_features_similarity,
 )
+from .utils import hierarchical_distance_from_breadcrumbs
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -164,7 +165,6 @@ class DocumentSimilarityCalculator:
 
         # Breadcrumb-based similarity
         if doc1.breadcrumb_text and doc2.breadcrumb_text:
-            from .utils import hierarchical_distance_from_breadcrumbs
             return hierarchical_distance_from_breadcrumbs(
                 doc1.breadcrumb_text, doc2.breadcrumb_text
             )

@@ -258,10 +258,8 @@ def calculate_metadata_similarity(doc1: SearchResult, doc2: SearchResult) -> flo
         getattr(doc2, "has_images", False),
         getattr(doc2, "has_links", False),
     ]
-    try:
-        feature_similarity = sum(f1 == f2 for f1, f2 in zip(features1, features2, strict=False)) / len(features1)
-    except TypeError:
-        feature_similarity = sum(f1 == f2 for f1, f2 in zip(features1, features2)) / len(features1)
+    assert len(features1) == len(features2)
+    feature_similarity = sum(f1 == f2 for f1, f2 in zip(features1, features2)) / len(features1)
     similarity_factors.append(feature_similarity)
 
     if getattr(doc1, "word_count", None) and getattr(doc2, "word_count", None):
