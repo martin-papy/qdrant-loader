@@ -422,10 +422,4 @@ Developer Documentation:
 └── documentation/ # This guide
 ```
 
-### Code Quality Gates (for developers)
-
-- Import cycle and module size guards are under `packages/qdrant-loader/tests/unit/quality/`.
-- Keep refactored modules within target sizes (<300–400 lines) unless explicitly exempted in tests.
-- Prefer thin entrypoints and shared helpers to avoid duplication.
-
 Remember: **Good documentation is code**. Treat it with the same care and attention you give to your implementation code.

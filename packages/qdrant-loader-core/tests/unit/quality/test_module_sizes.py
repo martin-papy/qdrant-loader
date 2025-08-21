@@ -6,7 +6,7 @@ DEFAULT_LIMIT = 400
 STRICT_LIMIT = 300
 
 STRICT_SCOPES = [
-    "qdrant_loader_core/llm/",
+    "llm/",
 ]
 
 EXEMPTIONS = {
@@ -18,9 +18,15 @@ def _count_lines(path: Path) -> int:
     return sum(1 for _ in path.open("r", encoding="utf-8", errors="ignore"))
 
 
+def _normalize_scope(scope: str) -> str:
+    """Normalize a scope string to POSIX style and strip leading './'."""
+    return scope.replace("\\", "/").lstrip("./")
+
+
 def _is_in_scopes(path: Path, scopes: list[str]) -> bool:
-    s = str(path)
-    return any(scope in s for scope in scopes)
+    """Return True if the relative POSIX path starts with any normalized scope."""
+    rel_posix = path.as_posix().lstrip("./")
+    return any(rel_posix.startswith(_normalize_scope(scope)) for scope in scopes)
 
 
 def test_module_sizes_within_thresholds_core():
@@ -48,6 +54,7 @@ def test_module_sizes_within_thresholds_core():
         "Core modules exceeding size limits:\n" +
         "\n".join(f" - {p} : {n} > {lim}" for p, n, lim in offenders)
     )
+
 
 
 
