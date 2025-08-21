@@ -642,6 +642,20 @@ class ConflictDetector:
         doc_score_avg = (doc1_score + doc2_score) / 2
         
         return min(1.0, pattern_strength * doc_score_avg)
+
+    # --- Public stats accessor to avoid leaking private attributes ---
+    def get_last_stats(self) -> dict:
+        """Return the last computed runtime statistics as a dictionary.
+
+        Exposes detector runtime metrics via a stable public API. Falls back to an
+        empty dict if stats are not available. Compatible with internal implementations
+        that may store stats on a private attribute.
+        """
+        try:
+            stats = getattr(self, "_last_stats", None)
+            return stats if isinstance(stats, dict) else {}
+        except Exception:
+            return {}
     
     # Additional compatibility methods for tests
     def _have_content_overlap(self, doc1: SearchResult, doc2: SearchResult) -> bool:
