@@ -3,6 +3,7 @@ State management service for tracking document ingestion state.
 """
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from qdrant_loader.config.source_config import SourceConfig
 from qdrant_loader.config.state import IngestionStatus, StateManagementConfig
@@ -19,6 +20,9 @@ from qdrant_loader.core.state.session import (
 )
 from qdrant_loader.core.state import transitions as _transitions
 
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+
 logger = LoggingConfig.get_logger(__name__)
 
 
@@ -29,8 +33,8 @@ class StateManager:
         """Initialize the state manager with configuration."""
         self.config = config
         self._initialized = False
-        self._engine = None
-        self._session_factory = None
+        self._engine: "AsyncEngine | None" = None
+        self._session_factory: "async_sessionmaker[AsyncSession] | None" = None
         self.logger = LoggingConfig.get_logger(__name__)
 
     @property
@@ -38,7 +42,7 @@ class StateManager:
         """Public accessor for initialization state used by callers/tests."""
         return self._initialized
 
-    async def get_session(self):
+    async def get_session(self) -> "AsyncSession":
         """Return an async session context manager, initializing if needed.
 
         This method allows callers to use:
@@ -51,7 +55,7 @@ class StateManager:
             raise RuntimeError("State manager session factory is not available")
         return self._session_factory()
 
-    async def create_session(self):
+    async def create_session(self) -> "AsyncSession":
         """Alias for get_session for backward compatibility."""
         return await self.get_session()
 

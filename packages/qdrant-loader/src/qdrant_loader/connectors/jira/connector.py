@@ -1,7 +1,6 @@
 """Jira connector implementation."""
 
 import asyncio
-import time
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from urllib.parse import urlparse  # noqa: F401 - may be used in URL handling
@@ -41,7 +40,8 @@ from qdrant_loader.connectors.jira.mappers import (
     parse_comment as _parse_comment_helper,
 )
 from qdrant_loader.connectors.shared.http import (
-    make_request_with_retries_async as _http_request,
+    request_with_policy as _http_request_with_policy,
+    RateLimiter,
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -70,8 +70,7 @@ class JiraConnector(BaseConnector):
         self._setup_authentication()
 
         self._last_sync: datetime | None = None
-        self._rate_limit_lock = asyncio.Lock()
-        self._last_request_time = 0.0
+        self._rate_limiter = RateLimiter.per_minute(self.config.requests_per_minute)
         self._initialized = False
 
         # Initialize file conversion components if enabled
@@ -159,78 +158,75 @@ class JiraConnector(BaseConnector):
         Raises:
             requests.exceptions.RequestException: If the request fails
         """
-        async with self._rate_limit_lock:
-            min_interval = 60.0 / self.config.requests_per_minute
-            now = time.time()
-            time_since_last_request = now - self._last_request_time
+        url = self._get_api_url(endpoint)
 
-            if time_since_last_request < min_interval:
-                await asyncio.sleep(min_interval - time_since_last_request)
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = 60
 
-            self._last_request_time = time.time()
+        try:
+            logger.debug(
+                "Making JIRA API request",
+                method=method,
+                endpoint=endpoint,
+                url=url,
+                timeout=kwargs.get("timeout"),
+            )
 
-            url = self._get_api_url(endpoint)
+            if not self.session.headers.get("Authorization"):
+                kwargs["auth"] = self.session.auth
 
-            if "timeout" not in kwargs:
-                kwargs["timeout"] = 60
+            response = await _http_request_with_policy(
+                self.session,
+                method,
+                url,
+                rate_limiter=self._rate_limiter,
+                retries=3,
+                backoff_factor=0.5,
+                status_forcelist=(429, 500, 502, 503, 504),
+                overall_timeout=90.0,
+                **kwargs,
+            )
 
-            try:
-                logger.debug(
-                    "Making JIRA API request",
-                    method=method,
-                    endpoint=endpoint,
-                    url=url,
-                    timeout=kwargs.get("timeout"),
-                )
+            response.raise_for_status()
 
-                if not self.session.headers.get("Authorization"):
-                    kwargs["auth"] = self.session.auth
+            logger.debug(
+                "JIRA API request completed successfully",
+                method=method,
+                endpoint=endpoint,
+                status_code=response.status_code,
+                response_size=(
+                    len(response.content) if hasattr(response, "content") else 0
+                ),
+            )
 
-                response = await asyncio.wait_for(
-                    _http_request(self.session, method, url, **kwargs),
-                    timeout=90.0,
-                )
+            return response.json()
 
-                response.raise_for_status()
+        except TimeoutError:
+            logger.error(
+                "JIRA API request timed out",
+                method=method,
+                url=url,
+                timeout=kwargs.get("timeout"),
+            )
+            raise requests.exceptions.Timeout(
+                f"Request to {url} timed out after {kwargs.get('timeout')} seconds"
+            )
 
-                logger.debug(
-                    "JIRA API request completed successfully",
-                    method=method,
-                    endpoint=endpoint,
-                    status_code=response.status_code,
-                    response_size=(
-                        len(response.content) if hasattr(response, "content") else 0
-                    ),
-                )
-
-                return response.json()
-
-            except TimeoutError:
-                logger.error(
-                    "JIRA API request timed out",
-                    method=method,
-                    url=url,
-                    timeout=kwargs.get("timeout"),
-                )
-                raise requests.exceptions.Timeout(
-                    f"Request to {url} timed out after {kwargs.get('timeout')} seconds"
-                )
-
-            except requests.exceptions.RequestException as e:
-                logger.error(
-                    "Failed to make request to JIRA API",
-                    method=method,
-                    url=url,
-                    error=str(e),
-                    error_type=type(e).__name__,
-                )
-                logger.error(
-                    "Request details",
-                    deployment_type=self.config.deployment_type,
-                    has_auth_header=bool(self.session.headers.get("Authorization")),
-                    has_session_auth=bool(self.session.auth),
-                )
-                raise
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                "Failed to make request to JIRA API",
+                method=method,
+                url=url,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            logger.error(
+                "Request details",
+                deployment_type=self.config.deployment_type,
+                has_auth_header=bool(self.session.headers.get("Authorization")),
+                has_session_auth=bool(self.session.auth),
+            )
+            raise
 
     def _make_sync_request(self, jql: str, **kwargs):
         """

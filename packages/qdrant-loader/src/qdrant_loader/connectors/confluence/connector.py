@@ -33,7 +33,8 @@ from qdrant_loader.core.file_conversion import (
 )
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.connectors.shared.http import (
-    make_request_with_retries_async as _http_request,
+    request_with_policy as _http_request_with_policy,
+    RateLimiter,
 )
 
 logger = LoggingConfig.get_logger(__name__)
@@ -54,6 +55,9 @@ class ConfluenceConnector(BaseConnector):
 
         # Initialize session
         self.session = requests.Session()
+        # Rate limiter (conservative default for Confluence API)
+        # Using 60 rpm by default; could be surfaced via config in a follow-up
+        self._rate_limiter = RateLimiter.per_minute(60)
 
         # Set up authentication based on deployment type
         self._setup_authentication()
@@ -151,7 +155,17 @@ class ConfluenceConnector(BaseConnector):
             if not self.session.headers.get("Authorization"):
                 kwargs["auth"] = self.session.auth
 
-            response = await _http_request(self.session, method, url, **kwargs)
+            response = await _http_request_with_policy(
+                self.session,
+                method,
+                url,
+                rate_limiter=self._rate_limiter,
+                retries=3,
+                backoff_factor=0.5,
+                status_forcelist=(429, 500, 502, 503, 504),
+                overall_timeout=90.0,
+                **kwargs,
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:

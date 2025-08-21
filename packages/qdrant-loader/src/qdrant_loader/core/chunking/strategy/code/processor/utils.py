@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
@@ -30,7 +31,8 @@ def is_mostly_comments(content: str) -> bool:
 
 def has_meaningful_names(content: str) -> bool:
     bad_names = ["tmp", "foo", "bar", "baz", "var", "data", "x", "y", "z"]
-    return not any(f" {n} " in content for n in bad_names)
+    text = content.lower()
+    return not any(re.search(rf"\b{re.escape(n)}\b", text) for n in bad_names)
 
 
 def determine_learning_level(complexity: int) -> str:
