@@ -18,14 +18,15 @@ def parse_user(raw_user: Dict[str, Any] | None, required: bool = False) -> Optio
         return None
     return JiraUser(
         account_id=account_id,
-        display_name=raw_user["displayName"],
+        display_name=(raw_user.get("displayName") or raw_user.get("name") or account_id),
         email_address=raw_user.get("emailAddress"),
     )
 
 
 def parse_attachment(raw_attachment: Dict[str, Any]) -> JiraAttachment:
     author = parse_user(raw_attachment["author"], required=True)
-    assert author is not None
+    if author is None:
+        raise ValueError("Missing author in Jira attachment")
     return JiraAttachment(
         id=raw_attachment["id"],
         filename=raw_attachment["filename"],
@@ -39,7 +40,8 @@ def parse_attachment(raw_attachment: Dict[str, Any]) -> JiraAttachment:
 
 def parse_comment(raw_comment: Dict[str, Any]) -> JiraComment:
     author = parse_user(raw_comment["author"], required=True)
-    assert author is not None
+    if author is None:
+        raise ValueError("Missing author in Jira comment")
     return JiraComment(
         id=raw_comment["id"],
         body=raw_comment["body"],

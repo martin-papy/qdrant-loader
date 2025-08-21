@@ -297,10 +297,10 @@ class ConfluenceConnector(BaseConnector):
 
                     logger.debug(
                         "Found attachment",
-                        attachment_id=attachment_id,
-                        filename=filename,
-                        size=file_size,
-                        mime_type=mime_type,
+                        attachment_id=getattr(translated, "id", None),
+                        filename=getattr(translated, "filename", None),
+                        size=getattr(translated, "size", None),
+                        mime_type=getattr(translated, "mime_type", None),
                         deployment_type=self.config.deployment_type,
                     )
 
