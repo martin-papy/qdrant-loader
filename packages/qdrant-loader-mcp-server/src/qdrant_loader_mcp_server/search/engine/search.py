@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .core import SearchEngine
 
 from ...utils.logging import LoggingConfig
-from ..components.search_result_models import HybridSearchResult
+from ..components.models.hybrid import HybridSearchResult
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -22,7 +22,6 @@ class SearchOperations:
     def __init__(self, engine: "SearchEngine"):
         """Initialize with search engine reference."""
         self.engine = engine
-        self.logger = LoggingConfig.get_logger(__name__)
 
     async def search(
         self,
@@ -42,7 +41,7 @@ class SearchOperations:
         if not self.engine.hybrid_search:
             raise RuntimeError("Search engine not initialized")
 
-        self.logger.debug(
+        logger.debug(
             "Performing search",
             query=query,
             source_types=source_types,
@@ -58,7 +57,7 @@ class SearchOperations:
                 project_ids=project_ids,
             )
 
-            self.logger.info(
+            logger.info(
                 "Search completed",
                 query=query,
                 result_count=len(results),
@@ -67,5 +66,5 @@ class SearchOperations:
 
             return results
         except Exception as e:
-            self.logger.error("Search failed", error=str(e), query=query)
+            logger.error("Search failed", error=str(e), query=query)
             raise
