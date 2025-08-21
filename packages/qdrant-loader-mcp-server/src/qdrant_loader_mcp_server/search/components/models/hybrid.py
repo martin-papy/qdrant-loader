@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 
 from .base import BaseSearchResult
 from .project import ProjectInfo
@@ -301,7 +302,6 @@ class HybridSearchResult:
         base_title = self.source_title
         if not base_title or base_title.strip() == "":
             if self.file_path:
-                import os
                 base_title = os.path.basename(self.file_path)
             elif self.repo_name:
                 base_title = self.repo_name
@@ -401,7 +401,6 @@ class HybridSearchResult:
         elif self.mime_type:
             return self.mime_type
         elif self.original_filename:
-            import os
             _, ext = os.path.splitext(self.original_filename)
             return ext.lower().lstrip(".") if ext else None
         return None
