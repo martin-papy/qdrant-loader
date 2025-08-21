@@ -13,8 +13,10 @@ def get_field(obj: Any, key: str, default: Any = None) -> Any:
 
 def get_or_create_document_id(doc: Any) -> str:
     explicit_id = get_field(doc, "document_id", None)
-    if explicit_id:
-        return explicit_id
+    if explicit_id is not None:
+        explicit_id_str = str(explicit_id).strip()
+        if explicit_id_str:
+            return explicit_id_str
 
     raw_source_type = get_field(doc, "source_type", "unknown")
     raw_source_title = get_field(doc, "source_title", "unknown")

@@ -118,6 +118,7 @@ QDrant Loader is built on several key architectural principles:
 **Supported Sources**: Git, Confluence, Jira, Local Files, Public Docs
 
 Implementation notes:
+
 - Jira uses `request_with_policy` with project-configured `requests_per_minute`.
 - Confluence and PublicDocs use a conservative default limiter; can be surfaced in config later.
 
@@ -171,6 +172,7 @@ class BaseConnector(ABC):
 - Async processing pipelines
 
 Refactoring highlights (Large Files):
+
 - Markdown strategy split into `splitters/{base,standard,excel,fallback}.py` with facade `section_splitter.py`.
 - Code strategy modularized (`parser/*`, `metadata/*`, `processor/*`); orchestrators remain thin.
 

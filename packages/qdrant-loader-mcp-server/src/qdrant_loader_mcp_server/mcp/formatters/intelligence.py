@@ -201,7 +201,12 @@ class IntelligenceResultFormatters:
 
         # Add summary statistics
         total_docs = sum(len(cluster.get("documents", [])) for cluster in cluster_list)
-        avg_coherence = sum(cluster.get("coherence_score", 0) for cluster in cluster_list) / len(cluster_list)
+        cluster_count = len(cluster_list)
+        avg_coherence = (
+            sum(cluster.get("coherence_score", 0) for cluster in cluster_list) / cluster_count
+            if cluster_count > 0
+            else 0.0
+        )
         
         formatted += f"📊 **Summary:**\n"
         formatted += f"• Total Clusters: {len(cluster_list)}\n"
