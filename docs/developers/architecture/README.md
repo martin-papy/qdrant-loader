@@ -109,10 +109,17 @@ QDrant Loader is built on several key architectural principles:
 - Unified `BaseConnector` interface for all sources
 - Per-source authentication and validation
 - Retry-aware HTTP and rate limiting (where relevant)
+- Shared HTTP utilities under `qdrant_loader.connectors.shared.http`:
+  - `RateLimiter` for per-interval throttling
+  - `request_with_policy` / `aiohttp_request_with_policy` for consistent retries + jitter + optional rate limiting
 - Incremental updates via state tracking
 - Rich metadata on every `Document`
 
 **Supported Sources**: Git, Confluence, Jira, Local Files, Public Docs
+
+Implementation notes:
+- Jira uses `request_with_policy` with project-configured `requests_per_minute`.
+- Confluence and PublicDocs use a conservative default limiter; can be surfaced in config later.
 
 **Interface (simplified)**:
 
@@ -162,6 +169,10 @@ class BaseConnector(ABC):
 - Content deduplication via hashing
 - Document ID generation
 - Async processing pipelines
+
+Refactoring highlights (Large Files):
+- Markdown strategy split into `splitters/{base,standard,excel,fallback}.py` with facade `section_splitter.py`.
+- Code strategy modularized (`parser/*`, `metadata/*`, `processor/*`); orchestrators remain thin.
 
 ### Embedding Service
 

@@ -33,7 +33,8 @@ from qdrant_loader.core.file_conversion import (
 )
 from qdrant_loader.utils.logging import LoggingConfig
 from qdrant_loader.connectors.shared.http import (
-    aiohttp_request_with_retries as _aiohttp_request,
+    aiohttp_request_with_policy as _aiohttp_request,
+    RateLimiter,
 )
 # Local HTTP helper for safe text reading
 from qdrant_loader.connectors.publicdocs.http import read_text_response as _read_text
@@ -94,6 +95,9 @@ class PublicDocsConnector(BaseConnector):
 
                 session = requests.Session()
                 self.attachment_downloader = AttachmentDownloader(session=session)
+
+            # Initialize polite default rate limiter for crawling
+            self._rate_limiter = RateLimiter.per_minute(120)
 
         return self
 
@@ -245,7 +249,15 @@ class PublicDocsConnector(BaseConnector):
                         ):
                             # We need to get the HTML again to extract attachments
                             try:
-                                response = await _aiohttp_request(self.client, "GET", page)
+                                response = await _aiohttp_request(
+                                    self.client,
+                                    "GET",
+                                    page,
+                                    rate_limiter=self._rate_limiter,
+                                    retries=3,
+                                    backoff_factor=0.5,
+                                    overall_timeout=60.0,
+                                )
                                 html = await _read_text(response)
                                 # Some mocks may return a coroutine-of-coroutine
                                 if asyncio.iscoroutine(html):  # type: ignore[arg-type]
@@ -316,7 +328,15 @@ class PublicDocsConnector(BaseConnector):
 
             self.logger.debug("Making HTTP request", url=url)
             try:
-                response = await _aiohttp_request(self.client, "GET", url)
+                response = await _aiohttp_request(
+                    self.client,
+                    "GET",
+                    url,
+                    rate_limiter=self._rate_limiter,
+                    retries=3,
+                    backoff_factor=0.5,
+                    overall_timeout=60.0,
+                )
                 response.raise_for_status()  # This is a synchronous method, no need to await
             except aiohttp.ClientError as e:
                 raise HTTPRequestError(url=url, message=str(e)) from e

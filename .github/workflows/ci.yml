@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Setup venv
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install dev dependencies
+        run: |
+          . venv/bin/activate
+          pip install -e packages/qdrant-loader[dev]
+          pip install -e packages/qdrant-loader-mcp-server[dev]
+          pip install -e packages/qdrant-loader-core[openai]
+
+      - name: Lint
+        run: |
+          . venv/bin/activate
+          make lint
+
+      - name: Quality gates (qdrant-loader)
+        run: |
+          . venv/bin/activate
+          make quality
+
+      - name: Tests (qdrant-loader-core)
+        run: |
+          . venv/bin/activate
+          make test-core
+
+      - name: Tests (mcp-server)
+        run: |
+          . venv/bin/activate
+          make test-mcp
+
+      - name: Tests
+        run: |
+          . venv/bin/activate
+          make test
