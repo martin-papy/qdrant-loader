@@ -7,6 +7,7 @@ complementary content discovery, and document clustering.
 """
 
 from typing import Any, TYPE_CHECKING
+from contextlib import contextmanager
 
 if TYPE_CHECKING:
     from .core import SearchEngine
@@ -241,7 +242,6 @@ class IntelligenceOperations:
 
             # Detect conflicts with optional per-call overrides applied
             detector = self.engine.hybrid_search.cross_document_engine.conflict_detector
-            previous_settings = getattr(detector, "_settings", {}) if hasattr(detector, "_settings") else {}
             call_overrides: dict[str, Any] = {}
             if use_llm is not None:
                 call_overrides["conflict_use_llm"] = bool(use_llm)
@@ -254,19 +254,34 @@ class IntelligenceOperations:
             if isinstance(text_window_chars, int):
                 call_overrides["conflict_text_window_chars"] = text_window_chars
 
-            try:
-                if call_overrides:
-                    merged = dict(previous_settings)
-                    merged.update(call_overrides)
-                    detector._settings = merged  # type: ignore[attr-defined]
-
-                conflicts = await self.engine.hybrid_search.detect_document_conflicts(documents)
-            finally:
-                # Restore original settings to avoid leaking overrides
+            @contextmanager
+            def temporary_detector_settings(det: Any, overrides: dict[str, Any] | None):
+                """Temporarily apply merged detector settings and restore afterwards."""
+                previous = (
+                    getattr(det, "_settings", {}) if hasattr(det, "_settings") else {}
+                )
+                if not overrides:
+                    # No overrides to apply; simply yield control
+                    yield
+                    return
+                merged_settings = dict(previous)
+                merged_settings.update(overrides)
                 try:
-                    detector._settings = previous_settings  # type: ignore[attr-defined]
+                    det._settings = merged_settings  # type: ignore[attr-defined]
                 except Exception:
+                    # If settings assignment fails, proceed without overriding
                     pass
+                try:
+                    yield
+                finally:
+                    # Always attempt to restore previous settings
+                    try:
+                        det._settings = previous  # type: ignore[attr-defined]
+                    except Exception:
+                        pass
+
+            with temporary_detector_settings(detector, call_overrides):
+                conflicts = await self.engine.hybrid_search.detect_document_conflicts(documents)
 
             # Add query metadata and original documents for formatting
             conflicts["query_metadata"] = {

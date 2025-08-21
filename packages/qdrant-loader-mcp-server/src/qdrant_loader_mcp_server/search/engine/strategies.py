@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 from ...utils.logging import LoggingConfig
 from ..enhanced.cross_document_intelligence import ClusteringStrategy
 
-logger = LoggingConfig.get_logger(__name__)
-
 
 class StrategySelector:
     """Handles intelligent strategy selection for search operations."""
