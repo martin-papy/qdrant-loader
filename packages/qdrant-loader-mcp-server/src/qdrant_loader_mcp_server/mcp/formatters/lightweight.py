@@ -23,17 +23,20 @@ class LightweightResultFormatters:
         return {
             "similarity_index": [
                 {
-                    "document_id": getattr(doc_info.get("document", {}), "document_id", ""),
-                    "title": getattr(doc_info.get("document", {}), "source_title", "Untitled"),
+                    # Support dict or object for document field
+                    **(lambda document: {
+                        "document_id": (document.get("document_id", "") if isinstance(document, dict) else getattr(document, "document_id", "")),
+                        "title": (document.get("source_title", "Untitled") if isinstance(document, dict) else getattr(document, "source_title", "Untitled")),
+                        "navigation_hints": {
+                            "can_expand": True,
+                            "has_children": (document.get("has_children", False) if isinstance(document, dict) else getattr(document, "has_children", False)),
+                        }
+                    })(doc_info.get("document", {})),
                     "similarity_score": doc_info.get("similarity_score", 0),
                     "similarity_info": {
                         "metric_scores": doc_info.get("metric_scores", {}),
                         "reasons": doc_info.get("similarity_reasons", []),
                     },
-                    "navigation_hints": {
-                        "can_expand": True,
-                        "has_children": getattr(doc_info.get("document", {}), "has_children", False),
-                    }
                 }
                 for doc_info in similar_docs[:10]  # Limit to top 10
             ],
