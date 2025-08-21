@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from qdrant_loader.utils.logging import LoggingConfig
 
 
 async def run_pipeline_ingestion(
@@ -20,6 +21,8 @@ async def run_pipeline_ingestion(
         if metrics_dir
         else AsyncIngestionPipeline(settings, qdrant_manager)
     )
+    logger = LoggingConfig.get_logger(__name__)
+    ingestion_error: Exception | None = None
     try:
         await pipeline.process_documents(
             project_id=project,
@@ -27,7 +30,30 @@ async def run_pipeline_ingestion(
             source=source,
             force=force,
         )
-    finally:
+    except Exception as e:
+        ingestion_error = e
+    cleanup_error: Exception | None = None
+    try:
         await pipeline.cleanup()
+    except Exception as e:
+        cleanup_error = e
+        if ingestion_error is not None:
+            logger.error(
+                "Cleanup failed after ingestion exception",
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
+            )
+        else:
+            logger.error(
+                "Cleanup failed after successful ingestion",
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
+            )
+    if ingestion_error is not None:
+        raise ingestion_error
+    if cleanup_error is not None:
+        raise cleanup_error
 
 

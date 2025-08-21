@@ -79,6 +79,8 @@ async def run_ingest_command(
             logger = LoggingConfig.get_logger(__name__)
             logger.debug(" SIGINT received, cancelling all tasks...")
             stop_event.set()
+            # Schedule cancellation of all running tasks safely from signal handler
+            loop.call_soon_threadsafe(lambda: asyncio.create_task(_cancel_all_tasks_helper()))
 
         try:
             loop.add_signal_handler(signal.SIGINT, _handle_sigint)
@@ -87,6 +89,7 @@ async def run_ingest_command(
                 logger = LoggingConfig.get_logger(__name__)
                 logger.debug(" SIGINT received on Windows, cancelling all tasks...")
                 loop.call_soon_threadsafe(stop_event.set)
+                loop.call_soon_threadsafe(lambda: asyncio.create_task(_cancel_all_tasks_helper()))
 
             signal.signal(signal.SIGINT, _signal_handler)
 
@@ -114,7 +117,16 @@ async def run_ingest_command(
             ]
             if pending:
                 logger.debug(f" Awaiting {len(pending)} pending tasks before exit...")
-                await asyncio.gather(*pending, return_exceptions=True)
+                results = await asyncio.gather(*pending, return_exceptions=True)
+                for idx, result in enumerate(results):
+                    if isinstance(result, Exception):
+                        logger.error(
+                            "Pending task failed during shutdown",
+                            task_index=idx,
+                            error=str(result),
+                            error_type=type(result).__name__,
+                            exc_info=True,
+                        )
             await asyncio.sleep(0.1)
         except Exception as e:
             logger = LoggingConfig.get_logger(__name__)
@@ -132,9 +144,8 @@ async def run_ingest_command(
             raise ClickException(f"Failed to run ingestion: {error_msg}") from e
         finally:
             if stop_event.is_set():
-                await _cancel_all_tasks_helper()
                 logger = LoggingConfig.get_logger(__name__)
-                logger.debug(" All tasks cancelled, exiting after SIGINT.")
+                logger.debug(" Cancellation already initiated by SIGINT; exiting gracefully.")
 
     except ClickException:
         raise
