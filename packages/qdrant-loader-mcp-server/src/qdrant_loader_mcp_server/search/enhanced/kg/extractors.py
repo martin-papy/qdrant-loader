@@ -4,16 +4,16 @@ from typing import Any
 
 
 def extract_entities_from_result(result: Any) -> list[str]:
-    entities: list[str] = []
-    if result.source_title:
-        entities.append(result.source_title)
-    if result.parent_title:
-        entities.append(result.parent_title)
-    if result.section_title:
-        entities.append(result.section_title)
-    if result.project_name:
-        entities.append(result.project_name)
-    return list(set(entities))
+    entities: set[str] = set()
+
+    for attr_name in ("source_title", "parent_title", "section_title", "project_name"):
+        value = getattr(result, attr_name, None)
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped:
+                entities.add(stripped)
+
+    return list(entities)
 
 
 def extract_topics_from_result(result: Any) -> list[str]:
@@ -37,12 +37,22 @@ def extract_concepts_from_result(result: Any) -> list[str]:
 
 
 def extract_keywords_from_result(result: Any) -> list[str]:
-    keywords: list[str] = []
-    text_words = result.text.lower().split()[:10]
-    keywords.extend([word for word in text_words if len(word) > 3 and word.isalpha()])
-    if result.source_title:
-        title_words = result.source_title.lower().split()
-        keywords.extend([word for word in title_words if len(word) > 3 and word.isalpha()])
-    return list(set(keywords))
+    keywords_set: set[str] = set()
+
+    def filtered_words(text: Any, limit: int | None = 10) -> list[str]:
+        if not isinstance(text, str):
+            return []
+        words = text.lower().split()
+        if limit is not None:
+            words = words[:limit]
+        return [w for w in words if len(w) > 3 and w.isalpha()]
+
+    text = getattr(result, "text", None)
+    keywords_set.update(filtered_words(text, 10))
+
+    source_title = getattr(result, "source_title", None)
+    keywords_set.update(filtered_words(source_title, None))
+
+    return list(keywords_set)
 
 

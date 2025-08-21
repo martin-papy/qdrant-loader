@@ -62,11 +62,13 @@ class GraphTraverser:
         """Traverse the graph to find related content."""
 
         results = []
-        visited = set()
 
         for start_node_id in start_nodes:
             if start_node_id not in self.graph.nodes:
                 continue
+
+            # Use a fresh visited set for each start node to avoid cross-contamination
+            visited = set()
 
             # Perform traversal based on strategy
             if strategy == TraversalStrategy.BREADTH_FIRST:
