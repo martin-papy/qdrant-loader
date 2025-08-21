@@ -3,7 +3,7 @@ from typing import Any
 
 def get_detect_conflicts_tool_schema() -> dict[str, Any]:
     return {
-        "name": "detect_document_conflicts",
+        "name": "detect_conflicts",
         "description": "Detect conflicts and contradictions between documents",
         "annotations": {"read-only": True, "compute-intensive": True},
         "inputSchema": {

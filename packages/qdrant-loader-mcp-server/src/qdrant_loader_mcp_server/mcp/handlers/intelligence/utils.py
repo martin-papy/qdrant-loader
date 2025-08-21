@@ -36,7 +36,12 @@ def get_or_create_document_id(doc: Any) -> str:
         "id": get_field(doc, "id", None),
     }
 
-    payload = json.dumps({k: v for k, v in candidate_fields.items() if v is not None}, sort_keys=True, ensure_ascii=False)
+    payload = json.dumps(
+        {k: v for k, v in candidate_fields.items() if v is not None},
+        sort_keys=True,
+        ensure_ascii=False,
+        default=str,
+    )
     short_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:10]
     return f"{source_type}:{source_title}:{short_hash}"
 

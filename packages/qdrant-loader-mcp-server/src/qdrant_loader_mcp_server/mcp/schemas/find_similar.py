@@ -68,6 +68,8 @@ def get_find_similar_tool_schema() -> dict[str, Any]:
                                     "topic_overlap": {"type": "number"},
                                     "semantic_similarity": {"type": "number"},
                                     "metadata_similarity": {"type": "number"},
+                                    "hierarchical_distance": {"type": "number"},
+                                    "content_features": {"type": "number"},
                                 },
                             },
                             "similarity_reason": {"type": "string"},
