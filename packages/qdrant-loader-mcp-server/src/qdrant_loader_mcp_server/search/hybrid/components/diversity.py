@@ -12,8 +12,16 @@ def apply_diversity_filtering(
 
     Penalizes repeated source types, section types, and identical source/title pairs
     before selecting the final `limit` results, mirroring legacy behavior.
+
+    Valid range for `diversity_factor` is [0.0, 1.0]. Values outside this range
+    will raise a ValueError.
     """
-    if diversity_factor <= 0.0 or len(results) <= limit:
+    # Validate inputs
+    if not (0.0 <= diversity_factor <= 1.0):
+        raise ValueError(
+            f"diversity_factor must be within [0.0, 1.0], got {diversity_factor}"
+        )
+    if diversity_factor == 0.0 or len(results) <= limit:
         return results[:limit]
 
     diverse_results: List[HybridSearchResult] = []
@@ -57,7 +65,21 @@ def apply_diversity_filtering(
     # Second pass: Fill remaining slots with best remaining results
     remaining_slots = limit - len(diverse_results)
     if remaining_slots > 0:
-        remaining_results = [r for r in results if r not in diverse_results]
+        # Build an identifier set for O(1) membership checks while preserving order
+        # Prefer a stable tuple key; fallback to object id if needed
+        def _result_key(r: HybridSearchResult) -> tuple:
+            return (
+                r.document_id,
+                r.source_type,
+                r.source_title,
+                r.section_type,
+                r.section_title,
+            )
+
+        existing_keys = {_result_key(r) for r in diverse_results}
+        remaining_results = [
+            r for r in results if _result_key(r) not in existing_keys
+        ]
         diverse_results.extend(remaining_results[:remaining_slots])
 
     return diverse_results[:limit]
