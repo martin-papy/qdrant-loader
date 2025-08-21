@@ -117,7 +117,7 @@ class IntelligenceHandler:
             )
 
             # Use the sophisticated SearchEngine method
-            similar_docs = await self.search_engine.find_similar_documents(
+            similar_docs_raw = await self.search_engine.find_similar_documents(
                 target_query=params["target_query"],
                 comparison_query=params["comparison_query"],
                 similarity_metrics=params.get("similarity_metrics"),
@@ -125,6 +125,14 @@ class IntelligenceHandler:
                 source_types=params.get("source_types"),
                 project_ids=params.get("project_ids"),
             )
+
+            # Normalize result: engine may return list, but can return {} on empty
+            if isinstance(similar_docs_raw, list):
+                similar_docs = similar_docs_raw
+            elif isinstance(similar_docs_raw, dict):
+                similar_docs = similar_docs_raw.get("similar_documents", []) or similar_docs_raw.get("results", []) or []
+            else:
+                similar_docs = []
 
             logger.info(f"Got {len(similar_docs)} similar documents from SearchEngine")
 

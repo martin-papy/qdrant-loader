@@ -41,12 +41,27 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
             except Exception:
                 sorted_docs = list(cluster_docs)
 
-            if max_pairs is None or max_pairs <= 0:
-                continue
+            # Validate inputs and clamp quadratic-based doc count
+            try:
+                max_pairs_val = int(max_pairs) if max_pairs is not None else 0
+            except Exception:
+                max_pairs_val = 0
+            if max_pairs_val < 0:
+                max_pairs_val = 0
 
-            max_docs = int((1 + math.isqrt(1 + 8 * max_pairs)) // 2)
-            max_docs = max(2, max_docs)
-            docs_for_pairs = sorted_docs[:max_docs]
+            if not sorted_docs:
+                docs_for_pairs = []
+            else:
+                # Guard isqrt by ensuring non-negative discriminant
+                discriminant = 1 + 8 * max_pairs_val
+                if discriminant < 0:
+                    discriminant = 0
+                root = math.isqrt(discriminant)
+                max_docs = int((1 + root) // 2)
+                # Clamp to [2, len(sorted_docs)] where possible
+                max_docs = max(2, max_docs)
+                max_docs = min(len(sorted_docs), max_docs)
+                docs_for_pairs = sorted_docs[:max_docs]
 
             emitted_pairs = 0
             for i, doc1 in enumerate(docs_for_pairs):
@@ -91,6 +106,22 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
     if "complementary_content" in analysis_results:
         complementary = analysis_results["complementary_content"]
         comp_count = 0
+        # Build a lightweight documents lookup for title resolution
+        docs_lookup: Dict[str, Any] = {}
+        try:
+            # From clusters if available
+            for cluster in analysis_results.get("document_clusters", []) or []:
+                for d in cluster.get("documents", []) or []:
+                    if isinstance(d, dict):
+                        doc_key = d.get("document_id") or get_or_create_document_id(d)
+                        if doc_key:
+                            docs_lookup[str(doc_key)] = d
+                        # Also try a composite key commonly used elsewhere
+                        st = d.get("source_type", "unknown")
+                        tt = d.get("source_title", d.get("title", "unknown"))
+                        docs_lookup.setdefault(f"{st}:{tt}", d)
+        except Exception:
+            pass
         for doc_id, complementary_content in complementary.items():
             if hasattr(complementary_content, "get_top_recommendations"):
                 recommendations = complementary_content.get_top_recommendations()
@@ -101,12 +132,22 @@ def process_analysis_results(analysis_results: Dict[str, Any], params: Dict[str,
                     target_doc_id = rec.get("document_id", "Unknown")
                     score = rec.get("relevance_score", 0.5)
                     reason = rec.get("recommendation_reason", "complementary content")
+                    # Resolve titles consistently using _display_title with lookups
+                    source_doc_obj = docs_lookup.get(str(doc_id))
+                    document_1_title = (
+                        _display_title(source_doc_obj) if source_doc_obj is not None else str(doc_id)
+                    )[:100]
+                    target_doc_obj = rec.get("document") or docs_lookup.get(str(target_doc_id))
+                    fallback_title = rec.get("title", str(target_doc_id))
+                    document_2_title = (
+                        _display_title(target_doc_obj) if target_doc_obj is not None else fallback_title
+                    )[:100]
                     relationships.append(
                         {
                             "document_1_id": doc_id,
                             "document_2_id": target_doc_id,
-                            "document_1_title": str(doc_id)[:100],
-                            "document_2_title": rec.get("title", str(target_doc_id))[:100],
+                            "document_1_title": document_1_title,
+                            "document_2_title": document_2_title,
                             "relationship_type": "complementary",
                             "confidence_score": score,
                             "relationship_summary": f"Complementary content: {reason}",
