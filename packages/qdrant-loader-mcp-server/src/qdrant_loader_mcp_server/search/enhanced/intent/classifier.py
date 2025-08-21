@@ -649,12 +649,11 @@ class IntentClassifier:
                     if features[indicator] == expected_value:
                         score += 1.0
                 elif isinstance(expected_value, int | float):
-                    # For numeric indicators, use similarity
+                    # For numeric indicators, use magnitude-aware similarity
                     actual_value = features.get(indicator, 0)
                     if isinstance(actual_value, int | float):
-                        similarity = 1.0 - abs(actual_value - expected_value) / max(
-                            expected_value, 1.0
-                        )
+                        denom = max(abs(expected_value), abs(actual_value), 1.0)
+                        similarity = 1.0 - abs(actual_value - expected_value) / denom
                         score += max(0.0, similarity)
 
         return score / max(total_indicators, 1)
