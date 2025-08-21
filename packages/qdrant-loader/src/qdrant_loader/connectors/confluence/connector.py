@@ -55,9 +55,10 @@ class ConfluenceConnector(BaseConnector):
 
         # Initialize session
         self.session = requests.Session()
-        # Rate limiter (conservative default for Confluence API)
-        # Using 60 rpm by default; could be surfaced via config in a follow-up
-        self._rate_limiter = RateLimiter.per_minute(60)
+        # Rate limiter (configurable RPM)
+        self._rate_limiter = RateLimiter.per_minute(
+            getattr(self.config, "requests_per_minute", 60)
+        )
 
         # Set up authentication based on deployment type
         self._setup_authentication()

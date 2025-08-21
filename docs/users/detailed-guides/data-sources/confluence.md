@@ -77,6 +77,8 @@ projects:
           exclude_labels: []
           enable_file_conversion: true
           download_attachments: true
+          # Rate limiting
+          requests_per_minute: 60
 ```
 
 ### Advanced Configuration
@@ -202,6 +204,7 @@ projects:
 |--------|------|-------------|---------|
 | `enable_file_conversion` | bool | Enable file conversion for attachments | `true` |
 | `download_attachments` | bool | Download and process attachments | `true` |
+| `requests_per_minute` | int | API rate limit (RPM) | `60` |
 
 ## 🚀 Usage Examples
 
