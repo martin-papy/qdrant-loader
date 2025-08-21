@@ -29,7 +29,7 @@ class IntelligenceOperations:
     async def analyze_document_relationships(
         self,
         query: str,
-        limit: int = 20,
+        limit: int | None = None,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
     ) -> dict[str, Any]:
@@ -53,10 +53,15 @@ class IntelligenceOperations:
             # Honor default conflict limit from config if caller didn't override
             effective_limit = limit
             config = getattr(self.engine, "config", None)
-            if limit is None and config is not None:
-                default_limit = getattr(config, "conflict_limit_default", None)
-                if isinstance(default_limit, int):
-                    effective_limit = default_limit
+            if limit is None:
+                if config is not None:
+                    default_limit = getattr(config, "conflict_limit_default", None)
+                    if isinstance(default_limit, int):
+                        effective_limit = default_limit
+                    else:
+                        effective_limit = 20
+                else:
+                    effective_limit = 20
 
             documents = await self.engine.hybrid_search.search(
                 query=query,
@@ -128,10 +133,12 @@ class IntelligenceOperations:
             )
 
             if not target_results:
-                return {
-                    "error": "No target document found",
-                    "target_query": target_query,
-                }
+                return [
+                    {
+                        "error": "No target document found",
+                        "target_query": target_query,
+                    }
+                ]
 
             target_doc = target_results[0]
 
@@ -144,10 +151,12 @@ class IntelligenceOperations:
             )
 
             if len(comparison_results) < 2:
-                return {
-                    "error": "Need at least 1 comparison document",
-                    "comparison_count": len(comparison_results),
-                }
+                return [
+                    {
+                        "error": "Need at least 1 comparison document",
+                        "comparison_count": len(comparison_results),
+                    }
+                ]
 
             # Parse similarity metrics
             metric_enums = []
@@ -270,11 +279,17 @@ class IntelligenceOperations:
             # Inject detector runtime stats if available for richer structured output
             try:
                 detector = self.engine.hybrid_search.cross_document_engine.conflict_detector
+                # Prefer public accessor; fall back to attribute if available
+                raw_stats = {}
                 try:
-                    raw_stats = detector._last_stats or {}
-                except AttributeError:
+                    getter = getattr(detector, "get_last_stats", None)
+                    if callable(getter):
+                        raw_stats = getter() or {}
+                    else:
+                        raw_stats = getattr(detector, "last_stats", {}) or {}
+                except Exception:
                     raw_stats = {}
-                
+
                 if raw_stats:
                     # Filter to JSON-safe scalar values only
                     safe_stats = {}
