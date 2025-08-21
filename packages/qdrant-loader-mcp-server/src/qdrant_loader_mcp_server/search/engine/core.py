@@ -5,11 +5,23 @@ This module implements the core SearchEngine class with initialization,
 configuration management, and resource cleanup functionality.
 """
 
-from typing import Any
 import os
 from pathlib import Path
+from typing import Any
+
 import yaml
 from qdrant_client import AsyncQdrantClient, models
+
+from ...config import OpenAIConfig, QdrantConfig, SearchConfig
+from ...utils.logging import LoggingConfig
+from ..components.search_result_models import HybridSearchResult
+from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
+from ..hybrid_search import HybridSearchEngine
+from .faceted import FacetedSearchOperations
+from .intelligence import IntelligenceOperations
+from .search import SearchOperations
+from .strategies import StrategySelector
+from .topic_chain import TopicChainOperations
 
 # Expose OpenAI Async client symbol at module scope for tests to patch.
 try:  # pragma: no cover - defensive import; tests may monkeypatch this
@@ -19,19 +31,6 @@ except Exception:  # pragma: no cover - openai may be optional
 
 # Public alias so tests can patch qdrant_loader_mcp_server.search.engine.AsyncOpenAI
 AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
-
-from ...config import OpenAIConfig, QdrantConfig, SearchConfig
-from ...utils.logging import LoggingConfig
-from ..components.search_result_models import HybridSearchResult
-from ..enhanced.cross_document_intelligence import ClusteringStrategy, SimilarityMetric
-from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
-from ..hybrid_search import HybridSearchEngine
-
-from .search import SearchOperations
-from .topic_chain import TopicChainOperations
-from .faceted import FacetedSearchOperations
-from .intelligence import IntelligenceOperations
-from .strategies import StrategySelector
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -101,7 +100,7 @@ class SearchEngine:
                 try:
                     cfg_path = os.getenv("MCP_CONFIG")
                     if cfg_path and Path(cfg_path).exists():
-                        with open(cfg_path, "r", encoding="utf-8") as f:
+                        with open(cfg_path, encoding="utf-8") as f:
                             data = yaml.safe_load(f) or {}
                         llm = (
                             data.get("global", {}).get("llm")
@@ -110,7 +109,7 @@ class SearchEngine:
                         )
                         emb = llm.get("embeddings") or {}
                         if isinstance(emb.get("vector_size"), int):
-                            vector_size = int(emb["vector_size"]) 
+                            vector_size = int(emb["vector_size"])
                 except Exception:
                     pass
 
@@ -154,8 +153,20 @@ class SearchEngine:
     async def cleanup(self) -> None:
         """Cleanup resources."""
         if self.client:
-            await self.client.close()
-            self.client = None
+            try:
+                await self.client.close()
+            except Exception as e:  # pragma: no cover - defensive cleanup
+                # Prefer instance logger; fall back to module logger if needed
+                try:
+                    self.logger.warning(
+                        "Error closing Qdrant client during cleanup", error=str(e)
+                    )
+                except Exception:
+                    logger.warning(
+                        "Error closing Qdrant client during cleanup", error=str(e)
+                    )
+            finally:
+                self.client = None
 
     # Delegate operations to specialized modules
     async def search(
@@ -186,8 +197,8 @@ class SearchEngine:
         return await self._topic_chain_ops.generate_topic_chain(query, strategy_str, max_links)
 
     async def execute_topic_chain(
-        self, 
-        topic_chain: TopicSearchChain, 
+        self,
+        topic_chain: TopicSearchChain,
         results_per_link: int = 3,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
@@ -228,44 +239,44 @@ class SearchEngine:
             # Fallback: delegate directly to hybrid_search when operations not initialized
             if not self.hybrid_search:
                 raise RuntimeError("Search engine not initialized")
-            
+
             # Convert facet filter dictionaries to FacetFilter objects if provided
             filter_objects = []
             if facet_filters:
                 from ..enhanced.faceted_search import FacetFilter, FacetType
-                
+
                 for filter_dict in facet_filters:
                     try:
                         facet_type = FacetType(filter_dict["facet_type"])
                     except Exception:
                         continue  # Skip invalid facet filters
-                    
+
                     values_raw = filter_dict.get("values")
                     if not values_raw:
                         continue  # Skip filters with no values
-                        
-                    if isinstance(values_raw, (set, tuple)):
+
+                    if isinstance(values_raw, set | tuple):
                         values = list(values_raw)
                     elif isinstance(values_raw, list):
                         values = values_raw
                     else:
                         values = [str(values_raw)]
-                    
+
                     operator = filter_dict.get("operator", "OR")
                     filter_objects.append(FacetFilter(
                         facet_type=facet_type,
                         values=values,
                         operator=operator,
                     ))
-            
+
             faceted_results = await self.hybrid_search.search_with_facets(
-                query=query, 
-                limit=limit, 
-                source_types=source_types, 
-                project_ids=project_ids, 
+                query=query,
+                limit=limit,
+                source_types=source_types,
+                project_ids=project_ids,
                 facet_filters=filter_objects
             )
-            
+
             # Convert to MCP-friendly dict format (same as FacetedSearchOperations does)
             return {
                 "results": faceted_results.results,
@@ -304,11 +315,11 @@ class SearchEngine:
         )
 
     async def get_facet_suggestions(
-        self, 
+        self,
         query: str = None,
         current_filters: list[dict] = None,
         limit: int = 20,
-        documents: list[HybridSearchResult] = None, 
+        documents: list[HybridSearchResult] = None,
         max_facets_per_type: int = 5
     ) -> dict:
         """Get facet suggestions from documents or query."""
@@ -321,23 +332,23 @@ class SearchEngine:
                 search_results = await self.hybrid_search.search(query=query, limit=limit)
             else:
                 search_results = await self._search_ops.search(query, limit=limit)
-            
+
             # Use the hybrid search engine's suggestion method
             if hasattr(self.hybrid_search, 'suggest_facet_refinements'):
                 return self.hybrid_search.suggest_facet_refinements(search_results, current_filters or [])
             else:
                 return {"suggestions": []}
-        
+
         # Fallback to faceted operations if documents provided directly
         if documents is not None:
             if not self._faceted_ops:
                 raise RuntimeError("Search engine not initialized")
             return await self._faceted_ops.get_facet_suggestions(documents, max_facets_per_type)
-        
+
         raise ValueError("Either query or documents must be provided")
 
     async def analyze_document_relationships(
-        self, 
+        self,
         query: str = None,
         limit: int = 20,
         source_types: list[str] = None,
@@ -347,11 +358,11 @@ class SearchEngine:
         """Analyze relationships between documents."""
         if not self._intelligence_ops:
             raise RuntimeError("Search engine not initialized")
-            
+
         # If query is provided, perform search to get documents
         if query is not None:
             search_results = await self._search_ops.search(query, source_types, limit, project_ids)
-            
+
             # Check if we have sufficient documents for relationship analysis
             if len(search_results) < 2:
                 return {
@@ -366,10 +377,10 @@ class SearchEngine:
                         "project_ids": project_ids
                     }
                 }
-            
+
             # Use the hybrid search engine's analysis method
             analysis_result = await self.hybrid_search.analyze_document_relationships(search_results)
-            
+
             # Add query metadata to the result
             if isinstance(analysis_result, dict):
                 analysis_result["query_metadata"] = {
@@ -378,13 +389,13 @@ class SearchEngine:
                     "source_types": source_types,
                     "project_ids": project_ids
                 }
-            
+
             return analysis_result
-        
+
         # Fallback to documents if provided directly
         if documents is not None:
             return await self._intelligence_ops.analyze_document_relationships(documents)
-        
+
         raise ValueError("Either query or documents must be provided")
 
     async def find_similar_documents(
@@ -401,27 +412,27 @@ class SearchEngine:
         """Find similar documents."""
         if not self._search_ops:
             raise RuntimeError("Search engine not initialized")
-        
+
         # First, search for target documents
         target_documents = await self._search_ops.search(target_query, source_types, 1, project_ids)
         if not target_documents:
             return {}
-        
-        # Then search for comparison documents  
+
+        # Then search for comparison documents
         comparison_documents = await self._search_ops.search(comparison_query or target_query, source_types, limit, project_ids)
-        
+
         # Use the hybrid search engine's method to find similarities
         return await self.hybrid_search.find_similar_documents(
             target_documents=target_documents,
-            comparison_documents=comparison_documents, 
+            comparison_documents=comparison_documents,
             similarity_metrics=similarity_metrics or ["semantic_similarity"],
             max_similar=max_similar,
             similarity_threshold=similarity_threshold
         )
 
     async def detect_document_conflicts(
-        self, 
-        query: str, 
+        self,
+        query: str,
         limit: int = 10,
         source_types: list[str] = None,
         project_ids: list[str] = None
@@ -429,10 +440,10 @@ class SearchEngine:
         """Detect conflicts between documents."""
         if not self._search_ops:
             raise RuntimeError("Search engine not initialized")
-        
+
         # First, search for documents related to the query
         search_results = await self._search_ops.search(query, source_types, limit, project_ids)
-        
+
         # Check if we have sufficient documents for conflict detection
         if len(search_results) < 2:
             return {
@@ -459,18 +470,18 @@ class SearchEngine:
                     for d in search_results
                 ]
             }
-        
+
         # Delegate to the intelligence module which handles query-based conflict detection
         if not self._intelligence_ops:
             raise RuntimeError("Intelligence operations not initialized")
-            
+
         conflicts_result = await self._intelligence_ops.detect_document_conflicts(
             query=query,
             limit=limit,
             source_types=source_types,
             project_ids=project_ids
         )
-        
+
         # Add query metadata and original documents to the result
         if isinstance(conflicts_result, dict):
             conflicts_result["query_metadata"] = {
@@ -492,7 +503,7 @@ class SearchEngine:
                 }
                 for d in search_results
             ]
-        
+
         return conflicts_result
 
     async def find_complementary_content(
@@ -523,9 +534,11 @@ class SearchEngine:
         """Cluster documents using specified strategy."""
         if not self._intelligence_ops:
             raise RuntimeError("Search engine not initialized")
-        
+
         # Convert strategy string to enum if needed
-        from qdrant_loader_mcp_server.search.enhanced.cdi.models import ClusteringStrategy
+        from qdrant_loader_mcp_server.search.enhanced.cdi.models import (
+            ClusteringStrategy,
+        )
         if isinstance(strategy, str):
             if strategy == "adaptive":
                 # First, get documents to analyze for optimal strategy selection
@@ -552,7 +565,7 @@ class SearchEngine:
                 strategy_enum = strategy_map.get(strategy, ClusteringStrategy.MIXED_FEATURES)
         else:
             strategy_enum = strategy
-        
+
         return await self._intelligence_ops.cluster_documents(
             query, strategy_enum, max_clusters, min_cluster_size, limit, source_types, project_ids
         )
@@ -563,24 +576,24 @@ class SearchEngine:
         # Handle empty documents case
         if not documents:
             return "mixed_features"  # Default strategy for empty documents
-            
+
         if not self._strategy_selector:
             # Provide basic strategy selection when not initialized (for testing)
             # Use simple heuristics based on document characteristics
             analysis = self._analyze_document_characteristics(documents)
-            
+
             # Simple strategy selection logic
             if analysis.get("entity_richness", 0) > 0.6:
                 return "entity_based"
             elif analysis.get("project_distribution", 0) > 0.7:
-                return "project_based" 
+                return "project_based"
             elif analysis.get("hierarchical_structure", 0) > 0.6:
                 return "hierarchical"
             elif analysis.get("topic_clarity", 0) > 0.6:
                 return "topic_based"
             else:
                 return "mixed_features"  # Safe default
-                
+
         return self._strategy_selector.select_optimal_strategy(documents)
 
     def _analyze_document_characteristics(self, documents: list) -> dict[str, float]:
@@ -588,7 +601,7 @@ class SearchEngine:
         if not self._strategy_selector:
             # Provide basic analysis when not initialized (for testing)
             characteristics = {}
-            
+
             if documents:
                 # Helper function to handle both dict and object formats
                 def get_doc_attr(doc, attr, default=None):
@@ -596,51 +609,51 @@ class SearchEngine:
                         return doc.get(attr, default)
                     else:
                         return getattr(doc, attr, default)
-                
+
                 # Calculate hierarchical structure based on breadcrumb depths
                 total_depth = 0
                 valid_breadcrumbs = 0
-                
+
                 # Calculate source diversity
                 source_types = set()
                 project_ids = set()
-                
+
                 for doc in documents:
-                    
+
                     # Hierarchical structure
                     breadcrumb = get_doc_attr(doc, 'breadcrumb_text', '')
                     if breadcrumb and breadcrumb.strip():
                         depth = len(breadcrumb.split(' > ')) - 1
                         total_depth += depth
                         valid_breadcrumbs += 1
-                    
+
                     # Source diversity
                     source_type = get_doc_attr(doc, 'source_type', 'unknown')
                     if source_type:
                         source_types.add(source_type)
-                    
+
                     # Project distribution
                     project_id = get_doc_attr(doc, 'project_id', None)
                     if project_id:
                         project_ids.add(project_id)
-                
+
                 # Hierarchical structure
                 if valid_breadcrumbs > 0:
                     avg_depth = total_depth / valid_breadcrumbs
                     characteristics["hierarchical_structure"] = min(avg_depth / 5.0, 1.0)
                 else:
                     characteristics["hierarchical_structure"] = 0.0
-                
+
                 # Source diversity (0-1 based on variety of source types)
                 characteristics["source_diversity"] = min(len(source_types) / 4.0, 1.0)  # Normalize assuming max 4 source types
-                
-                # Project distribution (0-1 based on project spread)  
+
+                # Project distribution (0-1 based on project spread)
                 characteristics["project_distribution"] = min(len(project_ids) / 3.0, 1.0)  # Normalize assuming max 3 projects
-                
+
                 # Entity richness (basic heuristic based on doc attributes)
                 has_entities_count = sum(1 for doc in documents if get_doc_attr(doc, 'has_entities', False))
                 characteristics["entity_richness"] = has_entities_count / len(documents) if documents else 0.0
-                
+
                 # Topic clarity (higher when source types are more consistent)
                 if len(documents) > 0:
                     # Count occurrences of each source type
@@ -648,7 +661,7 @@ class SearchEngine:
                     for doc in documents:
                         source_type = get_doc_attr(doc, 'source_type', 'unknown')
                         source_type_counts[source_type] = source_type_counts.get(source_type, 0) + 1
-                    
+
                     # Find most common source type and calculate consistency
                     if source_type_counts:
                         most_common_count = max(source_type_counts.values())
@@ -657,7 +670,7 @@ class SearchEngine:
                         characteristics["topic_clarity"] = 0.0
                 else:
                     characteristics["topic_clarity"] = 0.0
-                
+
             else:
                 # Default values for empty documents
                 characteristics.update({
@@ -667,7 +680,7 @@ class SearchEngine:
                     "entity_richness": 0.0,
                     "topic_clarity": 0.0,
                 })
-            
+
             return characteristics
-            
+
         return self._strategy_selector.analyze_document_characteristics(documents)
