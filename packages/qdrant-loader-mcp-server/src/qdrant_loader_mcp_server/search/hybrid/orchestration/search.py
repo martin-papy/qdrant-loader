@@ -33,8 +33,9 @@ async def run_search(
             limit = min(adaptive_config.max_results, limit * 2)
 
     expanded_query = await engine._expand_query(query)
-    if adaptive_config and adaptive_config.expand_query:
-        if adaptive_config.expansion_aggressiveness > 0.5:
+    if adaptive_config and getattr(adaptive_config, "expand_query", False):
+        aggressiveness = getattr(adaptive_config, "expansion_aggressiveness", None)
+        if isinstance(aggressiveness, (int, float)) and aggressiveness > 0.5:
             expanded_query = await engine._expand_query_aggressive(query)
 
     query_context = engine._analyze_query(query)

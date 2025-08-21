@@ -7,7 +7,11 @@ from ...components.search_result_models import HybridSearchResult
 
 
 async def analyze_document_relationships(engine: Any, documents: list[HybridSearchResult]) -> dict[str, Any]:
-    return engine.cross_document_engine.analyze_document_relationships(documents)
+    result = engine.cross_document_engine.analyze_document_relationships(documents)
+    # Handle both async and sync implementations defensively
+    if hasattr(result, "__await__"):
+        return await result  # type: ignore[no-any-return]
+    return result  # type: ignore[no-any-return]
 
 
 async def find_similar_documents(
