@@ -88,9 +88,10 @@ class StrategySelector:
         # Validate against ClusteringStrategy enum; fallback to safe default
         try:
             _ = ClusteringStrategy(best_strategy)
-        except Exception:
+        except ValueError as e:
             self.logger.warning(
-                f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'"
+                f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'",
+                error=str(e),
             )
             best_strategy = "mixed_features"
 
