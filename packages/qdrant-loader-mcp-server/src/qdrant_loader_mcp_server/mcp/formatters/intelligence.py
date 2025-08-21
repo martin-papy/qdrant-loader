@@ -61,8 +61,13 @@ class IntelligenceResultFormatters:
             reasons = doc_info.get("similarity_reasons", [])
 
             formatted += f"**{i}. Similarity Score: {score:.3f}**\n"
-            if hasattr(document, "source_title"):
-                formatted += f"• Title: {document.source_title}\n"
+            # Support both dict-based and object-based documents for title
+            if isinstance(document, dict):
+                source_title = document.get("source_title")
+            else:
+                source_title = getattr(document, "source_title", None)
+            if source_title:
+                formatted += f"• Title: {source_title}\n"
             if reasons:
                 formatted += f"• Reasons: {', '.join(reasons)}\n"
             formatted += "\n"
@@ -143,14 +148,13 @@ class IntelligenceResultFormatters:
             reason = content.get("recommendation_reason", "")
 
             formatted += f"**{i}. Complementary Score: {relevance:.3f}**\n"
-            
-            if hasattr(document, "source_title"):
-                formatted += f"• Title: {document.source_title}\n"
-            elif isinstance(document, dict):
-                formatted += f"• Title: {document.get('source_title', 'Unknown')}\n"
+            # Prefer dict access when document is a dict, otherwise use getattr
+            if isinstance(document, dict):
+                title_value = document.get('source_title', 'Unknown')
             else:
-                formatted += f"• Title: Sample Document\n"
-                
+                title_value = getattr(document, 'source_title', 'Unknown')
+            formatted += f"• Title: {title_value}\n"
+
             if reason:
                 formatted += f"• Why Complementary: {reason}\n"
                 

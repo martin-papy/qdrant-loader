@@ -13,8 +13,13 @@ class BasicResultFormatters:
     """Handles basic result formatting operations."""
 
     @staticmethod
-    def format_search_result(result: HybridSearchResult) -> str:
-        """Format a search result for display."""
+    def _format_common_fields(result: HybridSearchResult, is_attachment_view: bool = False) -> str:
+        """Build the base formatted string for a search result.
+
+        This consolidates shared formatting between standard search results and
+        attachment-focused views while preserving the original output order and
+        conditional branches.
+        """
         formatted_result = f"Score: {result.score}\n"
         formatted_result += f"Text: {result.text}\n"
         formatted_result += f"Source: {result.source_type}"
@@ -22,13 +27,14 @@ class BasicResultFormatters:
         if result.source_title:
             formatted_result += f" - {result.source_title}"
 
-        # Add project information if available
-        project_info = result.get_project_info()
-        if project_info:
-            formatted_result += f"\n🏗️ {project_info}"
+        # Project information (only shown in non-attachment view to preserve behavior)
+        if not is_attachment_view:
+            project_info = result.get_project_info()
+            if project_info:
+                formatted_result += f"\n🏗️ {project_info}"
 
-        # Add attachment information if this is a file attachment
-        if result.is_attachment:
+        # Attachment info (shown if viewing attachments or the result itself is an attachment)
+        if is_attachment_view or result.is_attachment:
             formatted_result += "\n📎 Attachment"
             if result.original_filename:
                 formatted_result += f": {result.original_filename}"
@@ -37,10 +43,11 @@ class BasicResultFormatters:
             if result.parent_document_title:
                 formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
 
-        # Add hierarchy context for Confluence documents
+        # Confluence breadcrumb path
         if result.source_type == "confluence" and result.breadcrumb_text:
             formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
 
+        # Source URL appended inline
         if result.source_url:
             formatted_result += f" ({result.source_url})"
 
@@ -50,65 +57,29 @@ class BasicResultFormatters:
         if result.repo_name:
             formatted_result += f"\nRepo: {result.repo_name}"
 
-        # Add hierarchy information for Confluence documents
+        # Additional hierarchy info for Confluence
         if result.source_type == "confluence" and result.hierarchy_context:
             formatted_result += f"\n🏗️ {result.hierarchy_context}"
 
-        # Add parent information if available (for hierarchy, not attachments)
+        # Parent info (for hierarchy, not for attachment items themselves)
         if result.parent_title and not result.is_attachment:
             formatted_result += f"\n⬆️ Parent: {result.parent_title}"
 
-        # Add children count if available
+        # Children count
         if result.has_children():
             formatted_result += f"\n⬇️ Children: {result.children_count}"
 
         return formatted_result
 
     @staticmethod
+    def format_search_result(result: HybridSearchResult) -> str:
+        """Format a search result for display."""
+        return BasicResultFormatters._format_common_fields(result, is_attachment_view=False)
+
+    @staticmethod
     def format_attachment_search_result(result: HybridSearchResult) -> str:
         """Format an attachment search result for display."""
-        formatted_result = f"Score: {result.score}\n"
-        formatted_result += f"Text: {result.text}\n"
-        formatted_result += f"Source: {result.source_type}"
-
-        if result.source_title:
-            formatted_result += f" - {result.source_title}"
-
-        # Add attachment information
-        formatted_result += "\n📎 Attachment"
-        if result.original_filename:
-            formatted_result += f": {result.original_filename}"
-        if result.attachment_context:
-            formatted_result += f"\n📋 {result.attachment_context}"
-        if result.parent_document_title:
-            formatted_result += f"\n📄 Attached to: {result.parent_document_title}"
-
-        # Add hierarchy context for Confluence documents
-        if result.source_type == "confluence" and result.breadcrumb_text:
-            formatted_result += f"\n📍 Path: {result.breadcrumb_text}"
-
-        if result.source_url:
-            formatted_result += f" ({result.source_url})"
-
-        if result.file_path:
-            formatted_result += f"\nFile: {result.file_path}"
-
-        if result.repo_name:
-            formatted_result += f"\nRepo: {result.repo_name}"
-
-        # Add hierarchy information for Confluence documents
-        if result.source_type == "confluence" and result.hierarchy_context:
-            formatted_result += f"\n🏗️ {result.hierarchy_context}"
-
-        # Add parent information if available (for hierarchy, not attachments)
-        if result.parent_title and not result.is_attachment:
-            formatted_result += f"\n⬆️ Parent: {result.parent_title}"
-
-        # Add children count if available
-        if result.has_children():
-            formatted_result += f"\n⬇️ Children: {result.children_count}"
-
-        return formatted_result
+        return BasicResultFormatters._format_common_fields(result, is_attachment_view=True)
 
     @staticmethod
     def format_hierarchical_results(
