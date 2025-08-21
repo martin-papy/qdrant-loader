@@ -23,7 +23,7 @@ class StructuredResultFormatters:
         return [
             {
                 "document_id": getattr(result, "document_id", ""),
-                "title": result.get_display_title() if hasattr(result, "get_display_title") else getattr(result, "source_title", "Untitled"),
+                "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
                 "content": result.text,
                 "content_snippet": (
                     result.text[:300] + "..." if len(result.text) > 300 else result.text
@@ -55,8 +55,17 @@ class StructuredResultFormatters:
     def create_structured_hierarchy_results(
         organized_results: dict[str, list[HybridSearchResult]],
         query: str = "",
+        max_depth: int = 100,
     ) -> dict[str, Any]:
-        """Create structured hierarchical results with full organization."""
+        """Create structured hierarchical results with full organization.
+
+        Parameters:
+            organized_results: Mapping of group name to list of results.
+            query: Original query string.
+            max_depth: Maximum tree depth to attach children. This prevents
+                stack overflows on very deep or cyclic hierarchies. Root level
+                starts at depth 1. Children beyond max_depth are not attached.
+        """
         hierarchy_data = []
         
         for group_name, results in organized_results.items():
@@ -68,7 +77,7 @@ class StructuredResultFormatters:
                 parent_id = FormatterUtils.extract_synthetic_parent_id(result)
                 doc_data = {
                     "document_id": getattr(result, "document_id", ""),
-                    "title": getattr(result, "source_title", "Untitled"),
+                    "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
                     "content_snippet": (
                         result.text[:200] + "..." if len(result.text) > 200 else result.text
                     ),
@@ -92,15 +101,30 @@ class StructuredResultFormatters:
                 else:
                     root_documents.append(doc_data)
             
-            # Attach children to parents
-            def attach_children(doc_list):
-                for doc in doc_list:
-                    doc_id = doc["document_id"]
-                    if doc_id in child_map:
-                        doc["children"] = child_map[doc_id]
-                        attach_children(doc["children"])
-            
-            attach_children(root_documents)
+            # Attach children to parents using an explicit stack and depth cap
+            # to avoid unbounded recursion in deep hierarchies
+            def attach_children_iterative(root_docs: list[dict[str, Any]], depth_limit: int) -> None:
+                if depth_limit <= 0:
+                    return
+                stack: list[tuple[dict[str, Any], int]] = [(doc, 1) for doc in root_docs]
+                # Track visited to avoid cycles
+                visited: set[str] = set()
+                while stack:
+                    current_doc, current_depth = stack.pop()
+                    doc_id = current_doc.get("document_id")
+                    if not doc_id or doc_id in visited:
+                        continue
+                    visited.add(doc_id)
+                    # Only attach children if within depth limit
+                    if current_depth >= depth_limit:
+                        continue
+                    children = child_map.get(doc_id)
+                    if children:
+                        current_doc["children"] = children
+                        for child in children:
+                            stack.append((child, current_depth + 1))
+
+            attach_children_iterative(root_documents, max_depth)
             
             hierarchy_data.append({
                 "group_name": FormatterUtils.generate_clean_group_name(group_name, results),
@@ -177,7 +201,7 @@ class StructuredResultFormatters:
             "results": [
                 {
                     "document_id": getattr(result, "document_id", ""),
-                    "title": getattr(result, "source_title", "Untitled"),
+                    "title": (result.get_display_title() if hasattr(result, "get_display_title") else None) or getattr(result, "source_title", None) or "Untitled",
                     "attachment_info": {
                         "filename": FormatterUtils.extract_safe_filename(result),
                         "file_type": FormatterUtils.extract_file_type_minimal(result),
