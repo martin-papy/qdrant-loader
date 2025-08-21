@@ -14,13 +14,14 @@ def run_project_list(settings: Any, project_manager: Any, *, output_format: str)
         contexts = project_manager.get_all_project_contexts()
         for context in contexts.values():
             sources = context.config.sources if context.config else None
-            source_count = (
-                len(sources.publicdocs)
-                + len(sources.git)
-                + len(sources.confluence)
-                + len(sources.jira)
-                + len(sources.localfile)
-            ) if sources else 0
+            # Safely sum lengths of available source collections; treat missing/None as empty
+            if sources:
+                source_count = sum(
+                    len(getattr(sources, name, {}) or {})
+                    for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+                )
+            else:
+                source_count = 0
             projects_data.append(
                 {
                     "project_id": context.project_id,

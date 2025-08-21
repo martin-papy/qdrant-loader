@@ -38,13 +38,14 @@ async def run_project_status(
         if not context:
             continue
         sources = context.config.sources if context.config else None
-        source_count = (
-            len(sources.publicdocs)
-            + len(sources.git)
-            + len(sources.confluence)
-            + len(sources.jira)
-            + len(sources.localfile)
-        ) if sources else 0
+        # Safely sum lengths of available source collections; treat missing/None as empty
+        if sources:
+            source_count = sum(
+                len(getattr(sources, name, {}) or {})
+                for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+            )
+        else:
+            source_count = 0
         document_count = await _get_document_count(context.project_id)
         latest_ingestion = await _get_latest_ingestion(context.project_id)
         results.append(
