@@ -4,12 +4,14 @@ from click.exceptions import ClickException
 
 
 async def run_init(settings, force: bool) -> None:
+    from qdrant_loader.core.init_collection import init_collection
     try:
-        from qdrant_loader.core.init_collection import init_collection
         result = await init_collection(settings, force)
-        if not result:
-            raise ClickException("Failed to initialize collection")
+    except ClickException:
+        raise
     except Exception as e:
-        raise ClickException(f"Failed to initialize collection: {str(e)!s}") from e
+        raise ClickException(f"Failed to initialize collection: {e}") from e
+    if not result:
+        raise ClickException("Failed to initialize collection")
 
 
