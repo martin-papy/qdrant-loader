@@ -397,7 +397,7 @@ class SearchEngine:
         limit: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
-    ) -> dict:
+    ) -> dict | list[dict]:
         """Find similar documents."""
         if not self._search_ops:
             raise RuntimeError("Search engine not initialized")
@@ -405,7 +405,7 @@ class SearchEngine:
         # First, search for target documents
         target_documents = await self._search_ops.search(target_query, source_types, 1, project_ids)
         if not target_documents:
-            return {}  # No target document found; return empty dict for consistency with declared type
+            return {}
         
         # Then search for comparison documents  
         comparison_documents = await self._search_ops.search(comparison_query or target_query, source_types, limit, project_ids)

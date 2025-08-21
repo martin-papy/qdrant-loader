@@ -105,7 +105,7 @@ class IntelligenceOperations:
         max_similar: int = 5,
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
         Find documents similar to a target document.
 
