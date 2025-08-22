@@ -25,8 +25,8 @@ async def cluster_documents(
         documents, strategy, max_clusters, min_cluster_size
     )
 
-    # Build robust document lookup with multiple strategies
-    doc_lookup = engine._build_document_lookup(documents, robust=True)
+    # Build robust document lookup with multiple strategies via public API
+    doc_lookup = engine.build_document_lookup(documents, robust=True)
 
     cluster_data = []
     total_matched_docs = 0
@@ -40,7 +40,7 @@ async def cluster_documents(
         total_requested_docs += len(cluster.documents)
 
         for doc_id in cluster.documents:
-            matched_doc = engine._find_document_by_id(doc_id, doc_lookup)
+            matched_doc = engine.find_document_by_id(doc_id, doc_lookup)
             if matched_doc:
                 cluster_documents.append(matched_doc)
                 doc_ids_found.append(doc_id)
@@ -57,15 +57,17 @@ async def cluster_documents(
                 f"Missing documents in cluster {i}: {doc_ids_missing[:3]}"
             )
 
-        # Calculate cluster quality metrics
-        cluster_quality = engine._calculate_cluster_quality(cluster, cluster_documents)
+        # Calculate cluster quality metrics via public API
+        cluster_quality = engine.calculate_cluster_quality(cluster, cluster_documents)
 
         cluster_data.append(
             {
                 "id": cluster.cluster_id,
                 "name": cluster.name,
                 "documents": cluster_documents,
-                "centroid_topics": cluster.shared_topics,
+                "centroid_topics": getattr(cluster, "centroid_topics", None)
+                if hasattr(cluster, "centroid_topics")
+                else getattr(cluster, "shared_topics", []),
                 "shared_entities": cluster.shared_entities,
                 "coherence_score": cluster.coherence_score,
                 "cluster_summary": cluster.cluster_description,
@@ -79,7 +81,7 @@ async def cluster_documents(
 
     processing_time = (time.time() - start_time) * 1000
 
-    clustering_metadata = engine._build_enhanced_metadata(
+    clustering_metadata = engine.build_enhanced_metadata(
         clusters,
         documents,
         strategy,
@@ -88,7 +90,7 @@ async def cluster_documents(
         total_requested_docs,
     )
 
-    cluster_relationships = engine._analyze_cluster_relationships(clusters, documents)
+    cluster_relationships = engine.analyze_cluster_relationships(clusters, documents)
 
     engine.logger.info(
         f"Clustering completed: {len(clusters)} clusters, "
