@@ -342,30 +342,54 @@ class HybridEngineAPI:
 
     # Helper wrappers
     async def _get_embedding(self, text: str) -> list[float]:
+        if self.vector_search_service is None:
+            raise RuntimeError(
+                "Vector search service is not configured. Provide 'vector_search_service' to HybridEngineAPI or wire it via your engine builder before calling _get_embedding()."
+            )
         from .components.helpers import get_embedding
         return await get_embedding(self.vector_search_service, text)
 
     async def _expand_query(self, query: str) -> str:
+        if self.query_processor is None:
+            raise RuntimeError(
+                "Query processor is not configured. Provide 'query_processor' to HybridEngineAPI or wire it via your engine builder before calling _expand_query()."
+            )
         from .components.helpers import expand_query
         return await expand_query(self.query_processor, query)
 
     async def _expand_query_aggressive(self, query: str) -> str:
+        if self.query_processor is None:
+            raise RuntimeError(
+                "Query processor is not configured. Provide 'query_processor' to HybridEngineAPI or wire it via your engine builder before calling _expand_query_aggressive()."
+            )
         from .components.helpers import expand_query_aggressive
         return await expand_query_aggressive(self.query_processor, query)
 
     def _analyze_query(self, query: str) -> dict[str, Any]:
+        if self.query_processor is None:
+            raise RuntimeError(
+                "Query processor is not configured. Provide 'query_processor' to HybridEngineAPI or wire it via your engine builder before calling _analyze_query()."
+            )
         from .components.helpers import analyze_query
         return analyze_query(self.query_processor, query)
 
     async def _vector_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
+        if self.vector_search_service is None:
+            raise RuntimeError(
+                "Vector search service is not configured. Provide 'vector_search_service' to HybridEngineAPI or wire it via your engine builder before calling _vector_search()."
+            )
         from .components.helpers import vector_search
         return await vector_search(self.vector_search_service, query, limit, project_ids)
 
     async def _keyword_search(
         self, query: str, limit: int, project_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
+        if self.keyword_search_service is None:
+            raise RuntimeError(
+                "Keyword search service is not configured. Provide 'keyword_search_service' to HybridEngineAPI or wire it via your engine builder before calling _keyword_search()."
+            )
         from .components.helpers import keyword_search
         return await keyword_search(self.keyword_search_service, query, limit, project_ids)
 
@@ -378,6 +402,10 @@ class HybridEngineAPI:
         source_types: list[str] | None = None,
         project_ids: list[str] | None = None,
     ) -> list["HybridSearchResult"]:
+        if self.result_combiner is None:
+            raise RuntimeError(
+                "Result combiner is not configured. Provide 'result_combiner' to HybridEngineAPI or wire it via your engine builder before calling _combine_results()."
+            )
         from .components.helpers import combine_results
         return await combine_results(
             self.result_combiner,
@@ -391,14 +419,26 @@ class HybridEngineAPI:
         )
 
     def _extract_metadata_info(self, metadata: dict) -> dict:
+        if self.metadata_extractor is None:
+            raise RuntimeError(
+                "Metadata extractor is not configured. Provide 'metadata_extractor' to HybridEngineAPI or wire it via your engine builder before calling _extract_metadata_info()."
+            )
         from .components.metadata import extract_metadata_info
         return extract_metadata_info(self.metadata_extractor, metadata)
 
     def _extract_project_info(self, metadata: dict) -> dict:
+        if self.metadata_extractor is None:
+            raise RuntimeError(
+                "Metadata extractor is not configured. Provide 'metadata_extractor' to HybridEngineAPI or wire it via your engine builder before calling _extract_project_info()."
+            )
         from .components.metadata import extract_project_info
         return extract_project_info(self.metadata_extractor, metadata)
 
     def _build_filter(self, project_ids: list[str] | None = None) -> Any:
+        if self.vector_search_service is None:
+            raise RuntimeError(
+                "Vector search service is not configured. Provide 'vector_search_service' to HybridEngineAPI or wire it via your engine builder before calling _build_filter()."
+            )
         from .components.helpers import build_filter
         return build_filter(self.vector_search_service, project_ids)
 
@@ -407,10 +447,18 @@ class HybridEngineAPI:
         current_results: list["HybridSearchResult"],
         current_filters: list["FacetFilter"],
     ) -> list[dict[str, Any]]:
+        if self.faceted_search_engine is None:
+            raise RuntimeError(
+                "Faceted search engine is not configured. Provide 'faceted_search_engine' to HybridEngineAPI or wire it via your engine builder before calling suggest_facet_refinements()."
+            )
         from .components.facets import suggest_refinements as _suggest
         return _suggest(self.faceted_search_engine, current_results, current_filters)
 
     def generate_facets(self, results: list["HybridSearchResult"]) -> list:
+        if self.faceted_search_engine is None:
+            raise RuntimeError(
+                "Faceted search engine is not configured. Provide 'faceted_search_engine' to HybridEngineAPI or wire it via your engine builder before calling generate_facets()."
+            )
         from .components.facets import generate_facets as _generate
         return _generate(self.faceted_search_engine, results)
 
