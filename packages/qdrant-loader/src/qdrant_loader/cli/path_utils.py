@@ -12,7 +12,8 @@ def create_database_directory(path: Path) -> bool:
     """
     abs_path = path.resolve()
     # If directory already exists, no need to prompt; treat as success
-    if abs_path.exists():
+    # Use is_dir() in addition to exists() to avoid false positives in tests that patch exists
+    if abs_path.exists() and abs_path.is_dir():
         return True
     # Prompt user with explicit path information
     if click.confirm(f"Directory does not exist: {abs_path}. Create it?", default=True):
