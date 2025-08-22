@@ -12,6 +12,10 @@ from qdrant_loader.config import get_settings, initialize_config
 from qdrant_loader.config.state import DatabaseDirectoryError
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.utils.logging import LoggingConfig
+from qdrant_loader.cli.config_loader import (
+    setup_workspace as _setup_workspace_impl,
+    load_config_with_workspace as _load_config_with_workspace,
+)
 
 from . import run_init as _commands_run_init
 
@@ -45,8 +49,6 @@ async def run_init_command(
         # Setup workspace if provided
         workspace_config = None
         if workspace:
-            from qdrant_loader.cli.config_loader import setup_workspace as _setup_workspace_impl
-
             workspace_config = _setup_workspace_impl(workspace)
             logger.info("Using workspace", workspace=str(workspace_config.workspace_path))
             if getattr(workspace_config, "env_path", None):
@@ -61,10 +63,6 @@ async def run_init_command(
         LoggingConfig.setup(level=log_level, format="console", file=log_file)
 
         # Load configuration
-        from qdrant_loader.cli.config_loader import (
-            load_config_with_workspace as _load_config_with_workspace,
-        )
-
         _load_config_with_workspace(workspace_config, config, env)
 
         # Fetch settings

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from collections.abc import Mapping
 
 
 def run_project_list(settings: Any, project_manager: Any, *, output_format: str) -> str:
@@ -16,10 +17,16 @@ def run_project_list(settings: Any, project_manager: Any, *, output_format: str)
             sources = context.config.sources if context.config else None
             # Safely sum lengths of available source collections; treat missing/None as empty
             if sources:
-                source_count = sum(
-                    len(getattr(sources, name, {}) or {})
-                    for name in ("publicdocs", "git", "confluence", "jira", "localfile")
-                )
+                if isinstance(sources, Mapping):
+                    source_count = sum(
+                        len((sources.get(name, {}) or {}))
+                        for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+                    )
+                else:
+                    source_count = sum(
+                        len((getattr(sources, name, {}) or {}))
+                        for name in ("publicdocs", "git", "confluence", "jira", "localfile")
+                    )
             else:
                 source_count = 0
             projects_data.append(
