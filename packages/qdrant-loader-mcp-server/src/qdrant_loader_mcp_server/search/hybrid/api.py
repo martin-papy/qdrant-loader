@@ -133,6 +133,12 @@ class HybridEngineAPI:
         from .orchestration.topic_chain import _initialize_topic_relationships as _init
         await _init(self, sample_query)
 
+    # Topic chain initialization state accessor to avoid private attribute access
+    @property
+    def is_topic_chains_initialized(self) -> bool:
+        """Public read-only accessor for topic chains initialization state."""
+        return getattr(self, "_topic_chains_initialized", False)
+
     # Faceted Search
     async def search_with_facets(
         self,

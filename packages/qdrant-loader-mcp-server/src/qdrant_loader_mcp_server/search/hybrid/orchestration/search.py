@@ -71,8 +71,9 @@ async def run_search(
         engine_min_score = getattr(engine, "min_score", None)
         if engine_min_score is not None and (
             getattr(local_combiner, "min_score", None) is None
-            or local_combiner.min_score > engine_min_score
+            or local_combiner.min_score < engine_min_score
         ):
+            # Use the stricter (higher) engine threshold
             local_combiner.min_score = engine_min_score
 
         if plan.use_pipeline and engine.hybrid_pipeline is not None:

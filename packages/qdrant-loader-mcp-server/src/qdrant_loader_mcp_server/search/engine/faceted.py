@@ -64,10 +64,12 @@ class FacetedSearchOperations:
                 for filter_dict in facet_filters:
                     try:
                         facet_type = FacetType(filter_dict["facet_type"])
-                    except Exception:
+                    except (ValueError, TypeError) as e:
                         self.logger.warning(
                             "Invalid facet_type provided; skipping facet filter",
                             facet_type=str(filter_dict.get("facet_type")),
+                            error=str(e),
+                            exc_info=True,
                         )
                         continue
 

@@ -406,6 +406,14 @@ class HybridSearchResult:
         return None
 
     def is_root_document(self) -> bool:
+        # Local files: treat roots as paths with at most two segments (e.g., repo/file)
+        if self.source_type == "localfile":
+            fp = self.file_path
+            if isinstance(fp, str):
+                parts = [p for p in fp.split("/") if p]
+                return len(parts) <= 2
+            return False
+        # Other sources: root documents have no parent identifiers
         return self.parent_id is None and self.parent_document_id is None
 
     def has_children(self) -> bool:

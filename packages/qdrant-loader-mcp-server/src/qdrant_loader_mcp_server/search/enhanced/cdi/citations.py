@@ -14,8 +14,6 @@ from ....utils.logging import LoggingConfig
 from ...models import SearchResult
 from .models import CitationNetwork
 
-logger = LoggingConfig.get_logger(__name__)
-
 
 class CitationNetworkAnalyzer:
     """Analyzes citation and reference networks between documents."""

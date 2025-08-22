@@ -291,28 +291,16 @@ class DocumentClusterAnalyzer:
         context_key: str = "",
     ) -> str:
         """Generate an intelligent, descriptive name for a cluster."""
-
-        def _normalize_acronym(token: str) -> str:
-            mapping = {
-                "oauth": "OAuth",
-                "jwt": "JWT",
-                "api": "API",
-                "ui": "UI",
-                "ux": "UX",
-                "sql": "SQL",
-            }
-            t = (token or "").strip()
-            lower = t.lower()
-            return mapping.get(lower, t.title())
+        from .utils import normalize_acronym
 
         # Entity-based naming
         if cluster_type == "entity" and entities:
             if len(entities) == 1:
-                return f"{_normalize_acronym(entities[0])} Documentation"
+                return f"{normalize_acronym(entities[0])} Documentation"
             elif len(entities) == 2:
-                return f"{_normalize_acronym(entities[0])} & {_normalize_acronym(entities[1])}"
+                return f"{normalize_acronym(entities[0])} & {normalize_acronym(entities[1])}"
             else:
-                return f"{_normalize_acronym(entities[0])} Ecosystem"
+                return f"{normalize_acronym(entities[0])} Ecosystem"
 
         # Topic-based naming
         if cluster_type == "topic" and topics:
@@ -328,7 +316,7 @@ class DocumentClusterAnalyzer:
         # Mixed or unknown type naming - try to use provided entities/topics
         # Recognize known types first to avoid early-return blocking specialized handling
         if cluster_type not in ["entity", "topic", "project", "hierarchy", "mixed"]:
-            first_entity = _normalize_acronym(entities[0]) if entities else None
+            first_entity = normalize_acronym(entities[0]) if entities else None
             clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
             first_topic = clean_topics[0] if clean_topics else None
             if first_entity and first_topic:
@@ -556,13 +544,8 @@ class DocumentClusterAnalyzer:
             cluster.cluster_strategy == ClusteringStrategy.ENTITY_BASED
             and cluster.shared_entities
         ):
-
-            def _cap(token: str) -> str:
-                m = {"oauth": "OAuth", "jwt": "JWT"}
-                t = token or ""
-                return m.get(t.lower(), t.title())
-
-            entities = [_cap(e) for e in cluster.shared_entities[:2]]
+            from .utils import normalize_acronym
+            entities = [normalize_acronym(e) for e in cluster.shared_entities[:2]]
             return f"Documents focused on {' and '.join(entities)}"
 
         if (

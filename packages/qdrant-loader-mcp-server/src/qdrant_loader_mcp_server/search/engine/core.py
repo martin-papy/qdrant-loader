@@ -35,6 +35,42 @@ AsyncOpenAI = _AsyncOpenAI  # type: ignore[assignment]
 logger = LoggingConfig.get_logger(__name__)
 
 
+def _safe_value_to_dict(value_obj: object) -> dict:
+    """Safely convert a facet value object to a dict.
+
+    Uses getattr with defaults and tolerates missing attributes.
+    """
+    return {
+        "value": getattr(value_obj, "value", "unknown"),
+        "count": getattr(value_obj, "count", 0),
+        "display_name": getattr(value_obj, "display_name", "Unknown"),
+        "description": getattr(value_obj, "description", None),
+    }
+
+
+def _safe_facet_to_dict(facet: object, top_k: int = 10) -> dict:
+    """Safely convert a facet object to a dict with defensive callable/None handling."""
+    facet_type_obj = getattr(facet, "facet_type", None)
+    facet_type_value = getattr(facet_type_obj, "value", "unknown") if facet_type_obj else "unknown"
+
+    # Safely obtain top values
+    get_top_values = getattr(facet, "get_top_values", None)
+    values_raw: list = []
+    if callable(get_top_values):
+        try:
+            values_raw = get_top_values(top_k) or []
+        except Exception:
+            values_raw = []
+
+    return {
+        "type": facet_type_value,
+        "name": getattr(facet, "name", "unknown"),
+        "display_name": getattr(facet, "display_name", "Unknown"),
+        "description": getattr(facet, "description", None),
+        "values": [_safe_value_to_dict(v) for v in values_raw],
+    }
+
+
 class SearchEngine:
     """Main search engine that orchestrates query processing and search."""
 
@@ -187,13 +223,32 @@ class SearchEngine:
         return await self._search_ops.search(query, source_types, limit, project_ids)
 
     async def generate_topic_chain(
-        self, query: str, strategy: ChainStrategy = ChainStrategy.BREADTH_FIRST, max_links: int = 5
+        self, query: str, strategy: ChainStrategy | str = ChainStrategy.BREADTH_FIRST, max_links: int = 5
     ) -> TopicSearchChain:
-        """Generate topic search chain."""
+        """Generate topic search chain.
+
+        Parameters:
+            query: The query string.
+            strategy: Chain strategy to use; accepts a ChainStrategy enum or a string.
+            max_links: Maximum number of links to generate.
+
+        Returns:
+            TopicSearchChain
+
+        Raises:
+            TypeError: If strategy is not a ChainStrategy or string.
+        """
         if not self._topic_chain_ops:
             raise RuntimeError("Search engine not initialized")
-        # Convert ChainStrategy enum to string if needed
-        strategy_str = strategy.value if hasattr(strategy, 'value') else str(strategy)
+        # Normalize strategy: allow ChainStrategy enum or string
+        if hasattr(strategy, "value"):
+            strategy_str = strategy.value  # ChainStrategy enum
+        elif isinstance(strategy, str):
+            strategy_str = strategy
+        else:
+            raise TypeError(
+                "strategy must be a ChainStrategy or str, got " + type(strategy).__name__
+            )
         return await self._topic_chain_ops.generate_topic_chain(query, strategy_str, max_links)
 
     async def execute_topic_chain(
@@ -279,36 +334,28 @@ class SearchEngine:
 
             # Convert to MCP-friendly dict format (same as FacetedSearchOperations does)
             return {
-                "results": faceted_results.results,
+                "results": getattr(faceted_results, "results", []),
                 "facets": [
-                    {
-                        "type": getattr(getattr(facet, 'facet_type', None), 'value', 'unknown') if getattr(facet, 'facet_type', None) else 'unknown',
-                        "name": getattr(facet, 'name', 'unknown'),
-                        "display_name": getattr(facet, 'display_name', 'Unknown'),
-                        "description": getattr(facet, 'description', None),
-                        "values": [
-                            {
-                                "value": getattr(fv, 'value', 'unknown'),
-                                "count": getattr(fv, 'count', 0),
-                                "display_name": getattr(fv, 'display_name', 'Unknown'),
-                                "description": getattr(fv, 'description', None),
-                            }
-                            for fv in (getattr(facet, 'get_top_values', lambda x: []))(10)
-                        ],
-                    }
-                    for facet in getattr(faceted_results, 'facets', [])
+                    _safe_facet_to_dict(facet)
+                    for facet in getattr(faceted_results, "facets", [])
                 ],
-                "total_results": getattr(faceted_results, 'total_results', 0),
-                "filtered_count": getattr(faceted_results, 'filtered_count', 0),
+                "total_results": getattr(faceted_results, "total_results", 0),
+                "filtered_count": getattr(faceted_results, "filtered_count", 0),
                 "applied_filters": [
                     {
-                        "facet_type": getattr(getattr(f, 'facet_type', None), 'value', 'unknown') if getattr(f, 'facet_type', None) else 'unknown',
-                        "values": getattr(f, 'values', []),
-                        "operator": getattr(f, 'operator', 'and'),
+                        "facet_type": (
+                            getattr(getattr(f, "facet_type", None), "value", "unknown")
+                            if getattr(f, "facet_type", None)
+                            else "unknown"
+                        ),
+                        "values": getattr(f, "values", []),
+                        "operator": getattr(f, "operator", "and"),
                     }
-                    for f in getattr(faceted_results, 'applied_filters', [])
+                    for f in getattr(faceted_results, "applied_filters", [])
                 ],
-                "generation_time_ms": getattr(faceted_results, 'generation_time_ms', 0.0),
+                "generation_time_ms": getattr(
+                    faceted_results, "generation_time_ms", 0.0
+                ),
             }
         return await self._faceted_ops.search_with_facets(
             query, limit, source_types, project_ids, facet_filters

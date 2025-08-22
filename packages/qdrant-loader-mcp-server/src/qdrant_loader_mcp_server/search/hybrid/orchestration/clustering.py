@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from ...enhanced.cross_document_intelligence import ClusteringStrategy
+from ...enhanced.cdi.models import ClusteringStrategy
 from ...components.search_result_models import HybridSearchResult
 
 
@@ -14,7 +14,54 @@ async def cluster_documents(
     max_clusters: int = 10,
     min_cluster_size: int = 2,
 ) -> dict[str, Any]:
-    """Cluster documents using engine's CDI with delegated helpers."""
+    """Cluster documents using engine's CDI with delegated helpers.
+
+    Args:
+        engine: The hybrid search engine instance providing CDI and helper APIs.
+        documents: Non-empty list of `HybridSearchResult` to cluster.
+        strategy: Clustering strategy (instance of `ClusteringStrategy`).
+        max_clusters: Maximum number of clusters to produce. Must be int > 0.
+        min_cluster_size: Minimum documents per cluster. Must be int >= 1 and <= max_clusters.
+
+    Returns:
+        Dict with the following structure:
+        - "clusters": list[dict]
+          Each cluster dict contains:
+            - "id": str | int
+            - "name": str | None
+            - "documents": list[HybridSearchResult]
+            - "centroid_topics": list[str] | None
+            - "shared_entities": list[str] | None
+            - "coherence_score": float | None
+            - "cluster_summary": str | None
+            - "representative_doc_id": str | None
+            - "cluster_strategy": str (the strategy value)
+            - "quality_metrics": dict[str, Any]
+            - "document_count": int
+            - "expected_document_count": int
+        - "clustering_metadata": dict[str, Any]
+          Aggregate stats, counts, parameters, and quality assessments for the run.
+        - "cluster_relationships": list[dict[str, Any]]
+          Relationship analysis between clusters.
+
+    Raises:
+        ValueError: If inputs are invalid, e.g. documents is not a non-empty list,
+                    strategy is not a `ClusteringStrategy`, or constraints on
+                    max_clusters/min_cluster_size are violated.
+    """
+    # Input validation
+    if not isinstance(documents, list):
+        raise ValueError("'documents' must be a list of HybridSearchResult")
+    if len(documents) == 0:
+        raise ValueError("'documents' must be a non-empty list")
+    if not isinstance(max_clusters, int) or max_clusters <= 0:
+        raise ValueError("'max_clusters' must be an int greater than 0")
+    if not isinstance(min_cluster_size, int) or min_cluster_size < 1:
+        raise ValueError("'min_cluster_size' must be an int greater than or equal to 1")
+    if min_cluster_size > max_clusters:
+        raise ValueError("'min_cluster_size' cannot be greater than 'max_clusters'")
+    if not isinstance(strategy, ClusteringStrategy):
+        raise ValueError("'strategy' must be an instance of ClusteringStrategy")
     start_time = time.time()
 
     engine.logger.info(

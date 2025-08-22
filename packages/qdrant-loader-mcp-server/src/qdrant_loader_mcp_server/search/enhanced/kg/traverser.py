@@ -8,6 +8,7 @@ and content discovery within knowledge graphs.
 from __future__ import annotations
 
 import heapq
+from collections import deque
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -16,8 +17,6 @@ if TYPE_CHECKING:
 else:
     QueryAnalysis = Any
     SpaCyQueryAnalyzer = Any
-    TraversalStrategy = Any
-    TraversalResult = Any
 
 from ....utils.logging import LoggingConfig
 from .models import TraversalStrategy, TraversalResult
@@ -135,13 +134,15 @@ class GraphTraverser:
         """Breadth-first traversal implementation."""
 
         results = []
-        queue = [
-            (start_node_id, [], [], 0.0, 0)
-        ]  # (node_id, path, edges, weight, hops)
+        queue = deque(
+            [
+                (start_node_id, [], [], 0.0, 0)
+            ]
+        )  # (node_id, path, edges, weight, hops)
         local_visited = set()
 
         while queue and len(results) < max_results:
-            node_id, path, edges, total_weight, hops = queue.pop(0)
+            node_id, path, edges, total_weight, hops = queue.popleft()
 
             if node_id in local_visited or hops >= max_hops:
                 continue
@@ -151,7 +152,7 @@ class GraphTraverser:
             # Create traversal result
             if node_id != start_node_id:  # Don't include the starting node
                 semantic_score = self._calculate_semantic_score(node_id, query_analysis)
-                reasoning_path = build_reasoning_path(path, edges, self.graph.nodes)
+                reasoning_path = build_reasoning_path(edges, self.graph.nodes)
 
                 result = TraversalResult(
                     path=path + [node_id],
@@ -207,7 +208,7 @@ class GraphTraverser:
             # Create traversal result
             if node_id != start_node_id:
                 semantic_score = self._calculate_semantic_score(node_id, query_analysis)
-                reasoning_path = build_reasoning_path(path, edges, self.graph.nodes)
+                reasoning_path = build_reasoning_path(edges, self.graph.nodes)
 
                 result = TraversalResult(
                     path=path + [node_id],
@@ -269,7 +270,7 @@ class GraphTraverser:
             # Create traversal result
             if node_id != start_node_id:
                 semantic_score = self._calculate_semantic_score(node_id, query_analysis)
-                reasoning_path = build_reasoning_path(path, edges, self.graph.nodes)
+                reasoning_path = build_reasoning_path(edges, self.graph.nodes)
 
                 result = TraversalResult(
                     path=path + [node_id],
@@ -339,7 +340,7 @@ class GraphTraverser:
             # Create traversal result
             if node_id != start_node_id:
                 semantic_score = -neg_score  # Convert back from negative
-                reasoning_path = build_reasoning_path(path, edges, self.graph.nodes)
+                reasoning_path = build_reasoning_path(edges, self.graph.nodes)
 
                 result = TraversalResult(
                     path=path + [node_id],
