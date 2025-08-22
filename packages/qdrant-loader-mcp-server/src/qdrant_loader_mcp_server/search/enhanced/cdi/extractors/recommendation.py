@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..interfaces import Recommender
-from ....components.search_result_models import HybridSearchResult
+from ....components.models import HybridSearchResult
 from ..models import ComplementaryContent
 
 

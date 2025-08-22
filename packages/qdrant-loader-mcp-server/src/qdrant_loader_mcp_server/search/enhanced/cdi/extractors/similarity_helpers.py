@@ -71,10 +71,7 @@ def extract_context_snippet(text: str, keyword: str, max_length: int = 150) -> s
     import re
 
     keyword_lower = (keyword or "").lower()
-    if " " in keyword_lower:
-        pattern = r"\b" + re.escape(keyword_lower) + r"\b"
-    else:
-        pattern = r"\b" + re.escape(keyword_lower) + r"\b"
+    pattern = r"\b" + re.escape(keyword_lower) + r"\b"
 
     match = re.search(pattern, text, re.IGNORECASE)
     if not match:
