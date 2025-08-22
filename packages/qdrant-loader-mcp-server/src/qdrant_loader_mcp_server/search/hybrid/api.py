@@ -139,6 +139,14 @@ class HybridEngineAPI:
         """Public read-only accessor for topic chains initialization state."""
         return getattr(self, "_topic_chains_initialized", False)
 
+    def mark_topic_chains_initialized(self) -> None:
+        """Mark topic chain relationships as initialized via public API."""
+        self._topic_chains_initialized = True
+
+    def set_topic_chains_initialized(self, initialized: bool) -> None:
+        """Explicitly set topic chain initialization state via public API."""
+        self._topic_chains_initialized = bool(initialized)
+
     # Faceted Search
     async def search_with_facets(
         self,
