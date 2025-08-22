@@ -85,7 +85,7 @@ async def run_ingest_command(
             logger.debug(" SIGINT received, cancelling all tasks...")
             stop_event.set()
             # Schedule cancellation of all running tasks safely on the event loop thread
-            loop.call_soon_threadsafe(loop.create_task, _cancel_all_tasks_helper())
+            loop.call_soon_threadsafe(lambda: loop.create_task(_cancel_all_tasks_helper()))
 
         try:
             loop.add_signal_handler(signal.SIGINT, _handle_sigint)

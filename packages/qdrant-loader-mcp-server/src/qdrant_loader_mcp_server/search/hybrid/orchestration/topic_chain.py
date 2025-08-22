@@ -70,6 +70,10 @@ async def _initialize_topic_relationships(engine: Any, sample_query: str) -> Non
     )
     if sample_results:
         engine.topic_chain_generator.initialize_from_results(sample_results)
-        engine._topic_chains_initialized = True
+        # Mark initialization via public API instead of touching private attribute
+        if hasattr(engine, "set_topic_chains_initialized"):
+            engine.set_topic_chains_initialized(True)
+        else:
+            engine.mark_topic_chains_initialized()
 
 
