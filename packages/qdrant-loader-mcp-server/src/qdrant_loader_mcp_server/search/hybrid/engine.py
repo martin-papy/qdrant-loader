@@ -58,10 +58,10 @@ class HybridSearchEngine(HybridEngineAPI):
             keyword_weight: Weight for keyword search scores (0-1)
             metadata_weight: Weight for metadata-based scoring (0-1)
             min_score: Minimum combined score threshold
-            alpha: Weight for dense search (1-alpha for sparse search)
             knowledge_graph: Optional knowledge graph for integration
             enable_intent_adaptation: Enable intent-aware adaptive search
             search_config: Optional search configuration for performance optimization
+            processing_config: Optional processing configuration controlling hybrid processing behaviors
         """
         self.qdrant_client = qdrant_client
         self.openai_client = openai_client

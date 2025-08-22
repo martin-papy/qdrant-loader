@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from typing import Any, List
+import logging
 
 from ...components.search_result_models import HybridSearchResult
 from ...components.result_combiner import ResultCombiner
 from ..components.helpers import combine_results as _combine_results_helper
 from ..pipeline import HybridPipeline
+
+logger = logging.getLogger(__name__)
 
 
 async def run_search(
@@ -123,14 +126,64 @@ async def run_search(
                 project_ids,
             )
     finally:
-        # Always restore engine combiner settings to their original values
+        # Always attempt to restore engine combiner settings to their original values.
+        # Log any restoration failures with context, without masking original exceptions.
         try:
-            engine.result_combiner.vector_weight = original_vector_weight
-            engine.result_combiner.keyword_weight = original_keyword_weight
-            engine.result_combiner.min_score = original_min_score
+            engine_rc = getattr(engine, "result_combiner", None)
+            if engine_rc is not None:
+                # Restore vector_weight
+                try:
+                    engine_rc.vector_weight = original_vector_weight
+                except Exception as e:
+                    try:
+                        logger.error(
+                            "Failed to restore result_combiner.vector_weight to %r on %s: %s",
+                            original_vector_weight,
+                            type(engine_rc).__name__,
+                            e,
+                            exc_info=True,
+                        )
+                    except Exception:
+                        # Never allow logging to raise
+                        pass
+                # Restore keyword_weight
+                try:
+                    engine_rc.keyword_weight = original_keyword_weight
+                except Exception as e:
+                    try:
+                        logger.error(
+                            "Failed to restore result_combiner.keyword_weight to %r on %s: %s",
+                            original_keyword_weight,
+                            type(engine_rc).__name__,
+                            e,
+                            exc_info=True,
+                        )
+                    except Exception:
+                        pass
+                # Restore min_score
+                try:
+                    engine_rc.min_score = original_min_score
+                except Exception as e:
+                    try:
+                        logger.error(
+                            "Failed to restore result_combiner.min_score to %r on %s: %s",
+                            original_min_score,
+                            type(engine_rc).__name__,
+                            e,
+                            exc_info=True,
+                        )
+                    except Exception:
+                        pass
         except Exception:
-            # If restoration fails, do not mask original exceptions
-            pass
+            # Never raise from restoration; preserve original exception flow
+            try:
+                logger.error(
+                    "Unexpected error during result_combiner restoration on %s",
+                    type(getattr(engine, 'result_combiner', object())).__name__,
+                    exc_info=True,
+                )
+            except Exception:
+                pass
 
     return combined_results
 

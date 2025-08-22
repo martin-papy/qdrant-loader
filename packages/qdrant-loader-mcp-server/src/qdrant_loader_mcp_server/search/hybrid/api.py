@@ -210,11 +210,32 @@ class HybridEngineAPI:
         )
         return _build(documents, robust=robust, logger=self.logger)
 
+    # Public delegation APIs for clustering helpers
+    def build_document_lookup(
+        self, documents: list["HybridSearchResult"], robust: bool = False
+    ) -> dict[str, "HybridSearchResult"]:
+        """Build a document lookup table using the configured helper.
+
+        Args:
+            documents: List of search results to index
+            robust: Whether to include additional, sanitized keys for resilience
+
+        Returns:
+            Mapping from identifier keys to corresponding search results
+        """
+        return self._build_document_lookup(documents, robust=robust)
+
     def _find_document_by_id(
         self, doc_id: str, doc_lookup: dict[str, "HybridSearchResult"]
     ) -> "HybridSearchResult" | None:
         from .components.document_lookup import find_document_by_id as _find
         return _find(doc_id, doc_lookup, logger=self.logger)
+
+    def find_document_by_id(
+        self, doc_id: str, doc_lookup: dict[str, "HybridSearchResult"]
+    ) -> "HybridSearchResult" | None:
+        """Find a document by any supported identifier in the lookup map."""
+        return self._find_document_by_id(doc_id, doc_lookup)
 
     async def cluster_documents(
         self,
@@ -244,6 +265,12 @@ class HybridEngineAPI:
         from .components.cluster_quality import calculate_cluster_quality
         return calculate_cluster_quality(cluster, cluster_documents)
 
+    def calculate_cluster_quality(
+        self, cluster: Any, cluster_documents: list["HybridSearchResult"]
+    ) -> dict[str, Any]:
+        """Calculate quality metrics for a cluster in a stable API."""
+        return self._calculate_cluster_quality(cluster, cluster_documents)
+
     def _categorize_cluster_size(self, size: int) -> str:
         from .components.cluster_quality import categorize_cluster_size
         return categorize_cluster_size(size)
@@ -266,6 +293,25 @@ class HybridEngineAPI:
         from .components.cluster_quality import build_enhanced_metadata
         return build_enhanced_metadata(
             clusters, documents, strategy, processing_time, matched_docs, requested_docs
+        )
+
+    def build_enhanced_metadata(
+        self,
+        clusters: list[Any],
+        documents: list["HybridSearchResult"],
+        strategy: Any,
+        processing_time: float,
+        matched_docs: int,
+        requested_docs: int,
+    ) -> dict[str, Any]:
+        """Build comprehensive clustering metadata via public API."""
+        return self._build_enhanced_metadata(
+            clusters,
+            documents,
+            strategy,
+            processing_time,
+            matched_docs,
+            requested_docs,
         )
 
     def _calculate_std(self, values: list[float]) -> float:
@@ -292,6 +338,12 @@ class HybridEngineAPI:
     ) -> list[dict[str, Any]]:
         from .orchestration.relationships import analyze_cluster_relationships as _rel
         return _rel(self, clusters, documents)
+
+    def analyze_cluster_relationships(
+        self, clusters: list[Any], documents: list["HybridSearchResult"]
+    ) -> list[dict[str, Any]]:
+        """Analyze relationships between clusters in a public API."""
+        return self._analyze_cluster_relationships(clusters, documents)
 
     def _analyze_cluster_pair(
         self, cluster_a: Any, cluster_b: Any, doc_lookup: dict

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import asyncio
 
 from .interfaces import VectorSearcher, KeywordSearcher, ResultCombinerLike, Reranker
 from .components.boosting import ResultBooster
@@ -30,10 +31,12 @@ class HybridPipeline:
         vector_query: str | None = None,
         keyword_query: str | None = None,
     ) -> list[HybridSearchResult]:
-        effective_vector_query = vector_query or query
-        effective_keyword_query = keyword_query or query
-        vector_results = await self.vector_searcher.search(effective_vector_query, limit * 3, project_ids)
-        keyword_results = await self.keyword_searcher.search(effective_keyword_query, limit * 3, project_ids)
+        effective_vector_query = vector_query if vector_query is not None else query
+        effective_keyword_query = keyword_query if keyword_query is not None else query
+        vector_results, keyword_results = await asyncio.gather(
+            self.vector_searcher.search(effective_vector_query, limit * 3, project_ids),
+            self.keyword_searcher.search(effective_keyword_query, limit * 3, project_ids),
+        )
         results = await self.result_combiner.combine_results(
             vector_results, keyword_results, query_context, limit, source_types, project_ids
         )

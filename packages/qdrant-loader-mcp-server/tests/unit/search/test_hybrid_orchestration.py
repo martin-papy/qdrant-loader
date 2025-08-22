@@ -51,3 +51,61 @@ async def test_orchestrator_calls_pipeline_run():
     assert called["keyword_query"] == "kq"
 
 
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_orchestrator_preserves_empty_queries():
+    # Prepare a dummy pipeline that records inputs
+    called = {}
+
+    async def _run(**kwargs):
+        called.update(kwargs)
+        return ["ok"]
+
+    pipeline = SimpleNamespace(run=_run)
+    orch = HybridOrchestrator()
+
+    out = await orch.run_pipeline(
+        pipeline,
+        query="Q",
+        limit=3,
+        query_context={"ctx": True},
+        vector_query="",
+        keyword_query="",
+    )
+
+    assert out == ["ok"]
+    # Empty strings must be preserved and NOT defaulted to query
+    assert called["vector_query"] == ""
+    assert called["keyword_query"] == ""
+    # Other params still passed through
+    assert called["query"] == "Q"
+    assert called["limit"] == 3
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_orchestrator_defaults_none_queries():
+    # Prepare a dummy pipeline that records inputs
+    called = {}
+
+    async def _run(**kwargs):
+        called.update(kwargs)
+        return ["ok"]
+
+    pipeline = SimpleNamespace(run=_run)
+    orch = HybridOrchestrator()
+
+    out = await orch.run_pipeline(
+        pipeline,
+        query="Q",
+        limit=2,
+        query_context={},
+        vector_query=None,
+        keyword_query=None,
+    )
+
+    assert out == ["ok"]
+    # None should default to the main query value
+    assert called["vector_query"] == "Q"
+    assert called["keyword_query"] == "Q"

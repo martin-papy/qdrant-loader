@@ -27,8 +27,8 @@ class HybridOrchestrator:
             query_context=query_context,
             source_types=source_types,
             project_ids=project_ids,
-            vector_query=vector_query or query,
-            keyword_query=keyword_query or query,
+            vector_query=vector_query if vector_query is not None else query,
+            keyword_query=keyword_query if keyword_query is not None else query,
         )
 
 
