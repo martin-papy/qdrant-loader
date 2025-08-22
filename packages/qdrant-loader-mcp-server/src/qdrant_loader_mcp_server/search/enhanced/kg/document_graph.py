@@ -111,10 +111,23 @@ class DocumentKnowledgeGraph:
 
         start_nodes = []
 
-        # Find nodes by entities
-        for entity_text, _entity_label in query_analysis.entities:
-            entity_nodes = self.knowledge_graph.find_nodes_by_entity(entity_text)
-            start_nodes.extend([node.id for node in entity_nodes])
+        # Find nodes by entities (defensive against unexpected formats)
+        for item in getattr(query_analysis, "entities", []) or []:
+            try:
+                entity_text: str | None = None
+                # Accept tuple/list like (text, label, ...)
+                if isinstance(item, (list, tuple)) and len(item) > 0:
+                    entity_text = item[0]
+                # Accept direct string entity
+                elif isinstance(item, str):
+                    entity_text = item
+                # Skip dicts or None/empty safely
+                if entity_text:
+                    entity_nodes = self.knowledge_graph.find_nodes_by_entity(entity_text)
+                    start_nodes.extend([node.id for node in entity_nodes])
+            except IndexError:
+                # Malformed entity entry; skip
+                continue
 
         # Find nodes by main concepts (as topics)
         for concept in query_analysis.main_concepts:
