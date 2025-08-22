@@ -11,7 +11,7 @@ async def run_init(settings, force: bool) -> None:
         raise
     except Exception as e:
         raise ClickException(f"Failed to initialize collection: {e}") from e
-    if not result:
+    if result is False:
         raise ClickException("Failed to initialize collection")
 
 
