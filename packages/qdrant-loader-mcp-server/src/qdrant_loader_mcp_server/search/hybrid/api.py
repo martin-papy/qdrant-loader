@@ -81,12 +81,7 @@ class HybridEngineAPI:
         from .orchestration.search import run_search
 
         self.logger.debug(
-            "Starting hybrid search",
-            query=query,
-            limit=limit,
-            source_types=source_types,
-            project_ids=project_ids,
-            intent_adaptation_enabled=self.enable_intent_adaptation,
+            f"Starting hybrid search query={query} limit={limit} source_types={source_types} project_ids={project_ids} intent_adaptation_enabled={self.enable_intent_adaptation}"
         )
         return await run_search(
             self,

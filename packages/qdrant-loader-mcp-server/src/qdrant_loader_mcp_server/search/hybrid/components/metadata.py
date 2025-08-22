@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict
+from dataclasses import is_dataclass, asdict
 
 
 def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
@@ -11,11 +12,28 @@ def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
     for _component_name, component in components.items():
         if component is None:
             continue
-        if hasattr(component, "__dict__"):
-            for key, value in component.__dict__.items():
-                flattened[key] = value
+        # Handle dataclasses explicitly
+        if is_dataclass(component):
+            component_dict = asdict(component)
+        # Handle regular objects by inspecting vars and filtering private/callable
+        elif hasattr(component, "__dict__"):
+            component_dict = {
+                k: v
+                for k, v in vars(component).items()
+                if not k.startswith("_") and not callable(v)
+            }
+        # Handle dictionaries
         elif isinstance(component, dict):
-            flattened.update(component)
+            component_dict = component
+        else:
+            # Fallback: skip unsupported component types
+            continue
+
+        # Merge without overwriting existing keys
+        for key, value in component_dict.items():
+            if key in flattened:
+                continue
+            flattened[key] = value
 
     expected_keys = [
         # Project info
@@ -113,13 +131,21 @@ def extract_metadata_info(metadata_extractor: Any, metadata: dict) -> dict:
 
 def extract_project_info(metadata_extractor: Any, metadata: dict) -> dict:
     project_info = metadata_extractor.extract_project_info(metadata)
+    data: Dict[str, Any] = {}
     if project_info:
-        return project_info.__dict__
+        if isinstance(project_info, dict):
+            data = project_info
+        else:
+            data = getattr(project_info, "__dict__", {}) or {}
+
+    # Remove private keys
+    data = {k: v for k, v in data.items() if not k.startswith("_")}
+
     return {
-        "project_id": None,
-        "project_name": None,
-        "project_description": None,
-        "collection_name": None,
+        "project_id": data.get("project_id"),
+        "project_name": data.get("project_name"),
+        "project_description": data.get("project_description"),
+        "collection_name": data.get("collection_name"),
     }
 
 
