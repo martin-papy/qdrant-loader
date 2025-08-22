@@ -594,7 +594,9 @@ class SearchEngine:
             else:
                 return "mixed_features"  # Safe default
 
-        return self._strategy_selector.select_optimal_strategy(documents)
+        # The strategy selector returns a ClusteringStrategy enum; normalize to string value
+        selected = self._strategy_selector.select_optimal_strategy(documents)
+        return selected.value if hasattr(selected, "value") else str(selected)
 
     def _analyze_document_characteristics(self, documents: list) -> dict[str, float]:
         """Analyze document characteristics."""
