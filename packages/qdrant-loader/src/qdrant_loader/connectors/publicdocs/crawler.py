@@ -19,12 +19,14 @@ async def discover_pages(
 ) -> list[str]:
     """Fetch the base URL and discover matching pages under it."""
     # Support both aiohttp-style context manager and direct-await mocks
+    status_code = None
     try:
         get_result = session.get(base_url)
         # If the returned object implements the async context manager protocol, use it
         if hasattr(get_result, "__aenter__") and hasattr(get_result, "__aexit__"):
             async with get_result as response:  # type: ignore[func-returns-value]
                 status = getattr(response, "status", None)
+                status_code = status
                 if status is None or not (200 <= int(status) < 300):
                     logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
                     return []
@@ -38,6 +40,7 @@ async def discover_pages(
             response = await get_result  # type: ignore[assignment]
             try:
                 status = getattr(response, "status", None)
+                status_code = status
                 if status is None or not (200 <= int(status) < 300):
                     logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
                     return []
@@ -58,10 +61,11 @@ async def discover_pages(
         logger.warning("HTTP request failed", url=base_url, error=str(e))
         return []
 
-    logger.debug("HTTP request successful", status_code=response.status)
+    if status_code is not None:
+        logger.debug("HTTP request successful", status_code=status_code)
     logger.debug(
         "Received HTML response",
-        status_code=response.status,
+        status_code=status_code,
         content_length=len(html),
     )
 

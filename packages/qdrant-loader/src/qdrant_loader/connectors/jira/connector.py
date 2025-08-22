@@ -17,7 +17,10 @@ from qdrant_loader.connectors.jira.models import (
     JiraIssue,
     JiraUser,
 )
-from qdrant_loader.core.attachment_downloader import AttachmentMetadata
+from qdrant_loader.core.attachment_downloader import (
+    AttachmentMetadata,
+    AttachmentDownloader,
+)
 from qdrant_loader.connectors.shared.attachments import AttachmentReader
 from qdrant_loader.connectors.shared.attachments.metadata import (
     jira_attachment_to_metadata,
@@ -76,16 +79,14 @@ class JiraConnector(BaseConnector):
         # Initialize file conversion components if enabled
         self.file_converter: FileConverter | None = None
         self.file_detector: FileDetector | None = None
-        self.attachment_downloader: AttachmentDownloader | None = None
+        self.attachment_reader: AttachmentReader | None = None
 
         if config.enable_file_conversion:
             self.file_detector = FileDetector()
             # FileConverter will be initialized when file_conversion_config is set
 
         if config.download_attachments:
-            from qdrant_loader.core.attachment_downloader import AttachmentDownloader
-
-            self.attachment_downloader = AttachmentReader(
+            self.attachment_reader = AttachmentReader(
                 session=self.session, downloader=AttachmentDownloader(session=self.session)
             )
 
@@ -111,9 +112,7 @@ class JiraConnector(BaseConnector):
             self.file_converter = FileConverter(config)
             if self.config.download_attachments:
                 # Reinitialize reader with new downloader config
-                from qdrant_loader.core.attachment_downloader import AttachmentDownloader
-
-                self.attachment_downloader = AttachmentReader(
+                self.attachment_reader = AttachmentReader(
                     session=self.session,
                     downloader=AttachmentDownloader(
                         session=self.session,
@@ -488,7 +487,7 @@ class JiraConnector(BaseConnector):
             )
 
             # Process attachments if enabled
-            if self.config.download_attachments and self.attachment_downloader:
+            if self.config.download_attachments and self.attachment_reader:
                 attachment_metadata = self._get_issue_attachments(issue)
                 if attachment_metadata:
                     logger.info(
@@ -497,7 +496,7 @@ class JiraConnector(BaseConnector):
                         attachment_count=len(attachment_metadata),
                     )
 
-                    attachment_documents = await self.attachment_downloader.fetch_and_process(
+                    attachment_documents = await self.attachment_reader.fetch_and_process(
                         attachment_metadata, document
                     )
                     documents.extend(attachment_documents)
