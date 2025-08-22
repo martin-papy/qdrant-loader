@@ -5,16 +5,21 @@ import signal
 from pathlib import Path
 
 from click.exceptions import ClickException
-from qdrant_loader.cli.async_utils import cancel_all_tasks as _cancel_all_tasks_helper
+from qdrant_loader.cli.async_utils import cancel_all_tasks
 from qdrant_loader.cli.config_loader import (
-    _get_logger as _alias_logger,  # noqa: F401
-    load_config_with_workspace as _load_config_with_workspace,
-    setup_workspace as _setup_workspace_impl,
+    load_config_with_workspace,
+    setup_workspace,
 )
 from qdrant_loader.config.workspace import validate_workspace_flags
 from qdrant_loader.utils.logging import LoggingConfig
 
-from . import run_pipeline_ingestion as _run_ingest_pipeline
+from . import run_pipeline_ingestion
+
+# Backward-compatibility aliases for tests expecting underscored names
+_load_config_with_workspace = load_config_with_workspace
+_setup_workspace_impl = setup_workspace
+_run_ingest_pipeline = run_pipeline_ingestion
+_cancel_all_tasks_helper = cancel_all_tasks
 
 
 async def run_ingest_command(
@@ -79,8 +84,8 @@ async def run_ingest_command(
             logger = LoggingConfig.get_logger(__name__)
             logger.debug(" SIGINT received, cancelling all tasks...")
             stop_event.set()
-            # Schedule cancellation of all running tasks safely from signal handler
-            loop.call_soon_threadsafe(lambda: asyncio.create_task(_cancel_all_tasks_helper()))
+            # Schedule cancellation of all running tasks safely on the event loop thread
+            loop.call_soon_threadsafe(loop.create_task, _cancel_all_tasks_helper())
 
         try:
             loop.add_signal_handler(signal.SIGINT, _handle_sigint)
@@ -89,7 +94,8 @@ async def run_ingest_command(
                 logger = LoggingConfig.get_logger(__name__)
                 logger.debug(" SIGINT received on Windows, cancelling all tasks...")
                 loop.call_soon_threadsafe(stop_event.set)
-                loop.call_soon_threadsafe(lambda: asyncio.create_task(_cancel_all_tasks_helper()))
+                # Ensure the coroutine runs on the correct loop without race conditions
+                asyncio.run_coroutine_threadsafe(_cancel_all_tasks_helper(), loop)
 
             signal.signal(signal.SIGINT, _signal_handler)
 
