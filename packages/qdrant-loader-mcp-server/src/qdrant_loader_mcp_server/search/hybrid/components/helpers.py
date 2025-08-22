@@ -54,6 +54,7 @@ async def combine_results(
 
 
 def build_filter(vector_search_service: Any, project_ids: list[str] | None) -> Any:
-    return vector_search_service._build_filter(project_ids)
+    # Use public API on the service to avoid relying on private methods
+    return vector_search_service.build_filter(project_ids)
 
 

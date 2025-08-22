@@ -348,3 +348,18 @@ class VectorSearchService:
         return None
 
     # Note: _build_filter method added back for backward compatibility - prefer FieldQueryParser.create_qdrant_filter()
+
+    def build_filter(self, project_ids: list[str] | None = None) -> models.Filter | None:
+        """Public wrapper for building a Qdrant filter for project constraints.
+
+        Prefer using `FieldQueryParser.create_qdrant_filter` for field queries. This
+        method exists to expose project filter building via a public API and wraps the
+        legacy `_build_filter` implementation for compatibility.
+
+        Args:
+            project_ids: Optional list of project IDs to filter by.
+
+        Returns:
+            A Qdrant `models.Filter` or `None` if no filtering is needed.
+        """
+        return self._build_filter(project_ids)
