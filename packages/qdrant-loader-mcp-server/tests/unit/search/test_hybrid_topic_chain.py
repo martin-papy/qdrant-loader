@@ -42,7 +42,9 @@ async def test_topic_chain_execution_with_failures(hybrid_search):
         generation_time_ms=150.0,
     )
 
-    async def mock_search_with_failures(query, limit, source_types=None, project_ids=None):
+    async def mock_search_with_failures(
+        query, limit, source_types=None, project_ids=None, **kwargs
+    ):
         if query == "API documentation":
             return [
                 create_hybrid_search_result(
