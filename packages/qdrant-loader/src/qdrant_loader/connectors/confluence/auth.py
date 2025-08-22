@@ -22,7 +22,6 @@ def setup_authentication(session: Session, config: ConfluenceSpaceConfig) -> Non
         session.headers.update(
             {
                 "Authorization": f"Bearer {config.token}",
-                "Content-Type": "application/json",
             }
         )
 

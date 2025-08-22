@@ -70,27 +70,62 @@ def extract_attachments(
     html: str, page_url: str, document_id: str, selectors: list[str]
 ) -> List[dict[str, Any]]:
     soup = BeautifulSoup(html, "html.parser")
-    attachments = []
+    attachments: List[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+
     for selector in selectors:
         links = soup.select(selector)
         for link in links:
-            href = link.get("href")
-            if not href:
+            try:
+                href = link.get("href")
+                if not href:
+                    continue
+
+                # Build absolute URL safely
+                absolute_url = urljoin(page_url, str(href))
+
+                # Normalize by stripping fragments and whitespace
+                absolute_url = absolute_url.strip().split("#")[0]
+
+                parsed_url = urlparse(absolute_url)
+
+                # Validate scheme and netloc
+                if parsed_url.scheme.lower() not in ("http", "https", "ftp"):
+                    continue
+                if not parsed_url.netloc:
+                    continue
+
+                # Deduplicate on normalized absolute URL
+                if absolute_url in seen_urls:
+                    continue
+                seen_urls.add(absolute_url)
+
+                # Derive a safe filename
+                if parsed_url.path:
+                    filename = parsed_url.path.rsplit("/", 1)[-1] or "download"
+                else:
+                    filename = "download"
+
+                # If there is no extension, keep generic octet-stream
+                file_ext = filename.split(".")[-1].lower() if "." in filename else ""
+                mime_type = get_mime_type_from_extension(file_ext)
+
+                # Stable id using index in the deduplicated list
+                attachment_id = f"{document_id}_{len(attachments)}"
+
+                attachments.append(
+                    {
+                        "id": attachment_id,
+                        "filename": filename or "download",
+                        "size": 0,
+                        "mime_type": mime_type,
+                        "download_url": absolute_url,
+                    }
+                )
+            except Exception:
+                # Skip malformed URLs or parsing errors silently; caller can log if needed
                 continue
-            absolute_url = urljoin(page_url, str(href))
-            parsed_url = urlparse(absolute_url)
-            filename = parsed_url.path.split("/")[-1] if parsed_url.path else "unknown"
-            file_ext = filename.split(".")[-1].lower() if "." in filename else ""
-            mime_type = get_mime_type_from_extension(file_ext)
-            attachments.append(
-                {
-                    "id": f"{document_id}_{len(attachments)}",
-                    "filename": filename,
-                    "size": 0,
-                    "mime_type": mime_type,
-                    "download_url": absolute_url,
-                }
-            )
+
     return attachments
 
 
