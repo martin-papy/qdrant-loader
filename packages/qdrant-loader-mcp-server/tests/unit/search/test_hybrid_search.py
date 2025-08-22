@@ -358,15 +358,22 @@ async def test_combine_results(hybrid_search):
 
 @pytest.mark.asyncio
 async def test_combine_results_with_source_filter(hybrid_search):
-    """Covered in test_hybrid_combining; keep minimal shape check."""
+    """Verify that only results matching source_types are kept."""
     out = await hybrid_search._combine_results(
-        [{"score": 0.8, "text": "x", "metadata": {}, "source_type": "git"}],
-        [],
+        [
+            {"score": 0.9, "text": "g1", "metadata": {}, "source_type": "git"},
+            {"score": 0.7, "text": "o1", "metadata": {}, "source_type": "other"},
+        ],
+        [
+            {"score": 0.8, "text": "g2", "metadata": {}, "source_type": "git"},
+            {"score": 0.6, "text": "c1", "metadata": {}, "source_type": "confluence"},
+        ],
         {},
-        5,
+        10,
         source_types=["git"],
     )
-    assert out and out[0].source_type == "git"
+    assert len(out) >= 1
+    assert all(getattr(r, "source_type", None) == "git" for r in out)
 
 
 @pytest.mark.asyncio

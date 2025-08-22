@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
+import inspect
 
 from ...enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 from ...components.search_result_models import HybridSearchResult
@@ -15,9 +16,12 @@ async def generate_topic_search_chain(
 ) -> TopicSearchChain:
     if initialize_from_search and not engine._topic_chains_initialized:
         await _initialize_topic_relationships(engine, query)
-    return engine.topic_chain_generator.generate_search_chain(
+    result = engine.topic_chain_generator.generate_search_chain(
         original_query=query, strategy=strategy, max_links=max_links
     )
+    if inspect.isawaitable(result):
+        return await result
+    return result
 
 
 async def execute_topic_chain_search(

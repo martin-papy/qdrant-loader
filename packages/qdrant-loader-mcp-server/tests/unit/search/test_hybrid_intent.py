@@ -79,7 +79,7 @@ async def test_search_with_aggressive_expansion(hybrid_search_with_intent):
         return_value="aggressive expansion"
     )
 
-    from qdrant_loader_mcp_server.search.enhanced.intent_classifier import (
+    from qdrant_loader_mcp_server.search.enhanced.intent.models import (
         IntentType,
         SearchIntent,
         AdaptiveSearchConfig,
