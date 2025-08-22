@@ -173,6 +173,10 @@ class ComplementaryContent:
 
     def get_top_recommendations(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get top N recommendations with detailed information."""
+        # Validate input limit explicitly to avoid silent misuse
+        if not isinstance(limit, int) or limit <= 0:
+            raise ValueError("limit must be an int greater than 0")
+
         top_recs = sorted(self.recommendations, key=lambda x: x[1], reverse=True)[:limit]
         return [
             {

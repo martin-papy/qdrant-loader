@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import os
 
 from ....search.components.search_result_models import HybridSearchResult
 
@@ -37,13 +38,7 @@ def apply_hierarchy_filters(
                 if parent_title_val != expected_parent:
                     continue
         if hierarchy_filter.get("root_only", False):
-            file_path_val = getattr(result, "file_path", None)
-            if result.source_type == "localfile" and file_path_val:
-                path_parts = [p for p in file_path_val.split("/") if p]
-                is_root = len(path_parts) <= 2
-                if not is_root:
-                    continue
-            elif not result.is_root_document():
+            if not result.is_root_document():
                 continue
         if "has_children" in hierarchy_filter and result.source_type != "localfile":
             if result.has_children() != hierarchy_filter["has_children"]:
@@ -91,9 +86,10 @@ def apply_lightweight_attachment_filters(
         _is_attachment_flag = bool(getattr(result, "is_attachment", False))
         _original_filename = getattr(result, "original_filename", None)
         _file_path = getattr(result, "file_path", None)
-        _is_path_file = (
-            isinstance(_file_path, str) and "." in _file_path and not _file_path.endswith("/")
-        )
+        _is_path_file = False
+        if isinstance(_file_path, str) and not _file_path.endswith("/"):
+            _basename = os.path.basename(_file_path)
+            _is_path_file = "." in _basename
         is_attachment = _is_attachment_flag or bool(_original_filename) or _is_path_file
         if not is_attachment:
             continue

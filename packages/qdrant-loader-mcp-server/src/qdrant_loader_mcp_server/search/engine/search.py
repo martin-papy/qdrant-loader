@@ -38,7 +38,8 @@ class SearchOperations:
             limit: Maximum number of results to return
             project_ids: Optional list of project IDs to filter by
         """
-        if not self.engine.hybrid_search:
+        hybrid = getattr(self.engine, "hybrid_search", None)
+        if not hybrid:
             raise RuntimeError("Search engine not initialized")
 
         logger.debug(
@@ -50,7 +51,7 @@ class SearchOperations:
         )
 
         try:
-            results = await self.engine.hybrid_search.search(
+            results = await hybrid.search(
                 query=query,
                 source_types=source_types,
                 limit=limit,

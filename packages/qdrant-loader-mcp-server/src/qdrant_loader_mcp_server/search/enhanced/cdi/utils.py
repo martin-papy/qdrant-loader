@@ -270,3 +270,21 @@ def categorize_cluster_size(size: int) -> str:
     if size <= 15:
         return "large"
     return "very large"
+
+
+def normalize_acronym(token: str) -> str:
+    """Normalize common acronyms for display consistently across CDI modules.
+
+    Falls back to Title Case when not in mapping and tolerates None/empty input.
+    """
+    mapping = {
+        "oauth": "OAuth",
+        "jwt": "JWT",
+        "api": "API",
+        "ui": "UI",
+        "ux": "UX",
+        "sql": "SQL",
+    }
+    t = (token or "").strip()
+    lower = t.lower()
+    return mapping.get(lower, t.title())

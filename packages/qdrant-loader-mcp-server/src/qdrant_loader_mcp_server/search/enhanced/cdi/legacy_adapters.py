@@ -90,8 +90,8 @@ class LegacyConflictDetectorAdapter:
                 has_conflict, reason, confidence = self.detector._analyze_metadata_conflicts(doc1, doc2)
                 if has_conflict and isinstance(reason, str) and "version" in reason.lower():
                     return [{"type": "version_conflict", "reason": reason, "confidence": confidence}]
-            except Exception:
-                pass
+            except Exception as exc:
+                self.logger.exception("Metadata conflict analysis failed during version conflict detection", exc_info=exc)
             return []
         except Exception as e:
             self.logger.warning(f"Error in version conflict detection: {e}")
@@ -123,8 +123,8 @@ class LegacyConflictDetectorAdapter:
                 has_conflict, reason, confidence = self.detector._analyze_text_conflicts(doc1, doc2)
                 if has_conflict and any(k in str(reason).lower() for k in ["procedure", "process", "steps", "workflow"]):
                     return [{"type": "procedural_conflict", "reason": reason, "confidence": confidence}]
-            except Exception:
-                pass
+            except Exception as exc:
+                self.logger.exception("Text conflict analysis failed during procedural conflict detection", exc_info=exc)
 
             return []
         except Exception as e:

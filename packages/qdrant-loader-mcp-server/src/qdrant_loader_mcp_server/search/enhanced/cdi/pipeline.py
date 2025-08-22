@@ -42,23 +42,28 @@ class CrossDocumentPipeline:
 
     # Methods below intentionally do not implement logic yet.
     def compute_similarity(self, a: SearchResult, b: SearchResult) -> DocumentSimilarity:
-        assert self.similarity_computer is not None, "similarity_computer not configured"
+        if self.similarity_computer is None:
+            raise RuntimeError("similarity_computer not configured")
         return self.similarity_computer.compute(a, b)
 
     def cluster(self, results: list[SearchResult]) -> list[DocumentCluster]:
-        assert self.clusterer is not None, "clusterer not configured"
+        if self.clusterer is None:
+            raise RuntimeError("clusterer not configured")
         return self.clusterer.cluster(results, strategy=ClusteringStrategy.MIXED_FEATURES)
 
     def recommend(self, target: SearchResult, pool: list[SearchResult]) -> ComplementaryContent:
-        assert self.recommender is not None, "recommender not configured"
+        if self.recommender is None:
+            raise RuntimeError("recommender not configured")
         return self.recommender.recommend(target, pool)
 
     async def detect_conflicts(self, results: list[SearchResult]) -> ConflictAnalysis:
-        assert self.conflict_detector is not None, "conflict_detector not configured"
+        if self.conflict_detector is None:
+            raise RuntimeError("conflict_detector not configured")
         return await self.conflict_detector.detect(results)
 
     def rank(self, results: list[HybridSearchResult]) -> list[HybridSearchResult]:
-        assert self.ranker is not None, "ranker not configured"
+        if self.ranker is None:
+            raise RuntimeError("ranker not configured")
         return self.ranker.rank(results)
 
 

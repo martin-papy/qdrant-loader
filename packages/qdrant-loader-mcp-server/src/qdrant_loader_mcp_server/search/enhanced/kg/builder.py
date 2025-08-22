@@ -95,9 +95,14 @@ class GraphBuilder:
 
             return graph
 
-        except Exception as e:
-            logger.error(f"Failed to build knowledge graph: {e}")
-            return graph
+        except (ValueError, KeyError) as exc:
+            # Known issues from malformed inputs or missing keys: log and return a clear error indicator
+            logger.exception("Recoverable error while building knowledge graph", exc_info=exc)
+            return None
+        except Exception as exc:
+            # Unexpected/critical exceptions should propagate after logging for caller visibility
+            logger.exception("Unexpected error while building knowledge graph", exc_info=exc)
+            raise
 
     def _create_document_nodes(
         self, search_results: list[SearchResult]

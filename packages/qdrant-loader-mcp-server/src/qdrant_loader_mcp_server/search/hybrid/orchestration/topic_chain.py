@@ -14,7 +14,8 @@ async def generate_topic_search_chain(
     max_links: int = 5,
     initialize_from_search: bool = True,
 ) -> TopicSearchChain:
-    if initialize_from_search and not engine._topic_chains_initialized:
+    # Use public accessor instead of private attribute
+    if initialize_from_search and not getattr(engine, "is_topic_chains_initialized", False):
         await _initialize_topic_relationships(engine, query)
     result = engine.topic_chain_generator.generate_search_chain(
         original_query=query, strategy=strategy, max_links=max_links
@@ -51,6 +52,13 @@ async def execute_topic_chain_search(
             )
             chain_results[link.query] = link_results
         except Exception as e:  # noqa: F841 - keep behavior
+            try:
+                # Log exception with context without altering behavior
+                engine.logger.exception(
+                    "Error running topic chain for query=%s", link.query
+                )
+            except Exception:
+                pass
             chain_results[link.query] = []
 
     return chain_results

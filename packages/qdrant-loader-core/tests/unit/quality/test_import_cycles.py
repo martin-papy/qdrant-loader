@@ -34,7 +34,14 @@ def _collect_edges(src_root: Path, scope_prefix: str) -> Tuple[Dict[str, Set[str
     modules: List[str] = []
 
     for py_file in _iter_python_files(src_root):
-        mod = _module_name_from_path(src_root.parent, py_file)
+        # Resolve module name relative to src_root (not its parent) to avoid "src." prefix
+        mod = _module_name_from_path(src_root, py_file)
+        # Normalize package __init__ modules to the package name
+        if mod.endswith(".__init__"):
+            mod = mod.rsplit(".", 1)[0]
+        # Optionally reduce noise by seeding only in-scope modules
+        if not mod.startswith(scope_prefix):
+            continue
         modules.append(mod)
         graph.setdefault(mod, set())
         try:
@@ -45,11 +52,17 @@ def _collect_edges(src_root: Path, scope_prefix: str) -> Tuple[Dict[str, Set[str
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name.startswith(scope_prefix):
-                        graph[mod].add(alias.name)
+                        nbr = alias.name
+                        if nbr.endswith(".__init__"):
+                            nbr = nbr.rsplit(".", 1)[0]
+                        graph[mod].add(nbr)
             elif isinstance(node, ast.ImportFrom):
                 target = _resolve_relative_import(mod, node.module, node.level)
                 if target and target.startswith(scope_prefix):
-                    graph[mod].add(target)
+                    nbr = target
+                    if nbr.endswith(".__init__"):
+                        nbr = nbr.rsplit(".", 1)[0]
+                    graph[mod].add(nbr)
     return graph, modules
 
 
@@ -89,6 +102,7 @@ def test_no_import_cycles_in_core_llm():
     graph, _ = _collect_edges(src_root, SCOPE_PREFIX)
     has_cycles, cycles = _has_cycles(graph, SCOPE_PREFIX)
     assert not has_cycles, f"Import cycles detected in core LLM modules: {cycles}"
+
 
 
 

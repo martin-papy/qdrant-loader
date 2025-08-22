@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Hashable, Iterable, List, Set
+from typing import Any, Hashable, Iterable, List, Set, Mapping
+import json
 
 
 class ResultDeduplicator:
@@ -13,7 +14,11 @@ class ResultDeduplicator:
         seen: Set[Hashable] = set()
         unique: List[Any] = []
         for item in results:
-            key_obj = getattr(item, self.key_attr, None)
+            # Support both Mapping (dict-like) and object attributes
+            if isinstance(item, Mapping):
+                key_obj = item.get(self.key_attr, None)
+            else:
+                key_obj = getattr(item, self.key_attr, None)
             if key_obj is None:
                 unique.append(item)
                 continue
@@ -22,8 +27,9 @@ class ResultDeduplicator:
             try:
                 hash(key_obj)
                 key = key_obj  # type: ignore[assignment]
-            except Exception:
-                key = str(key_obj)
+            except TypeError:
+                # Deterministic serialization for unhashable keys
+                key = json.dumps(key_obj, sort_keys=True, default=str)
             if key not in seen:
                 seen.add(key)
                 unique.append(item)

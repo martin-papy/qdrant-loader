@@ -54,8 +54,13 @@ def calculate_node_similarity(node1: GraphNode, node2: GraphNode) -> float:
     return total_similarity
 
 
-def build_reasoning_path(path: list[str], edges: list[GraphEdge], nodes_by_id: dict[str, GraphNode]) -> list[str]:
-    """Build a human-readable reasoning path from a traversal."""
+def build_reasoning_path(edges: list[GraphEdge], nodes_by_id: dict[str, GraphNode]) -> list[str]:
+    """Build a human-readable reasoning path from a traversal.
+
+    Parameters
+    - edges: Ordered list of graph edges traversed.
+    - nodes_by_id: Mapping from node id to `GraphNode` for resolving titles.
+    """
     reasoning: list[str] = []
     for _i, edge in enumerate(edges):
         source_node = nodes_by_id.get(edge.source_id)

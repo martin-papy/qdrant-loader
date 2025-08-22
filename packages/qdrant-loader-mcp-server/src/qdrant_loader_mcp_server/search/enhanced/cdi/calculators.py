@@ -9,6 +9,7 @@ hierarchical distance, and semantic similarity with spaCy integration.
 from __future__ import annotations
 
 import time
+import warnings
 
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
@@ -196,12 +197,30 @@ class DocumentSimilarityCalculator:
         return cdi_get_shared_topics(doc1, doc2)
 
     def _extract_entity_texts(self, entities: list[dict | str]) -> list[str]:
-        """Deprecated: kept for backward compatibility; use CDI utils instead."""
+        """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
+
+        Replacement: use CDI utils `extract_texts_from_mixed`.
+        """
+        warnings.warn(
+            "DocumentSimilarityCalculator._extract_entity_texts is deprecated; "
+            "use CDI utils.extract_texts_from_mixed instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         from .utils import extract_texts_from_mixed
         return extract_texts_from_mixed(entities)
 
     def _extract_topic_texts(self, topics: list[dict | str]) -> list[str]:
-        """Deprecated: kept for backward compatibility; use CDI utils instead."""
+        """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
+
+        Replacement: use CDI utils `extract_texts_from_mixed`.
+        """
+        warnings.warn(
+            "DocumentSimilarityCalculator._extract_topic_texts is deprecated; "
+            "use CDI utils.extract_texts_from_mixed instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         from .utils import extract_texts_from_mixed
         return extract_texts_from_mixed(topics)
 
