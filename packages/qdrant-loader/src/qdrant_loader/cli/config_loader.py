@@ -110,8 +110,6 @@ def load_config(
 
     except Exception as e:
         from qdrant_loader.config.state import DatabaseDirectoryError
-        from qdrant_loader.config import initialize_config
-
         if isinstance(e, DatabaseDirectoryError):
             if skip_validation:
                 return
@@ -119,10 +117,11 @@ def load_config(
             abs_path = error_path.resolve()
             if not create_database_directory(abs_path):
                 raise ClickException("Database directory creation declined. Exiting.") from e
-            if config_path is not None:
-                initialize_config(config_path, env_path, skip_validation=skip_validation)
-            else:
-                initialize_config(Path("config.yaml"), env_path, skip_validation=skip_validation)
+            # After successful creation, initialize once using the original config_path if provided,
+            # otherwise fall back to default config.yaml
+            from qdrant_loader.config import initialize_config
+            target_config = config_path if config_path is not None else Path("config.yaml")
+            initialize_config(target_config, env_path, skip_validation=skip_validation)
         elif isinstance(e, ClickException):
             raise e from None
         else:

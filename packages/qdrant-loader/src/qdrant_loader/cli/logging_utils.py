@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from typing import Any
+from logging import Logger
 
 
 _logger = None
 
 
-def get_logger():
+def get_logger() -> Logger:
     global _logger
     if _logger is None:
         from qdrant_loader.utils.logging import LoggingConfig

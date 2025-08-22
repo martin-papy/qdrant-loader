@@ -19,6 +19,7 @@ from qdrant_loader.core.state.session import (
     dispose_engine as _dispose_engine,
 )
 from qdrant_loader.core.state import transitions as _transitions
+from sqlalchemy import func, select
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -180,6 +181,59 @@ class StateManager:
                 exc_info=True,
             )
             raise
+
+    async def get_project_document_count(self, project_id: str) -> int:
+        """Get the count of non-deleted documents for a project.
+
+        Returns 0 on failure to avoid breaking CLI status output.
+        """
+        try:
+            session_factory = getattr(self, "_session_factory", None)
+            if session_factory is None:
+                ctx = await self.get_session()
+            else:
+                ctx = session_factory() if callable(session_factory) else session_factory
+            async with ctx as session:  # type: ignore
+                result = await session.execute(
+                    select(func.count(DocumentStateRecord.id))
+                    .filter_by(project_id=project_id)
+                    .filter_by(is_deleted=False)
+                )
+                count = result.scalar() or 0
+                return count
+        except Exception as e:  # pragma: no cover - fallback path
+            self.logger.error(
+                f"Error getting project document count for {project_id}: {str(e)}",
+                exc_info=True,
+            )
+            return 0
+
+    async def get_project_latest_ingestion(self, project_id: str) -> str | None:
+        """Get the latest ingestion timestamp (ISO) for a project.
+
+        Returns None on failure or when no ingestion exists.
+        """
+        try:
+            session_factory = getattr(self, "_session_factory", None)
+            if session_factory is None:
+                ctx = await self.get_session()
+            else:
+                ctx = session_factory() if callable(session_factory) else session_factory
+            async with ctx as session:  # type: ignore
+                result = await session.execute(
+                    select(IngestionHistory.last_successful_ingestion)
+                    .filter_by(project_id=project_id)
+                    .order_by(IngestionHistory.last_successful_ingestion.desc())
+                    .limit(1)
+                )
+                timestamp = result.scalar_one_or_none()
+                return timestamp.isoformat() if timestamp else None
+        except Exception as e:  # pragma: no cover - fallback path
+            self.logger.error(
+                f"Error getting project latest ingestion for {project_id}: {str(e)}",
+                exc_info=True,
+            )
+            return None
 
     async def mark_document_deleted(
         self,

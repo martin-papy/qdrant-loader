@@ -18,8 +18,45 @@ async def discover_pages(
     logger: Any,
 ) -> list[str]:
     """Fetch the base URL and discover matching pages under it."""
-    response = await session.get(base_url)
-    html = await _read_text(response)
+    # Support both aiohttp-style context manager and direct-await mocks
+    try:
+        get_result = session.get(base_url)
+        # If the returned object implements the async context manager protocol, use it
+        if hasattr(get_result, "__aenter__") and hasattr(get_result, "__aexit__"):
+            async with get_result as response:  # type: ignore[func-returns-value]
+                status = getattr(response, "status", None)
+                if status is None or not (200 <= int(status) < 300):
+                    logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
+                    return []
+                try:
+                    html = await _read_text(response)
+                except Exception as e:
+                    logger.warning("Failed to read HTTP response body", url=base_url, error=str(e))
+                    return []
+        else:
+            # Fallback: await the response directly
+            response = await get_result  # type: ignore[assignment]
+            try:
+                status = getattr(response, "status", None)
+                if status is None or not (200 <= int(status) < 300):
+                    logger.warning("Non-2xx HTTP status when fetching base URL", url=base_url, status_code=status)
+                    return []
+                try:
+                    html = await _read_text(response)
+                finally:
+                    # Best effort close if available
+                    close = getattr(response, "close", None)
+                    if callable(close):
+                        try:
+                            close()
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning("Failed to process HTTP response", url=base_url, error=str(e))
+                return []
+    except Exception as e:
+        logger.warning("HTTP request failed", url=base_url, error=str(e))
+        return []
 
     logger.debug("HTTP request successful", status_code=response.status)
     logger.debug(

@@ -8,7 +8,8 @@ _ALLOWED_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def _quote_cql_literal(value: str) -> str:
-    escaped = value.replace('"', '\\"')
+    # Escape backslashes first, then double quotes
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
 
 

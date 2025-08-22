@@ -5,6 +5,7 @@ from typing import List, Any
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
+from bs4 import NavigableString
 
 
 def extract_links(html: str, current_url: str, base_url: str) -> List[str]:
@@ -47,7 +48,9 @@ def extract_content(html: str, content_selector: str, remove: list[str], code_bl
     for code_block in code_blocks:
         code_text = code_block.get_text()
         if code_text:
-            code_block.replace_with(f"\n```\n{code_text}\n```\n")
+            # Keep node in tree: clear and append NavigableString with fenced markdown
+            code_block.clear()
+            code_block.append(NavigableString(f"\n```\n{code_text}\n```\n"))
     return content.get_text(separator="\n", strip=True)
 
 

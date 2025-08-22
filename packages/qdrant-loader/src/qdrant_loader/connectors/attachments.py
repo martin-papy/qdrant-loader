@@ -6,17 +6,42 @@ from qdrant_loader.core.attachment_downloader import AttachmentMetadata
 
 
 def attachment_metadata_from_dict(data: Dict[str, Any], parent_document_id: str) -> AttachmentMetadata:
-    """Create AttachmentMetadata from a simple dict structure.
+    """Create AttachmentMetadata from a simple dict structure with input validation.
 
-    Expected keys: id, filename, size, mime_type, download_url, created_at, updated_at, author.
-    Missing optional keys default to None/0.
+    Required keys: id, download_url.
+    Optional keys: filename, size, mime_type, created_at, updated_at, author.
+    Missing optional keys default to sensible values.
     """
+    # Validate required fields: id and download_url
+    raw_id = data.get("id", "")
+    attachment_id = str(raw_id).strip()
+    if not attachment_id:
+        raise ValueError("Attachment 'id' is required and cannot be empty.")
+
+    raw_url = data.get("download_url", "")
+    download_url = str(raw_url).strip()
+    if not download_url:
+        raise ValueError("Attachment 'download_url' is required and cannot be empty.")
+
+    # Optional fields with safe conversions/defaults
+    filename = str(data.get("filename", "unknown"))
+    mime_type = str(data.get("mime_type", "application/octet-stream"))
+
+    # Safely coerce size to int
+    size_value = data.get("size", 0)
+    try:
+        size_int = int(size_value) if size_value not in (None, "") else 0
+    except Exception:
+        size_int = 0
+    if size_int < 0:
+        size_int = 0
+
     return AttachmentMetadata(
-        id=str(data.get("id", "")),
-        filename=str(data.get("filename", "unknown")),
-        size=int(data.get("size", 0) or 0),
-        mime_type=str(data.get("mime_type", "application/octet-stream")),
-        download_url=str(data.get("download_url", "")),
+        id=attachment_id,
+        filename=filename,
+        size=size_int,
+        mime_type=mime_type,
+        download_url=download_url,
         parent_document_id=parent_document_id,
         created_at=data.get("created_at"),
         updated_at=data.get("updated_at"),
