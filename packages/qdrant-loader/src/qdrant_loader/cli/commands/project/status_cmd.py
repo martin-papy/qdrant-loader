@@ -17,13 +17,13 @@ async def run_project_status(
 
     async def _get_document_count(pid: str) -> int:
         try:
-            return await state_manager._get_project_document_count(pid)  # type: ignore[attr-defined]
+            return await state_manager.get_project_document_count(pid)
         except Exception:
             return 0
 
     async def _get_latest_ingestion(pid: str) -> str | None:
         try:
-            return await state_manager._get_project_latest_ingestion(pid)  # type: ignore[attr-defined]
+            return await state_manager.get_project_latest_ingestion(pid)
         except Exception:
             return None
 

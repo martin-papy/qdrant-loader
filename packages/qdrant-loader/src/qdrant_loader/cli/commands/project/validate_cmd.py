@@ -12,11 +12,12 @@ def run_project_validate(
     """Validate projects and return (results, all_valid)."""
     def _get_all_sources_from_config(sources_config):
         all_sources = {}
-        all_sources.update(sources_config.publicdocs)
-        all_sources.update(sources_config.git)
-        all_sources.update(sources_config.confluence)
-        all_sources.update(sources_config.jira)
-        all_sources.update(sources_config.localfile)
+        if not sources_config:
+            return all_sources
+        for name in ("publicdocs", "git", "confluence", "jira", "localfile"):
+            value = getattr(sources_config, name, None)
+            if isinstance(value, dict):
+                all_sources.update(value)
         return all_sources
 
     if project_id:
@@ -27,11 +28,11 @@ def run_project_validate(
 
     validation_results = []
     all_valid = True
-    for context in contexts.values():
-        if not context or not context.config:
+    for key, context in contexts.items():
+        if not context or not getattr(context, "config", None):
             validation_results.append(
                 {
-                    "project_id": getattr(context, "project_id", project_id),
+                    "project_id": (context.project_id if context and hasattr(context, "project_id") else key),
                     "valid": False,
                     "errors": ["Missing project configuration"],
                     "source_count": 0,
@@ -41,7 +42,8 @@ def run_project_validate(
             continue
 
         source_errors: list[str] = []
-        all_sources = _get_all_sources_from_config(context.config.sources)
+        sources_cfg = context.config.sources if context and context.config else None
+        all_sources = _get_all_sources_from_config(sources_cfg)
         for source_name, source_config in all_sources.items():
             try:
                 if not getattr(source_config, "source_type", None):
@@ -53,7 +55,7 @@ def run_project_validate(
 
         validation_results.append(
             {
-                "project_id": context.project_id,
+                "project_id": (context.project_id if context and hasattr(context, "project_id") else key),
                 "valid": len(source_errors) == 0,
                 "errors": source_errors,
                 "source_count": len(all_sources),
