@@ -23,7 +23,7 @@ async def test_get_embedding_error_handling(hybrid_search, mock_openai_client):
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_topic_chain_generation_error_handling(hybrid_search):
-    hybrid_search.topic_chain_generator.generate_search_chain = MagicMock(
+    hybrid_search.topic_chain_generator.generate_search_chain = AsyncMock(
         side_effect=Exception("Topic chain generation failed")
     )
     with pytest.raises(Exception, match="Topic chain generation failed"):
