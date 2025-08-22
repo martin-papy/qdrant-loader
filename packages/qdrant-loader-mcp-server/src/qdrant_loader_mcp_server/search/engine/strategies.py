@@ -22,76 +22,77 @@ class StrategySelector:
         self.engine = engine
         self.logger = LoggingConfig.get_logger(__name__)
 
-    def select_optimal_strategy(self, documents: list) -> str:
+    def select_optimal_strategy(self, documents: list) -> ClusteringStrategy:
         """Analyze document characteristics and select optimal clustering strategy."""
         if not documents:
-            return "mixed_features"
+            return ClusteringStrategy.MIXED_FEATURES
 
         # Analyze document characteristics
         analysis = self.analyze_document_characteristics(documents)
 
         # Strategy scoring system
-        strategy_scores = {
-            "entity_based": 0,
-            "topic_based": 0,
-            "project_based": 0,
-            "hierarchical": 0,
-            "mixed_features": 0,
+        strategy_scores: dict[ClusteringStrategy, int] = {
+            ClusteringStrategy.ENTITY_BASED: 0,
+            ClusteringStrategy.TOPIC_BASED: 0,
+            ClusteringStrategy.PROJECT_BASED: 0,
+            ClusteringStrategy.HIERARCHICAL: 0,
+            ClusteringStrategy.MIXED_FEATURES: 0,
         }
 
         # Score based on entity richness
         if analysis["entity_richness"] > 0.7:
-            strategy_scores["entity_based"] += 3
-            strategy_scores["mixed_features"] += 1
+            strategy_scores[ClusteringStrategy.ENTITY_BASED] += 3
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 1
         elif analysis["entity_richness"] > 0.4:
-            strategy_scores["entity_based"] += 1
-            strategy_scores["mixed_features"] += 2
+            strategy_scores[ClusteringStrategy.ENTITY_BASED] += 1
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 2
 
         # Score based on topic clarity
         if analysis["topic_clarity"] > 0.7:
-            strategy_scores["topic_based"] += 3
-            strategy_scores["mixed_features"] += 1
+            strategy_scores[ClusteringStrategy.TOPIC_BASED] += 3
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 1
         elif analysis["topic_clarity"] > 0.4:
-            strategy_scores["topic_based"] += 1
-            strategy_scores["mixed_features"] += 2
+            strategy_scores[ClusteringStrategy.TOPIC_BASED] += 1
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 2
 
         # Score based on project distribution
         if analysis["project_distribution"] > 0.6:
-            strategy_scores["project_based"] += 3
+            strategy_scores[ClusteringStrategy.PROJECT_BASED] += 3
         elif analysis["project_distribution"] > 0.3:
-            strategy_scores["project_based"] += 1
-            strategy_scores["mixed_features"] += 1
+            strategy_scores[ClusteringStrategy.PROJECT_BASED] += 1
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 1
 
         # Score based on hierarchical structure
         if analysis["hierarchical_structure"] > 0.6:
-            strategy_scores["hierarchical"] += 3
+            strategy_scores[ClusteringStrategy.HIERARCHICAL] += 3
         elif analysis["hierarchical_structure"] > 0.3:
-            strategy_scores["hierarchical"] += 1
-            strategy_scores["mixed_features"] += 1
+            strategy_scores[ClusteringStrategy.HIERARCHICAL] += 1
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 1
 
         # Score based on source diversity
         if analysis["source_diversity"] > 0.7:
-            strategy_scores["mixed_features"] += 2
+            strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 2
 
         # Bonus for mixed_features as a safe default
-        strategy_scores["mixed_features"] += 1
+        strategy_scores[ClusteringStrategy.MIXED_FEATURES] += 1
 
         # Select strategy with highest score
         best_strategy = max(strategy_scores.items(), key=lambda x: x[1])[0]
 
         self.logger.info(f"Strategy analysis: {analysis}")
         self.logger.info(f"Strategy scores: {strategy_scores}")
-        self.logger.info(f"Selected strategy: {best_strategy}")
+        self.logger.info(f"Selected strategy: {getattr(best_strategy, 'value', str(best_strategy))}")
 
         # Validate against ClusteringStrategy enum; fallback to safe default
-        try:
-            _ = ClusteringStrategy(best_strategy)
-        except ValueError as e:
-            self.logger.warning(
-                f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'",
-                error=str(e),
-            )
-            best_strategy = "mixed_features"
+        if not isinstance(best_strategy, ClusteringStrategy):
+            try:
+                best_strategy = ClusteringStrategy(str(best_strategy))
+            except ValueError as e:
+                self.logger.warning(
+                    f"Unsupported clustering strategy '{best_strategy}', falling back to 'mixed_features'",
+                    error=str(e),
+                )
+                best_strategy = ClusteringStrategy.MIXED_FEATURES
 
         return best_strategy
 

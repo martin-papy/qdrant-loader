@@ -29,6 +29,7 @@ from ....utils.logging import LoggingConfig
 from ...models import SearchResult
 from ...nlp.spacy_analyzer import SpaCyQueryAnalyzer
 from .models import ConflictAnalysis
+from .legacy_adapters import LegacyConflictDetectorAdapter
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -226,15 +227,44 @@ class ConflictDetector:
                 timeout=timeout_s
             )
 
-            content = response.choices[0].message.content.strip()
-            parts = content.split("|")
+            content_raw = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
+            content = content_raw.strip()
 
-            if len(parts) >= 3:
-                conflict_detected = parts[0].lower().strip() == "yes"
-                confidence = float(parts[1].strip())
-                explanation = parts[2].strip()
-                return conflict_detected, explanation, confidence
-            else:
+            try:
+                parts = content.split("|", 2)
+                if len(parts) < 2:
+                    raise ValueError("Expected at least two pipe-separated fields")
+
+                # Normalize conflict token
+                conflict_token = parts[0].strip().lower()
+                truthy = {"yes", "true", "y", "1"}
+                falsy = {"no", "false", "n", "0"}
+                if conflict_token in truthy:
+                    conflict_detected = True
+                elif conflict_token in falsy:
+                    conflict_detected = False
+                else:
+                    # Default conservative to False when unclear
+                    conflict_detected = False
+
+                # Parse confidence safely
+                confidence_str = parts[1].strip()
+                try:
+                    confidence_val = float(confidence_str)
+                except Exception:
+                    confidence_val = 0.0
+                # Clamp to [0,1]
+                confidence = max(0.0, min(1.0, confidence_val))
+
+                # Explanation is the remainder (may contain pipes)
+                explanation = parts[2].strip() if len(parts) > 2 else ""
+                return conflict_detected, explanation or "", confidence
+            except Exception as parse_err:
+                self.logger.warning(
+                    "Invalid LLM response format; returning safe defaults",
+                    error=str(parse_err),
+                    raw_response=content[:200],
+                )
                 return False, "Invalid LLM response format", 0.0
 
         except asyncio.TimeoutError:
@@ -465,112 +495,38 @@ class ConflictDetector:
             self.logger.error(f"Error in conflict detection after {processing_time:.2f}ms: {e}")
             return ConflictAnalysis()
 
-    # Compatibility methods for tests - delegate to existing functionality
+    # Compatibility methods for tests - delegate via legacy adapter
     def _find_contradiction_patterns(self, doc1, doc2):
-        """Find contradiction patterns between two documents (compatibility method)."""
         try:
-            # Simple text-based conflict detection for test compatibility
-            text1 = getattr(doc1, 'text', getattr(doc1, 'content', ''))
-            text2 = getattr(doc2, 'text', getattr(doc2, 'content', ''))
-            
-            patterns = []
-            
-            # Check for version conflicts
-            import re
-            version_pattern = r'version\s+(\d+\.\d+\.\d+)'
-            versions1 = re.findall(version_pattern, text1.lower())
-            versions2 = re.findall(version_pattern, text2.lower())
-            
-            if versions1 and versions2 and versions1 != versions2:
-                patterns.append({
-                    "type": "version_conflict",
-                    "reason": f"Version mismatch: {versions1[0]} vs {versions2[0]}",
-                    "confidence": 0.8
-                })
-            
-            # Check for general conflicting terms
-            conflict_indicators = [
-                ("should not", "should"), 
-                ("avoid", "use"),
-                ("deprecated", "recommended"),
-                ("wrong", "correct"),
-                ("never", "always"),
-                ("must not", "must"),
-                ("don't", "do")
-            ]
-            
-            for negative, positive in conflict_indicators:
-                if (negative in text1.lower() and positive in text2.lower()) or (negative in text2.lower() and positive in text1.lower()):
-                    patterns.append({
-                        "type": "procedural_conflict",
-                        "reason": f"Conflicting advice: '{negative}' vs '{positive}'",
-                        "confidence": 0.8
-                    })
-                    
-            return patterns
-            
+            adapter = getattr(self, "_legacy_adapter", None)
+            if adapter is None:
+                adapter = LegacyConflictDetectorAdapter(self)
+                setattr(self, "_legacy_adapter", adapter)
+            return adapter._find_contradiction_patterns(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error in compatibility method _find_contradiction_patterns: {e}")
+            self.logger.warning(f"Error delegating to legacy adapter in _find_contradiction_patterns: {e}")
             return []
 
     def _detect_version_conflicts(self, doc1, doc2):
-        """Detect version conflicts (compatibility method)."""
         try:
-            text1 = getattr(doc1, 'text', getattr(doc1, 'content', ''))
-            text2 = getattr(doc2, 'text', getattr(doc2, 'content', ''))
-            
-            # Look for version patterns in both documents
-            import re
-            version_pattern = r'(?:python|node|java|version)\s*(\d+\.\d+(?:\.\d+)?)'
-            versions1 = re.findall(version_pattern, text1.lower())
-            versions2 = re.findall(version_pattern, text2.lower())
-            
-            if versions1 and versions2:
-                # Check if there are different versions mentioned
-                for v1 in versions1:
-                    for v2 in versions2:
-                        if v1 != v2:
-                            return [{"type": "version_conflict", "reason": f"Version mismatch: {v1} vs {v2}", "summary": f"Version mismatch: {v1} vs {v2}", "confidence": 0.8}]
-            
-            # Fallback to metadata analysis
-            has_conflict, reason, confidence = self._analyze_metadata_conflicts(doc1, doc2)
-            if has_conflict and "version" in reason.lower():
-                return [{"type": "version_conflict", "reason": reason, "confidence": confidence}]
-            return []
+            adapter = getattr(self, "_legacy_adapter", None)
+            if adapter is None:
+                adapter = LegacyConflictDetectorAdapter(self)
+                setattr(self, "_legacy_adapter", adapter)
+            return adapter._detect_version_conflicts(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error in version conflict detection: {e}")
+            self.logger.warning(f"Error delegating to legacy adapter in _detect_version_conflicts: {e}")
             return []
 
     def _detect_procedural_conflicts(self, doc1, doc2):
-        """Detect procedural conflicts (compatibility method)."""
         try:
-            text1 = getattr(doc1, 'text', getattr(doc1, 'content', ''))
-            text2 = getattr(doc2, 'text', getattr(doc2, 'content', ''))
-            
-            # Look for procedural conflicts directly in text
-            procedural_conflicts = [
-                ("should", "should not"),
-                ("must", "must not"),
-                ("manually", "automated"),
-                ("always", "never")
-            ]
-            
-            for positive, negative in procedural_conflicts:
-                if ((positive in text1.lower() and negative in text2.lower()) or 
-                    (negative in text1.lower() and positive in text2.lower())):
-                    return [{"type": "procedural_conflict", "reason": f"Conflicting procedures: '{positive}' vs '{negative}'", "confidence": 0.8}]
-            
-            # Fallback to text analysis if available
-            try:
-                has_conflict, reason, confidence = self._analyze_text_conflicts(doc1, doc2)
-                if has_conflict and any(keyword in reason.lower() for keyword in ["procedure", "process", "steps", "workflow"]):
-                    return [{"type": "procedural_conflict", "reason": reason, "confidence": confidence}]
-            except:
-                pass  # Ignore errors from mocked components
-                
-            return []
+            adapter = getattr(self, "_legacy_adapter", None)
+            if adapter is None:
+                adapter = LegacyConflictDetectorAdapter(self)
+                setattr(self, "_legacy_adapter", adapter)
+            return adapter._detect_procedural_conflicts(doc1, doc2)
         except Exception as e:
-            self.logger.warning(f"Error in procedural conflict detection: {e}")
+            self.logger.warning(f"Error delegating to legacy adapter in _detect_procedural_conflicts: {e}")
             return []
 
     def _extract_context_snippet(self, text, keyword, context_length=100, max_length=None):
@@ -823,77 +779,115 @@ class ConflictDetector:
                 temperature=0.1
             )
             
-            # Parse LLM response with JSON extraction for malformed responses
+            # Parse LLM response with robust JSON extraction for malformed responses
             import json
-            import re
             
-            content = response.choices[0].message.content
-            
-            # Try direct JSON parsing first
+            content = getattr(getattr(response.choices[0], "message", {}), "content", "") or ""
+
+            def extract_json_object(text: str) -> str | None:
+                """Extract the first complete JSON object from text safely.
+                Guards against runaway loops and unbalanced braces.
+                """
+                max_len = min(len(text), 20000)
+                start_idx = text.find('{', 0, max_len)
+                if start_idx == -1:
+                    return None
+
+                brace_count = 0
+                end_idx = start_idx
+                iterations = 0
+                for i in range(start_idx, max_len):
+                    ch = text[i]
+                    if ch == '{':
+                        brace_count += 1
+                    elif ch == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            end_idx = i
+                            break
+                    iterations += 1
+                    if iterations > 50000:
+                        break
+
+                if brace_count == 0 and end_idx >= start_idx:
+                    return text[start_idx:end_idx + 1]
+                return None
+
+            llm_result: dict | None = None
             try:
                 llm_result = json.loads(content)
-            except json.JSONDecodeError:
-                # Try to extract JSON from malformed response using bracket matching
-                def extract_json_object(text):
-                    """Extract the first complete JSON object from text."""
-                    start_idx = text.find('{')
-                    if start_idx == -1:
-                        return None
-                    
-                    brace_count = 0
-                    end_idx = start_idx
-                    
-                    for i, char in enumerate(text[start_idx:], start_idx):
-                        if char == '{':
-                            brace_count += 1
-                        elif char == '}':
-                            brace_count -= 1
-                            if brace_count == 0:
-                                end_idx = i
-                                break
-                    
-                    if brace_count == 0:
-                        return text[start_idx:end_idx + 1]
-                    return None
-                
-                extracted_json = extract_json_object(content)
-                if extracted_json:
+            except Exception:
+                extracted = extract_json_object(content)
+                if extracted is not None:
                     try:
-                        llm_result = json.loads(extracted_json)
-                    except json.JSONDecodeError:
-                        # If extraction fails, raise original error
-                        raise
+                        llm_result = json.loads(extracted)
+                    except Exception as json_err:
+                        self.logger.warning(
+                            "Failed to parse extracted JSON from LLM content",
+                            error=str(json_err),
+                            snippet=(extracted[:200] if isinstance(extracted, str) else ""),
+                        )
+                        llm_result = None
                 else:
-                    # No JSON found, raise original error
-                    raise
-            
-            # If no conflicts detected, return None as expected by tests
-            if not llm_result.get("has_conflicts", False):
+                    self.logger.warning(
+                        "No JSON object found in LLM content",
+                        snippet=content[:200],
+                    )
+
+            if not isinstance(llm_result, dict):
                 return None
-            
-            # Return formatted result with conflict type from LLM
-            conflicts = llm_result.get("conflicts", [])
-            conflict_type = conflicts[0].get("type", "unknown") if conflicts else "unknown"
-            
-            # Extract confidence from LLM result or first conflict
-            confidence = llm_result.get("confidence")
-            if confidence is None and conflicts:
-                confidence = conflicts[0].get("confidence", 0.5)
-            if confidence is None:
-                confidence = 0.5
-            
+
+            # Validate and coerce fields
+            raw_has_conflicts = llm_result.get("has_conflicts", False)
+            if isinstance(raw_has_conflicts, bool):
+                has_conflicts = raw_has_conflicts
+            elif isinstance(raw_has_conflicts, (int, float)):
+                has_conflicts = bool(raw_has_conflicts)
+            else:
+                has_conflicts = str(raw_has_conflicts).strip().lower() in {"true", "yes", "1"}
+
+            if not has_conflicts:
+                return None
+
+            conflicts = llm_result.get("conflicts")
+            if not isinstance(conflicts, list):
+                conflicts = []
+
+            # Determine conflict type
+            conflict_type = "unknown"
+            if conflicts and isinstance(conflicts[0], dict):
+                conflict_type = conflicts[0].get("type", "unknown")
+
+            # Confidence
+            raw_conf = llm_result.get("confidence")
+            if raw_conf is None and conflicts and isinstance(conflicts[0], dict):
+                raw_conf = conflicts[0].get("confidence")
+            try:
+                confidence = float(raw_conf) if raw_conf is not None else 0.5
+            except Exception:
+                try:
+                    confidence = float(str(raw_conf))
+                except Exception:
+                    confidence = 0.5
+            confidence = max(0.0, min(1.0, confidence))
+
+            explanation = llm_result.get("explanation")
+            if not isinstance(explanation, str):
+                explanation = "LLM analysis"
+
             return {
                 "conflicts": conflicts,
-                "has_conflicts": llm_result.get("has_conflicts", False),
+                "has_conflicts": True,
                 "confidence": confidence,
-                "explanation": llm_result.get("explanation", "LLM analysis"),
+                "explanation": explanation,
                 "similarity_score": similarity_score,
-                "type": conflict_type
+                "type": conflict_type,
             }
-            
         except Exception as e:
-            self.logger.warning(f"LLM conflict analysis failed: {e}")
-            # Return None for timeout and other exceptions (as expected by tests)
+            self.logger.warning(
+                "LLM conflict analysis failed",
+                error=str(e),
+            )
             return None
     
     async def _get_tiered_analysis_pairs(self, documents: list[SearchResult]) -> list[tuple]:
