@@ -115,8 +115,10 @@ class KnowledgeGraph:
             betweenness_centrality = nx.betweenness_centrality(self.graph)
 
             # For directed graphs, calculate hub and authority scores
+            # Create a simple DiGraph view to ensure compatibility with HITS
             try:
-                hub_scores, authority_scores = nx.hits(self.graph, max_iter=100)
+                simple_digraph = nx.DiGraph(self.graph)
+                hub_scores, authority_scores = nx.hits(simple_digraph, max_iter=100)
             except nx.PowerIterationFailedConvergence:
                 logger.warning(
                     "HITS algorithm failed to converge, using default scores"

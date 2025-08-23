@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..knowledge_graph import TraversalStrategy
@@ -21,6 +21,10 @@ else:
     except ImportError:
         # Fallback if knowledge_graph isn't available
         TraversalStrategy = None
+
+
+# Sentinel to distinguish between an explicit None and an omitted argument
+_UNSET = object()
 
 
 class IntentType(Enum):
@@ -72,7 +76,8 @@ class AdaptiveSearchConfig:
 
     # Knowledge graph integration
     use_knowledge_graph: bool = False
-    kg_traversal_strategy: Any = None  # TraversalStrategy when available
+    # Use Optional[TraversalStrategy] while leveraging a sentinel default to detect omission
+    kg_traversal_strategy: Optional["TraversalStrategy"] = field(default=_UNSET)
     max_graph_hops: int = 2
     kg_expansion_weight: float = 0.2
 
@@ -98,7 +103,13 @@ class AdaptiveSearchConfig:
     personal_bias: float = 0.0  # Bias toward user's previous interests
 
     def __post_init__(self):
-        """Initialize TraversalStrategy if available."""
-        if self.kg_traversal_strategy is None and TraversalStrategy is not None:
-            # Set default TraversalStrategy when available
-            self.kg_traversal_strategy = TraversalStrategy.SEMANTIC
+        """Assign default TraversalStrategy only when the field was omitted.
+
+        This preserves explicit None values provided by callers.
+        """
+        if self.kg_traversal_strategy is _UNSET:
+            if TraversalStrategy is not None:
+                self.kg_traversal_strategy = TraversalStrategy.SEMANTIC
+            else:
+                # If TraversalStrategy isn't available at runtime, keep as None
+                self.kg_traversal_strategy = None
