@@ -53,6 +53,7 @@ def get_search_tool_schema() -> dict[str, Any]:
             "properties": {
                 "results": {
                     "type": "array",
+                    "minItems": 0,
                     "items": {
                         "type": "object",
                         "additionalProperties": False,
@@ -96,7 +97,7 @@ def get_search_tool_schema() -> dict[str, Any]:
                         ],
                     },
                 },
-                "total_found": {"type": "integer"},
+                "total_found": {"type": "integer", "minimum": 0},
                 "query_context": {
                     "type": "object",
                     "additionalProperties": False,
@@ -113,6 +114,7 @@ def get_search_tool_schema() -> dict[str, Any]:
                     },
                 },
             },
+            "required": ["results", "total_found"],
         },
     }
 

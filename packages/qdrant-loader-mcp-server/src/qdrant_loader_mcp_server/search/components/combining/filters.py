@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
 
-def should_skip_result(metadata: dict, result_filters: dict, query_context: dict) -> bool:
+def should_skip_result(
+    metadata: Dict[str, Any],
+    result_filters: Dict[str, Any],
+    query_context: Dict[str, Any],
+) -> bool:
     # Content type filtering
     if "content_type" in result_filters:
         allowed_content_types = result_filters["content_type"]
