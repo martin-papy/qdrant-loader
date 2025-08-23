@@ -9,6 +9,21 @@ class DefaultClusterer(Clusterer):
     """Adapter to legacy DocumentClusterAnalyzer for behavior parity."""
 
     def __init__(self, similarity_calculator):
+        """Initialize the clusterer.
+
+        The provided `similarity_calculator` is expected to expose a `spacy_analyzer`
+        attribute compatible with the legacy `DocumentSimilarityCalculator`.
+
+        - If `spacy_analyzer` is present, it will be used to construct the legacy
+          similarity calculator and analyzer.
+        - If absent, a clear ValueError is raised describing the missing attribute
+          and expected type, rather than failing with an AttributeError later.
+        """
+        if not hasattr(similarity_calculator, "spacy_analyzer"):
+            raise ValueError(
+                "similarity_calculator must provide a 'spacy_analyzer' attribute compatible "
+                "with the legacy DocumentSimilarityCalculator."
+            )
         # Try to import from current CDI modules first; fall back to legacy path.
         try:
             from ..analyzers import (

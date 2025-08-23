@@ -439,15 +439,21 @@ class CrossDocumentIntelligenceEngine:
 
                 if i == j:
                     matrix[doc1_id][doc2_id] = 1.0
-                elif doc2_id in matrix and doc1_id in matrix[doc2_id]:
-                    # Use cached value
-                    matrix[doc1_id][doc2_id] = matrix[doc2_id][doc1_id]
                 else:
-                    # Calculate similarity
+                    # Ensure rows exist before accessing for symmetry checks
+                    if doc2_id not in matrix:
+                        matrix[doc2_id] = {}
+                    # If symmetric value already computed, reuse it
+                    if doc1_id in matrix.get(doc2_id, {}):
+                        matrix[doc1_id][doc2_id] = matrix[doc2_id][doc1_id]
+                        continue
+                    # Otherwise compute and store symmetrically
                     similarity = self.similarity_calculator.calculate_similarity(
                         doc1, doc2
                     )
-                    matrix[doc1_id][doc2_id] = similarity.similarity_score
+                    score = similarity.similarity_score
+                    matrix[doc1_id][doc2_id] = score
+                    matrix[doc2_id][doc1_id] = score
 
         return matrix
 

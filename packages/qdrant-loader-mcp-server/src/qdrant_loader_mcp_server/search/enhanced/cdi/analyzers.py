@@ -15,6 +15,7 @@ from typing import Any
 from ....utils.logging import LoggingConfig
 from ...models import SearchResult
 from .models import ClusteringStrategy, DocumentCluster
+from . import utils as cdi_utils
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -196,12 +197,11 @@ class DocumentClusterAnalyzer:
         # Group documents by hierarchical context
         for doc in documents:
             doc_id = f"{doc.source_type}:{doc.source_title}"
-
             # Use breadcrumb as clustering key (delegated)
-            from .utils import cluster_key_from_breadcrumb
-
             if doc.breadcrumb_text:
-                cluster_key = cluster_key_from_breadcrumb(doc.breadcrumb_text, levels=2)
+                cluster_key = cdi_utils.cluster_key_from_breadcrumb(
+                    doc.breadcrumb_text, levels=2
+                )
                 hierarchy_groups[cluster_key].append(doc_id)
             else:
                 hierarchy_groups["root"].append(doc_id)
@@ -291,16 +291,15 @@ class DocumentClusterAnalyzer:
         context_key: str = "",
     ) -> str:
         """Generate an intelligent, descriptive name for a cluster."""
-        from .utils import normalize_acronym
 
         # Entity-based naming
         if cluster_type == "entity" and entities:
             if len(entities) == 1:
-                return f"{normalize_acronym(entities[0])} Documentation"
+                return f"{cdi_utils.normalize_acronym(entities[0])} Documentation"
             elif len(entities) == 2:
-                return f"{normalize_acronym(entities[0])} & {normalize_acronym(entities[1])}"
+                return f"{cdi_utils.normalize_acronym(entities[0])} & {cdi_utils.normalize_acronym(entities[1])}"
             else:
-                return f"{normalize_acronym(entities[0])} Ecosystem"
+                return f"{cdi_utils.normalize_acronym(entities[0])} Ecosystem"
 
         # Topic-based naming
         if cluster_type == "topic" and topics:
@@ -316,7 +315,7 @@ class DocumentClusterAnalyzer:
         # Mixed or unknown type naming - try to use provided entities/topics
         # Recognize known types first to avoid early-return blocking specialized handling
         if cluster_type not in ["entity", "topic", "project", "hierarchy", "mixed"]:
-            first_entity = normalize_acronym(entities[0]) if entities else None
+            first_entity = cdi_utils.normalize_acronym(entities[0]) if entities else None
             clean_topics = [self._clean_topic_name(topic) for topic in topics if topic]
             first_topic = clean_topics[0] if clean_topics else None
             if first_entity and first_topic:
@@ -339,9 +338,7 @@ class DocumentClusterAnalyzer:
             return f"Topic Cluster {index}"
         # Hierarchy-based naming
         if cluster_type == "hierarchy" and context_key:
-            from .utils import format_hierarchy_cluster_name
-
-            return format_hierarchy_cluster_name(context_key)
+            return cdi_utils.format_hierarchy_cluster_name(context_key)
 
         # Mixed features naming
         if cluster_type == "mixed":
@@ -381,9 +378,7 @@ class DocumentClusterAnalyzer:
 
     def _clean_topic_name(self, topic: str) -> str:
         """Clean and format topic names for display (delegates to CDI utils)."""
-        from .utils import clean_topic_name
-
-        return clean_topic_name(topic)
+        return cdi_utils.clean_topic_name(topic)
 
     def _calculate_cluster_coherence(
         self, cluster: DocumentCluster, all_documents: list[SearchResult]
@@ -505,8 +500,7 @@ class DocumentClusterAnalyzer:
 
         # Analyze titles for common patterns (delegate to CDI helper)
         titles = [doc.source_title or "" for doc in cluster_docs if doc.source_title]
-        from .utils import compute_common_title_words
-        common_title_words = compute_common_title_words(titles, top_k=10)
+        common_title_words = cdi_utils.compute_common_title_words(titles, top_k=10)
 
         # Analyze content patterns
         has_code = any(getattr(doc, "has_code_blocks", False) for doc in cluster_docs)
@@ -648,6 +642,4 @@ class DocumentClusterAnalyzer:
 
     def _categorize_cluster_size(self, size: int) -> str:
         """Categorize cluster size (delegates to CDI utils)."""
-        from .utils import categorize_cluster_size
-
-        return categorize_cluster_size(size)
+        return cdi_utils.categorize_cluster_size(size)

@@ -17,6 +17,48 @@ from ..enhanced.topic_search_chain import ChainStrategy, TopicSearchChain
 logger = LoggingConfig.get_logger(__name__)
 
 
+class TopicChainResult(dict):
+    """Dict-like result for topic chain searches.
+
+    - Behaves like the legacy mapping of query->results (backward compatible).
+    - Additionally exposes metadata via special keys and attributes:
+      'chain_results', 'organized_results', and 'stats'.
+    """
+
+    def __init__(self, chain_results: dict, organized_results: dict, stats: dict):
+        super().__init__(chain_results)
+        # Expose as attributes
+        self.chain_results = chain_results
+        self.organized_results = organized_results
+        self.stats = stats
+
+    def __getitem__(self, key):  # type: ignore[override]
+        if key == "chain_results":
+            return self.chain_results
+        if key == "organized_results":
+            return self.organized_results
+        if key == "stats":
+            return self.stats
+        return super().__getitem__(key)
+
+    def __contains__(self, key):  # type: ignore[override]
+        if key in {"chain_results", "organized_results", "stats"}:
+            return True
+        return super().__contains__(key)
+
+    def get(self, key, default=None):  # type: ignore[override]
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __eq__(self, other):  # type: ignore[override]
+        # Compare only the legacy mapping portion for equality with dicts
+        if isinstance(other, dict):
+            return dict(super().items()) == other
+        return super().__eq__(other)
+
+
 class TopicChainOperations:
     """Handles topic chain search operations."""
 
@@ -188,8 +230,13 @@ class TopicChainOperations:
                 topics_explored=topic_chain.total_topics_covered,
             )
 
-            # Return simple results format for backward compatibility
-            return chain_results
+            # Return structured result matching documented shape while preserving
+            # backward compatibility by including raw chain results under a key
+            return TopicChainResult(
+                chain_results=chain_results,
+                organized_results=organized_results,
+                stats=stats,
+            )
 
         except Exception as e:
             self.logger.error("Topic chain search failed", error=str(e), query=query)

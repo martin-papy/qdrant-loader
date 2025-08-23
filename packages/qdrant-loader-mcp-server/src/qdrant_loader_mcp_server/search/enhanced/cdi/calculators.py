@@ -22,8 +22,10 @@ from .extractors.similarity_helpers import (
     calculate_semantic_similarity_spacy as cdi_calc_semantic_spacy,
     calculate_metadata_similarity as cdi_calc_metadata_similarity,
     calculate_content_features_similarity as cdi_calc_content_features_similarity,
+    calculate_entity_overlap as cdi_calculate_entity_overlap,
+    calculate_topic_overlap as cdi_calculate_topic_overlap,
 )
-from .utils import hierarchical_distance_from_breadcrumbs
+from .utils import hierarchical_distance_from_breadcrumbs, extract_texts_from_mixed
 
 logger = LoggingConfig.get_logger(__name__)
 
@@ -57,9 +59,11 @@ class DocumentSimilarityCalculator:
         # Calculate individual metric scores
         for metric in metrics:
             if metric == SimilarityMetric.ENTITY_OVERLAP:
-                metric_scores[metric] = self._calculate_entity_overlap(doc1, doc2)
+                # Use CDI extractors directly to avoid deprecated wrappers
+                metric_scores[metric] = cdi_calculate_entity_overlap(doc1, doc2)
             elif metric == SimilarityMetric.TOPIC_OVERLAP:
-                metric_scores[metric] = self._calculate_topic_overlap(doc1, doc2)
+                # Use CDI extractors directly to avoid deprecated wrappers
+                metric_scores[metric] = cdi_calculate_topic_overlap(doc1, doc2)
             elif metric == SimilarityMetric.METADATA_SIMILARITY:
                 metric_scores[metric] = self._calculate_metadata_similarity(doc1, doc2)
             elif metric == SimilarityMetric.CONTENT_FEATURES:
@@ -102,8 +106,9 @@ class DocumentSimilarityCalculator:
         self, doc1: SearchResult, doc2: SearchResult
     ) -> float:
         """Calculate entity overlap between documents."""
-        entities1 = self._extract_entity_texts(doc1.entities)
-        entities2 = self._extract_entity_texts(doc2.entities)
+        # Use CDI utils directly; this method remains for backward compatibility
+        entities1 = extract_texts_from_mixed(getattr(doc1, "entities", []) or [])
+        entities2 = extract_texts_from_mixed(getattr(doc2, "entities", []) or [])
 
         if not entities1 and not entities2:
             return 0.0
@@ -117,20 +122,17 @@ class DocumentSimilarityCalculator:
         return intersection / union if union > 0 else 0.0
 
     def _calculate_topic_overlap(self, doc1: SearchResult, doc2: SearchResult) -> float:
-        """Calculate topic overlap between documents."""
-        topics1 = self._extract_topic_texts(doc1.topics)
-        topics2 = self._extract_topic_texts(doc2.topics)
+        """Deprecated. Use CDI extractors.calculate_topic_overlap instead.
 
-        if not topics1 and not topics2:
-            return 0.0
-        if not topics1 or not topics2:
-            return 0.0
-
-        # Jaccard similarity with topic weighting
-        intersection = len(set(topics1) & set(topics2))
-        union = len(set(topics1) | set(topics2))
-
-        return intersection / union if union > 0 else 0.0
+        TODO: Remove this method after 2026-01-01 once all external callers migrate.
+        """
+        warnings.warn(
+            "DocumentSimilarityCalculator._calculate_topic_overlap is deprecated; "
+            "use CDI extractors.calculate_topic_overlap instead",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return cdi_calculate_topic_overlap(doc1, doc2)
 
     def _calculate_metadata_similarity(
         self, doc1: SearchResult, doc2: SearchResult
@@ -200,6 +202,8 @@ class DocumentSimilarityCalculator:
         """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
 
         Replacement: use CDI utils `extract_texts_from_mixed`.
+        
+        TODO: Remove this wrapper after 2026-01-01; ensure all callers are migrated.
         """
         warnings.warn(
             "DocumentSimilarityCalculator._extract_entity_texts is deprecated; "
@@ -207,13 +211,14 @@ class DocumentSimilarityCalculator:
             category=DeprecationWarning,
             stacklevel=2,
         )
-        from .utils import extract_texts_from_mixed
         return extract_texts_from_mixed(entities)
 
     def _extract_topic_texts(self, topics: list[dict | str]) -> list[str]:
         """Deprecated. Use CDI utils instead: `utils.extract_texts_from_mixed`.
 
         Replacement: use CDI utils `extract_texts_from_mixed`.
+        
+        TODO: Remove this wrapper after 2026-01-01; ensure all callers are migrated.
         """
         warnings.warn(
             "DocumentSimilarityCalculator._extract_topic_texts is deprecated; "
@@ -221,7 +226,6 @@ class DocumentSimilarityCalculator:
             category=DeprecationWarning,
             stacklevel=2,
         )
-        from .utils import extract_texts_from_mixed
         return extract_texts_from_mixed(topics)
 
     def _determine_relationship_type(

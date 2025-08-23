@@ -74,17 +74,25 @@ class CitationNetworkAnalyzer:
                         )
 
             # Add hierarchical relationships
-            if doc.parent_id and doc.parent_id in doc_lookup:
-                network.edges.append(
-                    (
-                        doc.parent_id,
-                        doc_id,
-                        {
-                            "relation_type": "hierarchical_child",
-                            "weight": 2.0,  # Higher weight for hierarchical relationships
-                        },
+            if doc.parent_id is not None:
+                if doc.parent_id in doc_lookup:
+                    network.edges.append(
+                        (
+                            doc.parent_id,
+                            doc_id,
+                            {
+                                "relation_type": "hierarchical_child",
+                                "weight": 2.0,  # Higher weight for hierarchical relationships
+                            },
+                        )
                     )
-                )
+                else:
+                    # Parent declared but not found; log for visibility and skip
+                    self.logger.debug(
+                        "Parent ID not found in documents for hierarchical edge",
+                        child_id=doc_id,
+                        parent_id=doc.parent_id,
+                    )
 
             # Add sibling relationships
             if doc.sibling_sections:
